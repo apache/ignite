@@ -18,25 +18,17 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.CustomWireFormMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Takes a {@link Message} to the state it is written from, and back to the state it is used in. Two steps take part,
- * and this class is the only place that knows both and their order:
- * <ul>
- *     <li>the step a {@link CustomWireFormMessage} does itself;</li>
- *     <li>{@link MessageMarshaller} — the fields that become bytes;</li>
- *     <li>{@link MessageWireForm} — walking the nested messages and cache objects.</li>
- * </ul>
- * On the way out they run in that order, on the way in in reverse, so each step sees the fields in the shape the
- * next one expects. Writing and reading the bytes themselves is left to {@link MessageSerializer}.
+ * Takes a {@link Message} to the state it is written from, and back to the state it is used in. The work itself is in
+ * the {@link MessageWireForm} codegen wrote for the message; this class only finds that companion by the message's
+ * direct type and calls it. Writing and reading the bytes is left to {@link MessageSerializer}.
  */
 public final class MessageWire {
     /** */
@@ -67,18 +59,10 @@ public final class MessageWire {
      */
     public static <M extends Message> void toWire(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        if (msg instanceof CustomWireFormMessage wireFormMsg)
-            wireFormMsg.toWireForm();
-
-        MessageMarshaller<M> marshaller = marshaller(msgFactory, msg);
-
-        if (marshaller != null)
-            marshaller.marshal(msg, kctx, cacheObjCtx);
-
         MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
 
         if (wireForm != null)
-            wireForm.walkOut(msg, kctx, cacheObjCtx);
+            wireForm.prepare(msg, kctx, cacheObjCtx);
     }
 
     /**
@@ -112,15 +96,7 @@ public final class MessageWire {
         MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
 
         if (wireForm != null)
-            wireForm.walkIn(msg, kctx, cacheObjCtx, clsLdr);
-
-        MessageMarshaller<M> marshaller = marshaller(msgFactory, msg);
-
-        if (marshaller != null)
-            marshaller.unmarshal(msg, kctx, cacheObjCtx, clsLdr);
-
-        if (msg instanceof CustomWireFormMessage wireFormMsg)
-            wireFormMsg.fromWireForm();
+            wireForm.restore(msg, kctx, cacheObjCtx, clsLdr);
     }
 
     /**
@@ -134,20 +110,10 @@ public final class MessageWire {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, false)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
-        IgniteMessageFactory msgFactory = factory(kctx);
-
-        MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
+        MessageWireForm<M> wireForm = wireForm(factory(kctx), msg);
 
         if (wireForm != null)
-            wireForm.walkIn(msg, kctx);
-
-        MessageMarshaller<M> marshaller = marshaller(msgFactory, msg);
-
-        if (marshaller != null)
-            marshaller.unmarshal(msg, kctx);
-
-        if (msg instanceof CustomWireFormMessage wireFormMsg)
-            wireFormMsg.fromWireForm();
+            wireForm.restore(msg, kctx);
     }
 
     /**
@@ -161,18 +127,12 @@ public final class MessageWire {
         MessageWireForm<M> wireForm = wireForm(factory(kctx), msg);
 
         if (wireForm != null)
-            wireForm.walkInNio(msg, kctx);
+            wireForm.restoreNio(msg, kctx);
     }
 
     /** @return the message factory of {@code kctx}. */
     private static IgniteMessageFactory factory(GridKernalContext kctx) {
         return (IgniteMessageFactory)kctx.messageFactory();
-    }
-
-    /** @return the marshaller registered for {@code msg}'s direct type, or {@code null} if none. */
-    @SuppressWarnings("unchecked")
-    private static <M extends Message> @Nullable MessageMarshaller<M> marshaller(IgniteMessageFactory msgFactory, M msg) {
-        return (MessageMarshaller<M>)msgFactory.marshaller(msg.directType());
     }
 
     /** @return the wire form registered for {@code msg}'s direct type, or {@code null} if none. */

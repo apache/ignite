@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.QualifiedNameable;
@@ -34,27 +33,52 @@ import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
+import static org.apache.ignite.internal.MessageProcessor.CUSTOM_WIRE_FORM_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.PLAIN_MESSAGE_INTERFACE;
 
 /**
- * Generates the {@code *WireForm} class of a {@code Message}: the code that walks into its nested messages and
- * prepares its cache objects, so the fields are in the shape they go on the wire in. Marshalling a field is a step of
- * its own and belongs to {@link MessageMarshallerGenerator}; a message with nothing to walk gets no wire form.
+ * Generates the {@code *WireForm} class of a {@code Message}: one walk over its {@code @Order} fields — the loops,
+ * null guards and recursion into collections — with the concrete calls supplied by two helpers:
+ * {@link MessageWireCalls} for nested messages and cache objects, {@link MarshallingCalls} for what becomes bytes.
+ * A message with nothing to walk and nothing to marshal gets no wire form.
  */
-public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
+public class MessageWireFormGenerator extends MessageCompanionGenerator {
     /** Interface the generated wire forms implement. */
     private static final String MESSAGE_WIRE_FORM_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWireForm";
 
-    /** Facade the generated code calls to take nested messages to the wire and back. */
-    private static final String MESSAGE_WIRE_CLS = "org.apache.ignite.internal.managers.communication.MessageWire";
+    /** */
+    private static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
+
+    /** */
+    private static final String GRID_KERNAL_CONTEXT_CLS = "org.apache.ignite.internal.GridKernalContext";
+
+    /** */
+    private static final String CACHE_OBJECT_CONTEXT_CLS = "org.apache.ignite.internal.processors.cache.CacheObjectContext";
+
+    /** */
+    private static final String GRID_CACHE_GROUP_ID_MESSAGE_CLS = "org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage";
+
+    /** */
+    private static final String IGNITE_MESSAGE_FACTORY_CLS = "org.apache.ignite.internal.managers.communication.IgniteMessageFactory";
+
+    /** The marshalling calls of the generated class: {@code @Marshalled} fields and the message's own {@code marshal}. */
+    private final MarshallingCalls marshalling = new MarshallingCalls(this);
+
+    /** The {@code MessageWire} calls of the generated class: the walk's leaves. */
+    private final MessageWireCalls wire = new MessageWireCalls(this);
+
+    /** Accumulated source lines of the generated methods. */
+    private final List<String> methods = new ArrayList<>();
+
+    /** */
+    private final TypeMirror customWireFormMsgType;
 
     /** */
     private final TypeMirror msgType;
@@ -71,18 +95,32 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     /** */
     private final TypeMirror colType;
 
+    /** */
+    private final TypeMirror cacheGrpIdMsgType;
+
+    /** Whether the message is a {@code CustomWireFormMessage}, so the generated methods call its own step. */
+    private boolean customWireForm;
+
+    /** Whether any generated method got a non-empty body; a wire form without one is skipped entirely. */
+    private boolean hasStatements;
+
+    /** Whether the currently generated method emitted a loop-nested {@code MessageWire} call and so needs the {@code msgFactory} local. */
+    boolean usesMsgFactory;
+
     /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
-    private int loopDepth;
+    int loopDepth;
 
     /** */
     MessageWireFormGenerator(ProcessingEnvironment env) {
         super(env);
 
+        customWireFormMsgType = type(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         plainType = type(PLAIN_MESSAGE_INTERFACE);
         mapType = type(Map.class.getName());
         colType = type(Collection.class.getName());
+        cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
     }
 
     /** {@inheritDoc} */
@@ -92,8 +130,12 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
     /** {@inheritDoc} */
     @Override protected void generateBody(List<VariableElement> fields) {
-        generateWalkOutMethod(fields);
-        generateWalkInMethods(fields);
+        marshalling.readFields(enclosedFields());
+
+        customWireForm = customWireFormMsgType != null && assignableFrom(type.asType(), customWireFormMsgType);
+
+        generatePrepareMethod(fields);
+        generateRestoreMethods(fields);
     }
 
     /** {@inheritDoc} */
@@ -105,9 +147,14 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
             imports.add(type.toString());
             imports.add(MESSAGE_WIRE_FORM_CLS);
 
+            if (marshalling.needsMarshaller())
+                imports.add(MARSHALLER_CLS);
+
             writeClassHeader(writer, "MessageWireForm", clsName);
 
             writer.write(" {" + NL);
+
+            writeConstructor(writer, clsName);
 
             for (String line : methods)
                 writer.write(line + NL);
@@ -118,21 +165,35 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         }
     }
 
-    /** Cache-free read-back of a {@code @NioField} message field on the NIO thread (no cache context available). */
-    private List<String> walkInNioField(String accessor) {
-        imports.add(MESSAGE_WIRE_CLS);
+    /** Writes the {@code marshaller} field and the constructor initializing it, when the marshaller is needed. */
+    private void writeConstructor(Writer writer, String clsName) throws IOException {
+        if (!marshalling.needsMarshaller())
+            return;
 
-        List<String> code = new ArrayList<>();
+        writer.write(indentedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(indentedLine("private final Marshaller marshaller;"));
+        writer.write(NL + NL);
 
-        code.add(indentedLine("if (%s != null)", accessor));
+        writer.write(indentedLine(METHOD_JAVADOC));
+        writer.write(NL);
+        writer.write(indentedLine("public " + clsName + "(Marshaller marshaller) {"));
+        writer.write(NL);
 
         indent++;
 
-        code.add(indentedLine("MessageWire.fromWire(%s, kctx);", accessor));
+        writer.write(indentedLine("this.marshaller = marshaller;"));
+        writer.write(NL);
 
         indent--;
 
-        return code;
+        writer.write(indentedLine("}"));
+        writer.write(NL + NL);
+    }
+
+    /** @return {@code true} if the generated {@code code} refers to the cache object context, so it has to be resolved. */
+    private static boolean usesCtx(List<String> code) {
+        return code.stream().anyMatch(l -> l.matches(".*\\bctx\\b.*"));
     }
 
     /**
@@ -149,7 +210,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         return SystemViewRowAttributeWalkerProcessor.superclasses(env, (TypeElement)el)
             .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
             .filter(f -> f.getAnnotation(Order.class) != null)
-            .anyMatch(f -> needsCtxType(f.asType()));
+            .anyMatch(f -> needsCtx(f.asType()));
     }
 
     /** */
@@ -168,25 +229,57 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         return loopDepth > 0 || elemType.getKind() == TypeKind.TYPEVAR;
     }
 
-    /** Generates the {@code walkOut} method: every field on the way out. */
-    private void generateWalkOutMethod(List<VariableElement> orderedFields) {
+    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested {@code MessageWire} call was emitted. */
+    private void prependMsgFactoryResolution(List<String> body) {
+        if (!usesMsgFactory)
+            return;
+
+        imports.add(IGNITE_MESSAGE_FACTORY_CLS);
+
+        body.add(0, EMPTY);
+        body.add(0, indentedLine("IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();"));
+    }
+
+    /**
+     * Returns the {@code CacheObjectContext ctx} resolution line for the current message type. Cache messages resolve
+     * via the cache, group messages via the cache group — the group's context outlives the stop of individual caches,
+     * so cache objects still read back while a cache (group) is being destroyed.
+     */
+    private String ctxResolutionLine() {
+        if (isCacheIdAwareMessage(type))
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
+                    "kctx.cache().context().cacheObjectContext(msg.cacheId());");
+        else if (isCacheGroupIdMessage(type))
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx != null ? cacheObjCtx : " +
+                    "kctx.cache().cacheGroup(msg.groupId()) == null ? null : " +
+                    "kctx.cache().cacheGroup(msg.groupId()).cacheObjectContext();");
+        else
+            return indentedLine("CacheObjectContext ctx = cacheObjCtx;");
+    }
+
+    /** Generates the {@code prepare} method: the message's own step, then its bytes, then the walk. */
+    private void generatePrepareMethod(List<VariableElement> orderedFields) {
         imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
         imports.add(GRID_KERNAL_CONTEXT_CLS);
         imports.add(CACHE_OBJECT_CONTEXT_CLS);
 
-        String signature = "walkOut(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
+        String signature = "prepare(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
 
         hasStatements |= emitMethod(methods, signature, body -> {
             usesMsgFactory = false;
 
             List<String> code = new ArrayList<>();
 
+            if (customWireForm)
+                appendBlock(code, List.of(indentedLine("msg.toWireForm();")));
+
+            appendBlock(code, marshalling.prepare());
             appendFields(code, orderedFields, Direction.OUT);
 
             if (code.isEmpty())
                 return;
 
-            if (needsCtx(orderedFields))
+            if (needsCtx(orderedFields) || usesCtx(code))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
             appendBlock(body, code);
@@ -195,8 +288,8 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         });
     }
 
-    /** Generates the {@code walkIn} overloads: the NIO-eligible fields apart from the rest. */
-    private void generateWalkInMethods(List<VariableElement> orderedFields) {
+    /** Generates the {@code restore} overloads: the NIO-eligible fields apart from the rest. */
+    private void generateRestoreMethods(List<VariableElement> orderedFields) {
         List<VariableElement> nioFields = new ArrayList<>();
         List<VariableElement> workerFields = new ArrayList<>();
 
@@ -222,25 +315,29 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
         String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
 
-        generateWalkInMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
+        generateRestoreMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
 
         if (!nioFields.isEmpty())
-            generateWalkInNioMethod(msgParam, nioFields);
+            generateRestoreNioMethod(msgParam, nioFields);
     }
 
-    /** Generates the cache-aware {@code walkIn} overload: the full field set, with cache context and class loader. */
-    private void generateWalkInMethod(String params, List<VariableElement> fields) {
-        hasStatements |= emitMethod(methods, "walkIn(" + params + ")", body -> {
+    /** Generates the cache-aware {@code restore} overload: the walk, then the bytes, then the message's own step. */
+    private void generateRestoreMethod(String params, List<VariableElement> fields) {
+        hasStatements |= emitMethod(methods, "restore(" + params + ")", body -> {
             usesMsgFactory = false;
 
             List<String> code = new ArrayList<>();
 
             appendFields(code, fields, Direction.IN);
+            appendBlock(code, marshalling.restore());
+
+            if (customWireForm)
+                appendBlock(code, List.of(indentedLine("msg.fromWireForm();")));
 
             if (code.isEmpty())
                 return;
 
-            if (needsCtx(fields))
+            if (needsCtx(fields) || usesCtx(code))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
             appendBlock(body, code);
@@ -249,26 +346,18 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         });
     }
 
-    /** Generates the {@code walkInNio} method for NIO-eligible {@code @Message} fields. */
-    private void generateWalkInNioMethod(String params, List<VariableElement> nioFields) {
-        hasStatements |= emitMethod(methods, "walkInNio(" + params + ")", body -> {
+    /** Generates the {@code restoreNio} method for NIO-eligible {@code @Message} fields. */
+    private void generateRestoreNioMethod(String params, List<VariableElement> nioFields) {
+        hasStatements |= emitMethod(methods, "restoreNio(" + params + ")", body -> {
             for (VariableElement f : nioFields)
-                appendBlock(body, walkInNioField(fieldAccessor(f)));
+                appendBlock(body, wire.forNioMessage(fieldAccessor(f)));
         });
     }
 
     /** Generates the code of each field and appends the non-empty results to {@code body}. */
-    private void appendFields(List<String> body, List<VariableElement> fields, Direction mode) {
-        appendFields(body, fields, mode, Set.of());
-    }
-
-    /** Generates the code of each field, skipping names in {@code skip}, and appends the non-empty results. */
-    private void appendFields(List<String> body, List<VariableElement> fields, Direction mode, Set<String> skip) {
+    private void appendFields(List<String> body, List<VariableElement> fields, Direction dir) {
         for (VariableElement field : fields) {
-            if (skip.contains(field.getSimpleName().toString()))
-                continue;
-
-            List<String> result = codeFor(field.asType(), fieldAccessor(field), mode);
+            List<String> result = codeFor(field.asType(), fieldAccessor(field), dir);
 
             if (!result.isEmpty())
                 appendBlock(body, result);
@@ -278,83 +367,34 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     /**
      * @return the generated code lines for a field of type {@code t} in the given direction, or empty if it needs none.
      */
-    private List<String> codeFor(TypeMirror t, String accessor, Direction mode) {
+    private List<String> codeFor(TypeMirror t, String accessor, Direction dir) {
         if (t.getKind() == TypeKind.ARRAY) {
             TypeMirror comp = ((ArrayType)t).getComponentType();
 
-            return comp.getKind() == TypeKind.DECLARED ? arrayCode(comp, accessor, mode) : List.of();
+            return comp.getKind() == TypeKind.DECLARED ? arrayCode(comp, accessor, dir) : List.of();
         }
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return isPlain(t) ? List.of() : messageCode(accessor, mode);
+                return isPlain(t) ? List.of() : wire.forMessage(accessor, dir);
             if (isCacheObject(t))
-                return cacheObjectCode(accessor, mode);
+                return wire.forCacheObject(accessor, dir);
             if (isMap(t))
-                return mapCode((DeclaredType)t, accessor, mode);
+                return mapCode((DeclaredType)t, accessor, dir);
             if (isCollection(t))
-                return collectionCode((DeclaredType)t, accessor, mode);
+                return collectionCode((DeclaredType)t, accessor, dir);
         }
 
         return List.of();
     }
 
-    /**
-     * Generates a null-guarded {@code MessageWire} call. Loop-nested calls go through the overloads taking the
-     * pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the factory is not
-     * re-resolved from the context on every element.
-     */
-    private List<String> messageCode(String accessor, Direction mode) {
-        imports.add(MESSAGE_WIRE_CLS);
-
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("if (%s != null)", accessor));
-
-        indent++;
-
-        if (loopDepth > 0) {
-            usesMsgFactory = true;
-
-            code.add(mode == Direction.OUT
-                ? indentedLine("MessageWire.toWire(msgFactory, %s, kctx, ctx);", accessor)
-                : indentedLine("MessageWire.fromWire(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
-        }
-        else {
-            code.add(mode == Direction.OUT
-                ? indentedLine("MessageWire.toWire(%s, kctx, ctx);", accessor)
-                : indentedLine("MessageWire.fromWire(%s, kctx, ctx, clsLdr);", accessor));
-        }
-
-        indent--;
-
-        return code;
-    }
-
-    /** Generates a null-and-ctx-guarded call that prepares a {@code CacheObject} field, or reads it back. */
-    private List<String> cacheObjectCode(String accessor, Direction mode) {
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("if (%s != null && ctx != null)", accessor));
-
-        indent++;
-
-        code.add(mode == Direction.OUT
-            ? indentedLine("%s.marshal(ctx);", accessor)
-            : indentedLine("%s.unmarshal(ctx, clsLdr);", accessor));
-
-        indent--;
-
-        return code;
-    }
-
     /** Generates a null-guarded for-each loop over the array's elements. */
-    private List<String> arrayCode(TypeMirror comp, String accessor, Direction mode) {
+    private List<String> arrayCode(TypeMirror comp, String accessor, Direction dir) {
         Element elem = ((DeclaredType)comp).asElement();
 
         indent++;
 
-        List<String> loopCode = forLoop(elem.getSimpleName().toString(), comp, accessor, mode);
+        List<String> loopCode = forLoop(elem.getSimpleName().toString(), comp, accessor, dir);
 
         indent--;
 
@@ -365,7 +405,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     }
 
     /** Generates a null-guarded for-each loop over the collection's elements. */
-    private List<String> collectionCode(DeclaredType t, String accessor, Direction mode) {
+    private List<String> collectionCode(DeclaredType t, String accessor, Direction dir) {
         TypeMirror arg = t.getTypeArguments().get(0);
 
         if (arg.getKind() != TypeKind.DECLARED && arg.getKind() != TypeKind.TYPEVAR)
@@ -379,7 +419,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
         String iterable = needsCast(arg) ? "(Collection<? extends " + typeName + ">)" + accessor : accessor;
 
-        List<String> loopCode = forLoop(typeName, arg, iterable, mode);
+        List<String> loopCode = forLoop(typeName, arg, iterable, dir);
 
         indent--;
 
@@ -392,7 +432,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     }
 
     /** Iterates {@code keySet()} then {@code values()}, wrapping both loops in a null-guard. */
-    private List<String> mapCode(DeclaredType t, String accessor, Direction mode) {
+    private List<String> mapCode(DeclaredType t, String accessor, Direction dir) {
         List<? extends TypeMirror> args = t.getTypeArguments();
 
         indent++;
@@ -413,7 +453,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
                 ? "((Collection<? extends " + typeName + ">)" + accessor + "." + collection + "())"
                 : accessor + "." + collection + "()";
 
-            List<String> loopCode = forLoop(typeName, elemType, iterable, mode);
+            List<String> loopCode = forLoop(typeName, elemType, iterable, dir);
 
             if (loopCode.isEmpty())
                 continue;
@@ -430,13 +470,13 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     }
 
     /** @return a for-each loop over {@code iterable}, or empty when its elements need no code of their own. */
-    private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, Direction mode) {
+    private List<String> forLoop(String typeName, TypeMirror elemType, String iterable, Direction dir) {
         String el = loopDepth == 0 ? "e" : "e" + loopDepth;
 
         loopDepth++;
         indent++;
 
-        List<String> inner = codeFor(elemType, el, mode);
+        List<String> inner = codeFor(elemType, el, dir);
 
         indent--;
         loopDepth--;
@@ -471,8 +511,8 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         return code;
     }
 
-    /** Which way the generated field code runs: {@link #OUT} before the message is written, {@link #IN} after it is read. */
-    private enum Direction {
+    /** Which way the generated field code runs. */
+    enum Direction {
         /** On the way out: the code runs before the message is written. */
         OUT,
 
@@ -480,22 +520,15 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         IN
     }
 
-    /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
-    private Element element(TypeMirror t) {
-        return t.getKind() == TypeKind.DECLARED
-            ? ((DeclaredType)t).asElement()
-            : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
-    }
-
     /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */
     private boolean needsCtx(List<VariableElement> fields) {
-        return fields.stream().anyMatch(f -> needsCtxType(f.asType()));
+        return fields.stream().anyMatch(f -> needsCtx(f.asType()));
     }
 
     /** Returns {@code true} if type {@code t} (or its element/key/value types) requires {@code ctx}. */
-    private boolean needsCtxType(TypeMirror t) {
+    private boolean needsCtx(TypeMirror t) {
         if (t.getKind() == TypeKind.ARRAY)
-            return needsCtxType(((ArrayType)t).getComponentType());
+            return needsCtx(((ArrayType)t).getComponentType());
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
@@ -506,12 +539,12 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
             if (isMap(t)) {
                 List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-                return needsCtxType(args.get(0)) || needsCtxType(args.get(1));
+                return needsCtx(args.get(0)) || needsCtx(args.get(1));
             }
 
             if (isCollection(t)) {
                 List<? extends TypeMirror> args = ((DeclaredType)t).getTypeArguments();
-                return needsCtxType(args.get(0));
+                return needsCtx(args.get(0));
             }
         }
 
@@ -546,5 +579,10 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     /** Returns {@code true} if {@code type} (erased) is assignable to {@code java.util.Collection}. */
     private boolean isCollection(TypeMirror type) {
         return assignableFrom(erasedType(type), colType);
+    }
+
+    /** */
+    private boolean isCacheGroupIdMessage(TypeElement te) {
+        return assignableFrom(te.asType(), cacheGrpIdMsgType);
     }
 }

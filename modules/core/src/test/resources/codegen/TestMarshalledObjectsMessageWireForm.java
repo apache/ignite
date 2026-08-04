@@ -26,24 +26,24 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller<TestMarshalledObjectsMessage> {
+public final class TestMarshalledObjectsMessageWireForm implements MessageWireForm<TestMarshalledObjectsMessage> {
     /** */
     private final Marshaller marshaller;
 
     /** */
-    public TestMarshalledObjectsMessageMarshaller(Marshaller marshaller) {
+    public TestMarshalledObjectsMessageWireForm(Marshaller marshaller) {
         this.marshaller = marshaller;
     }
 
     /** */
-    @Override public void marshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void prepare(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.data != null && msg.dataBytes == null) {
             msg.dataBytes = new ArrayList<>(msg.data.size());
 
@@ -53,7 +53,7 @@ public final class TestMarshalledObjectsMessageMarshaller implements MessageMars
     }
 
     /** */
-    @Override public void unmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void restore(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.dataBytes != null) {

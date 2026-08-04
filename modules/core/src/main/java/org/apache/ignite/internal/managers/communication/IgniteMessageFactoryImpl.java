@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 import org.jetbrains.annotations.Nullable;
@@ -43,9 +42,6 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
 
     /** Message serializers. */
     private final MessageSerializer<M>[] msgSerializers = (MessageSerializer<M>[])Array.newInstance(MessageSerializer.class, ARR_SIZE);
-
-    /** Message marshallers (null entry = no marshaller registered for that type). */
-    private final MessageMarshaller<M>[] msgMarshallers = (MessageMarshaller<M>[])Array.newInstance(MessageMarshaller.class, ARR_SIZE);
 
     /** Message wire forms (null entry = no wire form registered for that type). */
     private final MessageWireForm<M>[] msgWireForms = (MessageWireForm<M>[])Array.newInstance(MessageWireForm.class, ARR_SIZE);
@@ -77,17 +73,9 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         initialized = true;
     }
 
-    /**
-     * Registers a message with a serializer, an optional marshaller, and an optional deployer.
-     *
-     * @param directType Direct type ({@link Message#directType()}) to register the message under.
-     * @param serializer Message serializer.
-     * @param marshaller Message marshaller, or {@code null} when the message has nothing to marshal.
-     * @param wireForm Message wire form, or {@code null} when the message has no field to walk.
-     * @param deployer Message deployer, or {@code null} for messages without deployable fields.
-     */
+    /** {@inheritDoc} */
     @Override public void register(short directType, MessageSerializer<M> serializer,
-        @Nullable MessageMarshaller<M> marshaller, @Nullable MessageWireForm<M> wireForm,
+        @Nullable MessageWireForm<M> wireForm,
         @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
@@ -97,9 +85,9 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         try {
             Message msg = serializer.createMessage();
 
-            if (marshaller == null && msg instanceof MarshallableMessage) {
+            if (wireForm == null && msg instanceof MarshallableMessage) {
                 throw new IgniteException("Failed to register a message: it implements MarshallableMessage but no" +
-                    " marshaller is provided [directType=" + directType +
+                    " wire form is provided [directType=" + directType +
                     ", cls=" + msg.getClass().getName() + ']');
             }
 
@@ -122,7 +110,6 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
 
         if (curr == null) {
             msgSerializers[idx] = serializer;
-            msgMarshallers[idx] = marshaller;
             msgWireForms[idx] = wireForm;
             msgDeployers[idx] = deployer;
 
@@ -160,11 +147,6 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
             throw new IgniteException("Message serializer not found for a message type: " + directType);
 
         return serializer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable MessageMarshaller<M> marshaller(short directType) {
-        return msgMarshallers[directTypeToIndex(directType)];
     }
 
     /** {@inheritDoc} */

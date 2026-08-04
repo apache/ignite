@@ -131,8 +131,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
@@ -2717,24 +2717,24 @@ public final class GridTestUtils {
         }
     }
 
-    /** Loads the generated {@code *Marshaller} class for {@code msgCls} and instantiates it with {@code dfltMarsh}. */
-    public static <T extends Message> MessageMarshaller<T> loadMarshaller(Class<? extends Message> msgCls,
+    /** Loads the generated {@code *WireForm} class for {@code msgCls} and instantiates it with {@code dfltMarsh}. */
+    public static <T extends Message> MessageWireForm<T> loadWireForm(Class<? extends Message> msgCls,
         @Nullable Marshaller dfltMarsh) {
         try {
-            Class<?> marshallerCls = U.gridClassLoader()
-                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Marshaller");
+            Class<?> wireFormCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "WireForm");
 
             boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
 
             if (isMarshallable) {
                 Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
-                return (MessageMarshaller<T>)marshallerCls.getConstructor(Marshaller.class).newInstance(marsh);
+                return (MessageWireForm<T>)wireFormCls.getConstructor(Marshaller.class).newInstance(marsh);
             }
 
-            return (MessageMarshaller<T>)U.newInstance(marshallerCls);
+            return (MessageWireForm<T>)U.newInstance(wireFormCls);
         }
         catch (Exception e) {
-            throw new RuntimeException("Unable to find marshaller for message: " + msgCls, e);
+            throw new RuntimeException("Unable to find wire form for message: " + msgCls, e);
         }
     }
 

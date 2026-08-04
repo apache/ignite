@@ -19,32 +19,38 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestMarshallableMessage;
+import org.apache.ignite.internal.TestMarshalledMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshallableMessageMarshaller implements MessageMarshaller<TestMarshallableMessage> {
+public final class TestMarshalledMessageWireForm implements MessageWireForm<TestMarshalledMessage> {
     /** */
     private final Marshaller marshaller;
 
     /** */
-    public TestMarshallableMessageMarshaller(Marshaller marshaller) {
+    public TestMarshalledMessageWireForm(Marshaller marshaller) {
         this.marshaller = marshaller;
     }
 
     /** */
-    @Override public void marshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        msg.marshal(marshaller);
+    @Override public void prepare(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        if (msg.data != null && msg.dataBytes == null)
+            msg.dataBytes = U.marshal(marshaller, msg.data);
     }
 
     /** */
-    @Override public void unmarshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        msg.unmarshal(marshaller, clsLdr);
+    @Override public void restore(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (msg.dataBytes != null) {
+            msg.data = U.unmarshal(marshaller, msg.dataBytes, clsLdr);
+
+            msg.dataBytes = null;
+        }
     }
 }

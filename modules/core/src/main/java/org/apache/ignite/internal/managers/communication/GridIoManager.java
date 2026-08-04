@@ -2044,8 +2044,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /**
-     * Marshals {@code ioMsg} enforcing the marshal-once contract: a wrap is marshalled exactly once before
-     * transmission (marshalling is not idempotent, see {@code MessageMarshalOnceTest}).
+     * Takes {@code ioMsg} to the wire, enforcing the once-only contract: a wrap goes to the wire exactly once before
+     * transmission (the step is not idempotent, see {@code MessageMarshalOnceTest}).
      */
     private void toWire(GridIoMessage ioMsg) throws IgniteCheckedException {
         assert !ioMsg.onWire() : "GridIoMessage is taken to the wire twice: " + ioMsg;

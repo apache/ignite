@@ -51,7 +51,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
@@ -762,7 +761,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                     @Override public void register(
                         short directType,
                         MessageSerializer<Message> serializer,
-                        @Nullable MessageMarshaller<Message> marshaller,
                         @Nullable MessageWireForm<Message> wireForm,
                         @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer
                     ) throws IgniteException {
@@ -774,10 +772,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                     }
 
                     @Override public MessageSerializer<Message> serializer(short type) {
-                        throw new IgniteException("Failed to register message, node is not started.");
-                    }
-
-                    @Nullable @Override public MessageMarshaller<Message> marshaller(short type) {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
 

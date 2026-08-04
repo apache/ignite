@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestCollectionsMessage;
-import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.TestMarshallableMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 
 /**
@@ -30,29 +29,22 @@ import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestCollectionsMessageWireForm implements MessageWireForm<TestCollectionsMessage> {
+public final class TestMarshallableMessageWireForm implements MessageWireForm<TestMarshallableMessage> {
     /** */
-    @Override public void prepare(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        CacheObjectContext ctx = cacheObjCtx;
+    private final Marshaller marshaller;
 
-        if (msg.cacheObjectSet != null) {
-            for (CacheObject e : msg.cacheObjectSet) {
-                if (e != null && ctx != null)
-                    e.marshal(ctx);
-            }
-        }
+    /** */
+    public TestMarshallableMessageWireForm(Marshaller marshaller) {
+        this.marshaller = marshaller;
     }
 
     /** */
-    @Override public void restore(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        CacheObjectContext ctx = cacheObjCtx;
+    @Override public void prepare(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        msg.marshal(marshaller);
+    }
 
-        if (msg.cacheObjectSet != null) {
-            for (CacheObject e : msg.cacheObjectSet) {
-                if (e != null && ctx != null)
-                    e.unmarshal(ctx, clsLdr);
-            }
-        }
-
+    /** */
+    @Override public void restore(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        msg.unmarshal(marshaller, clsLdr);
     }
 }

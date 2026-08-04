@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
  */
 public final class TestMapMessageWireForm implements MessageWireForm<TestMapMessage> {
     /** */
-    @Override public void walkOut(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void prepare(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {
@@ -59,7 +59,7 @@ public final class TestMapMessageWireForm implements MessageWireForm<TestMapMess
     }
 
     /** */
-    @Override public void walkIn(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void restore(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {
@@ -80,5 +80,6 @@ public final class TestMapMessageWireForm implements MessageWireForm<TestMapMess
                 }
             }
         }
+
     }
 }

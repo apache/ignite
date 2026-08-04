@@ -19,38 +19,24 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestMarshalledMessage;
+import org.apache.ignite.internal.TestCustomWireFormMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledMessageMarshaller implements MessageMarshaller<TestMarshalledMessage> {
+public final class TestCustomWireFormMessageWireForm implements MessageWireForm<TestCustomWireFormMessage> {
     /** */
-    private final Marshaller marshaller;
+    @Override public void prepare(TestCustomWireFormMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        msg.toWireForm();
 
-    /** */
-    public TestMarshalledMessageMarshaller(Marshaller marshaller) {
-        this.marshaller = marshaller;
     }
 
     /** */
-    @Override public void marshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        if (msg.data != null && msg.dataBytes == null)
-            msg.dataBytes = U.marshal(marshaller, msg.data);
-    }
-
-    /** */
-    @Override public void unmarshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (msg.dataBytes != null) {
-            msg.data = U.unmarshal(marshaller, msg.dataBytes, clsLdr);
-
-            msg.dataBytes = null;
-        }
+    @Override public void restore(TestCustomWireFormMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        msg.fromWireForm();
     }
 }

@@ -24,54 +24,55 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Puts the fields of a {@link Message} into the shape they go on the wire in, and back: walking into nested messages
- * and preparing cache objects. Turning a field into bytes is a step of its own and belongs to {@link MessageMarshaller}.
- * Generated per message class by codegen and called by {@code MessageWire}.
+ * Puts the fields of a {@link Message} into the shape they go on the wire in, and back. Three kinds of work end up
+ * here, and codegen writes only the ones the message actually needs: the step the message defines itself, the
+ * {@code @Marshalled} fields that become bytes, and the walk into nested messages and cache objects.
+ * Generated per message class and called by {@code MessageWire}.
  *
  * @param <M> Message type.
  */
 public interface MessageWireForm<M extends Message> {
     /**
-     * Walks the fields on the way out. Called on the user thread before sending.
+     * Takes the fields to their wire shape. Called on the user thread before sending.
      *
      * @param msg Message to take to the wire.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public void walkOut(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
+    public void prepare(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException;
 
     /**
-     * Walks the fields on the way in, with full cache context and class loader.
+     * Brings the fields back, with full cache context and class loader.
      *
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader to resolve the classes with.
      */
-    public void walkIn(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
+    public void restore(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
     /**
-     * Walks the fields without a cache context, using the configuration class loader — the cache-free receive path.
+     * Brings the fields back without a cache context, using the configuration class loader — the cache-free receive path.
      * Delegates to the cache-aware overload with a {@code null} context, so a generated wire form implements the
      * cache-aware method only.
      *
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    default void walkIn(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        walkIn(msg, kctx, null, U.resolveClassLoader(kctx.config()));
+    default void restore(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+        restore(msg, kctx, null, U.resolveClassLoader(kctx.config()));
     }
 
     /**
-     * Walks only the {@code @NioField} fields (routing headers) on the NIO thread — unlike the {@code walkIn}
+     * Brings back only the {@code @NioField} fields (routing headers) on the NIO thread — unlike the {@code restore}
      * overloads, which take the full payload later on a worker thread. No-op unless the message has {@code @NioField}s.
      *
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    default void walkInNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    default void restoreNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         // No-op.
     }
 }

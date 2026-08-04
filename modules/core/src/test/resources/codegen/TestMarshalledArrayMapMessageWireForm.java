@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopicMessage;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.communication.MessageWire;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 
 /**
@@ -35,10 +37,32 @@ import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
  */
 public final class TestMarshalledArrayMapMessageWireForm implements MessageWireForm<TestMarshalledArrayMapMessage> {
     /** */
-    @Override public void walkOut(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void prepare(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
 
         CacheObjectContext ctx = cacheObjCtx;
+
+        if (msg.theMap != null && msg.mapKeys == null) {
+            msg.mapKeys = new GridTopicMessage[msg.theMap.size()];
+            msg.mapVals = new List[msg.mapKeys.length];
+            int i = 0;
+            for (Map.Entry<?, ?> e : msg.theMap.entrySet()) {
+                msg.mapKeys[i] = (GridTopicMessage)e.getKey();
+                msg.mapVals[i] = (List)e.getValue();
+                i++;
+            }
+        }
+
+        if (msg.fixedMap != null && msg.fixedMapKeys == null) {
+            msg.fixedMapKeys = new GridTopicMessage[msg.fixedMap.size()];
+            msg.fixedMapVals = new List[msg.fixedMapKeys.length];
+            int i = 0;
+            for (Map.Entry<?, ?> e : msg.fixedMap.entrySet()) {
+                msg.fixedMapKeys[i] = (GridTopicMessage)e.getKey();
+                msg.fixedMapVals[i] = (List)e.getValue();
+                i++;
+            }
+        }
 
         if (msg.mapKeys != null) {
             for (GridTopicMessage e : msg.mapKeys) {
@@ -78,7 +102,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
     }
 
     /** */
-    @Override public void walkIn(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void restore(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
 
         CacheObjectContext ctx = cacheObjCtx;
@@ -117,6 +141,32 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
                     }
                 }
             }
+        }
+
+        if (msg.mapKeys != null) {
+            msg.theMap = U.newHashMap(msg.mapKeys.length);
+
+            for (int i = 0; i < msg.mapKeys.length; i++) {
+                GridTopicMessage k = msg.mapKeys[i];
+                List v = msg.mapVals[i];
+
+                msg.theMap.put(k, v);
+            }
+
+            msg.mapKeys = null;
+            msg.mapVals = null;
+        }
+
+        if (msg.fixedMapKeys != null) {
+            for (int i = 0; i < msg.fixedMapKeys.length; i++) {
+                GridTopicMessage k = msg.fixedMapKeys[i];
+                List v = msg.fixedMapVals[i];
+
+                msg.fixedMap.put(k, v);
+            }
+
+            msg.fixedMapKeys = null;
+            msg.fixedMapVals = null;
         }
     }
 }

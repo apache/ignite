@@ -32,26 +32,27 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * A custom wire form is a step of its own: {@link MessageWire} runs it around marshalling, so it happens even for
- * a message that has no marshaller at all.
+ * {@link MessageWire} finds the wire form codegen wrote for a message and calls it, both ways. What that wire form
+ * does inside — the message's own step, the bytes, the walk — is put there statically, and the codegen tests check
+ * the generated source for it.
  */
 public class MessageWireFormStepTest extends GridCommonAbstractTest {
     /** Direct type of the message that has both steps. */
     private static final short BOTH_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 1);
 
-    /** Direct type of the message that has a wire form only. */
-    private static final short WIRE_ONLY_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 2);
+    /** Direct type of the message that has a step of its own but no wire form registered. */
+    private static final short OWN_STEP_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 2);
 
-    /** Direct type of the message that gets no companion at all. */
+    /** Direct type of the message that needs nothing but its serializer. */
     private static final short PLAIN_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 3);
 
     /** Steps taken, in the order they happened. */
@@ -68,8 +69,8 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
 
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 registry.registerExtension(MessageFactoryProvider.class, factory -> {
-                    factory.register(BOTH_TYPE, new BothSerializer(), new RecordingMarshaller());
-                    factory.register(WIRE_ONLY_TYPE, new WireOnlySerializer(), null);
+                    factory.register(BOTH_TYPE, new BothSerializer(), new RecordingWireForm());
+                    factory.register(OWN_STEP_TYPE, new OwnStepSerializer(), null);
                     factory.register(PLAIN_TYPE, new PlainSerializer(), null);
                 });
             }
@@ -94,7 +95,7 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testWireFormRunsAroundMarshalling() throws Exception {
+    public void testWireFormIsFoundAndCalled() throws Exception {
         GridKernalContext kctx = startGrid(0).context();
 
         BothMessage msg = new BothMessage();
@@ -102,44 +103,11 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         MessageWire.toWire(msg, kctx, null);
         MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
 
-        assertEquals("The wire form must be built before marshalling and read back after unmarshalling",
-            List.of("toWireForm", "marshal", "unmarshal", "fromWireForm"), STEPS);
+        assertEquals("The wire form registered for the message must be called both ways",
+            List.of("prepare", "restore"), STEPS);
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testWireFormRunsWithoutMarshaller() throws Exception {
-        GridKernalContext kctx = startGrid(0).context();
-
-        WireOnlyMessage msg = new WireOnlyMessage();
-
-        MessageWire.toWire(msg, kctx, null);
-        MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
-
-        assertEquals("A message with nothing to marshal still gets its wire form step",
-            List.of("toWireForm", "fromWireForm"), STEPS);
-    }
-
-    /**
-     * {@link PlainMessage} says codegen writes no companion for the message, which says nothing about a step the
-     * message runs itself, so the two are free to meet.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testWireFormRunsForPlainMessage() throws Exception {
-        GridKernalContext kctx = startGrid(0).context();
-
-        PlainWireFormMessage msg = new PlainWireFormMessage();
-
-        MessageWire.toWire(msg, kctx, null);
-        MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
-
-        assertEquals("Getting no companion must not take the message's own step away",
-            List.of("toWireForm", "fromWireForm"), STEPS);
-    }
-
-    /** Fieldless message that gets no companion, yet still has a wire form of its own. */
+    /** Fieldless {@link PlainMessage} with a step of its own; registered with no wire form. */
     private static class PlainWireFormMessage implements PlainMessage, CustomWireFormMessage {
         /** {@inheritDoc} */
         @Override public void toWireForm() {
@@ -175,8 +143,8 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Fieldless message with a wire form and nothing to marshal, so no marshaller is registered for it. */
-    private static class WireOnlyMessage implements CustomWireFormMessage {
+    /** Fieldless message with a step of its own and nothing else; registered with no wire form. */
+    private static class OwnStepMessage implements CustomWireFormMessage {
         /** {@inheritDoc} */
         @Override public void toWireForm() {
             STEPS.add("toWireForm");
@@ -188,17 +156,17 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Marshaller that delegates to the message, as a generated one does. */
-    private static class RecordingMarshaller implements MessageMarshaller<BothMessage> {
+    /** Wire form that records both calls. */
+    private static class RecordingWireForm implements MessageWireForm<BothMessage> {
         /** {@inheritDoc} */
-        @Override public void marshal(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
-            msg.marshal((Marshaller)null);
+        @Override public void prepare(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
+            STEPS.add("prepare");
         }
 
         /** {@inheritDoc} */
-        @Override public void unmarshal(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested,
+        @Override public void restore(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested,
             ClassLoader clsLdr) {
-            msg.unmarshal(null, clsLdr);
+            STEPS.add("restore");
         }
     }
 
@@ -238,21 +206,21 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Header-only serializer for {@link WireOnlyMessage}. */
-    private static class WireOnlySerializer implements MessageSerializer<WireOnlyMessage> {
+    /** Header-only serializer for {@link OwnStepMessage}. */
+    private static class OwnStepSerializer implements MessageSerializer<OwnStepMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(WireOnlyMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(OwnStepMessage msg, MessageWriter writer) {
             return writeHeader(msg, writer);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(WireOnlyMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(OwnStepMessage msg, MessageReader reader) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public WireOnlyMessage createMessage() {
-            return new WireOnlyMessage();
+        @Override public OwnStepMessage createMessage() {
+            return new OwnStepMessage();
         }
     }
 
