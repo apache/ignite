@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.plugin.AbstractCompanionMessageFactoryProvider;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Message factory.
  */
-public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryProvider {
+public class CalciteMessageFactory extends AbstractCompanionMessageFactoryProvider {
     /** */
     public static final short MIN_MESSAGE_TYPE = 300;
 

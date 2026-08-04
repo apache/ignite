@@ -179,7 +179,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     }
 
     /** Marshaller that only counts {@code marshal} calls — no idempotency guard, so it counts raw invocations. */
-    private static class CountingMarshaller implements MessageWireForm<MarshalOnceCheckMessage> {
+    private static class CountingMarshaller implements MessageWire<MarshalOnceCheckMessage> {
         /** {@inheritDoc} */
         @Override public void prepare(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
             MARSHAL_CNT.incrementAndGet();
@@ -231,7 +231,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     }
 
     /** Marshaller that only counts {@code marshal} calls of {@link RetryCheckMessage}. */
-    private static class RetryCountingMarshaller implements MessageWireForm<RetryCheckMessage> {
+    private static class RetryCountingMarshaller implements MessageWire<RetryCheckMessage> {
         /** {@inheritDoc} */
         @Override public void prepare(RetryCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
             RETRY_MARSHAL_CNT.incrementAndGet();

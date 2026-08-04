@@ -35,7 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.MessageWire;
+import org.apache.ignite.internal.managers.communication.MessageWires;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
@@ -197,7 +197,7 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            MessageWire.fromWire(msg, ((IgniteEx)spi.ignite()).context());
+            MessageWires.restore(msg, ((IgniteEx)spi.ignite()).context());
 
             return (T)msg;
         }
@@ -241,7 +241,7 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        MessageWire.toWire(m, ((IgniteEx)spi.ignite()).context(), null);
+        MessageWires.prepare(m, ((IgniteEx)spi.ignite()).context(), null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);

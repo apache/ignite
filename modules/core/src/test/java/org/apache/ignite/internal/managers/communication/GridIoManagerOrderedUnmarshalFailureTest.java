@@ -37,7 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -240,7 +240,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     }
 
     /** Fails the unmarshal of the flagged messages. */
-    private static class FailingMarshaller implements MessageWireForm<FailingUnmarshalMessage> {
+    private static class FailingMarshaller implements MessageWire<FailingUnmarshalMessage> {
         /** {@inheritDoc} */
         @Override public void prepare(FailingUnmarshalMessage msg, GridKernalContext kctx,
             @Nullable CacheObjectContext cacheObjCtx) {

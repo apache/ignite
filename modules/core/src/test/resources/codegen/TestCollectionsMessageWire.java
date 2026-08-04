@@ -17,36 +17,42 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestMarshalledCollectionMessage;
+import org.apache.ignite.internal.TestCollectionsMessage;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledCollectionMessageWireForm implements MessageWireForm<TestMarshalledCollectionMessage> {
+public final class TestCollectionsMessageWire implements MessageWire<TestCollectionsMessage> {
     /** */
-    @Override public void prepare(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        if (msg.keys != null && msg.keysArr == null)
-            msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);
+    @Override public void prepare(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
+
+        if (msg.cacheObjectSet != null) {
+            for (CacheObject e : msg.cacheObjectSet) {
+                if (e != null && ctx != null)
+                    e.marshal(ctx);
+            }
+        }
     }
 
     /** */
-    @Override public void restore(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (msg.keysArr != null) {
-            msg.keys = U.newHashSet(msg.keysArr.length);
+    @Override public void restore(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
 
-            for (GridCacheVersion e : msg.keysArr) {
-                msg.keys.add(e);
+        if (msg.cacheObjectSet != null) {
+            for (CacheObject e : msg.cacheObjectSet) {
+                if (e != null && ctx != null)
+                    e.unmarshal(ctx, clsLdr);
             }
-
-            msg.keysArr = null;
         }
+
     }
 }

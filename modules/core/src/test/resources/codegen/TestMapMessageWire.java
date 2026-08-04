@@ -26,14 +26,14 @@ import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMapMessageWireForm implements MessageWireForm<TestMapMessage> {
+public final class TestMapMessageWire implements MessageWire<TestMapMessage> {
     /** */
     @Override public void prepare(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;

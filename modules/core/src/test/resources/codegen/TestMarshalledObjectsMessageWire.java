@@ -26,19 +26,19 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledObjectsMessageWireForm implements MessageWireForm<TestMarshalledObjectsMessage> {
+public final class TestMarshalledObjectsMessageWire implements MessageWire<TestMarshalledObjectsMessage> {
     /** */
     private final Marshaller marshaller;
 
     /** */
-    public TestMarshalledObjectsMessageWireForm(Marshaller marshaller) {
+    public TestMarshalledObjectsMessageWire(Marshaller marshaller) {
         this.marshaller = marshaller;
     }
 

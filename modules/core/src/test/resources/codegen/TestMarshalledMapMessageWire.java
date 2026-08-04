@@ -24,14 +24,14 @@ import org.apache.ignite.internal.TestMarshalledMapMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledMapMessageWireForm implements MessageWireForm<TestMarshalledMapMessage> {
+public final class TestMarshalledMapMessageWire implements MessageWire<TestMarshalledMapMessage> {
     /** */
     @Override public void prepare(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.theMap != null && msg.mapKeys == null) {

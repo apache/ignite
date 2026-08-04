@@ -44,14 +44,14 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.PLAIN_MESSAGE_INTERFACE;
 
 /**
- * Generates the {@code *WireForm} class of a {@code Message}: one walk over its {@code @Order} fields — the loops,
+ * Generates the {@code *Wire} class of a {@code Message}: one walk over its {@code @Order} fields — the loops,
  * null guards and recursion into collections — with the concrete calls supplied by two helpers:
- * {@link MessageWireCalls} for nested messages and cache objects, {@link MarshallingCalls} for what becomes bytes.
- * A message with nothing to walk and nothing to marshal gets no wire form.
+ * {@link WireCalls} for nested messages and cache objects, {@link MarshallingCalls} for what becomes bytes.
+ * A message with nothing to walk and nothing to marshal gets no wire.
  */
-public class MessageWireFormGenerator extends MessageCompanionGenerator {
-    /** Interface the generated wire forms implement. */
-    private static final String MESSAGE_WIRE_FORM_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWireForm";
+public class MessageWireGenerator extends MessageCompanionGenerator {
+    /** Interface the generated wires implement. */
+    private static final String MESSAGE_WIRE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWire";
 
     /** */
     private static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
@@ -71,8 +71,8 @@ public class MessageWireFormGenerator extends MessageCompanionGenerator {
     /** The marshalling calls of the generated class: {@code @Marshalled} fields and the message's own {@code marshal}. */
     private final MarshallingCalls marshalling = new MarshallingCalls(this);
 
-    /** The {@code MessageWire} calls of the generated class: the walk's leaves. */
-    private final MessageWireCalls wire = new MessageWireCalls(this);
+    /** The {@code MessageWires} calls of the generated class: the walk's leaves. */
+    private final WireCalls wire = new WireCalls(this);
 
     /** Accumulated source lines of the generated methods. */
     private final List<String> methods = new ArrayList<>();
@@ -99,19 +99,19 @@ public class MessageWireFormGenerator extends MessageCompanionGenerator {
     private final TypeMirror cacheGrpIdMsgType;
 
     /** Whether the message is a {@code CustomWireFormMessage}, so the generated methods call its own step. */
-    private boolean customWireForm;
+    private boolean customWire;
 
-    /** Whether any generated method got a non-empty body; a wire form without one is skipped entirely. */
+    /** Whether any generated method got a non-empty body; a wire without one is skipped entirely. */
     private boolean hasStatements;
 
-    /** Whether the currently generated method emitted a loop-nested {@code MessageWire} call and so needs the {@code msgFactory} local. */
+    /** Whether the currently generated method emitted a loop-nested {@code MessageWires} call and so needs the {@code msgFactory} local. */
     boolean usesMsgFactory;
 
     /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
     int loopDepth;
 
     /** */
-    MessageWireFormGenerator(ProcessingEnvironment env) {
+    MessageWireGenerator(ProcessingEnvironment env) {
         super(env);
 
         customWireFormMsgType = type(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
@@ -125,14 +125,14 @@ public class MessageWireFormGenerator extends MessageCompanionGenerator {
 
     /** {@inheritDoc} */
     @Override protected String typeSuffix() {
-        return "WireForm";
+        return "Wire";
     }
 
     /** {@inheritDoc} */
     @Override protected void generateBody(List<VariableElement> fields) {
         marshalling.readFields(enclosedFields());
 
-        customWireForm = customWireFormMsgType != null && assignableFrom(type.asType(), customWireFormMsgType);
+        customWire = customWireFormMsgType != null && assignableFrom(type.asType(), customWireFormMsgType);
 
         generatePrepareMethod(fields);
         generateRestoreMethods(fields);
@@ -145,12 +145,12 @@ public class MessageWireFormGenerator extends MessageCompanionGenerator {
 
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
-            imports.add(MESSAGE_WIRE_FORM_CLS);
+            imports.add(MESSAGE_WIRE_CLS);
 
             if (marshalling.needsMarshaller())
                 imports.add(MARSHALLER_CLS);
 
-            writeClassHeader(writer, "MessageWireForm", clsName);
+            writeClassHeader(writer, "MessageWire", clsName);
 
             writer.write(" {" + NL);
 
@@ -229,7 +229,7 @@ public class MessageWireFormGenerator extends MessageCompanionGenerator {
         return loopDepth > 0 || elemType.getKind() == TypeKind.TYPEVAR;
     }
 
-    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested {@code MessageWire} call was emitted. */
+    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested {@code MessageWires} call was emitted. */
     private void prependMsgFactoryResolution(List<String> body) {
         if (!usesMsgFactory)
             return;
@@ -270,7 +270,7 @@ public class MessageWireFormGenerator extends MessageCompanionGenerator {
 
             List<String> code = new ArrayList<>();
 
-            if (customWireForm)
+            if (customWire)
                 appendBlock(code, List.of(indentedLine("msg.toWireForm();")));
 
             appendBlock(code, marshalling.prepare());
@@ -331,7 +331,7 @@ public class MessageWireFormGenerator extends MessageCompanionGenerator {
             appendFields(code, fields, Direction.IN);
             appendBlock(code, marshalling.restore());
 
-            if (customWireForm)
+            if (customWire)
                 appendBlock(code, List.of(indentedLine("msg.fromWireForm();")));
 
             if (code.isEmpty())

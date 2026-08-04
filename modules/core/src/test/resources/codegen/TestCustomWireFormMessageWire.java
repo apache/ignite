@@ -21,14 +21,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestCustomWireFormMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestCustomWireFormMessageWireForm implements MessageWireForm<TestCustomWireFormMessage> {
+public final class TestCustomWireFormMessageWire implements MessageWire<TestCustomWireFormMessage> {
     /** */
     @Override public void prepare(TestCustomWireFormMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         msg.toWireForm();

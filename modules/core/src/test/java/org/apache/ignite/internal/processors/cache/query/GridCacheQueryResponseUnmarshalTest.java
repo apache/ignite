@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.MessageWire;
+import org.apache.ignite.internal.managers.communication.MessageWires;
 import org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -68,13 +68,13 @@ public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest 
 
         res.data(List.of(new T2<>(key, "row")));
 
-        MessageWire.toWire(res, kctx, null);
+        MessageWires.prepare(res, kctx, null);
 
         GridCacheQueryResponse rcvd = new GridCacheQueryResponse(cctx.cacheId(), 0, true, false);
 
         rcvd.dataBytes = res.dataBytes;
 
-        MessageWire.fromWire(rcvd, kctx, null, getClass().getClassLoader());
+        MessageWires.restore(rcvd, kctx, null, getClass().getClassLoader());
 
         Map.Entry<?, ?> row = (Map.Entry<?, ?>)rcvd.data().iterator().next();
 

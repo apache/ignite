@@ -51,7 +51,7 @@ import javax.tools.StandardLocation;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 /**
- * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageWireFormGenerator},
+ * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageWireGenerator},
  * {@link MessageDeploymentGenerator}).
  */
 public abstract class MessageCompanionGenerator {
@@ -89,7 +89,7 @@ public abstract class MessageCompanionGenerator {
     /** Current indentation level. Set to the class-member level once in {@link #generate}; adjusted only by balanced shifts. */
     protected int indent;
 
-    /** Dispatches cache-object-context resolution in both the wire form and the deployment generators. */
+    /** Dispatches cache-object-context resolution in both the wire and the deployment generators. */
     protected final TypeMirror cacheIdAwareType;
 
     /** */
@@ -142,7 +142,7 @@ public abstract class MessageCompanionGenerator {
         }
     }
 
-    /** @return Class name suffix: {@code "Serializer"}, {@code "WireForm"} or {@code "Deployer"}. */
+    /** @return Class name suffix: {@code "Serializer"}, {@code "Wire"} or {@code "Deployer"}. */
     protected abstract String typeSuffix();
 
     /** @return {@code true} if no file should be generated for this type; default is {@code false}. */

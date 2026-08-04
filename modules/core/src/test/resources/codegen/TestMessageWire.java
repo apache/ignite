@@ -20,16 +20,16 @@ package org.apache.ignite.internal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMessage;
-import org.apache.ignite.internal.managers.communication.MessageWire;
+import org.apache.ignite.internal.managers.communication.MessageWires;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
+public final class TestMessageWire implements MessageWire<TestMessage> {
     /** */
     @Override public void prepare(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
@@ -41,7 +41,7 @@ public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
             msg.cacheObject.marshal(ctx);
 
         if (msg.nioMsg != null)
-            MessageWire.toWire(msg.nioMsg, kctx, ctx);
+            MessageWires.prepare(msg.nioMsg, kctx, ctx);
     }
 
     /** */
@@ -59,6 +59,6 @@ public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
     /** */
     @Override public void restoreNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.nioMsg != null)
-            MessageWire.fromWire(msg.nioMsg, kctx);
+            MessageWires.restore(msg.nioMsg, kctx);
     }
 }

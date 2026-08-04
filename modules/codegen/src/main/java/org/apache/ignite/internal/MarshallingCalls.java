@@ -38,9 +38,9 @@ import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 
 /**
- * Prints the marshalling calls of a generated wire form: the {@code @Marshalled} fields turned into their wire
+ * Prints the marshalling calls of a generated wire: the {@code @Marshalled} fields turned into their wire
  * companion fields and back — bytes, message arrays or key/value pairs — and the {@code marshal} a
- * {@code MarshallableMessage} defines. Walking the fields is {@link MessageWireFormGenerator}'s business; it asks
+ * {@code MarshallableMessage} defines. Walking the fields is {@link MessageWireGenerator}'s business; it asks
  * this class for the marshalling blocks of its {@code prepare} and {@code restore} methods.
  */
 public class MarshallingCalls {
@@ -48,7 +48,7 @@ public class MarshallingCalls {
     private static final String U_CLS = "org.apache.ignite.internal.util.typedef.internal.U";
 
     /** Generator whose class these calls go into; supplies the imports, indent and current type. */
-    private final MessageWireFormGenerator gen;
+    private final MessageWireGenerator gen;
 
     /** */
     private final TypeMirror marshallableMsgType;
@@ -66,7 +66,7 @@ public class MarshallingCalls {
     private boolean hasMarshalled;
 
     /** */
-    MarshallingCalls(MessageWireFormGenerator gen) {
+    MarshallingCalls(MessageWireGenerator gen) {
         this.gen = gen;
 
         marshallableMsgType = gen.type(MARSHALLABLE_MESSAGE_INTERFACE);
@@ -498,7 +498,8 @@ public class MarshallingCalls {
     }
 
     /** Generates key/value array population from the map's entry set. */
-    private List<String> mapPrepareArrayBlock(Marshalled ann, String mapField, String keysField, VariableElement keysEl, String valuesField) {
+    private List<String> mapPrepareArrayBlock(Marshalled ann, String mapField, String keysField, VariableElement keysEl,
+        String valuesField) {
         String compName = arrayComponentName(keysEl);
         String valCompName = arrayComponentName(requireEnclosed(ann.values()));
 

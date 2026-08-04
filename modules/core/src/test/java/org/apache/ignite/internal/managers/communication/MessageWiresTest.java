@@ -34,22 +34,22 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * {@link MessageWire} finds the wire form codegen wrote for a message and calls it, both ways. What that wire form
+ * {@link MessageWires} finds the wire codegen wrote for a message and calls it, both ways. What that wire
  * does inside — the message's own step, the bytes, the walk — is put there statically, and the codegen tests check
  * the generated source for it.
  */
-public class MessageWireFormStepTest extends GridCommonAbstractTest {
+public class MessageWiresTest extends GridCommonAbstractTest {
     /** Direct type of the message that has both steps. */
     private static final short BOTH_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 1);
 
-    /** Direct type of the message that has a step of its own but no wire form registered. */
+    /** Direct type of the message that has a step of its own but no wire registered. */
     private static final short OWN_STEP_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 2);
 
     /** Direct type of the message that needs nothing but its serializer. */
@@ -69,7 +69,7 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
 
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 registry.registerExtension(MessageFactoryProvider.class, factory -> {
-                    factory.register(BOTH_TYPE, new BothSerializer(), new RecordingWireForm());
+                    factory.register(BOTH_TYPE, new BothSerializer(), new RecordingWire());
                     factory.register(OWN_STEP_TYPE, new OwnStepSerializer(), null);
                     factory.register(PLAIN_TYPE, new PlainSerializer(), null);
                 });
@@ -95,19 +95,19 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testWireFormIsFoundAndCalled() throws Exception {
+    public void testWireIsFoundAndCalled() throws Exception {
         GridKernalContext kctx = startGrid(0).context();
 
         BothMessage msg = new BothMessage();
 
-        MessageWire.toWire(msg, kctx, null);
-        MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
+        MessageWires.prepare(msg, kctx, null);
+        MessageWires.restore(msg, kctx, null, getClass().getClassLoader());
 
-        assertEquals("The wire form registered for the message must be called both ways",
+        assertEquals("The wire registered for the message must be called both ways",
             List.of("prepare", "restore"), STEPS);
     }
 
-    /** Fieldless {@link PlainMessage} with a step of its own; registered with no wire form. */
+    /** Fieldless {@link PlainMessage} with a step of its own; registered with no wire. */
     private static class PlainWireFormMessage implements PlainMessage, CustomWireFormMessage {
         /** {@inheritDoc} */
         @Override public void toWireForm() {
@@ -143,7 +143,7 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Fieldless message with a step of its own and nothing else; registered with no wire form. */
+    /** Fieldless message with a step of its own and nothing else; registered with no wire. */
     private static class OwnStepMessage implements CustomWireFormMessage {
         /** {@inheritDoc} */
         @Override public void toWireForm() {
@@ -156,8 +156,8 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Wire form that records both calls. */
-    private static class RecordingWireForm implements MessageWireForm<BothMessage> {
+    /** Wire that records both calls. */
+    private static class RecordingWire implements MessageWire<BothMessage> {
         /** {@inheritDoc} */
         @Override public void prepare(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
             STEPS.add("prepare");

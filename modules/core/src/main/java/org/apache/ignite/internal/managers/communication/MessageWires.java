@@ -22,17 +22,17 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Takes a {@link Message} to the state it is written from, and back to the state it is used in. The work itself is in
- * the {@link MessageWireForm} codegen wrote for the message; this class only finds that companion by the message's
+ * the {@link MessageWire} codegen wrote for the message; this class only finds that companion by the message's
  * direct type and calls it. Writing and reading the bytes is left to {@link MessageSerializer}.
  */
-public final class MessageWire {
+public final class MessageWires {
     /** */
-    private MessageWire() {
+    private MessageWires() {
         // No-op.
     }
 
@@ -43,9 +43,9 @@ public final class MessageWire {
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public static <M extends Message> void toWire(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
+    public static <M extends Message> void prepare(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException {
-        toWire(factory(kctx), msg, kctx, cacheObjCtx);
+        prepare(factory(kctx), msg, kctx, cacheObjCtx);
     }
 
     /**
@@ -57,12 +57,12 @@ public final class MessageWire {
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public static <M extends Message> void toWire(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
+    public static <M extends Message> void prepare(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
+        MessageWire<M> wire = wire(msgFactory, msg);
 
-        if (wireForm != null)
-            wireForm.prepare(msg, kctx, cacheObjCtx);
+        if (wire != null)
+            wire.prepare(msg, kctx, cacheObjCtx);
     }
 
     /**
@@ -73,9 +73,9 @@ public final class MessageWire {
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader to resolve the classes with.
      */
-    public static <M extends Message> void fromWire(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
+    public static <M extends Message> void restore(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
         ClassLoader clsLdr) throws IgniteCheckedException {
-        fromWire(factory(kctx), msg, kctx, cacheObjCtx, clsLdr);
+        restore(factory(kctx), msg, kctx, cacheObjCtx, clsLdr);
     }
 
     /**
@@ -88,15 +88,15 @@ public final class MessageWire {
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader to resolve the classes with.
      */
-    public static <M extends Message> void fromWire(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
+    public static <M extends Message> void restore(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, true)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
-        MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
+        MessageWire<M> wire = wire(msgFactory, msg);
 
-        if (wireForm != null)
-            wireForm.restore(msg, kctx, cacheObjCtx, clsLdr);
+        if (wire != null)
+            wire.restore(msg, kctx, cacheObjCtx, clsLdr);
     }
 
     /**
@@ -106,14 +106,14 @@ public final class MessageWire {
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    public static <M extends Message> void fromWire(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    public static <M extends Message> void restore(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, false)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
-        MessageWireForm<M> wireForm = wireForm(factory(kctx), msg);
+        MessageWire<M> wire = wire(factory(kctx), msg);
 
-        if (wireForm != null)
-            wireForm.restore(msg, kctx);
+        if (wire != null)
+            wire.restore(msg, kctx);
     }
 
     /**
@@ -123,11 +123,11 @@ public final class MessageWire {
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    public static <M extends Message> void fromWireNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        MessageWireForm<M> wireForm = wireForm(factory(kctx), msg);
+    public static <M extends Message> void restoreNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+        MessageWire<M> wire = wire(factory(kctx), msg);
 
-        if (wireForm != null)
-            wireForm.restoreNio(msg, kctx);
+        if (wire != null)
+            wire.restoreNio(msg, kctx);
     }
 
     /** @return the message factory of {@code kctx}. */
@@ -135,9 +135,9 @@ public final class MessageWire {
         return (IgniteMessageFactory)kctx.messageFactory();
     }
 
-    /** @return the wire form registered for {@code msg}'s direct type, or {@code null} if none. */
+    /** @return the wire registered for {@code msg}'s direct type, or {@code null} if none. */
     @SuppressWarnings("unchecked")
-    private static <M extends Message> @Nullable MessageWireForm<M> wireForm(IgniteMessageFactory msgFactory, M msg) {
-        return (MessageWireForm<M>)msgFactory.wireForm(msg.directType());
+    private static <M extends Message> @Nullable MessageWire<M> wire(IgniteMessageFactory msgFactory, M msg) {
+        return (MessageWire<M>)msgFactory.wire(msg.directType());
     }
 }

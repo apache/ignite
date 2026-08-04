@@ -22,19 +22,19 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshallableMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshallableMessageWireForm implements MessageWireForm<TestMarshallableMessage> {
+public final class TestMarshallableMessageWire implements MessageWire<TestMarshallableMessage> {
     /** */
     private final Marshaller marshaller;
 
     /** */
-    public TestMarshallableMessageWireForm(Marshaller marshaller) {
+    public TestMarshallableMessageWire(Marshaller marshaller) {
         this.marshaller = marshaller;
     }
 

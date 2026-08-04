@@ -19,9 +19,9 @@ package org.apache.ignite.plugin.extensions.communication;
 
 /**
  * Implemented by messages that carry cache data ({@code CacheObject}) to transfer. The cache ID lets the generated
- * wire form and deployer resolve the cache object context used to (un)marshal and deploy that data.
+ * companions resolve the cache object context used to (un)marshal and deploy that data.
  *
- * @see MessageWireForm
+ * @see MessageWire
  * @see MessageFactory
  */
 public interface CacheIdAware {

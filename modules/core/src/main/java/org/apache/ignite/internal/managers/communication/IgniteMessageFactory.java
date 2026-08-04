@@ -23,16 +23,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Internal extension of {@link MessageFactory} that also registers and resolves the wire form and deployment
- * companions of a message. Kept out of the public factory interface: wire forms and deployers are bound to
+ * Internal extension of {@link MessageFactory} that also registers and resolves the wire and deployment
+ * companions of a message. Kept out of the public factory interface: wires and deployers are bound to
  * kernal and cache internals ({@code GridKernalContext}, {@code GridCacheSharedContext}) the public SPI module
  * must not depend on.
  *
- * @see MessageWireForm
+ * @see MessageWire
  * @see GridCacheMessageDeployer
  */
 public interface IgniteMessageFactory<M extends Message, CM extends GridCacheMessage> extends MessageFactory<M> {
@@ -43,37 +43,37 @@ public interface IgniteMessageFactory<M extends Message, CM extends GridCacheMes
     }
 
     /**
-     * Registers a message with the given direct type, serializer, and wire form. All messages must be registered
+     * Registers a message with the given direct type, serializer, and wire. All messages must be registered
      * during construction of the class that implements this interface.
      *
      * @param directType Direct type ({@link Message#directType()}) to register the message under.
      * @param serializer Message serializer.
-     * @param wireForm Message wire form, or {@code null} when codegen generated none.
+     * @param wire Message wire, or {@code null} when codegen generated none.
      * @throws IgniteException If a message is already registered under the given direct type.
      */
     default void register(short directType, MessageSerializer<M> serializer,
-        @Nullable MessageWireForm<M> wireForm) throws IgniteException {
-        register(directType, serializer, wireForm, null);
+        @Nullable MessageWire<M> wire) throws IgniteException {
+        register(directType, serializer, wire, null);
     }
 
     /**
-     * Registers a message with the given direct type, serializer, wire form, and deployer. All messages must be
+     * Registers a message with the given direct type, serializer, wire, and deployer. All messages must be
      * registered during construction of the class that implements this interface.
      *
      * @param directType Direct type ({@link Message#directType()}) to register the message under.
      * @param serializer Message serializer.
-     * @param wireForm Message wire form, or {@code null} when the message has no wire-form work.
+     * @param wire Message wire, or {@code null} when the message has no wire work.
      * @param deployer Message deployer, or {@code null} for messages without deployable fields.
      * @throws IgniteException If a message is already registered under the given direct type.
      */
-    public void register(short directType, MessageSerializer<M> serializer, @Nullable MessageWireForm<M> wireForm,
+    public void register(short directType, MessageSerializer<M> serializer, @Nullable MessageWire<M> wire,
         @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException;
 
     /**
      * @param type Message direct type.
-     * @return Wire form registered for the type, or {@code null} if none.
+     * @return Wire registered for the type, or {@code null} if none.
      */
-    public @Nullable MessageWireForm<M> wireForm(short type);
+    public @Nullable MessageWire<M> wire(short type);
 
     /**
      * Returns {@code GridCacheMessageDeployer} for provided type, or {@code null} if none is registered

@@ -30,7 +30,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * hands a {@link MarshallableMessage} the marshaller its class asks for: schema-aware when the class is annotated
  * with {@link UseBinaryMarshaller}, the default one otherwise.
  */
-public abstract class AbstractMarshallableMessageFactoryProvider implements MessageFactoryProvider {
+public abstract class AbstractCompanionMessageFactoryProvider implements MessageFactoryProvider {
     /** Generated-companion constructors per message class, indexed by {@link Companion#ordinal()}. */
     private static final ClassValue<Constructor<?>[]> COMPANIONS = new ClassValue<>() {
         @Override protected Constructor<?>[] computeValue(Class<?> cls) {
@@ -76,20 +76,20 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         MessageSerializer<T> serializer = loadGenerated(cls, Companion.SERIALIZER, null);
 
-        MessageWireForm<T> wireForm = PlainMessage.class.isAssignableFrom(cls)
+        MessageWire<T> wire = PlainMessage.class.isAssignableFrom(cls)
             ? null
-            : loadGenerated(cls, Companion.WIRE_FORM, marsh);
+            : loadGenerated(cls, Companion.WIRE, marsh);
 
         // Deployers exist for GridCacheMessage only; a DeployableMessage left without one is rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
             ? loadGenerated(cls, Companion.DEPLOYER, null)
             : null;
 
-        factory.register(id, serializer, wireForm, deployer);
+        factory.register(id, serializer, wire, deployer);
     }
 
     /**
-     * Instantiates the generated companion of {@code cls}. Only the wire form may take a {@code Marshaller}, so
+     * Instantiates the generated companion of {@code cls}. Only the wire may take a {@code Marshaller}, so
      * {@code marsh} is {@code null} for the other two. Lookups are cached in {@link #COMPANIONS}.
      *
      * @return the companion, or {@code null} when it is not generated and not required.
@@ -136,10 +136,10 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         SERIALIZER("Serializer"),
 
         /**
-         * Takes the fields to their wire shape and back. Generated when the message has any wire-form work: a step of
+         * Takes the fields to their wire shape and back. Generated when the message has any wire work: a step of
          * its own, {@code @Marshalled} fields or fields to walk.
          */
-        WIRE_FORM("WireForm"),
+        WIRE("Wire"),
 
         /** Prepares the deployable fields. Generated for a {@link GridCacheMessage} that has them. */
         DEPLOYER("Deployer");
@@ -153,14 +153,14 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
         }
 
         /**
-         * A serializer exists for every message, and a {@link MarshallableMessage} always gets a wire form — its own
+         * A serializer exists for every message, and a {@link MarshallableMessage} always gets a wire — its own
          * {@code marshal} call alone is enough to generate one — so a missing companion in these two cases means a
          * stale build. The rest are generated only when the message gives them something to do.
          *
          * @return {@code true} if {@code cls} must have this companion.
          */
         boolean required(Class<?> cls) {
-            return this == SERIALIZER || (this == WIRE_FORM && MarshallableMessage.class.isAssignableFrom(cls));
+            return this == SERIALIZER || (this == WIRE && MarshallableMessage.class.isAssignableFrom(cls));
         }
 
         /** @return the companion class name to report {@code cls} problems with. */

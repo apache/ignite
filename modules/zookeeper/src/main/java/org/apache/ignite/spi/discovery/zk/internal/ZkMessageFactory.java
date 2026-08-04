@@ -18,10 +18,10 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.plugin.AbstractCompanionMessageFactoryProvider;
 
 /** */
-public class ZkMessageFactory extends AbstractMarshallableMessageFactoryProvider {
+public class ZkMessageFactory extends AbstractCompanionMessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(IgniteMessageFactory factory) {
         register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400);

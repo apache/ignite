@@ -1178,12 +1178,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             // Not a double unmarshal: the @NioField routing header is restored here on the NIO thread, its full
             // payload below on a pool thread — disjoint fields.
-            MessageWire.fromWireNio(initMsg, ctx);
+            MessageWires.restoreNio(initMsg, ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
                     try {
-                        MessageWire.fromWire(initMsg, ctx);
+                        MessageWires.restore(initMsg, ctx);
 
                         processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
                             (SocketChannel)channel);
@@ -1256,7 +1256,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             // After the delayed-message gate: a replayed message re-enters this method, so its NIO-thread header
             // unmarshal is kept here to run exactly once.
-            MessageWire.fromWireNio(msg, ctx);
+            MessageWires.restoreNio(msg, ctx);
 
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
@@ -1465,7 +1465,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             return;
 
         try {
-            MessageWire.fromWire(msg.message(), ctx);
+            MessageWires.restore(msg.message(), ctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshal message payload", e);
@@ -2050,7 +2050,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     private void toWire(GridIoMessage ioMsg) throws IgniteCheckedException {
         assert !ioMsg.onWire() : "GridIoMessage is taken to the wire twice: " + ioMsg;
 
-        MessageWire.toWire(ioMsg, ctx, null);
+        MessageWires.prepare(ioMsg, ctx, null);
 
         ioMsg.markOnWire();
     }

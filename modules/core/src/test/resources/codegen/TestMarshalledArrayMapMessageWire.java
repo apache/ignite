@@ -25,17 +25,17 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
-import org.apache.ignite.internal.managers.communication.MessageWire;
+import org.apache.ignite.internal.managers.communication.MessageWires;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledArrayMapMessageWireForm implements MessageWireForm<TestMarshalledArrayMapMessage> {
+public final class TestMarshalledArrayMapMessageWire implements MessageWire<TestMarshalledArrayMapMessage> {
     /** */
     @Override public void prepare(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
@@ -67,7 +67,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
         if (msg.mapKeys != null) {
             for (GridTopicMessage e : msg.mapKeys) {
                 if (e != null)
-                    MessageWire.toWire(msgFactory, e, kctx, ctx);
+                    MessageWires.prepare(msgFactory, e, kctx, ctx);
             }
         }
 
@@ -76,7 +76,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
                 if (e != null) {
                     for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
                         if (e1 != null)
-                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
+                            MessageWires.prepare(msgFactory, e1, kctx, ctx);
                     }
                 }
             }
@@ -85,7 +85,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
         if (msg.fixedMapKeys != null) {
             for (GridTopicMessage e : msg.fixedMapKeys) {
                 if (e != null)
-                    MessageWire.toWire(msgFactory, e, kctx, ctx);
+                    MessageWires.prepare(msgFactory, e, kctx, ctx);
             }
         }
 
@@ -94,7 +94,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
                 if (e != null) {
                     for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
                         if (e1 != null)
-                            MessageWire.toWire(msgFactory, e1, kctx, ctx);
+                            MessageWires.prepare(msgFactory, e1, kctx, ctx);
                     }
                 }
             }
@@ -110,7 +110,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
         if (msg.mapKeys != null) {
             for (GridTopicMessage e : msg.mapKeys) {
                 if (e != null)
-                    MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
+                    MessageWires.restore(msgFactory, e, kctx, ctx, clsLdr);
             }
         }
 
@@ -119,7 +119,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
                 if (e != null) {
                     for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
                         if (e1 != null)
-                            MessageWire.fromWire(msgFactory, e1, kctx, ctx, clsLdr);
+                            MessageWires.restore(msgFactory, e1, kctx, ctx, clsLdr);
                     }
                 }
             }
@@ -128,7 +128,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
         if (msg.fixedMapKeys != null) {
             for (GridTopicMessage e : msg.fixedMapKeys) {
                 if (e != null)
-                    MessageWire.fromWire(msgFactory, e, kctx, ctx, clsLdr);
+                    MessageWires.restore(msgFactory, e, kctx, ctx, clsLdr);
             }
         }
 
@@ -137,7 +137,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
                 if (e != null) {
                     for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
                         if (e1 != null)
-                            MessageWire.fromWire(msgFactory, e1, kctx, ctx, clsLdr);
+                            MessageWires.restore(msgFactory, e1, kctx, ctx, clsLdr);
                     }
                 }
             }

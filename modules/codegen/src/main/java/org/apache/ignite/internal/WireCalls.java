@@ -19,35 +19,35 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.MessageWireFormGenerator.Direction;
+import org.apache.ignite.internal.MessageWireGenerator.Direction;
 
 /**
- * Prints the {@code MessageWire} calls of a generated wire form: taking a nested message field to the wire and back,
+ * Prints the {@code MessageWires} calls of a generated wire: taking a nested message field to the wire and back,
  * and preparing a cache object field. Which field to visit, in what loop and under what guard is
- * {@link MessageWireFormGenerator}'s business; this class only supplies the call at a leaf of the walk.
+ * {@link MessageWireGenerator}'s business; this class only supplies the call at a leaf of the walk.
  */
-public class MessageWireCalls {
+public class WireCalls {
     /** Facade the generated code calls to take nested messages to the wire and back. */
-    private static final String MESSAGE_WIRE_CLS = "org.apache.ignite.internal.managers.communication.MessageWire";
+    private static final String MESSAGE_WIRES_CLS = "org.apache.ignite.internal.managers.communication.MessageWires";
 
     /**
      * Generator whose class these calls go into; supplies the imports, indent and loop depth. A loop-nested call
      * reports itself back through {@code gen.usesMsgFactory}.
      */
-    private final MessageWireFormGenerator gen;
+    private final MessageWireGenerator gen;
 
     /** */
-    MessageWireCalls(MessageWireFormGenerator gen) {
+    WireCalls(MessageWireGenerator gen) {
         this.gen = gen;
     }
 
     /**
-     * Generates a null-guarded {@code MessageWire} call. Loop-nested calls go through the overloads taking the
+     * Generates a null-guarded {@code MessageWires} call. Loop-nested calls go through the overloads taking the
      * pre-resolved {@code msgFactory} local (see {@code prependMsgFactoryResolution}), so the factory is not
      * re-resolved from the context on every element.
      */
     List<String> forMessage(String accessor, Direction dir) {
-        gen.imports.add(MESSAGE_WIRE_CLS);
+        gen.imports.add(MESSAGE_WIRES_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -59,13 +59,13 @@ public class MessageWireCalls {
             gen.usesMsgFactory = true;
 
             code.add(dir == Direction.OUT
-                ? gen.indentedLine("MessageWire.toWire(msgFactory, %s, kctx, ctx);", accessor)
-                : gen.indentedLine("MessageWire.fromWire(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
+                ? gen.indentedLine("MessageWires.prepare(msgFactory, %s, kctx, ctx);", accessor)
+                : gen.indentedLine("MessageWires.restore(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
         }
         else {
             code.add(dir == Direction.OUT
-                ? gen.indentedLine("MessageWire.toWire(%s, kctx, ctx);", accessor)
-                : gen.indentedLine("MessageWire.fromWire(%s, kctx, ctx, clsLdr);", accessor));
+                ? gen.indentedLine("MessageWires.prepare(%s, kctx, ctx);", accessor)
+                : gen.indentedLine("MessageWires.restore(%s, kctx, ctx, clsLdr);", accessor));
         }
 
         gen.indent--;
@@ -75,8 +75,7 @@ public class MessageWireCalls {
 
     /**
      * Generates a null-and-ctx-guarded call that prepares a {@code CacheObject} field, or reads it back. The one leaf
-     * that does not go through {@code MessageWire}: a cache object is not a {@code Message} and has no wire form of
-     * its own — it marshals itself against the cache object context.
+     * that does not go through {@code MessageWires}: a cache object is not a {@code Message} and has no wire of     * its own — it marshals itself against the cache object context.
      */
     List<String> forCacheObject(String accessor, Direction dir) {
         List<String> code = new ArrayList<>();
@@ -96,7 +95,7 @@ public class MessageWireCalls {
 
     /** Cache-free read-back of a {@code @NioField} message field on the NIO thread (no cache context available). */
     List<String> forNioMessage(String accessor) {
-        gen.imports.add(MESSAGE_WIRE_CLS);
+        gen.imports.add(MESSAGE_WIRES_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -104,7 +103,7 @@ public class MessageWireCalls {
 
         gen.indent++;
 
-        code.add(gen.indentedLine("MessageWire.fromWire(%s, kctx);", accessor));
+        code.add(gen.indentedLine("MessageWires.restore(%s, kctx);", accessor));
 
         gen.indent--;
 

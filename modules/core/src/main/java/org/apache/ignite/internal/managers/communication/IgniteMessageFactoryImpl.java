@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
+import org.apache.ignite.plugin.extensions.communication.MessageWire;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,8 +43,8 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
     /** Message serializers. */
     private final MessageSerializer<M>[] msgSerializers = (MessageSerializer<M>[])Array.newInstance(MessageSerializer.class, ARR_SIZE);
 
-    /** Message wire forms (null entry = no wire form registered for that type). */
-    private final MessageWireForm<M>[] msgWireForms = (MessageWireForm<M>[])Array.newInstance(MessageWireForm.class, ARR_SIZE);
+    /** Message wires (null entry = no wire registered for that type). */
+    private final MessageWire<M>[] msgWires = (MessageWire<M>[])Array.newInstance(MessageWire.class, ARR_SIZE);
 
     /** Message deployers (null entry = no deployer registered for that type). */
     private final GridCacheMessageDeployer<CM>[] msgDeployers =
@@ -75,7 +75,7 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
 
     /** {@inheritDoc} */
     @Override public void register(short directType, MessageSerializer<M> serializer,
-        @Nullable MessageWireForm<M> wireForm,
+        @Nullable MessageWire<M> wire,
         @Nullable GridCacheMessageDeployer<CM> deployer) throws IgniteException {
         if (initialized) {
             throw new IllegalStateException("Message factory is already initialized. " +
@@ -85,9 +85,9 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         try {
             Message msg = serializer.createMessage();
 
-            if (wireForm == null && msg instanceof MarshallableMessage) {
+            if (wire == null && msg instanceof MarshallableMessage) {
                 throw new IgniteException("Failed to register a message: it implements MarshallableMessage but no" +
-                    " wire form is provided [directType=" + directType +
+                    " wire is provided [directType=" + directType +
                     ", cls=" + msg.getClass().getName() + ']');
             }
 
@@ -110,7 +110,7 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
 
         if (curr == null) {
             msgSerializers[idx] = serializer;
-            msgWireForms[idx] = wireForm;
+            msgWires[idx] = wire;
             msgDeployers[idx] = deployer;
 
             minIdx = Math.min(idx, minIdx);
@@ -150,8 +150,8 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable MessageWireForm<M> wireForm(short directType) {
-        return msgWireForms[directTypeToIndex(directType)];
+    @Override public @Nullable MessageWire<M> wire(short directType) {
+        return msgWires[directTypeToIndex(directType)];
     }
 
     /** {@inheritDoc} */

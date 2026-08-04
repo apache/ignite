@@ -27,11 +27,11 @@ import org.jetbrains.annotations.Nullable;
  * Puts the fields of a {@link Message} into the shape they go on the wire in, and back. Three kinds of work end up
  * here, and codegen writes only the ones the message actually needs: the step the message defines itself, the
  * {@code @Marshalled} fields that become bytes, and the walk into nested messages and cache objects.
- * Generated per message class and called by {@code MessageWire}.
+ * Generated per message class and called by {@code MessageWires}.
  *
  * @param <M> Message type.
  */
-public interface MessageWireForm<M extends Message> {
+public interface MessageWire<M extends Message> {
     /**
      * Takes the fields to their wire shape. Called on the user thread before sending.
      *
@@ -55,7 +55,7 @@ public interface MessageWireForm<M extends Message> {
 
     /**
      * Brings the fields back without a cache context, using the configuration class loader — the cache-free receive path.
-     * Delegates to the cache-aware overload with a {@code null} context, so a generated wire form implements the
+     * Delegates to the cache-aware overload with a {@code null} context, so a generated wire implements the
      * cache-aware method only.
      *
      * @param msg Message to bring back.
