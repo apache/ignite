@@ -1,5 +1,3 @@
-
-
 package org.apache.ignite.console.agent.handlers;
 
 import java.util.Collection;
@@ -35,7 +33,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTopologyReques
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.Vertx;

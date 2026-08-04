@@ -8,13 +8,12 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import org.apache.ignite.console.utils.Utils;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.StringContentProvider;
+
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.springframework.jndi.JndiObjectFactoryBean;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -188,7 +187,9 @@ public class DataSourceManager {
 		try {
 			for(String token: serverTokens) {
 				Request req = serverClient.newRequest(datasourceGetUrl);
-				req.header("Authorization", "token "+token);
+				req.headers(s-> {
+					s.add("Authorization", "token "+token);
+				});
 				req.method(HttpMethod.GET);
 				ContentResponse response = req.send();
 				String body = response.getContentAsString();
@@ -229,12 +230,15 @@ public class DataSourceManager {
 		
 		try {	
 			for(String token: serverTokens) {
-				Request req = serverClient.newRequest(datasourceCreateUrl);				
-				req.header("Authorization", "token "+token);
-				req.header("XSRF-TOKEN", token);
+				Request req = serverClient.newRequest(datasourceCreateUrl);
+				req.headers(s-> {
+					s.add("Authorization", "token "+token);
+					s.add("XSRF-TOKEN", token);
+				});
+
 				req.method(HttpMethod.PUT);
 				String content = Utils.toJson(dbInfo);
-				req.content(new StringContentProvider(content, "UTF-8"),"application/json");
+				req.body(new StringRequestContent("application/json;UTF-8",content));
 				ContentResponse response = req.send();
 				String body = response.getContentAsString();
 				
@@ -264,7 +268,10 @@ public class DataSourceManager {
 		try {
 			for(String token: serverTokens) {
 				Request req = serverClient.newRequest(url);
-				req.header("Authorization", "Token "+token);
+				req.headers(s-> {
+					s.add("Authorization", "token "+token);
+					s.add("XSRF-TOKEN", token);
+				});
 				req.method(HttpMethod.GET);
 				ContentResponse response = req.send();
 				String body = response.getContentAsString();

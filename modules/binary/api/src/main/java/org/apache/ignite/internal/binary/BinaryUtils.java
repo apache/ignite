@@ -64,17 +64,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.*;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -3294,5 +3284,30 @@ public class BinaryUtils {
      */
     public static @Nullable IgniteUuid asIgniteUuid(@Nullable GridCacheVersion ver) {
         return ver == null ? null : new IgniteUuid(new UUID(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw()), ver.order());
+    }
+
+    /**
+     * Writes IgniteUuid to a writer.
+     *
+     * @param writer Writer.
+     * @param val Values.
+     */
+    public static void writeIgniteUuid(BinaryRawWriter writer, IgniteUuid val) {
+        if (val == null)
+            writer.writeUuid(null);
+        else {
+            writer.writeUuid(val.globalId());
+            writer.writeLong(val.localId());
+        }
+    }
+
+    public static IgniteUuid readIgniteUuid(BinaryRawReader in){
+        UUID globalId = in.readUuid();
+        if (globalId!=null) {
+            long locId = in.readLong();
+
+            return new IgniteUuid(globalId, locId);
+        }
+        return null;
     }
 }

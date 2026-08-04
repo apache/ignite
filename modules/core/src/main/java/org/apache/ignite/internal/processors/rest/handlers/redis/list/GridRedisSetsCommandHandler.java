@@ -78,6 +78,7 @@ public class GridRedisSetsCommandHandler implements GridRedisCommandHandler {
         this.ctx = ctx;
         cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cfg.setBackups(1);
+		cfg.setCollocated(true);
     }
 
     /** {@inheritDoc} */

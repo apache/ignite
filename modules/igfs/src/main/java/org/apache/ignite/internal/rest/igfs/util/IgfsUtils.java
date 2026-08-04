@@ -103,7 +103,7 @@ public class IgfsUtils {
      *
      * @param fs IGFS.
      * @param path File path.
-     * @param data Data.
+     * @param in Data.
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
@@ -134,7 +134,7 @@ public class IgfsUtils {
      *
      * @param fs IGFS.
      * @param path File path.
-     * @param data Data.
+     * @param in Data.
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
@@ -273,7 +273,6 @@ public class IgfsUtils {
         }
         return len>0;
     }
-	
 	
 	public static boolean move(IgniteFileSystem fs, IgfsPath path, IgfsPath to, StandardCopyOption opt) throws IgniteException, IOException {
         assert fs != null;

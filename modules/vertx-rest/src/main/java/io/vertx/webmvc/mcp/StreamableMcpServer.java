@@ -14,6 +14,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.webmvc.mcp.tools.RealtimeDataStreamTool;
 import io.vertx.webmvc.mcp.tools.StreamFileProcessorTool;
+import io.vertx.webmvc.mcp.tools.StreamFileSearchProcessorTool;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -863,6 +864,10 @@ public class StreamableMcpServer extends AbstractVerticle {
 
         StreamFileProcessorTool fileProcessorTool = new StreamFileProcessorTool(vertx,this.igniteInstanceName);
         registerStreamingTool(fileProcessorTool);
+
+        StreamFileSearchProcessorTool fileSearchProcessorTool = new StreamFileSearchProcessorTool(vertx,this.igniteInstanceName);
+        registerStreamingTool(fileSearchProcessorTool);
+
     }
 
     private void loadToolsFromSpringContext() {

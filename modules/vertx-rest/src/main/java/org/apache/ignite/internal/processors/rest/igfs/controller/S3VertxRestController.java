@@ -63,6 +63,8 @@ public class S3VertxRestController extends VertxInstanceAware{
 	private static final String HEADER_X_AMZ_META_PREFIX = "x-amz-meta-";
 	
 	private static final String HEADER_X_AMZ_COPY_SOURCE = "x-amz-copy-source";
+
+    private static final String HEADER_X_AMZ_COPY_OPTION = "x-amz-copy-option";
 	
 	private static final String contextPath = "/s3/";
     public static final byte[] BYTES = new byte[0];
@@ -232,7 +234,7 @@ public class S3VertxRestController extends VertxInstanceAware{
         _listObjects(bucketName,prefix,delimiter,response);
     }
     
-    private void _listObjects(@PathVariable String bucketName, String prefix,boolean delimiter,HttpServerResponse response) throws Exception {
+    private void _listObjects(@PathVariable String bucketName, String prefix, boolean delimiter,HttpServerResponse response) throws Exception {
         bucketName = URLDecoder.decode(bucketName, "utf-8");        
         
         List<S3Object> s3ObjectList = s3Service().listObjects(bucketName, prefix);
@@ -372,7 +374,6 @@ public class S3VertxRestController extends VertxInstanceAware{
             response.end();
         }
     }
-    
    
 
     @PutMapping("/:bucketName/*")
@@ -384,7 +385,8 @@ public class S3VertxRestController extends VertxInstanceAware{
         String copySource = request.getHeader(HEADER_X_AMZ_COPY_SOURCE);
         if(copySource!=null) {
         	copySource = URLDecoder.decode(copySource, "utf-8");
-        }        
+        }
+        String copyOption = request.getHeader(HEADER_X_AMZ_COPY_OPTION);
         
         if (!StringUtils.hasText(copySource)) {
 
@@ -411,7 +413,12 @@ public class S3VertxRestController extends VertxInstanceAware{
             String[] copyList = copySource.split("\\/",2);
             String sourceBucketName = copyList[0];
             String sourceObjectKey = copyList[1];
-            s3Service().copyObject(sourceBucketName, sourceObjectKey, bucketName, objectKey);
+            if(copyOption!=null && copyOption.contains("ATOMIC_MOVE")){
+                s3Service().moveObject(sourceBucketName, sourceObjectKey, bucketName, objectKey);
+            }
+            else {
+                s3Service().copyObject(sourceBucketName, sourceObjectKey, bucketName, objectKey);
+            }
             ObjectMetadata metadata = s3Service().headObject(bucketName, objectKey);
 
             DocumentBuilder builder = documentFactory.newDocumentBuilder();

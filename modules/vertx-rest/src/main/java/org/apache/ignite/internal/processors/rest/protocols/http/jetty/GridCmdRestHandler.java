@@ -692,7 +692,7 @@ public class GridCmdRestHandler extends Vertxlet {
 
             case AUTHENTICATE: {
                 restReq = new GridRestRequest();
-
+                restReq.command(cmd);
                 break;
             }
 

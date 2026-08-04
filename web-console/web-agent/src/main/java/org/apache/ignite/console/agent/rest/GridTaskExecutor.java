@@ -84,10 +84,6 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.InjectableValues;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -624,7 +620,6 @@ public class GridTaskExecutor {
 
             case AUTHENTICATE: {
                 restReq = new GridRestRequest();
-
                 break;
             }
 

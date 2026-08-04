@@ -369,6 +369,21 @@ public class IgfsDatasetPersistenceProvider {
         	throw new DatasetPersistenceException("copy:" + e.getMessage(),e);            
         }
     }
+
+	public void move(DatasetSnapshotContext from, DatasetSnapshotContext to) throws DatasetPersistenceException {
+		try {
+			final String fromKey = getKey(from);
+			final String toKey = getKey(to);
+			IgniteFileSystem fs = fs(to.getBucketName());
+			IgfsPath fromPath = new IgfsPath(fromKey);
+			IgfsPath destPath = new IgfsPath(toKey);
+			IgfsUtils.move(fs, fromPath, destPath, StandardCopyOption.REPLACE_EXISTING);
+
+		} catch (IOException e) {
+			LOGGER.error("copy:" + e.getMessage(), e);
+			throw new DatasetPersistenceException("copy:" + e.getMessage(),e);
+		}
+	}
     
     
     private String getKey(final DatasetSnapshotContext coordinate) {

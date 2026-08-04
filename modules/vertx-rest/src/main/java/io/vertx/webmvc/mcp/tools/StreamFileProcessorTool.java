@@ -83,8 +83,13 @@ public class StreamFileProcessorTool extends StreamingToolExecutorImpl {
         Ignite ignite = Ignition.ignite(igniteInstanceName);
         String[] parts = filePath.split("/",2);
         IgniteFileSystem fileSystem = ignite.fileSystem(parts[0]);
-        if(fileSystem==null || parts.length<2){
-            callback.onError(new McpSchema.McpError(404,"File System not found.",null));
+        if(fileSystem==null){
+            callback.onError(new McpError(404,"File System not found.",null));
+            return;
+        }
+        if(parts.length<2){
+            callback.onError(new McpError(404,"File Path must set.",null));
+            return;
         }
         // 异步处理文件
         vertx.executeBlocking(promise -> {

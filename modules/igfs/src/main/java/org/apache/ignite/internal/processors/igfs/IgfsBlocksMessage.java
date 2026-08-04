@@ -16,8 +16,6 @@
  */
 
 package org.apache.ignite.internal.processors.igfs;
-
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -42,7 +40,6 @@ public class IgfsBlocksMessage extends IgfsCommunicationMessage {
     long id;
 
     /** Blocks to store. */
-    @GridDirectMap(keyType = IgfsBlockKey.class, valueType = byte[].class)
     @Order(2)
     Map<IgfsBlockKey, byte[]> blocks;
 

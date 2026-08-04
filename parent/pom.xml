@@ -842,49 +842,13 @@
         </profile>
 
         <profile>
-            <id>tools.jar-default</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../lib/tools.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>${java.version}</version>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>tools.jar-mac</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/../Classes/classes.jar</exists>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <scope>system</scope>
-                    <version>${java.version}</version>
-                    <systemPath>${java.home}/../Classes/classes.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
             <id>licenses</id>
 
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
-                    <version>1.4.0</version>
+                    <version>1.5.0-SNAPSHOT</version>
                 </dependency>
             </dependencies>
 

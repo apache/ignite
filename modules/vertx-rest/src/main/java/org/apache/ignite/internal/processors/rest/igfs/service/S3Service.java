@@ -32,6 +32,8 @@ public interface S3Service {
 
     void copyObject(String sourceBucketName, String sourceObjectKey, String targetBuckName, String targetObjectKey);
 
+    void moveObject(String sourceBucketName, String sourceObjectKey, String targetBuckName, String targetObjectKey);
+
     InitiateMultipartUploadResult initiateMultipartUpload(String bucketName, String objectKey,Map<String,String> userMeta);
 
     PartETag uploadPart(String bucketName, String objectKey, int partNumber, String uploadId, InputStream inputStream);

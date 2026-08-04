@@ -187,6 +187,28 @@ public class S3LocalFileServiceImpl implements S3Service {
     }
 
     @Override
+    public void moveObject(String sourceBucketName, String sourceObjectKey, String targetBuckName, String targetObjectKey) {
+        String sourceFilePath = systemConfig.getDataPath() + sourceBucketName + "/" + sourceObjectKey;
+        createBucket(targetBuckName);
+        String targetFilePath = systemConfig.getDataPath() + targetBuckName + "/" + targetObjectKey;
+        String[] filePathList = targetFilePath.split("\\/");
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < filePathList.length - 1; i++) {
+            result.append(filePathList[i]).append("/");
+        }
+        String fileDirPath = result.toString();
+        File fileDir = new File(fileDirPath);
+        if (!fileDir.exists()) {
+            fileDir.mkdirs();
+        }
+        try{
+            FileUtil.moveFile(sourceFilePath,targetFilePath);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void deleteObject(String bucketName, String objectKey) {
         String filePath = systemConfig.getDataPath() + bucketName + "/" + objectKey;
         FileUtil.delete(filePath);

@@ -60,9 +60,6 @@ public class GremlinExecutor implements AutoCloseable {
     private String prevURL = "";
     
     private Client client;
-    
-    
-
     /**
      * @param addr ip.
      */

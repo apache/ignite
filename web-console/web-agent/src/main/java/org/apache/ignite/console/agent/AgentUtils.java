@@ -36,12 +36,8 @@ import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.ProxyConfiguration;
-import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.client.*;
+
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
@@ -53,7 +49,8 @@ import static java.net.Proxy.NO_PROXY;
 import static java.net.Proxy.Type.SOCKS;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.console.utils.Utils.toJson;
-import static org.eclipse.jetty.client.api.Authentication.ANY_REALM;
+import static org.eclipse.jetty.client.Authentication.ANY_REALM;
+
 
 /**
  * Utility methods.
@@ -264,7 +261,8 @@ public class AgentUtils {
                 })
                 .collect(toList());
 
-            httpClient.getProxyConfiguration().getProxies().addAll(proxies);
+            for(var proxy: proxies)
+                httpClient.getProxyConfiguration().addProxy(proxy);
 
             addAuthentication(httpClient, proxies);
         }
@@ -306,14 +304,8 @@ public class AgentUtils {
      * @param unit the time unit of the timeout argument
      * @throws Exception If failed to send event.
      */
-    public static void send(Session ses, WebSocketResponse evt, long timeout, TimeUnit unit) throws Exception {        
-
-        try {
-        	ses.getRemote().sendString(toJson(evt));
-        }
-        catch (IOException e) {
-            throw e;
-        }
+    public static void send(Session ses, WebSocketResponse evt, long timeout, TimeUnit unit) throws Exception {
+        ses.sendText(toJson(evt),null);
     }
 
     /**

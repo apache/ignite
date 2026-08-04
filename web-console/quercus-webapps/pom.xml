@@ -34,12 +34,11 @@
 	    </dependency>
         
         <!-- https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-rewrite -->
-    <!--    <dependency>
+        <dependency>
             <groupId>org.eclipse.jetty.ee10</groupId>
             <artifactId>jetty-rewrite</artifactId>
-            <version>12.0.16</version>
-        </dependency>-->
-        
+            <version>12.0.19</version>
+        </dependency>
         
     </dependencies>
 

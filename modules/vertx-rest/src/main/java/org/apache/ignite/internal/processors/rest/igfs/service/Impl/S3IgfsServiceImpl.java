@@ -126,7 +126,28 @@ public class S3IgfsServiceImpl implements S3Service {
     }
 
     @Override
+    public void moveObject(String sourceBucketName, String sourceObjectKey, String targetBuckName, String targetObjectKey) {
+        Bucket bucket = createBucket(targetBuckName);
+        DatasetSnapshotContext context = new StandardDatasetSnapshotContext.Builder(bucket)
+                .datasetId(targetObjectKey)
+                .datasetName(targetObjectKey)
+                .build();
+
+        Bucket fromBucket = new Bucket();
+        fromBucket.setName(sourceBucketName);
+        DatasetSnapshotContext fromContext = new StandardDatasetSnapshotContext.Builder(fromBucket)
+                .datasetId(sourceObjectKey)
+                .datasetName(sourceObjectKey)
+                .build();
+
+        provider.move(fromContext,context);
+
+    }
+
+    @Override
     public void deleteObject(String bucketName, String objectKey) {
+        if(objectKey.startsWith("/"))
+            objectKey = objectKey.substring(1);
     	Bucket bucket = new Bucket();
     	bucket.setName(bucketName);
         DatasetSnapshotContext context = new StandardDatasetSnapshotContext.Builder(bucket)
@@ -158,11 +179,13 @@ public class S3IgfsServiceImpl implements S3Service {
 
     @Override
     public S3ObjectInputStream getObject(String bucketName, String objectKey, Range range) {
+        if(objectKey.startsWith("/"))
+            objectKey = objectKey.substring(1);
     	if(range==null) {
     		return getObject(bucketName,objectKey);
     	}
     	Bucket bucket = new Bucket();
-    	bucket.setName(bucketName);        
+    	bucket.setName(bucketName);
         
     	ObjectMetadata metadata = provider.getObjectMetadata(bucketName, objectKey);
        
@@ -182,6 +205,8 @@ public class S3IgfsServiceImpl implements S3Service {
     @Override
     public InitiateMultipartUploadResult initiateMultipartUpload(String bucketName, String objectKey,Map<String,String> userMeta) {
         createBucket(bucketName);
+        if(objectKey.startsWith("/"))
+            objectKey = objectKey.substring(1);
         InitiateMultipartUploadResult multipartUploadResult = new InitiateMultipartUploadResult();
         multipartUploadResult.setBucket(bucketName);
         multipartUploadResult.setObjectKey(objectKey);
@@ -221,6 +246,8 @@ public class S3IgfsServiceImpl implements S3Service {
     @Override
     public PartETag uploadPart(String bucketName, String objectKey, int partNumber, String uploadId, InputStream inputStream) {
         String tempPartFilePath = systemConfig.getTempPath() + "/" + uploadId + "/" + partNumber + ".md5";
+        if(objectKey.startsWith("/"))
+            objectKey = objectKey.substring(1);
         File file = new File(tempPartFilePath);
         if (!file.exists()) {            
         	String filePath = systemConfig.getDataPath() + bucketName + "/" + objectKey;

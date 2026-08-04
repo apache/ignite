@@ -180,7 +180,7 @@ public class AgentsService extends AbstractSocketHandler {
 
             if (F.isEmpty(clusterId)) {
                 clusterId = oldTops.stream()
-                    .filter(t -> t.sameNodes(newTop))
+                    .filter(t -> t!=null && t.sameNodes(newTop))
                     .map(TopologySnapshot::getId)
                     .findFirst()
                     .orElse(null);

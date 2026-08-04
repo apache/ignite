@@ -1,8 +1,11 @@
 package org.apache.ignite.internal.rest.igfs.util;
 
 import java.io.*;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
@@ -337,11 +340,41 @@ public class FileUtil {
             e.printStackTrace();
         }
     }
+
+    public static void moveFile(String sourceFilePath, String targetFilePath) throws IOException {
+        // 1. 参数校验
+        if (sourceFilePath == null || sourceFilePath.trim().isEmpty()) {
+            throw new IllegalArgumentException("sourceFilePath must not be null or empty");
+        }
+        if (targetFilePath == null || targetFilePath.trim().isEmpty()) {
+            throw new IllegalArgumentException("targetFilePath must not be null or empty");
+        }
+
+        Path source = Paths.get(sourceFilePath);
+        Path target = Paths.get(targetFilePath);
+
+        // 2. 检查源文件是否存在且是普通文件（若需移动目录，可去掉 isRegularFile 检查）
+        if (!Files.exists(source)) {
+            throw new IOException("Source file does not exist: " + sourceFilePath);
+        }
+        if (!Files.isRegularFile(source)) {
+            throw new IOException("Source is not a regular file: " + sourceFilePath);
+        }
+
+        // 3. 确保目标父目录存在
+        Path parent = target.getParent();
+        if (parent != null && !Files.exists(parent)) {
+            Files.createDirectories(parent);
+        }
+
+        // 4. 执行移动（覆盖已存在的目标文件）
+        Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+    }
     
 
     // The invalid character list is derived from this Stackoverflow page.
     // https://stackoverflow.com/questions/1155107/is-there-a-cross-platform-java-method-to-remove-filename-special-chars
-    private final static int[] INVALID_CHARS = {34, 60, 62, 124, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+    private static int[] INVALID_CHARS = {34, 60, 62, 124, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 58, 42, 63, 92, 47, 32};
 
     static {

@@ -21,7 +21,6 @@ import org.apache.ignite.console.agent.rest.RestRequest;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.agent.service.CacheAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
-import org.apache.ignite.console.agent.service.ClusterAgentServiceManager;
 import org.apache.ignite.console.agent.service.ServiceResult;
 import org.apache.ignite.console.agent.task.CacheServiceMapperTask;
 import org.apache.ignite.console.demo.AgentClusterDemo;
@@ -41,12 +40,14 @@ import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -55,7 +56,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.console.agent.AgentUtils.*;
 import static org.apache.ignite.console.agent.handlers.DemoClusterHandler.DEMO_CLUSTER_ID;
 import static org.apache.ignite.console.agent.handlers.DemoClusterHandler.DEMO_CLUSTER_NAME;
@@ -66,13 +66,12 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.*;
 /**
  * Router that listen for web socket and redirect messages to event bus.
  */
-@WebSocket(maxTextMessageSize = 8 * 1024 * 1024, maxBinaryMessageSize = 8 * 1024 * 1024)
-public class WebSocketRouter implements AutoCloseable {
+public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDemanding  {
     /** */
     private static final IgniteLogger logger = new Slf4jLogger(LoggerFactory.getLogger(WebSocketRouter.class));
 
     /** Pong message. */
-    private static final ByteBuffer PONG_MSG = UTF_8.encode("PONG");
+    private static final ByteBuffer PONG_MSG = StandardCharsets.UTF_8.encode("PONG");
 
     /** Default error messages. */
     private static final Map<String, String> ERROR_MSGS = Collections.unmodifiableMap(Stream.of(
@@ -90,7 +89,7 @@ public class WebSocketRouter implements AutoCloseable {
     private final AgentConfiguration cfg;
 
     /** Websocket Client. */
-    private final WebSocketClient client;
+    private WebSocketClient client;
 
 	/** Schema import handler. */
     private final DatabaseHandler dbHnd;
@@ -152,14 +151,14 @@ public class WebSocketRouter implements AutoCloseable {
         httpClient.setFollowRedirects(false);
         
         // TODO GG-18379 Investigate how to establish native websocket connection with proxy.
-        //- configureProxy(httpClient, cfg.serverUri());
-
-        client = new WebSocketClient(httpClient);
-        client.setIdleTimeout(Duration.ofSeconds(-1));
-        client.setAutoFragment(true);
+        configureProxy(httpClient, cfg.serverUri());
 
         try {
 			httpClient.start();
+
+            client = new WebSocketClient(httpClient);
+            client.setIdleTimeout(Duration.ofSeconds(-1));
+            client.setAutoFragment(true);
             client.start();
         } catch (Exception e) {
 			logger.error("Failed to start http client: ", e);
@@ -225,7 +224,8 @@ public class WebSocketRouter implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override
+    public void close() {
         logger.info("Stopping Web Console Agent...");
         watcher.stop();
         vertxClusterHnd.close();
@@ -247,7 +247,7 @@ public class WebSocketRouter implements AutoCloseable {
     // 主动连接并重连
     private void connectWithRetry() {
         if(session!=null && session.isOpen()){
-            logger.info("WebSocket 已经连接成功，会话 ID: "+session.getRemoteAddress());
+            logger.info("WebSocket 已经连接成功，会话Address: "+session.getRemoteSocketAddress());
             return;
         }
 
@@ -262,7 +262,7 @@ public class WebSocketRouter implements AutoCloseable {
                     this.session = session;
                     connected.set(true);
                     reconnectAttempts.set(0);
-                    logger.info("WebSocket 连接成功，会话 ID: "+session.getRemoteAddress());
+                    logger.info("WebSocket 连接成功，会话Address: "+session.getRemoteSocketAddress());
                     onConnected();
                 }
             });
@@ -320,10 +320,10 @@ public class WebSocketRouter implements AutoCloseable {
     /**
      * @param ses Session.
      */
-    @OnWebSocketConnect
-    public void onConnect(Session ses) {
+    @Override
+    public void onWebSocketOpen(Session ses) {
         AgentHandshakeRequest req = new AgentHandshakeRequest(CURRENT_VER, cfg.tokens());
-
+        this.session = ses;
         try {
             AgentUtils.send(ses, new WebSocketResponse(AGENT_HANDSHAKE, req), 10L, TimeUnit.SECONDS);
         }
@@ -338,8 +338,8 @@ public class WebSocketRouter implements AutoCloseable {
      * @param statusCode Close status code.
      * @param reason Close reason.
      */
-    @OnWebSocketClose
-    public void onClose(int statusCode, String reason) {
+    @Override
+    public void onWebSocketClose(int statusCode, String reason) {
         logger.info("Websocket connection closed with code: " + statusCode+ ", reason:"+reason);
         connected.set(false);
 
@@ -354,8 +354,8 @@ public class WebSocketRouter implements AutoCloseable {
         }
     }
 
-    @OnWebSocketError
-    public void onError(Throwable cause) {
+    @Override
+    public void onWebSocketError(Throwable cause) {
         logger.error("WebSocket 错误", cause);
         // 错误时也可能需要重连
         if (connected.get()) {
@@ -763,9 +763,10 @@ public class WebSocketRouter implements AutoCloseable {
     /**
      * @param msg Message.
      */
-    @OnWebSocketMessage
-    public void onMessage(Session ses, String msg) {
+    @Override
+    public void onWebSocketText(String msg) {
         WebSocketRequest evt = null;
+        Session ses = this.session;
         JsonObject msgRet;
         try {
             evt = fromJson(msg, WebSocketRequest.class);
@@ -917,17 +918,18 @@ public class WebSocketRouter implements AutoCloseable {
     }
 
     /**
-     * @param ses Session.
      * @param frame Frame.
      */
-    @OnWebSocketFrame
-    public void onFrame(Session ses, Frame frame) {
+    @Override
+    public void onWebSocketFrame(Frame frame,Callback callback) {
+
         if (isRunning() && frame.getType() == Frame.Type.PING) {
+            Session ses = this.session;
             if (logger.isTraceEnabled())
                 logger.trace("Received ping message [socket=" + ses + ", msg=" + frame + "]");
 
             try {
-                ses.getRemote().sendPong(PONG_MSG);
+                ses.sendPong(PONG_MSG,callback);
             }
             catch (Throwable e) {
                 logger.error("Failed to send pong to: " + ses, e);

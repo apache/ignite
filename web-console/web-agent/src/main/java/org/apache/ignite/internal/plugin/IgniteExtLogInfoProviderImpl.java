@@ -28,11 +28,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
 import static org.apache.ignite.internal.IgniteKernal.NL;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 
 /**

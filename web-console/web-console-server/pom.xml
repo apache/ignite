@@ -179,13 +179,13 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jndi</artifactId>
-            <version>12.0.19</version>
+            <version>${jetty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-rewrite</artifactId>
-            <version>12.0.19</version>
+            <version>${jetty.version}</version>
         </dependency>
 
         <dependency>

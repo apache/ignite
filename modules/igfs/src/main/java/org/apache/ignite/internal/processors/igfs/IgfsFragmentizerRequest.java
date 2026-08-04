@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.GridDirectCollection;
+
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,7 +42,6 @@ public class IgfsFragmentizerRequest extends IgfsCommunicationMessage {
 
     /** Ranges to fragment. */
     @GridToStringInclude
-    @GridDirectCollection(IgfsFileAffinityRange.class)
     @Order(1)
     Collection<IgfsFileAffinityRange> fragmentRanges;
 
