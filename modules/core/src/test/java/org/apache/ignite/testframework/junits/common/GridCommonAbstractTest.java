@@ -1898,12 +1898,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (!act.containsKey(e.getKey()))
                 fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
 
-            try {
-                assertEqualsArraysAware(e.getValue(), act.get(e.getKey()));
-            }
-            catch (AssertionError ignored) {
-                fail("Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
-            }
+            assertEqualsArraysAware(
+                "Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act,
+                e.getValue(),
+                act.get(e.getKey())
+            );
         }
     }
 
