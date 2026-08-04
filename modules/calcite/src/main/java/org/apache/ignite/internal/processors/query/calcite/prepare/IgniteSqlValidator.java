@@ -248,7 +248,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /**
-     * Invalidate fetch/offset params restrictions.
+     * Validate fetch/offset params restrictions.
      *
      * @param n        Node to check limit.
      * @param nodeName Node name.

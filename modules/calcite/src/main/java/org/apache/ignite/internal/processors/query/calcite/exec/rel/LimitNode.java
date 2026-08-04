@@ -150,4 +150,9 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     private boolean hasMoreData() {
         return rowsProcessed < rowsSummary;
     }
+
+    /** Fetch value if undefined. */
+    public static long defaultFetchValue() {
+        return -1;
+    }
 }

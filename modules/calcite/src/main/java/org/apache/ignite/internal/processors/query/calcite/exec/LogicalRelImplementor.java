@@ -135,6 +135,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode.defaultFetchValue;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -635,7 +636,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
         long offset = rel.offset() == null ? 0 : validateAndGetFetchOffsetParams(rel.offset(), "offset");
-        long fetch = rel.fetch() == null ? -1 : validateAndGetFetchOffsetParams(rel.fetch(), "fetch");
+        long fetch = rel.fetch() == null ? defaultFetchValue() : validateAndGetFetchOffsetParams(rel.fetch(), "fetch");
 
         LimitNode<Row> node = new LimitNode<>(ctx, rel.getRowType(), offset, fetch);
 

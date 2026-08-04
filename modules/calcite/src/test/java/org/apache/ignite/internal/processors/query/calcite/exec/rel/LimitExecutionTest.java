@@ -110,7 +110,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         RelDataType rowType = TypeUtils.createRowType(tf, int.class);
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
-        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, offset, fetch == 0 ? -1 : fetch);
+        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, offset, fetch == 0 ? defaultFetchValue() : fetch);
         SourceNode srcNode = new SourceNode(ctx, rowType);
 
         rootNode.register(limitNode);
