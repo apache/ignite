@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
@@ -33,14 +32,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job execution request.
  */
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
-public class GridJobExecuteRequest implements ExecutorAwareMessage {
+@UseBinaryMarshaller
+public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnmarshalMessage {
     /** */
     @Order(0)
     IgniteUuid sesId;
@@ -56,7 +55,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** */
     @GridToStringExclude
-    private ComputeJob job;
+    @Marshalled("jobBytes")
+    ComputeJob job;
 
     /** */
     @Order(3)
@@ -90,7 +90,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** */
     @GridToStringExclude
-    private Map<Object, Object> sesAttrs;
+    @Marshalled("sesAttrsBytes")
+    Map<Object, Object> sesAttrs;
 
     /** */
     @GridToStringExclude
@@ -99,14 +100,16 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
     /** */
     @GridToStringExclude
-    private Map<? extends Serializable, ? extends Serializable> jobAttrs;
+    @Marshalled("jobAttrsBytes")
+    Map<? extends Serializable, ? extends Serializable> jobAttrs;
 
     /** Checkpoint SPI name. */
     @Order(11)
     String cpSpi;
 
-    /** */
-    private Collection<ComputeJobSibling> siblings;
+    /** Left unset for a continuous task: such a job requests its siblings from the task node instead. */
+    @Marshalled("siblingsBytes")
+    Collection<ComputeJobSibling> siblings;
 
     /** */
     @Order(12)
@@ -144,7 +147,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     Collection<UUID> top;
 
     /** */
-    private IgnitePredicate<ClusterNode> topPred;
+    @Marshalled("topPredBytes")
+    IgnitePredicate<ClusterNode> topPred;
 
     /** */
     @Order(20)
@@ -249,7 +253,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         this.top = top;
         this.topVer = topVer;
         this.topPred = topPred;
-        this.siblings = siblings;
+        this.siblings = dynamicSiblings ? null : siblings;
         this.sesAttrs = sesAttrs;
         this.jobAttrs = jobAttrs;
         this.clsLdrId = clsLdrId;
@@ -448,45 +452,4 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         return S.toString(GridJobExecuteRequest.class, this);
     }
 
-    /**
-     * @param marsh Marshaller.
-     */
-    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        jobBytes = U.marshal(marsh, job);
-        topPredBytes = U.marshal(marsh, topPred);
-        siblingsBytes = U.marshal(marsh, siblings);
-        sesAttrsBytes = U.marshal(marsh, sesAttrs);
-        jobAttrsBytes = U.marshal(marsh, jobAttrs);
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        assert top != null || topPredBytes != null;
-        assert sesAttrsBytes != null || !sesFullSup;
-
-        if (!dynamicSiblings && siblings == null)
-            siblings = U.unmarshal(marsh, siblingsBytes, ldr);
-
-        if (sesFullSup && sesAttrs == null)
-            sesAttrs = U.unmarshal(marsh, sesAttrsBytes, ldr);
-
-        if (topPred == null && topPredBytes != null)
-            topPred = U.unmarshal(marsh, topPredBytes, ldr);
-
-        if (jobAttrs == null)
-            jobAttrs = U.unmarshal(marsh, jobAttrsBytes, ldr);
-
-        if (job == null)
-            job = U.unmarshal(marsh, jobBytes, ldr);
-
-        // Are not required anymore.
-        siblingsBytes = null;
-        sesAttrsBytes = null;
-        topPredBytes = null;
-        jobAttrsBytes = null;
-        jobBytes = null;
-    }
 }

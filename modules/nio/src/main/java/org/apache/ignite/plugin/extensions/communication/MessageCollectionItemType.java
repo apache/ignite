@@ -108,7 +108,10 @@ public enum MessageCollectionItemType {
     COLLECTION,
 
     /** Array. */
-    ARRAY;
+    ARRAY,
+
+    /** Enum. */
+    ENUM;
 
     /** Enum values. */
     private static final MessageCollectionItemType[] VALS = values();

@@ -358,6 +358,8 @@ class IgniteApplicationSpec(IgniteSpec):
         ]
 
     def command(self, node):
+        assert self.service.java_class_name is not None, "Missing required 'java_class_name' to execute command."
+
         args = [
             str(self.service.config.service_type.name),
             self.service.java_class_name,

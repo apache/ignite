@@ -21,20 +21,22 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class DataStreamerRequest implements Message {
+public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware {
     /** */
     @Order(0)
     long reqId;
@@ -279,5 +281,10 @@ public class DataStreamerRequest implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataStreamerRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return GridCacheUtils.cacheId(cacheName);
     }
 }

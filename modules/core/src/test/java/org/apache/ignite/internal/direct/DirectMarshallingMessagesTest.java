@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -46,12 +45,8 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     /** Message factory. */
     private final MessageFactory msgFactory =
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader()),
-            factory -> factory.register(
-                TestNestedContainersMessage.TYPE,
-                TestNestedContainersMessage::new,
-                new TestNestedContainersMessageSerializer()
-            )
+            new CoreMessagesProvider(jdk(), jdk()),
+            factory -> factory.register(TestNestedContainersMessage.TYPE, new TestNestedContainersMessageSerializer())
         });
 
     /** */

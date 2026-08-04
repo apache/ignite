@@ -143,7 +143,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
      * @param perms Permissions.
      * @return Collection.
      */
-    private static Collection<SecurityPermission> permissions(SecurityPermission... perms) {
+    static Collection<SecurityPermission> permissions(SecurityPermission... perms) {
         Collection<SecurityPermission> col = U.newHashSet(perms.length);
 
         Collections.addAll(col, perms);

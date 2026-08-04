@@ -22,9 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,6 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+@UseBinaryMarshaller
 public class UpdateErrors implements Message {
     /** Failed keys. */
     @GridToStringInclude
@@ -114,17 +114,6 @@ public class UpdateErrors implements Message {
 
         errMsg.error().addSuppressed(e);
     }
-
-    /** */
-    void prepareMarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-        msg.prepareMarshalCacheObjects(failedKeys, cctx);
-    }
-
-    /** */
-    void finishUnmarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx, ClassLoader ldr) throws IgniteCheckedException {
-        msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

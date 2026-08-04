@@ -101,8 +101,11 @@ public class SortAggregateNode<Row> extends AggregateNode<Row> {
 
             source().request(IN_BUFFER_SIZE);
         }
-        else if (waiting < 0)
+        else if (waiting < 0) {
+            requested = 0;
+
             downstream().end();
+        }
     }
 
     /** {@inheritDoc} */
@@ -163,8 +166,11 @@ public class SortAggregateNode<Row> extends AggregateNode<Row> {
             doPush();
         }
 
-        if (requested > 0)
+        if (requested > 0) {
+            requested = 0;
+
             downstream().end();
+        }
 
         grp = null;
         prevRow = null;

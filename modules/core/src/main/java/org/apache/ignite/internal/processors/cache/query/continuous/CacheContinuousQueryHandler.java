@@ -53,6 +53,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -932,13 +933,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     private void prepareEntry(GridCacheContext cctx, UUID nodeId, CacheContinuousQueryEntry entry)
         throws IgniteCheckedException {
-        if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null) {
-            entry.prepareMarshal(cctx);
-
+        if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && cctx.discovery().node(nodeId) != null)
             cctx.deploy().prepare(entry);
-        }
-        else
-            entry.prepareMarshal(cctx);
     }
 
     /**
@@ -1076,7 +1072,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     }
                 }
 
-                e.unmarshal(cctx, ldr);
+                MessageMarshalling.unmarshal(e, ctx, cctx.cacheObjectContext(), ldr);
 
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);
 
@@ -1336,7 +1332,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, e.partition());
 
-        buf.processEntry(e.copyWithDataReset(), true);
+        buf.processEntry(e, true);
     }
 
     /**
@@ -1355,10 +1351,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return e;
         }
 
-        // Initial query entry.
-        // This events should be fired immediately.
+        // Initial query entry. This events should be fired immediately.
+        // A filtered one carries nothing but a counter the receiver discards, so it is not sent at all.
         if (e.updateCounter() == -1L)
-            return e;
+            return e.isFiltered() ? null : e;
 
         CacheContinuousQueryEventBuffer buf = partitionBuffer(cctx, e.partition());
 

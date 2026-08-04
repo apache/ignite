@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /** Wraps atomic updates with application attributes. */
+@UseBinaryMarshaller
 public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage {
     /** Original update message. */
     @Order(0)
@@ -55,16 +55,6 @@ public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage 
     /** @return Application attributes. */
     public Map<String, String> applicationAttributes() {
         return appAttrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        payload.prepareMarshal(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        payload.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */

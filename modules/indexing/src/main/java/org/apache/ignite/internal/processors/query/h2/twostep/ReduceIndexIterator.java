@@ -23,13 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
-
-import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_CLOSE;
 
 /**
  * Iterator that transparently and sequentially traverses a bunch of {@link AbstractReduceIndexAdapter} objects.
@@ -62,9 +57,6 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Whether remote resources were released. */
     private boolean released;
 
-    /** Tracing processor. */
-    private final Tracing tracing;
-
     /**
      * Constructor.
      *
@@ -73,21 +65,18 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
      * @param run Query run.
      * @param qryReqId Query request ID.
      * @param distributedJoins Distributed joins.
-     * @param tracing Tracing processor.
      */
     public ReduceIndexIterator(GridReduceQueryExecutor rdcExec,
         Collection<ClusterNode> nodes,
         ReduceQueryRun run,
         long qryReqId,
-        boolean distributedJoins,
-        Tracing tracing
+        boolean distributedJoins
     ) {
         this.rdcExec = rdcExec;
         this.nodes = nodes;
         this.run = run;
         this.qryReqId = qryReqId;
         this.distributedJoins = distributedJoins;
-        this.tracing = tracing;
 
         rdcIter = run.reducers().iterator();
 
@@ -118,9 +107,7 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        try (TraceSurroundings ignored = MTC.support(tracing.create(SQL_ITER_CLOSE, MTC.span()))) {
-            releaseIfNeeded();
-        }
+        releaseIfNeeded();
     }
 
     /**

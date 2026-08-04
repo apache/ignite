@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -205,6 +206,19 @@ public class DataStreamProcessor extends GridProcessorAdapter {
 
                     return;
                 }
+            }
+
+            // The generic receive pass skips this request (entries must stay serialized for the update job and its
+            // peer-deployment loader), so the response topic is restored here; it carries only internal classes.
+            try {
+                if (req.resTopicMsg != null)
+                    MessageMarshalling.unmarshal(req.resTopicMsg, ctx);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to unmarshal response topic (no response will be sent) [nodeId=" + nodeId +
+                    ", req=" + req + ']', e);
+
+                return;
             }
 
             Object topic = req.responseTopic();
