@@ -177,7 +177,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
             if (usesCtx(code))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
-            body.addAll(code);
+            appendBlock(body, code);
 
             prependMsgFactoryResolution(body);
         });
@@ -207,7 +207,7 @@ public class MessageMarshallerGenerator extends MessageWireCompanionGenerator {
             if (usesCtx(code))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
-            body.addAll(code);
+            appendBlock(body, code);
 
             prependMsgFactoryResolution(body);
         });

@@ -157,6 +157,17 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         return field.getAnnotation(NioField.class) != null;
     }
 
+    /**
+     * A field of the message keeps its type arguments, so a for-each over it already yields the element type. Inside
+     * a loop it does not: the loop variable is declared by simple name, {@code Map e} rather than {@code Map<K, V> e},
+     * and so is raw. A type variable gives nothing to iterate by either.
+     *
+     * @return {@code true} if the for-each needs the element type spelled out with a cast.
+     */
+    private boolean needsCast(TypeMirror elemType) {
+        return loopDepth > 0 || elemType.getKind() == TypeKind.TYPEVAR;
+    }
+
     /** Generates the {@code toWire} method: every field on the way out. */
     private void generateToWireMethod(List<VariableElement> orderedFields) {
         imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
@@ -178,7 +189,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
             if (needsCtx(orderedFields))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
-            body.addAll(code);
+            appendBlock(body, code);
 
             prependMsgFactoryResolution(body);
         });
@@ -232,7 +243,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
             if (needsCtx(fields))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
-            body.addAll(code);
+            appendBlock(body, code);
 
             prependMsgFactoryResolution(body);
         });
@@ -366,7 +377,9 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
         indent++;
 
-        List<String> loopCode = forLoop(typeName, arg, "(Collection<? extends " + typeName + ">)" + accessor, mode);
+        String iterable = needsCast(arg) ? "(Collection<? extends " + typeName + ">)" + accessor : accessor;
+
+        List<String> loopCode = forLoop(typeName, arg, iterable, mode);
 
         indent--;
 
@@ -396,7 +409,9 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
             String typeName = elem.getSimpleName().toString();
             String collection = i == 0 ? "keySet" : "values";
-            String iterable = "((Collection<? extends " + typeName + ">)" + accessor + "." + collection + "())";
+            String iterable = needsCast(elemType)
+                ? "((Collection<? extends " + typeName + ">)" + accessor + "." + collection + "())"
+                : accessor + "." + collection + "()";
 
             List<String> loopCode = forLoop(typeName, elemType, iterable, mode);
 

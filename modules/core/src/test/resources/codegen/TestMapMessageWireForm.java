@@ -37,12 +37,13 @@ public final class TestMapMessageWireForm implements MessageWireForm<TestMapMess
     /** */
     @Override public void toWire(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.gridCacheObjectMap != null) {
-            for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
+            for (KeyCacheObject e : msg.gridCacheObjectMap.keySet()) {
                 if (e != null && ctx != null)
                     e.marshal(ctx);
             }
-            for (Map e : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
+            for (Map e : msg.gridCacheObjectMap.values()) {
                 if (e != null) {
                     for (List e1 : ((Collection<? extends List>)e.values())) {
                         if (e1 != null) {
@@ -60,12 +61,13 @@ public final class TestMapMessageWireForm implements MessageWireForm<TestMapMess
     /** */
     @Override public void fromWire(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.gridCacheObjectMap != null) {
-            for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
+            for (KeyCacheObject e : msg.gridCacheObjectMap.keySet()) {
                 if (e != null && ctx != null)
                     e.unmarshal(ctx, clsLdr);
             }
-            for (Map e : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
+            for (Map e : msg.gridCacheObjectMap.values()) {
                 if (e != null) {
                     for (List e1 : ((Collection<? extends List>)e.values())) {
                         if (e1 != null) {

@@ -39,6 +39,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
 
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.mapKeys != null) {
             for (GridTopicMessage e : msg.mapKeys) {
                 if (e != null)
@@ -81,6 +82,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
 
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.mapKeys != null) {
             for (GridTopicMessage e : msg.mapKeys) {
                 if (e != null)

@@ -33,6 +33,7 @@ public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
     /** */
     @Override public void toWire(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.marshal(ctx);
 
@@ -46,6 +47,7 @@ public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
     /** */
     @Override public void fromWire(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.keyCacheObject != null && ctx != null)
             msg.keyCacheObject.unmarshal(ctx, clsLdr);
 

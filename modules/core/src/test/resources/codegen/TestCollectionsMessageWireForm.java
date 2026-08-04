@@ -34,8 +34,9 @@ public final class TestCollectionsMessageWireForm implements MessageWireForm<Tes
     /** */
     @Override public void toWire(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.cacheObjectSet != null) {
-            for (CacheObject e : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
+            for (CacheObject e : msg.cacheObjectSet) {
                 if (e != null && ctx != null)
                     e.marshal(ctx);
             }
@@ -45,8 +46,9 @@ public final class TestCollectionsMessageWireForm implements MessageWireForm<Tes
     /** */
     @Override public void fromWire(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.cacheObjectSet != null) {
-            for (CacheObject e : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
+            for (CacheObject e : msg.cacheObjectSet) {
                 if (e != null && ctx != null)
                     e.unmarshal(ctx, clsLdr);
             }
