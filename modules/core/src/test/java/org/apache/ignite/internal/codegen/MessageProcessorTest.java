@@ -51,6 +51,10 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class MessageProcessorTest {
+    /** Custom mapper error. */
+    public static final String CUSTOM_MAPPER_ERROR = "Annotation @CustomMapper must only be used for enum fields or " +
+        "enum collections and maps, including nested ones.";
+
     /** */
     @Test
     public void testMarshalledObjectsMessage() {
@@ -273,7 +277,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("CustomEnumMapperOnPrimitiveFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
     }
 
     /**
@@ -285,7 +289,50 @@ public class MessageProcessorTest {
         Compilation compilation = compile("CustomEnumMapperOnArrayFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection, which does not store enums.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnNonEnumCollection() {
+        Compilation compilation = compile("CustomEnumMapperOnNonEnumCollectionMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection, which does not store enums.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnNonEnumMap() {
+        Compilation compilation = compile("CustomEnumMapperOnNonEnumMapMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for enum mapper verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection with nested enums of different type.
+     */
+    @Test
+    public void testEnumMapperCannotBeTwoEnums() {
+        Compilation compilation = compile("TwoDifferentEnumsInCollectionMessage.java");
+
+        assertThat(compilation).failed();
+
+        String oai = "org.apache.ignite.";
+
+        assertThat(compilation).hadErrorContaining(String.format("Multiple enums of different types are not supported " +
+            "for a single field [msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]",
+            oai + "internal.TwoDifferentEnumsInCollectionMessage", "col",
+            oai + "transactions.TransactionIsolation",
+            oai + "internal.processors.cache.GridCacheOperation"));
     }
 
     /**
@@ -338,6 +385,25 @@ public class MessageProcessorTest {
 
         String errMsg = "Enum " + TransactionIsolation.class.getName() + " is declared with different mappers: " +
             DefaultEnumMapper.class.getName() + " in org.apache.ignite.internal.DefaultMapperEnumFieldsMessage" +
+            " and org.apache.ignite.internal.TransactionIsolationEnumMapper in org.apache.ignite.internal.CustomMapperEnumFieldsMessage.";
+
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Negative test for a conflict situation when two enum mappers are used for the same enum in different messages.
+     * Tests conflict between ordinary enum field and collection of enums.
+     */
+    @Test
+    public void testDifferentMappersForTheSameEnumAreProhibitedWithCollection() {
+        Compilation compilation = compile("DefaultMapperEnumMapCollectionMessage.java",
+            "CustomMapperEnumFieldsMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).failed();
+
+        String errMsg = "Enum " + TransactionIsolation.class.getName() + " is declared with different mappers: " +
+            DefaultEnumMapper.class.getName() + " in org.apache.ignite.internal.DefaultMapperEnumMapCollectionMessage" +
             " and org.apache.ignite.internal.TransactionIsolationEnumMapper in org.apache.ignite.internal.CustomMapperEnumFieldsMessage.";
 
         assertThat(compilation).hadErrorContaining(errMsg);

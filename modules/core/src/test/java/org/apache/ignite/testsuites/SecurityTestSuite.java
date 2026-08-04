@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.security.service.ServiceStaticConfi
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
 import org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest;
 import org.apache.ignite.internal.thread.context.OperationContextAttributesTest;
+import org.apache.ignite.plugin.security.SecurityBasicPermissionSetSerializationTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.ssl.SslContextFactoryReloadTest;
 import org.apache.ignite.ssl.SslContextReloadNodeTest;
@@ -157,6 +158,7 @@ import org.junit.runners.Suite;
     NodeConnectionCertificateCapturingTest.class,
     OperationContextAttributesTest.class,
     OperationContextAttributePropagationTest.class,
+    SecurityBasicPermissionSetSerializationTest.class,
 })
 public class SecurityTestSuite {
     /** */
