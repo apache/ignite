@@ -80,6 +80,5 @@ public final class TestMapMessageWire implements MessageWire<TestMapMessage> {
                 }
             }
         }
-
     }
 }

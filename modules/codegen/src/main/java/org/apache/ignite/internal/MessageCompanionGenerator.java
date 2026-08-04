@@ -240,8 +240,11 @@ public abstract class MessageCompanionGenerator {
         return result;
     }
 
-    /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
+    /** Appends {@code block} to {@code body}, inserting a blank-line separator when both are non-empty. */
     protected static void appendBlock(List<String> body, List<String> block) {
+        if (block.isEmpty())
+            return;
+
         if (!body.isEmpty())
             body.add(EMPTY);
 

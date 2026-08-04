@@ -53,6 +53,5 @@ public final class TestCollectionsMessageWire implements MessageWire<TestCollect
                     e.unmarshal(ctx, clsLdr);
             }
         }
-
     }
 }

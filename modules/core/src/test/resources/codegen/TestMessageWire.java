@@ -53,7 +53,6 @@ public final class TestMessageWire implements MessageWire<TestMessage> {
 
         if (msg.cacheObject != null && ctx != null)
             msg.cacheObject.unmarshal(ctx, clsLdr);
-
     }
 
     /** */

@@ -32,7 +32,6 @@ public final class TestCustomWireFormMessageWire implements MessageWire<TestCust
     /** */
     @Override public void prepare(TestCustomWireFormMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         msg.toWireForm();
-
     }
 
     /** */
