@@ -1414,7 +1414,7 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
+    @Override public void prepareToMarshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
 
         // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
@@ -1458,7 +1458,7 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
 
         // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
@@ -1512,7 +1512,7 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
     /** Presents to reset {@link #p2pUnmarshalFut} is case of the P2P-deployment. */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        /** Are unmarshaled in {@link #unmarshal(UUID, GridKernalContext, boolean)}. */
+        /** Are unmarshaled in {@link #finishUnmarshal(UUID, GridKernalContext, boolean)}. */
         if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
             p2pUnmarshalFut = new GridFutureAdapter<>();
     }

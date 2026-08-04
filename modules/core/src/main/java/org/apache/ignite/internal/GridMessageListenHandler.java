@@ -142,7 +142,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
+    @Override public void prepareToMarshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
 
         // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
@@ -177,7 +177,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
 
         // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
@@ -227,7 +227,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         assert (clsName == null) == (predDepInfo == null);
 
-        /** Are unmarshaled in {@link #unmarshal(UUID, GridKernalContext, boolean)}. */
+        /** Are unmarshaled in {@link #finishUnmarshal(UUID, GridKernalContext, boolean)}. */
         if (predDepInfo != null)
             p2pUnmarshalFut = new GridFutureAdapter<>();
     }

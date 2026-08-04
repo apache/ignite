@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.Collection;
-import java.util.Dictionary;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,6 +25,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -77,20 +77,20 @@ public interface GridContinuousHandler extends Cloneable, Message {
     public void notifyCallback(UUID nodeId, UUID routineId, Collection<?> objs, GridKernalContext ctx);
 
     /**
-     * Deploys and marshals inner objects (called only if peer deployment is enabled).
-     * Or marshals in {@link MarshallableMessage}-style the handler. Should not be processed inside {@link Dictionary}'s
-     * threads because can issue the schema-exchange deadlock.
+     * Pre-marshals inner objects if the P2P deployment is enabled. If not, marshals the continous routine handler
+     * in the {@link MarshallableMessage}-style. Should not be processed inside a {@link DiscoverySpi}'s threads because
+     * can issue the schema-exchange deadlock.
      *
      * @param ctx Kernal context.
      * @param p2p If {@code True}, process the P2P deployment marshaling. Otherwise, marshals in {@link MarshallableMessage}-style.
      * @throws IgniteCheckedException In case of error.
      */
-    public void marshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException;
+    public void prepareToMarshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException;
 
     /**
-     * Unmarshals inner objects (called only if peer deployment is enabled). Or marshals in {@link MarshallableMessage}-style
-     * the handler. Should not be processed inside {@link Dictionary}'s threads because can issue the schema-exchange
-     * deadlock.
+     * Finishes unmarshaling inner objects if the P2P deployment is enabled. Or unmarshals the continous routine handler
+     * in the {@link MarshallableMessage}-style. Should not be processed inside a {@link DiscoverySpi}'s threads because
+     * can issue the schema-exchange deadlock.
      *
      * @param nodeId Sender node ID.
      * @param ctx Kernal context.
@@ -98,7 +98,7 @@ public interface GridContinuousHandler extends Cloneable, Message {
      *            {@link MarshallableMessage}-style.
      * @throws IgniteCheckedException In case of error.
      */
-    public void unmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException;
+    public void finishUnmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException;
 
     /**
      * Creates new batch.

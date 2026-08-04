@@ -652,7 +652,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 // Run the deployment task in the system pool to avoid blocking of the discovery thread.
                 ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
                     try {
-                        hnd.unmarshal(srcNodeId, ctx, ctx.config().isPeerClassLoadingEnabled());
+                        hnd.finishUnmarshal(srcNodeId, ctx, ctx.config().isPeerClassLoadingEnabled());
                     }
                     catch (IgniteCheckedException | IgniteException e) {
                         U.error(log, "Failed to unmarshal continuous routine handler [" +
@@ -829,7 +829,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
-        hnd.marshal(ctx, ctx.config().isPeerClassLoadingEnabled());
+        hnd.prepareToMarshal(ctx, ctx.config().isPeerClassLoadingEnabled());
 
         // Register routine locally.
         locInfos.put(routineId,
@@ -1368,7 +1368,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
                     !locInfos.containsKey(routineId)) {
-                    hnd.unmarshal(node.id(), ctx, ctx.config().isPeerClassLoadingEnabled());
+                    hnd.finishUnmarshal(node.id(), ctx, ctx.config().isPeerClassLoadingEnabled());
 
                     registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);

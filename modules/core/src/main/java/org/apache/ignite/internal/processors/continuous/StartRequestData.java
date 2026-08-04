@@ -170,7 +170,7 @@ public class StartRequestData implements Message {
     /** */
     public void marshal(GridKernalContext ctx) throws IgniteCheckedException {
         if (hnd != null)
-            hnd.marshal(ctx, ctx.config().isPeerClassLoadingEnabled());
+            hnd.prepareToMarshal(ctx, ctx.config().isPeerClassLoadingEnabled());
 
         if (nodeFilter != null)
             nodeFilterBytes = U.marshal(ctx.marshaller(), nodeFilter);
@@ -201,7 +201,7 @@ public class StartRequestData implements Message {
                 U.resolveClassLoader(ctx.config()));
         }
 
-        hnd.unmarshal(sndId, ctx, ctx.config().isPeerClassLoadingEnabled());
+        hnd.finishUnmarshal(sndId, ctx, ctx.config().isPeerClassLoadingEnabled());
 
         if (keepBinary) {
             assert hnd instanceof CacheContinuousQueryHandler : hnd;
