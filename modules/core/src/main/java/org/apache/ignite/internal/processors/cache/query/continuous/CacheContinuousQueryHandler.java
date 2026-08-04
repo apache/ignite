@@ -99,7 +99,6 @@ import static org.apache.ignite.internal.processors.cache.query.continuous.Cache
 /**
  * Continuous query handler.
  */
-@UseBinaryMarshaller
 public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler, MarshallableMessage {
     /** @see #IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD */
     public static final int DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD = 100;

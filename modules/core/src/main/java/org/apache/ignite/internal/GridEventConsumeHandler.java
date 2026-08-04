@@ -61,7 +61,6 @@ import static org.apache.ignite.events.EventType.EVTS_ALL;
 /**
  * Continuous routine handler for remote event listening.
  */
-@UseBinaryMarshaller
 public final class GridEventConsumeHandler implements GridContinuousHandler, MarshallableMessage {
     /** Default callback. */
     private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<>() {
