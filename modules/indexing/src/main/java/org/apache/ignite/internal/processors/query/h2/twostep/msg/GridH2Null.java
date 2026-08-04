@@ -26,7 +26,7 @@ import org.h2.value.ValueNull;
  */
 public class GridH2Null extends GridH2ValueMessage {
     /** */
-    public static GridH2Null INSTANCE = new GridH2Null();
+    public static final GridH2Null INSTANCE = new GridH2Null();
 
     /**
      * Disallow new instance creation.

@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.NodeConnectionCertificateCapturingTest;
 import org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest;
 import org.apache.ignite.internal.processors.security.SecurityContextInternalFuturePropagationTest;
+import org.apache.ignite.internal.processors.security.TaskNameResolutionTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCreateDestroyCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
@@ -73,8 +74,9 @@ import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteS
 import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
 import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
+import org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest;
 import org.apache.ignite.internal.thread.context.OperationContextAttributesTest;
-import org.apache.ignite.internal.thread.context.OperationContextSendAttributesTest;
+import org.apache.ignite.plugin.security.SecurityBasicPermissionSetSerializationTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
@@ -146,9 +148,11 @@ import org.junit.runners.Suite;
     NodeJoinPermissionsTest.class,
     ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
     SecurityContextInternalFuturePropagationTest.class,
+    TaskNameResolutionTest.class,
     NodeConnectionCertificateCapturingTest.class,
     OperationContextAttributesTest.class,
-    OperationContextSendAttributesTest.class,
+    OperationContextAttributePropagationTest.class,
+    SecurityBasicPermissionSetSerializationTest.class,
 })
 public class SecurityTestSuite {
     /** */

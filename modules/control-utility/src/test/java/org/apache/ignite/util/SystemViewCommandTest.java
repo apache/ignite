@@ -601,7 +601,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
                 InetSocketAddress.class.getName()),
             asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
             asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
-            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName())
+            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
+            asList("DATA_CENTER_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1",
+                String.class.getName())
         ));
 
         Set<List<String>> sqlViewColumnsView = systemView(ignite0, SQL_VIEW_COLS_VIEW).stream()

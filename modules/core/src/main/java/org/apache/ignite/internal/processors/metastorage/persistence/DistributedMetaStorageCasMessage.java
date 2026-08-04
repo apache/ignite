@@ -75,16 +75,16 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        super.prepareMarshal(marsh);
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        super.marshal(marsh);
 
         if (expVal != null && expValBytes == null)
             expValBytes = U.marshal(marsh, expVal);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh) throws IgniteCheckedException {
-        super.finishUnmarshal(marsh);
+    @Override public void unmarshal(Marshaller marsh) throws IgniteCheckedException {
+        super.unmarshal(marsh);
 
         if (expValBytes != null && expVal == null)
             expVal = U.unmarshal(marsh, expValBytes, U.gridClassLoader());

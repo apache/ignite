@@ -100,11 +100,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-opencensus</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.opencensus</groupId>
-            <artifactId>opencensus-exporter-trace-zipkin</artifactId>
-            <version>0.31.1</version>
-        </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>

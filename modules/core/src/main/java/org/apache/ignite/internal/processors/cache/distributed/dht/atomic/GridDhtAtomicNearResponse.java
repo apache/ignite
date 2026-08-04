@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -169,22 +167,6 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (errs != null)
-            errs.prepareMarshal(this, ctx.cacheContext(cacheId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (errs != null)
-            errs.finishUnmarshal(this, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */

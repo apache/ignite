@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -126,9 +126,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         if (writeEntries != null) {
             for (IgniteTxEntry entry : writeEntries) {
-                entry.unmarshal(ctx, true, ldr);
+                try {
+                    entry.initializeContext(ctx, topVer, true);
 
-                addEntry(entry);
+                    addEntry(entry);
+                }
+                catch (CacheInvalidStateException e) {
+                    // Cache was destroyed.
+                }
             }
         }
 
@@ -171,10 +176,11 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         if (F.isEmpty(vers))
             return;
 
+        // The request is done with by now, so its map is taken over instead of being copied.
         if (owned == null)
-            owned = new GridLeanMap<>(vers.size());
-
-        owned.putAll(vers);
+            owned = vers;
+        else
+            owned.putAll(vers);
     }
 
     /** {@inheritDoc} */
@@ -203,9 +209,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public void addEntries(ClassLoader ldr, Iterable<IgniteTxEntry> entries) throws IgniteCheckedException {
         for (IgniteTxEntry entry : entries) {
-            entry.unmarshal(cctx, true, ldr);
+            try {
+                entry.initializeContext(cctx, topVer, true);
 
-            addEntry(entry);
+                addEntry(entry);
+            }
+            catch (CacheInvalidStateException e) {
+                // Cache was destroyed.
+            }
         }
     }
 

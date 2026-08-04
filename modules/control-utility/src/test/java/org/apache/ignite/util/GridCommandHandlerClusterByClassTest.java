@@ -2367,7 +2367,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         cmdArgs.put("--wal", asList(new String[] {"print"}, new String[] {"delete"}));
         cmdArgs.put("--meta", asList(new String[] {"help"}, new String[] {"list"}));
-        cmdArgs.put("--tracing-configuration", singletonList(new String[] {"get_all"}));
         cmdArgs.put("--consistency", asList(
             new String[] {"repair", CACHE, "cache", PARTITIONS, "0", STRATEGY, "LWW"},
             new String[] {"status"},

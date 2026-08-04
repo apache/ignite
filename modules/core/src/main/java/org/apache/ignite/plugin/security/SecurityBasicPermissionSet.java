@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,24 +46,29 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
     /** Cache permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
+    @Order(0)
+    Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
 
     /** Task permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
+    @Order(1)
+    Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
 
     /** Service permissions. */
     @GridToStringInclude
-    private transient Map<String, Collection<SecurityPermission>> servicePermissions = isSecurityCompatibilityMode()
+    @Order(2)
+    transient Map<String, Collection<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
             ? compatibleServicePermissions()
-            : new HashMap<String, Collection<SecurityPermission>>();
+            : new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude
-    private Collection<SecurityPermission> systemPermissions;
+    @Order(3)
+    Collection<SecurityPermission> sysPermissions;
 
     /** Default allow all. */
-    private boolean dfltAllowAll;
+    @Order(4)
+    boolean dfltAllowAll;
 
     /**
      * Setter for set cache permission map.
@@ -89,21 +95,21 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /**
      * Setter for set service permission map.
      *
-     * @param servicePermissions Service permissions.
+     * @param srvcPermissions Service permissions.
      */
-    public void setServicePermissions(Map<String, Collection<SecurityPermission>> servicePermissions) {
+    public void setServicePermissions(Map<String, Collection<SecurityPermission>> srvcPermissions) {
         A.notNull(taskPermissions, "servicePermissions");
 
-        this.servicePermissions = servicePermissions;
+        this.srvcPermissions = srvcPermissions;
     }
 
     /**
      * Setter for set collection system permission.
      *
-     * @param systemPermissions System permissions.
+     * @param sysPermissions System permissions.
      */
-    public void setSystemPermissions(Collection<SecurityPermission> systemPermissions) {
-        this.systemPermissions = systemPermissions;
+    public void setSystemPermissions(Collection<SecurityPermission> sysPermissions) {
+        this.sysPermissions = sysPermissions;
     }
 
     /**
@@ -127,12 +133,12 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
     /** {@inheritDoc} */
     @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
-        return servicePermissions;
+        return srvcPermissions;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
-        return systemPermissions;
+        return sysPermissions;
     }
 
     /** {@inheritDoc} */
@@ -153,8 +159,8 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         return dfltAllowAll == other.dfltAllowAll &&
             Objects.equals(cachePermissions, other.cachePermissions) &&
             Objects.equals(taskPermissions, other.taskPermissions) &&
-            Objects.equals(servicePermissions, other.servicePermissions) &&
-            Objects.equals(systemPermissions, other.systemPermissions);
+            Objects.equals(srvcPermissions, other.srvcPermissions) &&
+            Objects.equals(sysPermissions, other.sysPermissions);
     }
 
     /** {@inheritDoc} */
@@ -163,8 +169,8 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
         res = 31 * res + (cachePermissions != null ? cachePermissions.hashCode() : 0);
         res = 31 * res + (taskPermissions != null ? taskPermissions.hashCode() : 0);
-        res = 31 * res + (servicePermissions != null ? servicePermissions.hashCode() : 0);
-        res = 31 * res + (systemPermissions != null ? systemPermissions.hashCode() : 0);
+        res = 31 * res + (srvcPermissions != null ? srvcPermissions.hashCode() : 0);
+        res = 31 * res + (sysPermissions != null ? sysPermissions.hashCode() : 0);
 
         return res;
     }
@@ -176,7 +182,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         out.defaultWriteObject();
 
         if (serializeVersion() >= 2)
-            U.writeMap(out, servicePermissions);
+            U.writeMap(out, srvcPermissions);
     }
 
     /**
@@ -186,14 +192,14 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         in.defaultReadObject();
 
         if (serializeVersion() >= 2)
-            servicePermissions = U.readMap(in);
+            srvcPermissions = U.readMap(in);
 
-        if (servicePermissions == null) {
+        if (srvcPermissions == null) {
             // Allow all for compatibility mode
             if (serializeVersion() < 2)
-                servicePermissions = compatibleServicePermissions();
+                srvcPermissions = compatibleServicePermissions();
             else
-                servicePermissions = Collections.emptyMap();
+                srvcPermissions = Collections.emptyMap();
         }
     }
 

@@ -32,10 +32,13 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -144,7 +147,7 @@ public class TcpDiscoveryIoSession {
      * @return Deserialized message instance.
      * @throws IgniteCheckedException If deserialization fails.
      */
-    <T> T readMessage() throws IgniteCheckedException, IOException {
+    <T extends Message> T readMessage() throws IgniteCheckedException, IOException {
         try {
             byte b0 = (byte)in.read();
             byte b1 = (byte)in.read();
@@ -166,8 +169,6 @@ public class TcpDiscoveryIoSession {
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
 
-            MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
-
             boolean finished;
 
             do {
@@ -180,7 +181,7 @@ public class TcpDiscoveryIoSession {
 
                 msgBuf.limit(read);
 
-                finished = msgSer.readFrom(msg, msgReader);
+                finished = MessageSerialization.readFrom(spi.messageFactory(), msg, msgReader);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
@@ -195,6 +196,8 @@ public class TcpDiscoveryIoSession {
                 }
             }
             while (!finished);
+
+            MessageMarshalling.unmarshal(msg, ((IgniteEx)spi.ignite()).context());
 
             return (T)msg;
         }
@@ -237,8 +240,8 @@ public class TcpDiscoveryIoSession {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    void serializeMessage(Message m, OutputStream out) throws IOException {
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+    void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
+        MessageMarshalling.marshal(m, ((IgniteEx)spi.ignite()).context(), null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);
@@ -249,7 +252,7 @@ public class TcpDiscoveryIoSession {
             // Should be cleared before first operation.
             msgBuf.clear();
 
-            finished = msgSer.writeTo(m, msgWriter);
+            finished = MessageSerialization.writeTo(spi.messageFactory(), m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }

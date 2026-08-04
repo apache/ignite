@@ -72,6 +72,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -1269,7 +1270,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         // Do not give own loopback to avoid requesting current node.
         if (!node.equals(locNode))
-            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+            addrs.removeIf(addr -> addr.getAddress() == null ||
+                (addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr)));
 
         addrs.sort(U.inetAddressesComparator(sameHost));
 
@@ -1809,7 +1811,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IOException If IO failed or read timed out.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException, IgniteCheckedException {
+    protected <T extends Message> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException, IgniteCheckedException {
         Socket sock = ses.socket();
 
         assert sock != null;
