@@ -1953,7 +1953,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
-        toWire(ioMsg);
+        marshal(ioMsg);
 
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
@@ -2021,7 +2021,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 ackC.apply(null);
         }
         else {
-            toWire(ioMsg);
+            marshal(ioMsg);
 
             sendMarshalled(node, ioMsg, ackC);
         }
@@ -2038,7 +2038,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-        toWire(ioMsg);
+        marshal(ioMsg);
 
         return ioMsg;
     }
@@ -2047,7 +2047,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * Takes {@code ioMsg} to the wire, enforcing the once-only contract: a wrap goes to the wire exactly once before
      * transmission (the step is not idempotent, see {@code MessageMarshalOnceTest}).
      */
-    private void toWire(GridIoMessage ioMsg) throws IgniteCheckedException {
+    private void marshal(GridIoMessage ioMsg) throws IgniteCheckedException {
         assert !ioMsg.onWire() : "GridIoMessage is taken to the wire twice: " + ioMsg;
 
         MessageMarshalling.marshal(ioMsg, ctx, null);

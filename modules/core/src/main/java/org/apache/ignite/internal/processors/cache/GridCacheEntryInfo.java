@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;

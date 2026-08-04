@@ -613,7 +613,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (depEnabled)
                 cctx.deploy().ignoreOwnership(true);
 
-            fromWire(nodeId, cacheMsg);
+            unmarshall(nodeId, cacheMsg);
 
             if (cacheMsg.classError() != null)
                 processFailedMessage(nodeId, cacheMsg, c, plc);
@@ -1516,7 +1516,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Message.
      */
     @SuppressWarnings({"ErrorNotRethrown"})
-    private void fromWire(UUID nodeId, GridCacheMessage cacheMsg) {
+    private void unmarshall(UUID nodeId, GridCacheMessage cacheMsg) {
         if (cctx.localNodeId().equals(nodeId))
             return;
 

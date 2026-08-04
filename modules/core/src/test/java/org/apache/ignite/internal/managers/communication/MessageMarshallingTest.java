@@ -22,9 +22,9 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -32,9 +32,9 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -111,12 +111,12 @@ public class MessageMarshallingTest extends GridCommonAbstractTest {
     private static class PlainWireFormMessage implements PlainMessage, SelfMarshallingMessage {
         /** {@inheritDoc} */
         @Override public void selfMarshal() {
-            STEPS.add("toWireForm");
+            STEPS.add("selfMarshal");
         }
 
         /** {@inheritDoc} */
         @Override public void selfUnmarshal() {
-            STEPS.add("fromWireForm");
+            STEPS.add("selfUnmarshal");
         }
     }
 
@@ -134,12 +134,12 @@ public class MessageMarshallingTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void selfMarshal() {
-            STEPS.add("toWireForm");
+            STEPS.add("selfMarshal");
         }
 
         /** {@inheritDoc} */
         @Override public void selfUnmarshal() {
-            STEPS.add("fromWireForm");
+            STEPS.add("selfUnmarshal");
         }
     }
 
@@ -147,12 +147,12 @@ public class MessageMarshallingTest extends GridCommonAbstractTest {
     private static class OwnStepMessage implements SelfMarshallingMessage {
         /** {@inheritDoc} */
         @Override public void selfMarshal() {
-            STEPS.add("toWireForm");
+            STEPS.add("selfMarshal");
         }
 
         /** {@inheritDoc} */
         @Override public void selfUnmarshal() {
-            STEPS.add("fromWireForm");
+            STEPS.add("selfUnmarshal");
         }
     }
 
