@@ -924,7 +924,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * {@link InMemoryCachedDistributedMetaStorageBridge#localFullData()} invoked on {@link #bridge}.
      */
     @TestOnly
-    private Map<String, byte[]> localFullData() {
+    public Map<String, byte[]> localFullData() {
         return bridge.localFullData();
     }
 
