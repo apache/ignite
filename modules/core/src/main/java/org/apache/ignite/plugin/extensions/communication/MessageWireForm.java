@@ -38,7 +38,7 @@ public interface MessageWireForm<M extends Message> {
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public void toWire(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
+    public void walkOut(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException;
 
     /**
@@ -49,7 +49,7 @@ public interface MessageWireForm<M extends Message> {
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader to resolve the classes with.
      */
-    public void fromWire(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
+    public void walkIn(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
     /**
@@ -60,18 +60,18 @@ public interface MessageWireForm<M extends Message> {
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    default void fromWire(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        fromWire(msg, kctx, null, U.resolveClassLoader(kctx.config()));
+    default void walkIn(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+        walkIn(msg, kctx, null, U.resolveClassLoader(kctx.config()));
     }
 
     /**
-     * Walks only the {@code @NioField} fields (routing headers) on the NIO thread — unlike the {@code fromWire}
+     * Walks only the {@code @NioField} fields (routing headers) on the NIO thread — unlike the {@code walkIn}
      * overloads, which take the full payload later on a worker thread. No-op unless the message has {@code @NioField}s.
      *
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    default void fromWireNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    default void walkInNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         // No-op.
     }
 }

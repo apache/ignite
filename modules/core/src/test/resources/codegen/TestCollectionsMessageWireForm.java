@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
  */
 public final class TestCollectionsMessageWireForm implements MessageWireForm<TestCollectionsMessage> {
     /** */
-    @Override public void toWire(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void walkOut(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.cacheObjectSet != null) {
@@ -44,7 +44,7 @@ public final class TestCollectionsMessageWireForm implements MessageWireForm<Tes
     }
 
     /** */
-    @Override public void fromWire(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void walkIn(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.cacheObjectSet != null) {

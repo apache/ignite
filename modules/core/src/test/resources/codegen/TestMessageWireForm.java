@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
  */
 public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
     /** */
-    @Override public void toWire(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void walkOut(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
@@ -45,7 +45,7 @@ public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
     }
 
     /** */
-    @Override public void fromWire(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void walkIn(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
@@ -56,7 +56,7 @@ public final class TestMessageWireForm implements MessageWireForm<TestMessage> {
     }
 
     /** */
-    @Override public void fromWireNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void walkInNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.nioMsg != null)
             MessageWire.fromWire(msg.nioMsg, kctx);
     }

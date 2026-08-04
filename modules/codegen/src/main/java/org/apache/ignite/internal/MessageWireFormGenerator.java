@@ -92,8 +92,8 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
     /** {@inheritDoc} */
     @Override protected void generateBody(List<VariableElement> fields) {
-        generateToWireMethod(fields);
-        generateFromWireMethods(fields);
+        generateWalkOutMethod(fields);
+        generateWalkInMethods(fields);
     }
 
     /** {@inheritDoc} */
@@ -119,7 +119,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     }
 
     /** Cache-free read-back of a {@code @NioField} message field on the NIO thread (no cache context available). */
-    private List<String> fromWireNioField(String accessor) {
+    private List<String> walkInNioField(String accessor) {
         imports.add(MESSAGE_WIRE_CLS);
 
         List<String> code = new ArrayList<>();
@@ -168,13 +168,13 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         return loopDepth > 0 || elemType.getKind() == TypeKind.TYPEVAR;
     }
 
-    /** Generates the {@code toWire} method: every field on the way out. */
-    private void generateToWireMethod(List<VariableElement> orderedFields) {
+    /** Generates the {@code walkOut} method: every field on the way out. */
+    private void generateWalkOutMethod(List<VariableElement> orderedFields) {
         imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
         imports.add(GRID_KERNAL_CONTEXT_CLS);
         imports.add(CACHE_OBJECT_CONTEXT_CLS);
 
-        String signature = "toWire(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
+        String signature = "walkOut(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
 
         hasStatements |= emitMethod(methods, signature, body -> {
             usesMsgFactory = false;
@@ -195,8 +195,8 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         });
     }
 
-    /** Generates the {@code fromWire} overloads: the NIO-eligible fields apart from the rest. */
-    private void generateFromWireMethods(List<VariableElement> orderedFields) {
+    /** Generates the {@code walkIn} overloads: the NIO-eligible fields apart from the rest. */
+    private void generateWalkInMethods(List<VariableElement> orderedFields) {
         List<VariableElement> nioFields = new ArrayList<>();
         List<VariableElement> workerFields = new ArrayList<>();
 
@@ -222,15 +222,15 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
         String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
 
-        generateFromWireMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
+        generateWalkInMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
 
         if (!nioFields.isEmpty())
-            generateFromWireNioMethod(msgParam, nioFields);
+            generateWalkInNioMethod(msgParam, nioFields);
     }
 
-    /** Generates the cache-aware {@code fromWire} overload: the full field set, with cache context and class loader. */
-    private void generateFromWireMethod(String params, List<VariableElement> fields) {
-        hasStatements |= emitMethod(methods, "fromWire(" + params + ")", body -> {
+    /** Generates the cache-aware {@code walkIn} overload: the full field set, with cache context and class loader. */
+    private void generateWalkInMethod(String params, List<VariableElement> fields) {
+        hasStatements |= emitMethod(methods, "walkIn(" + params + ")", body -> {
             usesMsgFactory = false;
 
             List<String> code = new ArrayList<>();
@@ -249,11 +249,11 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
         });
     }
 
-    /** Generates the {@code fromWireNio} method for NIO-eligible {@code @Message} fields. */
-    private void generateFromWireNioMethod(String params, List<VariableElement> nioFields) {
-        hasStatements |= emitMethod(methods, "fromWireNio(" + params + ")", body -> {
+    /** Generates the {@code walkInNio} method for NIO-eligible {@code @Message} fields. */
+    private void generateWalkInNioMethod(String params, List<VariableElement> nioFields) {
+        hasStatements |= emitMethod(methods, "walkInNio(" + params + ")", body -> {
             for (VariableElement f : nioFields)
-                appendBlock(body, fromWireNioField(fieldAccessor(f)));
+                appendBlock(body, walkInNioField(fieldAccessor(f)));
         });
     }
 

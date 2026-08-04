@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
  */
 public final class TestMarshalledArrayMapMessageWireForm implements MessageWireForm<TestMarshalledArrayMapMessage> {
     /** */
-    @Override public void toWire(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void walkOut(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
 
         CacheObjectContext ctx = cacheObjCtx;
@@ -78,7 +78,7 @@ public final class TestMarshalledArrayMapMessageWireForm implements MessageWireF
     }
 
     /** */
-    @Override public void fromWire(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void walkIn(TestMarshalledArrayMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();
 
         CacheObjectContext ctx = cacheObjCtx;

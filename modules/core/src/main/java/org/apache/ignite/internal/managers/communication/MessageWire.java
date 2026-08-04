@@ -78,7 +78,7 @@ public final class MessageWire {
         MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
 
         if (wireForm != null)
-            wireForm.toWire(msg, kctx, cacheObjCtx);
+            wireForm.walkOut(msg, kctx, cacheObjCtx);
     }
 
     /**
@@ -112,7 +112,7 @@ public final class MessageWire {
         MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
 
         if (wireForm != null)
-            wireForm.fromWire(msg, kctx, cacheObjCtx, clsLdr);
+            wireForm.walkIn(msg, kctx, cacheObjCtx, clsLdr);
 
         MessageMarshaller<M> marshaller = marshaller(msgFactory, msg);
 
@@ -139,7 +139,7 @@ public final class MessageWire {
         MessageWireForm<M> wireForm = wireForm(msgFactory, msg);
 
         if (wireForm != null)
-            wireForm.fromWire(msg, kctx);
+            wireForm.walkIn(msg, kctx);
 
         MessageMarshaller<M> marshaller = marshaller(msgFactory, msg);
 
@@ -161,7 +161,7 @@ public final class MessageWire {
         MessageWireForm<M> wireForm = wireForm(factory(kctx), msg);
 
         if (wireForm != null)
-            wireForm.fromWireNio(msg, kctx);
+            wireForm.walkInNio(msg, kctx);
     }
 
     /** @return the message factory of {@code kctx}. */
