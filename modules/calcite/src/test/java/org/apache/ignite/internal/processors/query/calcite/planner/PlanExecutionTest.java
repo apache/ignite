@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.Assert;
@@ -72,7 +73,6 @@ import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  *
@@ -85,7 +85,7 @@ public class PlanExecutionTest extends AbstractPlannerTest {
 
         CalciteMessageFactory msgFactory = new CalciteMessageFactory();
 
-        msgFactory.init(jdk(), jdk());
+        msgFactory.init(Marshallers.jdk(), Marshallers.jdk());
 
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{msgFactory});
