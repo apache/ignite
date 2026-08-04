@@ -449,10 +449,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 UUID routineId = e.getKey();
                 ContinousRoutineLocalInfo info = e.getValue();
 
-                assert !ctx.config().isPeerClassLoadingEnabled() ||
-                    !(info.hnd instanceof CacheContinuousQueryHandler) ||
-                    ((CacheContinuousQueryHandler<?, ?>)info.hnd).isMarshalled();
-
                 data.addItem(new ContinousRoutineDiscoveryDataItem(routineId,
                     info.prjPred,
                     info.hnd,
@@ -835,11 +831,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
-        if (ctx.config().isPeerClassLoadingEnabled()) {
+        if (ctx.config().isPeerClassLoadingEnabled())
             hnd.p2pMarshal(ctx);
-
-            assert !(hnd instanceof CacheContinuousQueryHandler) || ((CacheContinuousQueryHandler)hnd).isMarshalled();
-        }
 
         // Register routine locally.
         locInfos.put(routineId,

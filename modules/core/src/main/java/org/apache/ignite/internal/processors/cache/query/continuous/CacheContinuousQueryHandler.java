@@ -1421,17 +1421,18 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
-        if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
-            return;
-
-        if (requiresDeployment(rmtFilter))
+        /**
+         * Some filters, factories might be an Ignite-internals and do not require external marshaling. But there is no
+         * quarantine that a user-defuned class is not included in a wrap like {@link SecurityAwareFilter}. Hence, we always
+         * externally-marshall here.
+         */
+        if (rmtFilter != null)
             rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
 
-        if (requiresDeployment(rmtFilterFactory))
+        if (rmtFilterFactory != null)
             rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
 
-        if (requiresDeployment(rmtTransFactory))
+        if (rmtTransFactory != null)
             rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
     }
 
@@ -1499,15 +1500,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
             throw err;
         }
-    }
-
-    /**
-     * @return Whether the handler is marshalled for peer class loading.
-     */
-    public boolean isMarshalled() {
-        return (!requiresDeployment(rmtFilter) || rmtFilterDep != null)
-            && (!requiresDeployment(rmtFilterFactory) || rmtFilterFactoryDep != null)
-            && (!requiresDeployment(rmtTransFactory) || rmtTransFactoryDep != null);
     }
 
     /** {@inheritDoc} */
@@ -1788,10 +1780,5 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** */
     Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers() {
         return Collections.unmodifiableMap(entryBufs);
-    }
-
-    /** */
-    private static boolean requiresDeployment(@Nullable Object obj) {
-        return obj != null && !U.isGrid(obj.getClass());
     }
 }
