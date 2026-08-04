@@ -619,7 +619,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 IgniteResource.INSTANCE.selectForUpdateRequiresPessimisticTx().str(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        // waitSeconds: null = use tx remaining time (0), 0 = NOWAIT (-1), positive = ms.
+        // Convert SQL waitSeconds to the internal lock-wait representation:
+        // null means use the remaining transaction time or the query timeout and is encoded as 0;
+        // 0 requests NOWAIT and is encoded as -1; a positive value is converted from seconds to milliseconds.
         Long waitSeconds = plan.waitSeconds();
         long waitMs;
 
@@ -656,9 +658,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /**
-     * Executes the inner SELECT once and tries to lock the selected row versions.
+     * Executes the inner SELECT and attempts to acquire transaction locks for the selected row versions.
      *
-     * @return Result cursor when locking succeeds, or {@code null} when the SELECT must be executed again.
+     * @param qry Root query for this execution attempt.
+     * @param plan SELECT FOR UPDATE plan.
+     * @param userTx Transaction that acquires the locks.
+     * @param waitMs Lock wait time in the internal representation.
+     * @param deadline Absolute lock acquisition deadline.
+     * @return Result cursor if all required locks were acquired, or {@code null} if at least one lock was not acquired.
      */
     @Nullable private FieldsQueryCursor<List<?>> tryExecuteForUpdate(
         RootQuery<Row> qry,

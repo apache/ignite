@@ -34,6 +34,7 @@ import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -156,7 +157,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
      *
      * <p>Steps:
      * <ol>
-     *   <li>Validate that the inner query is a plain {@link SqlSelect} (not UNION etc.).</li>
+     *   <li>Unwrap optional ORDER BY and validate that the inner query is a plain {@link SqlSelect}
+     *       (not UNION etc.).</li>
      *   <li>Collect base tables from the FROM clause.</li>
      *   <li>Append OF columns for validation and lock columns for every table.</li>
      *   <li>Prepare the modified SELECT as a normal {@link MultiStepQueryPlan}.</li>
@@ -168,14 +170,24 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         throws ValidationException {
         SqlNode innerQry = forUpdate.query();
 
+        SqlOrderBy orderBy = null;
+
+        if (innerQry instanceof SqlOrderBy) {
+            orderBy = (SqlOrderBy)innerQry;
+            innerQry = orderBy.query;
+        }
+
         if (!(innerQry instanceof SqlSelect))
             throw new IgniteSQLException(
                 "SELECT FOR UPDATE is only supported for plain SELECT statements",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         SqlSelect select = (SqlSelect)innerQry;
+        SqlNodeList orderList = orderBy == null ? select.getOrderList() : orderBy.orderList;
+        SqlNode offset = orderBy == null ? select.getOffset() : orderBy.offset;
+        SqlNode fetch = orderBy == null ? select.getFetch() : orderBy.fetch;
 
-        validateSelectForUpdateShape(select, ctx.planner());
+        validateSelectForUpdateShape(select, orderList, ctx.planner());
 
         // Unwrap optional AS alias around the table reference.
         SqlNode from = select.getFrom();
@@ -219,9 +231,9 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
             select.getHaving(),
             select.getWindowList(),
             select.getQualify(),
-            select.getOrderList(),
-            select.getOffset(),
-            select.getFetch(),
+            orderList,
+            offset,
+            fetch,
             select.getHints()
         );
 
@@ -270,7 +282,11 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     }
 
     /** Rejects SELECT forms whose result rows cannot be mapped one-to-one to cache entries. */
-    private void validateSelectForUpdateShape(SqlSelect select, IgnitePlanner planner) {
+    private void validateSelectForUpdateShape(
+        SqlSelect select,
+        @Nullable SqlNodeList orderList,
+        IgnitePlanner planner
+    ) {
         if (select.isDistinct())
             throw unsupportedSelectForUpdateClause("DISTINCT");
 
@@ -280,7 +296,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         if (select.getHaving() != null)
             throw unsupportedSelectForUpdateClause("HAVING");
 
-        if (planner.isAggregate(select))
+        if (planner.isAggregate(select, orderList))
             throw unsupportedSelectForUpdateClause("aggregate functions");
     }
 
@@ -437,6 +453,12 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         IgnitePlanner planner = ctx.planner();
 
         SqlNode sql = ((SqlExplain)explain).getExplicandum();
+
+        if (sql instanceof IgniteSqlSelectForUpdate) {
+            SelectForUpdatePlan forUpdatePlan = prepareSelectForUpdate((IgniteSqlSelectForUpdate)sql, ctx);
+
+            return new ExplainPlan(ctx.query(), forUpdatePlan.innerPlan().textPlan(), explainFieldsMetadata(ctx));
+        }
 
         // Validate
         sql = planner.validate(sql);

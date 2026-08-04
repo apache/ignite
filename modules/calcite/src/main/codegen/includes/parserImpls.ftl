@@ -818,6 +818,60 @@ SqlDrop SqlDropView(Span s, boolean replace) :
 }
 
 /**
+ * Parses EXPLAIN PLAN, including SELECT ... FOR UPDATE as the explicandum.
+ */
+SqlNode IgniteSqlExplain() :
+{
+    SqlNode stmt;
+    SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+    SqlExplain.Depth depth;
+    final SqlExplainFormat format;
+}
+{
+    <EXPLAIN> <PLAN>
+    [ detailLevel = ExplainDetailLevel() ]
+    depth = ExplainDepth()
+    (
+        LOOKAHEAD(2)
+        <AS> <XML> { format = SqlExplainFormat.XML; }
+    |
+        LOOKAHEAD(2)
+        <AS> <JSON> { format = SqlExplainFormat.JSON; }
+    |
+        <AS> <DOT_FORMAT> { format = SqlExplainFormat.DOT; }
+    |
+        { format = SqlExplainFormat.TEXT; }
+    )
+    <FOR> stmt = IgniteSqlQueryOrDml() {
+        return new SqlExplain(getPos(),
+            stmt,
+            detailLevel.symbol(SqlParserPos.ZERO),
+            depth.symbol(SqlParserPos.ZERO),
+            format.symbol(SqlParserPos.ZERO),
+            nDynamicParams);
+    }
+}
+
+/** Parses a query, including SELECT ... FOR UPDATE, or a DML statement. */
+SqlNode IgniteSqlQueryOrDml() :
+{
+    SqlNode stmt;
+}
+{
+    (
+        stmt = SqlSelectForUpdate()
+    |
+        stmt = SqlInsert()
+    |
+        stmt = SqlDelete()
+    |
+        stmt = SqlUpdate()
+    |
+        stmt = SqlMerge()
+    ) { return stmt; }
+}
+
+/**
  * Parses a query optionally followed by FOR UPDATE [OF col [, col ...]] [WAIT n | NOWAIT].
  *
  * When FOR UPDATE is absent the inner query node is returned unchanged, so this rule

@@ -17,28 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode.ALL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -47,24 +45,18 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 /**
  * Integration tests for {@code SELECT ... FOR UPDATE} syntax.
  */
-public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
+public class SelectForUpdateIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
-    private static Ignite ignite0;
+    private static IgniteEx ignite0;
 
     /** */
-    private static Ignite ignite1;
-
-    /** */
-    private static Ignite client;
+    private static IgniteEx ignite1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setTransactionConfiguration(new TransactionConfiguration()
                 .setTxAwareQueriesEnabled(true))
-            .setSqlConfiguration(new SqlConfiguration()
-                .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()
-                    .setDefault(true)))
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
@@ -72,22 +64,45 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        ignite0 = startGridsMultiThreaded(3);
+        ignite0 = grid(0);
         ignite1 = grid(1);
-        client = startClientGrid();
-
-        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite0 = null;
         ignite1 = null;
-        client = null;
 
         super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected QueryChecker assertQuery(Ignite ignite, String qry) {
+        Transaction tx = ignite.transactions().tx();
+        QueryChecker checker;
+
+        if (tx == null)
+            checker = super.assertQuery(ignite, qry);
+        else {
+            checker = new QueryChecker(qry, tx, ALL) {
+                @Override public void check() {
+                    tx.suspend();
+
+                    try {
+                        super.check();
+                    }
+                    finally {
+                        tx.resume();
+                    }
+                }
+
+                @Override protected QueryEngine getEngine() {
+                    return Commons.lookupComponent(((IgniteEx)ignite).context(), QueryEngine.class);
+                }
+            };
+        }
+
+        return checker;
     }
 
     /** {@inheritDoc} */
@@ -125,10 +140,10 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> lockFut = GridTestUtils.runAsync(() -> {
             try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                assertRows(
-                    sql("SELECT p.id FROM Person p JOIN Dept d ON p.deptId = d.id WHERE p.id = 1 FOR UPDATE"),
-                    Arrays.asList(1)
-                );
+                assertQuery(ignite0,
+                    "SELECT p.id FROM Person p JOIN Dept d ON p.deptId = d.id WHERE p.id = 1 FOR UPDATE")
+                    .returns(1)
+                    .check();
 
                 locked.countDown();
 
@@ -161,10 +176,10 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> lockFut = GridTestUtils.runAsync(() -> {
             try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                assertRows(
-                    sql("SELECT p.id FROM Person p JOIN Dept d ON p.deptId = d.id WHERE p.id = 1 FOR UPDATE OF p.id"),
-                    Arrays.asList(1)
-                );
+                assertQuery(ignite0,
+                    "SELECT p.id FROM Person p JOIN Dept d ON p.deptId = d.id WHERE p.id = 1 FOR UPDATE OF p.id")
+                    .returns(1)
+                    .check();
 
                 locked.countDown();
 
@@ -180,8 +195,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
             assertTableRowLocked(ignite1, "Person", 1);
 
             try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                assertRows(sql(ignite1, "SELECT * FROM Dept WHERE id = 1 FOR UPDATE NOWAIT"),
-                    Arrays.asList(1, "Engineering"));
+                assertQuery(ignite1, "SELECT * FROM Dept WHERE id = 1 FOR UPDATE NOWAIT")
+                    .returns(1, "Engineering")
+                    .check();
 
                 tx.commit();
             }
@@ -213,9 +229,11 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> lockFut = GridTestUtils.runAsync(() -> {
             try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                assertRows(sql("SELECT employee.id, manager.id FROM Person employee " +
+                assertQuery(ignite0, "SELECT employee.id, manager.id FROM Person employee " +
                     "JOIN Person manager ON employee.managerId = manager.id " +
-                    "WHERE employee.id = 1 FOR UPDATE OF " + alias + ".id"), Arrays.asList(1, 2));
+                    "WHERE employee.id = 1 FOR UPDATE OF " + alias + ".id")
+                    .returns(1, 2)
+                    .check();
 
                 locked.countDown();
 
@@ -241,15 +259,16 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     /** FOR UPDATE without an active transaction produces "requires an active PESSIMISTIC transaction". */
     @Test
     public void testSelectForUpdateOutsideTransaction() {
-        GridTestUtils.assertThrowsAnyCause(log, () -> sql("SELECT id FROM Person FOR UPDATE"),
-            IgniteSQLException.class, "SELECT FOR UPDATE requires an active PESSIMISTIC transaction");
+        assertThrows("SELECT id FROM Person FOR UPDATE", IgniteSQLException.class,
+            IgniteResource.INSTANCE.selectForUpdateRequiresPessimisticTx().str());
     }
 
     /** SELECT FOR UPDATE inside an OPTIMISTIC transaction throws an appropriate error. */
     @Test
     public void testSelectForUpdateInOptimisticTransaction() {
         try (Transaction tx = ignite0.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
-            GridTestUtils.assertThrowsAnyCause(log, () -> sql("SELECT * FROM Person WHERE id = 1 FOR UPDATE"),
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> sql(ignite0, "SELECT * FROM Person WHERE id = 1 FOR UPDATE"),
                 IgniteSQLException.class, "PESSIMISTIC");
         }
     }
@@ -286,14 +305,64 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
             "aggregate functions");
     }
 
+    /** An aggregate used only by ORDER BY still collapses all source rows into one result row. */
+    @Test
+    public void testSelectForUpdateRejectsAggregateInOrderBy() {
+        assertSelectForUpdateUnsupported(
+            "SELECT 1 FROM Person ORDER BY COUNT(*) FOR UPDATE",
+            "aggregate functions");
+    }
+
+    /** SELECT FOR UPDATE cannot lock rows exposed by a system view. */
+    @Test
+    public void testSelectForUpdateRejectsSystemView() {
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertThrows(ignite0, "SELECT node_id FROM SYS.NODES FOR UPDATE", IgniteSQLException.class,
+                "Column '_KEY' not found in table 'NODES'");
+        }
+    }
+
+    /** SELECT FOR UPDATE cannot lock rows produced by a table function. */
+    @Test
+    public void testSelectForUpdateRejectsTableFunction() {
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertThrows(ignite0, "SELECT x FROM TABLE(SYSTEM_RANGE(1, 2)) FOR UPDATE", IgniteSQLException.class,
+                "SELECT FOR UPDATE is only supported for tables and JOINs of tables");
+        }
+    }
+
+    /** A windowed aggregate in ORDER BY preserves one result row per source row. */
+    @Test
+    public void testSelectForUpdateSupportsWindowedAggregateInOrderBy() {
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertQuery(ignite0, "SELECT id FROM Person ORDER BY COUNT(*) OVER (ORDER BY id DESC) LIMIT 2 FOR UPDATE")
+                .ordered()
+                .returns(30)
+                .returns(29)
+                .check();
+        }
+    }
+
+    /** ORDER BY, LIMIT and OFFSET are preserved while preparing SELECT FOR UPDATE. */
+    @Test
+    public void testSelectForUpdateSupportsOrderByLimitAndOffset() {
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertQuery(ignite0, "SELECT id FROM Person ORDER BY id DESC LIMIT 2 OFFSET 1 FOR UPDATE")
+                .ordered()
+                .returns(29)
+                .returns(28)
+                .check();
+        }
+    }
+
     /** Windowed aggregates preserve the identity of every source row and remain supported. */
     @Test
     public void testSelectForUpdateSupportsWindowedAggregates() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            assertRows(
-                sql("SELECT id, COUNT(*) OVER () FROM Person WHERE id <= 2 FOR UPDATE"),
-                Arrays.asList(1, 2L),
-                Arrays.asList(2, 2L));
+            assertQuery(ignite0, "SELECT id, COUNT(*) OVER () FROM Person WHERE id <= 2 FOR UPDATE")
+                .returns(1, 2L)
+                .returns(2, 2L)
+                .check();
         }
     }
 
@@ -301,9 +370,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void forUpdateOfColumn() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            List<List<?>> rows = sql("SELECT id FROM Person FOR UPDATE OF id");
-
-            assertEquals(30, rows.size());
+            assertQuery(ignite0, "SELECT id FROM Person FOR UPDATE OF id")
+                .resultSize(30)
+                .check();
         }
     }
 
@@ -311,9 +380,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void forUpdateWait() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            List<List<?>> rows = sql("SELECT id FROM Person FOR UPDATE WAIT 5");
-
-            assertEquals(30, rows.size());
+            assertQuery(ignite0, "SELECT id FROM Person FOR UPDATE WAIT 5")
+                .resultSize(30)
+                .check();
         }
     }
 
@@ -321,9 +390,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void forUpdateNowait() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            List<List<?>> rows = sql("SELECT id FROM Person FOR UPDATE NOWAIT");
-
-            assertEquals(30, rows.size());
+            assertQuery(ignite0, "SELECT id FROM Person FOR UPDATE NOWAIT")
+                .resultSize(30)
+                .check();
         }
     }
 
@@ -344,14 +413,13 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
             });
         }
 
-        IgniteInternalFuture<List<List<?>>> selectFut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture<?> selectFut = GridTestUtils.runAsync(() -> {
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                List<List<?>> rows =
-                    sql(client, "SELECT id, age FROM Person WHERE id = 10 FOR UPDATE WAIT 5");
+                assertQuery("SELECT id, age FROM Person WHERE id = 10 FOR UPDATE WAIT 5")
+                    .returns(10, 100)
+                    .check();
 
                 tx.commit();
-
-                return rows;
             }
         });
 
@@ -359,23 +427,25 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
             assertTrue("The first SELECT result was not intercepted",
                 batchBlocked.await(10, TimeUnit.SECONDS));
 
-            assertEquals(1L, sql("UPDATE Person SET age = 100 WHERE id = 10").get(0).get(0));
+            assertQuery(ignite0, "UPDATE Person SET age = 100 WHERE id = 10")
+                .returns(1L)
+                .check();
         }
         finally {
             for (int i = 0; i < 3; i++)
                 TestRecordingCommunicationSpi.spi(grid(i)).stopBlock();
         }
 
-        assertRows(selectFut.get(10_000), Arrays.asList(10, 100));
+        selectFut.get(10_000);
     }
 
     /** FOR UPDATE with WHERE is supported. */
     @Test
     public void forUpdateWithWhere() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            List<List<?>> rows = sql("SELECT id FROM Person WHERE age >= 30 FOR UPDATE");
-
-            assertEquals(20, rows.size());
+            assertQuery(ignite0, "SELECT id FROM Person WHERE age >= 30 FOR UPDATE")
+                .resultSize(20)
+                .check();
         }
     }
 
@@ -383,8 +453,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void testSelectForUpdateByPrimaryKey() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            assertRows(sql("SELECT * FROM Person WHERE id = 2 FOR UPDATE"),
-                Arrays.asList(2, "Bob", 21, null, null));
+            assertQuery(ignite0, "SELECT * FROM Person WHERE id = 2 FOR UPDATE")
+                .returns(2, "Bob", 21, null, null)
+                .check();
 
             tx.commit();
         }
@@ -394,9 +465,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void testSelectForUpdateNoRows() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            List<List<?>> rows = sql("SELECT * FROM Person WHERE id = 9999 FOR UPDATE");
-
-            assertEquals(0, rows.size());
+            assertQuery(ignite0, "SELECT * FROM Person WHERE id = 9999 FOR UPDATE")
+                .resultSize(0)
+                .check();
 
             tx.commit();
         }
@@ -406,12 +477,14 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void testSelectForUpdateRepeatedInSameTx() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            assertRows(sql("SELECT * FROM Person WHERE id = 2 FOR UPDATE"),
-                Arrays.asList(2, "Bob", 21, null, null));
+            assertQuery(ignite0, "SELECT * FROM Person WHERE id = 2 FOR UPDATE")
+                .returns(2, "Bob", 21, null, null)
+                .check();
 
             // Second FOR UPDATE on the same key in the same transaction should succeed.
-            assertRows(sql("SELECT * FROM Person WHERE id = 2 FOR UPDATE"),
-                Arrays.asList(2, "Bob", 21, null, null));
+            assertQuery(ignite0, "SELECT * FROM Person WHERE id = 2 FOR UPDATE")
+                .returns(2, "Bob", 21, null, null)
+                .check();
 
             tx.commit();
         }
@@ -429,7 +502,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
         // Transaction 1: acquire lock on row id=5 and hold it.
         IgniteInternalFuture<?> tx1 = GridTestUtils.runAsync(() -> {
             try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                sql("SELECT * FROM Person WHERE id = 5 FOR UPDATE");
+                assertQuery(ignite0, "SELECT * FROM Person WHERE id = 5 FOR UPDATE")
+                    .returns(5, "Alex", 24, null, null)
+                    .check();
 
                 tx1Locked.countDown();    // Signal that lock is held.
 
@@ -444,7 +519,8 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
         // Transaction 2: try to lock the same row with NOWAIT – must fail.
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            GridTestUtils.assertThrowsAnyCause(log, () -> sql("SELECT * FROM Person WHERE id = 5 FOR UPDATE NOWAIT"),
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> sql(ignite0, "SELECT * FROM Person WHERE id = 5 FOR UPDATE NOWAIT"),
                 IgniteSQLException.class, "could not acquire lock");
 
             tx.rollback();
@@ -519,9 +595,13 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
                 release.countDown();
 
-                sql(ignite1, "SELECT * FROM Person WHERE id = 9 FOR UPDATE WAIT 5");
+                assertQuery(ignite1, "SELECT * FROM Person WHERE id = 9 FOR UPDATE WAIT 5")
+                    .returns(9, "Diana", 28, null, null)
+                    .check();
 
-                assertEquals(1L, sql(ignite1, "UPDATE Person SET age = 100 WHERE id = 9").get(0).get(0));
+                assertQuery(ignite1, "UPDATE Person SET age = 100 WHERE id = 9")
+                    .returns(1L)
+                    .check();
 
                 assertEquals(ACTIVE, tx.state());
 
@@ -534,19 +614,24 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
 
         lockFut.get(10_000);
 
-        assertRows(sql("SELECT id, age FROM Person WHERE id = 9"), Arrays.asList(9, 100));
+        assertQuery("SELECT id, age FROM Person WHERE id = 9")
+            .returns(9, 100)
+            .check();
     }
 
     /** Acquires a row lock on the specified node and holds it until the release latch is opened. */
     private IgniteInternalFuture<?> lockRow(
-        Ignite ignite,
+        IgniteEx ignite,
         int id,
         CountDownLatch locked,
         CountDownLatch release
     ) {
         return GridTestUtils.runAsync(() -> {
             try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                sql(ignite, "SELECT * FROM Person WHERE id = ? FOR UPDATE", id);
+                assertQuery(ignite, "SELECT * FROM Person WHERE id = ? FOR UPDATE")
+                    .withParams(id)
+                    .resultSize(1)
+                    .check();
 
                 locked.countDown();
 
@@ -558,12 +643,12 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Verifies that a transaction on the specified node cannot acquire the row lock. */
-    private void assertRowLocked(Ignite ignite, int id) {
+    private void assertRowLocked(IgniteEx ignite, int id) {
         assertTableRowLocked(ignite, "Person", id);
     }
 
     /** Verifies that a transaction cannot acquire a row lock in the specified table. */
-    private void assertTableRowLocked(Ignite ignite, String tableName, int id) {
+    private void assertTableRowLocked(IgniteEx ignite, String tableName, int id) {
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             GridTestUtils.assertThrowsAnyCause(log,
                 () -> sql(ignite, "SELECT * FROM " + tableName + " WHERE id = ? FOR UPDATE NOWAIT", id),
@@ -575,10 +660,12 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Verifies that a transaction can acquire the row lock in the specified table. */
-    private void assertTableRowUnlocked(Ignite ignite, String tableName, int id) {
+    private void assertTableRowUnlocked(IgniteEx ignite, String tableName, int id) {
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            assertRows(sql(ignite, "SELECT id FROM " + tableName + " WHERE id = ? FOR UPDATE NOWAIT", id),
-                Arrays.asList(id));
+            assertQuery(ignite, "SELECT id FROM " + tableName + " WHERE id = ? FOR UPDATE NOWAIT")
+                .withParams(id)
+                .returns(id)
+                .check();
 
             tx.commit();
         }
@@ -587,25 +674,9 @@ public class SelectForUpdateIntegrationTest extends GridCommonAbstractTest {
     /** Checks that a row-collapsing SELECT form is rejected before lock execution. */
     private void assertSelectForUpdateUnsupported(String qry, String clause) {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
+            GridTestUtils.assertThrowsAnyCause(log, () -> sql(ignite0, qry), IgniteSQLException.class,
                 "SELECT FOR UPDATE does not support " + clause);
         }
     }
 
-    /** */
-    private List<List<?>> sql(String sql, Object... args) {
-        return sql(ignite0, sql, args);
-    }
-
-    /** */
-    private List<List<?>> sql(Ignite ignite, String sql, Object... args) {
-        return ((IgniteEx)ignite).context().query().querySqlFields(
-            new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll();
-    }
-
-    /** */
-    private void assertRows(List<List<?>> rows, List<?>... expRows) {
-        assertEquals(expRows.length, rows.size());
-        assertEquals(new HashSet<>(Arrays.asList(expRows)), new HashSet<>(rows));
-    }
 }

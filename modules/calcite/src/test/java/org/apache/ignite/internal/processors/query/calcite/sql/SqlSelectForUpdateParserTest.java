@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
+import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -171,6 +172,19 @@ public class SqlSelectForUpdateParserTest extends GridCommonAbstractTest {
         SqlNode node = parse("WITH cte AS (SELECT id FROM Person) SELECT id FROM cte FOR UPDATE");
 
         assertThat(node, instanceOf(IgniteSqlSelectForUpdate.class));
+    }
+
+    /** EXPLAIN keeps SELECT FOR UPDATE as its explicandum. */
+    @Test
+    public void explainForUpdate() throws SqlParseException {
+        SqlNode node = parse("EXPLAIN PLAN FOR SELECT name FROM Person FOR UPDATE NOWAIT");
+
+        assertThat(node, instanceOf(SqlExplain.class));
+
+        SqlNode explicandum = ((SqlExplain)node).getExplicandum();
+
+        assertThat(explicandum, instanceOf(IgniteSqlSelectForUpdate.class));
+        assertThat(((IgniteSqlSelectForUpdate)explicandum).waitSeconds(), is(0L));
     }
 
     // ------------------------------------------------------------------ helpers

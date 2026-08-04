@@ -457,6 +457,7 @@ data: {
       "SqlStatisticsAnalyze()",
       "SqlStatisticsRefresh()",
       "SqlStatisticsDrop()",
+      "IgniteSqlExplain()",
       "SqlSelectForUpdate()"
     ]
 

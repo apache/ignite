@@ -425,11 +425,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** Returns whether the SELECT changes row cardinality using aggregation. */
     @SuppressWarnings("deprecation")
-    public boolean isAggregate(SqlSelect select) {
+    public boolean isAggregate(SqlSelect select, @Nullable SqlNodeList orderList) {
         SqlValidator validator = validator();
 
         return validator.isAggregate(select)
-            || (select.getOrderList() != null && validator.isAggregate(select.getOrderList()));
+            || (orderList != null && validator.isAggregate(orderList));
     }
 
     /** */
