@@ -1636,7 +1636,7 @@ public class BinaryUtils {
             boolean useCache = Marshallers.USE_CACHE.get();
 
             try {
-                cls = ClassLoaderUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1667,7 +1667,7 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
         else {
             try {
-                cls = ClassLoaderUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1720,10 +1720,9 @@ public class BinaryUtils {
      * Having target class in place we simply read ordinal and create final representation.
      *
      * @param cls Enum class.
-     * @param useCache True if class loader cache will be used, false otherwise.
      * @return Value.
      */
-    static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls, boolean useCache) throws BinaryObjectException {
+    static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
         if (!cls.isEnum())
@@ -1731,7 +1730,7 @@ public class BinaryUtils {
 
         int ord = in.readInt();
 
-        if (useCache)
+        if (Marshallers.USE_CACHE.get())
             return BinaryEnumCache.get(cls, ord);
         else
             return uncachedEnumValue(cls, ord);
@@ -1774,7 +1773,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr), Marshallers.USE_CACHE.get());
+                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr));
         }
 
         return arr;

@@ -301,7 +301,7 @@ class OptimizedMarshallerUtils {
             throw new IOException("Failed to resolve class for ID: " + typeId, e);
         }
 
-        Class cls = ClassLoaderUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+        Class cls = ClassLoaderUtils.forName(clsName, ldr);
 
         OptimizedClassDescriptor desc = clsMap.get(cls);
 

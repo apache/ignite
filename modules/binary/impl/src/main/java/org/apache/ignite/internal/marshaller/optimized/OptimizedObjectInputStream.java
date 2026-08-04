@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.Marshallers;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.ARRAY_LIST;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.BOOLEAN;
@@ -546,7 +545,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return ClassLoaderUtils.forName(desc.getName(), clsLdr, MarshallerUtils.classNameFilter(), Marshallers.USE_CACHE.get());
+        return ClassLoaderUtils.forNameFiltered(desc.getName(), clsLdr);
     }
 
     /**

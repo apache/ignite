@@ -428,7 +428,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-        return ClassLoaderUtils.forName(clsName, ldr, MarshallerUtils.classNameFilter());
+        return ClassLoaderUtils.forNameFiltered(clsName, ldr);
     }
 
     /** {@inheritDoc} */

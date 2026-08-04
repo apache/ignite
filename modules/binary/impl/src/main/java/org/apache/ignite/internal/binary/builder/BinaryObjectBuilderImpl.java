@@ -42,7 +42,6 @@ import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -153,7 +152,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
             Class cls;
 
             try {
-                cls = ClassLoaderUtils.forName(clsNameToWrite, ctx.classLoader(), null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsNameToWrite, ctx.classLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);

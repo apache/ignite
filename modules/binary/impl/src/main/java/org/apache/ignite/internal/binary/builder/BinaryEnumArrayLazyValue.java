@@ -22,7 +22,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
-import org.apache.ignite.marshaller.Marshallers;
 
 /**
  *
@@ -51,8 +50,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
             Class cls;
 
             try {
-                cls =
-                    ClassLoaderUtils.forName(reader.readString(), reader.binaryContext().classLoader(), null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(reader.readString(), reader.binaryContext().classLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);

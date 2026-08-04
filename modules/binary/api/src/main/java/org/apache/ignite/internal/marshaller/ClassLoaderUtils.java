@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
@@ -270,12 +271,11 @@ public class ClassLoaderUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(
+    public static Class<?> forNameFiltered(
         String clsName,
-        @Nullable ClassLoader ldr,
-        @Nullable IgnitePredicate<String> clsFilter
+        @Nullable ClassLoader ldr
     ) throws ClassNotFoundException {
-        return forName(clsName, ldr, clsFilter, Marshallers.USE_CACHE.get());
+        return forName(clsName, ldr, MarshallerUtils.classNameFilter(), Marshallers.USE_CACHE.get());
     }
 
 }
