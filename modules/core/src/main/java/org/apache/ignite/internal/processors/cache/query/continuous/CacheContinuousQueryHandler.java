@@ -88,6 +88,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
@@ -1421,13 +1422,18 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (requiresDeployment(rmtFilter))
+        /**
+         * Some filters, factories might be an Ignite-internals and do not require external marshaling. But there is no
+         * quarantine that a user-defuned class is not included in a wrap like {@link SecurityAwareFilter}. Hence, we always
+         * externally-marshall here.
+         */
+        if (rmtFilter != null)
             rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
 
-        if (requiresDeployment(rmtFilterFactory))
+        if (rmtFilterFactory != null)
             rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
 
-        if (requiresDeployment(rmtTransFactory))
+        if (rmtTransFactory != null)
             rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
     }
 
@@ -1496,10 +1502,9 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /**
      * @return Whether the handler is marshalled for peer class loading.
      */
+    @TestOnly
     public boolean isMarshalled() {
-        return (!requiresDeployment(rmtFilter) || rmtFilterDep != null)
-            && (!requiresDeployment(rmtFilterFactory) || rmtFilterFactoryDep != null)
-            && (!requiresDeployment(rmtTransFactory) || rmtTransFactoryDep != null);
+        return rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null;
     }
 
     /** {@inheritDoc} */
@@ -1780,10 +1785,5 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** */
     Map<Integer, CacheContinuousQueryEventBuffer> partitionContinuesQueryEntryBuffers() {
         return Collections.unmodifiableMap(entryBufs);
-    }
-
-    /** */
-    private static boolean requiresDeployment(@Nullable Object obj) {
-        return obj != null && !U.isGrid(obj.getClass());
     }
 }
