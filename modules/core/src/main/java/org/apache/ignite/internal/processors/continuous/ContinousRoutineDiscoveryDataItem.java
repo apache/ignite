@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** Discovery data item. */
-public class ContinousRoutineDiscoveryDataItem implements Message {
+public final class ContinousRoutineDiscoveryDataItem implements Message {
     /** */
     @Order(0)
     UUID routineId;

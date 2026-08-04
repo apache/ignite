@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
-public class ContinuousRoutinesJoiningNodeDiscoveryData implements Message {
+public final class ContinuousRoutinesJoiningNodeDiscoveryData implements Message {
     /** */
     @Order(0)
     List<ContinuousRoutineInfo> startedRoutines;

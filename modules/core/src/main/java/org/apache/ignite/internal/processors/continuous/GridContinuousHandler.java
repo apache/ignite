@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.Collection;
+import java.util.Dictionary;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -76,20 +78,27 @@ public interface GridContinuousHandler extends Cloneable, Message {
 
     /**
      * Deploys and marshals inner objects (called only if peer deployment is enabled).
+     * Or marshals in {@link MarshallableMessage}-style the handler. Should not be processed inside {@link Dictionary}'s
+     * threads because can issue the schema-exchange deadlock.
      *
      * @param ctx Kernal context.
+     * @param p2p If {@code True}, process the P2P deployment marshaling. Otherwise, marshals in {@link MarshallableMessage}-style.
      * @throws IgniteCheckedException In case of error.
      */
-    public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException;
+    public void marshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException;
 
     /**
-     * Unmarshals inner objects (called only if peer deployment is enabled).
+     * Unmarshals inner objects (called only if peer deployment is enabled). Or marshals in {@link MarshallableMessage}-style
+     * the handler. Should not be processed inside {@link Dictionary}'s threads because can issue the schema-exchange
+     * deadlock.
      *
      * @param nodeId Sender node ID.
      * @param ctx Kernal context.
+     * @param p2p If {@code True}, process the P2P deployment unmarshaling. Otherwise, unmarshals in
+     *            {@link MarshallableMessage}-style.
      * @throws IgniteCheckedException In case of error.
      */
-    public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
+    public void unmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException;
 
     /**
      * Creates new batch.

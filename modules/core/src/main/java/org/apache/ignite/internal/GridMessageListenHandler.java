@@ -142,87 +142,94 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void marshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
-        assert ctx.config().isPeerClassLoadingEnabled();
+
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (predBytes != null)
+            return;
+
+        if (p2p) {
+            assert ctx.config().isPeerClassLoadingEnabled();
+
+            // Deploy only listener, as it is very likely to be of some user class.
+            GridPeerDeployAware pda = U.peerDeployAware(pred);
+
+            clsName = pda.deployClass().getName();
+
+            GridDeployment dep = ctx.deploy().deploy(pda.deployClass(), pda.classLoader());
+
+            if (dep == null)
+                throw new IgniteDeploymentCheckedException("Failed to deploy message listener.");
+
+            predDepInfo = new GridDeploymentInfoBean(dep);
+        }
 
         if (topic != null)
             topicBytes = U.marshal(ctx.marshaller(), topic);
 
         predBytes = U.marshal(ctx.marshaller(), pred);
-
-        // Deploy only listener, as it is very likely to be of some user class.
-        GridPeerDeployAware pda = U.peerDeployAware(pred);
-
-        clsName = pda.deployClass().getName();
-
-        GridDeployment dep = ctx.deploy().deploy(pda.deployClass(), pda.classLoader());
-
-        if (dep == null)
-            throw new IgniteDeploymentCheckedException("Failed to deploy message listener.");
-
-        predDepInfo = new GridDeploymentInfoBean(dep);
     }
 
-    /** {@inheritDoc} */
+    /** Presents due to {@link MarshallableMessage}'s {@link #unmarshal(Marshaller, ClassLoader)} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        /** Are marshaled in {@link #p2pMarshal(GridKernalContext)}. */
-        if (predDepInfo != null)
-            return;
-
-        if (topic != null)
-            topicBytes = marsh.marshal(topic);
-
-        predBytes = marsh.marshal(pred);
+        // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        assert nodeId != null;
+    @Override public void unmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
-        assert ctx.config().isPeerClassLoadingEnabled();
 
-        try {
-            GridDeployment dep = ctx.deploy().getGlobalDeployment(predDepInfo.deployMode(), clsName, clsName,
-                predDepInfo.userVersion(), nodeId, predDepInfo.classLoaderId(), predDepInfo.participants(), null);
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (pred != null)
+            return;
 
-            if (dep == null)
-                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+        if (p2p) {
+            assert nodeId != null;
+            assert ctx.config().isPeerClassLoadingEnabled();
 
-            ClassLoader ldr = dep.classLoader();
+            try {
+                GridDeployment dep = ctx.deploy().getGlobalDeployment(predDepInfo.deployMode(), clsName, clsName,
+                    predDepInfo.userVersion(), nodeId, predDepInfo.classLoaderId(), predDepInfo.participants(), null);
 
+                if (dep == null)
+                    throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+
+                ClassLoader ldr = dep.classLoader();
+
+                if (topicBytes != null)
+                    topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));
+
+                pred = U.unmarshal(ctx, predBytes, U.resolveClassLoader(ldr, ctx.config()));
+            }
+            catch (IgniteCheckedException | IgniteException e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw e;
+            }
+            catch (ExceptionInInitializerError e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+            }
+
+            ((GridFutureAdapter)p2pUnmarshalFut).onDone();
+        }
+        else {
             if (topicBytes != null)
-                topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));
+                topic = U.unmarshal(ctx, topicBytes, U.gridClassLoader());
 
-            pred = U.unmarshal(ctx, predBytes, U.resolveClassLoader(ldr, ctx.config()));
+            pred = U.unmarshal(ctx, predBytes, U.gridClassLoader());
         }
-        catch (IgniteCheckedException | IgniteException e) {
-            ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
-
-            throw e;
-        }
-        catch (ExceptionInInitializerError e) {
-            ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
-
-            throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
-        }
-
-        ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
-    /** {@inheritDoc} */
+    /** Presents to reset {@link #p2pUnmarshalFut} is case of the P2P-deployment. */
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
-        if (predDepInfo != null) {
+        assert (clsName == null) == (predDepInfo == null);
+
+        /** Are unmarshaled in {@link #unmarshal(UUID, GridKernalContext, boolean)}. */
+        if (predDepInfo != null)
             p2pUnmarshalFut = new GridFutureAdapter<>();
-
-            return;
-        }
-
-        if (topicBytes != null)
-            topic = marsh.unmarshal(topicBytes, clsLdr);
-
-        pred = marsh.unmarshal(predBytes, clsLdr);
     }
 
     /** {@inheritDoc} */

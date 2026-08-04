@@ -388,11 +388,19 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void marshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
-        assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filter != null) {
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (filterBytes != null)
+            return;
+
+        if (filter == null)
+            return;
+
+        if (p2p) {
+            assert ctx.config().isPeerClassLoadingEnabled();
+
             Class cls = U.detectClass(filter);
 
             clsName = cls.getName();
@@ -403,18 +411,32 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
                 throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + filter);
 
             depInfo = new GridDeploymentInfoBean(dep);
-
-            filterBytes = U.marshal(ctx.marshaller(), filter);
         }
+
+        filterBytes = U.marshal(ctx.marshaller(), filter);
+    }
+
+    /** Presents due to {@link MarshallableMessage}'s {@link #unmarshal(Marshaller, ClassLoader)}. */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        assert nodeId != null;
+    @Override public void unmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
-        assert ctx.config().isPeerClassLoadingEnabled();
 
-        if (filterBytes != null) {
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (filter != null)
+            return;
+
+        if (filterBytes == null)
+            return;
+
+        if (p2p) {
+            assert nodeId != null;
+            assert ctx.config().isPeerClassLoadingEnabled();
+            assert clsName != null && depInfo != null;
+
             try {
                 GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
                     depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
@@ -437,6 +459,17 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
                 throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
             }
         }
+        else
+            filter = U.unmarshal(ctx.marshaller(), filterBytes, U.gridClassLoader());
+    }
+
+    /** Presents to reset {@link #p2pUnmarshalFut} is case of the P2P-deployment. */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        assert (clsName == null) == (depInfo == null);
+
+        /** Are unmarshaled in {@link #unmarshal(UUID, GridKernalContext, boolean)}. */
+        if (depInfo != null)
+            p2pUnmarshalFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */
@@ -467,30 +500,6 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        assert (clsName == null) == (depInfo == null);
-
-        /** Are marshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
-        if (filter != null && depInfo == null)
-            filterBytes = marsh.marshal(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        assert (clsName == null) == (depInfo == null);
-
-        /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
-        if (depInfo != null) {
-            p2pUnmarshalFut = new GridFutureAdapter<>();
-
-            return;
-        }
-
-        if (filterBytes != null)
-            filter = marsh.unmarshal(filterBytes, clsLdr);
     }
 
     /**

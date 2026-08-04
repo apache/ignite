@@ -192,7 +192,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** Remote transformer factory. */
     volatile Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
 
-
     /** Deployable object for {@link #rmtTransFactory}. Is {@code null} if no external marsshalling used. */
     @Order(7)
     volatile CacheContinuousQueryDeployableObject rmtTransFactoryDep;
@@ -1415,85 +1414,107 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void marshal(GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
         assert ctx != null;
-        assert ctx.config().isPeerClassLoadingEnabled();
 
-        /**
-         * Some filters, factories might be an Ignite-internals and do not require external marshaling. But there is no
-         * quarantine that a user-defuned class is not included in a wrap like {@link SecurityAwareFilter}. Hence, we always
-         * externally-marshall here.
-         */
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if ((rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null) ||
+            (rmtFilterBytes != null || rmtFilterFactoryBytes != null || rmtTransFactoryBytes != null))
+            return;
+
+        if (p2p) {
+            assert ctx.config().isPeerClassLoadingEnabled();
+
+            /**
+             * Some filters, factories might be an Ignite-internals and do not require external marshaling. But there is no
+             * quarantine that a user-defuned class is not included in a wrap like {@link SecurityAwareFilter}. Hence, we always
+             * externally-marshall here.
+             */
+            if (rmtFilter != null)
+                rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
+
+            if (rmtFilterFactory != null)
+                rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
+
+            if (rmtTransFactory != null)
+                rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
+
+            return;
+        }
+
         if (rmtFilter != null)
-            rmtFilterDep = new CacheContinuousQueryDeployableObject(rmtFilter, ctx);
+            rmtFilterBytes = U.marshal(ctx.marshaller(), rmtFilter);
 
         if (rmtFilterFactory != null)
-            rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
+            rmtFilterFactoryBytes = U.marshal(ctx.marshaller(), rmtFilterFactory);
 
         if (rmtTransFactory != null)
-            rmtTransFactoryDep = new CacheContinuousQueryDeployableObject(rmtTransFactory, ctx);
+            rmtTransFactoryBytes = U.marshal(ctx.marshaller(), rmtTransFactory);
     }
 
-    /** {@inheritDoc} */
+    /** Presents due to {@link MarshallableMessage}'s {@link #unmarshal(Marshaller, ClassLoader)} */
     @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
-        if (rmtFilter != null && rmtFilterDep == null)
-            rmtFilterBytes = marsh.marshal(rmtFilter);
-
-        if (rmtFilterFactory != null && rmtFilterFactoryDep == null)
-            rmtFilterFactoryBytes = marsh.marshal(rmtFilterFactory);
-
-        if (rmtTransFactory != null && rmtTransFactoryDep == null)
-            rmtTransFactoryBytes = marsh.marshal(rmtTransFactory);
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (rmtFilterBytes != null && rmtFilterDep == null)
-            rmtFilter = marsh.unmarshal(rmtFilterBytes, clsLdr);
+    @Override public void unmarshal(UUID nodeId, GridKernalContext ctx, boolean p2p) throws IgniteCheckedException {
+        assert ctx != null;
 
-        if (rmtFilterFactoryBytes != null && rmtFilterFactoryDep == null)
-            rmtFilterFactory = marsh.unmarshal(rmtFilterFactoryBytes, clsLdr);
-
-        if (rmtTransFactoryBytes != null && rmtTransFactoryDep == null)
-            rmtTransFactory = marsh.unmarshal(rmtTransFactoryBytes, clsLdr);
-
-        if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
-            p2pUnmarshalFut = new GridFutureAdapter<>();
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (rmtFilter != null || rmtFilterFactory != null || rmtTransFactory != null)
+            return;
 
         cacheId = CU.cacheId(cacheName);
+
+        if (p2p) {
+            try {
+                assert nodeId != null;
+                assert ctx.config().isPeerClassLoadingEnabled();
+
+                if (rmtFilterDep != null)
+                    rmtFilter = rmtFilterDep.unmarshal(nodeId, ctx);
+
+                if (rmtFilterFactoryDep != null)
+                    rmtFilterFactory = rmtFilterFactoryDep.unmarshal(nodeId, ctx);
+
+                if (rmtTransFactoryDep != null)
+                    rmtTransFactory = rmtTransFactoryDep.unmarshal(nodeId, ctx);
+
+                if (!p2pUnmarshalFut.isDone())
+                    ((GridFutureAdapter)p2pUnmarshalFut).onDone();
+            }
+            catch (IgniteCheckedException e) {
+                ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(e);
+
+                throw e;
+            }
+            catch (ExceptionInInitializerError e) {
+                IgniteCheckedException err = new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+
+                ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(err);
+
+                throw err;
+            }
+
+            return;
+        }
+
+        if (rmtFilterBytes != null)
+            rmtFilter = U.unmarshal(ctx.marshaller(), rmtFilterBytes, U.gridClassLoader());
+
+        if (rmtFilterFactoryBytes != null)
+            rmtFilterFactory = U.unmarshal(ctx.marshaller(), rmtFilterFactoryBytes, U.gridClassLoader());
+
+        if (rmtTransFactoryBytes != null)
+            rmtTransFactory = U.unmarshal(ctx.marshaller(), rmtTransFactoryBytes, U.gridClassLoader());
     }
 
-    /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        assert nodeId != null;
-        assert ctx != null;
-        assert ctx.config().isPeerClassLoadingEnabled();
-
-        try {
-            if (rmtFilterDep != null)
-                rmtFilter = rmtFilterDep.unmarshal(nodeId, ctx);
-
-            if (rmtFilterFactoryDep != null)
-                rmtFilterFactory = rmtFilterFactoryDep.unmarshal(nodeId, ctx);
-
-            if (rmtTransFactoryDep != null)
-                rmtTransFactory = rmtTransFactoryDep.unmarshal(nodeId, ctx);
-
-            if (!p2pUnmarshalFut.isDone())
-                ((GridFutureAdapter)p2pUnmarshalFut).onDone();
-        }
-        catch (IgniteCheckedException e) {
-            ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(e);
-
-            throw e;
-        }
-        catch (ExceptionInInitializerError e) {
-            IgniteCheckedException err = new IgniteCheckedException("Failed to unmarshal deployable object.", e);
-
-            ((GridFutureAdapter<?>)p2pUnmarshalFut).onDone(err);
-
-            throw err;
-        }
+    /** Presents to reset {@link #p2pUnmarshalFut} is case of the P2P-deployment. */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        /** Are unmarshaled in {@link #unmarshal(UUID, GridKernalContext, boolean)}. */
+        if (rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null)
+            p2pUnmarshalFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */

@@ -648,24 +648,22 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     autoUnsubscribe,
                     false);
 
-                if (ctx.config().isPeerClassLoadingEnabled()) {
-                    // Peer class loading cannot be performed before a node joins, so we delay the deployment.
-                    // Run the deployment task in the system pool to avoid blocking of the discovery thread.
-                    ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
-                        try {
-                            hnd.p2pUnmarshal(srcNodeId, ctx);
-                        }
-                        catch (IgniteCheckedException | IgniteException e) {
-                            U.error(log, "Failed to unmarshal continuous routine handler [" +
-                                "routineId=" + routineId +
-                                ", srcNodeId=" + srcNodeId + ']', e);
+                // Peer class loading cannot be performed before a node joins, so we delay the deployment.
+                // Run the deployment task in the system pool to avoid blocking of the discovery thread.
+                ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
+                    try {
+                        hnd.unmarshal(srcNodeId, ctx, ctx.config().isPeerClassLoadingEnabled());
+                    }
+                    catch (IgniteCheckedException | IgniteException e) {
+                        U.error(log, "Failed to unmarshal continuous routine handler [" +
+                            "routineId=" + routineId +
+                            ", srcNodeId=" + srcNodeId + ']', e);
 
-                            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
-                            unregisterHandler(routineId, hnd, false);
-                        }
-                    }));
-                }
+                        unregisterHandler(routineId, hnd, false);
+                    }
+                }));
             }
             else {
                 if (log.isDebugEnabled()) {
@@ -831,8 +829,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
-        if (ctx.config().isPeerClassLoadingEnabled())
-            hnd.p2pMarshal(ctx);
+        hnd.marshal(ctx, ctx.config().isPeerClassLoadingEnabled());
 
         // Register routine locally.
         locInfos.put(routineId,
@@ -1371,8 +1368,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
                     !locInfos.containsKey(routineId)) {
-                    if (ctx.config().isPeerClassLoadingEnabled())
-                        hnd.p2pUnmarshal(node.id(), ctx);
+                    hnd.unmarshal(node.id(), ctx, ctx.config().isPeerClassLoadingEnabled());
 
                     registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
