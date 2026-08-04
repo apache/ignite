@@ -217,8 +217,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
         if (predDepInfo != null) {
-            assert predBytes == null;
-
             p2pUnmarshalFut = new GridFutureAdapter<>();
 
             return;
