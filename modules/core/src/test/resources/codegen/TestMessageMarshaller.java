@@ -20,18 +20,18 @@ package org.apache.ignite.internal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMessage;
-import org.apache.ignite.internal.managers.communication.MessageWires;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.plugin.extensions.communication.MessageWire;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMessageWire implements MessageWire<TestMessage> {
+public final class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     /** */
-    @Override public void prepare(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void marshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
@@ -41,11 +41,11 @@ public final class TestMessageWire implements MessageWire<TestMessage> {
             msg.cacheObject.marshal(ctx);
 
         if (msg.nioMsg != null)
-            MessageWires.prepare(msg.nioMsg, kctx, ctx);
+            MessageMarshalling.marshal(msg.nioMsg, kctx, ctx);
     }
 
     /** */
-    @Override public void restore(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
@@ -56,8 +56,8 @@ public final class TestMessageWire implements MessageWire<TestMessage> {
     }
 
     /** */
-    @Override public void restoreNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshalNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.nioMsg != null)
-            MessageWires.restore(msg.nioMsg, kctx);
+            MessageMarshalling.unmarshal(msg.nioMsg, kctx);
     }
 }

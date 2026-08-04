@@ -20,43 +20,43 @@ package org.apache.ignite.internal;
 import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.type.TypeMirror;
-import org.apache.ignite.internal.MessageWireGenerator.Direction;
+import org.apache.ignite.internal.MessageMarshallerGenerator.Direction;
 
-import static org.apache.ignite.internal.MessageProcessor.CUSTOM_WIRE_FORM_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.SELF_MARSHALLING_MESSAGE_INTERFACE;
 
 /**
  * Prints the calls that take a field to its wire shape with no {@code Marshaller} in play: the object does the work
- * itself. Two kinds of them — the step a {@code CustomWireFormMessage} writes by hand, and a {@code CacheObject}
- * preparing itself against the cache object context. Where to put them is {@link MessageWireGenerator}'s business.
+ * itself. Two kinds of them — the step a {@code SelfMarshallingMessage} writes by hand, and a {@code CacheObject}
+ * preparing itself against the cache object context. Where to put them is {@link MessageMarshallerGenerator}'s business.
  */
 public class SelfMarshallingCalls {
     /** Generator whose class these calls go into; supplies the indent and the current type. */
-    private final MessageWireGenerator gen;
+    private final MessageMarshallerGenerator gen;
 
     /** */
-    private final TypeMirror customWireFormMsgType;
+    private final TypeMirror selfMarshallingMsgType;
 
     /** Whether the message writes a step of its own. Read once per message. */
-    private boolean customWireForm;
+    private boolean selfMarshalling;
 
     /** */
-    SelfMarshallingCalls(MessageWireGenerator gen) {
+    SelfMarshallingCalls(MessageMarshallerGenerator gen) {
         this.gen = gen;
 
-        customWireFormMsgType = gen.type(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
+        selfMarshallingMsgType = gen.type(SELF_MARSHALLING_MESSAGE_INTERFACE);
     }
 
     /** Reads what the type being generated for does itself. Called once per message. */
     void readType() {
-        customWireForm = customWireFormMsgType != null && gen.assignableFrom(gen.type.asType(), customWireFormMsgType);
+        selfMarshalling = selfMarshallingMsgType != null && gen.assignableFrom(gen.type.asType(), selfMarshallingMsgType);
     }
 
     /** @return the step the message writes by hand, empty when it writes none. */
     List<String> ownStep(Direction dir) {
-        if (!customWireForm)
+        if (!selfMarshalling)
             return List.of();
 
-        return List.of(gen.indentedLine(dir == Direction.OUT ? "msg.toWireForm();" : "msg.fromWireForm();"));
+        return List.of(gen.indentedLine(dir == Direction.OUT ? "msg.selfMarshal();" : "msg.selfUnmarshal();"));
     }
 
     /** Generates a null-and-ctx-guarded call that prepares a {@code CacheObject} field, or reads it back. */

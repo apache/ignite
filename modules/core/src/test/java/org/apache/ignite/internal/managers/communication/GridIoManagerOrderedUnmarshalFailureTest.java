@@ -37,7 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWire;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -240,15 +240,15 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     }
 
     /** Fails the unmarshal of the flagged messages. */
-    private static class FailingMarshaller implements MessageWire<FailingUnmarshalMessage> {
+    private static class FailingMarshaller implements MessageMarshaller<FailingUnmarshalMessage> {
         /** {@inheritDoc} */
-        @Override public void prepare(FailingUnmarshalMessage msg, GridKernalContext kctx,
+        @Override public void marshal(FailingUnmarshalMessage msg, GridKernalContext kctx,
             @Nullable CacheObjectContext cacheObjCtx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(FailingUnmarshalMessage msg, GridKernalContext kctx,
+        @Override public void unmarshal(FailingUnmarshalMessage msg, GridKernalContext kctx,
             @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
             if (msg.fail)
                 throw new IgniteCheckedException("Failed payload");

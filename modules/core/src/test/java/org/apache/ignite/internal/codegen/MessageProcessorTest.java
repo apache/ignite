@@ -69,8 +69,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageMarshaller.java"));
     }
 
     /** */
@@ -87,8 +87,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
     }
 
     /** */
@@ -105,8 +105,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestCollectionsMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestCollectionsMessageMarshaller.java"));
     }
 
     /** */
@@ -123,8 +123,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMapMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMapMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMapMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMapMessageMarshaller.java"));
     }
 
     /** */
@@ -182,7 +182,7 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        // No ChildMessageWire: the message has nothing to walk or marshal, so its generation is skipped.
+        // No ChildMessageMarshaller: the message has nothing to walk or marshal, so its generation is skipped.
         assertEquals(3, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
@@ -194,8 +194,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
     }
 
     /** */
@@ -368,24 +368,25 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshallableMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshaller.java"));
     }
 
     /**
-     * A custom wire form is a step the message defines itself, and codegen puts the call to it into the generated     * wire form — statically, so nothing has to ask at run time whether a message has one.
+     * Self-marshalling is a step the message writes by hand, and codegen puts the call to it into the generated
+     * marshaller — statically, so nothing has to ask at run time whether a message has one.
      */
     @Test
-    public void testCustomWireFormMessage() {
-        Compilation compilation = compile("TestCustomWireFormMessage.java");
+    public void testSelfMarshallingMessage() {
+        Compilation compilation = compile("TestSelfMarshallingMessage.java");
 
         assertThat(compilation).succeeded();
 
         assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestCustomWireFormMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("TestCustomWireFormMessageSerializer.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageSerializer.java"));
     }
 
     /**
@@ -515,8 +516,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMarshalledMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMessageMarshaller.java"));
     }
 
     /** Verifies the companions generated for a {@code @Marshalled} field whose logical form is a Set. */
@@ -533,8 +534,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledCollectionMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledCollectionMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageMarshaller.java"));
     }
 
     /** Verifies the companions generated for a {@code @Marshalled} field whose logical form is a Map. */
@@ -551,8 +552,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
     }
 
     /**
@@ -572,8 +573,8 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledArrayMapMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledArrayMapMessageWire")
-            .hasSourceEquivalentTo(javaFile("TestMarshalledArrayMapMessageWire.java"));
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledArrayMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledArrayMapMessageMarshaller.java"));
     }
 
     /** Verifies a deployable {@link GridCacheIdMessage} gets a generated deployer that bridges cache-object fields. */

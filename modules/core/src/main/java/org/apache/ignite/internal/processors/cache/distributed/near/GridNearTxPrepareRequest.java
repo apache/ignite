@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.CustomWireFormMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest implements CustomWireFormMessage {
+public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest implements SelfMarshallingMessage {
     /** */
     private static final int NEAR_FLAG_MASK = 0x01;
 
@@ -293,7 +293,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest im
     }
 
     /** {@inheritDoc} */
-    @Override public void toWireForm() {
+    @Override public void selfMarshal() {
         // Of all tx messages, only the near prepare request transfers entry expiry policies.
         if (writes() != null) {
             for (IgniteTxEntry e : writes())
@@ -307,7 +307,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest im
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() {
+    @Override public void selfUnmarshal() {
         // No-op.
     }
 

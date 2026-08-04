@@ -19,23 +19,34 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestCustomWireFormMessage;
+import org.apache.ignite.internal.TestMarshalledCollectionMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.plugin.extensions.communication.MessageWire;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestCustomWireFormMessageWire implements MessageWire<TestCustomWireFormMessage> {
+public final class TestMarshalledCollectionMessageMarshaller implements MessageMarshaller<TestMarshalledCollectionMessage> {
     /** */
-    @Override public void prepare(TestCustomWireFormMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        msg.toWireForm();
+    @Override public void marshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        if (msg.keys != null && msg.keysArr == null)
+            msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);
     }
 
     /** */
-    @Override public void restore(TestCustomWireFormMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        msg.fromWireForm();
+    @Override public void unmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (msg.keysArr != null) {
+            msg.keys = U.newHashSet(msg.keysArr.length);
+
+            for (GridCacheVersion e : msg.keysArr) {
+                msg.keys.add(e);
+            }
+
+            msg.keysArr = null;
+        }
     }
 }

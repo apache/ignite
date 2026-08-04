@@ -51,7 +51,7 @@ import javax.tools.StandardLocation;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 /**
- * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageWireGenerator},
+ * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator},
  * {@link MessageDeploymentGenerator}).
  */
 public abstract class MessageCompanionGenerator {

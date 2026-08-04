@@ -48,9 +48,9 @@ import static org.apache.ignite.internal.MessageProcessor.PLAIN_MESSAGE_INTERFAC
  * the loops, null guards and recursion — is written here; the other two parts come from {@link MarshallingCalls}
  * and {@link SelfMarshallingCalls}. A message with nothing to do gets no wire.
  */
-public class MessageWireGenerator extends MessageCompanionGenerator {
+public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** Interface the generated wires implement. */
-    private static final String MESSAGE_WIRE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageWire";
+    private static final String MESSAGE_MARSHALLER_CLS = "org.apache.ignite.plugin.extensions.communication.MessageMarshaller";
 
     /** */
     private static final String MARSHALLER_CLS = "org.apache.ignite.marshaller.Marshaller";
@@ -68,7 +68,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     private static final String IGNITE_MESSAGE_FACTORY_CLS = "org.apache.ignite.internal.managers.communication.IgniteMessageFactory";
 
     /** Facade the generated code calls to take nested messages to the wire and back. */
-    private static final String MESSAGE_WIRES_CLS = "org.apache.ignite.internal.managers.communication.MessageWires";
+    private static final String MESSAGE_MARSHALLING_CLS = "org.apache.ignite.internal.managers.communication.MessageMarshalling";
 
     /** What the {@code Marshaller} does: {@code @Marshalled} fields and the message's own {@code marshal}. */
     private final MarshallingCalls marshalling = new MarshallingCalls(this);
@@ -100,14 +100,14 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     /** Whether any generated method got a non-empty body; a wire without one is skipped entirely. */
     private boolean hasStatements;
 
-    /** Whether the currently generated method emitted a loop-nested {@code MessageWires} call and so needs the {@code msgFactory} local. */
+    /** Whether the currently generated method emitted a loop-nested {@code MessageMarshalling} call and so needs the {@code msgFactory} local. */
     private boolean usesMsgFactory;
 
     /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
     private int loopDepth;
 
     /** */
-    MessageWireGenerator(ProcessingEnvironment env) {
+    MessageMarshallerGenerator(ProcessingEnvironment env) {
         super(env);
 
         msgType = type(MESSAGE_INTERFACE);
@@ -120,7 +120,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
     /** {@inheritDoc} */
     @Override protected String typeSuffix() {
-        return "Wire";
+        return "Marshaller";
     }
 
     /** {@inheritDoc} */
@@ -128,8 +128,8 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
         marshalling.readFields(enclosedFields());
         selfMarshalling.readType();
 
-        generatePrepareMethod(fields);
-        generateRestoreMethods(fields);
+        generateMarshalMethod(fields);
+        generateUnmarshalMethods(fields);
     }
 
     /** {@inheritDoc} */
@@ -139,12 +139,12 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
         try (Writer writer = new StringWriter()) {
             imports.add(type.toString());
-            imports.add(MESSAGE_WIRE_CLS);
+            imports.add(MESSAGE_MARSHALLER_CLS);
 
             if (marshalling.needsMarshaller())
                 imports.add(MARSHALLER_CLS);
 
-            writeClassHeader(writer, "MessageWire", clsName);
+            writeClassHeader(writer, "MessageMarshaller", clsName);
 
             writer.write(" {" + NL);
 
@@ -223,7 +223,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
         return loopDepth > 0 || elemType.getKind() == TypeKind.TYPEVAR;
     }
 
-    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested {@code MessageWires} call was emitted. */
+    /** Prefixes {@code body} with the {@code msgFactory} resolution line when a loop-nested {@code MessageMarshalling} call was emitted. */
     private void prependMsgFactoryResolution(List<String> body) {
         if (!usesMsgFactory)
             return;
@@ -252,12 +252,12 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     }
 
     /** Generates the {@code prepare} method: the message's own step, then its bytes, then the walk. */
-    private void generatePrepareMethod(List<VariableElement> orderedFields) {
+    private void generateMarshalMethod(List<VariableElement> orderedFields) {
         imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
         imports.add(GRID_KERNAL_CONTEXT_CLS);
         imports.add(CACHE_OBJECT_CONTEXT_CLS);
 
-        String signature = "prepare(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
+        String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
 
         hasStatements |= emitMethod(methods, signature, body -> {
             usesMsgFactory = false;
@@ -265,7 +265,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
             List<String> code = new ArrayList<>();
 
             appendBlock(code, selfMarshalling.ownStep(Direction.OUT));
-            appendBlock(code, marshalling.prepare());
+            appendBlock(code, marshalling.marshal());
             appendFields(code, orderedFields, Direction.OUT);
 
             if (code.isEmpty())
@@ -281,7 +281,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     }
 
     /** Generates the {@code restore} overloads: the NIO-eligible fields apart from the rest. */
-    private void generateRestoreMethods(List<VariableElement> orderedFields) {
+    private void generateUnmarshalMethods(List<VariableElement> orderedFields) {
         List<VariableElement> nioFields = new ArrayList<>();
         List<VariableElement> workerFields = new ArrayList<>();
 
@@ -307,21 +307,21 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
         String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
 
-        generateRestoreMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
+        generateUnmarshalMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
 
         if (!nioFields.isEmpty())
-            generateRestoreNioMethod(msgParam, nioFields);
+            generateUnmarshalNioMethod(msgParam, nioFields);
     }
 
     /** Generates the cache-aware {@code restore} overload: the walk, then the bytes, then the message's own step. */
-    private void generateRestoreMethod(String params, List<VariableElement> fields) {
-        hasStatements |= emitMethod(methods, "restore(" + params + ")", body -> {
+    private void generateUnmarshalMethod(String params, List<VariableElement> fields) {
+        hasStatements |= emitMethod(methods, "unmarshal(" + params + ")", body -> {
             usesMsgFactory = false;
 
             List<String> code = new ArrayList<>();
 
             appendFields(code, fields, Direction.IN);
-            appendBlock(code, marshalling.restore());
+            appendBlock(code, marshalling.unmarshal());
             appendBlock(code, selfMarshalling.ownStep(Direction.IN));
 
             if (code.isEmpty())
@@ -337,8 +337,8 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     }
 
     /** Generates the {@code restoreNio} method for NIO-eligible {@code @Message} fields. */
-    private void generateRestoreNioMethod(String params, List<VariableElement> nioFields) {
-        hasStatements |= emitMethod(methods, "restoreNio(" + params + ")", body -> {
+    private void generateUnmarshalNioMethod(String params, List<VariableElement> nioFields) {
+        hasStatements |= emitMethod(methods, "unmarshalNio(" + params + ")", body -> {
             for (VariableElement f : nioFields)
                 appendBlock(body, nioMessageCode(fieldAccessor(f)));
         });
@@ -346,7 +346,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
     /** Cache-free read-back of a {@code @NioField} message field on the NIO thread (no cache context available). */
     private List<String> nioMessageCode(String accessor) {
-        imports.add(MESSAGE_WIRES_CLS);
+        imports.add(MESSAGE_MARSHALLING_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -354,7 +354,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        code.add(indentedLine("MessageWires.restore(%s, kctx);", accessor));
+        code.add(indentedLine("MessageMarshalling.unmarshal(%s, kctx);", accessor));
 
         indent--;
 
@@ -401,7 +401,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
      * not re-resolved from the context on every element.
      */
     private List<String> messageCode(String accessor, Direction dir) {
-        imports.add(MESSAGE_WIRES_CLS);
+        imports.add(MESSAGE_MARSHALLING_CLS);
 
         List<String> code = new ArrayList<>();
 
@@ -413,13 +413,13 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
             usesMsgFactory = true;
 
             code.add(dir == Direction.OUT
-                ? indentedLine("MessageWires.prepare(msgFactory, %s, kctx, ctx);", accessor)
-                : indentedLine("MessageWires.restore(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageMarshalling.marshal(msgFactory, %s, kctx, ctx);", accessor)
+                : indentedLine("MessageMarshalling.unmarshal(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
         }
         else {
             code.add(dir == Direction.OUT
-                ? indentedLine("MessageWires.prepare(%s, kctx, ctx);", accessor)
-                : indentedLine("MessageWires.restore(%s, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageMarshalling.marshal(%s, kctx, ctx);", accessor)
+                : indentedLine("MessageMarshalling.unmarshal(%s, kctx, ctx, clsLdr);", accessor));
         }
 
         indent--;

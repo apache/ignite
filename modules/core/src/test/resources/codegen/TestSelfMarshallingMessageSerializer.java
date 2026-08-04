@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.TestCustomWireFormMessage;
+import org.apache.ignite.internal.TestSelfMarshallingMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -27,9 +27,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestCustomWireFormMessageSerializer implements MessageSerializer<TestCustomWireFormMessage> {
+public final class TestSelfMarshallingMessageSerializer implements MessageSerializer<TestSelfMarshallingMessage> {
     /** */
-    @Override public final boolean writeTo(TestCustomWireFormMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestSelfMarshallingMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -49,7 +49,7 @@ public final class TestCustomWireFormMessageSerializer implements MessageSeriali
     }
 
     /** */
-    @Override public final boolean readFrom(TestCustomWireFormMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestSelfMarshallingMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.ttlOnWire = reader.readLong();
@@ -64,7 +64,7 @@ public final class TestCustomWireFormMessageSerializer implements MessageSeriali
     }
 
     /** {@inheritDoc} */
-    @Override public final TestCustomWireFormMessage createMessage() {
-        return new TestCustomWireFormMessage();
+    @Override public final TestSelfMarshallingMessage createMessage() {
+        return new TestSelfMarshallingMessage();
     }
 }

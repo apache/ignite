@@ -30,7 +30,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWire;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,20 +76,20 @@ public abstract class AbstractCompanionMessageFactoryProvider implements Message
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         MessageSerializer<T> serializer = loadGenerated(cls, Companion.SERIALIZER, null);
 
-        MessageWire<T> wire = PlainMessage.class.isAssignableFrom(cls)
+        MessageMarshaller<T> marshaller = PlainMessage.class.isAssignableFrom(cls)
             ? null
-            : loadGenerated(cls, Companion.WIRE, marsh);
+            : loadGenerated(cls, Companion.MARSHALLER, marsh);
 
         // Deployers exist for GridCacheMessage only; a DeployableMessage left without one is rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)
             ? loadGenerated(cls, Companion.DEPLOYER, null)
             : null;
 
-        factory.register(id, serializer, wire, deployer);
+        factory.register(id, serializer, marshaller, deployer);
     }
 
     /**
-     * Instantiates the generated companion of {@code cls}. Only the wire may take a {@code Marshaller}, so
+     * Instantiates the generated companion of {@code cls}. Only the marshaller may take a {@code Marshaller}, so
      * {@code marsh} is {@code null} for the other two. Lookups are cached in {@link #COMPANIONS}.
      *
      * @return the companion, or {@code null} when it is not generated and not required.
@@ -139,7 +139,7 @@ public abstract class AbstractCompanionMessageFactoryProvider implements Message
          * Takes the fields to their wire shape and back. Generated when the message has any wire work: a step of
          * its own, {@code @Marshalled} fields or fields to walk.
          */
-        WIRE("Wire"),
+        MARSHALLER("Marshaller"),
 
         /** Prepares the deployable fields. Generated for a {@link GridCacheMessage} that has them. */
         DEPLOYER("Deployer");
@@ -160,7 +160,7 @@ public abstract class AbstractCompanionMessageFactoryProvider implements Message
          * @return {@code true} if {@code cls} must have this companion.
          */
         boolean required(Class<?> cls) {
-            return this == SERIALIZER || (this == WIRE && MarshallableMessage.class.isAssignableFrom(cls));
+            return this == SERIALIZER || (this == MARSHALLER && MarshallableMessage.class.isAssignableFrom(cls));
         }
 
         /** @return the companion class name to report {@code cls} problems with. */

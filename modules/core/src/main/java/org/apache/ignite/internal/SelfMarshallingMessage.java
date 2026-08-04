@@ -29,10 +29,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * conversion where the message is filled in and where it is consumed.
  */
 @Deprecated
-public interface CustomWireFormMessage extends Message {
+public interface SelfMarshallingMessage extends Message {
     /** Called before the message is marshalled and sent. */
-    public void toWireForm();
+    public void selfMarshal();
 
     /** Called after the message is received and unmarshalled. */
-    public void fromWireForm();
+    public void selfUnmarshal();
 }

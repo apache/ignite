@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
-import org.apache.ignite.internal.CustomWireFormMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
  */
-public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements CustomWireFormMessage {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements SelfMarshallingMessage {
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
@@ -386,7 +386,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void toWireForm() {
+    @Override public void selfMarshal() {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
     }
@@ -406,7 +406,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() {
+    @Override public void selfUnmarshal() {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 

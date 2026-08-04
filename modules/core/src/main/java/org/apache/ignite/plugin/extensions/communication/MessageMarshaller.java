@@ -27,11 +27,11 @@ import org.jetbrains.annotations.Nullable;
  * Puts the fields of a {@link Message} into the shape they go on the wire in, and back. Three kinds of work end up
  * here, and codegen writes only the ones the message actually needs: the step the message defines itself, the
  * {@code @Marshalled} fields that become bytes, and the walk into nested messages and cache objects.
- * Generated per message class and called by {@code MessageWires}.
+ * Generated per message class and called by {@code MessageMarshalling}.
  *
  * @param <M> Message type.
  */
-public interface MessageWire<M extends Message> {
+public interface MessageMarshaller<M extends Message> {
     /**
      * Takes the fields to their wire shape. Called on the user thread before sending.
      *
@@ -39,7 +39,7 @@ public interface MessageWire<M extends Message> {
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public void prepare(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
+    public void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException;
 
     /**
@@ -50,19 +50,19 @@ public interface MessageWire<M extends Message> {
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader to resolve the classes with.
      */
-    public void restore(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
+    public void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
         throws IgniteCheckedException;
 
     /**
      * Brings the fields back without a cache context, using the configuration class loader — the cache-free receive path.
-     * Delegates to the cache-aware overload with a {@code null} context, so a generated wire implements the
+     * Delegates to the cache-aware overload with a {@code null} context, so a generated marshaller implements the
      * cache-aware method only.
      *
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    default void restore(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        restore(msg, kctx, null, U.resolveClassLoader(kctx.config()));
+    default void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+        unmarshal(msg, kctx, null, U.resolveClassLoader(kctx.config()));
     }
 
     /**
@@ -72,7 +72,7 @@ public interface MessageWire<M extends Message> {
      * @param msg Message to bring back.
      * @param kctx Kernal context.
      */
-    default void restoreNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    default void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         // No-op.
     }
 }

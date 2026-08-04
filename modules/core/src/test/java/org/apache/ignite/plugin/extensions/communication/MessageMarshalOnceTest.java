@@ -179,20 +179,20 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     }
 
     /** Marshaller that only counts {@code marshal} calls — no idempotency guard, so it counts raw invocations. */
-    private static class CountingMarshaller implements MessageWire<MarshalOnceCheckMessage> {
+    private static class CountingMarshaller implements MessageMarshaller<MarshalOnceCheckMessage> {
         /** {@inheritDoc} */
-        @Override public void prepare(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
+        @Override public void marshal(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
             MARSHAL_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested,
+        @Override public void unmarshal(MarshalOnceCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested,
             ClassLoader clsLdr) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(MarshalOnceCheckMessage msg, GridKernalContext kctx) {
+        @Override public void unmarshal(MarshalOnceCheckMessage msg, GridKernalContext kctx) {
             // No-op.
         }
     }
@@ -231,20 +231,20 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     }
 
     /** Marshaller that only counts {@code marshal} calls of {@link RetryCheckMessage}. */
-    private static class RetryCountingMarshaller implements MessageWire<RetryCheckMessage> {
+    private static class RetryCountingMarshaller implements MessageMarshaller<RetryCheckMessage> {
         /** {@inheritDoc} */
-        @Override public void prepare(RetryCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
+        @Override public void marshal(RetryCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
             RETRY_MARSHAL_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(RetryCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested,
+        @Override public void unmarshal(RetryCheckMessage msg, GridKernalContext kctx, CacheObjectContext nested,
             ClassLoader clsLdr) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(RetryCheckMessage msg, GridKernalContext kctx) {
+        @Override public void unmarshal(RetryCheckMessage msg, GridKernalContext kctx) {
             // No-op.
         }
     }

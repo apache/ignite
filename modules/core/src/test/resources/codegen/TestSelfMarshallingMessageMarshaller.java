@@ -19,38 +19,23 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestMarshalledMessage;
+import org.apache.ignite.internal.TestSelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageWire;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledMessageWire implements MessageWire<TestMarshalledMessage> {
+public final class TestSelfMarshallingMessageMarshaller implements MessageMarshaller<TestSelfMarshallingMessage> {
     /** */
-    private final Marshaller marshaller;
-
-    /** */
-    public TestMarshalledMessageWire(Marshaller marshaller) {
-        this.marshaller = marshaller;
+    @Override public void marshal(TestSelfMarshallingMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        msg.selfMarshal();
     }
 
     /** */
-    @Override public void prepare(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        if (msg.data != null && msg.dataBytes == null)
-            msg.dataBytes = U.marshal(marshaller, msg.data);
-    }
-
-    /** */
-    @Override public void restore(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (msg.dataBytes != null) {
-            msg.data = U.unmarshal(marshaller, msg.dataBytes, clsLdr);
-
-            msg.dataBytes = null;
-        }
+    @Override public void unmarshal(TestSelfMarshallingMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        msg.selfUnmarshal();
     }
 }

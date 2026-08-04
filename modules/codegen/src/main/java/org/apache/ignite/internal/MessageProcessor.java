@@ -85,7 +85,7 @@ public class MessageProcessor extends AbstractProcessor {
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
     /** Message that reshapes its own fields before they go on the wire. */
-    static final String CUSTOM_WIRE_FORM_MESSAGE_INTERFACE = "org.apache.ignite.internal.CustomWireFormMessage";
+    static final String SELF_MARSHALLING_MESSAGE_INTERFACE = "org.apache.ignite.internal.SelfMarshallingMessage";
 
     /** Marker of messages that need nothing but their serializer. */
     static final String PLAIN_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.PlainMessage";
@@ -186,7 +186,7 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         List<Function<ProcessingEnvironment, MessageCompanionGenerator>> generators = List.of(
-            MessageSerializerGenerator::new, MessageWireGenerator::new, MessageDeploymentGenerator::new);
+            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
             for (Function<ProcessingEnvironment, MessageCompanionGenerator> factory : generators) {

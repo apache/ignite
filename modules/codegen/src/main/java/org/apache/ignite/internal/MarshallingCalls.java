@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_I
 /**
  * Prints the marshalling calls of a generated wire: the {@code @Marshalled} fields turned into their wire
  * companion fields and back — bytes, message arrays or key/value pairs — and the {@code marshal} a
- * {@code MarshallableMessage} defines. Walking the fields is {@link MessageWireGenerator}'s business; it asks
+ * {@code MarshallableMessage} defines. Walking the fields is {@link MessageMarshallerGenerator}'s business; it asks
  * this class for the marshalling blocks of its {@code prepare} and {@code restore} methods.
  */
 public class MarshallingCalls {
@@ -48,7 +48,7 @@ public class MarshallingCalls {
     private static final String U_CLS = "org.apache.ignite.internal.util.typedef.internal.U";
 
     /** Generator whose class these calls go into; supplies the imports, indent and current type. */
-    private final MessageWireGenerator gen;
+    private final MessageMarshallerGenerator gen;
 
     /** */
     private final TypeMirror marshallableMsgType;
@@ -66,7 +66,7 @@ public class MarshallingCalls {
     private boolean hasMarshalled;
 
     /** */
-    MarshallingCalls(MessageWireGenerator gen) {
+    MarshallingCalls(MessageMarshallerGenerator gen) {
         this.gen = gen;
 
         marshallableMsgType = gen.type(MARSHALLABLE_MESSAGE_INTERFACE);
@@ -95,7 +95,7 @@ public class MarshallingCalls {
     }
 
     /** @return the code turning the message's {@code @Marshalled} fields into bytes, empty when it has none. */
-    List<String> prepare() {
+    List<String> marshal() {
         if (!kinds.isEmpty())
             gen.imports.add(U_CLS);
 
@@ -116,7 +116,7 @@ public class MarshallingCalls {
     }
 
     /** @return the code rebuilding the message's {@code @Marshalled} fields from bytes, empty when it has none. */
-    List<String> restore() {
+    List<String> unmarshal() {
         List<String> code = new ArrayList<>();
 
         if (marshallable)

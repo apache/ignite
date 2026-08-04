@@ -65,7 +65,7 @@ import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdap
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.MessageWires;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1252,7 +1252,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     try {
                         // The job payload waits for this point: only now is there a deployment to unmarshal it with.
                         if (!loc) {
-                            MessageWires.restore(req, ctx, null,
+                            MessageMarshalling.unmarshal(req, ctx, null,
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 

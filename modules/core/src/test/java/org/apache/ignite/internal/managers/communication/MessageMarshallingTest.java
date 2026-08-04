@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.CustomWireFormMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -34,18 +34,18 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
-import org.apache.ignite.plugin.extensions.communication.MessageWire;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * {@link MessageWires} finds the wire codegen wrote for a message and calls it, both ways. What that wire
+ * {@link MessageMarshalling} finds the wire codegen wrote for a message and calls it, both ways. What that wire
  * does inside — the message's own step, the bytes, the walk — is put there statically, and the codegen tests check
  * the generated source for it.
  */
-public class MessageWiresTest extends GridCommonAbstractTest {
+public class MessageMarshallingTest extends GridCommonAbstractTest {
     /** Direct type of the message that has both steps. */
     private static final short BOTH_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 1);
 
@@ -100,28 +100,28 @@ public class MessageWiresTest extends GridCommonAbstractTest {
 
         BothMessage msg = new BothMessage();
 
-        MessageWires.prepare(msg, kctx, null);
-        MessageWires.restore(msg, kctx, null, getClass().getClassLoader());
+        MessageMarshalling.marshal(msg, kctx, null);
+        MessageMarshalling.unmarshal(msg, kctx, null, getClass().getClassLoader());
 
         assertEquals("The wire registered for the message must be called both ways",
-            List.of("prepare", "restore"), STEPS);
+            List.of("marshal", "unmarshal"), STEPS);
     }
 
     /** Fieldless {@link PlainMessage} with a step of its own; registered with no wire. */
-    private static class PlainWireFormMessage implements PlainMessage, CustomWireFormMessage {
+    private static class PlainWireFormMessage implements PlainMessage, SelfMarshallingMessage {
         /** {@inheritDoc} */
-        @Override public void toWireForm() {
+        @Override public void selfMarshal() {
             STEPS.add("toWireForm");
         }
 
         /** {@inheritDoc} */
-        @Override public void fromWireForm() {
+        @Override public void selfUnmarshal() {
             STEPS.add("fromWireForm");
         }
     }
 
     /** Fieldless message with both steps; only the order of the recorded steps matters. */
-    private static class BothMessage implements MarshallableMessage, CustomWireFormMessage {
+    private static class BothMessage implements MarshallableMessage, SelfMarshallingMessage {
         /** {@inheritDoc} */
         @Override public void marshal(Marshaller marsh) {
             STEPS.add("marshal");
@@ -133,40 +133,40 @@ public class MessageWiresTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void toWireForm() {
+        @Override public void selfMarshal() {
             STEPS.add("toWireForm");
         }
 
         /** {@inheritDoc} */
-        @Override public void fromWireForm() {
+        @Override public void selfUnmarshal() {
             STEPS.add("fromWireForm");
         }
     }
 
     /** Fieldless message with a step of its own and nothing else; registered with no wire. */
-    private static class OwnStepMessage implements CustomWireFormMessage {
+    private static class OwnStepMessage implements SelfMarshallingMessage {
         /** {@inheritDoc} */
-        @Override public void toWireForm() {
+        @Override public void selfMarshal() {
             STEPS.add("toWireForm");
         }
 
         /** {@inheritDoc} */
-        @Override public void fromWireForm() {
+        @Override public void selfUnmarshal() {
             STEPS.add("fromWireForm");
         }
     }
 
     /** Wire that records both calls. */
-    private static class RecordingWire implements MessageWire<BothMessage> {
+    private static class RecordingWire implements MessageMarshaller<BothMessage> {
         /** {@inheritDoc} */
-        @Override public void prepare(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
-            STEPS.add("prepare");
+        @Override public void marshal(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested) {
+            STEPS.add("marshal");
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested,
+        @Override public void unmarshal(BothMessage msg, GridKernalContext kctx, CacheObjectContext nested,
             ClassLoader clsLdr) {
-            STEPS.add("restore");
+            STEPS.add("unmarshal");
         }
     }
 

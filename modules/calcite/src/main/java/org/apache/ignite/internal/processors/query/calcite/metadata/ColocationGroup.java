@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-import org.apache.ignite.internal.CustomWireFormMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class ColocationGroup implements CustomWireFormMessage {
+public class ColocationGroup implements SelfMarshallingMessage {
     /** */
     @Order(0)
     long[] srcIds;
@@ -312,7 +312,7 @@ public class ColocationGroup implements CustomWireFormMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void toWireForm() {
+    @Override public void selfMarshal() {
         if (!F.isEmpty(marshalledAssignments) || assignments == null || primaryAssignment)
             return;
 
@@ -341,7 +341,7 @@ public class ColocationGroup implements CustomWireFormMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void fromWireForm() {
+    @Override public void selfUnmarshal() {
         if (F.isEmpty(marshalledAssignments))
             return;
 

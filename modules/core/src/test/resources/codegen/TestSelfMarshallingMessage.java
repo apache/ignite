@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal;
 
-public class TestCustomWireFormMessage implements CustomWireFormMessage {
+public class TestSelfMarshallingMessage implements SelfMarshallingMessage {
     long ttl;
 
     @Order(0)
     long ttlOnWire;
 
-    @Override public void toWireForm() {
+    @Override public void selfMarshal() {
         ttlOnWire = ttl;
     }
 
-    @Override public void fromWireForm() {
+    @Override public void selfUnmarshal() {
         ttl = ttlOnWire;
     }
 

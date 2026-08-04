@@ -19,34 +19,32 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.TestMarshalledCollectionMessage;
+import org.apache.ignite.internal.TestMarshallableMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageWire;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledCollectionMessageWire implements MessageWire<TestMarshalledCollectionMessage> {
+public final class TestMarshallableMessageMarshaller implements MessageMarshaller<TestMarshallableMessage> {
     /** */
-    @Override public void prepare(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        if (msg.keys != null && msg.keysArr == null)
-            msg.keysArr = msg.keys.toArray(new GridCacheVersion[0]);
+    private final Marshaller marshaller;
+
+    /** */
+    public TestMarshallableMessageMarshaller(Marshaller marshaller) {
+        this.marshaller = marshaller;
     }
 
     /** */
-    @Override public void restore(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (msg.keysArr != null) {
-            msg.keys = U.newHashSet(msg.keysArr.length);
+    @Override public void marshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        msg.marshal(marshaller);
+    }
 
-            for (GridCacheVersion e : msg.keysArr) {
-                msg.keys.add(e);
-            }
-
-            msg.keysArr = null;
-        }
+    /** */
+    @Override public void unmarshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        msg.unmarshal(marshaller, clsLdr);
     }
 }
