@@ -61,7 +61,6 @@ import static org.apache.ignite.events.EventType.EVTS_ALL;
 /**
  * Continuous routine handler for remote event listening.
  */
-@UseBinaryMarshaller
 public final class GridEventConsumeHandler implements GridContinuousHandler, MarshallableMessage {
     /** Default callback. */
     private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<>() {
@@ -390,6 +389,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
 
     /** {@inheritDoc} */
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
@@ -397,7 +397,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
             return;
 
         if (filter != null) {
-            Class<?> cls = U.detectClass(filter);
+            Class cls = U.detectClass(filter);
 
             clsName = cls.getName();
 
@@ -415,6 +415,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert nodeId != null;
+        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945

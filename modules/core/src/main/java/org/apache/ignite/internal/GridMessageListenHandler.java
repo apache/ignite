@@ -41,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Continuous handler for message subscription.
  */
-@UseBinaryMarshaller
 public final class GridMessageListenHandler implements GridContinuousHandler, MarshallableMessage {
     /** */
     private volatile @Nullable Object topic;
@@ -175,8 +174,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         if (predDepInfo != null)
             return;
 
-        assert predBytes == null;
-
         if (topic != null)
             topicBytes = marsh.marshal(topic);
 
@@ -225,14 +222,10 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
     @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
         /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
         if (predDepInfo != null) {
-            assert predBytes == null;
-
             p2pUnmarshalFut = new GridFutureAdapter<>();
 
             return;
         }
-
-        assert predBytes != null;
 
         if (topicBytes != null)
             topic = marsh.unmarshal(topicBytes, clsLdr);
