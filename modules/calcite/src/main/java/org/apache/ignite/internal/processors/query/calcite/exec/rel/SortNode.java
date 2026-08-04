@@ -52,7 +52,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
      * @param ctx Execution context.
      * @param comp Rows comparator.
      * @param offset Offset.
-     * @param fetch Limit.
+     * @param fetch How many rows need to be processed, {@code -1} if param is undefined.
      */
     public SortNode(
         ExecutionContext<Row> ctx, RelDataType rowType,
@@ -62,7 +62,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     ) {
         super(ctx, rowType);
 
-        assert fetch == -1 || fetch > 0;
+        assert fetch == -1 || fetch > 0 : "Unexpected fetch = " + fetch;
         assert offset >= 0;
 
         limit = fetch == -1 ? -1 : (fetch > Long.MAX_VALUE - offset ? -1 : fetch + offset);
