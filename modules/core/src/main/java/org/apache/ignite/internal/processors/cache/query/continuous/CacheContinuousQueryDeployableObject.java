@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Deployable object.
  */
-public class CacheContinuousQueryDeployableObject implements Message {
+public final class CacheContinuousQueryDeployableObject implements Message {
     /** Serialized object. */
     @GridToStringExclude
     @Order(0)

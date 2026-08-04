@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Discovery data. */
-public class ContinousRoutineDiscoveryData implements Message {
+public final class ContinousRoutineDiscoveryData implements Message {
     /** Node ID.  */
     @Order(0)
     UUID nodeId;

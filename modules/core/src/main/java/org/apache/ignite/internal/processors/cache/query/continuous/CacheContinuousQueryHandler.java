@@ -192,7 +192,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** Remote transformer factory. */
     volatile Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory;
 
-
     /** Deployable object for {@link #rmtTransFactory}. Is {@code null} if no external marsshalling used. */
     @Order(7)
     volatile CacheContinuousQueryDeployableObject rmtTransFactoryDep;

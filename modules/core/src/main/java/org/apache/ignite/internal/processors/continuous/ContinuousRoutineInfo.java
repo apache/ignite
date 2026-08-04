@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
-public class ContinuousRoutineInfo implements Message {
+public final class ContinuousRoutineInfo implements Message {
     /** */
     @Order(0)
     UUID srcNodeId;
