@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticato
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBaselineSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBeforeNodeStartSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorCacheNodeFilterTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorClassFilterTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
@@ -87,6 +88,7 @@ import org.junit.runners.Suite;
     JettyRestProcessorBaselineSelfTest.class,
     JettyRestProcessorBeforeNodeStartSelfTest.class,
     JettyRestProcessorCacheNodeFilterTest.class,
+    JettyRestProcessorClassFilterTest.class,
 
     // Test TCP rest processor with original memcache client.
     ClientMemcachedProtocolSelfTest.class,

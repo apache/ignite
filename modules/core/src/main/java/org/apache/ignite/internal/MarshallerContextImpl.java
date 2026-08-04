@@ -706,8 +706,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param proc Class processor (class name consumer).
      * @throws IOException In case of error.
      */
-    private static void processSystemClasses(@Nullable Collection<PluginProvider> plugins,
-                                             Consumer<String> proc) throws IOException {
+    private static void processSystemClasses(@Nullable Collection<PluginProvider> plugins, Consumer<String> proc) throws IOException {
         MarshallerUtils.processSystemClasses(proc);
 
         if (plugins != null && !plugins.isEmpty()) {

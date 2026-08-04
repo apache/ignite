@@ -22,7 +22,6 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -146,7 +145,7 @@ public final class ClientUtils {
     }
 
     /**
-     * @return Deserialized map
+     * @return Deserialized map preserving entry order.
      */
     private static <K, V> Map<K, V> map(
         BinaryInputStream in,
@@ -155,7 +154,7 @@ public final class ClientUtils {
     ) {
         int cnt = in.readInt();
 
-        Map<K, V> map = new HashMap<>(cnt);
+        Map<K, V> map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++)
             map.put(keyReader.apply(in), valReader.apply(in));

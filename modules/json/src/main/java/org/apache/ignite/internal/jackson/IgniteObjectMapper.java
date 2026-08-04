@@ -96,11 +96,7 @@ public class IgniteObjectMapper extends ObjectMapper {
 
         if (ctx != null) {
             module.addDeserializer(BinaryObject.class, new IgniteBinaryObjectJsonDeserializer(ctx));
-
-            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter();
-
-            if (clsFilter != null)
-                setDefaultTyping(new RestrictedTypeResolverBuilder(clsFilter).init(JsonTypeInfo.Id.CLASS, null));
+            setDefaultTyping(new RestrictedTypeResolverBuilder(MarshallerUtils.classNameFilter()).init(JsonTypeInfo.Id.CLASS, null));
         }
 
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
