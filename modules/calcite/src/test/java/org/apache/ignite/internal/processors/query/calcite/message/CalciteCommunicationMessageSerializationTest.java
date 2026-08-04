@@ -20,10 +20,16 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import org.apache.ignite.internal.managers.AbstractMessageSerializationTest;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
+import static org.apache.ignite.marshaller.Marshallers.jdk;
+
 /** */
 public class CalciteCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new CalciteMessageFactory();
+        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
+
+        msgFactory.init(jdk(), jdk());
+
+        return msgFactory;
     }
 }
