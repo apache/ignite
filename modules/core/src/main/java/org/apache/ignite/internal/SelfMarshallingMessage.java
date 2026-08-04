@@ -21,8 +21,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * A {@link Message} that reshapes its own fields before they go on the wire and back after they arrive: copying a
- * value into the field that is actually sent, packing bits, recalculating a TTL. Marshalling is a separate step and
- * does not happen here.
+ * value into the field that is actually sent, packing bits, recalculating a TTL. A message needing a
+ * {@code Marshaller} for that implements {@code MarshallableMessage} instead; here there is none to use.
  *
  * @deprecated A message carries data, it is not a place to compute. Each use of this interface is a message doing
  * work that belongs to the code building or reading it, so treat the current ones as debt and add no new ones: do the

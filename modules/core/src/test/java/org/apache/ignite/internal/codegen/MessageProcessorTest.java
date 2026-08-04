@@ -372,10 +372,7 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshaller.java"));
     }
 
-    /**
-     * Self-marshalling is a step the message writes by hand, and codegen puts the call to it into the generated
-     * marshaller — statically, so nothing has to ask at run time whether a message has one.
-     */
+    /** The self-marshalling step is called from the generated marshaller, statically. */
     @Test
     public void testSelfMarshallingMessage() {
         Compilation compilation = compile("TestSelfMarshallingMessage.java");
@@ -387,6 +384,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageMarshaller.java"));
     }
 
     /**

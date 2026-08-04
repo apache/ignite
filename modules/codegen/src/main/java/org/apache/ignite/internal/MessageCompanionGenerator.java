@@ -138,7 +138,7 @@ public abstract class MessageCompanionGenerator {
         }
     }
 
-    /** @return Class name suffix: {@code "Serializer"}, {@code "Marshaller"} or {@code "Deployer"}. */
+    /** @return Class name suffix: {@code "Serializer"} or {@code "Marshaller"}. */
     protected abstract String typeSuffix();
 
     /** @return {@code true} if no file should be generated for this type; default is {@code false}. */
@@ -229,11 +229,8 @@ public abstract class MessageCompanionGenerator {
         return result;
     }
 
-    /** Appends {@code block} to {@code body}, inserting a blank-line separator when both are non-empty. */
+    /** Appends {@code block} to {@code body}, inserting a blank-line separator when {@code body} is non-empty. */
     protected static void appendBlock(List<String> body, List<String> block) {
-        if (block.isEmpty())
-            return;
-
         if (!body.isEmpty())
             body.add(EMPTY);
 

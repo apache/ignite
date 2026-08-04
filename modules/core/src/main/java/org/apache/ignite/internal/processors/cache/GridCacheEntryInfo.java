@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.SelfMarshallingMessage;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,7 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 /**
  * Entry information that gets passed over wire.
  */
-@UseBinaryMarshaller
 public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
