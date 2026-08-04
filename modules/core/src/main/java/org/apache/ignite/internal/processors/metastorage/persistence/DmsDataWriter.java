@@ -142,7 +142,7 @@ public class DmsDataWriter extends IgniteAsyncObjectHandler<RunnableFuture<?>> {
     /** */
     public void addUpdateTask(
         DistributedMetaStorageVersion ver,
-        @Nullable DistributedMetaStorageHistoryItem[] hist,
+        DistributedMetaStorageHistoryItem[] hist,
         String[] newDataKeys,
         byte[][] newDataVals
     ) {
@@ -154,12 +154,10 @@ public class DmsDataWriter extends IgniteAsyncObjectHandler<RunnableFuture<?>> {
             for (int i = 0; i < newDataKeys.length; ++i)
                 metastorage.writeRaw(localKey(newDataKeys[i]), newDataVals[i]);
 
-            if (hist != null) {
-                for (int i = 0, len = hist.length; i < len; i++) {
-                    long histItemVer = ver.id() + i - (len - 1);
+            for (int i = 0, len = hist.length; i < len; i++) {
+                long histItemVer = ver.id() + i - (len - 1);
 
-                    metastorage.write(historyItemKey(histItemVer), hist[i]);
-                }
+                metastorage.write(historyItemKey(histItemVer), hist[i]);
             }
 
             metastorage.write(versionKey(), ver);

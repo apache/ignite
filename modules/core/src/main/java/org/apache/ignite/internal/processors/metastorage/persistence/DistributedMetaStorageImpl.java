@@ -953,7 +953,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
 
                 // Cached unwrapped history.
-                DistributedMetaStorageHistoryItem[] newHist = null;
+                DistributedMetaStorageHistoryItem[] newHist = EMPTY_ARRAY;
 
                 if (nodeData.hist != null) {
                     newHist = DistributedMetaStorageHistoryItem.fromMessages(nodeData.hist);
