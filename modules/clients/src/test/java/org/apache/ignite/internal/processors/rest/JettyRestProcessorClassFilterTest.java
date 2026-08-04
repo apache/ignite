@@ -68,8 +68,6 @@ public class JettyRestProcessorClassFilterTest extends JettyRestProcessorCommonS
             "val", json
         );
 
-        System.out.println("ret = " + ret);
-
         assertResponseContainsError(ret, "Deserialization of class " + Exploit.class.getName() + " is disallowed.");
     }
 
