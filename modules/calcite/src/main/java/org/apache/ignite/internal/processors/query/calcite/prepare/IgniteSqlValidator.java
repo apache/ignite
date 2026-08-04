@@ -266,11 +266,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (F.isEmpty(parameters))
                 return;
 
+            // Dynamic parameters are nullable.
+            RelDataType expectType = typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DECIMAL), true);
+
             if (dynamicParam.getIndex() < parameters.length) {
                 Object param = parameters[dynamicParam.getIndex()];
 
                 if (!(param instanceof Number)) {
-                    SqlTypeName expectType = SqlTypeName.BIGINT;
                     Resources.ExInst<SqlValidatorException> err;
 
                     if (param == null)
@@ -285,6 +287,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 else
                     checkLimitOffset((Number)param, n, nodeName);
             }
+
+            setValidatedNodeType(dynamicParam, expectType);
         }
     }
 

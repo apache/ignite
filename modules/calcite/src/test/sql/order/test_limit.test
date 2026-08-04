@@ -19,6 +19,26 @@ SELECT a FROM test ORDER BY a LIMIT 1
 
 # decimal limit
 query I
+SELECT a FROM test ORDER BY a LIMIT 1.2
+----
+11
+
+# decimal limit
+query I
+SELECT a FROM test ORDER BY a LIMIT 1.5
+----
+11
+12
+
+# decimal limit
+query I
+SELECT a FROM test ORDER BY a LIMIT 1.6
+----
+11
+12
+
+# decimal limit
+query I
 SELECT a FROM test ORDER BY a FETCH FIRST 0 ROWS ONLY
 ----
 
