@@ -69,6 +69,10 @@ public abstract class AbstractMessageFactoryProvider implements MessageFactoryPr
 
     /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
+        // Companions are instantiated right here, so a provider registering before init() would bind them to a null
+        // marshaller instead of picking the proper one up later.
+        assert marsh != null : "Provider is not initialized, see init(), while registering " + cls.getName();
+
         MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null, true);
 
         // A message that marshals a part of its fields itself always gets a generated marshaller (its own call alone
