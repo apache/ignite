@@ -39,11 +39,11 @@ public final class TestMapMessageMarshaller implements MessageMarshaller<TestMap
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {
-            for (KeyCacheObject e : msg.gridCacheObjectMap.keySet()) {
+            for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
                 if (e != null && ctx != null)
                     e.marshal(ctx);
             }
-            for (Map e : msg.gridCacheObjectMap.values()) {
+            for (Map e : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
                 if (e != null) {
                     for (List e1 : ((Collection<? extends List>)e.values())) {
                         if (e1 != null) {
@@ -63,11 +63,11 @@ public final class TestMapMessageMarshaller implements MessageMarshaller<TestMap
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {
-            for (KeyCacheObject e : msg.gridCacheObjectMap.keySet()) {
+            for (KeyCacheObject e : ((Collection<? extends KeyCacheObject>)msg.gridCacheObjectMap.keySet())) {
                 if (e != null && ctx != null)
                     e.unmarshal(ctx, clsLdr);
             }
-            for (Map e : msg.gridCacheObjectMap.values()) {
+            for (Map e : ((Collection<? extends Map>)msg.gridCacheObjectMap.values())) {
                 if (e != null) {
                     for (List e1 : ((Collection<? extends List>)e.values())) {
                         if (e1 != null) {

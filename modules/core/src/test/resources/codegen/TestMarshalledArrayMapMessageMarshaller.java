@@ -108,47 +108,21 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.mapKeys != null) {
-            for (GridTopicMessage e : msg.mapKeys) {
-                if (e != null)
-                    MessageMarshalling.unmarshal(msgFactory, e, kctx, ctx, clsLdr);
-            }
-        }
-
-        if (msg.mapVals != null) {
-            for (List e : msg.mapVals) {
-                if (e != null) {
-                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
-                        if (e1 != null)
-                            MessageMarshalling.unmarshal(msgFactory, e1, kctx, ctx, clsLdr);
-                    }
-                }
-            }
-        }
-
-        if (msg.fixedMapKeys != null) {
-            for (GridTopicMessage e : msg.fixedMapKeys) {
-                if (e != null)
-                    MessageMarshalling.unmarshal(msgFactory, e, kctx, ctx, clsLdr);
-            }
-        }
-
-        if (msg.fixedMapVals != null) {
-            for (List e : msg.fixedMapVals) {
-                if (e != null) {
-                    for (GridTopicMessage e1 : (Collection<? extends GridTopicMessage>)e) {
-                        if (e1 != null)
-                            MessageMarshalling.unmarshal(msgFactory, e1, kctx, ctx, clsLdr);
-                    }
-                }
-            }
-        }
-
-        if (msg.mapKeys != null) {
             msg.theMap = U.newHashMap(msg.mapKeys.length);
 
             for (int i = 0; i < msg.mapKeys.length; i++) {
                 GridTopicMessage k = msg.mapKeys[i];
                 List v = msg.mapVals[i];
+
+                if (k != null)
+                    MessageMarshalling.unmarshal(k, kctx, ctx, clsLdr);
+
+                if (v != null) {
+                    for (GridTopicMessage e : (Collection<? extends GridTopicMessage>)v) {
+                        if (e != null)
+                            MessageMarshalling.unmarshal(msgFactory, e, kctx, ctx, clsLdr);
+                    }
+                }
 
                 msg.theMap.put(k, v);
             }
@@ -161,6 +135,16 @@ public final class TestMarshalledArrayMapMessageMarshaller implements MessageMar
             for (int i = 0; i < msg.fixedMapKeys.length; i++) {
                 GridTopicMessage k = msg.fixedMapKeys[i];
                 List v = msg.fixedMapVals[i];
+
+                if (k != null)
+                    MessageMarshalling.unmarshal(k, kctx, ctx, clsLdr);
+
+                if (v != null) {
+                    for (GridTopicMessage e : (Collection<? extends GridTopicMessage>)v) {
+                        if (e != null)
+                            MessageMarshalling.unmarshal(msgFactory, e, kctx, ctx, clsLdr);
+                    }
+                }
 
                 msg.fixedMap.put(k, v);
             }

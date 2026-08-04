@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testframework;
 
-import com.google.common.collect.Lists;
-import com.sun.management.HotSpotDiagnosticMXBean;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -87,6 +85,8 @@ import javax.management.MBeanServer;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import com.google.common.collect.Lists;
+import com.sun.management.HotSpotDiagnosticMXBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;

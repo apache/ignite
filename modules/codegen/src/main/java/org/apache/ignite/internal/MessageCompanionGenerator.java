@@ -35,13 +35,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
@@ -89,7 +85,7 @@ public abstract class MessageCompanionGenerator {
     /** Current indentation level. Set to the class-member level once in {@link #generate}; adjusted only by balanced shifts. */
     protected int indent;
 
-    /** Dispatches cache-object-context resolution in both the wire and the deployment generators. */
+    /** Dispatches cache-object-context resolution in both the marshaller and the deployment generators. */
     protected final TypeMirror cacheIdAwareType;
 
     /** */
@@ -142,7 +138,7 @@ public abstract class MessageCompanionGenerator {
         }
     }
 
-    /** @return Class name suffix: {@code "Serializer"}, {@code "Wire"} or {@code "Deployer"}. */
+    /** @return Class name suffix: {@code "Serializer"}, {@code "Marshaller"} or {@code "Deployer"}. */
     protected abstract String typeSuffix();
 
     /** @return {@code true} if no file should be generated for this type; default is {@code false}. */
@@ -214,13 +210,6 @@ public abstract class MessageCompanionGenerator {
     /** */
     protected TypeMirror erasedType(TypeMirror type) {
         return env.getTypeUtils().erasure(type);
-    }
-
-    /** Returns the element for {@code t}; for a type variable, uses its upper bound. */
-    protected Element element(TypeMirror t) {
-        return t.getKind() == TypeKind.DECLARED
-            ? ((DeclaredType)t).asElement()
-            : ((DeclaredType)((TypeVariable)t).getUpperBound()).asElement();
     }
 
     /** @return {@code "msg.<fieldName>"} accessor expression for {@code field}. */

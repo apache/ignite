@@ -39,10 +39,13 @@ public final class TestMarshalledCollectionMessageMarshaller implements MessageM
 
     /** */
     @Override public void unmarshal(TestMarshalledCollectionMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        CacheObjectContext ctx = cacheObjCtx;
+
         if (msg.keysArr != null) {
             msg.keys = U.newHashSet(msg.keysArr.length);
 
             for (GridCacheVersion e : msg.keysArr) {
+
                 msg.keys.add(e);
             }
 

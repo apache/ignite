@@ -36,7 +36,7 @@ public final class TestCollectionsMessageMarshaller implements MessageMarshaller
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.cacheObjectSet != null) {
-            for (CacheObject e : msg.cacheObjectSet) {
+            for (CacheObject e : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
                 if (e != null && ctx != null)
                     e.marshal(ctx);
             }
@@ -48,7 +48,7 @@ public final class TestCollectionsMessageMarshaller implements MessageMarshaller
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.cacheObjectSet != null) {
-            for (CacheObject e : msg.cacheObjectSet) {
+            for (CacheObject e : (Collection<? extends CacheObject>)msg.cacheObjectSet) {
                 if (e != null && ctx != null)
                     e.unmarshal(ctx, clsLdr);
             }
