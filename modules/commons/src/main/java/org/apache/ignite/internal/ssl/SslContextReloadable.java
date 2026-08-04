@@ -18,18 +18,23 @@
 package org.apache.ignite.internal.ssl;
 
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * A node component whose TLS certificates can be replaced at runtime, without a node restart.
  * <p>
- * A component registers itself in {@link GridInternalSubscriptionProcessor} once it has set SSL up, so an empty
- * registry means the node does not use SSL at all. It registers under one of the names below, which is also how
- * the reload command reports it, so they are part of what an operator sees and scripts against.
+ * A node registers one of these per configured SSL context factory once it has set SSL up, so an empty registry
+ * means the node does not use SSL at all. Each registers under the names of the transports it serves, which is
+ * also how the reload command reports it, so they are part of what an operator sees and scripts against.
  */
 public interface SslContextReloadable {
+    /**
+     * @return Transports served, as the reload command reports them.
+     */
+    public Collection<String> users();
+
     /** */
     public static final String COMMUNICATION = "communication";
 

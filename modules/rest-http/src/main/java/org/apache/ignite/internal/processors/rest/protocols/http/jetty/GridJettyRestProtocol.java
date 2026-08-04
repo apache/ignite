@@ -36,7 +36,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
-import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -177,7 +176,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 SslConnectionFactory sslConnFactory = connector.getConnectionFactory(SslConnectionFactory.class);
 
                 if (sslConnFactory != null) {
-                    ctx.internalSubscriptionProcessor().registerSslContextReloadable(SslContextReloadable.HTTP_REST,
+                    ctx.internalSubscriptionProcessor().registerSslContextReloadable(
                         new JettySslContextReloadable(sslConnFactory.getSslContextFactory()));
                 }
 

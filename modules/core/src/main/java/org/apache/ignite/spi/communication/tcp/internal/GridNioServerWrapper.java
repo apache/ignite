@@ -58,8 +58,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.ssl.NioSslContextReloadable;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -219,9 +217,6 @@ public class GridNioServerWrapper {
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
 
-    /** Registry the SSL filter is published to, {@code null} if the SPI runs outside of a node. */
-    private final GridInternalSubscriptionProcessor subscriptionProc;
-
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping = false;
 
@@ -271,8 +266,7 @@ public class GridNioServerWrapper {
         @Nullable GridMetricManager metricMgr,
         ThrowableBiFunction<ClusterNode, Integer, GridCommunicationClient, IgniteCheckedException> createTcpClientFun,
         CommunicationListener<Message> lsnr,
-        TcpHandshakeExecutor tcpHandshakeExecutor,
-        @Nullable GridInternalSubscriptionProcessor subscriptionProc
+        TcpHandshakeExecutor tcpHandshakeExecutor
     ) {
         this.log = log;
         this.cfg = cfg;
@@ -300,7 +294,6 @@ public class GridNioServerWrapper {
             }
         };
         this.tcpHandshakeExecutor = tcpHandshakeExecutor;
-        this.subscriptionProc = subscriptionProc;
 
         this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor("handshake-timeout-nio", igniteInstanceName);
     }
@@ -924,7 +917,7 @@ public class GridNioServerWrapper {
 
                 if (stateProvider.isSslEnabled()) {
                     sslFilter = U.sslFilter(
-                        igniteCfg.getSslContextFactory().create(),
+                        stateProvider.sslContextProvider(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
                         log,
@@ -975,6 +968,10 @@ public class GridNioServerWrapper {
 
                 GridNioServer<Message> srvr = builder.build();
 
+                // Named only once the port is taken: a busy port makes this method try the next one.
+                if (sslFilter != null)
+                    stateProvider.sslContextProvider().addUser(SslContextReloadable.COMMUNICATION, true);
+
                 if (mreg != null)
                     U.registerNioServerMetrics(srvr, filtersArr, mreg);
 
@@ -991,12 +988,6 @@ public class GridNioServerWrapper {
                 }
 
                 srvr.idleTimeout(cfg.idleConnectionTimeout());
-
-                // Registered only once the port is taken: a busy port makes this method try the next one.
-                if (sslFilter != null && subscriptionProc != null) {
-                    subscriptionProc.registerSslContextReloadable(SslContextReloadable.COMMUNICATION,
-                        new NioSslContextReloadable(igniteCfg.getSslContextFactory(), sslFilter, true));
-                }
 
                 return srvr;
             }

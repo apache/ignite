@@ -21,13 +21,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.LongConsumer;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -69,8 +69,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Array of enabled protocols. */
     private String[] enabledProtos;
 
-    /** SSL context to use. Volatile since it is replaced on certificate hot reload. */
-    private volatile SSLContext sslCtx;
+    /** Provider the context is taken from, once per new session. */
+    private final SslContextProvider sslCtxProvider;
 
     /** Order. */
     private ByteOrder order;
@@ -90,7 +90,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /**
      * Creates SSL filter.
      *
-     * @param sslCtx SSL context.
+     * @param sslCtxProvider Provider of the context new sessions are opened with.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -98,7 +98,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @param rejectedSesCnt Increments the rejected-sessions counter, or {@code null} if metrics disabled.
      */
     public GridNioSslFilter(
-        SSLContext sslCtx,
+        SslContextProvider sslCtxProvider,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
@@ -108,28 +108,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         super("SSL filter");
 
         this.log = log;
-        this.sslCtx = sslCtx;
+        this.sslCtxProvider = sslCtxProvider;
         this.directBuf = directBuf;
         this.order = order;
         this.handshakeDuration = handshakeDuration;
         this.rejectedSesCnt = rejectedSesCnt;
-    }
-
-    /**
-     * Replaces the SSL context used to create an {@link SSLEngine} for new sessions. Already opened sessions are
-     * not affected.
-     *
-     * @param sslCtx New SSL context.
-     */
-    public void updateSslContext(SSLContext sslCtx) {
-        this.sslCtx = sslCtx;
-    }
-
-    /**
-     * @return SSL context.
-     */
-    public SSLContext sslContext() {
-        return sslCtx;
     }
 
     /**
@@ -195,7 +178,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         if (sslMeta == null) {
             try {
-                engine = sslCtx.createSSLEngine();
+                engine = sslCtxProvider.context().createSSLEngine();
             }
             catch (IllegalArgumentException e) {
                 throw new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);

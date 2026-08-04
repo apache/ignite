@@ -19,7 +19,6 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -30,9 +29,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Represents abstract implementation of SSL Context Factory that caches the result of the first successful
- * attempt to create an {@link SSLContext} and always returns it as a result of further invocations of the
- * {@link AbstractSslContextFactory#create()}} method.
+ * Represents abstract implementation of SSL Context Factory that builds an {@link SSLContext} out of the current
+ * configuration on every {@link AbstractSslContextFactory#create()}, re-reading whatever the stores hold at that
+ * moment. Holding on to the context, and deciding when to replace it, is up to the caller.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -49,9 +48,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Enabled protocols. */
     protected String[] protocols;
-
-    /** Cached instance of an {@link SSLContext}. */
-    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /**
      * Gets protocol for secure transport.
@@ -180,47 +176,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** {@inheritDoc} */
     @Override public SSLContext create() {
-        SSLContext ctx = sslCtx.get();
-
-        if (ctx == null) {
-            try {
-                ctx = createSslContext();
-
-                if (!sslCtx.compareAndSet(null, ctx))
-                    ctx = sslCtx.get();
-            }
-            catch (SSLException e) {
-                throw new IgniteException(e);
-            }
+        try {
+            return createSslContext();
         }
-
-        return ctx;
-    }
-
-    /**
-     * Rebuilds the SSL context from the factory configuration, re-reading the key and trust stores, and replaces
-     * the instance cached by {@link #create()}.
-     *
-     * @return Newly created SSL context.
-     * @throws SSLException If the new context could not be created. The cached context is kept in this case.
-     */
-    public SSLContext reload() throws SSLException {
-        SSLContext ctx = build();
-
-        sslCtx.set(ctx);
-
-        return ctx;
-    }
-
-    /**
-     * Builds an SSL context from the current factory configuration, re-reading the key and trust stores, and leaves
-     * the instance cached by {@link #create()} in place. Useful to check the stores on disk without putting them in
-     * use.
-     *
-     * @return Newly created SSL context.
-     * @throws SSLException If the context could not be created.
-     */
-    public SSLContext build() throws SSLException {
-        return createSslContext();
+        catch (SSLException e) {
+            throw new IgniteException(e);
+        }
     }
 }

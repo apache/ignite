@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,6 +44,11 @@ public class JettySslContextReloadable implements SslContextReloadable {
      */
     public JettySslContextReloadable(SslContextFactory.Server sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<String> users() {
+        return Collections.singleton(SslContextReloadable.HTTP_REST);
     }
 
     /** {@inheritDoc} */

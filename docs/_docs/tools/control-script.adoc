@@ -1665,8 +1665,7 @@ the node restarts, so a rotation that ends with the old authority removed locks 
 Put the new key store or trust store at the path a node is already configured with, and run the command. Nothing in
 the configuration changes: the node re-reads what it points at.
 
-The command has two forms, and both answer with one line per node. With `--dry-run` it changes nothing and says
-what each node would do:
+The command has two forms. With `--dry-run` it changes nothing and says what each node would do:
 
 [source, shell]
 ----
@@ -1679,18 +1678,22 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: can be reloaded client connector, communic
 0cf9e4e2-bb7a-466a-a113-b6230b500001: can be reloaded client connector, communication, discovery; serving CN=node01 until 2039-11-07
 ----
 
+One line per SSL context factory: transports configured with the same one share the context, so they are reloaded
+together and reported together. A node configured with several factories answers with several lines.
+
 A node that would not be able to use the new certificate says so, and the command fails:
 
 [source,text]
 ----
-46db5416-d199-48d6-a807-88b7f1300000: can be reloaded client connector; would fail on communication (No trusted certificate found), discovery (No trusted certificate found); serving CN=node01 until 2039-11-07
+46db5416-d199-48d6-a807-88b7f1300000: would fail on client connector, communication, discovery (No trusted certificate found)
 ----
 
-For communication and discovery, a certificate that the node's own trust store rejects counts as unusable. This
-assumes every node runs the same key and trust store configuration. The same answer comes back when the trust
-stores hold the node certificates themselves rather than the certificate of an authority, which is the scheme the
-link:security/ssl-tls[SSL/TLS] page describes; replacing a certificate is then a change of trust, so give the new
-one to every trust store first, the way the next section gives them a new authority.
+A certificate the node's own trust store rejects counts as unusable, and is checked whenever any of the transports
+sharing that factory connects nodes to each other. This assumes every node runs the same key and trust store
+configuration. The same answer comes back when the trust stores hold the node certificates themselves rather than
+the certificate of an authority, which is the scheme the link:security/ssl-tls[SSL/TLS] page describes; replacing
+a certificate is then a change of trust, so give the new one to every trust store first, the way the next section
+gives them a new authority.
 
 Worth doing before every reload: the command reaches the nodes independently of each other, so a node that cannot
 use its new certificate otherwise shows up only once the others have already switched.

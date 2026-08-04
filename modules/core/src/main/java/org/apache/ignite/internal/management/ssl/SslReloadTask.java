@@ -21,9 +21,8 @@ import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -61,7 +60,12 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
             else {
                 failed = true;
 
-                res.append(e.getMessage());
+                String msg = e.getMessage() != null ? e.getMessage() : e.toString();
+
+                // The job reports every node with its id; anything else that failed has to be attributed too.
+                res.append(msg.startsWith(jobRes.getNode().id().toString())
+                    ? msg
+                    : jobRes.getNode().id() + ": " + msg);
             }
 
             res.append('\n');
@@ -89,85 +93,82 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
         @Override protected String run(SslReloadCommandArg arg) throws IgniteException {
             boolean apply = !arg.dryRun();
 
+            Collection<SslContextReloadable> comps =
+                ignite.context().internalSubscriptionProcessor().getSslContextReloadables();
+
+            if (comps.isEmpty())
+                return ignite.localNode().id() + ": SSL is not configured";
+
             // Sorted, so that the report of a node does not depend on the order the components started in.
-            Map<String, SslContextReloadable> comps =
-                new TreeMap<>(ignite.context().internalSubscriptionProcessor().getSslContextReloadables());
+            // A provider whose transport never started serves nothing, so it has nothing to report either.
+            List<SslContextReloadable> sorted = new ArrayList<>();
 
-            List<String> rebuilt = new ArrayList<>();
-            List<String> unchanged = new ArrayList<>();
-            List<String> failed = new ArrayList<>();
-
-            for (Map.Entry<String, SslContextReloadable> e : comps.entrySet()) {
-                try {
-                    SslContextReloadable comp = e.getValue();
-
-                    boolean newCtx = apply ? comp.reloadSslContext() : comp.checkSslContext();
-
-                    (newCtx ? rebuilt : unchanged).add(e.getKey());
-                }
-                catch (Exception ex) {
-                    // Every component is attempted, so that one broken transport does not hide the state of the rest.
-                    // Anything may be thrown here: the SSL context comes from a user-supplied factory.
-                    failed.add(e.getKey() + " (" + ex.getMessage() + ')');
-                }
+            for (SslContextReloadable comp : comps) {
+                if (!comp.users().isEmpty())
+                    sorted.add(comp);
             }
 
-            String res = ignite.localNode().id() + ": " +
-                report(apply, rebuilt, unchanged, failed, servedCertificate(comps.values()));
+            // Configured but serving nothing is a different answer from not configured at all: it means a
+            // transport did not start, which the operator would otherwise have to find out some other way.
+            if (sorted.isEmpty())
+                return ignite.localNode().id() + ": SSL is configured, but no transport is serving it";
 
-            if (!failed.isEmpty())
+            sorted.sort(Comparator.comparing(comp -> String.join(", ", comp.users())));
+
+            List<String> lines = new ArrayList<>();
+
+            boolean failed = false;
+
+            for (SslContextReloadable comp : sorted) {
+                String users = String.join(", ", comp.users());
+
+                String outcome;
+
+                try {
+                    outcome = (apply ? comp.reloadSslContext() : comp.checkSslContext())
+                        ? (apply ? "reloaded " : "can be reloaded ") + users + served(comp)
+                        : (apply ? "not reloaded " : "cannot be reloaded ") + users +
+                            " - the SSL context is handed over ready-made, so there is nothing to read again" +
+                            served(comp);
+                }
+                catch (Exception e) {
+                    // Every provider is attempted, so that one broken transport does not hide the state of the
+                    // rest. Anything may be thrown here: the context comes from a user-supplied factory.
+                    failed = true;
+
+                    outcome = (apply ? "failed on " : "would fail on ") + users + " (" + reason(e) + ')';
+                }
+
+                lines.add(ignite.localNode().id() + ": " + outcome);
+            }
+
+            String res = String.join("\n", lines);
+
+            if (failed)
                 throw new IgniteException(res);
 
             return res;
         }
 
         /**
-         * @param comps Components of this node.
-         * @return Certificate the node presents to other nodes, or {@code null} if none could tell.
+         * @param e Failure to describe.
+         * @return Its message, or its type when it carries none, which is what an unexpected failure out of a
+         *      user-supplied factory tends to look like.
          */
-        private static @Nullable X509Certificate servedCertificate(Collection<SslContextReloadable> comps) {
-            for (SslContextReloadable comp : comps) {
-                X509Certificate cert = comp.servedCertificate();
-
-                if (cert != null)
-                    return cert;
-            }
-
-            return null;
+        private static String reason(Exception e) {
+            return e.getMessage() != null ? e.getMessage() : e.toString();
         }
 
         /**
-         * @param apply Whether the rebuilt certificates were put in use.
-         * @param rebuilt Components that produced new certificates.
-         * @param unchanged Components that were handed a ready-made context and have nothing to read again.
-         * @param failed Components that could not be rebuilt, with the reason.
-         * @param served Certificate the node presents to other nodes, may be {@code null}.
-         * @return Outcome for this node.
+         * @param comp Provider to ask.
+         * @return Certificate this provider presents, ready to append to its line, or an empty string if it cannot
+         *      be told without a peer, which is the case for the transports a client connects to.
          */
-        private static String report(boolean apply, List<String> rebuilt, List<String> unchanged,
-            List<String> failed, @Nullable X509Certificate served) {
-            if (rebuilt.isEmpty() && unchanged.isEmpty() && failed.isEmpty())
-                return "SSL is not configured";
+        private static String served(SslContextReloadable comp) {
+            X509Certificate cert = comp.servedCertificate();
 
-            List<String> parts = new ArrayList<>();
-
-            if (!rebuilt.isEmpty())
-                parts.add((apply ? "reloaded " : "can be reloaded ") + String.join(", ", rebuilt));
-
-            if (!unchanged.isEmpty()) {
-                parts.add((apply ? "not reloaded " : "cannot be reloaded ") + String.join(", ", unchanged) +
-                    " - the SSL context is handed over ready-made, so there is nothing to read again");
-            }
-
-            if (!failed.isEmpty())
-                parts.add((apply ? "failed on " : "would fail on ") + String.join(", ", failed));
-
-            if (served != null) {
-                parts.add("serving " + served.getSubjectX500Principal() + " until " +
-                    served.getNotAfter().toInstant().atOffset(ZoneOffset.UTC).toLocalDate());
-            }
-
-            return String.join("; ", parts);
+            return cert == null ? "" : "; serving " + cert.getSubjectX500Principal() + " until " +
+                cert.getNotAfter().toInstant().atOffset(ZoneOffset.UTC).toLocalDate();
         }
     }
 }

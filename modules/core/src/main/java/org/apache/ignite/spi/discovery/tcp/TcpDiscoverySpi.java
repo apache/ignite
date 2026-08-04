@@ -28,7 +28,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -61,9 +60,8 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
-import org.apache.ignite.internal.ssl.SslContextUtils;
-import org.apache.ignite.internal.ssl.SslContextValidator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -234,7 +232,7 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 @DiscoverySpiMutableCustomMessageSupport(true)
-public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi, SslContextReloadable {
+public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -426,7 +424,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** SSL context, {@code null} if SSL is disabled. Volatile: replaced on certificate reload. */
     @GridToStringExclude
-    private volatile SSLContext sslCtx;
+    private volatile SslContextProvider sslCtxProvider;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1670,7 +1668,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslCtx.getSocketFactory().createSocket();
+                sock = sslCtxProvider.context().getSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1701,7 +1699,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (!isSslEnabled())
             return sock;
 
-        SSLSocket sslSock = (SSLSocket)sslCtx.getSocketFactory().createSocket(sock, null, sock.getPort(), true);
+        SSLSocket sslSock = (SSLSocket)sslCtxProvider.context()
+            .getSocketFactory().createSocket(sock, null, sock.getPort(), true);
 
         // Set after the factory has applied the configured SSL parameters, which carry the default client auth mode.
         sslSock.setUseClientMode(false);
@@ -2197,16 +2196,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                sslCtx = ignite.configuration().getSslContextFactory().create();
+                Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
+
+                // A node that is not an IgniteEx cannot be reached by the reload command, so it owns its context
+                // alone instead of sharing a provider through the registry.
+                sslCtxProvider = ignite instanceof IgniteEx
+                    ? ((IgniteEx)ignite).context().internalSubscriptionProcessor()
+                        .sslContextProvider(factory, SslContextReloadable.DISCOVERY, true)
+                    : new SslContextProvider(factory);
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
                     + ignite.configuration().getSslContextFactory(), e);
-            }
-
-            if (ignite instanceof IgniteEx) {
-                ((IgniteEx)ignite).context().internalSubscriptionProcessor()
-                    .registerSslContextReloadable(DISCOVERY, this);
             }
         }
 
@@ -2337,55 +2338,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      */
     boolean isSslEnabled() {
         return sslEnable;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean reloadSslContext() throws IgniteCheckedException {
-        SSLContext ctx = rebuildSslContext(true);
-
-        if (ctx == null)
-            return false;
-
-        sslCtx = ctx;
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean checkSslContext() throws IgniteCheckedException {
-        return rebuildSslContext(false) != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable X509Certificate servedCertificate() {
-        try {
-            return SslContextValidator.validateInterNode(sslCtx);
-        }
-        catch (SSLException ignored) {
-            return null;
-        }
-    }
-
-    /**
-     * @param apply Whether the factory should hand the rebuilt context out afterwards.
-     * @return Rebuilt context, or {@code null} if the factory returned the one already in use.
-     * @throws IgniteCheckedException If the context could not be built or did not pass the check.
-     */
-    private @Nullable SSLContext rebuildSslContext(boolean apply) throws IgniteCheckedException {
-        Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
-
-        try {
-            SSLContext ctx = apply ? SslContextUtils.reload(factory, sslCtx) : SslContextUtils.build(factory, sslCtx);
-
-            if (ctx != null)
-                SslContextValidator.validateInterNode(ctx);
-
-            return ctx;
-        }
-        catch (SSLException e) {
-            // The component name is added by the reporting task, so only the cause is of interest here.
-            throw new IgniteCheckedException(e);
-        }
     }
 
     /** {@inheritDoc} */

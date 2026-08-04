@@ -26,13 +26,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.SslMode;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.ClientSslUtils;
@@ -40,7 +39,7 @@ import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
-import org.apache.ignite.internal.ssl.SslContextUtils;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
@@ -63,11 +62,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final GridNioServer<ByteBuffer> srv;
 
-    /** SSL filter of the server, {@code null} if SSL is disabled. */
-    private final GridNioSslFilter sslFilter;
-
-    /** Client configuration, kept to rebuild the SSL context out of it. */
-    private final ClientConfiguration cfg;
+    /** Owner of the SSL context, {@code null} if SSL is disabled. */
+    private final SslContextProvider sslCtxProvider;
 
     /** Set when a TLS handshake was refused, so that the next connection is opened on rebuilt certificates. */
     private final AtomicBoolean reloadSsl = new AtomicBoolean();
@@ -90,17 +86,17 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioClientParser(), gridLog, false);
 
-        this.cfg = cfg;
+        if (cfg.getSslMode() != SslMode.DISABLED) {
+            sslCtxProvider = new SslContextProvider(() -> ClientSslUtils.getSslContext(cfg));
 
-        SSLContext sslCtx = ClientSslUtils.getSslContext(cfg);
+            GridNioSslFilter sslFilter =
+                new GridNioSslFilter(sslCtxProvider, true, ByteOrder.nativeOrder(), gridLog, null, null);
 
-        if (sslCtx != null) {
-            sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog, null, null);
             sslFilter.directMode(false);
             filters = new GridNioFilter[] {codecFilter, sslFilter};
         }
         else {
-            sslFilter = null;
+            sslCtxProvider = null;
             filters = new GridNioFilter[] {codecFilter};
         }
 
@@ -193,7 +189,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             Map<Integer, Object> meta = new HashMap<>();
             IgniteInternalFuture<?> sslHandshakeFut = null;
 
-            if (sslFilter != null) {
+            if (sslCtxProvider != null) {
                 sslHandshakeFut = new GridFutureAdapter<>();
 
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
@@ -233,19 +229,12 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     }
 
     /**
-     * Rebuilds the SSL context out of the client configuration, so that connections opened afterwards use the
-     * certificates that are on disk now. The context in use is kept if the new one cannot be built.
+     * Rebuilds the SSL context out of the files on disk, so that connections opened afterwards use the certificates
+     * that are there now. The context in use is kept if the new one cannot be built.
      */
     private void reloadSslContext() {
         try {
-            Factory<SSLContext> sslCtxFactory = cfg.getSslContextFactory();
-
-            SSLContext sslCtx = sslCtxFactory != null
-                ? SslContextUtils.build(sslCtxFactory, sslFilter.sslContext())
-                : ClientSslUtils.getSslContext(cfg);
-
-            if (sslCtx != null && sslCtx != sslFilter.sslContext())
-                sslFilter.updateSslContext(sslCtx);
+            sslCtxProvider.reloadSslContext();
         }
         catch (Exception ignored) {
             // The connection attempt fails on its own, and the certificates in use stay untouched.

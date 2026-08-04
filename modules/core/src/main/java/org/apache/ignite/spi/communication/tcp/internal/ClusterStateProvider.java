@@ -19,12 +19,15 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import java.util.function.Supplier;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -56,6 +59,9 @@ public class ClusterStateProvider {
 
     /** Ignite ex supplier. */
     private final Supplier<Ignite> igniteExSupplier;
+
+    /** Owner of the SSL context of this transport; resolved once, then asked on every outgoing connection. */
+    private volatile SslContextProvider sslCtxProvider;
 
     /**
      * @param ignite Ignite.
@@ -104,10 +110,31 @@ public class ClusterStateProvider {
     }
 
     /**
+     * @return Owner of the SSL context this transport opens connections with.
+     */
+    public SslContextProvider sslContextProvider() {
+        SslContextProvider provider = sslCtxProvider;
+
+        if (provider == null) {
+            Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
+
+            // A node that is not an IgniteEx cannot be reached by the reload command, so it owns its context alone
+            // instead of sharing a provider through the registry. The transport says its name once it has bound.
+            provider = ignite instanceof IgniteEx
+                ? ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContextProvider(factory, null, true)
+                : new SslContextProvider(factory);
+
+            sslCtxProvider = provider;
+        }
+
+        return provider;
+    }
+
+    /**
      * @return {@link SSLEngine} for ssl connections.
      */
     public SSLEngine createSSLEngine() {
-        return ignite.configuration().getSslContextFactory().create().createSSLEngine();
+        return sslContextProvider().context().createSSLEngine();
     }
 
     /**
