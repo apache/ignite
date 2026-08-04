@@ -556,10 +556,7 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
     }
 
-    /**
-     * Verifies array-backed Map reconstruction of {@code @Marshalled} fields, both rebuilt and final maps. The message
-     * both marshals and has messages to walk, so it gets a companion for each.
-     */
+    /** Verifies array-backed Map reconstruction of {@code @Marshalled} fields, both rebuilt and final maps. */
     @Test
     public void testMarshalledArrayMapMessage() {
         Compilation compilation = compile("TestMarshalledArrayMapMessage.java");
@@ -626,13 +623,24 @@ public class MessageProcessorTest {
 
     /** Verifies the processor rejects a {@code NonMarshallableMessage} with declared marshalling logic. */
     @Test
-    public void testPlainWithMarshalledFieldFailed() {
+    public void testNonMarshallableWithMarshalledFieldFailed() {
         Compilation compilation = compile("WrongNonMarshallableMessage.java");
 
         assertThat(compilation).failed();
 
-        assertThat(compilation)
-            .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields");
+        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
+            "or SelfMarshallingMessage, nor declare @Marshalled fields");
+    }
+
+    /** A self-marshalling step of a {@code NonMarshallableMessage} would never run: it gets no marshaller to call it. */
+    @Test
+    public void testNonMarshallableSelfMarshallingFailed() {
+        Compilation compilation = compile("WrongSelfMarshallingMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
+            "or SelfMarshallingMessage, nor declare @Marshalled fields");
     }
 
     /** */
