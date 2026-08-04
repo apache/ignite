@@ -155,4 +155,9 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     public static long defaultFetchValue() {
         return -1;
     }
+
+    /** Offset value if undefined. */
+    public static long defaultOffsetValue() {
+        return 0;
+    }
 }
