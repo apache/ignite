@@ -17,26 +17,15 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
 
-public class DefaultMapperEnumFieldsMessage implements Message {
+public class CustomEnumMapperOnNonEnumMapMessage implements Message {
     @Order(0)
-    TransactionIsolation publicEnum;
+    @CustomMapper("org.apache.ignite.internal.CustomEnumMapper")
+    Map<String, Integer> intColField;
 
-    @Order(1)
-    GridCacheOperation internalEnum;
-
-    @Order(2)
-    Map<Collection<TransactionIsolation>, String> isolationStringMap;
-
-    @Order(3)
-    Collection<PartitionHashRecord.PartitionState> partStates;
-
+    @Override
     public short directType() {
         return 0;
     }
