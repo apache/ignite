@@ -38,16 +38,15 @@ import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
-import static org.apache.ignite.internal.MessageProcessor.CUSTOM_WIRE_FORM_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.PLAIN_MESSAGE_INTERFACE;
 
 /**
- * Generates the {@code *Wire} class of a {@code Message}: one walk over its {@code @Order} fields — the loops,
- * null guards and recursion into collections — with the concrete calls supplied by two helpers:
- * {@link WireCalls} for nested messages and cache objects, {@link MarshallingCalls} for what becomes bytes.
- * A message with nothing to walk and nothing to marshal gets no wire.
+ * Generates the {@code *Wire} class of a {@code Message}: a method that calls the marshalling of the message,
+ * then what the message does itself, then the same method on every nested message. The walk into the nested ones —
+ * the loops, null guards and recursion — is written here; the other two parts come from {@link MarshallingCalls}
+ * and {@link SelfMarshallingCalls}. A message with nothing to do gets no wire.
  */
 public class MessageWireGenerator extends MessageCompanionGenerator {
     /** Interface the generated wires implement. */
@@ -68,17 +67,17 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     /** */
     private static final String IGNITE_MESSAGE_FACTORY_CLS = "org.apache.ignite.internal.managers.communication.IgniteMessageFactory";
 
-    /** The marshalling calls of the generated class: {@code @Marshalled} fields and the message's own {@code marshal}. */
+    /** Facade the generated code calls to take nested messages to the wire and back. */
+    private static final String MESSAGE_WIRES_CLS = "org.apache.ignite.internal.managers.communication.MessageWires";
+
+    /** What the {@code Marshaller} does: {@code @Marshalled} fields and the message's own {@code marshal}. */
     private final MarshallingCalls marshalling = new MarshallingCalls(this);
 
-    /** The {@code MessageWires} calls of the generated class: the walk's leaves. */
-    private final WireCalls wire = new WireCalls(this);
+    /** What the message and its cache objects do themselves, with no {@code Marshaller} in play. */
+    private final SelfMarshallingCalls selfMarshalling = new SelfMarshallingCalls(this);
 
     /** Accumulated source lines of the generated methods. */
     private final List<String> methods = new ArrayList<>();
-
-    /** */
-    private final TypeMirror customWireFormMsgType;
 
     /** */
     private final TypeMirror msgType;
@@ -98,23 +97,19 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     /** */
     private final TypeMirror cacheGrpIdMsgType;
 
-    /** Whether the message is a {@code CustomWireFormMessage}, so the generated methods call its own step. */
-    private boolean customWire;
-
     /** Whether any generated method got a non-empty body; a wire without one is skipped entirely. */
     private boolean hasStatements;
 
     /** Whether the currently generated method emitted a loop-nested {@code MessageWires} call and so needs the {@code msgFactory} local. */
-    boolean usesMsgFactory;
+    private boolean usesMsgFactory;
 
     /** Nesting depth of the current for-loop; names loop variables {@code e}, {@code e1}, {@code e2}… */
-    int loopDepth;
+    private int loopDepth;
 
     /** */
     MessageWireGenerator(ProcessingEnvironment env) {
         super(env);
 
-        customWireFormMsgType = type(CUSTOM_WIRE_FORM_MESSAGE_INTERFACE);
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         plainType = type(PLAIN_MESSAGE_INTERFACE);
@@ -131,8 +126,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     /** {@inheritDoc} */
     @Override protected void generateBody(List<VariableElement> fields) {
         marshalling.readFields(enclosedFields());
-
-        customWire = customWireFormMsgType != null && assignableFrom(type.asType(), customWireFormMsgType);
+        selfMarshalling.readType();
 
         generatePrepareMethod(fields);
         generateRestoreMethods(fields);
@@ -270,9 +264,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
             List<String> code = new ArrayList<>();
 
-            if (customWire)
-                appendBlock(code, List.of(indentedLine("msg.toWireForm();")));
-
+            appendBlock(code, selfMarshalling.ownStep(Direction.OUT));
             appendBlock(code, marshalling.prepare());
             appendFields(code, orderedFields, Direction.OUT);
 
@@ -330,9 +322,7 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
             appendFields(code, fields, Direction.IN);
             appendBlock(code, marshalling.restore());
-
-            if (customWire)
-                appendBlock(code, List.of(indentedLine("msg.fromWireForm();")));
+            appendBlock(code, selfMarshalling.ownStep(Direction.IN));
 
             if (code.isEmpty())
                 return;
@@ -350,8 +340,25 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
     private void generateRestoreNioMethod(String params, List<VariableElement> nioFields) {
         hasStatements |= emitMethod(methods, "restoreNio(" + params + ")", body -> {
             for (VariableElement f : nioFields)
-                appendBlock(body, wire.forNioMessage(fieldAccessor(f)));
+                appendBlock(body, nioMessageCode(fieldAccessor(f)));
         });
+    }
+
+    /** Cache-free read-back of a {@code @NioField} message field on the NIO thread (no cache context available). */
+    private List<String> nioMessageCode(String accessor) {
+        imports.add(MESSAGE_WIRES_CLS);
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null)", accessor));
+
+        indent++;
+
+        code.add(indentedLine("MessageWires.restore(%s, kctx);", accessor));
+
+        indent--;
+
+        return code;
     }
 
     /** Generates the code of each field and appends the non-empty results to {@code body}. */
@@ -376,9 +383,9 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return isPlain(t) ? List.of() : wire.forMessage(accessor, dir);
+                return isPlain(t) ? List.of() : messageCode(accessor, dir);
             if (isCacheObject(t))
-                return wire.forCacheObject(accessor, dir);
+                return selfMarshalling.forCacheObject(accessor, dir);
             if (isMap(t))
                 return mapCode((DeclaredType)t, accessor, dir);
             if (isCollection(t))
@@ -386,6 +393,38 @@ public class MessageWireGenerator extends MessageCompanionGenerator {
         }
 
         return List.of();
+    }
+
+    /**
+     * Generates the null-guarded recursion into a nested message field. Loop-nested calls go through the overloads
+     * taking the pre-resolved {@code msgFactory} local (see {@link #prependMsgFactoryResolution}), so the factory is
+     * not re-resolved from the context on every element.
+     */
+    private List<String> messageCode(String accessor, Direction dir) {
+        imports.add(MESSAGE_WIRES_CLS);
+
+        List<String> code = new ArrayList<>();
+
+        code.add(indentedLine("if (%s != null)", accessor));
+
+        indent++;
+
+        if (loopDepth > 0) {
+            usesMsgFactory = true;
+
+            code.add(dir == Direction.OUT
+                ? indentedLine("MessageWires.prepare(msgFactory, %s, kctx, ctx);", accessor)
+                : indentedLine("MessageWires.restore(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
+        }
+        else {
+            code.add(dir == Direction.OUT
+                ? indentedLine("MessageWires.prepare(%s, kctx, ctx);", accessor)
+                : indentedLine("MessageWires.restore(%s, kctx, ctx, clsLdr);", accessor));
+        }
+
+        indent--;
+
+        return code;
     }
 
     /** Generates a null-guarded for-each loop over the array's elements. */
