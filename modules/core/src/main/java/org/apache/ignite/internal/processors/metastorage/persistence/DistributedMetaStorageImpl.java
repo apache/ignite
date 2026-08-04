@@ -964,11 +964,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                         addToHistoryCache(ver.id() + i - (len - 1), newHist[i]);
                 }
 
-                if (isPersistenceEnabled && nodeData.fullDataKeys != null) {
-                    assert newHist != null;
-
+                if (isPersistenceEnabled && nodeData.fullDataKeys != null)
                     dataWriter.addUpdateTask(ver, newHist, nodeData.fullDataKeys, nodeData.fullDataValsBytes);
-                }
 
                 if (nodeData.updates != null) {
                     for (DistributedMetaStorageHistoryItem item : DistributedMetaStorageHistoryItem.fromMessages(nodeData.updates))
