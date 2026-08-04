@@ -67,7 +67,8 @@ public final class MessageWire {
      */
     public static <M extends Message> void toWire(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        ownStep(msg, true);
+        if (msg instanceof CustomWireFormMessage wireFormMsg)
+            wireFormMsg.toWireForm();
 
         MessageMarshaller<M> marshaller = marshaller(msgFactory, msg);
 
@@ -118,7 +119,8 @@ public final class MessageWire {
         if (marshaller != null)
             marshaller.unmarshal(msg, kctx, cacheObjCtx, clsLdr);
 
-        ownStep(msg, false);
+        if (msg instanceof CustomWireFormMessage wireFormMsg)
+            wireFormMsg.fromWireForm();
     }
 
     /**
@@ -144,7 +146,8 @@ public final class MessageWire {
         if (marshaller != null)
             marshaller.unmarshal(msg, kctx);
 
-        ownStep(msg, false);
+        if (msg instanceof CustomWireFormMessage wireFormMsg)
+            wireFormMsg.fromWireForm();
     }
 
     /**
@@ -159,22 +162,6 @@ public final class MessageWire {
 
         if (wireForm != null)
             wireForm.fromWireNio(msg, kctx);
-    }
-
-    /**
-     * Runs the step the message does itself; a no-op for a message without one.
-     *
-     * @param msg Message to run the step of.
-     * @param out {@code true} on the way out, {@code false} on the way in.
-     */
-    private static void ownStep(Message msg, boolean out) {
-        if (!(msg instanceof CustomWireFormMessage))
-            return;
-
-        if (out)
-            ((CustomWireFormMessage)msg).toWireForm();
-        else
-            ((CustomWireFormMessage)msg).fromWireForm();
     }
 
     /** @return the message factory of {@code kctx}. */
