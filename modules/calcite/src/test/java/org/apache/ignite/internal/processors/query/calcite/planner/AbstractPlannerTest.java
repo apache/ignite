@@ -713,7 +713,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
      *               E.g. {@code createTable("MY_TABLE", distribution, "ID", Integer.class, "VAL", String.class)}.
      * @return Instance of the {@link TestTable}.
      */
-    static TestTable createTable(String name, IgniteDistribution distr, Object... fields) {
+    protected static TestTable createTable(String name, IgniteDistribution distr, Object... fields) {
         return createTable(name, DEFAULT_TBL_SIZE, distr, fields);
     }
 
