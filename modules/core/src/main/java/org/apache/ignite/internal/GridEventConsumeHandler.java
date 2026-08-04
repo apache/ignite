@@ -389,10 +389,11 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
 
     /** {@inheritDoc} */
     @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (filter != null) {
-            Class<?> cls = U.detectClass(filter);
+            Class cls = U.detectClass(filter);
 
             clsName = cls.getName();
 
@@ -410,6 +411,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert nodeId != null;
+        assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (filterBytes != null) {

@@ -157,14 +157,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @return Local event routines.
      */
     private Collection<ContinousRoutineLocalInfo> localRoutines(GridContinuousProcessor proc) {
-        return F.view(
-            U.<Map<UUID, ContinousRoutineLocalInfo>>field(proc, "locInfos").values(),
+        return F.view(U.<Map<UUID, ContinousRoutineLocalInfo>>field(proc, "locInfos").values(),
             new IgnitePredicate<>() {
                 @Override public boolean apply(ContinousRoutineLocalInfo info) {
                     return info.handler().isEvents();
                 }
-            }
-        );
+            });
     }
 
     /**
