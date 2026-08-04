@@ -72,6 +72,7 @@ import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  *
@@ -82,8 +83,12 @@ public class PlanExecutionTest extends AbstractPlannerTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
+
+        msgFactory.init(jdk(), jdk());
+
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
-        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CalciteMessageFactory()});
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{msgFactory});
     }
 
     /**
