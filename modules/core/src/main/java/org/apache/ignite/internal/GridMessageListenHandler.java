@@ -170,8 +170,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         if (predDepInfo != null)
             return;
 
-        assert predBytes == null;
-
         if (topic != null)
             topicBytes = marsh.marshal(topic);
 
@@ -220,8 +218,6 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
             return;
         }
-
-        assert predBytes != null;
 
         if (topicBytes != null)
             topic = marsh.unmarshal(topicBytes, clsLdr);
