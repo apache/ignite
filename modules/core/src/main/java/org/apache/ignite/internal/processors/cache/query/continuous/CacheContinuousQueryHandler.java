@@ -88,7 +88,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
@@ -1497,14 +1496,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
 
             throw err;
         }
-    }
-
-    /**
-     * @return Whether the handler is marshalled for peer class loading.
-     */
-    @TestOnly
-    public boolean isMarshalled() {
-        return rmtFilterDep != null || rmtFilterFactoryDep != null || rmtTransFactoryDep != null;
     }
 
     /** {@inheritDoc} */
