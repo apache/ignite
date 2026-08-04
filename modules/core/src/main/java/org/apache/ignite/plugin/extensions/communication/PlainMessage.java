@@ -15,18 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
-
-public class WrongNonMarshallableMessage implements NonMarshallableMessage {
-    @Order(0)
-    byte[] dataBytes;
-
-    @Marshalled("dataBytes")
-    Object data;
-
-    public short directType() {
-        return 0;
-    }
+/**
+ * A {@link Message} that needs nothing but its serializer: no field of it is marshalled, walked into or deployed, so
+ * codegen writes no companion for it and nothing walks into a field of this type either.
+ */
+public interface PlainMessage extends Message {
 }

@@ -36,7 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -51,8 +51,8 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
     /** Direct type of the message that has a wire form only. */
     private static final short WIRE_ONLY_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 2);
 
-    /** Direct type of the message excluded from marshalling. */
-    private static final short NON_MARSHALLABLE_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 3);
+    /** Direct type of the message that gets no companion at all. */
+    private static final short PLAIN_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 3);
 
     /** Steps taken, in the order they happened. */
     private static final List<String> STEPS = Collections.synchronizedList(new ArrayList<>());
@@ -70,7 +70,7 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
                 registry.registerExtension(MessageFactoryProvider.class, factory -> {
                     factory.register(BOTH_TYPE, new BothSerializer(), new RecordingMarshaller());
                     factory.register(WIRE_ONLY_TYPE, new WireOnlySerializer(), null);
-                    factory.register(NON_MARSHALLABLE_TYPE, new NonMarshallableSerializer(), null);
+                    factory.register(PLAIN_TYPE, new PlainSerializer(), null);
                 });
             }
         });
@@ -121,26 +121,26 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
     }
 
     /**
-     * {@link NonMarshallableMessage} says no marshaller is generated, which says nothing about a step the message
-     * runs itself, so the two are free to meet.
+     * {@link PlainMessage} says codegen writes no companion for the message, which says nothing about a step the
+     * message runs itself, so the two are free to meet.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testWireFormRunsForNonMarshallableMessage() throws Exception {
+    public void testWireFormRunsForPlainMessage() throws Exception {
         GridKernalContext kctx = startGrid(0).context();
 
-        NonMarshallableWireFormMessage msg = new NonMarshallableWireFormMessage();
+        PlainWireFormMessage msg = new PlainWireFormMessage();
 
         MessageWire.toWire(msg, kctx, null);
         MessageWire.fromWire(msg, kctx, null, getClass().getClassLoader());
 
-        assertEquals("Being excluded from marshalling must not take the message's own step away",
+        assertEquals("Getting no companion must not take the message's own step away",
             List.of("toWireForm", "fromWireForm"), STEPS);
     }
 
-    /** Fieldless message excluded from marshalling that still has a wire form. */
-    private static class NonMarshallableWireFormMessage implements NonMarshallableMessage, CustomWireFormMessage {
+    /** Fieldless message that gets no companion, yet still has a wire form of its own. */
+    private static class PlainWireFormMessage implements PlainMessage, CustomWireFormMessage {
         /** {@inheritDoc} */
         @Override public void toWireForm() {
             STEPS.add("toWireForm");
@@ -202,21 +202,21 @@ public class MessageWireFormStepTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Header-only serializer for {@link NonMarshallableWireFormMessage}. */
-    private static class NonMarshallableSerializer implements MessageSerializer<NonMarshallableWireFormMessage> {
+    /** Header-only serializer for {@link PlainWireFormMessage}. */
+    private static class PlainSerializer implements MessageSerializer<PlainWireFormMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(NonMarshallableWireFormMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(PlainWireFormMessage msg, MessageWriter writer) {
             return writeHeader(msg, writer);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(NonMarshallableWireFormMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(PlainWireFormMessage msg, MessageReader reader) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public NonMarshallableWireFormMessage createMessage() {
-            return new NonMarshallableWireFormMessage();
+        @Override public PlainWireFormMessage createMessage() {
+            return new PlainWireFormMessage();
         }
     }
 

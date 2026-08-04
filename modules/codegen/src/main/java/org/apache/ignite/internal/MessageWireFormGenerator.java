@@ -42,7 +42,7 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
-import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.PLAIN_MESSAGE_INTERFACE;
 
 /**
  * Generates the {@code *WireForm} class of a {@code Message}: the code that walks into its nested messages and
@@ -63,7 +63,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
     private final TypeMirror cacheObjType;
 
     /** */
-    private final TypeMirror nonMarshallableType;
+    private final TypeMirror plainType;
 
     /** */
     private final TypeMirror mapType;
@@ -80,7 +80,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
-        nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+        plainType = type(PLAIN_MESSAGE_INTERFACE);
         mapType = type(Map.class.getName());
         colType = type(Collection.class.getName());
     }
@@ -276,7 +276,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return isNonMarshallable(t) ? List.of() : messageCode(accessor, mode);
+                return isPlain(t) ? List.of() : messageCode(accessor, mode);
             if (isCacheObject(t))
                 return cacheObjectCode(accessor, mode);
             if (isMap(t))
@@ -484,7 +484,7 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
         if (t.getKind() == TypeKind.DECLARED || t.getKind() == TypeKind.TYPEVAR) {
             if (isMessage(t))
-                return !isNonMarshallable(t);
+                return !isPlain(t);
 
             if (isCacheObject(t))
                 return true;
@@ -505,12 +505,12 @@ public class MessageWireFormGenerator extends MessageWireCompanionGenerator {
 
     /** {@inheritDoc} */
     @Override protected boolean shouldSkip(TypeElement type, List<VariableElement> fields) {
-        return isNonMarshallable(type.asType());
+        return isPlain(type.asType());
     }
 
-    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code NonMarshallableMessage} marker. */
-    private boolean isNonMarshallable(TypeMirror t) {
-        return assignableFrom(t, nonMarshallableType);
+    /** Recursion skip for such fields is subtype-safe: subclasses inherit the {@code PlainMessage} marker. */
+    private boolean isPlain(TypeMirror t) {
+        return assignableFrom(t, plainType);
     }
 
     /** */

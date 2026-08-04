@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.extensions.communication;
+package org.apache.ignite.internal;
 
-/** Marker interface: no {@link MessageMarshaller} is generated for implementing classes. */
-public interface NonMarshallableMessage extends Message {
+import org.apache.ignite.plugin.extensions.communication.PlainMessage;
+
+public class WrongPlainMessage implements PlainMessage {
+    @Order(0)
+    byte[] dataBytes;
+
+    @Marshalled("dataBytes")
+    Object data;
+
+    public short directType() {
+        return 0;
+    }
 }

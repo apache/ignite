@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWireForm;
-import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.PlainMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -77,11 +77,11 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
         MessageSerializer<T> serializer = loadGenerated(cls, Companion.SERIALIZER, null);
 
-        boolean nonMarshallable = NonMarshallableMessage.class.isAssignableFrom(cls);
+        boolean plain = PlainMessage.class.isAssignableFrom(cls);
 
-        MessageMarshaller<T> marshaller = nonMarshallable ? null : loadGenerated(cls, Companion.MARSHALLER, marsh);
+        MessageMarshaller<T> marshaller = plain ? null : loadGenerated(cls, Companion.MARSHALLER, marsh);
 
-        MessageWireForm<T> wireForm = nonMarshallable ? null : loadGenerated(cls, Companion.WIRE_FORM, null);
+        MessageWireForm<T> wireForm = plain ? null : loadGenerated(cls, Companion.WIRE_FORM, null);
 
         // Deployers exist for GridCacheMessage only; a DeployableMessage left without one is rejected at registration.
         GridCacheMessageDeployer<?> deployer = GridCacheMessage.class.isAssignableFrom(cls)

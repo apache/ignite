@@ -84,8 +84,8 @@ public class MessageProcessor extends AbstractProcessor {
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
 
-    /** Marker of messages with no marshaller. */
-    static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
+    /** Marker of messages that get no companion at all. */
+    static final String PLAIN_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.PlainMessage";
 
     /** */
     static final String CACHE_OBJECT_CLS = "org.apache.ignite.internal.processors.cache.CacheObject";
@@ -140,7 +140,7 @@ public class MessageProcessor extends AbstractProcessor {
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
         TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
-        TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+        TypeElement plainEl = processingEnv.getElementUtils().getTypeElement(PLAIN_MESSAGE_INTERFACE);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
@@ -153,11 +153,11 @@ public class MessageProcessor extends AbstractProcessor {
             if (!isAssignable(msgType, clazz))
                 continue;
 
-            // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
-            if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
+            // No companion is generated for a PlainMessage, so declared marshalling logic would silently never run.
+            if (plainEl != null && isAssignable(plainEl.asType(), clazz)
                 && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz)) || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
+                    "PlainMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
             }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))

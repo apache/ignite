@@ -73,7 +73,7 @@ public interface IgniteMessageFactory<M extends Message, CM extends GridCacheMes
 
     /**
      * Returns {@code MessageMarshaller} for provided type, or {@code null} if none is registered
-     * (e.g. for {@code NonMarshallableMessage} types).
+     * (e.g. for {@code PlainMessage} types).
      *
      * @param type Message type.
      * @return Message marshaller, or {@code null}.
