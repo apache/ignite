@@ -80,8 +80,6 @@ public class GridEventStorageRequest implements DeferredUnmarshalMessage {
         return filter;
     }
 
-
-
     /** @return Deployment of the filter classes. */
     GridDeploymentInfo deploymentInfo() {
         return depInfo;
@@ -91,7 +89,6 @@ public class GridEventStorageRequest implements DeferredUnmarshalMessage {
     String filterClassName() {
         return filterClsName;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
