@@ -1209,14 +1209,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             GridDeployment tmpDep = req.forceLocalDeployment() ?
                 ctx.deploy().getLocalDeployment(req.taskClassName()) :
-                ctx.deploy().getGlobalDeployment(
-                    req.deploymentMode(),
-                    req.taskName(),
-                    req.taskClassName(),
-                    req.userVersion(),
-                    node.id(),
-                    req.classLoaderId(),
-                    req.loaderParticipants());
+                ctx.deploy().globalDeployment(req.deploymentInfo(), req.taskName(), req.taskClassName());
 
             if (tmpDep == null) {
                 if (log.isDebugEnabled())
@@ -1224,7 +1217,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Check local tasks.
                 for (Map.Entry<String, GridDeployment> d : ctx.task().getUsedDeploymentMap().entrySet()) {
-                    if (d.getValue().classLoaderId().equals(req.classLoaderId())) {
+                    if (d.getValue().classLoaderId().equals(req.deploymentInfo().classLoaderId())) {
                         assert d.getValue().local();
 
                         tmpDep = d.getValue();
@@ -1283,7 +1276,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     catch (IgniteCheckedException e) {
                         IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
                             "[taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
-                            ", codeVer=" + req.userVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
+                            ", codeVer=" + req.deploymentInfo().userVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
 
                         U.error(log, ex.getMessage(), e);
 
@@ -1375,9 +1368,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     // Deployment is null.
                     IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
-                        ", codeVer=" + req.userVersion() + ", clsLdrId=" + req.classLoaderId() +
-                        ", seqNum=" + req.classLoaderId().localId() + ", depMode=" + req.deploymentMode() +
-                        ", dep=" + dep + ']');
+                        ", dep=" + req.deploymentInfo() + ", resolved=" + dep + ']');
 
                     U.error(log, ex.getMessage(), ex);
 

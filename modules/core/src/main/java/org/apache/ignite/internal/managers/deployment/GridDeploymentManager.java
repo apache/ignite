@@ -414,13 +414,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      */
     public GridDeployment globalDeployment(GridDeploymentInfo depInfo, String clsName)
         throws IgniteDeploymentCheckedException {
-        GridDeployment dep = getGlobalDeployment(depInfo.deployMode(),
-            clsName,
-            clsName,
-            depInfo.userVersion(),
-            depInfo.classLoaderId().globalId(),
-            depInfo.classLoaderId(),
-            depInfo.participants());
+        GridDeployment dep = globalDeployment(depInfo, clsName, clsName);
 
         if (dep == null) {
             throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class (is peer class " +
@@ -428,6 +422,26 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         }
 
         return dep;
+    }
+
+    /**
+     * Resolves the deployment {@code depInfo} describes, as {@link #globalDeployment(GridDeploymentInfo, String)}
+     * does, but under {@code rsrcName} — a task may be deployed under a name of its own — and returns {@code null}
+     * instead of throwing, for callers that have somewhere else to look.
+     *
+     * @param depInfo Deployment of the classes, as it came with the message carrying them.
+     * @param rsrcName Name the classes are deployed under.
+     * @param clsName Name of a class the deployment must be able to load.
+     * @return The deployment, or {@code null} when there is none.
+     */
+    @Nullable public GridDeployment globalDeployment(GridDeploymentInfo depInfo, String rsrcName, String clsName) {
+        return getGlobalDeployment(depInfo.deployMode(),
+            rsrcName,
+            clsName,
+            depInfo.userVersion(),
+            depInfo.classLoaderId().globalId(),
+            depInfo.classLoaderId(),
+            depInfo.participants());
     }
 
     /**
