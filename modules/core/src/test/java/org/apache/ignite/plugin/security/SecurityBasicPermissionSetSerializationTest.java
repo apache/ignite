@@ -74,7 +74,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
 
     /** */
     @Test
-    public void testWillNullAndEmptyPermissions() throws Exception {
+    public void testWithNullAndEmptyPermissions() throws Exception {
         SecurityBasicPermissionSet src = new SecurityBasicPermissionSet();
         src.setDefaultAllowAll(true);
 
