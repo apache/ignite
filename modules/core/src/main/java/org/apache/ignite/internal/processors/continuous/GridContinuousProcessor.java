@@ -648,22 +648,26 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     autoUnsubscribe,
                     false);
 
-                // Peer class loading cannot be performed before a node joins, so we delay the deployment.
-                // Run the deployment task in the system pool to avoid blocking of the discovery thread.
-                ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
-                    try {
-                        hnd.finishUnmarshal(srcNodeId, ctx, ctx.config().isPeerClassLoadingEnabled());
-                    }
-                    catch (IgniteCheckedException | IgniteException e) {
-                        U.error(log, "Failed to unmarshal continuous routine handler [" +
-                            "routineId=" + routineId +
-                            ", srcNodeId=" + srcNodeId + ']', e);
+                if (ctx.config().isPeerClassLoadingEnabled()) {
+                    // Peer class loading cannot be performed before a node joins, so we delay the deployment.
+                    // Run the deployment task in the system pool to avoid blocking of the discovery thread.
+                    ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
+                        try {
+                            hnd.finishUnmarshal(srcNodeId, ctx, true);
+                        }
+                        catch (IgniteCheckedException | IgniteException e) {
+                            U.error(log, "Failed to unmarshal continuous routine handler [" +
+                                "routineId=" + routineId +
+                                ", srcNodeId=" + srcNodeId + ']', e);
 
-                        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
-                        unregisterHandler(routineId, hnd, false);
-                    }
-                }));
+                            unregisterHandler(routineId, hnd, false);
+                        }
+                    }));
+                }
+                else
+                    hnd.finishUnmarshal(srcNodeId, ctx, false);
             }
             else {
                 if (log.isDebugEnabled()) {
