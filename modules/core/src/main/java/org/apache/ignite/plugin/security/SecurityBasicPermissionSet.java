@@ -26,12 +26,10 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,8 +37,10 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.copySafe;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.downcast;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.normalizeValueType;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.upcast;
 
@@ -232,28 +232,5 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
         taskPermissions = normalizeValueType(taskPermissions);
         srvcPermissions = normalizeValueType(srvcPermissions);
         sysPermissions = sysPermissions == null ? null : copySafe(sysPermissions);
-    }
-
-    /**
-     * @param cachePermissions Cache permissions.
-     * @return Map with enum sets of security permissions.
-     */
-    public static Map<String, Collection<SecurityPermission>> normalizeValueType(
-        Map<String, Collection<SecurityPermission>> cachePermissions
-    ) {
-        return cachePermissions.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> copySafe(e.getValue())));
-    }
-
-    /** */
-    private static EnumSet<SecurityPermission> copySafe(Collection<SecurityPermission> col) {
-        if (col instanceof EnumSet<SecurityPermission> enumSet)
-            return enumSet;
-
-        // Enum set does not allow to copy empty collections, so we check it explicitly.
-        if (F.isEmpty(col))
-            return EnumSet.noneOf(SecurityPermission.class);
-
-        return EnumSet.copyOf(col);
     }
 }

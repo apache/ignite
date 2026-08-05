@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -152,6 +153,29 @@ public class SecurityUtils {
     @SuppressWarnings("rawtypes")
     public static Map<String, EnumSet<SecurityPermission>> downcast(Map<String, Collection<SecurityPermission>> map) {
         return (Map<String, EnumSet<SecurityPermission>>)(Map)map;
+    }
+
+    /**
+     * @param permissionsMap Permissions map.
+     * @return Map with enum sets of security permissions.
+     */
+    public static Map<String, Collection<SecurityPermission>> normalizeValueType(
+        Map<String, Collection<SecurityPermission>> permissionsMap
+    ) {
+        return permissionsMap.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> copySafe(e.getValue())));
+    }
+
+    /** */
+    public static EnumSet<SecurityPermission> copySafe(Collection<SecurityPermission> col) {
+        if (col instanceof EnumSet<SecurityPermission> enumSet)
+            return enumSet;
+
+        // Enum set does not allow to copy empty collections, so we check it explicitly.
+        if (F.isEmpty(col))
+            return EnumSet.noneOf(SecurityPermission.class);
+
+        return EnumSet.copyOf(col);
     }
 
     /**
