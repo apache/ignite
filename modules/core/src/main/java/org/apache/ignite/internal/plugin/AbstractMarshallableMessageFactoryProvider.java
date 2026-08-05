@@ -68,6 +68,10 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
     /** */
     private static <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, Marshaller marsh) {
+        // Companions are instantiated right here, so a provider registering before init() would bind them to a null
+        // marshaller instead of picking the proper one up later.
+        assert marsh != null : "Provider is not initialized, see init(), while registering " + cls.getName();
+
         MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null, true);
 
         // A MarshallableMessage always gets a generated marshaller (the hook call alone is a statement), so its

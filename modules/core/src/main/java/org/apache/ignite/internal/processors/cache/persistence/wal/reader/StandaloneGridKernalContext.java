@@ -107,7 +107,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -203,7 +202,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         this.ft = ft;
         this.marsh = new BinaryMarshaller();
 
-        marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
+        marshallerCtx = new MarshallerContextImpl(null);
         cfg = prepareIgniteConfiguration();
 
         try {
