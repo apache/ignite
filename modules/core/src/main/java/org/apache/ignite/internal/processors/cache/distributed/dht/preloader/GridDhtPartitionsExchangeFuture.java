@@ -106,7 +106,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
-import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -1274,11 +1273,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert req != null : exchActions;
 
         GridKernalContext kctx = cctx.kernalContext();
-
-        DiscoveryDataClusterState state = kctx.state().clusterState();
-
-        if (state.transitionError() != null)
-            exchangeLocE = state.transitionError();
 
         if (req.activeChanged()) {
             if (req.state().active()) {
