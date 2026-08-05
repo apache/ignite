@@ -82,7 +82,7 @@ public class GridDeploymentRequest implements Message {
      * @return Response topic name.
      */
     @Nullable Object responseTopic() {
-        return TOPIC_CLASSLOAD.topic(resTopicId);
+        return undeploy() ? null : TOPIC_CLASSLOAD.topic(resTopicId);
     }
 
     /**
