@@ -20,6 +20,7 @@ package org.apache.ignite.internal.plugin;
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
@@ -38,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * An extension of {@link MessageFactoryProvider} allowing to use provided schema-aware marshaller
  * to register {@link MarshallableMessage}.
  */
-public abstract class AbstractMarshallableMessageFactoryProvider implements MessageFactoryProvider {
+public abstract class AbstractMessageFactoryProvider implements MessageFactoryProvider {
     /** Generated-companion constructors per message class, including cached negative lookups. */
     private static final ClassValue<Companions> COMPANIONS = new ClassValue<>() {
         @Override protected Companions computeValue(Class<?> cls) {
@@ -74,18 +75,20 @@ public abstract class AbstractMarshallableMessageFactoryProvider implements Mess
 
         MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", null, true);
 
-        // A MarshallableMessage always gets a generated marshaller (the hook call alone is a statement), so its
-        // absence is a build problem. For the rest the generator skips statement-free marshallers, so absence
-        // legitimately means "nothing to marshal"; the message and its companions ship in the same jar, hence
-        // a missing class cannot be a packaging accident that spares the (required) serializer.
+        // A message that marshals a part of its fields itself always gets a generated marshaller (its own call alone
+        // is a statement), so its absence is a build problem. For the rest the generator skips statement-free
+        // marshallers, so absence legitimately means "nothing to marshal"; the message and its companions ship in the
+        // same jar, hence a missing class cannot be a packaging accident that spares the (required) serializer.
         MessageMarshaller<T> marshaller;
 
         if (NonMarshallableMessage.class.isAssignableFrom(cls))
             marshaller = null;
-        else if (MarshallableMessage.class.isAssignableFrom(cls))
-            marshaller = loadGenerated(cls, "Marshaller", marsh, true);
-        else
-            marshaller = loadGenerated(cls, "Marshaller", marsh, false);
+        else {
+            boolean required = MarshallableMessage.class.isAssignableFrom(cls)
+                || SelfMarshallingMessage.class.isAssignableFrom(cls);
+
+            marshaller = loadGenerated(cls, "Marshaller", marsh, required);
+        }
 
         // Deployers are generated for GridCacheMessage subclasses only, so the class lookup is skipped for the rest;
         // a DeployableMessage left without a deployer is then rejected at registration.
