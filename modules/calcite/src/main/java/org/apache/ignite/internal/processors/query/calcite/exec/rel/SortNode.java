@@ -68,7 +68,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     ) {
         super(ctx, rowType);
 
-        assert fetch == -1 || fetch > 0 : "Unexpected fetch = " + fetch;
+        assert fetch == FETCH_DEFAULT || fetch > 0 : "Unexpected fetch = " + fetch;
         assert offset >= 0 : "Unexpected offset = " + offset;
 
         limit = fetch == FETCH_DEFAULT ? -1 : (fetch > Long.MAX_VALUE - offset ? -1 : fetch + offset);

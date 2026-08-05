@@ -65,7 +65,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         super(ctx, rowType);
 
         this.offset = offset;
-        rowsSummary = fetch == -1 ? Long.MAX_VALUE : IgniteMath.addExact(fetch, offset);
+        rowsSummary = fetch == FETCH_DEFAULT ? Long.MAX_VALUE : IgniteMath.addExact(fetch, offset);
         this.fetch = fetch == FETCH_DEFAULT ? 0 : fetch;
     }
 
