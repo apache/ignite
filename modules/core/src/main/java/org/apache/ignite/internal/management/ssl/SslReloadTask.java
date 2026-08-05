@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -124,39 +126,16 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
                 String outcome;
 
-                if (commit) {
-                    switch (comp.commit(arg.token())) {
-                        case APPLIED:
-                            outcome = "reloaded " + users + served(comp);
-
-                            break;
-
-                        case NOTHING_TO_APPLY:
-                            outcome = "not reloaded " + users +
-                                " - the SSL context is handed over ready-made, so there is nothing to read again" +
-                                served(comp);
-
-                            break;
-
-                        default:
-                            outcome = "not reloaded " + users + " - nothing was prepared here for this run, " +
-                                "which is what a node that joined while the operator was being asked looks like";
-                    }
+                try {
+                    outcome = commit ? applied(comp, arg.token(), users) : prepared(comp, arg.token(), users);
                 }
-                else {
-                    try {
-                        outcome = comp.prepare(arg.token())
-                            ? "can be reloaded " + users + served(comp)
-                            : "cannot be reloaded " + users +
-                                " - the SSL context is handed over ready-made, so there is nothing to read again";
-                    }
-                    catch (Exception e) {
-                        // Every provider is attempted, so that one broken transport does not hide the state of the
-                        // rest. Anything may be thrown here: the context comes from a user-supplied factory.
-                        failed = true;
+                catch (Exception e) {
+                    // Every provider is attempted, so that one broken transport neither hides the state of the rest
+                    // nor keeps them from being reloaded. Anything may be thrown here: the context comes from a
+                    // user-supplied factory.
+                    failed = true;
 
-                        outcome = "would fail on " + users + " (" + reason(e) + ')';
-                    }
+                    outcome = (commit ? "failed on " : "would fail on ") + users + " (" + reason(e) + ')';
                 }
 
                 lines.add(ignite.localNode().id() + ": " + outcome);
@@ -178,6 +157,43 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
         }
 
         /**
+         * @param comp Provider to prepare.
+         * @param token Attempt to prepare for.
+         * @param users Transports this provider serves.
+         * @return What to report for it.
+         * @throws IgniteCheckedException If the certificates could not be built or would not be accepted.
+         */
+        private static String prepared(SslContextReloadable comp, UUID token, String users)
+            throws IgniteCheckedException {
+            return comp.prepare(token)
+                ? "can be reloaded " + users + served(comp, false)
+                : "cannot be reloaded " + users +
+                    " - the SSL context is handed over ready-made, so there is nothing to read again";
+        }
+
+        /**
+         * @param comp Provider to put the prepared certificates in use on.
+         * @param token Attempt whose result is to be applied.
+         * @param users Transports this provider serves.
+         * @return What to report for it.
+         */
+        private static String applied(SslContextReloadable comp, UUID token, String users) {
+            switch (comp.commit(token)) {
+                case APPLIED:
+                    return "reloaded " + users + served(comp, true);
+
+                case NOTHING_TO_APPLY:
+                    return "not reloaded " + users +
+                        " - the SSL context is handed over ready-made, so there is nothing to read again" +
+                        served(comp, true);
+
+                default:
+                    return "not reloaded " + users + " - nothing was prepared here for this run, " +
+                        "which is what a node that joined while the operator was being asked looks like";
+            }
+        }
+
+        /**
          * @param e Failure to describe.
          * @return Its message, or its type when it carries none, which is what an unexpected failure out of a
          *      user-supplied factory tends to look like.
@@ -188,14 +204,18 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
         /**
          * @param comp Provider to ask.
+         * @param inUse Whether the certificate is already in use, rather than one prepared and not yet applied.
          * @return Certificate this provider presents, ready to append to its line, or an empty string if it cannot
          *      be told without a peer, which is the case for the transports a client connects to.
          */
-        private static String served(SslContextReloadable comp) {
+        private static String served(SslContextReloadable comp, boolean inUse) {
             X509Certificate cert = comp.servedCertificate();
 
-            return cert == null ? "" : "; serving " + cert.getSubjectX500Principal() + " until " +
-                cert.getNotAfter().toInstant().atOffset(ZoneOffset.UTC).toLocalDate();
+            // The authority is what tells one certificate from another when both were issued for the same node,
+            // which is exactly what an authority being replaced looks like.
+            return cert == null ? "" : (inUse ? "; serving " : "; will serve ") + cert.getSubjectX500Principal() +
+                " until " + cert.getNotAfter().toInstant().atOffset(ZoneOffset.UTC).toLocalDate() +
+                ", issued by " + cert.getIssuerX500Principal();
         }
     }
 }

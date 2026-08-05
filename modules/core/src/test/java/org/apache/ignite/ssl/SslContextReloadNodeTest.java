@@ -165,8 +165,10 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertReloaded(res, g0, CLIENT_CONNECTOR, COMMUNICATION, DISCOVERY);
         assertReloaded(res, g1, CLIENT_CONNECTOR, COMMUNICATION, DISCOVERY);
 
-        // The report names the certificate now in use, so a rotation can be verified without probing the ports.
+        // The report names the certificate now in use, and the authority that issued it, so a rotation can be
+        // verified without probing the ports.
         assertContains(log, res, "serving CN=node02");
+        assertContains(log, res, "issued by ");
 
         assertRotated(CLIENT_CONNECTOR, cliCertBefore, servedCertificate(clientConnectorPort(g0)));
 
@@ -286,6 +288,11 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         assertContains(log, res, "can be reloaded");
         assertContains(log, res, DISCOVERY);
+
+        // The point of a rehearsal is to see what one is about to get, so the report has to name the certificate
+        // on disk rather than the one still in use.
+        assertContains(log, res, "will serve CN=node02");
+        assertNotContains(log, res, "CN=node01");
 
         assertKept("An accepted but not applied certificate", certBefore, servedCertificate(discoveryPort(g)));
     }
