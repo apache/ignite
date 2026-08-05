@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
@@ -149,7 +148,6 @@ public class ClassLoaderUtils {
     public static Class<?> forName(
         String clsName,
         @Nullable ClassLoader ldr,
-        @Nullable IgnitePredicate<String> clsFilter,
         boolean useCache
     ) throws ClassNotFoundException {
         assert clsName != null;
@@ -187,7 +185,7 @@ public class ClassLoaderUtils {
         cls = ldrMap.get(clsName);
 
         if (cls == null) {
-            if (clsFilter != null && !clsFilter.apply(clsName))
+            if (!MarshallerUtils.classNameFilter().apply(clsName))
                 throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
 
             // Avoid class caching inside Class.forName
@@ -260,22 +258,6 @@ public class ClassLoaderUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+        return forName(clsName, ldr, Marshallers.USE_CACHE.get());
     }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forNameFiltered(
-        String clsName,
-        @Nullable ClassLoader ldr
-    ) throws ClassNotFoundException {
-        return forName(clsName, ldr, MarshallerUtils.classNameFilter(), Marshallers.USE_CACHE.get());
-    }
-
 }

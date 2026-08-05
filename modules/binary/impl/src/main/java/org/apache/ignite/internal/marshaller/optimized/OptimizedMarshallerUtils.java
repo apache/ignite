@@ -200,8 +200,7 @@ class OptimizedMarshallerUtils {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null && !useCache) {
-            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(),
-                mapper), clsMap, ctx, mapper, false);
+            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper, false);
         }
         else if (desc == null) {
             int typeId = resolveTypeId(cls.getName(), mapper);

@@ -47,7 +47,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.MarshallerUtils;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.ARRAY_LIST;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.BOOLEAN;
@@ -347,7 +346,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 OptimizedClassDescriptor desc = typeId == 0
                     ? classDescriptor(
                         clsMap,
-                        ClassLoaderUtils.forName(readUTF(), clsLdr, MarshallerUtils.classNameFilter(), useCache),
+                        ClassLoaderUtils.forName(readUTF(), clsLdr, useCache),
                         useCache,
                         ctx,
                         mapper)
@@ -386,7 +385,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> readClass() throws ClassNotFoundException, IOException {
         int compTypeId = readInt();
 
-        return compTypeId == 0 ? ClassLoaderUtils.forName(readUTF(), clsLdr, null, useCache) :
+        return compTypeId == 0 ? ClassLoaderUtils.forName(readUTF(), clsLdr, useCache) :
             classDescriptor(clsMap, compTypeId, clsLdr, useCache, ctx, mapper).describedClass();
     }
 
@@ -545,7 +544,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return ClassLoaderUtils.forNameFiltered(desc.getName(), clsLdr);
+        return ClassLoaderUtils.forName(desc.getName(), clsLdr);
     }
 
     /**
