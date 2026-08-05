@@ -752,6 +752,22 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testLimitOffsetParameterMetadata() {
+        for (String sql : new String[] {
+            "SELECT 1 LIMIT ?",
+            "SELECT 1 OFFSET ?",
+            "SELECT 1 FETCH FIRST ? ROWS ONLY"
+        }) {
+            List<List<GridQueryFieldMetadata>> meta = queryEngine(client).parameterMetaData(null, "PUBLIC", sql);
+
+            assertEquals(1, meta.size());
+            assertEquals(1, meta.get(0).size());
+            assertEquals(int.class.getName(), meta.get(0).get(0).fieldTypeName());
+        }
+    }
+
     /**
      * Check that parameters metadata throws correct exception on non-parsable statement.
      */

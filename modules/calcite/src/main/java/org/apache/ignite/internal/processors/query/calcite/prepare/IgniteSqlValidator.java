@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
-import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -263,13 +262,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             checkLimitOffset(offsetFetchLimit, n, clauseName);
         }
         else if (n instanceof SqlDynamicParam dynamicParam) {
-            if (F.isEmpty(parameters))
-                return;
-
             // Dynamic parameters are nullable.
             RelDataType expectType = typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DECIMAL), true);
 
-            if (dynamicParam.getIndex() < parameters.length) {
+            if (definedDynParam(dynamicParam)) {
                 Object param = parameters[dynamicParam.getIndex()];
 
                 if (!(param instanceof Number)) {
@@ -286,10 +282,19 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 }
                 else
                     checkLimitOffset((Number)param, n, clauseName);
-            }
 
-            setValidatedNodeType(dynamicParam, expectType);
+                setValidatedNodeType(dynamicParam, expectType);
+            }
+            else {
+                expectType = typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.BIGINT), true);
+                setValidatedNodeType(dynamicParam, expectType);
+            }
         }
+    }
+
+    /** Returns {@code true} if the given dynamic parameter has value set. */
+    private boolean definedDynParam(SqlDynamicParam param) {
+        return param.getIndex() < parameters.length;
     }
 
     /** */
