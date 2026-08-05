@@ -1,0 +1,18 @@
+IgniteLimit(fetch=[10]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=17.0, cpu=35.0, memory=37.875, io=3.0, network=35.0], id = {id}
+{ONEOF}
+  IgniteSort(sort0=[$1], sort1=[$2], dir0=[DESC-nulls-last], dir1=[ASC-nulls-first], fetch=[10]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=16.0, cpu=34.0, memory=37.875, io=3.0, network=35.0], id = {id}
+=====
+  IgniteSort(sort0=[$1], sort1=[$2], dir0=[DESC-nulls-last], dir1=[ASC-nulls-first]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=16.0, cpu=34.0, memory=37.875, io=3.0, network=35.0], id = {id}
+{ONEOF}
+    IgniteProject(L_ORDERKEY=[$0], REVENUE=[$3], O_ORDERDATE=[$1], O_SHIPPRIORITY=[$2]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=15.0, cpu=30.0, memory=21.875, io=3.0, network=35.0], id = {id}
+      IgniteColocatedHashAggregate(group=[{0, 1, 2}], REVENUE=[SUM($3)]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=14.0, cpu=29.0, memory=21.875, io=3.0, network=35.0], id = {id}
+        IgniteProject(L_ORDERKEY=[$0], O_ORDERDATE=[$6], O_SHIPPRIORITY=[$7], $f3=[*($1, -(1, $2))]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=13.0, cpu=28.0, memory=7.0, io=3.0, network=35.0], id = {id}
+          IgniteMergeJoin(condition=[=($0, $4)], joinType=[inner], variablesSet=[[]], leftCollation=[[0 ASC-nulls-first]], rightCollation=[[1 ASC-nulls-first]], allowNulls=[{}]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=12.0, cpu=27.0, memory=7.0, io=3.0, network=35.0], id = {id}
+            IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=3.0, cpu=6.0, memory=1.0, io=1.0, network=13.0], id = {id}
+              IgniteIndexScan(table=[[PUBLIC, LINEITEM]], index=[{INDEX_CASE:_key_PK,_key_PK_proxy}], filters=[>($t3, 1995-03-15)], rowType=[RecordType(INTEGER L_ORDERKEY, DECIMAL(15, 2) L_EXTENDEDPRICE, DECIMAL(15, 2) L_DISCOUNT)], projects=[[$t0, $t1, $t2]], requiredColumns=[{2, 7, 8, 12}], inlineScan=[false], collation=[[2 ASC-nulls-first, 5 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=5.0, memory=1.0, io=1.0, network=1.0], id = {id}
+            IgniteProject(C_CUSTKEY=[$4], O_ORDERKEY=[$0], O_CUSTKEY=[$1], O_ORDERDATE=[$2], O_SHIPPRIORITY=[$3]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=7.0, cpu=13.0, memory=6.0, io=2.0, network=22.0], id = {id}
+              IgniteNestedLoopJoin(condition=[=($4, $1)], joinType=[inner], variablesSet=[[]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=6.0, cpu=12.0, memory=6.0, io=2.0, network=22.0], id = {id}
+                IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=3.0, cpu=6.0, memory=1.0, io=1.0, network=17.0], id = {id}
+                  IgniteIndexScan(table=[[PUBLIC, ORDERS]], index=[{INDEX_CASE:_key_PK,_key_PK_proxy}], filters=[<($t2, 1995-03-15)], requiredColumns=[{2, 3, 6, 9}], inlineScan=[false], collation=[[2 ASC-nulls-first]]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=5.0, memory=1.0, io=1.0, network=1.0], id = {id}
+                IgniteExchange(distribution=[single]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=2.0, cpu=2.0, memory=1.0, io=1.0, network=5.0], id = {id}
+                  IgniteTableScan(table=[[PUBLIC, CUSTOMER]], filters=[=($t1, _UTF-8'BUILDING')], rowType=[RecordType(INTEGER C_CUSTKEY)], projects=[[$t0]], requiredColumns=[{2, 8}]): rowcount = 1.0, cumulative cost = IgniteCost [rowCount=1.0, cpu=1.0, memory=1.0, io=1.0, network=1.0], id = {id}
