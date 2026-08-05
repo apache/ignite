@@ -15,20 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.managers.AbstractMessageSerializationTest;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 
-/** */
-public class CalciteCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
-    /** {@inheritDoc} */
-    @Override protected MessageFactoryProvider messageFactory() {
-        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
+public class WrongSelfMarshallingMessage implements NonMarshallableMessage, SelfMarshallingMessage {
+    @Order(0)
+    int id;
 
-        msgFactory.init(Marshallers.jdk(), Marshallers.jdk());
+    @Override public void selfMarshal() {
+        // No-op.
+    }
 
-        return msgFactory;
+    @Override public void selfUnmarshal() {
+        // No-op.
+    }
+
+    public short directType() {
+        return 0;
     }
 }

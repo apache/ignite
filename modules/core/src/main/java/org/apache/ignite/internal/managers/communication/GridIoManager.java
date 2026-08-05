@@ -1460,6 +1460,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** */
+    // TODO IGNITE-28950: the regular path drops the message without a trace, unlike the ordered one.
     private void unmarshalPayload(GridIoMessage msg) {
         if (msg.message() instanceof DeferredUnmarshalMessage)
             return;

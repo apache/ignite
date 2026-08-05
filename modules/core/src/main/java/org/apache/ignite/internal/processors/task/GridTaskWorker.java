@@ -68,6 +68,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
@@ -87,7 +88,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
@@ -155,9 +155,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
     /** */
     private final IgniteLogger log;
-
-    /** */
-    private final Marshaller marsh;
 
     /** */
     private final GridTaskSessionImpl ses;
@@ -324,8 +321,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         this.subjId = subjId;
 
         log = U.logger(ctx, logRef, this);
-
-        marsh = ctx.marshaller();
 
         boolean noResCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
 
@@ -829,7 +824,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         boolean loc = ctx.localNodeId().equals(res.nodeId()) && !ctx.config().isMarshalLocalJobs();
 
                         if (!loc)
-                            res.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                            MessageMarshalling.unmarshal(res, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                         jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 

@@ -1340,13 +1340,13 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /**
-     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller.
+     * Re-init {@link AbstractMessageFactoryProvider} with a proper marshaller.
      *
      * @param factoryProvider Message factory provider.
      */
     private void initProvider(MessageFactoryProvider factoryProvider) {
-        if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
-            ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
+        if (factoryProvider instanceof AbstractMessageFactoryProvider) {
+            ((AbstractMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
                 ctx.marshaller());
         }
     }
