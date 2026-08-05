@@ -217,9 +217,9 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         }
         else {
             if (topicBytes != null)
-                topic = U.unmarshal(ctx, topicBytes, U.gridClassLoader());
+                topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ctx.config()));
 
-            pred = U.unmarshal(ctx, predBytes, U.gridClassLoader());
+            pred = U.unmarshal(ctx, predBytes, U.resolveClassLoader(ctx.config()));
         }
     }
 

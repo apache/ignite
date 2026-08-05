@@ -1501,13 +1501,13 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
         }
 
         if (rmtFilterBytes != null)
-            rmtFilter = U.unmarshal(ctx.marshaller(), rmtFilterBytes, U.gridClassLoader());
+            rmtFilter = U.unmarshal(ctx.marshaller(), rmtFilterBytes, U.resolveClassLoader(ctx.config()));
 
         if (rmtFilterFactoryBytes != null)
-            rmtFilterFactory = U.unmarshal(ctx.marshaller(), rmtFilterFactoryBytes, U.gridClassLoader());
+            rmtFilterFactory = U.unmarshal(ctx.marshaller(), rmtFilterFactoryBytes, U.resolveClassLoader(ctx.config()));
 
         if (rmtTransFactoryBytes != null)
-            rmtTransFactory = U.unmarshal(ctx.marshaller(), rmtTransFactoryBytes, U.gridClassLoader());
+            rmtTransFactory = U.unmarshal(ctx.marshaller(), rmtTransFactoryBytes, U.resolveClassLoader(ctx.config()));
     }
 
     /** Presents to reset {@link #p2pUnmarshalFut} is case of the P2P-deployment. */

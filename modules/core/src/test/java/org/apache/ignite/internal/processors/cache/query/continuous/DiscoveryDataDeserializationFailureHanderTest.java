@@ -57,6 +57,7 @@ public class DiscoveryDataDeserializationFailureHanderTest extends GridCommonAbs
     @Test
     public void testFailureHander() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
+
         failureHnd = new TestFailureHandler(latch);
 
         Ignite node1 = startGrid(1);
@@ -69,6 +70,8 @@ public class DiscoveryDataDeserializationFailureHanderTest extends GridCommonAbs
 
         try {
             assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+            Thread.sleep(10000);
         }
         finally {
             GridTestUtils.assertThrows(log, (Callable<Object>)fut::get, IgniteCheckedException.class, "Failed to start");

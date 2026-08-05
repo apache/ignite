@@ -648,9 +648,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     autoUnsubscribe,
                     false);
 
+                if (ctx.config().isPeerClassLoadingEnabled()) {
+                    // Peer class loading cannot be performed before a node joins, so we delay the deployment.
+                    // Run the deployment task in the system pool to avoid blocking of the discovery thread.
                     ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
                         try {
-                            hnd.finishUnmarshal(srcNodeId, ctx, ctx.config().isPeerClassLoadingEnabled());
+                            hnd.finishUnmarshal(srcNodeId, ctx, true);
                         }
                         catch (IgniteCheckedException | IgniteException e) {
                             U.error(log, "Failed to unmarshal continuous routine handler [" +
@@ -662,6 +665,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             unregisterHandler(routineId, hnd, false);
                         }
                     }));
+                }
+                else
+                    hnd.finishUnmarshal(srcNodeId, ctx, false);
             }
             else {
                 if (log.isDebugEnabled()) {

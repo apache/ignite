@@ -460,7 +460,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
             }
         }
         else
-            filter = U.unmarshal(ctx.marshaller(), filterBytes, U.gridClassLoader());
+            filter = U.unmarshal(ctx.marshaller(), filterBytes, U.resolveClassLoader(ctx.config()));
     }
 
     /** Presents to reset {@link #p2pUnmarshalFut} is case of the P2P-deployment. */
