@@ -199,12 +199,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             GridNioFilter[] filters;
 
-            GridNioSslFilter sslFilter = null;
-
             MetricRegistryImpl mreg = ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
             if (sslCtxProvider != null) {
-                sslFilter = U.sslFilter(
+                GridNioSslFilter sslFilter = U.sslFilter(
                     sslCtxProvider,
                     cfg.isDirectBuffer(),
                     ByteOrder.nativeOrder(),

@@ -77,6 +77,9 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** Test trust store the node runs on, {@code null} to trust any peer. */
     private String trustStore;
 
+    /** Whether the client connector runs on a factory of its own, rather than sharing the one of the node. */
+    private boolean ownClientConnectorFactory;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -84,10 +87,16 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         if (ssl) {
             cfg.setSslContextFactory(nodeSslContextFactory());
 
-            cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            ClientConnectorConfiguration cliCfg = new ClientConnectorConfiguration()
                 .setSslEnabled(true)
-                .setSslClientAuth(false)
-                .setUseIgniteSslContextFactory(true));
+                .setSslClientAuth(false);
+
+            if (ownClientConnectorFactory)
+                cliCfg.setUseIgniteSslContextFactory(false).setSslContextFactory(reloadableFactory());
+            else
+                cliCfg.setUseIgniteSslContextFactory(true);
+
+            cfg.setClientConnectorConfiguration(cliCfg);
         }
 
         return cfg;
@@ -107,6 +116,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         ssl = true;
         cachingFactory = false;
         failingFactory = false;
+        ownClientConnectorFactory = false;
         trustStore = null;
 
         FAIL_RELOAD.set(false);
@@ -228,10 +238,14 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertKept("A caching factory", certBefore, servedCertificate(clientConnectorPort(g)));
     }
 
-    /** A factory that cannot rebuild the context must be reported per component, and the old one must stay in use. */
+    /**
+     * One factory that cannot rebuild the context must not hide the state of the rest: the node runs the client
+     * connector on a factory of its own here, so a broken node-level one leaves a healthy provider beside it.
+     */
     @Test
     public void testFailingFactoryReportedPerComponent() throws Exception {
         failingFactory = true;
+        ownClientConnectorFactory = true;
 
         IgniteEx g = startGrid(0);
 
@@ -242,11 +256,11 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         // The whole chain, so that the assertions do not depend on how the compute framework wraps the failure.
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
 
-        // Every SSL transport is attempted, so a single broken one does not hide the state of the others.
-        assertContains(log, res, COMMUNICATION);
-        assertContains(log, res, DISCOVERY);
-        assertContains(log, res, CLIENT_CONNECTOR);
+        assertContains(log, res, "would fail on " + COMMUNICATION + ", " + DISCOVERY);
         assertContains(log, res, FAILURE_MSG);
+
+        // The provider that could rebuild is reported as such, next to the one that could not.
+        assertContains(log, res, "can be reloaded " + CLIENT_CONNECTOR);
 
         assertKept("A failed reload", certBefore, servedCertificate(clientConnectorPort(g)));
     }
@@ -273,6 +287,29 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertContains(log, res, DISCOVERY);
 
         assertKept("A certificate the trust store rejects", certBefore, servedCertificate(discoveryPort(g)));
+    }
+
+    /**
+     * A node joining after a rotation must be able to open connections to the cluster: the certificate a running
+     * node serves on the communication transport is otherwise only known from the report.
+     */
+    @Test
+    public void testJoinAfterRotation() throws Exception {
+        IgniteEx g0 = startGrid(0);
+        IgniteEx g1 = startGrid(1);
+
+        copyKeyStore("node02");
+
+        reload(g0, g1);
+
+        IgniteEx g2 = startGrid(2);
+
+        assertEquals("The joining node must reach the rotated cluster", 3, g2.cluster().nodes().size());
+
+        g2.getOrCreateCache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        assertEquals("Traffic between nodes must go over the rotated certificates",
+            (Integer)1, g0.<Integer, Integer>cache(DEFAULT_CACHE_NAME).get(1));
     }
 
     /** A dry run must accept a valid rotation and still leave the node on the certificate it is running. */

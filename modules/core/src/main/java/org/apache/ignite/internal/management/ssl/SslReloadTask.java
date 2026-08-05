@@ -127,7 +127,17 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
                 String outcome;
 
                 try {
-                    outcome = commit ? applied(comp, arg.token(), users) : prepared(comp, arg.token(), users);
+                    if (commit) {
+                        SslContextReloadable.Commit res0 = comp.commit(arg.token());
+
+                        // Nothing was prepared here for this run, so this node did not do what the operator
+                        // confirmed. The certificates are fine, but the run did not cover the cluster.
+                        failed |= res0 == SslContextReloadable.Commit.NOT_PREPARED;
+
+                        outcome = applied(res0, users, comp);
+                    }
+                    else
+                        outcome = prepared(comp, arg.token(), users);
                 }
                 catch (Exception e) {
                     // Every provider is attempted, so that one broken transport neither hides the state of the rest
@@ -172,13 +182,13 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
         }
 
         /**
-         * @param comp Provider to put the prepared certificates in use on.
-         * @param token Attempt whose result is to be applied.
+         * @param res What there was to do.
          * @param users Transports this provider serves.
+         * @param comp Provider that was asked.
          * @return What to report for it.
          */
-        private static String applied(SslContextReloadable comp, UUID token, String users) {
-            switch (comp.commit(token)) {
+        private static String applied(SslContextReloadable.Commit res, String users, SslContextReloadable comp) {
+            switch (res) {
                 case APPLIED:
                     return "reloaded " + users + served(comp, true);
 

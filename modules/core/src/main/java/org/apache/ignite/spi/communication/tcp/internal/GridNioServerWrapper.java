@@ -913,10 +913,8 @@ public class GridNioServerWrapper {
                 filters.add(new GridNioCodecFilter(parser, log, true));
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
-                GridNioSslFilter sslFilter = null;
-
                 if (stateProvider.isSslEnabled()) {
-                    sslFilter = U.sslFilter(
+                    GridNioSslFilter sslFilter = U.sslFilter(
                         stateProvider.sslContextProvider(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
@@ -969,7 +967,7 @@ public class GridNioServerWrapper {
                 GridNioServer<Message> srvr = builder.build();
 
                 // Named only once the port is taken: a busy port makes this method try the next one.
-                if (sslFilter != null)
+                if (stateProvider.isSslEnabled())
                     stateProvider.sslContextProvider().addUser(SslContextReloadable.COMMUNICATION, true);
 
                 if (mreg != null)

@@ -417,9 +417,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             // The cause is otherwise not logged anywhere, and it is what names the problem: "No trusted certificate
             // found" or "Empty client certificate chain" both mean the peers disagree on the certificate authority.
             // Throttled, as a peer that keeps retrying would flood the log.
-            LT.warn(log, "TLS handshake failed [rmtAddr=" + ses.remoteAddress() + ", err=" + e.getMessage() + "]. " +
-                "While certificates are being rotated, a new authority has to be trusted everywhere before " +
-                "anything presents a certificate issued by it.");
+            // The address is left out on purpose: LT.warn throttles by message text, and a peer that keeps
+            // retrying comes from a new port every time, so naming it would defeat the throttling. It is in the
+            // exception below, which names the session.
+            LT.warn(log, "TLS handshake failed [err=" + e.getMessage() + "]. While certificates are being rotated, " +
+                "a new authority has to be trusted everywhere before anything presents a certificate issued by it.");
 
             throw new GridNioException("Failed to decode SSL data: " + ses, e);
         }

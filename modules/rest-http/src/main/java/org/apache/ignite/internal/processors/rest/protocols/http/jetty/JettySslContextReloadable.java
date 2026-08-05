@@ -81,7 +81,9 @@ public class JettySslContextReloadable implements SslContextReloadable {
 
     /** {@inheritDoc} */
     @Override public Commit commit(UUID token) {
-        if (prepared == null || !prepared.equals(token))
+        UUID prepared0 = prepared;
+
+        if (prepared0 == null || !prepared0.equals(token))
             return Commit.NOT_PREPARED;
 
         discard();

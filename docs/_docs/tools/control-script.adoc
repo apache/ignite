@@ -1038,7 +1038,7 @@ control.bat --metric --configure-hitrate hitrate-metric-name 1000
 ----
 --
 
-NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
+NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
 
 == Indexes Management
 
@@ -1470,7 +1470,7 @@ control.bat --property set --name 'statistics.usage.state' --val 'ON'
 ----
 --
 
-You can also get property value with `--property get` command:
+You can also get property value with `--property get` command. For example:
 
 [tabs]
 --

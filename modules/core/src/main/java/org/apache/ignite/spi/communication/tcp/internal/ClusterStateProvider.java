@@ -61,7 +61,7 @@ public class ClusterStateProvider {
     private final Supplier<Ignite> igniteExSupplier;
 
     /** Owner of the SSL context of this transport; resolved once, then asked on every outgoing connection. */
-    private volatile SslContextProvider sslCtxProvider;
+    private SslContextProvider sslCtxProvider;
 
     /**
      * @param ignite Ignite.
@@ -113,21 +113,17 @@ public class ClusterStateProvider {
      * @return Owner of the SSL context this transport opens connections with.
      */
     public synchronized SslContextProvider sslContextProvider() {
-        SslContextProvider provider = sslCtxProvider;
-
-        if (provider == null) {
+        if (sslCtxProvider == null) {
             Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
 
             // A node that is not an IgniteEx cannot be reached by the reload command, so it owns its context alone
             // instead of sharing a provider through the registry. The transport says its name once it has bound.
-            provider = ignite instanceof IgniteEx
+            sslCtxProvider = ignite instanceof IgniteEx
                 ? ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContextProvider(factory, null, true)
                 : new SslContextProvider(factory);
-
-            sslCtxProvider = provider;
         }
 
-        return provider;
+        return sslCtxProvider;
     }
 
     /**

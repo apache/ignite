@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ssl;
 
 import java.nio.ByteBuffer;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -97,9 +96,7 @@ public class SslContextValidator {
      */
     private static @Nullable X509Certificate presented(SSLEngine cli) {
         try {
-            Certificate[] chain = cli.getSession().getPeerCertificates();
-
-            return chain.length == 0 ? null : (X509Certificate)chain[0];
+            return (X509Certificate)cli.getSession().getPeerCertificates()[0];
         }
         catch (SSLPeerUnverifiedException ignored) {
             return null;
