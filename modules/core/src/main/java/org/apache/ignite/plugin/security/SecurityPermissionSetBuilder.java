@@ -17,7 +17,6 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -103,7 +102,7 @@ public class SecurityPermissionSetBuilder {
     public SecurityPermissionSetBuilder appendTaskPermissions(String name, SecurityPermission... perms) {
         validate(toCollection("TASK_"), perms);
 
-        append(taskPerms, name, toEnumSet(perms));
+        append(taskPerms, name, toCollection(perms));
 
         return this;
     }
@@ -118,7 +117,7 @@ public class SecurityPermissionSetBuilder {
     public SecurityPermissionSetBuilder appendServicePermissions(String name, SecurityPermission... perms) {
         validate(toCollection("SERVICE_"), perms);
 
-        append(srvcPerms, name, toEnumSet(perms));
+        append(srvcPerms, name, toCollection(perms));
 
         return this;
     }
@@ -133,7 +132,7 @@ public class SecurityPermissionSetBuilder {
     public SecurityPermissionSetBuilder appendCachePermissions(String name, SecurityPermission... perms) {
         validate(toCollection("CACHE_"), perms);
 
-        append(cachePerms, name, toEnumSet(perms));
+        append(cachePerms, name, toCollection(perms));
 
         return this;
     }
@@ -208,17 +207,6 @@ public class SecurityPermissionSetBuilder {
     }
 
     /**
-     * Convert vararg to {@link EnumSet}.
-     *
-     * @param perms Permissions.
-     */
-    private EnumSet<SecurityPermission> toEnumSet(SecurityPermission... perms) {
-        assert perms != null;
-
-        return EnumSet.copyOf(Arrays.asList(perms));
-    }
-
-    /**
      * @param permsMap Permissions map.
      * @param name Name.
      * @param perms Permission.
@@ -226,18 +214,14 @@ public class SecurityPermissionSetBuilder {
     private void append(
         Map<String, EnumSet<SecurityPermission>> permsMap,
         String name,
-        EnumSet<SecurityPermission> perms
+        Collection<SecurityPermission> perms
     ) {
         assert permsMap != null;
         assert name != null;
         assert perms != null;
 
-        EnumSet<SecurityPermission> col = permsMap.get(name);
-
-        if (col == null)
-            permsMap.put(name, perms);
-        else
-            col.addAll(perms);
+        permsMap.computeIfAbsent(name, n -> EnumSet.noneOf(SecurityPermission.class))
+            .addAll(perms);
     }
 
     /**
