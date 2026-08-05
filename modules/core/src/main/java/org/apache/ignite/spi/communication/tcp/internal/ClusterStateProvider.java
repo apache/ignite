@@ -112,7 +112,7 @@ public class ClusterStateProvider {
     /**
      * @return Owner of the SSL context this transport opens connections with.
      */
-    public SslContextProvider sslContextProvider() {
+    public synchronized SslContextProvider sslContextProvider() {
         SslContextProvider provider = sslCtxProvider;
 
         if (provider == null) {

@@ -37,6 +37,14 @@ public class SslReloadCommandArg extends IgniteDataTransferObject {
     )
     boolean dryRun;
 
+    /** Identifies one attempt, so that a node applies only what the same attempt showed to the operator. */
+    @Order(1)
+    UUID token;
+
+    /** Whether the nodes are to put in use what they prepared, rather than to prepare. */
+    @Order(2)
+    boolean commit;
+
     /** */
     public boolean dryRun() {
         return dryRun;
@@ -46,14 +54,6 @@ public class SslReloadCommandArg extends IgniteDataTransferObject {
     public void dryRun(boolean dryRun) {
         this.dryRun = dryRun;
     }
-
-    /** Identifies one attempt, so that a node applies only what the same attempt showed to the operator. */
-    @Order(1)
-    UUID token;
-
-    /** Whether the nodes are to put in use what they prepared, rather than to prepare. */
-    @Order(2)
-    boolean commit;
 
     /** */
     public UUID token() {

@@ -139,8 +139,8 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
                             break;
 
                         default:
-                            outcome = "not reloaded " + users + " - nothing was prepared for this node, which is " +
-                                "what a node that joined while the operator was being asked looks like";
+                            outcome = "not reloaded " + users + " - nothing was prepared here for this run, " +
+                                "which is what a node that joined while the operator was being asked looks like";
                     }
                 }
                 else {

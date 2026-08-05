@@ -50,11 +50,8 @@ public class SslContextProvider implements SslContextReloadable {
     /** Context in use. */
     private volatile SSLContext ctx;
 
-    /** Built and checked, waiting to be put in use; {@code null} when there is nothing prepared. */
-    private volatile SSLContext staged;
-
-    /** Attempt the staged context was built for. */
-    private volatile UUID stagedToken;
+    /** What one attempt built and checked, waiting to be put in use; {@code null} when there is nothing prepared. */
+    private volatile Staged staged;
 
     /**
      * @param factory Factory to build the context with.
@@ -104,38 +101,39 @@ public class SslContextProvider implements SslContextReloadable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean prepare(UUID token) throws IgniteCheckedException {
+    @Override public synchronized boolean prepare(UUID token) throws IgniteCheckedException {
+        // Dropped first, so that a rebuild that throws leaves nothing behind that any attempt could still apply.
+        discard();
+
         SSLContext rebuilt = rebuild();
 
-        staged = rebuilt;
-        stagedToken = token;
+        staged = new Staged(token, rebuilt);
 
         return rebuilt != null;
     }
 
     /** {@inheritDoc} */
-    @Override public Commit commit(UUID token) {
+    @Override public synchronized Commit commit(UUID token) {
+        Staged staged0 = staged;
+
         // Applying what another attempt prepared would put certificates in use that this one never showed to the
         // operator, so a token that does not match counts as nothing prepared here.
-        if (!token.equals(stagedToken))
+        if (staged0 == null || !staged0.token.equals(token))
             return Commit.NOT_PREPARED;
-
-        SSLContext prepared = staged;
 
         discard();
 
-        if (prepared == null)
+        if (staged0.ctx == null)
             return Commit.NOTHING_TO_APPLY;
 
-        ctx = prepared;
+        ctx = staged0.ctx;
 
         return Commit.APPLIED;
     }
 
     /** {@inheritDoc} */
-    @Override public void discard() {
+    @Override public synchronized void discard() {
         staged = null;
-        stagedToken = null;
     }
 
     /** {@inheritDoc} */
@@ -172,6 +170,27 @@ public class SslContextProvider implements SslContextReloadable {
         }
         catch (SSLException e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Result of one attempt to prepare, kept as a whole so that a commit cannot take the token of one attempt
+     * together with the context of another.
+     */
+    private static class Staged {
+        /** Attempt this was built for. */
+        private final UUID token;
+
+        /** Context to put in use, {@code null} when the attempt found nothing to apply. */
+        private final SSLContext ctx;
+
+        /**
+         * @param token Attempt this was built for.
+         * @param ctx Context to put in use, {@code null} if there is nothing to apply.
+         */
+        private Staged(UUID token, @Nullable SSLContext ctx) {
+            this.token = token;
+            this.ctx = ctx;
         }
     }
 }

@@ -1711,15 +1711,19 @@ The name stays the same, because the new certificate was issued for the same nod
 A node that joined while the question was on screen has nothing prepared, is reported as not reloaded, and keeps
 the certificates it read when it started.
 
+The HTTP REST connector is the one part that rebuilds in place instead of holding the new certificates aside, so
+it is also the only one that can still fail in this phase. It carries no traffic between nodes, so a failure there
+cannot split the cluster.
+
+New connections use the new certificate. Existing ones keep the certificate they were opened with, and nothing
+interrupts them, so for a while a node serves both.
+
 `--dry-run` stops after the first phase and throws away what it built, so it changes nothing and asks nothing:
 
 [source, shell]
 ----
 control.sh|bat --ssl reload --dry-run
 ----
-
-New connections use the new certificate. Existing ones keep the certificate they were opened with, and nothing
-interrupts them, so for a while a node serves both.
 
 === Replacing the Certificate Authority
 
@@ -1805,16 +1809,9 @@ of them and you cannot influence which.
 before step 3. Earlier, the cluster does not trust the new authority yet; later, step 3 has already checked what
 the application was given.
 
-*Once for the whole cluster.* A dry run first is optional, and pays off here more than anywhere else: this is the
-step that fails a node whose new key store its own trust store does not accept, which is what a skipped step 1
-looks like on that node. It changes nothing.
-
-[source, shell]
-----
-control.sh|bat --ssl reload --dry-run
-----
-
-Read the report, then put the certificates in use on the nodes:
+*Once for the whole cluster.* This is the step that catches a node whose new key store its own trust store does
+not accept, which is what a skipped step 1 looks like on that node. The command reports it before it puts anything
+in use anywhere, so read the report and answer the question it asks:
 
 [source, shell]
 ----

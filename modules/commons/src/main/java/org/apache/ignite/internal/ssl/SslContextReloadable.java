@@ -31,11 +31,6 @@ import org.jetbrains.annotations.Nullable;
  * also how the reload command reports it, so they are part of what an operator sees and scripts against.
  */
 public interface SslContextReloadable {
-    /**
-     * @return Transports served, as the reload command reports them.
-     */
-    public Collection<String> users();
-
     /** */
     public static final String COMMUNICATION = "communication";
 
@@ -50,6 +45,11 @@ public interface SslContextReloadable {
 
     /** */
     public static final String HTTP_REST = "HTTP REST";
+
+    /**
+     * @return Transports served, as the reload command reports them.
+     */
+    public Collection<String> users();
 
     /**
      * Builds the certificates that are on disk now, checks them, and keeps the result aside without touching what

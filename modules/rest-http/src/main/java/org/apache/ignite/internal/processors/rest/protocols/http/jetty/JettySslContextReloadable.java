@@ -64,19 +64,24 @@ public class JettySslContextReloadable implements SslContextReloadable {
      * is bounded — it takes no part in the traffic between nodes.
      */
     @Override public boolean prepare(UUID token) throws IgniteCheckedException {
-        if (!rebuildable())
-            return false;
+        // Dropped first, so that a check that throws leaves nothing behind that any attempt could still apply.
+        discard();
 
-        verifyStores();
+        boolean rebuildable = rebuildable();
 
+        if (rebuildable)
+            verifyStores();
+
+        // Remembered even when there is nothing to re-read, so that the second phase reports a connector handed a
+        // ready-made context as having nothing to apply, rather than as one this attempt never reached.
         prepared = token;
 
-        return true;
+        return rebuildable;
     }
 
     /** {@inheritDoc} */
     @Override public Commit commit(UUID token) {
-        if (!token.equals(prepared))
+        if (prepared == null || !prepared.equals(token))
             return Commit.NOT_PREPARED;
 
         discard();

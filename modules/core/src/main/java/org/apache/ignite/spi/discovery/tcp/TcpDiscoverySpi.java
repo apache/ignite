@@ -422,7 +422,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL context, {@code null} if SSL is disabled. Volatile: replaced on certificate reload. */
+    /** Owner of the SSL context connections are opened and accepted with, {@code null} if SSL is disabled. */
     @GridToStringExclude
     private volatile SslContextProvider sslCtxProvider;
 

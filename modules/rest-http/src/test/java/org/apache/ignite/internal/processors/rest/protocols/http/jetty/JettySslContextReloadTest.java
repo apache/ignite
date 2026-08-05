@@ -32,16 +32,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.ssl.SslReloadCommandArg;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.VisorTaskResult;
-import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 import static org.apache.ignite.internal.ssl.SslContextReloadable.HTTP_REST;
+import static org.apache.ignite.ssl.SslContextFactory.getDisabledTrustManager;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -121,6 +123,25 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
+     * A connector handed a ready-made context has no store to read again. It must report that it has nothing to
+     * apply, which is a normal configuration, and not that the run never reached it.
+     */
+    @Test
+    public void testReadyMadeContextReportedAsNothingToApply() throws Exception {
+        SslContextFactory.Server jettyFactory = new SslContextFactory.Server();
+
+        jettyFactory.setSslContext(SSLContext.getDefault());
+
+        JettySslContextReloadable reloadable = new JettySslContextReloadable(jettyFactory);
+
+        UUID token = UUID.randomUUID();
+
+        assertFalse("A ready-made context cannot be reloaded", reloadable.prepare(token));
+
+        assertEquals(SslContextReloadable.Commit.NOTHING_TO_APPLY, reloadable.commit(token));
+    }
+
+    /**
      * @param node Node to run the reload on.
      * @return Report the command prints for this node.
      */
@@ -163,7 +184,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     private X509Certificate servedCertificate(IgniteEx node) throws Exception {
         SSLContext cliCtx = SSLContext.getInstance("TLS");
 
-        cliCtx.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
+        cliCtx.init(null, new TrustManager[] {getDisabledTrustManager()}, null);
 
         try (SSLSocket sock = (SSLSocket)cliCtx.getSocketFactory()
             .createSocket(InetAddress.getLoopbackAddress(), (Integer)node.localNode().attribute(ATTR_REST_JETTY_PORT))) {
