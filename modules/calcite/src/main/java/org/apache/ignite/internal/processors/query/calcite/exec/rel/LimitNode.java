@@ -54,7 +54,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
      * @param ctx Execution context.
      * @param rowType Row type.
      * @param offset How many rows need to be skipped.
-     * @param fetch How many rows need to be processed, {@code -1} if param is undefined.
+     * @param fetch How many rows need to be processed, {@link #FETCH_DEFAULT} if param is undefined.
      */
     public LimitNode(
         ExecutionContext<Row> ctx,

@@ -39,7 +39,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** How many rows are requested by downstream. */
     private int requested;
 
-    /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
+    /** How many rows are we waiting for from the upstream. {@link #NOT_WAITING} means end of stream. */
     private int waiting;
 
     /**  */
@@ -58,7 +58,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
      * @param ctx Execution context.
      * @param comp Rows comparator.
      * @param offset Offset.
-     * @param fetch How many rows need to be processed, {@code -1} if param is undefined.
+     * @param fetch How many rows need to be processed, {@link #FETCH_DEFAULT} if param is undefined.
      */
     public SortNode(
         ExecutionContext<Row> ctx, RelDataType rowType,
@@ -86,7 +86,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
      * @param comp Rows comparator.
      */
     public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
-        this(ctx, rowType, comp, 0, -1);
+        this(ctx, rowType, comp, OFFSET_DEFAULT, FETCH_DEFAULT);
     }
 
     /** {@inheritDoc} */
