@@ -1070,13 +1070,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + p);
 
-            GridEventStorageRequest msg = new GridEventStorageRequest(
-                resTopicId,
-                p,
-                dep.classLoaderId(),
-                dep.deployMode(),
-                dep.userVersion(),
-                dep.participants());
+            GridEventStorageRequest msg = new GridEventStorageRequest(resTopicId, p, dep);
 
             sendMessage(nodes, TOPIC_EVENT, msg, PUBLIC_POOL);
 
@@ -1248,18 +1242,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    GridDeployment dep = ctx.deploy().getGlobalDeployment(
-                        req.deploymentMode(),
-                        req.filterClassName(),
-                        req.filterClassName(),
-                        req.userVersion(),
-                        nodeId,
-                        req.classLoaderId(),
-                        req.loaderParticipants());
-
-                    if (dep == null)
-                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
-                            "(is peer class loading turned on?): " + req);
+                    GridDeployment dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.filterClassName());
 
                     MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
