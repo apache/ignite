@@ -1216,8 +1216,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     req.userVersion(),
                     node.id(),
                     req.classLoaderId(),
-                    req.loaderParticipants(),
-                    null);
+                    req.loaderParticipants());
 
             if (tmpDep == null) {
                 if (log.isDebugEnabled())

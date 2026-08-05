@@ -644,8 +644,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 userVer,
                 sndId,
                 ldrId,
-                participants,
-                F.<ClusterNode>alwaysTrue());
+                participants);
 
             return d != null ? d.deployedClass(name) : null;
         }

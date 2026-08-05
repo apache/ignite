@@ -235,8 +235,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
                     req.userVersion(),
                     nodeId,
                     req.classLoaderId(),
-                    req.participants(),
-                    null);
+                    req.participants());
 
                 if (dep == null) {
                     sendResponse(nodeId,

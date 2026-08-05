@@ -21,7 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
@@ -188,17 +187,7 @@ public class StartRequestData implements Message {
     /** */
     public void unmarshal(GridKernalContext ctx, UUID sndId) throws IgniteCheckedException {
         if (ctx.config().isPeerClassLoadingEnabled() && clsName != null) {
-            GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(),
-                clsName,
-                clsName,
-                depInfo.userVersion(),
-                sndId,
-                depInfo.classLoaderId(),
-                depInfo.participants(),
-                null);
-
-            if (dep == null)
-                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+            GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName);
 
             nodeFilter = U.unmarshal(ctx.marshaller(),
                 nodeFilterBytes,

@@ -3640,8 +3640,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                             ioMsg.userVersion(),
                             nodeId,
                             ioMsg.classLoaderId(),
-                            ioMsg.loaderParticipants(),
-                            null);
+                            ioMsg.loaderParticipants());
 
                         if (dep == null)
                             throw new IgniteDeploymentCheckedException(

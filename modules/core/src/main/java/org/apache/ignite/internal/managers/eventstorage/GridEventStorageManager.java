@@ -1255,8 +1255,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         req.userVersion(),
                         nodeId,
                         req.classLoaderId(),
-                        req.loaderParticipants(),
-                        null);
+                        req.loaderParticipants());
 
                     if (dep == null)
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +

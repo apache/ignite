@@ -417,11 +417,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         if (filterBytes != null) {
             try {
-                GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
-                    depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
-
-                if (dep == null)
-                    throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+                GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName);
 
                 filter = U.unmarshal(ctx, filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
