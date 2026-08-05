@@ -359,13 +359,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         return partId;
     }
 
-    /**
-     * @param partId New partition ID.
-     */
-    public void partition(int partId) {
-        this.partId = partId;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
