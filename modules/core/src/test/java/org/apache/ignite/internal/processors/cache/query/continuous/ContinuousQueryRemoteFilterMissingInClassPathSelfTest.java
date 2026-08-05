@@ -111,22 +111,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testClientJoinsMissingClass() throws Exception {
-        setExternalLoader = true;
-        Ignite ignite0 = startGrid(1);
-
-        executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
-
-        log = new GridStringLogger();
-        setExternalLoader = false;
-
-        startClientGrid(2);
-
-        String logStr = log.toString();
-
-        Thread.sleep(5000);
-
-        assertTrue(logStr.contains("Failed to unmarshal continuous query remote filter on client node. " +
-            "Can be ignored.") || logStr.contains("Failed to unmarshal continuous routine handler"));
+        doTestNodeJoinsWithNoClassLoaderForContinuousQuery(false);
     }
 
     /**
