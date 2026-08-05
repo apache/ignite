@@ -250,17 +250,17 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /**
      * Validate fetch/offset params restrictions.
      *
-     * @param n        Node to check limit.
-     * @param nodeName Node name.
+     * @param n          Node to check.
+     * @param clauseName Clause name.
      */
-    private void validateFetchOffset(@Nullable SqlNode n, String nodeName) {
+    private void validateFetchOffset(@Nullable SqlNode n, String clauseName) {
         if (n == null)
             return;
 
         if (n instanceof SqlLiteral) {
             BigDecimal offsetFetchLimit = ((SqlLiteral)n).bigDecimalValue();
 
-            checkLimitOffset(offsetFetchLimit, n, nodeName);
+            checkLimitOffset(offsetFetchLimit, n, clauseName);
         }
         else if (n instanceof SqlDynamicParam dynamicParam) {
             if (F.isEmpty(parameters))
@@ -285,7 +285,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                     throw newValidationError(n, err);
                 }
                 else
-                    checkLimitOffset((Number)param, n, nodeName);
+                    checkLimitOffset((Number)param, n, clauseName);
             }
 
             setValidatedNodeType(dynamicParam, expectType);
@@ -293,7 +293,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** */
-    private void checkLimitOffset(Number offsetFetchLimit, @Nullable SqlNode n, String nodeName) {
+    private void checkLimitOffset(Number offsetFetchLimit, SqlNode n, String nodeName) {
         try {
             long res = IgniteMath.convertToLongExact(offsetFetchLimit);
 
