@@ -77,7 +77,8 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
 
             try {
                 startGrid(node2Cfg);
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 // Node start failure with unknow class of continous query filter is ok.
                 if (!X.hasCause(t, "Class not found for continuous query remote filter [name=" + ENTRY_FILTER_CLS_NAME,
                     IgniteException.class))
