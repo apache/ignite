@@ -203,6 +203,7 @@ import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscover
 import org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
+import org.apache.ignite.internal.processors.continuous.ContinuousRoutinesCommonDiscoveryData;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutinesJoiningNodeDiscoveryData;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.StartRequestData;
@@ -635,6 +636,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(ContinousRoutineLocalInfo.class);
         register(ContinousRoutineDiscoveryDataItem.class);
         register(ContinousRoutineDiscoveryData.class);
+        register(ContinuousRoutinesCommonDiscoveryData.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;

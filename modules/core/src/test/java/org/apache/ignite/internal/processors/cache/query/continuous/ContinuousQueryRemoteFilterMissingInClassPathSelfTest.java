@@ -28,7 +28,6 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
@@ -37,12 +36,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridStringLogger;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  *
@@ -110,7 +110,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      * @throws Exception If fail.
      */
     @Test
-    public void testClientJoinsMissingClassWarning() throws Exception {
+    public void testClientJoinsMissingClass() throws Exception {
         setExternalLoader = true;
         Ignite ignite0 = startGrid(1);
 
@@ -122,6 +122,8 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
         startClientGrid(2);
 
         String logStr = log.toString();
+
+        Thread.sleep(5000);
 
         assertTrue(logStr.contains("Failed to unmarshal continuous query remote filter on client node. " +
             "Can be ignored.") || logStr.contains("Failed to unmarshal continuous routine handler"));
@@ -151,6 +153,11 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      */
     @Test
     public void testServerJoinsMissingClassException() throws Exception {
+        doTestNodeJoinsWithNoClassLoaderForContinuousQuery(true);
+    }
+
+    /** */
+    private void doTestNodeJoinsWithNoClassLoaderForContinuousQuery(boolean server) throws Exception {
         setExternalLoader = true;
         Ignite ignite0 = startGrid(1);
 
@@ -160,19 +167,30 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
 
         log = listeningLog;
 
-        LogListener lsnr = LogListener.matches(logStr ->
-            logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
-                "Failed to find class with given class loader for unmarshalling")
-                || logStr.contains("Failed to unmarshal continuous routine handler"
-            )).build();
+        LogListener lsnr1 = LogListener.matches("Failed to initialize a continuous query").build();
+        LogListener lsnr2 = LogListener.matches("ClassNotFoundException: " + EXT_FILTER_CLASS).build();
 
-        listeningLog.registerListener(lsnr);
+        listeningLog.registerListener(lsnr1);
+        listeningLog.registerListener(lsnr2);
 
         setExternalLoader = false;
 
-        GridTestUtils.assertThrows(log, () -> startGrid(2), IgniteCheckedException.class, "Failed to start");
+        if (server) {
+            assertThrowsWithCause(() -> startGrid(2), ClassNotFoundException.class);
 
-        assertTrue(lsnr.check());
+            assertTrue(lsnr1.check());
+            assertTrue(lsnr2.check());
+        }
+        else {
+            startClientGrid(2);
+
+            /**
+             * Client successfuly starts because continous query isn't actually deployed on a client. It is filtered out
+             * by {@link AttributeNodeFilter} with {@link IgniteNodeAttributes#ATTR_CLIENT_MODE}.
+             **/
+            assertFalse(lsnr1.check());
+            assertFalse(lsnr2.check());
+        }
     }
 
     /**
