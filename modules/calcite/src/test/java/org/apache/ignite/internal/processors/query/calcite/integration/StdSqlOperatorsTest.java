@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
@@ -93,6 +94,10 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testAggregates() {
+        sql("CREATE TABLE keep_t(id INT PRIMARY KEY, grp INT, v INT, ord INT, priority INT)");
+        sql("INSERT INTO keep_t VALUES (1, 1, 10, 2, 2), (2, 1, 20, 1, 2), (3, 1, 30, 1, 1), " +
+            "(4, 2, 40, 3, NULL), (5, 2, 60, 4, 1), (6, 2, 70, 4, 2)");
+
         assertExpression("COUNT(*)").returns(1L).check();
         assertExpression("SUM(val)").returns(1L).check();
         assertExpression("AVG(val)").returns(1).check();
@@ -109,6 +114,52 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
             .returns((IntStream.range(1, 7).boxed().collect(Collectors.toList()))).check();
         assertExpression("EVERY(val = 1)").returns(true).check();
         assertExpression("SOME(val = 1)").returns(true).check();
+        assertQuery("SELECT " +
+            "SUM_WITH_KEEP(v, 'FIRST') WITHIN GROUP (ORDER BY ord ASC), " +
+            "SUM_WITH_KEEP(v, 'LAST') WITHIN GROUP (ORDER BY ord ASC) FROM keep_t")
+            .returns(50L, 130L)
+            .check();
+        assertQuery("SELECT grp, " +
+            "SUM_WITH_KEEP(v, 'FIRST') WITHIN GROUP (ORDER BY ord ASC), " +
+            "SUM_WITH_KEEP(v, 'LAST') WITHIN GROUP (ORDER BY ord ASC) " +
+            "FROM keep_t GROUP BY grp ORDER BY grp")
+            .returns(1, 50L, 10L)
+            .returns(2, 40L, 130L)
+            .check();
+
+        assertQuery("SELECT " +
+            "SUM_WITH_KEEP(v, 'FIRST') WITHIN GROUP (ORDER BY ord DESC), " +
+            "SUM_WITH_KEEP(v, 'LAST') WITHIN GROUP (ORDER BY ord DESC) FROM keep_t")
+            .returns(130L, 50L)
+            .check();
+
+        assertQuery("SELECT " +
+            "SUM_WITH_KEEP(v, 'FIRST') WITHIN GROUP (ORDER BY ord DESC, priority ASC), " +
+            "SUM_WITH_KEEP(v, 'LAST') WITHIN GROUP (ORDER BY ord DESC, priority ASC) FROM keep_t")
+            .returns(60L, 20L)
+            .check();
+
+        assertQuery("SELECT " +
+            "SUM_WITH_KEEP(v, 'FIRST') WITHIN GROUP (ORDER BY priority ASC NULLS FIRST), " +
+            "SUM_WITH_KEEP(v, 'LAST') WITHIN GROUP (ORDER BY priority ASC NULLS FIRST) FROM keep_t")
+            .returns(40L, 100L)
+            .check();
+
+        assertQuery("SELECT " +
+            "SUM_WITH_KEEP(v, 'FIRST') WITHIN GROUP (ORDER BY COALESCE(priority, 99)), " +
+            "SUM_WITH_KEEP(v, 'LAST') WITHIN GROUP (ORDER BY COALESCE(priority, 99)) FROM keep_t")
+            .returns(90L, 40L)
+            .check();
+
+        assertQuery("SELECT SUM_WITH_KEEP(v, 'FIRST') WITHIN GROUP " +
+            "(ORDER BY COALESCE(priority, 99) ASC, ord DESC) FROM keep_t")
+            .returns(60L)
+            .check();
+
+        assertThrows("SELECT SUM_WITH_KEEP(v, 'MIDDLE') WITHIN GROUP (ORDER BY ord) FROM keep_t",
+            SqlValidatorException.class, "Expected FIRST or LAST");
+        assertThrows("SELECT SUM_WITH_KEEP(v, 'FIRST') FROM keep_t",
+            SqlValidatorException.class, "must contain a WITHIN GROUP clause");
     }
 
     /** */
