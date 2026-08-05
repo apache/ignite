@@ -1476,7 +1476,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
             CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl)cacheObjProc;
 
-            Class<?> cls = U.box(ClassLoaderUtils.classForName(clsName, null, true));
+            Class<?> cls = U.box(ClassLoaderUtils.classForNameWithPrimitives(clsName));
 
             if (cls != null) {
                 if (!platformOnly)

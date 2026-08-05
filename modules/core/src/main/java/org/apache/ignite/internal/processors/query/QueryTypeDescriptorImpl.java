@@ -797,7 +797,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
         }
         else if (cacheObjects.typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
-            final Class<?> cls = ClassLoaderUtils.classForName(((BinaryObject)val).type().typeName(), null, true);
+            final Class<?> cls = ClassLoaderUtils.classForNameWithPrimitives(((BinaryObject)val).type().typeName());
 
             return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
         }

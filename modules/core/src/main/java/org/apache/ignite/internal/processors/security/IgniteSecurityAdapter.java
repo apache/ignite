@@ -42,7 +42,7 @@ public abstract class IgniteSecurityAdapter extends GridProcessorAdapter impleme
 
     static {
         // ignite-binary-impl. Theoretically, can be absent in runtime due to other implementation of binary-api.
-        Class<?> jdkMarshCls = ClassLoaderUtils.classForName("org.apache.ignite.marshaller.jdk.JdkMarshallerImpl", null);
+        Class<?> jdkMarshCls = ClassLoaderUtils.classForName("org.apache.ignite.marshaller.jdk.JdkMarshallerImpl");
 
         if (jdkMarshCls != null)
             MODULES.add(jdkMarshCls.getProtectionDomain().getCodeSource());

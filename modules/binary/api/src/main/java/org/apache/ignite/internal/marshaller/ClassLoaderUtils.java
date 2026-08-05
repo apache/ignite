@@ -50,39 +50,46 @@ public class ClassLoaderUtils {
     }
 
     /**
-     * Gets class for the given name if it can be loaded or default given class.
+     * Gets class for the given name if it can be loaded or {@code null}.
      *
      * @param cls Class.
-     * @param dflt Default class to return.
-     * @return Class or default given class if it can't be found.
+     * @return Class or {@code null} if it can't be found.
      */
-    @Nullable public static Class<?> classForName(@Nullable String cls, @Nullable Class<?> dflt) {
-        return classForName(cls, dflt, false);
+    @Nullable public static Class<?> classForName(@Nullable String cls) {
+        return classForName(cls, false);
+    }
+
+    /**
+     * Gets class for the given name if it can be loaded or {@code null}.
+     *
+     * @param cls Class.
+     * @return Class or {@code null} if it can't be found.
+     */
+    @Nullable public static Class<?> classForNameWithPrimitives(@Nullable String cls) {
+        return classForName(cls, true);
     }
 
     /**
      * Gets class for the given name if it can be loaded or default given class.
      *
      * @param cls Class.
-     * @param dflt Default class to return.
      * @param includePrimitiveTypes Whether class resolution should include primitive types
      *                              (i.e. "int" will resolve to int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
-    @Nullable public static Class<?> classForName(
+    @Nullable private static Class<?> classForName(
         @Nullable String cls,
-        @Nullable Class<?> dflt,
         boolean includePrimitiveTypes
     ) {
         Class<?> clazz;
         if (cls == null)
-            clazz = dflt;
+            return null;
         else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
             try {
-                clazz = Class.forName(cls);
+                return Class.forName(cls);
             }
             catch (ClassNotFoundException ignore) {
-                clazz = dflt;
+                return null;
             }
         }
         return clazz;

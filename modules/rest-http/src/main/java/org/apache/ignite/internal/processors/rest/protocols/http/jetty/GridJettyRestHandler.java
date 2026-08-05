@@ -1027,7 +1027,7 @@ public class GridJettyRestHandler extends HttpServlet {
                 }
 
                 // Creating an object of the specified type, if its class is available.
-                Class<?> cls = ClassLoaderUtils.classForName(type, null);
+                Class<?> cls = ClassLoaderUtils.classForName(type);
 
                 if (cls != null)
                     return jsonMapper.readValue(str, cls);

@@ -373,7 +373,7 @@ public class BinaryContext {
                         String affField = affFields.remove(clsName0);
 
                         if (affField == null) {
-                            Class<?> cls = ClassLoaderUtils.classForName(clsName0, null);
+                            Class<?> cls = ClassLoaderUtils.classForName(clsName0);
 
                             if (cls != null)
                                 affField = affFldNameProvider.apply(cls);
@@ -387,7 +387,7 @@ public class BinaryContext {
                     String affField = affFields.remove(clsName);
 
                     if (affField == null) {
-                        Class<?> cls = ClassLoaderUtils.classForName(clsName, null);
+                        Class<?> cls = ClassLoaderUtils.classForName(clsName);
 
                         if (cls != null)
                             affField = affFldNameProvider.apply(cls);

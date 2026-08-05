@@ -1020,7 +1020,7 @@ public class PlatformUtils {
         if (clsName == null)
             throw new IgniteException("Java object/factory class name is not set.");
 
-        Class cls = ClassLoaderUtils.classForName(clsName, null);
+        Class cls = ClassLoaderUtils.classForName(clsName);
 
         if (cls == null)
             throw new IgniteException("Java object/factory class is not found (is it in the classpath?): " +

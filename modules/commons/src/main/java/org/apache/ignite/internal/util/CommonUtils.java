@@ -1305,23 +1305,9 @@ public abstract class CommonUtils {
         return sCls != null && sCls.isEnum();
     }
 
-    /**
-     * Returns a first non-null value in a given array, if such is present.
-     *
-     * @param vals Input array.
-     * @return First non-null value, or {@code null}, if array is empty or contains
-     *      only nulls.
-     */
-    @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
-        if (vals == null)
-            return null;
-
-        for (T val : vals) {
-            if (val != null)
-                return val;
-        }
-
-        return null;
+    /** */
+    @Nullable public static <T> T firstNotNull(@Nullable T t0, @Nullable T t1) {
+        return t0 != null ? t0 : t1;
     }
 
     /**

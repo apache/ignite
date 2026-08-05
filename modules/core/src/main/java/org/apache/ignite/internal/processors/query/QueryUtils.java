@@ -464,8 +464,8 @@ public class QueryUtils {
         // We need that to set correct types for _key and _val columns.
         // We better box these types - otherwise, if user provides, say, raw 'byte' for
         // key or value (which they could), we'll deem key or value as Object which clearly is not right.
-        Class<?> keyCls = U.box(ClassLoaderUtils.classForName(qryEntity.findKeyType(), null, true));
-        Class<?> valCls = U.box(ClassLoaderUtils.classForName(qryEntity.findValueType(), null, true));
+        Class<?> keyCls = U.box(ClassLoaderUtils.classForNameWithPrimitives(qryEntity.findKeyType()));
+        Class<?> valCls = U.box(ClassLoaderUtils.classForNameWithPrimitives(qryEntity.findValueType()));
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -653,7 +653,7 @@ public class QueryUtils {
             Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, fieldName,
-                ClassLoaderUtils.classForName(fieldType, Object.class, true),
+                U.firstNotNull(ClassLoaderUtils.classForNameWithPrimitives(fieldType), Object.class),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
                 scale == null ? -1 : scale.getOrDefault(fieldName, -1));
@@ -702,7 +702,7 @@ public class QueryUtils {
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx,
             name,
-            ClassLoaderUtils.classForName(typeName, Object.class, true),
+            U.firstNotNull(ClassLoaderUtils.classForNameWithPrimitives(typeName), Object.class),
             d.aliases(),
             isKey,
             true,
@@ -731,7 +731,7 @@ public class QueryUtils {
                 d.keyFieldName(),
                 d.valueFieldName(),
                 entry.getKey(),
-                ClassLoaderUtils.classForName(entry.getValue(), Object.class),
+                U.firstNotNull(ClassLoaderUtils.classForName(entry.getValue()), Object.class),
                 d.aliases(),
                 notNulls != null && notNulls.contains(entry.getKey()),
                 coCtx);
