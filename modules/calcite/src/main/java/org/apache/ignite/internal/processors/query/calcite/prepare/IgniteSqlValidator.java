@@ -276,10 +276,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                     Resources.ExInst<SqlValidatorException> err;
 
                     if (param == null)
-                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(expectType.toString(), "null");
+                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.BIGINT.toString(), "null");
                     else {
                         SqlTypeName paramType = typeFactory().createType(param.getClass()).getSqlTypeName();
-                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(expectType.toString(), paramType.getName());
+                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.BIGINT.toString(), paramType.getName());
                     }
 
                     throw newValidationError(n, err);
