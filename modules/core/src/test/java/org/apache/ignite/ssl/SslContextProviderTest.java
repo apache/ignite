@@ -20,9 +20,11 @@ package org.apache.ignite.ssl;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -72,7 +74,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
         placeStore("node02");
 
-        assertTrue("A rotated store must be reported as reloaded", provider.reloadSslContext());
+        assertTrue("A rotated store must be reported as reloaded", provider.reload());
 
         // Connections opened afterwards must use the rotated store.
         assertNotSame(before, provider.context());
@@ -85,9 +87,48 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
         SslContextProvider provider = new SslContextProvider(() -> readyMade);
 
-        assertFalse("A context handed over ready-made cannot be reloaded", provider.reloadSslContext());
+        assertFalse("A context handed over ready-made cannot be reloaded", provider.reload());
 
         assertSame(readyMade, provider.context());
+    }
+
+    /** What one attempt prepared must not be applied by another: the operator was shown different certificates. */
+    @Test
+    public void testCommitAppliesOnlyWhatTheSameAttemptPrepared() throws Exception {
+        SslContextProvider provider = new SslContextProvider(fileFactory());
+
+        SSLContext before = provider.context();
+
+        placeStore("node02");
+
+        assertTrue(provider.prepare(UUID.randomUUID()));
+
+        assertEquals("A foreign attempt must not apply what this one prepared",
+            SslContextReloadable.Commit.NOT_PREPARED, provider.commit(UUID.randomUUID()));
+
+        // Nothing was applied, and nothing was thrown away either.
+        assertSame(before, provider.context());
+    }
+
+    /** A dry run keeps nothing: what it built must not become applicable later. */
+    @Test
+    public void testDiscardLeavesNothingToApply() throws Exception {
+        SslContextProvider provider = new SslContextProvider(fileFactory());
+
+        SSLContext before = provider.context();
+
+        placeStore("node02");
+
+        UUID token = UUID.randomUUID();
+
+        assertTrue(provider.prepare(token));
+
+        provider.discard();
+
+        assertEquals("Discarded work must not be applicable",
+            SslContextReloadable.Commit.NOT_PREPARED, provider.commit(token));
+
+        assertSame(before, provider.context());
     }
 
     /**

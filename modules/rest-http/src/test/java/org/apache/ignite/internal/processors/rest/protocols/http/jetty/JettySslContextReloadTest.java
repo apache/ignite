@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.UUID;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
@@ -113,7 +114,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         String err = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
 
         // The whole chain, so that the assertion does not depend on how the compute framework wraps the failure.
-        assertContains(log, err, "failed on " + HTTP_REST);
+        assertContains(log, err, "would fail on " + HTTP_REST);
 
         assertTrue("A broken key store must not reach the connector",
             Arrays.equals(certBefore.getEncoded(), servedCertificate(g).getEncoded()));
@@ -124,8 +125,26 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
      * @return Report the command prints for this node.
      */
     private String reload(IgniteEx node) throws Exception {
+        SslReloadCommandArg arg = new SslReloadCommandArg();
+
+        arg.token(UUID.randomUUID());
+
+        String prepared = run(node, arg);
+
+        // Both phases, the way the command drives them: what prepare checked is what commit puts in use.
+        arg.commit(true);
+
+        return prepared + '\n' + run(node, arg);
+    }
+
+    /**
+     * @param node Node to run on.
+     * @param arg Argument carrying the phase.
+     * @return Report of that phase.
+     */
+    private String run(IgniteEx node, SslReloadCommandArg arg) throws Exception {
         VisorTaskResult<String> res = node.compute(node.cluster()).execute(SslReloadTask.class,
-            new VisorTaskArgument<>(node.localNode().id(), new SslReloadCommandArg(), false));
+            new VisorTaskArgument<>(node.localNode().id(), arg, false));
 
         return res.result();
     }

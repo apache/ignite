@@ -234,7 +234,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
      */
     private void reloadSslContext() {
         try {
-            sslCtxProvider.reloadSslContext();
+            sslCtxProvider.reload();
         }
         catch (Exception ignored) {
             // The connection attempt fails on its own, and the certificates in use stay untouched.

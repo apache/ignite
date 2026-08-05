@@ -91,7 +91,7 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
         /** {@inheritDoc} */
         @Override protected String run(SslReloadCommandArg arg) throws IgniteException {
-            boolean apply = !arg.dryRun();
+            boolean commit = arg.commit();
 
             Collection<SslContextReloadable> comps =
                 ignite.context().internalSubscriptionProcessor().getSslContextReloadables();
@@ -124,22 +124,49 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
                 String outcome;
 
-                try {
-                    outcome = (apply ? comp.reloadSslContext() : comp.checkSslContext())
-                        ? (apply ? "reloaded " : "can be reloaded ") + users + served(comp)
-                        : (apply ? "not reloaded " : "cannot be reloaded ") + users +
-                            " - the SSL context is handed over ready-made, so there is nothing to read again" +
-                            served(comp);
-                }
-                catch (Exception e) {
-                    // Every provider is attempted, so that one broken transport does not hide the state of the
-                    // rest. Anything may be thrown here: the context comes from a user-supplied factory.
-                    failed = true;
+                if (commit) {
+                    switch (comp.commit(arg.token())) {
+                        case APPLIED:
+                            outcome = "reloaded " + users + served(comp);
 
-                    outcome = (apply ? "failed on " : "would fail on ") + users + " (" + reason(e) + ')';
+                            break;
+
+                        case NOTHING_TO_APPLY:
+                            outcome = "not reloaded " + users +
+                                " - the SSL context is handed over ready-made, so there is nothing to read again" +
+                                served(comp);
+
+                            break;
+
+                        default:
+                            outcome = "not reloaded " + users + " - nothing was prepared for this node, which is " +
+                                "what a node that joined while the operator was being asked looks like";
+                    }
+                }
+                else {
+                    try {
+                        outcome = comp.prepare(arg.token())
+                            ? "can be reloaded " + users + served(comp)
+                            : "cannot be reloaded " + users +
+                                " - the SSL context is handed over ready-made, so there is nothing to read again";
+                    }
+                    catch (Exception e) {
+                        // Every provider is attempted, so that one broken transport does not hide the state of the
+                        // rest. Anything may be thrown here: the context comes from a user-supplied factory.
+                        failed = true;
+
+                        outcome = "would fail on " + users + " (" + reason(e) + ')';
+                    }
                 }
 
                 lines.add(ignite.localNode().id() + ": " + outcome);
+            }
+
+            // Nothing may be left committable on a node that could not prepare everything, and a dry run keeps
+            // nothing at all: it is a rehearsal, not a first phase the operator can later confirm.
+            if (failed || arg.dryRun()) {
+                for (SslContextReloadable comp : sorted)
+                    comp.discard();
             }
 
             String res = String.join("\n", lines);

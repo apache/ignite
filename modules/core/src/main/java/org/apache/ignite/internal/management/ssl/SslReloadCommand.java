@@ -18,13 +18,19 @@
 package org.apache.ignite.internal.management.ssl;
 
 import java.util.Collection;
+import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class SslReloadCommand implements ComputeCommand<SslReloadCommandArg, String> {
+public class SslReloadCommand implements ComputeCommand<SslReloadCommandArg, String>,
+    PreparableCommand<SslReloadCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Reload TLS certificates on all cluster nodes by re-reading the configured key and trust stores. " +
@@ -51,11 +57,38 @@ public class SslReloadCommand implements ComputeCommand<SslReloadCommandArg, Str
         printer.accept(res);
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Has every node build the certificates that are on disk and check them, without putting any of them in use,
+     * and shows what it found. Everything that can fail happens here, so that the phase which does put them in use
+     * cannot stop half way and leave the cluster on two different certificates.
+     */
+    @Override public boolean prepare(
+        @Nullable IgniteClient client,
+        @Nullable Ignite ignite,
+        SslReloadCommandArg arg,
+        Consumer<String> printer
+    ) throws Exception {
+        arg.token(UUID.randomUUID());
+        arg.commit(false);
+
+        printer.accept(CommandUtils.execute(client, ignite, SslReloadTask.class, arg,
+            CommandUtils.nodes(client, ignite)));
+
+        if (arg.dryRun())
+            return false;
+
+        arg.commit(true);
+
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override public @Nullable String confirmationPrompt(SslReloadCommandArg arg) {
-        // A dry run changes nothing, so there is nothing to confirm.
+        // A dry run has already reported everything it was going to, and changed nothing.
         return arg.dryRun()
             ? null
-            : "Warning: the command will reload TLS certificates on all cluster nodes.";
+            : "Warning: the certificates above will be put in use on all cluster nodes.";
     }
 }

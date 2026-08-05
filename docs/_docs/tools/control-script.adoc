@@ -1665,12 +1665,13 @@ the node restarts, so a rotation that ends with the old authority removed locks 
 Put the new key store or trust store at the path a node is already configured with, and run the command. Nothing in
 the configuration changes: the node re-reads what it points at.
 
-The command has two forms. With `--dry-run` it changes nothing and says what each node would do:
-
 [source, shell]
 ----
-control.sh|bat --ssl reload --dry-run
+control.sh|bat --ssl reload
 ----
+
+The command works in two phases. First every node builds the certificates that are on disk and checks them,
+without putting any of them in use, and reports what it found:
 
 [source,text]
 ----
@@ -1681,7 +1682,8 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: can be reloaded client connector, communic
 One line per SSL context factory: transports configured with the same one share the context, so they are reloaded
 together and reported together. A node configured with several factories answers with several lines.
 
-A node that would not be able to use the new certificate says so, and the command fails:
+Everything that can fail happens in this phase. A node that would not be able to use the new certificate says so,
+and the command stops without having changed anything on any node:
 
 [source,text]
 ----
@@ -1695,15 +1697,9 @@ the certificate of an authority, which is the scheme the link:security/ssl-tls[S
 a certificate is then a change of trust, so give the new one to every trust store first, the way the next section
 gives them a new authority.
 
-Worth doing before every reload: the command reaches the nodes independently of each other, so a node that cannot
-use its new certificate otherwise shows up only once the others have already switched.
-
-Without `--dry-run` the certificates are put in use, and the same lines report what happened:
-
-[source, shell]
-----
-control.sh|bat --ssl reload
-----
+When every node is ready, the command asks before it goes on. The second phase then puts in use exactly what the
+first one checked — a node applies only what the same run prepared, never what some other run left behind — and
+reports it:
 
 [source,text]
 ----
@@ -1712,10 +1708,15 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, 
 ----
 
 The name stays the same, because the new certificate was issued for the same node; the expiry date is what moved.
+A node that joined while the question was on screen has nothing prepared, is reported as not reloaded, and keeps
+the certificates it read when it started.
 
-A node that cannot use the new certificate keeps the old one, names the transport it failed on, and the command
-fails. Nothing is rolled back, and nothing has to be: fix the files on that node and run the command again. A
-second run is safe, and a node that already serves the new certificate simply re-reads the same files.
+`--dry-run` stops after the first phase and throws away what it built, so it changes nothing and asks nothing:
+
+[source, shell]
+----
+control.sh|bat --ssl reload --dry-run
+----
 
 New connections use the new certificate. Existing ones keep the certificate they were opened with, and nothing
 interrupts them, so for a while a node serves both.

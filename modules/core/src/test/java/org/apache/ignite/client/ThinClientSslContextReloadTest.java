@@ -52,6 +52,9 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
     /** Whether the server demands a certificate from the client and checks who signed it. */
     private boolean srvClientAuth;
 
+    /** Port the node took; a suite running next to this one may hold the default. */
+    private int port;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -91,7 +94,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
     /** A client that stopped trusting the server must recover once the widened trust store is on its disk. */
     @Test
     public void testClientRecoversOnRotatedTrustStore() throws Exception {
-        startGrid(0);
+        startNode();
 
         try (IgniteClient cli = Ignition.startClient(clientConfiguration())) {
             assertNotNull(cli.cacheNames());
@@ -101,7 +104,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
             // The server comes back with a certificate issued by an authority the client does not trust yet.
             placeStore("node02", srvKeyStore);
 
-            startGrid(0);
+            startNode();
 
             assertFalse("The client must not trust the rotated server yet", reachable(cli));
 
@@ -120,7 +123,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
     public void testDroppedConnectionKeepsPresentedCertificate() throws Exception {
         srvClientAuth = true;
 
-        startGrid(0);
+        startNode();
 
         try (IgniteClient cli = Ignition.startClient(clientConfiguration())) {
             assertNotNull(cli.cacheNames());
@@ -134,7 +137,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
                 assertFalse("The handshake must not complete against a socket that closes at once", reachable(cli));
             }
 
-            startGrid(0);
+            startNode();
 
             assertTrue("A dropped connection must not rotate the certificate the client presents",
                 GridTestUtils.waitForCondition(() -> reachable(cli), 10_000));
@@ -146,13 +149,20 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
     public void testRefusedHandshakeNamesTheReason() throws Exception {
         placeStore("node02", srvKeyStore);
 
-        startGrid(0);
+        startNode();
 
         Throwable e = GridTestUtils.assertThrows(log, () -> Ignition.startClient(clientConfiguration()),
             Exception.class, null);
 
         assertTrue("The TLS failure must reach the caller, got: " + e,
             X.hasCause(e, SSLHandshakeException.class));
+    }
+
+    /**
+     * Starts the node under test and remembers the port it took.
+     */
+    private void startNode() throws Exception {
+        port = startGrid(0).context().clientListener().port();
     }
 
     /**
@@ -175,7 +185,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
      */
     private ClientConfiguration clientConfiguration() {
         return new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT)
+            .setAddresses("127.0.0.1:" + port)
             .setSslMode(SslMode.REQUIRED)
             .setSslTrustCertificateKeyStorePath(cliTrustStore.toString())
             .setSslTrustCertificateKeyStorePassword(GridTestUtils.keyStorePassword())
@@ -188,8 +198,7 @@ public class ThinClientSslContextReloadTest extends GridCommonAbstractTest {
      *      handshake never completes and TLS is not at fault.
      */
     private ServerSocket acceptAndClose() throws Exception {
-        ServerSocket srvSock = new ServerSocket(ClientConnectorConfiguration.DFLT_PORT, 0,
-            InetAddress.getLoopbackAddress());
+        ServerSocket srvSock = new ServerSocket(port, 0, InetAddress.getLoopbackAddress());
 
         // accept() throws once the test closes the socket, and the async runner absorbs that into a future
         // nobody waits on.

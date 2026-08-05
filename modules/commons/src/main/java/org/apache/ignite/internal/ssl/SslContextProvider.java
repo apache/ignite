@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -48,6 +49,12 @@ public class SslContextProvider implements SslContextReloadable {
 
     /** Context in use. */
     private volatile SSLContext ctx;
+
+    /** Built and checked, waiting to be put in use; {@code null} when there is nothing prepared. */
+    private volatile SSLContext staged;
+
+    /** Attempt the staged context was built for. */
+    private volatile UUID stagedToken;
 
     /**
      * @param factory Factory to build the context with.
@@ -83,21 +90,52 @@ public class SslContextProvider implements SslContextReloadable {
         return Collections.unmodifiableCollection(users);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean reloadSslContext() throws IgniteCheckedException {
-        SSLContext rebuilt = rebuild();
+    /**
+     * Builds the certificates on disk and puts them in use in one step, for callers that have no operator to show
+     * them to first.
+     *
+     * @return {@code True} if new certificates were put in use.
+     * @throws IgniteCheckedException If they could not be built or would not be accepted.
+     */
+    public boolean reload() throws IgniteCheckedException {
+        UUID token = UUID.randomUUID();
 
-        if (rebuilt == null)
-            return false;
-
-        ctx = rebuilt;
-
-        return true;
+        return prepare(token) && commit(token) == Commit.APPLIED;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkSslContext() throws IgniteCheckedException {
-        return rebuild() != null;
+    @Override public boolean prepare(UUID token) throws IgniteCheckedException {
+        SSLContext rebuilt = rebuild();
+
+        staged = rebuilt;
+        stagedToken = token;
+
+        return rebuilt != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Commit commit(UUID token) {
+        // Applying what another attempt prepared would put certificates in use that this one never showed to the
+        // operator, so a token that does not match counts as nothing prepared here.
+        if (!token.equals(stagedToken))
+            return Commit.NOT_PREPARED;
+
+        SSLContext prepared = staged;
+
+        discard();
+
+        if (prepared == null)
+            return Commit.NOTHING_TO_APPLY;
+
+        ctx = prepared;
+
+        return Commit.APPLIED;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void discard() {
+        staged = null;
+        stagedToken = null;
     }
 
     /** {@inheritDoc} */

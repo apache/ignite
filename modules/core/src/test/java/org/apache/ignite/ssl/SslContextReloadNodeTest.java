@@ -266,7 +266,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
 
-        assertContains(log, res, "failed on");
+        assertContains(log, res, "would fail on");
         assertContains(log, res, COMMUNICATION);
         assertContains(log, res, DISCOVERY);
 
@@ -356,9 +356,28 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         SslReloadCommandArg arg = new SslReloadCommandArg();
 
         arg.dryRun(dryRun);
+        arg.token(UUID.randomUUID());
 
+        String prepared = run(arg, ids, nodes[0]);
+
+        if (dryRun)
+            return prepared;
+
+        // Both phases, the way the command drives them: prepare reports what would happen, commit puts it in use.
+        arg.commit(true);
+
+        return run(arg, ids, nodes[0]);
+    }
+
+    /**
+     * @param arg Argument carrying the phase.
+     * @param ids Nodes to run on.
+     * @param from Node to run from.
+     * @return Report of that phase.
+     */
+    private String run(SslReloadCommandArg arg, List<UUID> ids, IgniteEx from) throws Exception {
         // Over the whole cluster, as the command itself does: the default facade covers server nodes only.
-        VisorTaskResult<String> res = nodes[0].compute(nodes[0].cluster()).execute(SslReloadTask.class,
+        VisorTaskResult<String> res = from.compute(from.cluster()).execute(SslReloadTask.class,
             new VisorTaskArgument<>(ids, arg, false));
 
         return res.result();
