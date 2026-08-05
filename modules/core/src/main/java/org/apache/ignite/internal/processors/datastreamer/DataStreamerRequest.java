@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.StripedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware {
+public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
     long reqId;
@@ -271,10 +272,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         return topVer;
     }
 
-    /**
-     * @return Partition ID.
-     */
-    public int partition() {
+    /** {@inheritDoc} */
+    @Override public int stripeIdx() {
         return partId;
     }
 
