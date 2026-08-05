@@ -37,7 +37,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_MODIF
  * Abstract node of execution tree.
  */
 public abstract class AbstractNode<Row> implements Node<Row> {
-    /** Special value to highlight that all rows were received and we do not expect more. */
+    /** Special flag which marks that all the rows are received. */
     static final int NOT_WAITING = -1;
 
     /** */
