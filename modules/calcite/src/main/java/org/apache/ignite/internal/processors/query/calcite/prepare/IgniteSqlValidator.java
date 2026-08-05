@@ -136,7 +136,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
 
-
     /** {@inheritDoc} */
     @Override public void validateInsert(SqlInsert insert) {
         validateTableModify(insert.getTargetTable());
@@ -271,7 +270,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         super.validateSelect(select, targetRowType);
     }
-
 
     /** {@inheritDoc} */
     @Override protected void validateNamespace(SqlValidatorNamespace namespace, RelDataType targetRowType) {

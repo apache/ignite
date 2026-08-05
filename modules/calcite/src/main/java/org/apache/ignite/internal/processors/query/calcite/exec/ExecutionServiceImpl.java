@@ -619,18 +619,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 IgniteResource.INSTANCE.selectForUpdateRequiresPessimisticTx().str(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        // Convert SQL waitSeconds to the internal lock-wait representation:
-        // null means use the remaining transaction time or the query timeout and is encoded as 0;
-        // 0 requests NOWAIT and is encoded as -1; a positive value is converted from seconds to milliseconds.
-        Long waitSeconds = plan.waitSeconds();
-        long waitMs;
-
-        if (waitSeconds == null)
-            waitMs = 0L;
-        else if (waitSeconds == 0L)
-            waitMs = -1L;
-        else
-            waitMs = waitSeconds * 1000L;
+        long waitMs = waitMillis(plan);
 
         // Zero means that retries are limited only by the transaction or query timeout.
         long deadline = waitMs > 0
@@ -658,6 +647,27 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /**
+     * Converts the SQL lock wait value to the internal millisecond representation.
+     *
+     * @param plan SELECT FOR UPDATE plan.
+     * @return {@code 0} for the remaining transaction/query timeout, {@code -1} for NOWAIT,
+     *      or a positive timeout in milliseconds.
+     */
+    private static long waitMillis(SelectForUpdatePlan plan) {
+        // Convert SQL waitSeconds to the internal lock-wait representation:
+        // null means use the remaining transaction time or the query timeout and is encoded as 0;
+        // 0 requests NOWAIT and is encoded as -1; a positive value is converted from seconds to milliseconds.
+        Long waitSeconds = plan.waitSeconds();
+
+        if (waitSeconds == null)
+            return 0L;
+        else if (waitSeconds == 0L)
+            return -1L;
+        else
+            return waitSeconds * 1000L;
+    }
+
+    /**
      * Executes the inner SELECT and attempts to acquire transaction locks for the selected row versions.
      *
      * @param qry Root query for this execution attempt.
@@ -680,18 +690,27 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         int userColCnt = plan.userColumnCount();
 
-        if (rows.isEmpty()) {
-            // Nothing to lock – return an empty cursor with user-only field metadata.
-            QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(Collections.emptyList(), null, false);
+        if (rows.isEmpty())
+            return createResultCursor(qry, plan, rows, userColCnt);
 
-            IgniteTypeFactory typeFactory = qry.context().typeFactory();
-            List<GridQueryFieldMetadata> meta = plan.innerPlan().fieldsMetadata().queryFieldsMetadata(typeFactory);
+        List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
+            collectLockBatches(plan, rows);
 
-            resCur.fieldsMeta(meta.subList(0, userColCnt));
+        if (!tryAcquireLocks(userTx, lockBatches, waitMs, deadline))
+            return null;
 
-            return resCur;
-        }
+        return createResultCursor(qry, plan, rows, userColCnt);
+    }
 
+    /**
+     * Collects unique cache entries to lock and orders cache batches by cache ID.
+     *
+     * @param plan SELECT FOR UPDATE plan containing the lock targets.
+     * @param rows Selected rows containing the internal lock columns.
+     * @return Cache-entry batches ordered by cache ID.
+     */
+    private List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>>
+        collectLockBatches(SelectForUpdatePlan plan, List<List<?>> rows) {
         Map<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> entriesByCache =
             new LinkedHashMap<>();
 
@@ -736,6 +755,24 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         lockBatches.sort(Comparator.comparingInt(left -> left.getKey().context().cacheId()));
 
+        return lockBatches;
+    }
+
+    /**
+     * Tries to lock all collected entries within a transaction savepoint.
+     *
+     * @param userTx Transaction that acquires the locks.
+     * @param lockBatches Cache entries grouped by cache.
+     * @param waitMs Lock wait time in the internal representation.
+     * @param deadline Absolute lock deadline, or {@code 0} to use the transaction/query timeout.
+     * @return {@code true} if every lock was acquired.
+     */
+    private static boolean tryAcquireLocks(
+        GridNearTxLocal userTx,
+        List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches,
+        long waitMs,
+        long deadline
+    ) {
         try {
             // lockTxEntries() requires the transaction to be bound to the current thread
             // (it checks cctx.tm().threadLocalTx()). Resume it here and suspend afterwards,
@@ -792,7 +829,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                             IgniteQueryErrorCode.UNKNOWN, rollbackEx);
                     }
 
-                    return null;
+                    return false;
                 }
 
                 try {
@@ -812,7 +849,25 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 IgniteQueryErrorCode.UNKNOWN, e);
         }
 
-        List<List<?>> userRows = new ArrayList<>(rows.size());
+        return true;
+    }
+
+    /**
+     * Creates a cursor containing only user-visible columns and their metadata.
+     *
+     * @param qry Root query providing the type factory.
+     * @param plan SELECT FOR UPDATE plan providing field metadata.
+     * @param rows Selected rows containing user-visible and internal lock columns.
+     * @param userColCnt Number of user-visible columns.
+     * @return Cursor containing only user-visible data and metadata.
+     */
+    private FieldsQueryCursor<List<?>> createResultCursor(
+        RootQuery<Row> qry,
+        SelectForUpdatePlan plan,
+        List<List<?>> rows,
+        int userColCnt
+    ) {
+        List<List<?>> userRows = rows.isEmpty() ? Collections.emptyList() : new ArrayList<>(rows.size());
 
         for (List<?> row : rows)
             userRows.add(row.subList(0, userColCnt));

@@ -2120,23 +2120,22 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
  * transparently handles all queries that reach the StatementParser.
  */
   final public SqlNode SqlSelectForUpdate() throws ParseException {
-    final Span s;
-    SqlNode qry;
-    SqlNodeList ofList = null;
-    List<SqlNode> ofCols = null;
-    SqlIdentifier col;
+    final Span querySpan;
+    SqlNode query;
+    SqlNodeList lockColumns = null;
+    SqlIdentifier lockColumn;
     Long waitSeconds = null;
-    String waitValue;
-    qry = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY);
-                                                         s = span();
+    String waitSecondsText;
+    query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY);
+                                                           querySpan = span();
     if (jj_2_164(2147483647)) {
       jj_consume_token(FOR);
       jj_consume_token(UPDATE);
       if (jj_2_160(2147483647)) {
         jj_consume_token(OF);
-                ofCols = new ArrayList<SqlNode>();
-        col = CompoundIdentifier();
-                                         ofCols.add(col);
+                lockColumns = new SqlNodeList(querySpan.pos());
+        lockColumn = CompoundIdentifier();
+                                                lockColumns.add(lockColumn);
         label_14:
         while (true) {
           if (jj_2_159(2)) {
@@ -2145,10 +2144,9 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
             break label_14;
           }
           jj_consume_token(COMMA);
-          col = CompoundIdentifier();
-                                                     ofCols.add(col);
+          lockColumn = CompoundIdentifier();
+                                                            lockColumns.add(lockColumn);
         }
-              ofList = new SqlNodeList(ofCols, s.pos());
       } else {
         ;
       }
@@ -2156,19 +2154,19 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
         if (jj_2_161(2147483647)) {
           jj_consume_token(WAIT);
           jj_consume_token(UNSIGNED_INTEGER_LITERAL);
-                waitValue = token.image;
+                waitSecondsText = token.image;
 
                 try {
-                    waitSeconds = Long.parseLong(waitValue);
+                    waitSeconds = Long.parseLong(waitSecondsText);
                 }
                 catch (NumberFormatException ignored) {
                     {if (true) throw SqlUtil.newContextException(getPos(),
-                        IgniteResource.INSTANCE.illegalWaitTimeout(waitValue));}
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitSecondsText));}
                 }
 
                 if (waitSeconds <= 0) {
                     {if (true) throw SqlUtil.newContextException(getPos(),
-                        IgniteResource.INSTANCE.illegalWaitTimeout(waitValue));}
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitSecondsText));}
                 }
         } else if (jj_2_162(2)) {
           jj_consume_token(NOWAIT);
@@ -2180,11 +2178,11 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
       } else {
         ;
       }
-          {if (true) return new IgniteSqlSelectForUpdate(s.end(this), qry, ofList, waitSeconds);}
+          {if (true) return new IgniteSqlSelectForUpdate(querySpan.end(this), query, lockColumns, waitSeconds);}
     } else {
       ;
     }
-      {if (true) return qry;}
+      {if (true) return query;}
     throw new Error("Missing return statement in function");
   }
 

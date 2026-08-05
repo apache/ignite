@@ -405,10 +405,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
-     * Chedk if particular field exists.
+     * Checks whether the specified field is registered or is a system field.
      *
-     * @param field Field.
-     * @return {@code True} if exists.
+     * <p>Registered fields are matched case-sensitively; system fields ({@code _KEY}, {@code _VAL}, and {@code _VER})
+     * are matched case-insensitively.
+     *
+     * @param field Field name to check.
+     * @return {@code true} if the field exists; otherwise {@code false}.
      */
     public boolean hasField(String field) {
         return props.containsKey(field)

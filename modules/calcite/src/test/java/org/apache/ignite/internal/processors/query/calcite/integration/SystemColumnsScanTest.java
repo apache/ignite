@@ -23,13 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import javax.cache.CacheException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -50,8 +46,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -59,30 +53,17 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** Tests system columns returned by direct table and index scans. */
-public class SystemColumnsScanTest extends GridCommonAbstractTest {
-    /** */
-    private IgniteEx node;
-
+public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
-                new CalciteQueryEngineConfiguration().setDefault(true)))
-            .setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true));
+            .setTransactionConfiguration(new TransactionConfiguration()
+                .setTxAwareQueriesEnabled(true));
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        node = startGrid(0);
-
-        awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        super.afterTest();
+    @Override protected int nodeCount() {
+        return 1;
     }
 
     /** */
@@ -116,16 +97,11 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
     public void testExplicitSelectReturnsSystemColumns() throws Exception {
         createAndPopulatePersonTable();
 
-        List<List<?>> rows = sql("SELECT _key, _val, _ver FROM Person");
-
-        assertEquals(30, rows.size());
-
-        for (List<?> row : rows) {
-            assertEquals(3, row.size());
-            assertTrue(row.get(0) instanceof Integer);
-            assertNotNull(row.get(1));
-            assertTrue("Unexpected _VER value: " + row.get(2), row.get(2) instanceof GridCacheVersion);
-        }
+        assertQuery("SELECT _key, _val, _ver FROM Person")
+            .columnNames("_KEY", "_VAL", "_VER")
+            .resultSize(30)
+            .withResultChecker(this::assertSqlSystemColumns)
+            .check();
     }
 
     /** */
@@ -149,11 +125,10 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
     public void testSystemColumnsAreHiddenFromSelectStar() throws Exception {
         createAndPopulatePersonTable();
 
-        List<List<?>> rows = sql("SELECT * FROM Person");
-
-        assertEquals(30, rows.size());
-        assertEquals(3, rows.get(0).size());
-
+        assertQuery("SELECT * FROM Person")
+            .columnNames("ID", "NAME", "AGE")
+            .resultSize(30)
+            .check();
     }
 
     /** */
@@ -175,7 +150,7 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
 
             fail("Exception is expected");
         }
-        catch (CacheException e) {
+        catch (Exception e) {
             assertTrue("Expected reserved field name exception was not found: " + e,
                 hasCauseOrSuppressed(e, IgniteCheckedException.class, expMsg));
         }
@@ -202,14 +177,12 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
 
     /** */
     private void assertSystemColumnAddForbidden(String qry, String colName) {
-        GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
-            "Column already exists: " + colName);
+        assertThrows(qry, IgniteSQLException.class, "Column already exists: " + colName);
     }
 
     /** */
     private void assertVersionColumnDmlTargetForbidden(String qry) {
-        GridTestUtils.assertThrowsAnyCause(log, () -> sql(qry), IgniteSQLException.class,
-            "Cannot modify system column");
+        assertThrows(qry, IgniteSQLException.class, "Cannot modify system column");
     }
 
     /** */
@@ -217,7 +190,7 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
         sql("CREATE TABLE Person (id INT PRIMARY KEY, name VARCHAR, age INT) WITH atomicity=TRANSACTIONAL");
         sql("CREATE INDEX age_idx ON Person(age)");
 
-        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             for (int i = 1; i <= 30; i++)
                 sql("INSERT INTO Person(id, name, age) VALUES (?, ?, ?)", i, personName(i), 20 + i);
 
@@ -225,6 +198,16 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
         }
 
         awaitPartitionMapExchange();
+    }
+
+    /** */
+    private void assertSqlSystemColumns(List<List<?>> rows) {
+        for (List<?> row : rows) {
+            assertEquals(3, row.size());
+            assertTrue(row.get(0) instanceof Integer);
+            assertNotNull(row.get(1));
+            assertTrue("Unexpected _VER value: " + row.get(2), row.get(2) instanceof GridCacheVersion);
+        }
     }
 
     /** */
@@ -284,6 +267,7 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
 
     /** */
     private ScanContext scanContext(IgniteCacheTable tbl) {
+        IgniteEx node = grid(0);
         UUID nodeId = node.localNode().id();
         AffinityTopologyVersion topVer = node.context().cache().context().exchange().readyAffinityVersion();
         BaseQueryContext qctx = BaseQueryContext.builder().logger(log).build();
@@ -312,14 +296,10 @@ public class SystemColumnsScanTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteCacheTable personTable() {
+        IgniteEx node = grid(0);
         CalciteQueryProcessor qryProc = Commons.lookupComponent(node.context(), CalciteQueryProcessor.class);
 
         return (IgniteCacheTable)qryProc.schemaHolder().schema(QueryUtils.DFLT_SCHEMA).getTable("PERSON");
-    }
-
-    /** */
-    private List<List<?>> sql(String sql, Object... args) {
-        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll();
     }
 
     /** */

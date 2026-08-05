@@ -879,16 +879,15 @@ SqlNode IgniteSqlQueryOrDml() :
  */
 SqlNode SqlSelectForUpdate() :
 {
-    final Span s;
-    SqlNode qry;
-    SqlNodeList ofList = null;
-    List<SqlNode> ofCols = null;
-    SqlIdentifier col;
+    final Span querySpan;
+    SqlNode query;
+    SqlNodeList lockColumns = null;
+    SqlIdentifier lockColumn;
     Long waitSeconds = null;
-    String waitValue;
+    String waitSecondsText;
 }
 {
-    qry = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) { s = span(); }
+    query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) { querySpan = span(); }
     [
         LOOKAHEAD(<FOR> <UPDATE>)
         <FOR> <UPDATE>
@@ -896,31 +895,30 @@ SqlNode SqlSelectForUpdate() :
             LOOKAHEAD(<OF>)
             <OF>
             {
-                ofCols = new ArrayList<SqlNode>();
+                lockColumns = new SqlNodeList(querySpan.pos());
             }
-            col = CompoundIdentifier() { ofCols.add(col); }
+            lockColumn = CompoundIdentifier() { lockColumns.add(lockColumn); }
             (
-                <COMMA> col = CompoundIdentifier() { ofCols.add(col); }
+                <COMMA> lockColumn = CompoundIdentifier() { lockColumns.add(lockColumn); }
             )*
-            { ofList = new SqlNodeList(ofCols, s.pos()); }
         ]
         [
             LOOKAHEAD(<WAIT>)
             <WAIT> <UNSIGNED_INTEGER_LITERAL>
             {
-                waitValue = token.image;
+                waitSecondsText = token.image;
 
                 try {
-                    waitSeconds = Long.parseLong(waitValue);
+                    waitSeconds = Long.parseLong(waitSecondsText);
                 }
                 catch (NumberFormatException ignored) {
                     throw SqlUtil.newContextException(getPos(),
-                        IgniteResource.INSTANCE.illegalWaitTimeout(waitValue));
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitSecondsText));
                 }
 
                 if (waitSeconds <= 0) {
                     throw SqlUtil.newContextException(getPos(),
-                        IgniteResource.INSTANCE.illegalWaitTimeout(waitValue));
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitSecondsText));
                 }
             }
         |
@@ -929,7 +927,7 @@ SqlNode SqlSelectForUpdate() :
                 waitSeconds = 0L;
             }
         ]
-        { return new IgniteSqlSelectForUpdate(s.end(this), qry, ofList, waitSeconds); }
+        { return new IgniteSqlSelectForUpdate(querySpan.end(this), query, lockColumns, waitSeconds); }
     ]
-    { return qry; }
+    { return query; }
 }

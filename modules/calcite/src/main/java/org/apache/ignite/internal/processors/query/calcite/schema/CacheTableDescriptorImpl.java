@@ -294,7 +294,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
         final CacheColumnDescriptor desc = descriptors[colIdx];
 
-        if (QueryUtils.VER_FIELD_NAME.equals(desc.name()))
+        if (desc instanceof SystemDescriptor)
             return false;
 
         return !desc.key() && (desc.field() || QueryUtils.isSqlType(desc.storageType()));
