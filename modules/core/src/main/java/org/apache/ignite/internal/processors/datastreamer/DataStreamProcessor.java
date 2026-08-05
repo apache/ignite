@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -228,21 +229,14 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             if (req.forceLocalDeployment())
                 clsLdr = U.gridClassLoader();
             else {
-                GridDeployment dep = ctx.deploy().getGlobalDeployment(
-                    req.deploymentMode(),
-                    req.sampleClassName(),
-                    req.sampleClassName(),
-                    req.userVersion(),
-                    nodeId,
-                    req.classLoaderId(),
-                    req.participants());
+                GridDeployment dep;
 
-                if (dep == null) {
-                    sendResponse(nodeId,
-                        topic,
-                        req.requestId(),
-                        new IgniteCheckedException("Failed to get deployment for request [sndId=" + nodeId +
-                            ", req=" + req + ']'));
+                try {
+                    dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.sampleClassName());
+                }
+                catch (IgniteDeploymentCheckedException e) {
+                    // The sender waits for an answer, so a missing deployment is reported back, not thrown.
+                    sendResponse(nodeId, topic, req.requestId(), e);
 
                     return;
                 }

@@ -18,17 +18,14 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -70,9 +67,9 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(7)
     boolean keepBinary;
 
-    /** */
+    /** Deployment of the streamed classes. */
     @Order(8)
-    DeploymentMode depMode;
+    GridDeploymentInfoBean depInfo;
 
     /** */
     @Order(9)
@@ -80,27 +77,14 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** */
     @Order(10)
-    String userVer;
-
-    /** Node class loader participants. */
-    @GridToStringInclude
-    @Order(11)
-    Map<UUID, IgniteUuid> ldrParticipants;
-
-    /** */
-    @Order(12)
-    IgniteUuid clsLdrId;
-
-    /** */
-    @Order(13)
     boolean forceLocDep;
 
     /** Topology version. */
-    @Order(14)
+    @Order(11)
     AffinityTopologyVersion topVer;
 
     /** */
-    @Order(15)
+    @Order(12)
     int partId;
 
     /**
@@ -119,11 +103,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
-     * @param depMode Deployment mode.
+     * @param depInfo Deployment of the streamed classes.
      * @param sampleClsName Sample class name.
-     * @param userVer User version.
-     * @param ldrParticipants Loader participants.
-     * @param clsLdrId Class loader ID.
      * @param forceLocDep Force local deployment.
      * @param topVer Topology version.
      * @param partId Partition ID.
@@ -137,11 +118,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         boolean ignoreDepOwnership,
         boolean skipStore,
         boolean keepBinary,
-        DeploymentMode depMode,
+        GridDeploymentInfo depInfo,
         String sampleClsName,
-        String userVer,
-        Map<UUID, IgniteUuid> ldrParticipants,
-        IgniteUuid clsLdrId,
         boolean forceLocDep,
         @NotNull AffinityTopologyVersion topVer,
         int partId
@@ -156,11 +134,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
-        this.depMode = depMode;
+        this.depInfo = depInfo != null ? new GridDeploymentInfoBean(depInfo) : null;
         this.sampleClsName = sampleClsName;
-        this.userVer = userVer;
-        this.ldrParticipants = ldrParticipants;
-        this.clsLdrId = clsLdrId;
         this.forceLocDep = forceLocDep;
         this.topVer = topVer;
         this.partId = partId;
@@ -222,11 +197,9 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         return keepBinary;
     }
 
-    /**
-     * @return Deployment mode.
-     */
-    DeploymentMode deploymentMode() {
-        return depMode;
+    /** @return Deployment of the streamed classes. */
+    GridDeploymentInfo deploymentInfo() {
+        return depInfo;
     }
 
     /**
@@ -234,27 +207,6 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      */
     String sampleClassName() {
         return sampleClsName;
-    }
-
-    /**
-     * @return User version.
-     */
-    String userVersion() {
-        return userVer;
-    }
-
-    /**
-     * @return Participants.
-     */
-    Map<UUID, IgniteUuid> participants() {
-        return ldrParticipants;
-    }
-
-    /**
-     * @return Class loader ID.
-     */
-    IgniteUuid classLoaderId() {
-        return clsLdrId;
     }
 
     /**

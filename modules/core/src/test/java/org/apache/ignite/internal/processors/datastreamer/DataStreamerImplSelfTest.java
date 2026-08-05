@@ -697,11 +697,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             req.ignoreDeploymentOwnership(),
                             req.skipStore(),
                             req.keepBinary(),
-                            req.deploymentMode(),
+                            req.deploymentInfo(),
                             req.sampleClassName(),
-                            req.userVersion(),
-                            req.participants(),
-                            req.classLoaderId(),
                             req.forceLocalDeployment(),
                             staleTop,
                             -1);
