@@ -109,7 +109,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -427,7 +426,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteConfiguration cfg,
         GridKernalGateway gw,
         List<PluginProvider> plugins,
-        IgnitePredicate<String> clsFilter,
         WorkersRegistry workerRegistry,
         Thread.UncaughtExceptionHandler hnd,
         LongJVMPauseDetector pauseDetector
@@ -443,7 +441,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.hnd = hnd;
         this.pauseDetector = pauseDetector;
 
-        marshCtx = new MarshallerContextImpl(plugins, clsFilter);
+        marshCtx = new MarshallerContextImpl(plugins);
 
         defragMgr = new IgniteDefragmentationImpl(this);
 
