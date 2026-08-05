@@ -1617,7 +1617,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         if (taskName != null) {
             try {
-                return ClassLoaderUtils.forName(taskName, U.gridClassLoader());
+                return ClassLoaderUtils.forName(taskName);
             }
             catch (ClassNotFoundException ignored) {
                 // No-op.

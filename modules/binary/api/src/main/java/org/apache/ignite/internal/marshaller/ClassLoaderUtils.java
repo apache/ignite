@@ -109,15 +109,7 @@ public class ClassLoaderUtils {
         if (cls != null)
             return cls;
 
-        if (ldr != null) {
-            if (!useCache) {
-                cls = Class.forName(clsName, true, ldr);
-
-                return cls;
-            }
-        }
-        else
-            ldr = CommonUtils.gridClassLoader();
+        ldr = ldr != null ? ldr : CommonUtils.gridClassLoader();
 
         if (!useCache) {
             cls = Class.forName(clsName, true, ldr);
@@ -156,6 +148,29 @@ public class ClassLoaderUtils {
     }
 
     /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        return forName(clsName, ldr, Marshallers.USE_CACHE.get());
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName) throws ClassNotFoundException {
+        return forName(clsName, null, Marshallers.USE_CACHE.get());
+    }
+
+    /**
      * Clears class associated with provided class loader from class cache.
      *
      * @param ldr Class loader.
@@ -182,17 +197,5 @@ public class ClassLoaderUtils {
      */
     public static void clearClassCache() {
         classCache.clear();
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, Marshallers.USE_CACHE.get());
     }
 }

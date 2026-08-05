@@ -107,7 +107,7 @@ public class ClientExecuteTaskRequest extends ClientRequest {
         Class<?> cls;
 
         try {
-            cls = ClassLoaderUtils.forName(taskName, U.gridClassLoader());
+            cls = ClassLoaderUtils.forName(taskName);
         }
         catch (ClassNotFoundException ignored) {
             return false;
