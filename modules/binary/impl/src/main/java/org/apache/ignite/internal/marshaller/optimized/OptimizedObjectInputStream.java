@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.ARRAY_LIST;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.BOOLEAN;
@@ -146,20 +147,18 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param clsLdr Class loader.
-     * @param useCache True if class loader cache will be used, false otherwise.
      */
     void context(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
-        ClassLoader clsLdr,
-        boolean useCache
+        ClassLoader clsLdr
     ) {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
         this.clsLdr = clsLdr;
-        this.useCache = useCache;
+        this.useCache = Marshallers.USE_CACHE.get();
     }
 
     /**

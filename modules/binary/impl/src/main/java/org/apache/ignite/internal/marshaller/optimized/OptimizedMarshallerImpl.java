@@ -190,29 +190,16 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
 
     /** {@inheritDoc} */
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        return unmarshal0(in, clsLdr, Marshallers.USE_CACHE.get());
-    }
-
-    /**
-     * Unmarshals object from the input stream using given class loader.
-     * This method should not close given input stream.
-     *
-     * @param <T> Type of unmarshalled object.
-     * @param in Input stream.
-     * @param clsLdr Class loader to use.
-     * @param useCache True if class loader cache will be used, false otherwise.
-     * @return Unmarshalled object.
-     * @throws IgniteCheckedException If unmarshalling failed.
-     */
-    protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr, boolean useCache) throws IgniteCheckedException {
         assert in != null;
+
+        boolean useCache = Marshallers.USE_CACHE.get();
 
         OptimizedObjectInputStream objIn = null;
 
         try {
             objIn = !useCache ? nonCachedRegistry.in() : registry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, useCache);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().inputStream(in);
 
@@ -245,8 +232,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
         try {
             objIn = registry.in();
 
-            objIn.context(clsMap, ctx, mapper,
-                clsLdr != null ? clsLdr : dfltClsLdr, Marshallers.USE_CACHE.get());
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().bytes(arr, arr.length);
 

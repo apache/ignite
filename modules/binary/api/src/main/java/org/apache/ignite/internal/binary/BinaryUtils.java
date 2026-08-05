@@ -1633,7 +1633,6 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
-            boolean useCache = Marshallers.USE_CACHE.get();
 
             try {
                 cls = ClassLoaderUtils.forName(clsName, ldr);
@@ -1643,7 +1642,7 @@ public class BinaryUtils {
             }
 
             // forces registering of class by type id, at least locally
-            if (useCache)
+            if (Marshallers.USE_CACHE.get())
                 ctx.registerType(cls, false, false);
         }
 
