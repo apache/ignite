@@ -981,7 +981,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             reqData.deploymentInfo(dep);
         }
 
-        reqData.marshal(ctx);
+        marshalStartRequestData(reqData);
 
         if (!immutableDiscoCustomMsg) {
             StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(routineId, reqData, Mode.MUTABLE);
@@ -1353,7 +1353,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         IgniteCheckedException err = null;
 
         try {
-            data.unmarshal(ctx, node.id());
+            unmarshalStartRequestData(data, node.id());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal start request data [nodeId=" + node.id() +
@@ -1495,7 +1495,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 Exception err = null;
 
                 try {
-                    reqData.unmarshal(ctx, snd.id());
+                    unmarshalStartRequestData(reqData, snd.id());
                 }
                 catch (IgniteCheckedException e) {
                     err = e;
@@ -2287,6 +2287,73 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Serializes the user objects of {@code reqData} before it goes into a discovery message. Must not run on the
+     * discovery thread: marshalling a user class registers its name, and that registration waits for a discovery
+     * message of its own.
+     *
+     * @param reqData Start request data.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void marshalStartRequestData(StartRequestData reqData) throws IgniteCheckedException {
+        if (reqData.hnd != null) {
+            if (ctx.config().isPeerClassLoadingEnabled()) {
+                // Handle peer deployment for the objects the handler carries.
+                reqData.hnd.p2pMarshal(ctx);
+            }
+
+            reqData.hndBytes = U.marshal(ctx.marshaller(), reqData.hnd);
+        }
+
+        if (reqData.nodeFilter != null)
+            reqData.nodeFilterBytes = U.marshal(ctx.marshaller(), reqData.nodeFilter);
+    }
+
+    /**
+     * Restores the user objects of {@code reqData} received from {@code sndId}. With peer class loading on, the node
+     * filter needs the deployment class loader of the sender, so the deployment is resolved first. Each object is put
+     * back into the message as soon as it is read: the caller reports a failure of the steps that follow and needs
+     * what was restored before it.
+     *
+     * @param reqData Start request data.
+     * @param sndId Sender node ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void unmarshalStartRequestData(StartRequestData reqData, UUID sndId) throws IgniteCheckedException {
+        ClassLoader clsLdr = U.resolveClassLoader(ctx.config());
+
+        if (ctx.config().isPeerClassLoadingEnabled() && reqData.clsName != null) {
+            GridDeployment dep = ctx.deploy().getGlobalDeployment(reqData.depInfo.deployMode(),
+                reqData.clsName,
+                reqData.clsName,
+                reqData.depInfo.userVersion(),
+                sndId,
+                reqData.depInfo.classLoaderId(),
+                reqData.depInfo.participants(),
+                null);
+
+            if (dep == null)
+                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + reqData.clsName);
+
+            clsLdr = U.resolveClassLoader(dep.classLoader(), ctx.config());
+        }
+
+        reqData.nodeFilter = U.unmarshal(ctx.marshaller(), reqData.nodeFilterBytes, clsLdr);
+
+        if (reqData.hndBytes != null) {
+            reqData.hnd = U.unmarshal(ctx.marshaller(), reqData.hndBytes, U.resolveClassLoader(ctx.config()));
+
+            if (ctx.config().isPeerClassLoadingEnabled())
+                reqData.hnd.p2pUnmarshal(sndId, ctx);
+
+            if (reqData.keepBinary) {
+                assert reqData.hnd instanceof CacheContinuousQueryHandler : reqData.hnd;
+
+                ((CacheContinuousQueryHandler<?, ?>)reqData.hnd).keepBinary(true);
+            }
+        }
+    }
+
+    /**
      * Discovery data.
      */
     private static class DiscoveryData implements Externalizable {
@@ -2695,4 +2762,5 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             return S.toString(SyncMessageAckFuture.class, this);
         }
     }
+
 }
