@@ -51,6 +51,7 @@ import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.SELF_MARSHALLING_MESSAGE_INTERFACE;
 
 /**
  * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
@@ -96,6 +97,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private final TypeMirror nonMarshallableType;
 
     /** */
+    private final TypeMirror selfMarshallingMsgType;
+
+    /** */
     private final TypeMirror cacheGrpIdMsgType;
 
     /** */
@@ -106,6 +110,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** */
     private boolean marshallable;
+
+    /** Whether the message marshals fields of its own, so the generated methods call its step. */
+    private boolean selfMarshalling;
 
     /** */
     private boolean hasMarshalled;
@@ -133,6 +140,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+        selfMarshallingMsgType = type(SELF_MARSHALLING_MESSAGE_INTERFACE);
         cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
         mapType = type(Map.class.getName());
         colType = type(Collection.class.getName());
@@ -160,6 +168,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         }
 
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
+        selfMarshalling = selfMarshallingMsgType != null && assignableFrom(type.asType(), selfMarshallingMsgType);
         hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
         generateMarshalMethod(fields);
@@ -233,6 +242,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             if (needsCtx(orderedFields))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
+            if (selfMarshalling)
+                appendBlock(body, List.of(indentedLine("msg.selfMarshal();")));
+
             appendMarshalledFieldsPrepare(body);
             appendMarshalledPrepare(body);
 
@@ -304,6 +316,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendMarshalledElementsFinish(body);
             appendMarshalledMapFinish(body);
             appendMarshalledElementBlobsFinish(body);
+
+            if (selfMarshalling)
+                appendBlock(body, List.of(indentedLine("msg.selfUnmarshal();")));
 
             prependMsgFactoryResolution(body);
         });
