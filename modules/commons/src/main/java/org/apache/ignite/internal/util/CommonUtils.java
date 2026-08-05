@@ -1305,9 +1305,15 @@ public abstract class CommonUtils {
         return sCls != null && sCls.isEnum();
     }
 
-    /** */
-    @Nullable public static <T> T firstNotNull(@Nullable T t0, @Nullable T t1) {
-        return t0 != null ? t0 : t1;
+    /**
+     * Returns a first non-null value, if such is present.
+     *
+     * @param first First value.
+     * @param second Second value.
+     * @return First non-null value, or {@code null}, if both {@code null}.
+     */
+    @Nullable public static <T> T firstNotNull(@Nullable T first, @Nullable T second) {
+        return first != null ? first : second;
     }
 
     /**
