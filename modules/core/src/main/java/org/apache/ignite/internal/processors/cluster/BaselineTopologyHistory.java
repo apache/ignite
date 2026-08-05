@@ -16,32 +16,28 @@
  */
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-public class BaselineTopologyHistory implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+/** */
+public class BaselineTopologyHistory implements Message {
     /** */
     private static final String METASTORE_BLT_HIST_PREFIX = "bltHist-";
 
     /** */
-    private final Queue<BaselineTopologyHistoryItem> bufferedForStore =
-        new ConcurrentLinkedQueue<>();
+    private final Queue<BaselineTopologyHistoryItem> bufferedForStore = new ConcurrentLinkedQueue<>();
 
     /** */
-    private final List<BaselineTopologyHistoryItem> hist = new ArrayList<>();
+    @Order(0)
+    List<BaselineTopologyHistoryItem> hist = new ArrayList<>();
 
     /** */
     void restoreHistory(ReadOnlyMetastorage metastorage, int lastId) throws IgniteCheckedException {

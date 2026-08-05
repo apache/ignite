@@ -50,6 +50,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -105,9 +105,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** Recordable events arrays length. */
     private final int len;
 
-    /** Marshaller. */
-    private final Marshaller marsh;
-
     /** Request listener. */
     private RequestListener msgLsnr;
 
@@ -141,8 +138,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     public GridEventStorageManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getEventStorageSpi());
-
-        marsh = ctx.marshaller();
 
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
@@ -1032,13 +1027,13 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 assert nodeId != null;
                 assert msg != null;
 
-                if (!(msg instanceof GridEventStorageMessage)) {
+                if (!(msg instanceof GridEventStorageResponse)) {
                     U.error(log, "Received unknown message: " + msg);
 
                     return;
                 }
 
-                GridEventStorageMessage res = (GridEventStorageMessage)msg;
+                GridEventStorageResponse res = (GridEventStorageResponse)msg;
 
                 synchronized (qryMux) {
                     if (uids.remove(nodeId)) {
@@ -1058,7 +1053,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             }
         };
 
-        Object resTopic = TOPIC_EVENT.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        IgniteUuid resTopicId = IgniteUuid.fromUuid(ctx.localNodeId());
+
+        Object resTopic = TOPIC_EVENT.topic(resTopicId);
 
         try {
             addLocalEventListener(evtLsnr, new int[] {
@@ -1073,8 +1070,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + p);
 
-            GridEventStorageMessage msg = new GridEventStorageMessage(
-                resTopic,
+            GridEventStorageRequest msg = new GridEventStorageRequest(
+                resTopicId,
                 p,
                 dep.classLoaderId(),
                 dep.deployMode(),
@@ -1144,7 +1141,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @throws IgniteCheckedException If sending failed.
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
-        GridEventStorageMessage msg, byte plc) throws IgniteCheckedException {
+        GridEventStorageRequest msg, byte plc) throws IgniteCheckedException {
         ClusterNode locNode = F.find(nodes, null, localNode(ctx.localNodeId()));
 
         Collection<? extends ClusterNode> rmtNodes = F.view(nodes, remoteNodes(ctx.localNodeId()));
@@ -1225,13 +1222,13 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 return;
 
             try {
-                if (!(msg instanceof GridEventStorageMessage)) {
+                if (!(msg instanceof GridEventStorageRequest)) {
                     U.warn(log, "Received unknown message: " + msg);
 
                     return;
                 }
 
-                GridEventStorageMessage req = (GridEventStorageMessage)msg;
+                GridEventStorageRequest req = (GridEventStorageRequest)msg;
 
                 ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -1265,7 +1262,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
                             "(is peer class loading turned on?): " + req);
 
-                    req.finishUnmarshalFilters(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                     filter = (IgnitePredicate<Event>)req.filter();
 
@@ -1295,7 +1292,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 }
 
                 // Response message.
-                GridEventStorageMessage res = new GridEventStorageMessage(evts, ex);
+                GridEventStorageResponse res = new GridEventStorageResponse(evts, ex);
 
                 try {
                     if (log.isDebugEnabled())

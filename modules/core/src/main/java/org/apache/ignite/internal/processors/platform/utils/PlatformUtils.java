@@ -882,7 +882,7 @@ public class PlatformUtils {
     public static GridBinaryMarshaller marshaller() {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null, null));
+        marsh.setContext(new MarshallerContextImpl(null));
 
         return new GridBinaryMarshaller(U.binaryContext(BinaryUtils.noopMetadataHandler(), marsh));
     }

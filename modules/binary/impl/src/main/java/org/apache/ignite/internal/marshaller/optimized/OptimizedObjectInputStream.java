@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.ARRAY_LIST;
@@ -347,7 +348,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 OptimizedClassDescriptor desc = typeId == 0
                     ? classDescriptor(
                         clsMap,
-                        CommonUtils.forName(readUTF(), clsLdr, ctx.classNameFilter(), useCache),
+                        CommonUtils.forName(readUTF(), clsLdr, MarshallerUtils.classNameFilter(), useCache),
                         useCache,
                         ctx,
                         mapper)
@@ -545,7 +546,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return CommonUtils.forName(desc.getName(), clsLdr, ctx.classNameFilter(), Marshallers.USE_CACHE.get());
+        return CommonUtils.forName(desc.getName(), clsLdr, MarshallerUtils.classNameFilter(), Marshallers.USE_CACHE.get());
     }
 
     /**

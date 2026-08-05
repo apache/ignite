@@ -19,26 +19,16 @@ package org.apache.ignite.marshaller;
 
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerImpl;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshallerImpl;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Marshallers factory implementation.
  */
 public class MarshallersFactoryImpl implements MarshallersFactory {
-    /** Singleton instance. */
-    private static final JdkMarshaller INSTANCE = new JdkMarshallerImpl();
-
     /** {@inheritDoc} */
     @Override public JdkMarshaller jdk() {
-        return INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter) {
-        return clsFilter == null ? INSTANCE : new JdkMarshallerImpl(clsFilter);
+        return new JdkMarshallerImpl();
     }
 
     /** {@inheritDoc} */
