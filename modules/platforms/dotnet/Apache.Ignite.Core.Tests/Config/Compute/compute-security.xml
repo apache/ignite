@@ -33,14 +33,9 @@
                     <constructor-arg name="pwd" value="pwd" />
                     <constructor-arg name="perms">
                         <bean class="org.apache.ignite.plugin.security.SecurityBasicPermissionSet">
-                            <property name="systemPermissions">
-                                <util:list value-type="org.apache.ignite.plugin.security.SecurityPermission">
-                                    <value>JOIN_AS_SERVER</value>
-                                    <value>CACHE_CREATE</value>
-                                </util:list>
-                            </property>
+                            <property name="systemPermissions" ref="system-permissions"/>
                             <property name="taskPermissions">
-                                <util:map map-class="java.util.HashMap" key-type="java.lang.String" value-type="java.util.Collection">
+                                <util:map map-class="java.util.HashMap" key-type="java.lang.String" value-type="java.util.EnumSet">
                                     <entry key="Apache.Ignite.Core.Tests.Compute.ExecuteAllowedTask" value-ref="task-execute-permission"/>
                                     <entry key="Apache.Ignite.Core.Tests.Compute.ExecuteAllowedFunction" value-ref="task-execute-permission"/>
                                     <entry key="Apache.Ignite.Core.Tests.Compute.ExecuteAllowedCallable" value-ref="task-execute-permission"/>
@@ -59,12 +54,29 @@
         </property>
     </bean>
 
-    <util:list id="task-execute-permission" value-type="org.apache.ignite.plugin.security.SecurityPermission">
-        <value>TASK_EXECUTE</value>
-    </util:list>
+    <bean id="system-permissions" class="java.util.EnumSet" factory-method="copyOf">
+        <constructor-arg>
+            <list>
+                <util:constant static-field="org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER"/>
+                <util:constant static-field="org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE"/>
+            </list>
+        </constructor-arg>
+    </bean>
 
-    <util:list id="task-execute-cancel-permission" value-type="org.apache.ignite.plugin.security.SecurityPermission">
-        <value>TASK_EXECUTE</value>
-        <value>TASK_CANCEL</value>
-    </util:list>
+    <bean id="task-execute-permissions" class="java.util.EnumSet" factory-method="copyOf">
+        <constructor-arg>
+            <list>
+                <util:constant static-field="org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE"/>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <bean id="task-execute-cancel-permissions" class="java.util.EnumSet" factory-method="copyOf">
+        <constructor-arg>
+            <list>
+                <util:constant static-field="org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE"/>
+                <util:constant static-field="org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL"/>
+            </list>
+        </constructor-arg>
+    </bean>
 </beans>

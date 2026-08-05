@@ -106,7 +106,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
      * @param srvcPermissions Service permissions.
      */
     public void setServicePermissions(Map<String, EnumSet<SecurityPermission>> srvcPermissions) {
-        A.notNull(taskPermissions, "servicePermissions");
+        A.notNull(srvcPermissions, "servicePermissions");
 
         this.srvcPermissions = normalizeValueType(upcast(srvcPermissions));
     }
