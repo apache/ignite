@@ -36,6 +36,10 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
 
     /** */
+    @Resources.BaseMessage("Cannot modify system column \"{0}\".")
+    Resources.ExInst<SqlValidatorException> cannotModifySystemColumn(String field);
+
+    /** */
     @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
     Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
 
@@ -84,4 +88,16 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Operator ''CAST'' supports only the parameters: value and target type.")
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
+
+    /** */
+    @Resources.BaseMessage("WAIT value must be a positive integer, but was: {0}")
+    Resources.ExInst<SqlValidatorException> illegalWaitTimeout(String value);
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE requires an active PESSIMISTIC transaction")
+    Resources.ExInst<SqlValidatorException> selectForUpdateRequiresPessimisticTx();
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE: could not acquire lock")
+    Resources.ExInst<SqlValidatorException> selectForUpdateLockFailed();
 }

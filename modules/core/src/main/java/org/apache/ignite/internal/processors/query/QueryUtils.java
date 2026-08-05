@@ -111,6 +111,9 @@ public class QueryUtils {
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = CommonUtils.VAL_FIELD_NAME;
 
+    /** Field name for row version. */
+    public static final String VER_FIELD_NAME = "_VER";
+
     /** Well-known template name for PARTITIONED cache. */
     public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
 
@@ -1474,6 +1477,12 @@ public class QueryUtils {
         }
 
         return null;
+    }
+
+    /** */
+    public static boolean isSystemFieldNameIgnoreCase(String fieldName) {
+        return KEY_FIELD_NAME.equalsIgnoreCase(fieldName) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName) ||
+            VER_FIELD_NAME.equalsIgnoreCase(fieldName);
     }
 
     /**
