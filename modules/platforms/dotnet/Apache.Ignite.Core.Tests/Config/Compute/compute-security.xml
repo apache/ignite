@@ -63,7 +63,7 @@
         </constructor-arg>
     </bean>
 
-    <bean id="task-execute-permissions" class="java.util.EnumSet" factory-method="copyOf">
+    <bean id="task-execute-permission" class="java.util.EnumSet" factory-method="copyOf">
         <constructor-arg>
             <list>
                 <util:constant static-field="org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE"/>
@@ -71,7 +71,7 @@
         </constructor-arg>
     </bean>
 
-    <bean id="task-execute-cancel-permissions" class="java.util.EnumSet" factory-method="copyOf">
+    <bean id="task-execute-cancel-permission" class="java.util.EnumSet" factory-method="copyOf">
         <constructor-arg>
             <list>
                 <util:constant static-field="org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE"/>
