@@ -24,6 +24,12 @@ import org.apache.ignite.internal.util.typedef.F;
 
 /** Offset, fetch|limit support node. */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+    /** */
+    public static final long FETCH_DEFAULT = -1;
+
+    /** */
+    public static final long OFFSET_DEFAULT = 0;
+
     /** Offset param. */
     private final long offset;
 
@@ -149,15 +155,5 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** {@code True} If current rows processed is less than required or undefined. */
     private boolean hasMoreData() {
         return rowsProcessed < rowsSummary;
-    }
-
-    /** Fetch value if undefined. */
-    public static long defaultFetchValue() {
-        return -1;
-    }
-
-    /** Offset value if undefined. */
-    public static long defaultOffsetValue() {
-        return 0;
     }
 }

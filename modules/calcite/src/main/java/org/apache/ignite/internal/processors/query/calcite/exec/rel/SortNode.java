@@ -30,6 +30,12 @@ import org.apache.ignite.internal.util.typedef.F;
  * Sort node.
  */
 public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
+    /** */
+    public static final long OFFSET_DEFAULT = 0;
+
+    /** */
+    public static final long FETCH_DEFAULT = -1;
+
     /** How many rows are requested by downstream. */
     private int requested;
 
@@ -63,7 +69,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
         super(ctx, rowType);
 
         assert fetch == -1 || fetch > 0 : "Unexpected fetch = " + fetch;
-        assert offset >= 0;
+        assert offset >= 0 : "Unexpected offset = " + offset;
 
         limit = fetch == -1 ? -1 : (fetch > Long.MAX_VALUE - offset ? -1 : fetch + offset);
 

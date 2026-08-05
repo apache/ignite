@@ -135,8 +135,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode.defaultFetchValue;
-import static org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode.defaultOffsetValue;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -636,8 +634,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        long offset = validateAndGetOffset(rel.offset());
-        long fetch = validateAndGetFetch(rel.fetch());
+        long offset = validateAndGetOffset(rel.offset(), LimitNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch(), LimitNode.FETCH_DEFAULT);
 
         LimitNode<Row> node = new LimitNode<>(ctx, rel.getRowType(), offset, fetch);
 
@@ -652,8 +650,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
 
-        long offset = validateAndGetOffset(rel.offset);
-        long fetch = validateAndGetFetch(rel.fetch);
+        long offset = validateAndGetOffset(rel.offset, SortNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch, SortNode.FETCH_DEFAULT);
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
@@ -666,13 +664,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** */
-    private long validateAndGetOffset(RexNode node) {
-        return node == null ? defaultOffsetValue() : validateAndGetFetchOffsetParams(node, "offset");
+    private long validateAndGetOffset(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "offset");
     }
 
     /** */
-    private long validateAndGetFetch(RexNode node) {
-        return node == null ? defaultFetchValue() : validateAndGetFetchOffsetParams(node, "fetch");
+    private long validateAndGetFetch(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch");
     }
 
     /** {@inheritDoc} */
