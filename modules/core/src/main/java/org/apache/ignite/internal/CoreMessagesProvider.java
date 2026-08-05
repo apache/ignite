@@ -42,7 +42,8 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
 import org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageRequest;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse;
 import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
 import org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem;
 import org.apache.ignite.internal.processors.authentication.User;
@@ -190,12 +191,16 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
+import org.apache.ignite.internal.processors.cluster.BaselineStateAndHistoryData;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistory;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterIdAndTag;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData;
@@ -721,7 +726,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13000 - 13300]: Control, configuration, diagnostics and other messages.
         msgIdx = 13000;
-        register(GridEventStorageMessage.class);
+        register(GridEventStorageRequest.class);
+        register(GridEventStorageResponse.class);
         register(ChangeGlobalStateMessage.class);
         register(GridChangeGlobalStateMessageResponse.class);
         register(IgniteDiagnosticRequest.class);
@@ -735,6 +741,10 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(ClusterUpdateNotifierDataBagItem.class);
         register(PluginsDataBagItem.class);
         register(EventsDataBagItem.class);
+        register(BaselineStateAndHistoryData.class);
+        register(BaselineTopologyHistory.class);
+        register(BaselineTopologyHistoryItem.class);
+        register(DiscoveryDataClusterState.class);
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;

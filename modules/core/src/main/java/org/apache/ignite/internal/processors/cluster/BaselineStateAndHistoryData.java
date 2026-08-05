@@ -14,61 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/** */
-public class BaselineTopologyHistoryItem implements Serializable, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+/**
+ * Carries cluster state and recent baseline topology history to joining nodes.
+ *
+ * <p>Instances are sent through discovery data collection during node join.
+ * A joining node receives this message, extracts the current {@link DiscoveryDataClusterState},
+ * and replays the {@link BaselineTopologyHistory} items into its local history.</p>
+ */
+public class BaselineStateAndHistoryData implements Message {
+    /** Current cluster state (active/inactive, baseline topology, transition info). */
     @Order(0)
-    int id;
+    DiscoveryDataClusterState globalState;
 
-    /** */
+    /** Recent baseline topology history items for replay on the joining node. */
     @Order(1)
-    List<Long> branchingHistory;
+    BaselineTopologyHistory recentHistory;
 
     /** Default constructor for {@link MessageFactory}. */
-    public BaselineTopologyHistoryItem() {
+    public BaselineStateAndHistoryData() {
         // No-op.
     }
 
     /**
-     * @param id Id.
-     * @param branchingHistory Activation history.
+     * @param globalState Current cluster state.
+     * @param recentHistory  Recent baseline topology history to transfer.
      */
-    private BaselineTopologyHistoryItem(int id, List<Long> branchingHistory) {
-        this.id = id;
-        this.branchingHistory = branchingHistory;
-    }
-
-    /** @param blt Baseline Topology. */
-    public static BaselineTopologyHistoryItem fromBaseline(BaselineTopology blt) {
-        if (blt == null)
-            return null;
-
-        List<Long> fullActivationHistory = new ArrayList<>(blt.branchingHistory().size());
-
-        fullActivationHistory.addAll(blt.branchingHistory());
-
-        return new BaselineTopologyHistoryItem(blt.id(), fullActivationHistory);
-    }
-
-    /** @return ID. */
-    public int id() {
-        return id;
-    }
-
-    /** */
-    public List<Long> branchingHistory() {
-        return branchingHistory;
+    BaselineStateAndHistoryData(DiscoveryDataClusterState globalState, BaselineTopologyHistory recentHistory) {
+        this.globalState = globalState;
+        this.recentHistory = recentHistory;
     }
 }
