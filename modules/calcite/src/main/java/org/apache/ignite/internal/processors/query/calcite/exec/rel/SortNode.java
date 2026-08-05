@@ -71,7 +71,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
         assert fetch == -1 || fetch > 0 : "Unexpected fetch = " + fetch;
         assert offset >= 0 : "Unexpected offset = " + offset;
 
-        limit = fetch == -1 ? -1 : (fetch > Long.MAX_VALUE - offset ? -1 : fetch + offset);
+        limit = fetch == FETCH_DEFAULT ? -1 : (fetch > Long.MAX_VALUE - offset ? -1 : fetch + offset);
 
         if (limit < 1 || limit > Integer.MAX_VALUE)
             rows = new PriorityQueue<>(comp);

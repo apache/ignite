@@ -33,7 +33,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
     /** Offset param. */
     private final long offset;
 
-    /** How many rows need to be processed. */
+    /** How many rows need to be processed, if {@code 0} it depends on {@link #rowsSummary}. */
     private final long fetch;
 
     /** Summary rows to process. */
@@ -66,7 +66,7 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
         this.offset = offset;
         rowsSummary = fetch == -1 ? Long.MAX_VALUE : IgniteMath.addExact(fetch, offset);
-        this.fetch = fetch == -1 ? 0 : fetch;
+        this.fetch = fetch == FETCH_DEFAULT ? 0 : fetch;
     }
 
     /** {@inheritDoc} */
