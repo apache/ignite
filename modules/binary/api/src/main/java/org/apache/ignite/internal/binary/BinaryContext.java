@@ -83,7 +83,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  */
 public class BinaryContext {
     /** System loader. */
-    private static final ClassLoader sysLdr = ClassLoaderUtils.gridClassLoader();
+    private static final ClassLoader sysLdr = CommonUtils.gridClassLoader();
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
@@ -471,7 +471,7 @@ public class BinaryContext {
 
         Collection<String> clsNames = new ArrayList<>();
 
-        ClassLoader ldr = ClassLoaderUtils.gridClassLoader();
+        ClassLoader ldr = CommonUtils.gridClassLoader();
 
         String pkgPath = pkgName.replaceAll("\\.", "/");
 
@@ -1118,7 +1118,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = ClassLoaderUtils.resolveClassLoader(null, classLoader()).loadClass(clsName);
+            cls = CommonUtils.resolveClassLoader(null, classLoader()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.

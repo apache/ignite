@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContextImpl;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -314,7 +313,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         assert log != null;
 
         // For system class loader return cached version.
-        if (ldr == ClassLoaderUtils.gridClassLoader() && SYS_LDR_VER.get() != null)
+        if (ldr == U.gridClassLoader() && SYS_LDR_VER.get() != null)
             return SYS_LDR_VER.get();
 
         String usrVer = U.DFLT_USER_VERSION;
@@ -364,7 +363,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         }
 
         // For system class loader return cached version.
-        if (ldr == ClassLoaderUtils.gridClassLoader())
+        if (ldr == U.gridClassLoader())
             SYS_LDR_VER.compareAndSet(null, usrVer);
 
         return usrVer;

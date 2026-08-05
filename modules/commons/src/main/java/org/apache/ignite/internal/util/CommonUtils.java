@@ -243,6 +243,9 @@ public abstract class CommonUtils {
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
         exceptionConverters = new HashMap<>();
 
+    /** Class loader used to load Ignite. */
+    private static final ClassLoader gridClassLoader = CommonUtils.class.getClassLoader();
+
     /** */
     private static final Class<?> GEOMETRY_CLASS;
 
@@ -732,6 +735,69 @@ public abstract class CommonUtils {
     public static void restoreOldIgniteName(@Nullable String oldName, @Nullable String curName) {
         if (oldName != curName)
             LOC_IGNITE_NAME.set(oldName);
+    }
+
+    /**
+     * @return Class loader used to load Ignite itself.
+     */
+    public static ClassLoader gridClassLoader() {
+        return gridClassLoader;
+    }
+
+    /**
+     * @param ldr Custom class loader.
+     * @param cfgLdr Class loader from config.
+     * @return ClassLoader passed as param in case it is not null or cfgLdr  in case it is not null or ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, @Nullable ClassLoader cfgLdr) {
+        return (ldr != null && ldr != gridClassLoader)
+            ? ldr
+            : cfgLdr != null
+                ? cfgLdr
+                : gridClassLoader;
+    }
+
+    /**
+     * Tests whether given class is loadable with provided class loader.
+     *
+     * @param clsName Class name to test.
+     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
+     *      If System class loader is not set - this method will return {@code false}.
+     * @return {@code True} if class is loadable, {@code false} otherwise.
+     */
+    public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
+        assert clsName != null;
+
+        if (ldr == null)
+            ldr = gridClassLoader;
+
+        String lambdaParent = lambdaEnclosingClassName(clsName);
+
+        try {
+            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
+        }
+    }
+
+    /**
+     * Extracts full name of enclosing class from JDK8 lambda class name.
+     *
+     * @param clsName JDK8 lambda class name.
+     * @return Full name of enclosing class for JDK8 lambda class name or
+     *      {@code null} if passed in name is not related to lambda.
+     */
+    @Nullable public static String lambdaEnclosingClassName(String clsName) {
+        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
+        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
+
+        if (idx0 == idx1)
+            return null;
+
+        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**

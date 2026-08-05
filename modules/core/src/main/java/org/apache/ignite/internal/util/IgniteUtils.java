@@ -181,7 +181,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -1750,7 +1749,7 @@ public abstract class IgniteUtils extends CommonUtils {
     public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
 
-        return ClassLoaderUtils.resolveClassLoader(ldr, cfg.getClassLoader());
+        return resolveClassLoader(ldr, cfg.getClassLoader());
     }
 
     /**
@@ -3992,7 +3991,7 @@ public abstract class IgniteUtils extends CommonUtils {
             String clsName = obj2 instanceof GridPeerDeployAware ?
                 ((GridPeerDeployAware)obj2).deployClass().getName() : obj2.getClass().getName();
 
-            if (!ClassLoaderUtils.isLoadableBy(clsName, ldr)) {
+            if (!isLoadableBy(clsName, ldr)) {
                 found = false;
 
                 break;
@@ -4037,7 +4036,7 @@ public abstract class IgniteUtils extends CommonUtils {
                         String clsName = obj2 instanceof GridPeerDeployAware ?
                             ((GridPeerDeployAware)obj2).deployClass().getName() : obj2.getClass().getName();
 
-                        if (!ClassLoaderUtils.isLoadableBy(clsName, ldr)) {
+                        if (!isLoadableBy(clsName, ldr)) {
                             found = false;
 
                             break;

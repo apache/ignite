@@ -36,7 +36,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -335,7 +334,7 @@ final class GridUriDeploymentFileProcessor {
      */
     private static GridUriDeploymentFileProcessorResult processWithDescriptorFile(GridUriDeploymentSpringDocument doc,
         File file, String uri, IgniteLogger log) throws IgniteSpiException {
-        ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(ClassLoaderUtils.gridClassLoader(), file, log);
+        ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
         List<Class<? extends ComputeTask<?, ?>>> tasks = doc.getTasks(clsLdr);
 
@@ -384,7 +383,7 @@ final class GridUriDeploymentFileProcessor {
      */
     private static GridUriDeploymentFileProcessorResult processNoDescriptorFile(File file, String uri, IgniteLogger log)
         throws IgniteSpiException {
-        ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(ClassLoaderUtils.gridClassLoader(), file, log);
+        ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
 
         Set<Class<? extends ComputeTask<?, ?>>> clss = GridUriDeploymentDiscovery.getClasses(clsLdr, file);
 

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.protocol.gg.GridProtocolHandler;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -81,9 +80,9 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             locDep = ann != null ?
                 new LocalDeployment(
                     ctx.config().getDeploymentMode(),
-                    ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : ClassLoaderUtils.gridClassLoader(),
+                    ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
                     IgniteUuid.fromUuid(ctx.localNodeId()),
-                    ctx.userVersion(ClassLoaderUtils.gridClassLoader()),
+                    ctx.userVersion(U.gridClassLoader()),
                     String.class.getName()) :
                 null;
         }
@@ -255,7 +254,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
 
         String clsName = cls.getName();
 
-        String lambdaParent = ClassLoaderUtils.lambdaEnclosingClassName(clsName);
+        String lambdaParent = U.lambdaEnclosingClassName(clsName);
 
         if (lambdaParent != null) {
             clsName = lambdaParent;
@@ -388,7 +387,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         if (locDep != null)
             return locDep;
 
-        String lambdaEnclosingClsName = ClassLoaderUtils.lambdaEnclosingClassName(rsrcName);
+        String lambdaEnclosingClsName = U.lambdaEnclosingClassName(rsrcName);
 
         String clsName = lambdaEnclosingClsName == null ? rsrcName : lambdaEnclosingClsName;
 
@@ -426,7 +425,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         if (locDep != null)
             return locDep;
 
-        String lambdaEnclosingClsName = ClassLoaderUtils.lambdaEnclosingClassName(clsName);
+        String lambdaEnclosingClsName = U.lambdaEnclosingClassName(clsName);
 
         if (lambdaEnclosingClsName != null)
             clsName = lambdaEnclosingClsName;

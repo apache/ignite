@@ -116,6 +116,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Utilities for converting {@link RelNode} into JSON format.
@@ -211,7 +212,7 @@ class RelJson {
     /** */
     private static Class<?> classForName(String typeName, boolean skipNotFound) {
         try {
-            return ClassLoaderUtils.forName(typeName, ClassLoaderUtils.gridClassLoader());
+            return ClassLoaderUtils.forName(typeName, U.gridClassLoader());
         }
         catch (ClassNotFoundException e) {
             if (!skipNotFound)

@@ -62,7 +62,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
@@ -400,7 +399,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (name != null && !name.equals(key))
                                 return;
 
-                            Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, ClassLoaderUtils.gridClassLoader());
+                            Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
 
                             data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
                         }

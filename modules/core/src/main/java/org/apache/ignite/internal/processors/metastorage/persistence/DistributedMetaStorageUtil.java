@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /** */
@@ -61,7 +61,7 @@ final class DistributedMetaStorageUtil {
 
     /** */
     public static Serializable unmarshal(JdkMarshaller marshaller, byte[] valBytes) throws IgniteCheckedException {
-        return valBytes == null ? null : marshaller.unmarshal(valBytes, ClassLoaderUtils.gridClassLoader());
+        return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
     }
 
     /** */

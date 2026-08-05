@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
@@ -29,9 +30,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class ClassLoaderUtils {
-    /** Class loader used to load Ignite. */
-    private static final ClassLoader gridClassLoader = ClassLoaderUtils.class.getClassLoader();
-
     /** Primitive class map. */
     private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
 
@@ -49,52 +47,6 @@ public class ClassLoaderUtils {
         primitiveMap.put("char", char.class);
         primitiveMap.put("boolean", boolean.class);
         primitiveMap.put("void", void.class);
-    }
-
-    /**
-     * @return Class loader used to load Ignite itself.
-     */
-    public static ClassLoader gridClassLoader() {
-        return gridClassLoader;
-    }
-
-    /**
-     * @param ldr Custom class loader.
-     * @param cfgLdr Class loader from config.
-     * @return ClassLoader passed as param in case it is not null or cfgLdr  in case it is not null or ClassLoader used to start Ignite.
-     */
-    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, @Nullable ClassLoader cfgLdr) {
-        return (ldr != null && ldr != gridClassLoader)
-            ? ldr
-            : cfgLdr != null
-                ? cfgLdr
-                : gridClassLoader;
-    }
-
-    /**
-     * Tests whether given class is loadable with provided class loader.
-     *
-     * @param clsName Class name to test.
-     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
-     *      If System class loader is not set - this method will return {@code false}.
-     * @return {@code True} if class is loadable, {@code false} otherwise.
-     */
-    public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
-        assert clsName != null;
-
-        if (ldr == null)
-            ldr = gridClassLoader;
-
-        String lambdaParent = lambdaEnclosingClassName(clsName);
-
-        try {
-            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
-
-            return true;
-        }
-        catch (ClassNotFoundException ignore) {
-            return false;
-        }
     }
 
     /**
@@ -165,7 +117,7 @@ public class ClassLoaderUtils {
             }
         }
         else
-            ldr = gridClassLoader;
+            ldr = CommonUtils.gridClassLoader();
 
         if (!useCache) {
             cls = Class.forName(clsName, true, ldr);
@@ -230,23 +182,6 @@ public class ClassLoaderUtils {
      */
     public static void clearClassCache() {
         classCache.clear();
-    }
-
-    /**
-     * Extracts full name of enclosing class from JDK8 lambda class name.
-     *
-     * @param clsName JDK8 lambda class name.
-     * @return Full name of enclosing class for JDK8 lambda class name or
-     *      {@code null} if passed in name is not related to lambda.
-     */
-    @Nullable public static String lambdaEnclosingClassName(String clsName) {
-        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
-        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
-
-        if (idx0 == idx1)
-            return null;
-
-        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
     }
 
     /**

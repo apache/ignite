@@ -2197,7 +2197,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         String path = GridTestProperties.getProperty("p2p.uri.cls");
 
         try {
-            return new URLClassLoader(new URL[] {new URL(path)}, ClassLoaderUtils.gridClassLoader());
+            return new URLClassLoader(new URL[] {new URL(path)}, U.gridClassLoader());
         }
         catch (MalformedURLException e) {
             throw new RuntimeException("Failed to create URL: " + path, e);

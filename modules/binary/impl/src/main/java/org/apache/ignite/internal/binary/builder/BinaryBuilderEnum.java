@@ -57,8 +57,7 @@ class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
             Class cls;
 
             try {
-                cls =
-                    ClassLoaderUtils.forName(reader.readString(), reader.binaryContext().classLoader());
+                cls = ClassLoaderUtils.forName(reader.readString(), reader.binaryContext().classLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);

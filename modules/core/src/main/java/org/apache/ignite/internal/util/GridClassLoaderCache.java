@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -79,7 +78,7 @@ public final class GridClassLoaderCache {
         ClassLoader clsLdr = cls.getClassLoader();
 
         if (clsLdr == null)
-            clsLdr = ClassLoaderUtils.gridClassLoader();
+            clsLdr = U.gridClassLoader();
 
         if (U.p2pLoader(ctxClsLdr))
             return clsLdr;

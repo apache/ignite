@@ -104,7 +104,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -2708,7 +2707,7 @@ public final class GridTestUtils {
     /** */
     public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls) {
         try {
-            Class<?> serCls = ClassLoaderUtils.gridClassLoader()
+            Class<?> serCls = U.gridClassLoader()
                 .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Serializer");
 
             return (MessageSerializer<T>)U.newInstance(serCls);
@@ -2722,7 +2721,7 @@ public final class GridTestUtils {
     public static <T extends Message> MessageMarshaller<T> loadMarshaller(Class<? extends Message> msgCls,
         @Nullable Marshaller dfltMarsh) {
         try {
-            Class<?> marshallerCls = ClassLoaderUtils.gridClassLoader()
+            Class<?> marshallerCls = U.gridClassLoader()
                 .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Marshaller");
 
             boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);

@@ -139,8 +139,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                 sysTypesSet.add(clsName);
             });
 
-            checkHasClassName(GridDhtPartitionFullMap.class.getName(), ClassLoaderUtils.gridClassLoader(), CLS_NAMES_FILE);
-            checkHasClassName(HashMap.class.getName(), ClassLoaderUtils.gridClassLoader(), JDK_CLS_NAMES_FILE);
+            checkHasClassName(GridDhtPartitionFullMap.class.getName(), U.gridClassLoader(), CLS_NAMES_FILE);
+            checkHasClassName(HashMap.class.getName(), U.gridClassLoader(), JDK_CLS_NAMES_FILE);
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -711,7 +711,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         if (plugins != null && !plugins.isEmpty()) {
             for (PluginProvider plugin : plugins) {
-                Enumeration<URL> pluginUrls = ClassLoaderUtils.gridClassLoader().getResources("META-INF/" + plugin.name().toLowerCase()
+                Enumeration<URL> pluginUrls = U.gridClassLoader().getResources("META-INF/" + plugin.name().toLowerCase()
                     + ".classnames.properties");
 
                 while (pluginUrls.hasMoreElements())

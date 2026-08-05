@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -88,7 +87,7 @@ public class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpda
         super.unmarshal(marsh);
 
         if (expValBytes != null && expVal == null)
-            expVal = U.unmarshal(marsh, expValBytes, ClassLoaderUtils.gridClassLoader());
+            expVal = U.unmarshal(marsh, expValBytes, U.gridClassLoader());
     }
 
     /** {@inheritDoc} */

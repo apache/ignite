@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cacheobject;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Wraps key provided by user, must be serialized before stored in cache.
@@ -76,7 +76,7 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
                 boolean p2pEnabled = ctx.isPeerClassLoadingEnabled();
 
                 ClassLoader ldr = p2pEnabled ?
-                    IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : ClassLoaderUtils.gridClassLoader();
+                    IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
 
                 Object val = ctx.unmarshal(valBytes, ldr);
 
