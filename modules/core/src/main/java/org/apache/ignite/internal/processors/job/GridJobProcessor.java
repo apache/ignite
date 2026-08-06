@@ -1617,8 +1617,22 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 false,
                 null);
 
-            if (!loc)
-                jobRes.marshallUserData(marsh, log);
+            if (!loc) {
+                try {
+                    MessageMarshalling.marshal(jobRes, ctx, null);
+                }
+                catch (IgniteCheckedException e) {
+                    // The exception is the only payload of this response, so it is what could not be written.
+                    String errMsg = "Failed to serialize job exception [nodeId=" + sndNode.id() +
+                        ", ses=" + req.sessionId() + ", jobId=" + req.jobId() + ']';
+
+                    U.error(log, errMsg, e);
+
+                    jobRes = jobRes.withError(new IgniteException(errMsg));
+
+                    MessageMarshalling.marshal(jobRes, ctx, null);
+                }
+            }
 
             if (req.sessionFullSupport()) {
                 // Send response to designated job topic.

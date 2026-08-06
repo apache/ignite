@@ -125,7 +125,6 @@ import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFut
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -2422,12 +2421,15 @@ public class JdbcThinConnection implements Connection {
         /** */
         private final Set<String> sysTypes = new HashSet<>();
 
+        /** JDK marshaller. */
+        private final JdkMarshaller jdkMarsh = Marshallers.jdk();
+
         /**
          * Default constructor.
          */
         public JdbcMarshallerContext() {
             try {
-                processSystemClasses(U.gridClassLoader(), sysTypes::add);
+                processSystemClasses(sysTypes::add);
             }
             catch (IOException e) {
                 throw new IgniteException("Unable to initialize marshaller context", e);
@@ -2536,13 +2538,8 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** {@inheritDoc} */
-        @Override public IgnitePredicate<String> classNameFilter() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return Marshallers.jdk();
+            return jdkMarsh;
         }
     }
 

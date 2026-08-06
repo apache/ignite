@@ -110,7 +110,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -201,10 +201,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
@@ -917,10 +915,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
 
-        IgniteMarshallerClassFilter clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
-
-        MarshallerUtils.autoconfigureObjectInputFilter(clsFilter);
-
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -928,7 +922,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 cfg,
                 gw,
                 plugins,
-                clsFilter,
                 workerRegistry,
                 hnd,
                 longJVMPauseDetector
@@ -1346,13 +1339,13 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /**
-     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller.
+     * Re-init {@link AbstractMessageFactoryProvider} with a proper marshaller.
      *
      * @param factoryProvider Message factory provider.
      */
     private void initProvider(MessageFactoryProvider factoryProvider) {
-        if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
-            ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
+        if (factoryProvider instanceof AbstractMessageFactoryProvider) {
+            ((AbstractMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
                 ctx.marshaller());
         }
     }

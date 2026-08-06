@@ -17,106 +17,131 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.math.BigDecimal;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /** Offset, fetch|limit support node. */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** Offset if its present, otherwise 0. */
-    private final BigDecimal offset;
+    /** */
+    public static final long FETCH_DEFAULT = -1;
 
-    /** Fetch if its present, otherwise all rows. */
-    private final @Nullable BigDecimal fetch;
+    /** */
+    public static final long OFFSET_DEFAULT = 0;
 
-    /** Already processed (pushed to upstream) rows count. */
-    private BigDecimal rowsProcessed = BigDecimal.ZERO;
+    /** Offset param. */
+    private final long offset;
 
-    /** Number of upstream rows that remain to be processed for the current downstream request. */
-    private BigDecimal waiting = BigDecimal.ZERO;
+    /** How many rows need to be processed, if {@code 0} it depends on {@link #rowsSummary}. */
+    private final long fetch;
+
+    /** Summary rows to process. */
+    private final long rowsSummary;
+
+    /** Already processed (pushed to downstream) rows count. */
+    private long rowsProcessed;
+
+    /** Waiting results counter. */
+    private int waiting;
+
+    /** Upper requested rows. */
+    private int requested;
 
     /**
      * Constructor.
      *
      * @param ctx Execution context.
      * @param rowType Row type.
+     * @param offset How many rows need to be skipped.
+     * @param fetch How many rows need to be processed, {@link #FETCH_DEFAULT} if param is undefined.
      */
     public LimitNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        @Nullable Supplier<BigDecimal> offsetNode,
-        @Nullable Supplier<BigDecimal> fetchNode
+        long offset,
+        long fetch
     ) {
         super(ctx, rowType);
 
-        offset = offsetNode == null ? BigDecimal.ZERO : offsetNode.get();
-        fetch = fetchNode == null ? null : fetchNode.get();
+        this.offset = offset;
+        rowsSummary = fetch == FETCH_DEFAULT ? Long.MAX_VALUE : IgniteMath.addExact(fetch, offset);
+        this.fetch = fetch == FETCH_DEFAULT ? 0 : fetch;
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
-        assert rowsCnt > 0 : rowsCnt;
+        assert rowsCnt > 0;
 
-        if (fetchNone()) {
+        if (!hasMoreData()) {
             end();
 
             return;
         }
 
-        waiting = BigDecimal.valueOf(rowsCnt);
+        assert requested == 0 : requested;
+        requested = rowsCnt;
 
-        if (rowsProcessed.compareTo(offset) < 0)
-            waiting = waiting.add(offset.subtract(rowsProcessed));
+        if (fetch > 0) {
+            long remain = rowsSummary - rowsProcessed;
 
-        requestNextBatch();
+            rowsCnt = remain > rowsCnt ? rowsCnt : (int)remain;
+        }
+
+        waiting = rowsCnt;
+
+        checkState();
+
+        source().request(rowsCnt);
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
-        if (waiting.signum() < 0)
+        if (waiting == NOT_WAITING)
             return;
 
-        rowsProcessed = rowsProcessed.add(BigDecimal.ONE);
+        --waiting;
 
-        waiting = waiting.subtract(BigDecimal.ONE);
-
-        checkState();
-
-        boolean endAfterRow = fetchNone() && waiting.signum() > 0;
-        boolean reqNextAfterRow = !endAfterRow && waiting.signum() > 0
-            && rowsProcessed.remainder(BigDecimal.valueOf(IN_BUFFER_SIZE)).signum() == 0;
-
-        if (rowsProcessed.compareTo(offset) > 0
-            && (fetch == null || rowsProcessed.compareTo(offset.add(fetch)) <= 0)) {
+        if (rowsProcessed >= offset && hasMoreData()) {
+            // This two rows can`t be swapped, cause if all requested rows have been pushed it will trigger further request call.
+            --requested;
             downstream().push(row);
         }
 
-        if (endAfterRow)
+        ++rowsProcessed;
+
+        // There several cases are possible:
+        //  1) requested = 512, limit = 1, offset = not defined: need to pass 1 row and call end()
+        //  2) requested = 512, limit = 512, offset = not defined: just need to pass all rows without end() call
+        //  3) requested = 512, limit = 512, offset = 1: need to request initially 512 and further 1 row
+        if (!hasMoreData() && requested > 0)
             end();
-        else if (reqNextAfterRow)
-            requestNextBatch();
+
+        if (waiting == 0 && requested > 0)
+            source().request(waiting = requested);
     }
 
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
-        if (waiting.signum() < 0)
+        if (waiting == NOT_WAITING)
             return;
 
         assert downstream() != null;
 
-        waiting = BigDecimal.ONE.negate();
+        waiting = NOT_WAITING;
+
+        if (requested > 0)
+            requested = 0;
 
         downstream().end();
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
-        rowsProcessed = BigDecimal.ZERO;
-        waiting = BigDecimal.ZERO;
+        waiting = 0;
+        requested = 0;
+        rowsProcessed = 0;
     }
 
     /** {@inheritDoc} */
@@ -127,29 +152,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         return this;
     }
 
-    /** {@code True} if requested 0 results, or all already processed. */
-    private boolean fetchNone() {
-        return fetch != null && (fetch.signum() == 0 || rowsProcessed.compareTo(offset.add(fetch)) >= 0);
-    }
-
-    /** Requests the next upstream batch, taking large decimal offsets into account. */
-    private void requestNextBatch() throws Exception {
-        BigDecimal bufSize = BigDecimal.valueOf(IN_BUFFER_SIZE);
-        BigDecimal rowsAvailable = waiting;
-
-        if (fetch != null)
-            rowsAvailable = rowsAvailable.min(offset.add(fetch).subtract(rowsProcessed));
-
-        BigDecimal rowsToReq = bufSize.subtract(rowsProcessed.remainder(bufSize)).min(rowsAvailable);
-
-        if (rowsToReq.signum() == 0) {
-            end();
-
-            return;
-        }
-
-        checkState();
-
-        source().request(rowsToReq.intValueExact());
+    /** {@code True} If current rows processed is less than required or undefined. */
+    private boolean hasMoreData() {
+        return rowsProcessed < rowsSummary;
     }
 }

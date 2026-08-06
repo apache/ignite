@@ -29,6 +29,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.runtime.Resources;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -61,6 +62,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -76,7 +78,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
-import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -239,21 +240,74 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
-        checkLimit(select.getFetch(), "fetch / limit");
-        checkLimit(select.getOffset(), "offset");
-
         super.validateSelect(select, targetRowType);
 
-        setFetchOffsetType(select.getFetch());
-        setFetchOffsetType(select.getOffset());
+        validateFetchOffset(select.getFetch(), "fetch / limit");
+        validateFetchOffset(select.getOffset(), "offset");
+    }
+
+    /**
+     * Validate fetch/offset params restrictions.
+     *
+     * @param n          Node to check.
+     * @param clauseName Clause name.
+     */
+    private void validateFetchOffset(@Nullable SqlNode n, String clauseName) {
+        if (n == null)
+            return;
+
+        if (n instanceof SqlLiteral) {
+            BigDecimal offsetFetchLimit = ((SqlLiteral)n).bigDecimalValue();
+
+            checkLimitOffset(offsetFetchLimit, n, clauseName);
+        }
+        else if (n instanceof SqlDynamicParam dynamicParam) {
+            // Dynamic parameters are nullable.
+            RelDataType expectType = typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DECIMAL), true);
+
+            if (definedDynParam(dynamicParam)) {
+                Object param = parameters[dynamicParam.getIndex()];
+
+                if (!(param instanceof Number)) {
+                    Resources.ExInst<SqlValidatorException> err;
+
+                    if (param == null)
+                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.BIGINT.toString(), "null");
+                    else {
+                        SqlTypeName paramType = typeFactory().createType(param.getClass()).getSqlTypeName();
+                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.BIGINT.toString(), paramType.getName());
+                    }
+
+                    throw newValidationError(n, err);
+                }
+                else
+                    checkLimitOffset((Number)param, n, clauseName);
+
+                setValidatedNodeType(dynamicParam, expectType);
+            }
+            else {
+                expectType = typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.BIGINT), true);
+                setValidatedNodeType(dynamicParam, expectType);
+            }
+        }
+    }
+
+    /** Returns {@code true} if the given dynamic parameter has value set. */
+    private boolean definedDynParam(SqlDynamicParam param) {
+        return param.getIndex() < parameters.length;
     }
 
     /** */
-    // TODO https://issues.apache.org/jira/browse/CALCITE-7624
-    //  Check SqlValidatorImpl#handleOffsetFetch and remove after update to Calcite 1.43.
-    private void setFetchOffsetType(@Nullable SqlNode node) {
-        if (node instanceof SqlDynamicParam)
-            setValidatedNodeType(node, typeFactory.createSqlType(SqlTypeName.DECIMAL));
+    private void checkLimitOffset(Number offsetFetchLimit, SqlNode n, String nodeName) {
+        try {
+            long res = IgniteMath.convertToLongExact(offsetFetchLimit);
+
+            if (res < 0)
+                throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
+        }
+        catch (ArithmeticException e) {
+            throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
+        }
     }
 
     /** {@inheritDoc} */
@@ -268,36 +322,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         super.validateNamespace(namespace, targetRowType);
-    }
-
-    /**
-     * @param n Node to check limit.
-     * @param nodeName Node name.
-     */
-    private void checkLimit(SqlNode n, String nodeName) {
-        if (n instanceof SqlLiteral) {
-            BigDecimal offFetchLimit = ((SqlLiteral)n).bigDecimalValue();
-
-            if (offFetchLimit.compareTo(BigDecimal.ZERO) < 0)
-                throw newValidationError(n, IgniteResource.INSTANCE.illegalLimit(nodeName));
-        }
-        else if (n instanceof SqlDynamicParam) {
-            // will fail in params check.
-            if (F.isEmpty(parameters))
-                return;
-
-            int idx = ((SqlDynamicParam)n).getIndex();
-
-            if (idx < parameters.length) {
-                Object param = parameters[idx];
-                if (param instanceof Number) {
-                    BigDecimal val = IgniteMath.convertToBigDecimal((Number)param);
-
-                    if (val.compareTo(BigDecimal.ZERO) < 0)
-                        throw newValidationError(n, IgniteResource.INSTANCE.illegalLimit(nodeName));
-                }
-            }
-        }
     }
 
     /** {@inheritDoc} */

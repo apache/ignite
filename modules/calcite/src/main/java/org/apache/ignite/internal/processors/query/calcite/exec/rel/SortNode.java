@@ -16,25 +16,30 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Sort node.
  */
 public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
+    /** */
+    public static final long OFFSET_DEFAULT = 0;
+
+    /** */
+    public static final long FETCH_DEFAULT = -1;
+
     /** How many rows are requested by downstream. */
     private int requested;
 
-    /** How many rows are we waiting for from the upstream. {@code -1} means end of stream. */
+    /** How many rows are we waiting for from the upstream. {@link #NOT_WAITING} means end of stream. */
     private int waiting;
 
     /**  */
@@ -43,37 +48,36 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** Rows buffer. */
     private final PriorityQueue<Row> rows;
 
+    /** SQL select limit. Negative if disabled. */
+    private final long limit;
+
     /** Reverse-ordered rows in case of limited sort. */
-    private ArrayList<Row> reversed;
+    private List<Row> reversed;
 
     /**
      * @param ctx Execution context.
      * @param comp Rows comparator.
      * @param offset Offset.
-     * @param fetch Limit.
+     * @param fetch How many rows need to be processed, {@link #FETCH_DEFAULT} if param is undefined.
      */
     public SortNode(
         ExecutionContext<Row> ctx, RelDataType rowType,
         Comparator<Row> comp,
-        @Nullable Supplier<BigDecimal> offset,
-        @Nullable Supplier<BigDecimal> fetch
+        long offset,
+        long fetch
     ) {
         super(ctx, rowType);
 
-        BigDecimal offsetVal = offset == null ? BigDecimal.ZERO : offset.get();
-        BigDecimal fetchVal = fetch == null ? null : fetch.get();
+        assert fetch == FETCH_DEFAULT || fetch > 0 : "Unexpected fetch = " + fetch;
+        assert offset >= 0 : "Unexpected offset = " + offset;
 
-        BigDecimal rowsToKeep = fetchVal == null ? null : fetchVal.add(offsetVal);
+        limit = fetch == FETCH_DEFAULT ? -1 : (fetch > Long.MAX_VALUE - offset ? -1 : fetch + offset);
 
-        if (rowsToKeep == null || rowsToKeep.signum() == 0
-            || rowsToKeep.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) > 0) {
+        if (limit < 1 || limit > Integer.MAX_VALUE)
             rows = new PriorityQueue<>(comp);
-        }
         else {
-            rows = new GridBoundedPriorityQueue<>(rowsToKeep.intValueExact(),
-                comp == null ? (Comparator<Row>)Comparator.reverseOrder() : comp.reversed());
-
-            reversed = new ArrayList<>();
+            rows = new GridBoundedPriorityQueue<>(IgniteMath.convertToIntExact(limit), comp == null ?
+                (Comparator<Row>)Comparator.reverseOrder() : comp.reversed());
         }
     }
 
@@ -82,7 +86,7 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
      * @param comp Rows comparator.
      */
     public SortNode(ExecutionContext<Row> ctx, RelDataType rowType, Comparator<Row> comp) {
-        this(ctx, rowType, comp, null, null);
+        this(ctx, rowType, comp, OFFSET_DEFAULT, FETCH_DEFAULT);
     }
 
     /** {@inheritDoc} */
@@ -107,8 +111,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
-        assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
-        assert waiting <= 0 : waiting;
+        assert rowsCnt > 0 && requested == 0;
+        assert waiting <= 0;
 
         checkState();
 
@@ -123,8 +127,8 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
-        assert waiting > 0 : waiting;
-        assert reversed == null || reversed.isEmpty() : reversed.size();
+        assert waiting > 0;
+        assert reversed == null || reversed.isEmpty();
 
         checkState();
 
@@ -147,11 +151,11 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
         assert downstream() != null;
-        assert waiting > 0 : waiting;
+        assert waiting > 0;
 
         checkState();
 
-        waiting = -1;
+        waiting = NOT_WAITING;
 
         flush();
     }
@@ -161,15 +165,16 @@ public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode
         if (isClosed())
             return;
 
-        assert waiting == -1 : waiting;
+        assert waiting == NOT_WAITING;
 
         int processed = 0;
 
         inLoop = true;
         try {
             // Prepare final order (reversed).
-            if (reversed != null && !rows.isEmpty()) {
-                reversed.ensureCapacity(rows.size());
+            if (limit > 0 && !rows.isEmpty()) {
+                if (reversed == null)
+                    reversed = new ArrayList<>(rows.size());
 
                 while (!rows.isEmpty()) {
                     reversed.add(rows.poll());

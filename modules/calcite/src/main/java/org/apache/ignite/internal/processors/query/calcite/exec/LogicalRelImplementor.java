@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -30,7 +28,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.adapter.enumerable.FetchOffsetRoundingPolicy;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
@@ -47,7 +44,9 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.IntPair;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -129,7 +128,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -147,9 +145,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** */
     private final ExecutionContext<Row> ctx;
-
-    /** FETCH/OFFSET rounding policy used by the Calcite engine. */
-    private final FetchOffsetRoundingPolicy fetchOffsetRoundingPolicy;
 
     /** */
     private final AffinityService affSrvc;
@@ -183,7 +178,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         this.ctx = ctx;
 
         expressionFactory = ctx.expressionFactory();
-        fetchOffsetRoundingPolicy = getFetchOffsetRoundingPolicy(ctx);
     }
 
     /** {@inheritDoc} */
@@ -575,8 +569,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx,
                 rowType,
                 idxBndRel.first() ? cmp : cmp.reversed(),
-                null,
-                () -> BigDecimal.ONE
+                0,
+                1
             );
 
             sortNode.register(scanNode);
@@ -638,8 +632,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<BigDecimal> offset = fetchOffsetSupplier(rel.offset(), "OFFSET");
-        Supplier<BigDecimal> fetch = fetchOffsetSupplier(rel.fetch(), "FETCH");
+        long offset = validateAndGetOffset(rel.offset(), LimitNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch(), LimitNode.FETCH_DEFAULT);
 
         LimitNode<Row> node = new LimitNode<>(ctx, rel.getRowType(), offset, fetch);
 
@@ -654,8 +648,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
 
-        Supplier<BigDecimal> offset = fetchOffsetSupplier(rel.offset, "OFFSET");
-        Supplier<BigDecimal> fetch = fetchOffsetSupplier(rel.fetch, "FETCH");
+        long offset = validateAndGetOffset(rel.offset, SortNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch, SortNode.FETCH_DEFAULT);
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
@@ -665,6 +659,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         node.register(input);
 
         return node;
+    }
+
+    /** */
+    private long validateAndGetOffset(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "offset");
+    }
+
+    /** */
+    private long validateAndGetFetch(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch");
     }
 
     /** {@inheritDoc} */
@@ -1060,32 +1064,31 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** */
-    private static FetchOffsetRoundingPolicy getFetchOffsetRoundingPolicy(ExecutionContext<?> ctx) {
-        FetchOffsetRoundingPolicy roundingPlc = ctx.unwrap(FetchOffsetRoundingPolicy.class);
+    private long validateAndGetFetchOffsetParams(RexNode node, String op) {
+        Supplier<Object> scalar = expressionFactory.execute(node);
+        Object param = scalar.get();
 
-        return roundingPlc == null ? FetchOffsetRoundingPolicy.NONE : roundingPlc;
-    }
+        if (!(param instanceof Number)) {
+            String actual = param == null ? "null" : param.getClass().getSimpleName();
+            throw new IgniteSQLException(IgniteResource.INSTANCE.incorrectDynamicParameterType("BIGINT", actual).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
 
-    /** Converts a FETCH/OFFSET expression to the row count expected by Ignite execution nodes. */
-    private @Nullable Supplier<BigDecimal> fetchOffsetSupplier(@Nullable RexNode node, String kind) {
-        if (node == null)
-            return null;
+        long paramAsLong;
 
-        Supplier<Number> val = expressionFactory.execute(node);
+        try {
+            paramAsLong = IgniteMath.convertToLongExact((Number)param);
+        }
+        catch (RuntimeException ex) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE, ex);
+        }
 
-        return () -> fetchOffsetValue(val.get(), kind);
-    }
+        if (paramAsLong < 0) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
 
-    /** Converts a FETCH/OFFSET runtime value to a row count. */
-    private BigDecimal fetchOffsetValue(Object val, String kind) {
-        if (!(val instanceof Number))
-            throw new IllegalArgumentException(kind + " must be a number");
-
-        BigDecimal decimal = IgniteMath.convertToBigDecimal((Number)val);
-
-        if (decimal.signum() < 0)
-            throw new IllegalArgumentException(kind + " must not be negative");
-
-        return fetchOffsetRoundingPolicy.round(decimal).setScale(0, RoundingMode.CEILING);
+        return paramAsLong;
     }
 }

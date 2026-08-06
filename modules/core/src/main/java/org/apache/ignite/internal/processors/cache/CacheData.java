@@ -113,7 +113,7 @@ public class CacheData implements Message {
         this.grpId = grpId;
         this.cacheType = cacheType;
         this.deploymentId = deploymentId;
-        entitiesMsgs = F.viewReadOnly(schema.entities(), QueryEntityMessage::new);
+        entitiesMsgs = F.transform(schema.entities(), QueryEntityMessage::new);
         this.rcvdFrom = rcvdFrom;
         this.staticCfg = staticCfg;
         this.sql = sql;

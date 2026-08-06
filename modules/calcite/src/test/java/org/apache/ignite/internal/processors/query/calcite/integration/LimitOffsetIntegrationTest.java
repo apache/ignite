@@ -17,15 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.calcite.adapter.enumerable.FetchOffsetRoundingPolicy;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.sql.validate.SqlValidatorException;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -38,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 
 /**
  * Limit / offset tests.
@@ -60,8 +54,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // Keep caches between tests, but do not leak an active transaction into the next test.
-        clearTransaction();
+        // Override method to keep caches after tests.
     }
 
     /** {@inheritDoc} */
@@ -101,8 +94,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
     /** */
     @Test
     public void testNestedLimitOffsetWithUnion() {
-        cacheRepl.clear();
-
         sql("INSERT into TEST_REPL VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')");
 
         assertQuery("(SELECT id FROM TEST_REPL WHERE id = 2) UNION ALL " +
@@ -110,71 +101,20 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         ).returns(2).returns(4).check();
     }
 
-    /** */
-    @Test
-    public void testFractionalLimitOffset() {
-        cacheRepl.clear();
-
-        sql("INSERT into TEST_REPL VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')");
-
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.2")
-            .returns(1)
-            .returns(2)
-            .check();
-
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1.1 ROWS FETCH FIRST 1.1 ROWS ONLY")
-            .returns(3)
-            .returns(4)
-            .check();
-
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET ? ROWS FETCH FIRST ? ROWS ONLY")
-            .withParams(new BigDecimal("1.1"), new BigDecimal("1.2"))
-            .returns(3)
-            .returns(4)
-            .check();
-    }
-
-    /** */
-    @Test
-    public void testFetchOffsetRoundingPolicy() {
-        FetchOffsetRoundingPolicy floorPlc = value -> value.setScale(0, RoundingMode.FLOOR);
-        FrameworkConfig floorPlcCfg = Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
-            .context(Contexts.of(floorPlc))
-            .build();
-
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
-
-        assertQuery("SELECT * FROM (VALUES (1), (2), (3), (4)) LIMIT 1.1")
-            .withFrameworkConfig(floorPlcCfg)
-            .returns(1)
-            .check();
-    }
-
-    /** */
-    @Test
-    public void testBigDecimalLimitOffset() {
-        String bigInt = BigDecimal.valueOf(10000000000L).toString();
-
-        if (sqlTxMode != SqlTransactionMode.NONE)
-            startTransaction(client);
-
-        assertQuery("SELECT * FROM (VALUES (1)) OFFSET " + bigInt + " ROWS")
-            .resultSize(0)
-            .check();
-
-        assertQuery("SELECT * FROM (VALUES (1)) FETCH FIRST " + bigInt + " ROWS ONLY")
-            .returns(1)
-            .check();
-
-        assertQuery("SELECT * FROM (VALUES (1)) LIMIT " + bigInt)
-            .returns(1)
-            .check();
-    }
-
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {
+        BigInteger moreThanMaxLong = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
+
+        assertThrows("SELECT * FROM TEST_REPL OFFSET " + moreThanMaxLong + " ROWS",
+            SqlValidatorException.class, "Illegal value of offset");
+
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + moreThanMaxLong + " ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
+        assertThrows("SELECT * FROM TEST_REPL LIMIT " + moreThanMaxLong,
+            SqlValidatorException.class, "Illegal value of fetch / limit");
+
         assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
             IgniteSQLException.class, null);
 
@@ -183,19 +123,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertThrows("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS",
             IgniteSQLException.class, null);
-
-        // Check with parameters
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1, -1);
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS",
-            SqlValidatorException.class, "Illegal value of offset", -1);
-
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1);
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS",
-            SqlValidatorException.class, "Illegal value of offset", new BigDecimal("-1.5"));
     }
 
     /**
