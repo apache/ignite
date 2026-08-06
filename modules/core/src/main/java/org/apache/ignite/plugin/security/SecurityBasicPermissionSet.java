@@ -26,14 +26,12 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
@@ -48,7 +46,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.upcas
  * Simple implementation of {@link SecurityPermissionSet} interface.
  * Provides convenient way to specify permission set in the XML configuration.
  */
-public class SecurityBasicPermissionSet implements SecurityPermissionSet, MarshallableMessage {
+public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMarshallingMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -215,12 +213,12 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, Marsha
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void selfMarshal() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void selfUnmarshal() {
         // Message framework uses ArrayList for ordinary collections,
         // so we need to convert it to appropriate form explicitly.
         normalize();
