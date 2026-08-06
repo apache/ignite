@@ -87,9 +87,6 @@ public class MessageProcessor extends AbstractProcessor {
     /** Message that reshapes its own fields before they go on the wire. */
     static final String SELF_MARSHALLING_MESSAGE_INTERFACE = "org.apache.ignite.internal.SelfMarshallingMessage";
 
-    /** Message sent on after being read, so its serialized form must stay as it arrived. */
-    static final String FORWARDED_MESSAGE_INTERFACE = "org.apache.ignite.internal.ForwardedMessage";
-
     /** Message that carries the deployment of the classes inside it. */
     static final String DEPLOYMENT_AWARE_MESSAGE_INTERFACE = "org.apache.ignite.internal.DeploymentAware";
 

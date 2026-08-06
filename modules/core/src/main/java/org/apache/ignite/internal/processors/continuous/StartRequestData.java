@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.DeploymentAware;
-import org.apache.ignite.internal.ForwardedMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -30,7 +29,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 /**
  * Start request data.
  */
-public class StartRequestData implements DeploymentAware, ForwardedMessage {
+public class StartRequestData implements DeploymentAware {
     /** Node filter. */
     @Marshalled("nodeFilterBytes")
     IgnitePredicate<ClusterNode> nodeFilter;
