@@ -27,14 +27,15 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Utility class to deal with class loading.
+ * Contains internal class cache.
  */
 public class ClassLoaderUtils {
     /** Primitive class map. */
     private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
 
     /** */
-    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class<?>>> classCache =
         new ConcurrentHashMap<>();
 
     static {
@@ -124,10 +125,10 @@ public class ClassLoaderUtils {
             return cls;
         }
 
-        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+        ConcurrentMap<String, Class<?>> ldrMap = classCache.get(ldr);
 
         if (ldrMap == null) {
-            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap<>());
+            ConcurrentMap<String, Class<?>> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap<>());
 
             if (old != null)
                 ldrMap = old;
@@ -145,7 +146,7 @@ public class ClassLoaderUtils {
             else
                 cls = Class.forName(clsName, true, ldr);
 
-            Class old = ldrMap.putIfAbsent(clsName, cls);
+            Class<?> old = ldrMap.putIfAbsent(clsName, cls);
 
             if (old != null)
                 cls = old;
@@ -184,7 +185,7 @@ public class ClassLoaderUtils {
      * @param clsName Class name of clearing class.
      */
     public static void clearClassFromClassCache(ClassLoader ldr, String clsName) {
-        ConcurrentMap<String, Class> map = classCache.get(ldr);
+        ConcurrentMap<String, Class<?>> map = classCache.get(ldr);
 
         if (map != null)
             map.remove(clsName);
