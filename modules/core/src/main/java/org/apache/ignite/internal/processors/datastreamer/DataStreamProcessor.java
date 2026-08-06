@@ -236,7 +236,9 @@ public class DataStreamProcessor extends GridProcessorAdapter {
                 }
                 catch (IgniteDeploymentCheckedException e) {
                     // The sender waits for an answer, so a missing deployment is reported back, not thrown.
-                    sendResponse(nodeId, topic, req.requestId(), e);
+                    sendResponse(nodeId, topic, req.requestId(),
+                        new IgniteCheckedException("Failed to get deployment for request [sndId=" + nodeId +
+                            ", req=" + req + ']', e));
 
                     return;
                 }

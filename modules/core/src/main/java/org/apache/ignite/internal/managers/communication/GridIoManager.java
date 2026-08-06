@@ -3630,7 +3630,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                     if (dep == null && ctx.config().isPeerClassLoadingEnabled() &&
                         ioMsg.deploymentClassName() != null) {
-                        dep = ctx.deploy().globalDeployment(ioMsg.deploymentInfo(), ioMsg.deploymentClassName());
+                        dep = ctx.deploy().globalDeployment(ioMsg.deploymentInfo(), ioMsg.deploymentClassName(),
+                            ioMsg.deploymentClassName());
+
+                        if (dep == null) {
+                            throw new IgniteDeploymentCheckedException(
+                                "Failed to obtain deployment information for user message. " +
+                                    "If you are using custom message or topic class, try implementing " +
+                                    "GridPeerDeployAware interface. [msg=" + ioMsg + ']');
+                        }
 
                         ioMsg.deployment(dep); // Cache deployment.
                     }

@@ -405,15 +405,6 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /**
-     * Resolves the deployment {@code depInfo} describes, for the classes of {@code clsName}. The sender of those
-     * classes is the node that created the class loader, or a participant when the deployment has any.
-     *
-     * @param depInfo Deployment of the classes, as it came with the message carrying them.
-     * @param clsName Name of a class the deployment must be able to load.
-     * @return The deployment the classes are loaded with.
-     * @throws IgniteDeploymentCheckedException If the deployment is gone or peer class loading is off.
-     */
-    /**
      * Resolves the class loader the classes of a message must be read with.
      *
      * @param msg Message carrying its own deployment.
@@ -428,6 +419,15 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             ctx.config());
     }
 
+    /**
+     * Resolves the deployment {@code depInfo} describes, for the classes of {@code clsName}. The sender of those
+     * classes is the node that created the class loader, or a participant when the deployment has any.
+     *
+     * @param depInfo Deployment of the classes, as it came with the message carrying them.
+     * @param clsName Name of a class the deployment must be able to load.
+     * @return The deployment the classes are loaded with.
+     * @throws IgniteDeploymentCheckedException If the deployment is gone or peer class loading is off.
+     */
     public GridDeployment globalDeployment(GridDeploymentInfo depInfo, String clsName)
         throws IgniteDeploymentCheckedException {
         GridDeployment dep = globalDeployment(depInfo, clsName, clsName);

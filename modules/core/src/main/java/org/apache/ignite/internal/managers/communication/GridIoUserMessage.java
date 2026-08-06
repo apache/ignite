@@ -93,15 +93,12 @@ public class GridIoUserMessage implements Message {
         return bodyBytes;
     }
 
-
-
     /**
      * @return Message body class name.
      */
     @Nullable public String deploymentClassName() {
         return depClsName;
     }
-
 
     /**
      * @return Serialized message topic.

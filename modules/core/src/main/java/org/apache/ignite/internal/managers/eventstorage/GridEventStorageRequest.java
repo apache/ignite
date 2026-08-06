@@ -91,11 +91,6 @@ public class GridEventStorageRequest implements DeploymentAware, DeferredUnmarsh
         return filterClsName;
     }
 
-    /** @return Filter class name. */
-    String filterClassName() {
-        return filterClsName;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridEventStorageRequest.class, this);

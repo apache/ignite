@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.continuous;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.DeploymentAware;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.Marshalled;
@@ -32,14 +31,13 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Start request data.
  */
-public class StartRequestData implements DeploymentAware, DeferredUnmarshalMessage {
+public class StartRequestData implements DeploymentAware {
     /** Node filter. */
-    @Marshalled("nodeFilterBytes")
+    @Marshalled(value = "nodeFilterBytes", keepBytes = true)
     IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Serialized node filter. */

@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
-import static org.apache.ignite.internal.MessageProcessor.DEFERRED_UNMARSHAL_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.DEPLOYMENT_AWARE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
@@ -102,9 +100,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private final TypeMirror deploymentAwareMsgType;
 
     /** */
-    private final TypeMirror deferredUnmarshalMsgType;
-
-    /** */
     private final TypeMirror selfMarshallingMsgType;
 
     /** */
@@ -149,7 +144,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
         deploymentAwareMsgType = type(DEPLOYMENT_AWARE_MESSAGE_INTERFACE);
-        deferredUnmarshalMsgType = type(DEFERRED_UNMARSHAL_MESSAGE_INTERFACE);
         selfMarshallingMsgType = type(SELF_MARSHALLING_MESSAGE_INTERFACE);
         cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
         mapType = type(Map.class.getName());
@@ -460,7 +454,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** Generates {@code U.marshal} calls for all {@code @Marshalled} fields in marshal. */
     private void appendMarshalledPrepare(List<String> body) {
-        forEachMarshalled((bytesAcc, objAcc) -> {
+        forEachMarshalled((bytesAcc, objAcc, ann) -> {
             List<String> code = new ArrayList<>();
 
             code.add(indentedLine("if (%s != null && %s == null)", objAcc, bytesAcc));
@@ -477,7 +471,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** Generates {@code U.unmarshal} calls for all {@code @Marshalled} fields in the cache-aware unmarshal. */
     private void appendMarshalledFinish(List<String> body) {
-        forEachMarshalled((bytesAcc, objAcc) -> {
+        forEachMarshalled((bytesAcc, objAcc, ann) -> {
             List<String> code = new ArrayList<>();
 
             code.add(indentedLine("if (%s != null) {", bytesAcc));
@@ -488,9 +482,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             // Drop the serialized cache once the object is restored: keeping both the deserialized value and its bytes
             // on every received message doubles retained memory (e.g. topology history nodes) and can exhaust the heap.
-            // A message unmarshalled by its owner may be sent on (a discovery message travels the whole ring), so its
-            // bytes stay: re-marshalling the user object on the sending path is what they are there to avoid.
-            if (!isDeferredUnmarshal()) {
+            if (!ann.keepBytes()) {
                 code.add(EMPTY);
                 code.add(indentedLine("%s = null;", bytesAcc));
             }
@@ -1065,11 +1057,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             + indentedLine("    clsLdr = kctx.deploy().classLoader(msg);");
     }
 
-    /** @return {@code true} if the message is unmarshalled by its owner instead of the receiving path. */
-    private boolean isDeferredUnmarshal() {
-        return deferredUnmarshalMsgType != null && assignableFrom(type.asType(), deferredUnmarshalMsgType);
-    }
-
     /** @return {@code true} if the message carries the deployment of its classes. */
     private boolean isDeploymentAware() {
         return deploymentAwareMsgType != null && assignableFrom(type.asType(), deploymentAwareMsgType);
@@ -1217,15 +1204,27 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
-    private void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
+    private void forEachMarshalled(MarshalledCode codeGen, List<String> body) {
         for (VariableElement field : enclosed.values()) {
             if (kinds.get(field) != MarshalledKind.BLOB)
                 continue;
 
             Marshalled ann = field.getAnnotation(Marshalled.class);
 
-            appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName()));
+            appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName(), ann));
         }
+    }
+
+    /** Generates the code handling a single {@code @Marshalled} field. */
+    @FunctionalInterface
+    private interface MarshalledCode {
+        /**
+         * @param bytesAcc Accessor of the companion field holding the serialized form.
+         * @param objAcc Accessor of the annotated field.
+         * @param ann Annotation of the field.
+         * @return Generated lines.
+         */
+        public List<String> apply(String bytesAcc, String objAcc, Marshalled ann);
     }
 
     /** Returns the element for {@code t}; for a type variable, uses its upper bound. */

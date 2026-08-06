@@ -1247,10 +1247,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                     filter = (IgnitePredicate<Event>)req.filter();
 
-                    GridDeployment dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.filterClassName());
+                    GridDeployment dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.deployedClassName());
 
                     // Resource injection.
-                    ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()).get1(), filter);
+                    ctx.resource().inject(dep, dep.deployedClass(req.deployedClassName()).get1(), filter);
 
                     // Get local events.
                     evts = localEvents(filter);
