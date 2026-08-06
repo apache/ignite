@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Discovery data item. */
+/** Continous routine Discovery data item. */
 public final class ContinousRoutineDiscoveryDataItem implements Message {
     /** */
     @Order(0)

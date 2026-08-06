@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Discovery data. */
+/** Continous routine Discovery data. */
 public final class ContinousRoutineDiscoveryData implements Message {
     /** Node ID.  */
     @Order(0)

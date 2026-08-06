@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.spi.discovery;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -91,7 +92,9 @@ public class DiscoveryDataBag {
 
         /** {@inheritDoc} */
         @Override @Nullable public <T> T joiningNodeData() {
-            return (T)joiningNodeData.get(cmpId);
+            Message dataMsg = joiningNodeData.get(cmpId);
+
+            return SerializableDataBagItemWrapper.unwrapIfNecessary(dataMsg);
         }
 
         /**
@@ -120,12 +123,15 @@ public class DiscoveryDataBag {
 
         /** {@inheritDoc} */
         @Override @Nullable public <T> T commonData() {
-            return commonData == null ? null : (T)commonData.get(cmpId);
+            if (commonData != null)
+                return SerializableDataBagItemWrapper.unwrapIfNecessary(commonData.get(cmpId));
+
+            return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T> Map<UUID, T> nodeSpecificData() {
-            return F.viewReadOnly(nodeSpecificData, e -> (T)e);
+            return F.viewReadOnly(nodeSpecificData, SerializableDataBagItemWrapper::unwrapIfNecessary);
         }
 
         /**
@@ -244,10 +250,26 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
+     * @param data Serializable data.
+     */
+    public void addJoiningNodeData(Integer cmpId, Serializable data) {
+        joiningNodeData.put(cmpId, new SerializableDataBagItemWrapper(data));
+    }
+
+    /**
+     * @param cmpId Component ID.
      * @param data Message data.
      */
     public void addJoiningNodeData(Integer cmpId, Message data) {
         joiningNodeData.put(cmpId, data);
+    }
+
+    /**
+     * @param cmpId Component ID.
+     * @param data Serializable data.
+     */
+    public void addGridCommonData(Integer cmpId, Serializable data) {
+        commonData.put(cmpId, new SerializableDataBagItemWrapper(data));
     }
 
     /**
