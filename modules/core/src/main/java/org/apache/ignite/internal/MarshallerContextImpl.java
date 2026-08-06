@@ -47,6 +47,7 @@ import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.compute.ComputeTaskContinuousMapper;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.executor.GridExecutorService;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -427,7 +428,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-        return U.forName(clsName, ldr, MarshallerUtils.classNameFilter());
+        return ClassLoaderUtils.forName(clsName, ldr);
     }
 
     /** {@inheritDoc} */
