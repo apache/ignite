@@ -445,7 +445,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nearEvicted.add(req.nearKey(i));
 
                 GridDhtAtomicUpdateResponse dhtRes = new GridDhtAtomicUpdateResponse(req.cacheId(),
-                    req.partition(),
+                    req.stripeIdx(),
                     req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
@@ -458,7 +458,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 if (req.nearNodeId() != null) {
                     GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
-                        req.partition(),
+                        req.stripeIdx(),
                         req.nearFutureId(),
                         nodeId,
                         req.flags());
@@ -791,7 +791,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
             GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -806,7 +806,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                 req.cacheId(),
-                req.partition(),
+                req.stripeIdx(),
                 req.futureId());
 
             res.onError(req.classError());
@@ -815,7 +815,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (req.nearNodeId() != null) {
                 GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
-                    req.partition(),
+                    req.stripeIdx(),
                     req.nearFutureId(),
                     nodeId,
                     req.flags());
@@ -832,7 +832,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 req.cacheId(),
                 nodeId,
                 req.futureId(),
-                req.partition(),
+                req.stripeIdx(),
                 false);
 
             res.error(req.classError());
@@ -901,7 +901,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
             GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -980,7 +980,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 req.cacheId(),
                 nodeId,
                 req.futureId(),
-                req.partition(),
+                req.stripeIdx(),
                 false);
 
             res.error(req.classError());
@@ -994,7 +994,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 req.cacheId(),
                 nodeId,
                 req.futureId(),
-                req.partition(),
+                req.stripeIdx(),
                 false);
 
             res.error(req.classError());
@@ -1008,7 +1008,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 req.cacheId(),
                 nodeId,
                 req.futureId(),
-                req.partition(),
+                req.stripeIdx(),
                 false);
 
             res.error(req.classError());
@@ -1020,7 +1020,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                 req.cacheId(),
-                req.partition(),
+                req.stripeIdx(),
                 req.futureId());
 
             res.onError(req.classError());
@@ -1029,7 +1029,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (req.nearNodeId() != null) {
                 GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
-                    req.partition(),
+                    req.stripeIdx(),
                     req.nearFutureId(),
                     nodeId,
                     req.flags());

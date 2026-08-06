@@ -320,7 +320,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest imp
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return U.safeAbs(version().hashCode());
     }
 
