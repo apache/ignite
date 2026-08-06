@@ -1854,6 +1854,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
                 ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
+                // Prevents following cycling attempts to reconnect and logs flooding.
                 spiStop();
             }
 
