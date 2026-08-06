@@ -115,19 +115,19 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testLimitOffsetParameterMetadata() {
-        RelDataTypeSystem typeSystem = IgniteTypeSystem.INSTANCE;
+        RelDataTypeSystem typeSys = IgniteTypeSystem.INSTANCE;
 
-        for (String query : new String[] {
+        for (String qry : new String[] {
             "SELECT 1 LIMIT ?",
             "SELECT 1 OFFSET ?",
             "SELECT 1 FETCH FIRST ? ROWS ONLY"
         }) {
-            checker(query)
+            checker(qry)
                 .addMeta(
                     builder -> builder
-                        .add(null, null, int.class, "1", typeSystem.getDefaultPrecision(SqlTypeName.INTEGER), 0, false),
+                        .add(null, null, int.class, "1", typeSys.getDefaultPrecision(SqlTypeName.INTEGER), 0, false),
                     builder -> builder
-                        .add(null, null, Long.class, "?0", typeSystem.getDefaultPrecision(SqlTypeName.BIGINT), 0, true)
+                        .add(null, null, Long.class, "?0", typeSys.getDefaultPrecision(SqlTypeName.BIGINT), 0, true)
                 )
                 .check();
         }
