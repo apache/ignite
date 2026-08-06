@@ -24,10 +24,12 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.google.common.primitives.UnsignedBytes;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
@@ -56,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -622,25 +625,25 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         long waitMs = waitMillis(plan);
 
         // Zero means that retries are limited only by the transaction or query timeout.
-        long deadline = waitMs > 0
+        long lockAcquisitionEndTime = waitMs > 0
             ? U.currentTimeMillis() + waitMs
             : waitMs < 0 ? U.currentTimeMillis() : 0L;
 
         RootQuery<Row> selectQry = qry;
 
         while (true) {
-            FieldsQueryCursor<List<?>> cursor = tryExecuteForUpdate(selectQry, plan, userTx, waitMs, deadline);
+            FieldsQueryCursor<List<?>> cursor = tryExecuteForUpdate(selectQry, plan, userTx, waitMs, lockAcquisitionEndTime);
 
             if (cursor != null)
                 return cursor;
 
-            if (deadline != 0 && U.currentTimeMillis() >= deadline) {
+            if (lockAcquisitionEndTime != 0 && U.currentTimeMillis() >= lockAcquisitionEndTime) {
                 throw new IgniteSQLException(
                     IgniteResource.INSTANCE.selectForUpdateLockFailed().str(),
                     IgniteQueryErrorCode.CONCURRENT_UPDATE);
             }
 
-            // The previous query has already been closed after materialisation, so retry with a fresh root query.
+            // The previous query has already been closed after execution, so retry with a fresh root query.
             selectQry = qry.retryQuery();
             qryReg.register(selectQry);
         }
@@ -674,7 +677,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
      * @param plan SELECT FOR UPDATE plan.
      * @param userTx Transaction that acquires the locks.
      * @param waitMs Lock wait time in the internal representation.
-     * @param deadline Absolute lock acquisition deadline.
+     * @param lockAcquisitionEndTime Absolute lock acquisition deadline in milliseconds.
      * @return Result cursor if all required locks were acquired, or {@code null} if at least one lock was not acquired.
      */
     @Nullable private FieldsQueryCursor<List<?>> tryExecuteForUpdate(
@@ -682,10 +685,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         SelectForUpdatePlan plan,
         GridNearTxLocal userTx,
         long waitMs,
-        long deadline
+        long lockAcquisitionEndTime
     ) {
         // Run the inner SELECT (with _KEY, _VAL, _VER appended) and collect all rows.
         ListFieldsQueryCursor<?> innerCursor = mapAndExecutePlan(qry, plan.innerPlan());
+
+        // TODO: IGNITE-28957 SELECT FOR UPDATE may cause OOM by materializing the entire result set.
         List<List<?>> rows = innerCursor.getAll();
 
         int userColCnt = plan.userColumnCount();
@@ -696,23 +701,23 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
             collectLockBatches(plan, rows);
 
-        if (!tryAcquireLocks(userTx, lockBatches, waitMs, deadline))
+        if (!tryAcquireLocks(userTx, lockBatches, waitMs, lockAcquisitionEndTime))
             return null;
 
         return createResultCursor(qry, plan, rows, userColCnt);
     }
 
     /**
-     * Collects unique cache entries to lock and orders cache batches by cache ID.
+     * Collects unique cache entries to lock and orders them by cache ID, partition ID, key hash, and key bytes.
      *
      * @param plan SELECT FOR UPDATE plan containing the lock targets.
      * @param rows Selected rows containing the internal lock columns.
-     * @return Cache-entry batches ordered by cache ID.
+     * @return Ordered cache-entry batches.
      */
     private List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>>
         collectLockBatches(SelectForUpdatePlan plan, List<List<?>> rows) {
-        Map<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> entriesByCache =
-            new LinkedHashMap<>();
+        Map<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> lockBatches =
+            new TreeMap<>(Comparator.comparingInt(cache -> cache.context().cacheId()));
 
         for (LockTarget target : plan.lockTargets()) {
             SchemaPlus schemaPlus = schemaHolder.schema(target.schemaName());
@@ -732,7 +737,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             IgniteInternalCache<Object, Object> cache = cctx.cache().keepBinary();
             Map<Object, CacheEntry<Object, Object>> entries =
-                entriesByCache.computeIfAbsent(cache, key -> new LinkedHashMap<>());
+                lockBatches.computeIfAbsent(cache, key -> new LinkedHashMap<>());
             int keyColumnIdx = target.keyColumnIndex();
 
             for (List<?> row : rows) {
@@ -750,12 +755,107 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
         }
 
-        List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
-            new ArrayList<>(entriesByCache.entrySet());
+        for (Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> batch :
+            lockBatches.entrySet()) {
+            Map<Object, CacheEntry<Object, Object>> entries = batch.getValue();
 
-        lockBatches.sort(Comparator.comparingInt(left -> left.getKey().context().cacheId()));
+            orderLockEntries(batch.getKey().context(), entries);
+        }
 
-        return lockBatches;
+        return new ArrayList<>(lockBatches.entrySet());
+    }
+
+    /**
+     * Orders entries by partition, key hash, and serialized key bytes in case of a hash collision.
+     *
+     * @param cctx Cache context used to prepare cache keys.
+     * @param entries Entries to order.
+     */
+    private static void orderLockEntries(
+        GridCacheContext<Object, Object> cctx,
+        Map<Object, CacheEntry<Object, Object>> entries
+    ) {
+        List<LockEntry> orderedEntries = new ArrayList<>(entries.size());
+
+        for (CacheEntry<Object, Object> entry : entries.values()) {
+            KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+            orderedEntries.add(new LockEntry(entry, key));
+        }
+
+        orderedEntries.sort(Comparator.comparingInt((LockEntry entry) -> entry.part)
+            .thenComparingInt(entry -> entry.keyHash));
+
+        for (int start = 0; start < orderedEntries.size(); ) {
+            LockEntry first = orderedEntries.get(start);
+            int end = start + 1;
+
+            while (end < orderedEntries.size()
+                && orderedEntries.get(end).part == first.part
+                && orderedEntries.get(end).keyHash == first.keyHash)
+                end++;
+
+            if (end - start > 1) {
+                try {
+                    for (int i = start; i < end; i++)
+                        orderedEntries.get(i).prepareKeyBytes(cctx.cacheObjectContext());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to serialize a cache key for lock ordering", e);
+                }
+
+                orderedEntries.subList(start, end).sort(Comparator.comparing(
+                    entry -> entry.keyBytes,
+                    UnsignedBytes.lexicographicalComparator()
+                ));
+            }
+
+            start = end;
+        }
+
+        entries.clear();
+
+        for (LockEntry entry : orderedEntries)
+            entries.put(entry.entry.getKey(), entry.entry);
+    }
+
+    /** Cache entry with the key attributes used for lock ordering. */
+    private static class LockEntry {
+        /** Cache entry. */
+        private final CacheEntry<Object, Object> entry;
+
+        /** Key partition. */
+        private final int part;
+
+        /** Key hash. */
+        private final int keyHash;
+
+        /** Cache key. */
+        private final KeyCacheObject key;
+
+        /** Serialized key bytes, initialized only for hash collisions. */
+        private byte[] keyBytes;
+
+        /**
+         * @param entry Cache entry.
+         * @param key Cache key.
+         */
+        private LockEntry(CacheEntry<Object, Object> entry, KeyCacheObject key) {
+            this.entry = entry;
+            this.key = key;
+            part = key.partition();
+            keyHash = key.hashCode();
+        }
+
+        /**
+         * Serializes the key for collision resolution.
+         *
+         * @param ctx Cache object context.
+         * @throws IgniteCheckedException If serialization fails.
+         */
+        private void prepareKeyBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+            keyBytes = key.valueBytes(ctx);
+        }
     }
 
     /**
@@ -764,14 +864,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
      * @param userTx Transaction that acquires the locks.
      * @param lockBatches Cache entries grouped by cache.
      * @param waitMs Lock wait time in the internal representation.
-     * @param deadline Absolute lock deadline, or {@code 0} to use the transaction/query timeout.
+     * @param lockAcquisitionEndTime Absolute lock deadline, or {@code 0} to use the transaction/query timeout.
      * @return {@code true} if every lock was acquired.
      */
     private static boolean tryAcquireLocks(
         GridNearTxLocal userTx,
         List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches,
         long waitMs,
-        long deadline
+        long lockAcquisitionEndTime
     ) {
         try {
             // lockTxEntries() requires the transaction to be bound to the current thread
@@ -795,10 +895,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
                         long batchWaitMs = waitMs;
 
-                        if (deadline > 0) {
-                            batchWaitMs = deadline - U.currentTimeMillis();
+                        if (lockAcquisitionEndTime > 0) {
+                            batchWaitMs = lockAcquisitionEndTime - U.currentTimeMillis();
 
-                            if (batchWaitMs <= 0)
+                            // Excluse case where
+                            if (batchWaitMs == 0)
                                 batchWaitMs = -1L;
                         }
 

@@ -3175,17 +3175,39 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 try {
                     for (int i = 0; i < txEntries.size(); i++) {
-                        GridCacheEntryEx cached = txEntries.get(i).cached();
-                        EntryGetResult getRes = cached.innerGetVersioned(
-                            null,
-                            tx,
-                            /*update-metrics*/false,
-                            /*event*/false,
-                            null,
-                            tx.resolveTaskName(),
-                            null,
-                            false,
-                            null);
+                        IgniteTxEntry txEntry = txEntries.get(i);
+                        EntryGetResult getRes;
+
+                        while (true) {
+                            try {
+                                GridCacheEntryEx cached = txEntry.cached();
+
+                                getRes = cached.innerGetVersioned(
+                                    null,
+                                    tx,
+                                    /*update-metrics*/false,
+                                    /*event*/false,
+                                    null,
+                                    tx.resolveTaskName(),
+                                    null,
+                                    false,
+                                    null);
+
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignored) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Got removed exception in lockTxEntries postLock (will retry): "
+                                        + txEntry.cached());
+
+                                KeyCacheObject key = txEntry.key();
+                                GridCacheEntryEx cached = ctx.isColocated()
+                                    ? ctx.colocated().entryExx(key, tx.topologyVersion(), true)
+                                    : entryEx(key, tx.topologyVersion());
+
+                                txEntry.cached(cached);
+                            }
+                        }
 
                         if (getRes == null || !expVers.get(i).equals(getRes.version())) {
                             tx.removeAndUnlockTxEntries(txEntries);
@@ -3196,7 +3218,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     return new GridFinishedFuture<>(true);
                 }
-                catch (IgniteCheckedException | GridCacheEntryRemovedException e) {
+                catch (IgniteCheckedException e) {
                     tx.removeAndUnlockTxEntries(txEntries);
 
                     return new GridFinishedFuture<>(e);

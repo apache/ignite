@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.CacheEntry;
 import org.jetbrains.annotations.Nullable;
@@ -67,7 +65,7 @@ public class SelectForUpdatePlan extends AbstractQueryPlan {
         this.innerPlan = innerPlan;
         this.userColumnCount = userColumnCount;
         this.waitSeconds = waitSeconds;
-        this.lockTargets = Collections.unmodifiableList(new ArrayList<>(lockTargets));
+        this.lockTargets = List.copyOf(lockTargets);
     }
 
     /** Returns the inner plan that reads rows together with the appended columns. */

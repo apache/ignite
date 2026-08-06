@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.IndexWithSameNameCalc
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AuthorizationIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.BulkOperationDeadlockIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CacheStoreTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CacheWithInterceptorIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBasicSecondaryIndexIntegrationTest;
@@ -192,6 +193,7 @@ import org.junit.runners.Suite;
     CalciteMessageUnmarshalThreadIntegrationTest.class,
     CollectIntegrationTest.class,
     SystemColumnsScanTest.class,
+    BulkOperationDeadlockIntegrationTest.class,
     SelectForUpdateIntegrationTest.class,
 })
 public class IntegrationTestSuite {

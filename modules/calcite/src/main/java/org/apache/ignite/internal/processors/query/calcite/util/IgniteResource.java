@@ -94,7 +94,7 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> illegalWaitTimeout(String value);
 
     /** */
-    @Resources.BaseMessage("SELECT FOR UPDATE requires an active PESSIMISTIC transaction")
+    @Resources.BaseMessage("SELECT FOR UPDATE requires a PESSIMISTIC transaction")
     Resources.ExInst<SqlValidatorException> selectForUpdateRequiresPessimisticTx();
 
     /** */

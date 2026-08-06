@@ -256,7 +256,7 @@ public class SelectForUpdateIntegrationTest extends AbstractBasicIntegrationTest
         lockFut.get(10_000);
     }
 
-    /** FOR UPDATE without an active transaction produces "requires an active PESSIMISTIC transaction". */
+    /** FOR UPDATE without an active transaction produces an exception. */
     @Test
     public void testSelectForUpdateOutsideTransaction() {
         assertThrows("SELECT id FROM Person FOR UPDATE", IgniteSQLException.class,
