@@ -503,6 +503,24 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("needs a cache object context to unmarshal");
     }
 
+    /** A message that is sent on after being read keeps the serialized form of its fields. */
+    @Test
+    public void testForwardedMessage() {
+        Compilation compilation = compile("TestForwardedMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestForwardedMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestForwardedMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestForwardedMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestForwardedMessageMarshaller.java"));
+    }
+
     /** A message carrying its own deployment has the class loader resolved from it. */
     @Test
     public void testDeploymentAwareMessage() {
