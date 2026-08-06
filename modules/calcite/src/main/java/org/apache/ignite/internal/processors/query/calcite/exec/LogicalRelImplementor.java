@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -128,6 +129,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -158,6 +161,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** */
     private final ExpressionFactory<Row> expressionFactory;
 
+    /** */
+    private final FetchOffsetRoundingPolicy fetchOffsetRoundingPlc;
+
     /**
      * @param ctx Root context.
      * @param affSrvc Affinity service.
@@ -178,6 +184,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         this.ctx = ctx;
 
         expressionFactory = ctx.expressionFactory();
+        fetchOffsetRoundingPlc = getFetchOffsetRoundingPolicy(ctx);
     }
 
     /** {@inheritDoc} */
@@ -569,7 +576,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx,
                 rowType,
                 idxBndRel.first() ? cmp : cmp.reversed(),
-                0,
+                SortNode.OFFSET_DEFAULT,
                 1
             );
 
@@ -1077,7 +1084,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         long paramAsLong;
 
         try {
-            paramAsLong = IgniteMath.convertToLongExact((Number)param);
+            BigDecimal val = IgniteMath.convertToBigDecimal((Number) param);
+            paramAsLong = IgniteMath.convertToLongExact(fetchOffsetRoundingPlc.round(val));
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
@@ -1090,5 +1098,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         }
 
         return paramAsLong;
+    }
+
+    /** */
+    private static FetchOffsetRoundingPolicy getFetchOffsetRoundingPolicy(ExecutionContext<?> ctx) {
+        FetchOffsetRoundingPolicy roundingPlc = ctx.unwrap(FetchOffsetRoundingPolicy.class);
+
+        return roundingPlc == null ? FetchOffsetRoundingPolicy.NONE : roundingPlc;
     }
 }

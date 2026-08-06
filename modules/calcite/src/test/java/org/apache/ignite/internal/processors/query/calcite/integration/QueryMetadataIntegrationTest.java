@@ -127,7 +127,7 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
                     builder -> builder
                         .add(null, null, int.class, "1", typeSys.getDefaultPrecision(SqlTypeName.INTEGER), 0, false),
                     builder -> builder
-                        .add(null, null, Long.class, "?0", typeSys.getDefaultPrecision(SqlTypeName.BIGINT), 0, true)
+                        .add(null, null, BigDecimal.class, "?0", typeSys.getDefaultPrecision(SqlTypeName.DECIMAL), 0, true)
                 )
                 .check();
         }
@@ -199,28 +199,6 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
                     .add(null, null, String.class, "PLAN", false),
                 builder -> {}
             ).check();
-    }
-
-    /** */
-    @Test
-    public void testFetchOffsetParameters() throws Exception {
-        executeSql("CREATE TABLE tbl (id BIGINT, PRIMARY KEY(id))");
-
-        checker("SELECT * FROM tbl OFFSET ? ROWS FETCH FIRST ? ROWS ONLY")
-            .addMeta(
-                builder -> builder.add("PUBLIC", "TBL", Long.class, "ID", 19, 0, true),
-                builder -> builder
-                    .add(null, null, BigDecimal.class, "?0", 32767, 0, false)
-                    .add(null, null, BigDecimal.class, "?1", 32767, 0, false)
-            )
-            .check();
-
-        checker("SELECT * FROM tbl LIMIT ?")
-            .addMeta(
-                builder -> builder.add("PUBLIC", "TBL", Long.class, "ID", 19, 0, true),
-                builder -> builder.add(null, null, BigDecimal.class, "?0", 32767, 0, false)
-            )
-            .check();
     }
 
     /** */

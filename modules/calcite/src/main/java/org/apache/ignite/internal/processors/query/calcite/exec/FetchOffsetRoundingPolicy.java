@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.adapter.enumerable;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.math.BigDecimal;
 
 /** Defines how enumerable FETCH and OFFSET values are rounded. */
-// TODO https://issues.apache.org/jira/browse/CALCITE-7624
-//  Check and remove after update to Calcite 1.43.
 public interface FetchOffsetRoundingPolicy {
     /** Default policy that preserves the value produced by validation or parameter binding. */
     FetchOffsetRoundingPolicy NONE = value -> value;
