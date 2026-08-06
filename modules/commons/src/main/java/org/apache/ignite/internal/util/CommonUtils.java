@@ -268,7 +268,7 @@ public abstract class CommonUtils {
         Class<?> geomCls = null;
 
         try {
-            geomCls = Class.forName("");
+            geomCls = Class.forName("org.locationtech.jts.geom.Geometry");
         }
         catch (ClassNotFoundException ignore) {
             // Ignore.
