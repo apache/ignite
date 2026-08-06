@@ -39,7 +39,7 @@ public class DynamicParametersPlannerTest extends AbstractPlannerTest {
         assertPlan(builder.params(Long.MAX_VALUE, -1), rel -> true);
 
         assertThrows(builder.params("a"), IgniteException.class,
-            "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <VARCHAR>");
+            "Incorrect type of a dynamic parameter. Expected <DECIMAL> but got <VARCHAR>");
 
         BigInteger moreThanMaxLong = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
 
@@ -50,7 +50,7 @@ public class DynamicParametersPlannerTest extends AbstractPlannerTest {
             "Illegal value of fetch / limit");
 
         assertThrows(builder.params((Object)null), IgniteException.class,
-            "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
+            "Incorrect type of a dynamic parameter. Expected <DECIMAL> but got <null>");
 
         // OFFSET.
         builder.query("SELECT * FROM t1 OFFSET ?");
@@ -62,7 +62,7 @@ public class DynamicParametersPlannerTest extends AbstractPlannerTest {
             "Illegal value of offset");
 
         assertThrows(builder.params((Object)null), IgniteException.class,
-            "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
+            "Incorrect type of a dynamic parameter. Expected <DECIMAL> but got <null>");
 
         // OFFSET Alternate syntax.
         builder.query("SELECT * FROM t1 OFFSET ? ROWS");
@@ -74,7 +74,7 @@ public class DynamicParametersPlannerTest extends AbstractPlannerTest {
             "Illegal value of offset");
 
         assertThrows(builder.params((Object)null), IgniteException.class,
-            "Incorrect type of a dynamic parameter. Expected <BIGINT> but got <null>");
+            "Incorrect type of a dynamic parameter. Expected <DECIMAL> but got <null>");
 
         // Expression.
         builder.query("SELECT * FROM TEST_REPL OFFSET 2+? ROWS");
