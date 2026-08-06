@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;

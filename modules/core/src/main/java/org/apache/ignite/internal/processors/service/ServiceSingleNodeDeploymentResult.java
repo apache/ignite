@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
