@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -197,7 +198,10 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            MessageMarshalling.unmarshal(msg, ((IgniteEx)spi.ignite()).context());
+            // A deferred-unmarshal message is left as it arrived: reading it here would run user-class loading, and
+            // whatever else its owner does, on the thread that reads the ring.
+            if (!(msg instanceof DeferredUnmarshalMessage))
+                MessageMarshalling.unmarshal(msg, ((IgniteEx)spi.ignite()).context());
 
             return (T)msg;
         }

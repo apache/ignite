@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
@@ -139,6 +140,10 @@ public class DiscoveryMessageParser {
                 msgBuf.compact();
         }
         while (!finished);
+
+        // A deferred-unmarshal message is left as it arrived, for its owner to read where the work it takes is allowed.
+        if (msg instanceof DeferredUnmarshalMessage)
+            return (T)msg;
 
         try {
             MessageMarshalling.unmarshal(msg, kctx);
