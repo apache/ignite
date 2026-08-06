@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import java.util.HashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
@@ -81,7 +82,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
      * @return Marshaller.
      */
     private OptimizedMarshaller marshaller() {
-        U.clearClassCache();
+        ClassLoaderUtils.clearClassCache();
 
         OptimizedMarshaller marsh = Marshallers.optimized();
 

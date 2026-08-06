@@ -22,10 +22,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,14 +35,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.copySafe;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.downcast;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.normalizeValueType;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.upcast;
 
 /**
  * Simple implementation of {@link SecurityPermissionSet} interface.
  * Provides convenient way to specify permission set in the XML configuration.
  */
-public class SecurityBasicPermissionSet implements SecurityPermissionSet {
+public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMarshallingMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -64,7 +70,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** System permissions. */
     @GridToStringInclude
     @Order(3)
-    Collection<SecurityPermission> sysPermissions;
+    @Nullable Collection<SecurityPermission> sysPermissions;
 
     /** Default allow all. */
     @Order(4)
@@ -75,10 +81,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param cachePermissions Cache permissions.
      */
-    public void setCachePermissions(Map<String, Collection<SecurityPermission>> cachePermissions) {
+    public void setCachePermissions(Map<String, EnumSet<SecurityPermission>> cachePermissions) {
         A.notNull(cachePermissions, "cachePermissions");
 
-        this.cachePermissions = cachePermissions;
+        this.cachePermissions = normalizeValueType(upcast(cachePermissions));
     }
 
     /**
@@ -86,10 +92,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param taskPermissions Task permissions.
      */
-    public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPermissions) {
+    public void setTaskPermissions(Map<String, EnumSet<SecurityPermission>> taskPermissions) {
         A.notNull(taskPermissions, "taskPermissions");
 
-        this.taskPermissions = taskPermissions;
+        this.taskPermissions = normalizeValueType(upcast(taskPermissions));
     }
 
     /**
@@ -97,10 +103,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param srvcPermissions Service permissions.
      */
-    public void setServicePermissions(Map<String, Collection<SecurityPermission>> srvcPermissions) {
-        A.notNull(taskPermissions, "servicePermissions");
+    public void setServicePermissions(Map<String, EnumSet<SecurityPermission>> srvcPermissions) {
+        A.notNull(srvcPermissions, "servicePermissions");
 
-        this.srvcPermissions = srvcPermissions;
+        this.srvcPermissions = normalizeValueType(upcast(srvcPermissions));
     }
 
     /**
@@ -108,7 +114,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param sysPermissions System permissions.
      */
-    public void setSystemPermissions(Collection<SecurityPermission> sysPermissions) {
+    public void setSystemPermissions(@Nullable EnumSet<SecurityPermission> sysPermissions) {
         this.sysPermissions = sysPermissions;
     }
 
@@ -122,23 +128,23 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
-        return cachePermissions;
+    @Override public Map<String, EnumSet<SecurityPermission>> cachePermissions() {
+        return downcast(cachePermissions);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
-        return taskPermissions;
+    @Override public Map<String, EnumSet<SecurityPermission>> taskPermissions() {
+        return downcast(taskPermissions);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
-        return srvcPermissions;
+    @Override public Map<String, EnumSet<SecurityPermission>> servicePermissions() {
+        return downcast(srvcPermissions);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
-        return sysPermissions;
+    @Nullable @Override public EnumSet<SecurityPermission> systemPermissions() {
+        return (EnumSet<SecurityPermission>)sysPermissions;
     }
 
     /** {@inheritDoc} */
@@ -175,9 +181,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         return res;
     }
 
-    /**
-     * @param out Out.
-     */
+    /** */
     private void writeObject(ObjectOutputStream out) throws IOException {
         out.defaultWriteObject();
 
@@ -185,9 +189,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
             U.writeMap(out, srvcPermissions);
     }
 
-    /**
-     * @param in In.
-     */
+    /** */
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
 
@@ -201,10 +203,32 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
             else
                 srvcPermissions = Collections.emptyMap();
         }
+
+        normalize();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SecurityBasicPermissionSet.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void selfMarshal() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void selfUnmarshal() {
+        // Message framework uses ArrayList for ordinary collections,
+        // so we need to convert it to appropriate form explicitly.
+        normalize();
+    }
+
+    /** */
+    private void normalize() {
+        cachePermissions = normalizeValueType(cachePermissions);
+        taskPermissions = normalizeValueType(taskPermissions);
+        srvcPermissions = normalizeValueType(srvcPermissions);
+        sysPermissions = sysPermissions == null ? null : copySafe(sysPermissions);
     }
 }

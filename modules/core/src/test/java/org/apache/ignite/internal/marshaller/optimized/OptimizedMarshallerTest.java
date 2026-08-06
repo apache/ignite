@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.GridMarshallerTestInheritedBean;
 import org.apache.ignite.marshaller.Marshaller;
@@ -52,7 +53,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      * @return Marshaller.
      */
     private OptimizedMarshaller marshaller() {
-        U.clearClassCache();
+        ClassLoaderUtils.clearClassCache();
 
         OptimizedMarshaller marsh = Marshallers.optimized();
 

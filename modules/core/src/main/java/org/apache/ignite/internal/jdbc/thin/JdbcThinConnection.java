@@ -85,6 +85,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -2483,7 +2484,7 @@ public class JdbcThinConnection implements Connection {
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 
-            return U.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr, null);
+            return ClassLoaderUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr);
         }
 
         /** {@inheritDoc} */

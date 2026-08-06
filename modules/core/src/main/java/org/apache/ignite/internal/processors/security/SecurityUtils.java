@@ -29,13 +29,14 @@ import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -132,14 +133,49 @@ public class SecurityUtils {
      * @return Allow all service permissions.
      */
     public static Map<String, Collection<SecurityPermission>> compatibleServicePermissions() {
-        Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
+        Map<String, EnumSet<SecurityPermission>> srvcPerms = new HashMap<>();
 
-        srvcPerms.put("*", Arrays.asList(
+        srvcPerms.put("*", EnumSet.of(
             SecurityPermission.SERVICE_CANCEL,
             SecurityPermission.SERVICE_DEPLOY,
             SecurityPermission.SERVICE_INVOKE));
 
-        return srvcPerms;
+        return upcast(srvcPerms);
+    }
+
+    /** */
+    @SuppressWarnings("rawtypes")
+    public static Map<String, Collection<SecurityPermission>> upcast(Map<String, EnumSet<SecurityPermission>> map) {
+        return (Map<String, Collection<SecurityPermission>>)(Map)map;
+    }
+
+    /** */
+    @SuppressWarnings("rawtypes")
+    public static Map<String, EnumSet<SecurityPermission>> downcast(Map<String, Collection<SecurityPermission>> map) {
+        return (Map<String, EnumSet<SecurityPermission>>)(Map)map;
+    }
+
+    /**
+     * @param permissionsMap Permissions map.
+     * @return Map with enum sets of security permissions.
+     */
+    public static Map<String, Collection<SecurityPermission>> normalizeValueType(
+        Map<String, Collection<SecurityPermission>> permissionsMap
+    ) {
+        return permissionsMap.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> copySafe(e.getValue())));
+    }
+
+    /** */
+    public static EnumSet<SecurityPermission> copySafe(Collection<SecurityPermission> col) {
+        if (col instanceof EnumSet<SecurityPermission> enumSet)
+            return enumSet;
+
+        // Enum set does not allow to copy empty collections, so we check it explicitly.
+        if (F.isEmpty(col))
+            return EnumSet.noneOf(SecurityPermission.class);
+
+        return EnumSet.copyOf(col);
     }
 
     /**
@@ -366,7 +402,7 @@ public class SecurityUtils {
     }
 
     /** */
-    private static void authorizeAll(IgniteSecurity security, Map<String, Collection<SecurityPermission>> permissions) {
+    private static void authorizeAll(IgniteSecurity security, Map<String, EnumSet<SecurityPermission>> permissions) {
         if (F.isEmpty(permissions))
             return;
 
