@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
-import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.StripedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -34,9 +33,9 @@ import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
+import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+
+/** */
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
@@ -44,7 +43,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** */
     @Order(1)
-    GridTopicMessage resTopicMsg;
+    IgniteUuid resTopicId;
 
     /** Cache name. */
     @Order(2)
@@ -104,16 +103,14 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(15)
     int partId;
 
-    /**
-     * Empty constructor.
-     */
+    /** Empty constructor. */
     public DataStreamerRequest() {
         // No-op.
     }
 
     /**
      * @param reqId Request ID.
-     * @param resTopic Response topic.
+     * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
      * @param updaterBytes Cache receiver.
      * @param entries Entries to put.
@@ -131,7 +128,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      */
     public DataStreamerRequest(
         long reqId,
-        Object resTopic,
+        IgniteUuid resTopicId,
         @Nullable String cacheName,
         byte[] updaterBytes,
         Collection<DataStreamerEntry> entries,
@@ -150,7 +147,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         assert topVer != null;
 
         this.reqId = reqId;
-        resTopicMsg = new GridTopicMessage(resTopic);
+        this.resTopicId = resTopicId;
         this.cacheName = cacheName;
         this.updaterBytes = updaterBytes;
         this.entries = entries;
@@ -167,107 +164,77 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.partId = partId;
     }
 
-    /**
-     * @return Request ID.
-     */
+    /** @return Request ID. */
     long requestId() {
         return reqId;
     }
 
-    /**
-     * @return Response topic.
-     */
+    /** @return Response topic. */
     Object responseTopic() {
-        return GridTopicMessage.topic(resTopicMsg);
+        return TOPIC_DATASTREAM.topic(resTopicId);
     }
 
-    /**
-     * @return Cache name.
-     */
+    /** @return Cache name. */
     String cacheName() {
         return cacheName;
     }
 
-    /**
-     * @return Updater.
-     */
+    /** @return Updater. */
     byte[] updaterBytes() {
         return updaterBytes;
     }
 
-    /**
-     * @return Entries to update.
-     */
+    /** @return Entries to update. */
     Collection<DataStreamerEntry> entries() {
         return entries;
     }
 
-    /**
-     * @return {@code True} to ignore ownership.
-     */
+    /** @return {@code True} to ignore ownership. */
     boolean ignoreDeploymentOwnership() {
         return ignoreDepOwnership;
     }
 
-    /**
-     * @return Skip store flag.
-     */
+    /** @return Skip store flag. */
     boolean skipStore() {
         return skipStore;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
+    /** @return Keep binary flag. */
     boolean keepBinary() {
         return keepBinary;
     }
 
-    /**
-     * @return Deployment mode.
-     */
+    /** @return Deployment mode. */
     DeploymentMode deploymentMode() {
         return depMode;
     }
 
-    /**
-     * @return Sample class name.
-     */
+    /** @return Sample class name. */
     String sampleClassName() {
         return sampleClsName;
     }
 
-    /**
-     * @return User version.
-     */
+    /** @return User version. */
     String userVersion() {
         return userVer;
     }
 
-    /**
-     * @return Participants.
-     */
+    /** @return Participants. */
     Map<UUID, IgniteUuid> participants() {
         return ldrParticipants;
     }
 
-    /**
-     * @return Class loader ID.
-     */
+    /** @return Class loader ID. */
     IgniteUuid classLoaderId() {
         return clsLdrId;
     }
 
-    /**
-     * @return {@code True} to force local deployment.
-     */
+    /** @return {@code True} to force local deployment. */
     boolean forceLocalDeployment() {
         return forceLocDep;
     }
 
-    /**
-     * @return Topology version.
-     */
+    /** @return Topology version. */
     AffinityTopologyVersion topologyVersion() {
         return topVer;
     }

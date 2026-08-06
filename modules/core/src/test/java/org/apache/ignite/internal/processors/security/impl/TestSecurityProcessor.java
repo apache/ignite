@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -261,17 +262,17 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** */
     private static boolean contains(
-        Map<String, Collection<SecurityPermission>> userPerms,
+        Map<String, EnumSet<SecurityPermission>> userPerms,
         boolean dfltAllowAll,
         String name,
         SecurityPermission perm
     ) {
-        Collection<SecurityPermission> perms = userPerms.get(name);
+        EnumSet<SecurityPermission> perms = userPerms.get(name);
 
         if (perms == null)
             return dfltAllowAll;
 
-        return perms.stream().anyMatch(perm::equals);
+        return perms.contains(perm);
     }
 
     /** */
@@ -279,11 +280,11 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         SecurityPermissionSet userPerms,
         SecurityPermission perm
     ) {
-        Collection<SecurityPermission> sysPerms = userPerms.systemPermissions();
+        EnumSet<SecurityPermission> sysPerms = userPerms.systemPermissions();
 
         if (F.isEmpty(sysPerms))
             return userPerms.defaultAllowAll();
 
-        return sysPerms.stream().anyMatch(perm::equals);
+        return sysPerms.contains(perm);
     }
 }

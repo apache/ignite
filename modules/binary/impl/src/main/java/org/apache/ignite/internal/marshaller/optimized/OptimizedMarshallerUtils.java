@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -301,7 +301,7 @@ class OptimizedMarshallerUtils {
             throw new IOException("Failed to resolve class for ID: " + typeId, e);
         }
 
-        Class cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+        Class cls = ClassLoaderUtils.forName(clsName, ldr);
 
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
