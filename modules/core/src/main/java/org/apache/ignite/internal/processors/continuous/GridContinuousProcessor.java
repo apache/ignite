@@ -59,7 +59,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -987,9 +986,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             hnd.p2pMarshal(ctx);
         }
 
-        // Marshalled here rather than left to the discovery layer: doing it there would marshal the user classes on
-        // the thread that writes the ring.
-        MessageMarshalling.marshal(reqData, ctx, null);
+        reqData.hndBytes = U.marshal(marsh, hnd);
+
+        if (nodeFilter != null)
+            reqData.nodeFilterBytes = U.marshal(marsh, nodeFilter);
 
         if (!immutableDiscoCustomMsg) {
             StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(routineId, reqData, Mode.MUTABLE);
@@ -1347,27 +1347,29 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Reads a start request the discovery layer left untouched. Obtaining the deployment of the node filter and
-     * restoring the handler both take work that must not run on the thread reading the ring.
+     * Restores the objects a start request carries. The serialized form stays on the message: it travels the whole
+     * ring, and a node must pass on what it received rather than a copy of its own making — the handler unpacks its
+     * user objects here and never packs them back.
      *
      * @param msg Message carrying the request.
      * @param sndId Node that started the routine.
      */
     private void unmarshalStartRequest(StartRoutineDiscoveryMessage msg, UUID sndId) throws IgniteCheckedException {
-        MessageMarshalling.unmarshal(msg, ctx);
-
         StartRequestData data = msg.startRequestData();
 
-        GridContinuousHandler hnd = data.handler();
+        data.nodeFilter = U.unmarshal(marsh, data.nodeFilterBytes,
+            ctx.deploy().classLoader(data.depInfo, data.clsName));
 
-        if (hnd != null) {
+        if (data.hndBytes != null) {
+            data.hnd = U.unmarshal(marsh, data.hndBytes, U.resolveClassLoader(ctx.config()));
+
             if (ctx.config().isPeerClassLoadingEnabled())
-                hnd.p2pUnmarshal(sndId, ctx);
+                data.hnd.p2pUnmarshal(sndId, ctx);
 
             if (data.keepBinary) {
-                assert hnd instanceof CacheContinuousQueryHandler : hnd;
+                assert data.hnd instanceof CacheContinuousQueryHandler : data.hnd;
 
-                ((CacheContinuousQueryHandler<?, ?>)hnd).keepBinary(true);
+                ((CacheContinuousQueryHandler<?, ?>)data.hnd).keepBinary(true);
             }
         }
     }
