@@ -205,6 +205,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Communication topic for responses. */
     private final Object topic;
 
+    /** Topic ID for responses. */
+    private final IgniteUuid topicId;
+
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
 
@@ -349,8 +352,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
+        topicId = IgniteUuid.fromUuid(ctx.localNodeId());
+
         // Generate unique topic for this loader.
-        topic = TOPIC_DATASTREAM.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        topic = TOPIC_DATASTREAM.topic(topicId);
 
         ctx.io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -1988,7 +1993,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
-                    topic,
+                    topicId,
                     cacheName,
                     updaterBytes,
                     entries,
