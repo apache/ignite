@@ -122,7 +122,7 @@ public class BulkOperationDeadlockIntegrationTest extends AbstractBasicIntegrati
     }
 
     /** Concurrent updates lock rows produced by an unordered scan without deadlocks. */
-    @Ignore("The deadlock issue for this bulk operation has not been resolved yet.")
+    @Ignore("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
     @Test
     public void testUpdateWithWhereDoesNotDeadlock() {
         runConcurrentBulkOperation(
@@ -139,7 +139,7 @@ public class BulkOperationDeadlockIntegrationTest extends AbstractBasicIntegrati
     }
 
     /** Concurrent putAll operations lock keys in opposite map iteration orders without deadlocks. */
-    @Ignore("The deadlock issue for this bulk operation has not been resolved yet.")
+    @Ignore("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
     @Test
     public void testPutAllWithOppositeKeyOrderDoesNotDeadlock() {
         runConcurrentBulkOperation(
@@ -158,7 +158,7 @@ public class BulkOperationDeadlockIntegrationTest extends AbstractBasicIntegrati
     }
 
     /** Concurrent getAll operations lock keys in opposite set iteration orders without deadlocks. */
-    @Ignore("The deadlock issue for this bulk operation has not been resolved yet.")
+    @Ignore("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
     @Test
     public void testGetAllWithOppositeKeyOrderDoesNotDeadlock() {
         runConcurrentBulkOperation(
