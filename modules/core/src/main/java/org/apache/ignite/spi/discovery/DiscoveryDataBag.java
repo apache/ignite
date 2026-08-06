@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.spi.discovery;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -92,9 +91,7 @@ public class DiscoveryDataBag {
 
         /** {@inheritDoc} */
         @Override @Nullable public <T> T joiningNodeData() {
-            Message dataMsg = joiningNodeData.get(cmpId);
-
-            return SerializableDataBagItemWrapper.unwrapIfNecessary(dataMsg);
+            return (T)joiningNodeData.get(cmpId);
         }
 
         /**
@@ -123,15 +120,12 @@ public class DiscoveryDataBag {
 
         /** {@inheritDoc} */
         @Override @Nullable public <T> T commonData() {
-            if (commonData != null)
-                return SerializableDataBagItemWrapper.unwrapIfNecessary(commonData.get(cmpId));
-
-            return null;
+            return commonData == null ? null : (T)commonData.get(cmpId);
         }
 
         /** {@inheritDoc} */
         @Override public <T> Map<UUID, T> nodeSpecificData() {
-            return F.viewReadOnly(nodeSpecificData, SerializableDataBagItemWrapper::unwrapIfNecessary);
+            return F.viewReadOnly(nodeSpecificData, e -> (T)e);
         }
 
         /**
@@ -250,14 +244,6 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Serializable data.
-     */
-    public void addJoiningNodeData(Integer cmpId, Serializable data) {
-        joiningNodeData.put(cmpId, new SerializableDataBagItemWrapper(data));
-    }
-
-    /**
-     * @param cmpId Component ID.
      * @param data Message data.
      */
     public void addJoiningNodeData(Integer cmpId, Message data) {
@@ -266,26 +252,10 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Serializable data.
-     */
-    public void addGridCommonData(Integer cmpId, Serializable data) {
-        commonData.put(cmpId, new SerializableDataBagItemWrapper(data));
-    }
-
-    /**
-     * @param cmpId Component ID.
      * @param data Message data.
      */
     public void addGridCommonData(Integer cmpId, Message data) {
         commonData.put(cmpId, data);
-    }
-
-    /**
-     * @param cmpId Component ID.
-     * @param data Serializable data.
-     */
-    public void addNodeSpecificData(Integer cmpId, Serializable data) {
-        addNodeSpecificData(cmpId, new SerializableDataBagItemWrapper(data));
     }
 
     /**
