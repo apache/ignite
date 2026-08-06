@@ -26,6 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.DeploymentAware;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -412,6 +413,21 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @return The deployment the classes are loaded with.
      * @throws IgniteDeploymentCheckedException If the deployment is gone or peer class loading is off.
      */
+    /**
+     * Resolves the class loader the classes of a message must be read with.
+     *
+     * @param msg Message carrying its own deployment.
+     * @return Class loader of the carried deployment, or the local one if the message carries none.
+     * @throws IgniteDeploymentCheckedException If the deployment cannot be obtained.
+     */
+    public ClassLoader classLoader(DeploymentAware msg) throws IgniteDeploymentCheckedException {
+        if (msg.deploymentInfo() == null)
+            return U.resolveClassLoader(ctx.config());
+
+        return U.resolveClassLoader(globalDeployment(msg.deploymentInfo(), msg.deployedClassName()).classLoader(),
+            ctx.config());
+    }
+
     public GridDeployment globalDeployment(GridDeploymentInfo depInfo, String clsName)
         throws IgniteDeploymentCheckedException {
         GridDeployment dep = globalDeployment(depInfo, clsName, clsName);

@@ -20,9 +20,13 @@ package org.apache.ignite.internal.processors.continuous;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
+import org.apache.ignite.internal.DeploymentAware;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,9 +37,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Start request data.
  */
-public class StartRequestData implements Message {
+public class StartRequestData implements DeploymentAware, DeferredUnmarshalMessage {
     /** Node filter. */
-    private IgnitePredicate<ClusterNode> nodeFilter;
+    @Marshalled("nodeFilterBytes")
+    IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Serialized node filter. */
     @Order(0)
@@ -169,6 +174,16 @@ public class StartRequestData implements Message {
         return S.toString(StartRequestData.class, this);
     }
 
+    /** {@inheritDoc} */
+    @Override public GridDeploymentInfo deploymentInfo() {
+        return depInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String deployedClassName() {
+        return clsName;
+    }
+
     /** */
     public void marshal(GridKernalContext ctx) throws IgniteCheckedException {
         if (hnd != null) {
@@ -180,24 +195,13 @@ public class StartRequestData implements Message {
             hndBytes = U.marshal(ctx.marshaller(), hnd);
         }
 
-        if (nodeFilter != null)
-            nodeFilterBytes = U.marshal(ctx.marshaller(), nodeFilter);
+        MessageMarshalling.marshal(this, ctx, null);
     }
 
     /** */
     public void unmarshal(GridKernalContext ctx, UUID sndId) throws IgniteCheckedException {
-        if (ctx.config().isPeerClassLoadingEnabled() && clsName != null) {
-            GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName);
-
-            nodeFilter = U.unmarshal(ctx.marshaller(),
-                nodeFilterBytes,
-                U.resolveClassLoader(dep.classLoader(), ctx.config()));
-        }
-        else {
-            nodeFilter = U.unmarshal(ctx.marshaller(),
-                nodeFilterBytes,
-                U.resolveClassLoader(ctx.config()));
-        }
+        // No class loader: the node filter is read with the deployment this message carries.
+        MessageMarshalling.unmarshal(this, ctx, null, null);
 
         if (hndBytes != null) {
             hnd = U.unmarshal(ctx.marshaller(), hndBytes, U.resolveClassLoader(ctx.config()));

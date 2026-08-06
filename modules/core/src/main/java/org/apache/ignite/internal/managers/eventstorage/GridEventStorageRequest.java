@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.eventstorage;
 
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
+import org.apache.ignite.internal.DeploymentAware;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
@@ -31,7 +32,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 
 /** Remote event query. The filter is a user class, hence the deferred unmarshalling. */
 @UseBinaryMarshaller
-public class GridEventStorageRequest implements DeferredUnmarshalMessage {
+public class GridEventStorageRequest implements DeploymentAware, DeferredUnmarshalMessage {
     /** */
     @Order(0)
     IgniteUuid resTopicId;
@@ -80,9 +81,14 @@ public class GridEventStorageRequest implements DeferredUnmarshalMessage {
         return filter;
     }
 
-    /** @return Deployment of the filter classes. */
-    GridDeploymentInfo deploymentInfo() {
+    /** {@inheritDoc} */
+    @Override public GridDeploymentInfo deploymentInfo() {
         return depInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String deployedClassName() {
+        return filterClsName;
     }
 
     /** @return Filter class name. */

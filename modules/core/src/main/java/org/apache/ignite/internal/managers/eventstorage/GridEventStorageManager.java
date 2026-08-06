@@ -1242,11 +1242,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    GridDeployment dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.filterClassName());
-
-                    MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    // No class loader: the message carries its own deployment, see GridEventStorageRequest.
+                    MessageMarshalling.unmarshal(req, ctx, null, null);
 
                     filter = (IgnitePredicate<Event>)req.filter();
+
+                    GridDeployment dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.filterClassName());
 
                     // Resource injection.
                     ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()).get1(), filter);
