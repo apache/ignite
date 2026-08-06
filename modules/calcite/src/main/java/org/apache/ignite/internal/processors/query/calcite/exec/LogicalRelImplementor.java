@@ -1084,7 +1084,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         long paramAsLong;
 
         try {
-            BigDecimal val = IgniteMath.convertToBigDecimal((Number) param);
+            BigDecimal val = IgniteMath.convertToBigDecimal((Number)param);
             paramAsLong = IgniteMath.convertToLongExact(fetchOffsetRoundingPlc.round(val));
         }
         catch (RuntimeException ex) {
