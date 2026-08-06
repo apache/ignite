@@ -19,9 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Message that chooses the stripe it is processed in.
- */
+/** Message that chooses the stripe it is processed in. */
 public interface StripedMessage extends Message {
     /** Process in any stripe. */
     public static final int ANY_STRIPE = -1;

@@ -2007,8 +2007,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    (rcvr == ISOLATED_UPDATER) ?
-                        partId : NO_STRIPE);
+                    (rcvr == ISOLATED_UPDATER) ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
