@@ -27,16 +27,10 @@ public class TestDeploymentAwareMessage implements DeploymentAware {
     @Order(0)
     byte[] dataBytes;
 
-    @Marshalled(value = "keptBytes", keepBytes = true)
-    Object kept;
-
     @Order(1)
-    byte[] keptBytes;
-
-    @Order(2)
     GridDeploymentInfoBean depInfo;
 
-    @Order(3)
+    @Order(2)
     String clsName;
 
     @Override public GridDeploymentInfo deploymentInfo() {

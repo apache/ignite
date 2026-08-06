@@ -46,11 +46,4 @@ public @interface Marshalled {
 
     /** Name of the map-values companion wire field; requires {@link #keys()}. */
     String values() default "";
-
-    /**
-     * Keeps the serialized copy once the object is restored, instead of dropping it. Needed when the message is sent
-     * again after being read: a discovery message travels the whole ring, and marshalling a user object on that path
-     * is exactly what the copy is there to avoid.
-     */
-    boolean keepBytes() default false;
 }

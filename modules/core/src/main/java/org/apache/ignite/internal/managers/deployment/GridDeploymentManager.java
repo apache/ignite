@@ -412,11 +412,24 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @throws IgniteDeploymentCheckedException If the deployment cannot be obtained.
      */
     public ClassLoader classLoader(DeploymentAware msg) throws IgniteDeploymentCheckedException {
-        if (msg.deploymentInfo() == null)
+        return classLoader(msg.deploymentInfo(), msg.deployedClassName());
+    }
+
+    /**
+     * Resolves the class loader classes described by {@code depInfo} must be read with. Blocks when the deployment has
+     * to be requested from its owner, so it must not be called from a socket-reading thread.
+     *
+     * @param depInfo Deployment of the classes, or {@code null} when they carry none.
+     * @param clsName Name of a class the deployment must be able to load.
+     * @return Class loader of the deployment, or the local one when there is no deployment.
+     * @throws IgniteDeploymentCheckedException If the deployment cannot be obtained.
+     */
+    public ClassLoader classLoader(@Nullable GridDeploymentInfo depInfo, String clsName)
+        throws IgniteDeploymentCheckedException {
+        if (depInfo == null)
             return U.resolveClassLoader(ctx.config());
 
-        return U.resolveClassLoader(globalDeployment(msg.deploymentInfo(), msg.deployedClassName()).classLoader(),
-            ctx.config());
+        return U.resolveClassLoader(globalDeployment(depInfo, clsName).classLoader(), ctx.config());
     }
 
     /**

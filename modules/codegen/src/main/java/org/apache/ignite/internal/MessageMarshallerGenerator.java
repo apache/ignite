@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -454,7 +455,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** Generates {@code U.marshal} calls for all {@code @Marshalled} fields in marshal. */
     private void appendMarshalledPrepare(List<String> body) {
-        forEachMarshalled((bytesAcc, objAcc, ann) -> {
+        forEachMarshalled((bytesAcc, objAcc) -> {
             List<String> code = new ArrayList<>();
 
             code.add(indentedLine("if (%s != null && %s == null)", objAcc, bytesAcc));
@@ -471,7 +472,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** Generates {@code U.unmarshal} calls for all {@code @Marshalled} fields in the cache-aware unmarshal. */
     private void appendMarshalledFinish(List<String> body) {
-        forEachMarshalled((bytesAcc, objAcc, ann) -> {
+        forEachMarshalled((bytesAcc, objAcc) -> {
             List<String> code = new ArrayList<>();
 
             code.add(indentedLine("if (%s != null) {", bytesAcc));
@@ -479,13 +480,11 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             indent++;
 
             code.add(indentedLine("%s = U.unmarshal(marshaller, %s, clsLdr);", objAcc, bytesAcc));
+            code.add(EMPTY);
 
             // Drop the serialized cache once the object is restored: keeping both the deserialized value and its bytes
             // on every received message doubles retained memory (e.g. topology history nodes) and can exhaust the heap.
-            if (!ann.keepBytes()) {
-                code.add(EMPTY);
-                code.add(indentedLine("%s = null;", bytesAcc));
-            }
+            code.add(indentedLine("%s = null;", bytesAcc));
 
             indent--;
 
@@ -1204,27 +1203,15 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Iterates all {@code @Marshalled} fields and applies {@code codeGen(bytesAccessor, objAccessor)} to each. */
-    private void forEachMarshalled(MarshalledCode codeGen, List<String> body) {
+    private void forEachMarshalled(BiFunction<String, String, List<String>> codeGen, List<String> body) {
         for (VariableElement field : enclosed.values()) {
             if (kinds.get(field) != MarshalledKind.BLOB)
                 continue;
 
             Marshalled ann = field.getAnnotation(Marshalled.class);
 
-            appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName(), ann));
+            appendBlock(body, codeGen.apply("msg." + ann.value(), "msg." + field.getSimpleName()));
         }
-    }
-
-    /** Generates the code handling a single {@code @Marshalled} field. */
-    @FunctionalInterface
-    private interface MarshalledCode {
-        /**
-         * @param bytesAcc Accessor of the companion field holding the serialized form.
-         * @param objAcc Accessor of the annotated field.
-         * @param ann Annotation of the field.
-         * @return Generated lines.
-         */
-        public List<String> apply(String bytesAcc, String objAcc, Marshalled ann);
     }
 
     /** Returns the element for {@code t}; for a type variable, uses its upper bound. */

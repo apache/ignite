@@ -47,9 +47,6 @@ public final class TestDeploymentAwareMessageMarshaller implements MessageMarsha
         if (msg.data != null && msg.dataBytes == null)
             msg.dataBytes = U.marshal(marshaller, msg.data);
 
-        if (msg.kept != null && msg.keptBytes == null)
-            msg.keptBytes = U.marshal(marshaller, msg.kept);
-
         if (msg.depInfo != null)
             MessageMarshalling.marshal(msg.depInfo, kctx, ctx);
     }
@@ -68,10 +65,6 @@ public final class TestDeploymentAwareMessageMarshaller implements MessageMarsha
             msg.data = U.unmarshal(marshaller, msg.dataBytes, clsLdr);
 
             msg.dataBytes = null;
-        }
-
-        if (msg.keptBytes != null) {
-            msg.kept = U.unmarshal(marshaller, msg.keptBytes, clsLdr);
         }
     }
 }

@@ -503,7 +503,7 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("needs a cache object context to unmarshal");
     }
 
-    /** A message carrying its own deployment resolves the class loader; a field may ask to keep its serialized copy. */
+    /** A message carrying its own deployment has the class loader resolved from it. */
     @Test
     public void testDeploymentAwareMessage() {
         Compilation compilation = compile("TestDeploymentAwareMessage.java");

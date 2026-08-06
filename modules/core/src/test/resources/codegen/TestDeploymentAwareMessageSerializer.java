@@ -45,18 +45,12 @@ public final class TestDeploymentAwareMessageSerializer implements MessageSerial
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray(msg.keptBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
                 if (!writer.writeMessage(msg.depInfo))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeString(msg.clsName))
                     return false;
 
@@ -78,14 +72,6 @@ public final class TestDeploymentAwareMessageSerializer implements MessageSerial
                 reader.incrementState();
 
             case 1:
-                msg.keptBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
                 msg.depInfo = reader.readMessage();
 
                 if (!reader.isLastRead())
@@ -93,7 +79,7 @@ public final class TestDeploymentAwareMessageSerializer implements MessageSerial
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 msg.clsName = reader.readString();
 
                 if (!reader.isLastRead())

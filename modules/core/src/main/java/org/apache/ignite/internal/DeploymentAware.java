@@ -24,6 +24,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Implemented by messages that carry classes deployed from another node. The deployment lets the generated marshaller
  * resolve the class loader those classes are read with, the same way {@code CacheIdAware} lets it resolve the cache
  * object context.
+ * <p>
+ * Resolving may have to request the deployment from its owner and block, so a message stating this must be unmarshalled
+ * where blocking is allowed: not from a socket-reading thread. A message that cannot promise that keeps its deployment
+ * as a plain field and asks {@code GridDeploymentManager} for the loader itself, as {@code StartRequestData} does.
  *
  * @see MarshallableMessage
  */
