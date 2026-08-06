@@ -35,9 +35,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
     /** */
     private static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
 
-    /** Special value to highlights that all row were received and we are not waiting any more. */
-    protected static final int NOT_WAITING = -1;
-
     /** */
     protected final Comparator<Row> comp;
 

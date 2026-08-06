@@ -44,7 +44,7 @@ import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
 import org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageRequest;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
@@ -228,6 +228,9 @@ import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMes
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageClusterNodeData;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageJoiningNodeData;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
 import org.apache.ignite.internal.processors.plugin.PluginsDataBagItem;
@@ -328,7 +331,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProvider {
+public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = 11500;
 
@@ -745,6 +748,9 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(BaselineTopologyHistory.class);
         register(BaselineTopologyHistoryItem.class);
         register(DiscoveryDataClusterState.class);
+        register(DistributedMetaStorageHistoryItemMessage.class);
+        register(DistributedMetaStorageJoiningNodeData.class);
+        register(DistributedMetaStorageClusterNodeData.class);
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
