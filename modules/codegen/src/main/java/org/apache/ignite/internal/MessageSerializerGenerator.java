@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private static final String MESSAGE_COLLECTION_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageCollectionType";
+
+    /** */
+    private static final String COLLECTION_IMPL_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.CollectionImplementationType";
 
     /** */
     private static final String IGNITE_UUID_CLS = "org.apache.ignite.lang.IgniteUuid";
@@ -552,9 +556,17 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             assert typeArgs.size() == 1 : type.toString();
 
-            return "new MessageCollectionType(" +
-                messageCollectionItemTypeDescriptor(typeArgs.get(0), field) + ", " +
-                assignableFrom(erasedType(type), type(Set.class.getName())) + ")";
+            TypeMirror itemType = typeArgs.get(0);
+
+            if (EnumSet.class.getName().equals(qualifiedClassName(type)) && !enumType(env, itemType))
+                throw new IllegalArgumentException("Unexpected Enum Set element type [itemType=" + itemType + ", colType=" + type + ']');
+
+            imports.add(COLLECTION_IMPL_TYPE_CLS);
+
+            String implType = resolveCollectionImplementationType(type);
+
+            return "new MessageCollectionType(" + messageCollectionItemTypeDescriptor(typeArgs.get(0), field) +
+                ", CollectionImplementationType." + implType + ")";
         }
         else if (enumType(env, type)) {
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageEnumType");
@@ -566,13 +578,28 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             String decoder = custMapper ? prefix + "Mapper::decode" :
                 "b -> DefaultEnumMapper.INSTANCE.decode(" + prefix + "Vals, b)";
 
-            return String.format("new MessageEnumType<>(%s, %s)", encoder, decoder);
+            return String.format("new MessageEnumType<>(%s.class, %s, %s)", simpleClassName(type), encoder, decoder);
         }
         else {
             imports.add(MESSAGE_ITEM_TYPE_CLS);
 
             return "new MessageItemType(MessageCollectionItemType." + messageCollectionItemType(type) + ")";
         }
+    }
+
+    /**
+     * @param type Declared collection type.
+     * @return Name of the {@code CollectionImplementationType} that will be used to create collection instance.
+     */
+    private String resolveCollectionImplementationType(TypeMirror type) {
+        TypeMirror declType = erasedType(type);
+
+        if (EnumSet.class.getName().equals(qualifiedClassName(declType)))
+            return "ENUM_SET";
+        else if (assignableFrom(declType, type(Set.class.getName())))
+            return "HASH_SET";
+        else
+            return "ARRAY_LIST";
     }
 
     /**

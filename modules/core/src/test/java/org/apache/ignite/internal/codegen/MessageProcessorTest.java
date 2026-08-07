@@ -111,6 +111,32 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testEnumSetMessage() {
+        Compilation compilation = compile("TestEnumSetMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        // No marshaller: enum fields need no marshalling, so its generation is skipped.
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestEnumSetMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestEnumSetMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testEnumSetOfTypeVariableFailed() {
+        Compilation compilation = compile("WrongEnumSetMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining(
+            "Unexpected Enum Set element type [itemType=E, colType=java.util.EnumSet<E>");
+    }
+
+    /** */
+    @Test
     public void testMapMessage() {
         Compilation compilation = compile("TestMapMessage.java");
 

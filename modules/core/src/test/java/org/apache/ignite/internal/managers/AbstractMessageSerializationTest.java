@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.Integer.MAX_VALUE;
+import static org.apache.ignite.plugin.extensions.communication.CollectionImplementationType.HASH_SET;
 import static org.junit.Assert.assertEquals;
 
 /** */
@@ -305,7 +306,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
-            return writeField(type.set() ? Set.class : Collection.class);
+            return writeField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
         }
 
         /** {@inheritDoc} */
@@ -572,7 +573,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
-            readField(type.set() ? Set.class : Collection.class);
+            readField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
 
             return null;
         }

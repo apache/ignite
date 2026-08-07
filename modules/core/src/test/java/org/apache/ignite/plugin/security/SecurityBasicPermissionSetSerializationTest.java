@@ -26,9 +26,7 @@ import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -74,7 +72,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
 
     /** */
     @Test
-    public void testWithNullAndEmptyPermissions() throws Exception {
+    public void testWitEmptyPermissions() throws Exception {
         SecurityBasicPermissionSet src = new SecurityBasicPermissionSet();
         src.setDefaultAllowAll(true);
 
@@ -83,8 +81,8 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         src.setSystemPermissions(emptyPerms);
 
         HashMap<String, EnumSet<SecurityPermission>> taskPerms = new HashMap<>();
-        taskPerms.put("task1", null);
-        taskPerms.put("task2", emptyPerms);
+        taskPerms.put("task1", emptyPerms);
+        taskPerms.put("task2", EnumSet.of(TASK_EXECUTE));
 
         src.setTaskPermissions(taskPerms);
 
@@ -115,8 +113,6 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
 
         GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
-        MessageMarshalling.marshal(msg, kctx, null);
-
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
@@ -132,8 +128,6 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
-
-        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
 
         return res;
     }

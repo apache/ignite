@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.TestMarshalledObjectsMessage;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -32,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public final class TestMarshalledObjectsMessageSerializer implements MessageSerializer<TestMarshalledObjectsMessage> {
     /** */
-    private static final MessageCollectionType dataBytesCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), false);
+    private static final MessageCollectionType dataBytesCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), CollectionImplementationType.ARRAY_LIST);
 
     /** */
     @Override public final boolean writeTo(TestMarshalledObjectsMessage msg, MessageWriter writer) {

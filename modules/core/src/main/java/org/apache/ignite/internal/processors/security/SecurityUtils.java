@@ -132,7 +132,7 @@ public class SecurityUtils {
     /**
      * @return Allow all service permissions.
      */
-    public static Map<String, Collection<SecurityPermission>> compatibleServicePermissions() {
+    public static Map<String, EnumSet<SecurityPermission>> compatibleServicePermissions() {
         Map<String, EnumSet<SecurityPermission>> srvcPerms = new HashMap<>();
 
         srvcPerms.put("*", EnumSet.of(
@@ -140,34 +140,22 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_DEPLOY,
             SecurityPermission.SERVICE_INVOKE));
 
-        return upcast(srvcPerms);
+        return srvcPerms;
     }
 
     /** */
-    @SuppressWarnings("rawtypes")
-    public static Map<String, Collection<SecurityPermission>> upcast(Map<String, EnumSet<SecurityPermission>> map) {
-        return (Map<String, Collection<SecurityPermission>>)(Map)map;
-    }
-
-    /** */
-    @SuppressWarnings("rawtypes")
-    public static Map<String, EnumSet<SecurityPermission>> downcast(Map<String, Collection<SecurityPermission>> map) {
-        return (Map<String, EnumSet<SecurityPermission>>)(Map)map;
-    }
-
-    /**
-     * @param permissionsMap Permissions map.
-     * @return Map with enum sets of security permissions.
-     */
-    public static Map<String, Collection<SecurityPermission>> normalizeValueType(
-        Map<String, Collection<SecurityPermission>> permissionsMap
+    public static Map<String, EnumSet<SecurityPermission>> normalizeResourcePermissions(
+        Map<String, ? extends Collection<SecurityPermission>> rsrcPerms
     ) {
-        return permissionsMap.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> copySafe(e.getValue())));
+        if (rsrcPerms == null)
+            return new HashMap<>();
+
+        return rsrcPerms.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> toEnumSet(e.getValue())));
     }
 
     /** */
-    public static EnumSet<SecurityPermission> copySafe(Collection<SecurityPermission> col) {
+    public static EnumSet<SecurityPermission> toEnumSet(Collection<SecurityPermission> col) {
         if (col instanceof EnumSet<SecurityPermission> enumSet)
             return enumSet;
 
