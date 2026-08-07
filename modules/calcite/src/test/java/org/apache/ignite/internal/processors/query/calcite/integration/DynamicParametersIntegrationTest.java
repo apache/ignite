@@ -154,10 +154,6 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1D).returns(0).check();
         assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1F).returns(0).check();
         assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1L).returns(0).check();
-        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.4).returns(0).check();
-        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.5).returns(0).returns(1).check();
-        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.6).returns(0).returns(1).check();
-
         assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(new BigDecimal(1)).returns(0).check();
 
         assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
@@ -168,6 +164,37 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
         assertQuery("SELECT id FROM person WHERE salary<? and id>?").withParams(15, 1)
             .returns(3).returns(4).check();
+    }
+
+    /** */
+    @Test
+    public void testFractionalLimitOffset() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.4).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.6).returns(0).check();
+
+        assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
+            .withParams(BigDecimal.valueOf(1.3))
+            .returns(0)
+            .check();
+        assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
+            .withParams(BigDecimal.valueOf(1.6))
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
+            .withParams(BigDecimal.valueOf(2.3))
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
+        assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
+            .withParams(BigDecimal.valueOf(2.3))
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
     }
 
     /** Tests the same query with different type of parameters to cover case with check right plans cache work. **/

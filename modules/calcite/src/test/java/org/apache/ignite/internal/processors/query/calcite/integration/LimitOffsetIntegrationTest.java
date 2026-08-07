@@ -18,20 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.sql.validate.SqlValidatorException;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.FetchOffsetRoundingPolicy;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -60,7 +54,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // Keep caches between tests, but do not leak an active transaction into the next test.
+        // Keep caches between tests but do not leak an active transaction into the next test.
         clearTransaction();
     }
 
@@ -141,47 +135,13 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         fillCache(cacheRepl, 4);
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.2").returns(0).check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.5").returns(0).returns(1).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.5").returns(0).check();
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.3 ROWS ONLY").returns(0).check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.6 ROWS ONLY").returns(0).returns(1).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.6 ROWS ONLY").returns(0).check();
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.3 ROWS").returns(2).returns(3).check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.6 ROWS").returns(3).check();
-    }
-
-    /** */
-    @Test
-    public void testFetchOffsetRoundingPolicy() throws Exception {
-        fillCache(cacheRepl, 4);
-
-        FetchOffsetRoundingPolicy floorPlc = value -> value.setScale(0, RoundingMode.FLOOR);
-        FrameworkConfig cfg = Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
-            .context(Contexts.of(floorPlc))
-            .build();
-
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.2").withFrameworkConfig(cfg).returns(0).check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.5").withFrameworkConfig(cfg).returns(0).check();
-
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.3 ROWS ONLY")
-            .withFrameworkConfig(cfg)
-            .returns(0)
-            .check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.6 ROWS ONLY")
-            .withFrameworkConfig(cfg)
-            .returns(0)
-            .check();
-
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.3 ROWS")
-            .withFrameworkConfig(cfg)
-            .returns(2)
-            .returns(3)
-            .check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.6 ROWS")
-            .withFrameworkConfig(cfg)
-            .returns(2)
-            .returns(3)
-            .check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.6 ROWS").returns(2).returns(3).check();
     }
 
     /**

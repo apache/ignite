@@ -244,9 +244,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         validateFetchOffset(select.getFetch(), "fetch / limit");
         validateFetchOffset(select.getOffset(), "offset");
-
-        setFetchOffsetType(select.getFetch());
-        setFetchOffsetType(select.getOffset());
     }
 
     /**
@@ -265,6 +262,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             checkLimitOffset(offsetFetchLimit, n, clauseName);
         }
         else if (n instanceof SqlDynamicParam dynamicParam) {
+            // Dynamic parameters are nullable.
+            RelDataType expectType = typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DECIMAL), true);
+
             if (definedDynParam(dynamicParam)) {
                 Object param = parameters[dynamicParam.getIndex()];
 
@@ -272,29 +272,23 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                     Resources.ExInst<SqlValidatorException> err;
 
                     if (param == null)
-                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.DECIMAL.toString(), "null");
+                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.BIGINT.toString(), "null");
                     else {
                         SqlTypeName paramType = typeFactory().createType(param.getClass()).getSqlTypeName();
-                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.DECIMAL.toString(), paramType.getName());
+                        err = IgniteResource.INSTANCE.incorrectDynamicParameterType(SqlTypeName.BIGINT.toString(), paramType.getName());
                     }
 
                     throw newValidationError(n, err);
                 }
                 else
                     checkLimitOffset((Number)param, n, clauseName);
-            }
-        }
-    }
 
-    /** */
-    // TODO https://issues.apache.org/jira/browse/CALCITE-7624
-    //  Check SqlValidatorImpl#handleOffsetFetch and remove after update to Calcite 1.43.
-    private void setFetchOffsetType(@Nullable SqlNode node) {
-        if (node instanceof SqlDynamicParam) {
-            setValidatedNodeType(
-                node,
-                typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.DECIMAL), true)
-            );
+                setValidatedNodeType(dynamicParam, expectType);
+            }
+            else {
+                expectType = typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.BIGINT), true);
+                setValidatedNodeType(dynamicParam, expectType);
+            }
         }
     }
 

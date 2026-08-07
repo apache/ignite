@@ -127,7 +127,7 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
                     builder -> builder
                         .add(null, null, int.class, "1", typeSys.getDefaultPrecision(SqlTypeName.INTEGER), 0, false),
                     builder -> builder
-                        .add(null, null, BigDecimal.class, "?0", typeSys.getDefaultPrecision(SqlTypeName.DECIMAL), 0, true)
+                        .add(null, null, Long.class, "?0", typeSys.getDefaultPrecision(SqlTypeName.BIGINT), 0, true)
                 )
                 .check();
         }
