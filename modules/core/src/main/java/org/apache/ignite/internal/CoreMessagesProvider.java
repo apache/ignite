@@ -641,6 +641,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(GridTaskResultResponse.class);
         register(JobStealingRequest.class);
         register(SingleNodeMessage.class);
+        register(GridJobSiblingImpl.class);
 
         // [11500 - 11600]:  IO, networking messages.
         msgIdx = NODE_ID_MSG_TYPE;

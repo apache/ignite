@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +27,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
@@ -40,16 +37,15 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 /**
  * This class provides implementation for job sibling.
  */
-public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
+public class GridJobSiblingImpl implements ComputeJobSibling, Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private IgniteUuid jobId;
+    @Order(1)
+    IgniteUuid jobId;
 
     /** */
     private Object taskTopic;
@@ -66,7 +62,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
     /** */
     private transient GridKernalContext ctx;
 
-    /** */
+    /** Empty constructor for serialization purposes. */
     public GridJobSiblingImpl() {
         // No-op.
     }
@@ -171,20 +167,6 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
 
         // Cancel local jobs directly.
         ctx.job().cancelJob(sesId, jobId, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // Don't serialize node ID.
-        U.writeIgniteUuid(out, sesId);
-        U.writeIgniteUuid(out, jobId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // Don't serialize node ID.
-        sesId = U.readIgniteUuid(in);
-        jobId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */
