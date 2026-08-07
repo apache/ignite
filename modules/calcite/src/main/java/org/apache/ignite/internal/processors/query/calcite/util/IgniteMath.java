@@ -268,7 +268,12 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(Number x) {
-        x = round(x);
+        return convertToLongExact(x, NUMERIC_ROUNDING_MODE);
+    }
+
+    /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
+    public static long convertToLongExact(Number x, RoundingMode roundingMode) {
+        x = round(x, roundingMode);
 
         checkNumberLongBounds(BIGINT, x);
 
@@ -416,7 +421,12 @@ public class IgniteMath {
     }
 
     /** */
+    private static BigDecimal round(Number x, RoundingMode roundingMode) {
+        return convertToBigDecimal(x).setScale(0, roundingMode);
+    }
+
+    /** */
     private static BigDecimal round(Number x) {
-        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
+        return round(x, NUMERIC_ROUNDING_MODE);
     }
 }

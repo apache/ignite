@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -1083,7 +1084,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             if (paramAsDecimal.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + op);
 
-            return IgniteMath.convertToLongExact(paramAsDecimal);
+            return IgniteMath.convertToLongExact(paramAsDecimal, RoundingMode.DOWN);
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
