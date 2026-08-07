@@ -558,7 +558,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             TypeMirror itemType = typeArgs.get(0);
 
-            if (EnumSet.class.getName().equals(qualifiedClassName(type)) && !enumType(env, itemType))
+            if (EnumSet.class.getName().equals(qualifiedClassName(erasedType(type))) && !enumType(env, itemType))
                 throw new IllegalArgumentException("Unexpected Enum Set element type [itemType=" + itemType + ", colType=" + type + ']');
 
             imports.add(COLLECTION_IMPL_TYPE_CLS);
