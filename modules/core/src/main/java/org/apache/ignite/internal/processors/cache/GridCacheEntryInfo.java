@@ -67,7 +67,10 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     /** Deleted flag. */
     private boolean deleted;
 
-    /** Empty constructor for serialization purposes. Sets {@link #initTime}. */
+    /**
+     * Empty constructor for serialization purposes.
+     * see {@link #expireTimeTransferDelta}.
+     */
     public GridCacheEntryInfo() {
         initTime = System.currentTimeMillis();
     }
