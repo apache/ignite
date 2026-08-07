@@ -49,6 +49,13 @@ import org.junit.Test;
 /** Tests system columns returned by direct table and index scans. */
 public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        createAndPopulatePersonTable();
+    }
+
+    /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
     }
@@ -56,8 +63,6 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testTableScanReturnsSystemColumns() throws Exception {
-        createAndPopulatePersonTable();
-
         IgniteCacheTable tbl = personTable();
         ScanContext scanCtx = scanContext(tbl);
 
@@ -67,8 +72,6 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIndexScanReturnsSystemColumns() throws Exception {
-        createAndPopulatePersonTable();
-
         IgniteCacheTable tbl = personTable();
         IgniteIndex idx = tbl.getIndex("AGE_IDX");
 
@@ -82,8 +85,6 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** Verifies that an explicit SQL query returns system columns. */
     @Test
     public void testExplicitSelectReturnsSystemColumns() throws Exception {
-        createAndPopulatePersonTable();
-
         assertQuery("SELECT _key, _val, _ver FROM Person")
             .columnNames("_KEY", "_VAL", "_VER")
             .resultSize(30)
@@ -101,8 +102,6 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testCannotAddSystemColumnName() throws Exception {
-        createAndPopulatePersonTable();
-
         assertSystemColumnAddForbidden("ALTER TABLE Person ADD COLUMN _ver INT",
             QueryUtils.VER_FIELD_NAME);
     }
@@ -110,8 +109,6 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testSystemColumnsAreHiddenFromSelectStar() throws Exception {
-        createAndPopulatePersonTable();
-
         assertQuery("SELECT * FROM Person")
             .columnNames("ID", "NAME", "AGE")
             .resultSize(30)
@@ -121,8 +118,6 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testVersionColumnCannotBeDmlTarget() throws Exception {
-        createAndPopulatePersonTable();
-
         assertVersionColumnDmlTargetForbidden(
             "INSERT INTO Person (id, name, age, _ver) VALUES (1, 'Ann', 21, NULL)");
         assertVersionColumnDmlTargetForbidden("UPDATE Person SET _ver = NULL");
