@@ -54,8 +54,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // Keep caches between tests but do not leak an active transaction into the next test.
-        clearTransaction();
+        // Override method to keep caches after tests.
     }
 
     /** {@inheritDoc} */
