@@ -355,15 +355,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return partId;
-    }
-
-    /**
-     * @param partId New partition ID.
-     */
-    public void partition(int partId) {
-        this.partId = partId;
     }
 
     /** {@inheritDoc} */

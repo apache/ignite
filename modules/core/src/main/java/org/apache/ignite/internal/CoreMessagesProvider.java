@@ -25,7 +25,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
@@ -271,6 +270,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceTopology;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;

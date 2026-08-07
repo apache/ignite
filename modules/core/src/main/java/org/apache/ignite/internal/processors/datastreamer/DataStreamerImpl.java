@@ -66,7 +66,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -125,6 +124,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.StripedMessage.NO_STRIPE;
 
 /**
  * Data streamer implementation.
@@ -2007,8 +2007,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    (rcvr == ISOLATED_UPDATER) ?
-                        partId : GridIoMessage.STRIPE_DISABLED_PART);
+                    (rcvr == ISOLATED_UPDATER) ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
