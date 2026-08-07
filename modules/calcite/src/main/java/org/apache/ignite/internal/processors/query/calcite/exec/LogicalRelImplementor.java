@@ -1080,9 +1080,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         try {
             BigDecimal paramAsDecimal = IgniteMath.convertToBigDecimal((Number)param);
 
-            if (paramAsDecimal.signum() < 0) {
-                throw new IllegalArgumentException("Negative value of " + op);
-            }
+            if (paramAsDecimal.signum() < 0)
+                throw new IllegalArgumentException("Negative value for " + op);
 
             return IgniteMath.convertToLongExact(paramAsDecimal);
         }
