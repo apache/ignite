@@ -19,8 +19,8 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 public class TcpDiscoveryClientNodesMetricsMessage implements Message {
     /** Map of nodes metrics messages per node id. */
     @Order(0)
-    Map<UUID, NodeMetricsMessage> nodesMetricsMsgs;
+    Map<UUID, ClusterMetricsSnapshot> nodesMetricsMsgs;
 
     /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryClientNodesMetricsMessage() {
@@ -37,12 +37,12 @@ public class TcpDiscoveryClientNodesMetricsMessage implements Message {
     }
 
     /** @return Map of nodes metrics messages per node id. */
-    public Map<UUID, NodeMetricsMessage> nodesMetricsMessages() {
+    public Map<UUID, ClusterMetricsSnapshot> nodesMetricsMessages() {
         return nodesMetricsMsgs;
     }
 
     /** @param nodesMetricsMsgs Map of nodes metrics messages per node id. */
-    public void nodesMetricsMessages(Map<UUID, NodeMetricsMessage> nodesMetricsMsgs) {
+    public void nodesMetricsMessages(Map<UUID, ClusterMetricsSnapshot> nodesMetricsMsgs) {
         this.nodesMetricsMsgs = nodesMetricsMsgs;
     }
 

@@ -37,9 +37,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -48,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +61,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <tt>public</tt> due to certain limitations of Java technology.
  */
 public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable, SelfMarshallingMessage {
+    Comparable<TcpDiscoveryNode>, Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -108,12 +107,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Node metrics. */
     @GridToStringExclude
-    volatile ClusterMetrics metrics;
-
-    /** Node metrics message. */
-    @GridToStringExclude
     @Order(6)
-    volatile NodeMetricsMessage metricsMsg;
+    volatile ClusterMetricsSnapshot metrics;
 
     /** Node cache metrics. */
     @GridToStringExclude
@@ -215,22 +210,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        metrics = metricsProvider.metrics();
+        metrics = ClusterMetricsSnapshot.of(metricsProvider.metrics());
         cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
-        metricsMsg = new NodeMetricsMessage(metrics);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
-        if (metricsMsg != null)
-            metrics = new ClusterMetricsSnapshot(metricsMsg);
-
-        metricsMsg = null;
     }
 
     /**
@@ -318,7 +300,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         if (metricsProvider != null) {
             ClusterMetrics metrics0 = metricsProvider.metrics();
 
-            metrics = metrics0;
+            metrics = ClusterMetricsSnapshot.of(metrics0);
 
             return metrics0;
         }
@@ -330,7 +312,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
-        this.metrics = metrics;
+        this.metrics = ClusterMetricsSnapshot.of(metrics);
     }
 
     /** {@inheritDoc} */
