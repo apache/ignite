@@ -349,7 +349,7 @@ public class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = new GridCacheEntryInfo(row.cacheId(), row.key(), row.value(), row.version(), 0, row.expireTime());
+                GridCacheEntryInfo info = new GridCacheEntryInfo(row.cacheId(), row.key(), row.value(), row.version(), row.expireTime(), 0);
 
                 supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
 

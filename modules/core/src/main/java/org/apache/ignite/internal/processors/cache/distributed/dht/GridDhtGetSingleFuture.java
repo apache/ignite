@@ -462,16 +462,14 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         assert val != null;
 
-        GridCacheEntryInfo info = new GridCacheEntryInfo(
+        return new GridCacheEntryInfo(
             cctx.cacheId(),
             key,
             skipVals ? null : val.value(),
             val.version(),
-            val.ttl(),
-            val.expireTime()
+            val.expireTime(),
+            val.ttl()
         );
-
-        return info;
     }
 
     /**

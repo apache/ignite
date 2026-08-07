@@ -269,7 +269,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryInfo info() {
-        return new GridCacheEntryInfo(0, key(), val, version(), ttl(), expireTime());
+        return new GridCacheEntryInfo(0, key(), val, version(), expireTime(), ttl());
     }
 
     /** {@inheritDoc} */

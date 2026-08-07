@@ -506,8 +506,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 entry.getKey(),
                 skipVals ? null : val.value(),
                 val.version(),
-                val.ttl(),
-                val.expireTime()
+                val.expireTime(),
+                val.ttl()
             );
 
             infos.add(info);
