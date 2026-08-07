@@ -300,12 +300,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private void checkLimitOffset(Number offsetFetchLimit, SqlNode n, String nodeName) {
         try {
-            long res = IgniteMath.convertToLongExact(offsetFetchLimit);
+            BigDecimal val = IgniteMath.convertToBigDecimal(offsetFetchLimit);
 
-            if (res < 0)
-                throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
+            if (val.signum() < 0)
+                throw new IllegalArgumentException("Negative value for " + nodeName);
+
+            IgniteMath.convertToLongExact(val);
         }
-        catch (ArithmeticException e) {
+        catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
         }
     }

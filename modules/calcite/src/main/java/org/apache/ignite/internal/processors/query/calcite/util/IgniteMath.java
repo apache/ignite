@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
@@ -72,7 +73,7 @@ public class IgniteMath {
     private static final double BYTE_MIN_EXT = Byte.MIN_VALUE - 1d;
 
     /** */
-    public static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final RoundingMode NUMERIC_ROUNDING_MODE = IgniteTypeSystem.INSTANCE.roundingMode();
 
     /** Returns the sum of its arguments, throwing an exception if the result overflows an {@code long}. */
     public static long addExact(long x, long y) {
@@ -411,7 +412,7 @@ public class IgniteMath {
 
     /** */
     private static double extendToRound(double x) {
-        return x < 0.0d ? x - 0.5d : x + 0.5d;
+        return round(x).doubleValue();
     }
 
     /** */
