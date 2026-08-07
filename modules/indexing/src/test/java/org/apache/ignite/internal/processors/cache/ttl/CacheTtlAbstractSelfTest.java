@@ -342,7 +342,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      * @param gridCnt Number of nodes.
      * @throws Exception If failed.
      */
-    private void checkSizeAfterLive(int gridCnt) throws Exception {
+    private void checkSizeAfterLive(int gridCnt) {
         for (int i = 0; i < gridCnt; ++i) {
             IgniteCache<Integer, Integer> cache = jcache(i);
 

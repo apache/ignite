@@ -81,8 +81,11 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
             /** {@link Long#MIN_VALUE} means no expiration is set. */
             expireTimeTransferDelta = Long.MIN_VALUE;
         }
-        else
+        else {
+            initTime = System.currentTimeMillis();
+
             expireTimeTransferDelta = expireTime == 0 ? Long.MIN_VALUE : expireTime - initTime;
+        }
 
         this.cacheId = cacheId;
         this.key = key;
