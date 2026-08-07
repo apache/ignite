@@ -69,7 +69,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Service permissions. */
     @GridToStringInclude
     @Order(2)
-    Map<String, EnumSet<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
+    transient Map<String, EnumSet<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
         ? compatibleServicePermissions()
         : new HashMap<>();
 

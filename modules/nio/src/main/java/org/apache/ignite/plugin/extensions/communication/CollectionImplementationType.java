@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-/** Collection implementation a {@link MessageSerializer} is read back into. */
+/** Collection implementation a {@link MessageCollectionType} is read back into. */
 public enum CollectionImplementationType {
     /** {@link java.util.ArrayList} (the default implementation type). */
     ARRAY_LIST,
