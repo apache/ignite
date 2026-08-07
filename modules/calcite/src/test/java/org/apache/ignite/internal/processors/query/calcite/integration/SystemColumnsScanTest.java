@@ -25,8 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -46,21 +44,10 @@ import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescript
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** Tests system columns returned by direct table and index scans. */
 public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setTransactionConfiguration(new TransactionConfiguration()
-                .setTxAwareQueriesEnabled(true));
-    }
-
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 1;
@@ -187,15 +174,11 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
 
     /** */
     private void createAndPopulatePersonTable() throws Exception {
-        sql("CREATE TABLE Person (id INT PRIMARY KEY, name VARCHAR, age INT) WITH atomicity=TRANSACTIONAL");
+        sql("CREATE TABLE Person (id INT PRIMARY KEY, name VARCHAR, age INT)");
         sql("CREATE INDEX age_idx ON Person(age)");
 
-        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            for (int i = 1; i <= 30; i++)
-                sql("INSERT INTO Person(id, name, age) VALUES (?, ?, ?)", i, personName(i), 20 + i);
-
-            tx.commit();
-        }
+        for (int i = 1; i <= 30; i++)
+            sql("INSERT INTO Person(id, name, age) VALUES (?, ?, ?)", i, personName(i), 20 + i);
 
         awaitPartitionMapExchange();
     }
