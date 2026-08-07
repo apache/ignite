@@ -19,17 +19,16 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware {
+public class GridCacheEntryInfo implements Message, CacheIdAware {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
@@ -50,9 +49,9 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
     @Order(3)
     long ttl;
 
-    /** Expiration time. */
+    /** Expiration time delta. */
     @Order(4)
-    long expireTime;
+    long expireTimeLeft;
 
     /** Entry version. */
     @Order(5)
@@ -108,14 +107,18 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
      * @return Expire time.
      */
     public long expireTime() {
-        return expireTime;
+        /** {@link Long#MIN_VALUE} means the expiration wasn't used. */
+        return expireTimeLeft == Long.MIN_VALUE ? 0 : System.currentTimeMillis() + expireTimeLeft;
     }
 
     /**
+     * Converts absolute exipation time to time-left/delta. Supposes that 0 means to expiration used.
+     *
      * @param expireTime Expiration time.
      */
     public void expireTime(long expireTime) {
-        this.expireTime = expireTime;
+        /** {@link Long#MIN_VALUE} means the expiration isn't used. */
+        expireTimeLeft = expireTime == 0 ? Long.MIN_VALUE : expireTime - System.currentTimeMillis();
     }
 
     /**
@@ -188,30 +191,6 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
         size += key.valueBytes(ctx).length;
 
         return SIZE_OVERHEAD + size;
-    }
-
-    // TODO IGNITE-28920: the rebase still runs inside the message; move it to the code filling and reading the entry.
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
-        if (expireTime == 0)
-            expireTime = -1;
-        else {
-            expireTime -= U.currentTimeMillis();
-
-            if (expireTime < 0)
-                expireTime = 0;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
-        long remaining = expireTime;
-
-        expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
-
-        // Account for overflow.
-        if (expireTime < 0)
-            expireTime = 0;
     }
 
     /** {@inheritDoc} */
