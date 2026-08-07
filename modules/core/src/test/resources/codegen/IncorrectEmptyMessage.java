@@ -15,35 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.msg;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.EmptyMessage;
-import org.apache.ignite.internal.GridKernalContext;
-import org.h2.value.Value;
-import org.h2.value.ValueNull;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Message for {@link Value#NULL}.
- */
-@EmptyMessage
-public class GridH2Null extends GridH2ValueMessage {
-    /** */
-    public static final GridH2Null INSTANCE = new GridH2Null();
-
-    /**
-     * Disallow new instance creation.
-     */
-    private GridH2Null() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) {
-        return ValueNull.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "NULL";
-    }
+public class IncorrectEmptyMessage implements Message {
 }
