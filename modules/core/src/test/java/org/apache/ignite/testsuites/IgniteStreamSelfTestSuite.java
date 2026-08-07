@@ -28,7 +28,12 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     SocketStreamerSelfTest.class,
-    SocketStreamerUnmarshalVulnerabilityTest.class,
+    SocketStreamerUnmarshalVulnerabilityTest.NoListsTest.class,
+    SocketStreamerUnmarshalVulnerabilityTest.WhiteListIncludedTest.class,
+    SocketStreamerUnmarshalVulnerabilityTest.WhiteListExcludedTest.class,
+    SocketStreamerUnmarshalVulnerabilityTest.BlackListIncludedTest.class,
+    SocketStreamerUnmarshalVulnerabilityTest.BlackListExcludedTest.class,
+    SocketStreamerUnmarshalVulnerabilityTest.BothListIncludedTest.class,
 })
 public class IgniteStreamSelfTestSuite {
 }

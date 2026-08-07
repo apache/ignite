@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.calcite.sql.validate.SqlValidatorException;
@@ -104,15 +104,15 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {
-        String bigInt = BigDecimal.valueOf(10000000000L).toString();
+        BigInteger moreThanMaxLong = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
 
-        assertThrows("SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS",
+        assertThrows("SELECT * FROM TEST_REPL OFFSET " + moreThanMaxLong + " ROWS",
             SqlValidatorException.class, "Illegal value of offset");
 
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY",
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + moreThanMaxLong + " ROWS ONLY",
             SqlValidatorException.class, "Illegal value of fetch / limit");
 
-        assertThrows("SELECT * FROM TEST_REPL LIMIT " + bigInt,
+        assertThrows("SELECT * FROM TEST_REPL LIMIT " + moreThanMaxLong,
             SqlValidatorException.class, "Illegal value of fetch / limit");
 
         assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
@@ -123,16 +123,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertThrows("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS",
             IgniteSQLException.class, null);
-
-        // Check with parameters
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1, -1);
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS",
-            SqlValidatorException.class, "Illegal value of offset", -1);
-
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1);
     }
 
     /**

@@ -18,25 +18,25 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
-public class CacheContinuousQueryEntry implements GridCacheDeployable, MarshallableMessage {
+@UseBinaryMarshaller
+public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, CacheIdAware {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 
@@ -54,29 +54,20 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     @Order(1)
     byte flags;
 
-    /** Key. */
+    /** Key. {@code null} for a filtered entry. */
+    @Order(2)
     @GridToStringInclude
     KeyCacheObject key;
 
-    /** */
-    @Order(2)
-    byte[] keyBytes;
-
-    /** New value. */
+    /** New value. {@code null} for a filtered entry. */
+    @Order(3)
     @GridToStringInclude
     CacheObject newVal;
 
-    /** */
-    @Order(3)
-    byte[] newValBytes;
-
-    /** Old value. */
+    /** Old value. {@code null} for a filtered entry. */
+    @Order(4)
     @GridToStringInclude
     CacheObject oldVal;
-
-    /** */
-    @Order(4)
-    byte[] oldValBytes;
 
     /** Cache name. */
     @Order(5)
@@ -194,10 +185,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
         return topVer;
     }
 
-    /**
-     * @return Cache ID.
-     */
-    int cacheId() {
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
         return cacheId;
     }
 
@@ -296,39 +285,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     }
 
     /**
-     * @param cctx Cache context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void prepareMarshal(GridCacheContext cctx) throws IgniteCheckedException {
-        if (key != null)
-            key.prepareMarshal(cctx.cacheObjectContext());
-
-        if (newVal != null)
-            newVal.prepareMarshal(cctx.cacheObjectContext());
-
-        if (oldVal != null)
-            oldVal.prepareMarshal(cctx.cacheObjectContext());
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        if (!isFiltered()) {
-            if (key != null)
-                key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (newVal != null)
-                newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (oldVal != null)
-                oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-        }
-    }
-
-    /**
      * @return Key.
      */
     KeyCacheObject key() {
@@ -350,7 +306,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
     }
 
     /** {@inheritDoc} */
-    @Override public void prepare(GridDeploymentInfo depInfo) {
+    @Override public void deploy(GridDeploymentInfo depInfo) {
         this.depInfo = depInfo;
     }
 
@@ -359,35 +315,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Marshalla
         return depInfo;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryEntry.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (!isFiltered()) {
-            if (key != null)
-                keyBytes = marsh.marshal(key);
-
-            if (newVal != null)
-                newValBytes = marsh.marshal(newVal);
-
-            if (oldVal != null)
-                oldValBytes = marsh.marshal(oldVal);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (keyBytes != null)
-            key = marsh.unmarshal(keyBytes, clsLdr);
-        
-        if (newValBytes != null)
-            newVal = marsh.unmarshal(newValBytes, clsLdr);
-        
-        if (oldValBytes != null)
-            oldVal = marsh.unmarshal(oldValBytes, clsLdr);
     }
 }

@@ -19,6 +19,12 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord.PartitionState;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
+import org.apache.ignite.plugin.extensions.communication.MessageItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -30,14 +36,20 @@ import org.apache.ignite.transactions.TransactionIsolation;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer<DefaultMapperEnumFieldsMessage> {
+public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer<DefaultMapperEnumFieldsMessage> {
     /** */
-    private final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
+    private static final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
     /** */
-    private final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
+    private static final PartitionState[] partitionStateVals = PartitionState.values();
+    /** */
+    private static final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
+    /** */
+    private static final MessageCollectionType partStatesCollDesc = new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(partitionStateVals, b)), false);
+    /** */
+    private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), false), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
-    @Override public boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -57,13 +69,25 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
                     return false;
 
                 writer.incrementState();
+
+            case 2:
+                if (!writer.writeMap(msg.isolationStringMap, isolationStringMapCollDesc))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeCollection(msg.partStates, partStatesCollDesc))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
     }
 
     /** */
-    @Override public boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 msg.publicEnum = DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, reader.readByte());
@@ -80,8 +104,29 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
                     return false;
 
                 reader.incrementState();
+
+            case 2:
+                msg.isolationStringMap = reader.readMap(isolationStringMapCollDesc);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                msg.partStates = reader.readCollection(partStatesCollDesc);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final DefaultMapperEnumFieldsMessage createMessage() {
+        return new DefaultMapperEnumFieldsMessage();
     }
 }

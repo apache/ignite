@@ -29,19 +29,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 
 /** */
-public class ColocationGroup implements MarshallableMessage {
+public class ColocationGroup implements SelfMarshallingMessage {
     /** */
     @Order(0)
     long[] srcIds;
@@ -314,8 +312,8 @@ public class ColocationGroup implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (assignments == null || primaryAssignment)
+    @Override public void selfMarshal() {
+        if (!F.isEmpty(marshalledAssignments) || assignments == null || primaryAssignment)
             return;
 
         Map<UUID, Integer> nodeIdxs = new HashMap<>();
@@ -343,7 +341,7 @@ public class ColocationGroup implements MarshallableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void selfUnmarshal() {
         if (F.isEmpty(marshalledAssignments))
             return;
 

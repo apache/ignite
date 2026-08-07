@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -32,9 +31,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
@@ -45,13 +43,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
-public class StoredCacheData implements Serializable, CdcCacheEvent, MarshallableMessage {
+public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache configuration. */
     @GridToStringInclude
-    private CacheConfiguration<?, ?> ccfg;
+    @Marshalled("ccfgBytes")
+    CacheConfiguration<?, ?> ccfg;
 
     /** Serialized {@link #ccfg}. */
     @Order(0)
@@ -59,7 +58,8 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
 
     /** Query entities. */
     @GridToStringInclude
-    private Collection<QueryEntity> qryEntities;
+    @Marshalled("qryEntitiesBytes")
+    Collection<QueryEntity> qryEntities;
 
     /** Serialized {@link #qryEntities}. */
     @Order(1)
@@ -224,27 +224,4 @@ public class StoredCacheData implements Serializable, CdcCacheEvent, Marshallabl
         return ccfg;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (ccfg != null)
-            ccfgBytes = U.marshal(marsh, ccfg);
-
-        if (qryEntities != null)
-            qryEntitiesBytes = U.marshal(marsh, qryEntities);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (ccfgBytes != null) {
-            ccfg = U.unmarshal(marsh, ccfgBytes, clsLdr);
-
-            ccfgBytes = null;
-        }
-
-        if (qryEntitiesBytes != null) {
-            qryEntities = U.unmarshal(marsh, qryEntitiesBytes, clsLdr);
-
-            qryEntitiesBytes = null;
-        }
-    }
 }

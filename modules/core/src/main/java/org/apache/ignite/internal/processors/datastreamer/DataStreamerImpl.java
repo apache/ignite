@@ -66,7 +66,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -125,6 +124,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.StripedMessage.NO_STRIPE;
 
 /**
  * Data streamer implementation.
@@ -204,6 +204,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Communication topic for responses. */
     private final Object topic;
+
+    /** Topic ID for responses. */
+    private final IgniteUuid topicId;
 
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
@@ -349,8 +352,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
+        topicId = IgniteUuid.fromUuid(ctx.localNodeId());
+
         // Generate unique topic for this loader.
-        topic = TOPIC_DATASTREAM.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        topic = TOPIC_DATASTREAM.topic(topicId);
 
         ctx.io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -1931,12 +1936,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             else {
                 try {
                     for (DataStreamerEntry e : entries) {
-                        e.getKey().prepareMarshal(cacheObjCtx);
+                        e.getKey().marshal(cacheObjCtx);
 
                         CacheObject val = e.getValue();
 
                         if (val != null)
-                            val.prepareMarshal(cacheObjCtx);
+                            val.marshal(cacheObjCtx);
                     }
 
                     if (updaterBytes == null) {
@@ -1988,7 +1993,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
-                    topic,
+                    topicId,
                     cacheName,
                     updaterBytes,
                     entries,
@@ -2002,8 +2007,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    (rcvr == ISOLATED_UPDATER) ?
-                        partId : GridIoMessage.STRIPE_DISABLED_PART);
+                    (rcvr == ISOLATED_UPDATER) ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
@@ -2253,7 +2257,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     cctx.shared().database().checkpointReadLock();
 
                     try {
-                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                        e.getKey().unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                         int p = cctx.affinity().partition(e.getKey());
 

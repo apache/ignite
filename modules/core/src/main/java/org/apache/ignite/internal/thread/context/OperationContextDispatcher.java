@@ -16,9 +16,7 @@
  */
 package org.apache.ignite.internal.thread.context;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -41,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link #MAX_ATTRS_CNT} for implementation reasons.</p>
  *
  * @see OperationContext
- * @see OperationContextMessage
+ * @see OperationContextSnapshotMessage
  */
 public class OperationContextDispatcher {
     /** Maximal number of supported distributed attributes. */
@@ -62,7 +60,7 @@ public class OperationContextDispatcher {
      * <p>Registered attribute value is automatically captured and propagated between cluster nodes
      * during the messages transmission.</p>
      *
-     * @see DistributedAttributeRegistry
+     * @see DistributedAttributeIdRegistry
      */
     public synchronized <T extends Message> void registerDistributedAttribute(int id, OperationContextAttribute<T> attr) {
         if (regFinished)
@@ -89,14 +87,13 @@ public class OperationContextDispatcher {
      *
      * @see OperationContext#get(OperationContextAttribute)
      */
-    public @Nullable OperationContextMessage collectDistributedAttributeValues() {
+    public @Nullable OperationContextSnapshotMessage createSnapshot() {
         OperationContextAttribute<? extends Message>[] locRegisteredAttrs = registeredAttrs;
 
         if (locRegisteredAttrs.length == 0)
             return null;
 
-        byte bitmap = 0;
-        List<Message> vals = null;
+        OperationContextSnapshotMessage.Builder snpBuilder = OperationContextSnapshotMessage.Builder.create();
 
         for (int id = 0; id < locRegisteredAttrs.length; id++) {
             OperationContextAttribute<? extends Message> attr = locRegisteredAttrs[id];
@@ -106,40 +103,30 @@ public class OperationContextDispatcher {
 
             Message curVal = OperationContext.get(attr);
 
-            if (curVal == attr.initialValue())
-                continue;
-
-            if (vals == null)
-                vals = new ArrayList<>(MAX_ATTRS_CNT / 2);
-
-            byte mask = (byte)(1 << id);
-
-            assert (bitmap & mask) == 0;
-
-            vals.add(curVal);
-            bitmap |= mask;
+            if (curVal != attr.initialValue())
+                snpBuilder.add(id, curVal);
         }
 
-        return bitmap == 0 ? null : new OperationContextMessage(bitmap, vals.toArray(Message[]::new));
+        return snpBuilder.isEmpty() ? null : snpBuilder.build();
     }
 
-    /** Restores distributed {@link OperationContextAttribute} values received from a remote node. */
-    public Scope restoreRemoteAttributeValues(@Nullable OperationContextMessage msg) {
-        if (msg == null)
-            return Scope.NOOP_SCOPE;
+    /** Restores {@link OperationContextAttribute} values received from a remote node. */
+    public Scope restoreSnapshot(@Nullable OperationContextSnapshotMessage snp) {
+        if (snp == null)
+            return OperationContext.Restorer.restoreEmpty();
 
         OperationContextAttribute<? extends Message>[] locRegisteredAttrs = registeredAttrs;
 
-        assert msg.idBitmap != 0;
-        assert !F.isEmpty(msg.attrs);
-        assert msg.attrs.length <= MAX_ATTRS_CNT;
+        assert snp.idBitmap != 0;
+        assert !F.isEmpty(snp.attrs);
+        assert snp.attrs.length <= MAX_ATTRS_CNT;
 
-        OperationContext.ContextUpdater updater = OperationContext.ContextUpdater.create();
+        OperationContext.Restorer ctxRestorer = OperationContext.Restorer.create();
 
-        for (byte valIdx = 0, attrId = 0; valIdx < msg.attrs.length; ++valIdx) {
-            Message curVal = msg.attrs[valIdx];
+        for (byte valIdx = 0, attrId = 0; valIdx < snp.attrs.length; ++valIdx) {
+            Message attrVal = snp.attrs[valIdx];
 
-            while ((msg.idBitmap & (1 << attrId)) == 0)
+            while ((snp.idBitmap & (1 << attrId)) == 0)
                 ++attrId;
 
             assert attrId < locRegisteredAttrs.length;
@@ -148,10 +135,10 @@ public class OperationContextDispatcher {
 
             assert attr != null;
 
-            updater.set(attr, curVal);
+            ctxRestorer.add(attr, attrVal);
         }
 
-        return updater.apply();
+        return ctxRestorer.restore();
     }
 
     /** Restricts further registration of distributed attributes. */

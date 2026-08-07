@@ -67,7 +67,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
-import org.apache.ignite.internal.thread.context.OperationContextMessage;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -280,7 +280,7 @@ public class ZookeeperDiscoveryImpl {
 
         this.stats = stats;
 
-        msgParser = new DiscoveryMessageParser(msgFactory);
+        msgParser = new DiscoveryMessageParser(msgFactory, ((IgniteEx)spi.ignite()).context());
 
         opCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
     }
@@ -527,7 +527,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     rtState.top.topologySnapshot(),
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -600,7 +599,6 @@ public class ZookeeperDiscoveryImpl {
                 locNode,
                 nodes,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();
@@ -669,10 +667,10 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        OperationContextMessage opCtx = opCtxDispatcher.collectDistributedAttributeValues();
+        OperationContextSnapshotMessage opCtxSnp = opCtxDispatcher.createSnapshot();
 
-        if (opCtx != null)
-            sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtx));
+        if (opCtxSnp != null)
+            sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtxSnp));
         else
             sendCustomMessage(msg);
     }
@@ -1511,7 +1509,7 @@ public class ZookeeperDiscoveryImpl {
             new ZkNoServersMessage(),
             null);
 
-        evtData.prepareMarshal(msgParser);
+        evtData.marshal(msgParser);
 
         Collection<ZookeeperClusterNode> nodesToAck = Collections.emptyList();
 
@@ -1541,7 +1539,7 @@ public class ZookeeperDiscoveryImpl {
             if (evtData instanceof ZkDiscoveryCustomEventData) {
                 ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
 
-                evtData0.finishUnmarshal(msgParser);
+                evtData0.unmarshal(msgParser);
 
                 // It is possible previous coordinator failed before finished cleanup.
                 if (evtData0.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage) {
@@ -2374,7 +2372,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -2771,7 +2768,7 @@ public class ZookeeperDiscoveryImpl {
                         if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
                             break;
 
-                        evtData0.finishUnmarshal(msgParser);
+                        evtData0.unmarshal(msgParser);
 
                         if (rtState.crd)
                             assert evtData0.resolvedMsg != null : evtData0;
@@ -3072,7 +3069,6 @@ public class ZookeeperDiscoveryImpl {
                     locNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    null,
                     null
                 )
             ).get();
@@ -3085,7 +3081,6 @@ public class ZookeeperDiscoveryImpl {
                         locNode,
                         topSnapshot,
                         Collections.emptyNavigableMap(),
-                        null,
                         null
                     )
                 ).get();
@@ -3472,7 +3467,7 @@ public class ZookeeperDiscoveryImpl {
             msg,
             null);
 
-        evtData.prepareMarshal(msgParser);
+        evtData.marshal(msgParser);
 
         evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
 
@@ -3528,10 +3523,10 @@ public class ZookeeperDiscoveryImpl {
      * @param msg Custom message to process. Can be a {@link ZkOperationContextAwareCustomMessage}.
      */
     private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, DiscoverySpiCustomMessage msg) {
-        OperationContextMessage opCtxMsg = null;
+        OperationContextSnapshotMessage opCtxSnp = null;
 
         if (msg instanceof ZkOperationContextAwareCustomMessage) {
-            opCtxMsg = ((ZkOperationContextAwareCustomMessage)msg).opCtxMsg;
+            opCtxSnp = ((ZkOperationContextAwareCustomMessage)msg).opCtxSnp;
             msg = ((ZkOperationContextAwareCustomMessage)msg).delegate;
         }
 
@@ -3548,7 +3543,7 @@ public class ZookeeperDiscoveryImpl {
 
         IgniteFuture<?> fut;
 
-        try (Scope ignored = opCtxDispatcher.restoreRemoteAttributeValues(opCtxMsg)) {
+        try (Scope ignored = opCtxDispatcher.restoreSnapshot(opCtxSnp)) {
             fut = lsnr.onDiscovery(
                 new DiscoveryNotification(
                     DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
@@ -3556,8 +3551,7 @@ public class ZookeeperDiscoveryImpl {
                     sndNode,
                     topSnapshot,
                     Collections.emptyNavigableMap(),
-                    msg,
-                    null
+                    msg
                 )
             );
         }
@@ -3587,7 +3581,6 @@ public class ZookeeperDiscoveryImpl {
                 joinedNode,
                 topSnapshot,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();
@@ -3637,7 +3630,6 @@ public class ZookeeperDiscoveryImpl {
                 leftNode,
                 topSnapshot,
                 Collections.emptyNavigableMap(),
-                null,
                 null
             )
         ).get();

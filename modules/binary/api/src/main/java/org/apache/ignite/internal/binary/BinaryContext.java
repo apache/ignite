@@ -63,6 +63,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -264,7 +265,7 @@ public class BinaryContext {
 
         BinaryUtils.binariesFactory.predefinedTypes().forEach(this::registerPredefinedType);
 
-        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        // TreeMap and TreeSet binary write-replacement support.
         registerBinarilizableSystemClass(BinaryTreeMap.class);
         registerBinarilizableSystemClass(TreeMap.class);
         registerBinarilizableSystemClass(TreeSet.class);
@@ -372,7 +373,7 @@ public class BinaryContext {
                         String affField = affFields.remove(clsName0);
 
                         if (affField == null) {
-                            Class<?> cls = CommonUtils.classForName(clsName0, null);
+                            Class<?> cls = ClassLoaderUtils.classForName(clsName0);
 
                             if (cls != null)
                                 affField = affFldNameProvider.apply(cls);
@@ -386,7 +387,7 @@ public class BinaryContext {
                     String affField = affFields.remove(clsName);
 
                     if (affField == null) {
-                        Class<?> cls = CommonUtils.classForName(clsName, null);
+                        Class<?> cls = ClassLoaderUtils.classForName(clsName);
 
                         if (cls != null)
                             affField = affFldNameProvider.apply(cls);
@@ -740,7 +741,7 @@ public class BinaryContext {
                 if (clsName == null)
                     throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr);
 
                 desc = descByCls.get(cls);
 
@@ -1496,7 +1497,7 @@ public class BinaryContext {
 
         optmMarsh.onUndeploy(ldr);
 
-        CommonUtils.clearClassCache(ldr);
+        ClassLoaderUtils.clearClassCache(ldr);
     }
 
     /**

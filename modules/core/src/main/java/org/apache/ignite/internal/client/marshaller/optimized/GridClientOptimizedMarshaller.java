@@ -47,7 +47,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public GridClientOptimizedMarshaller() {
         opMarsh = Marshallers.optimized();
 
-        opMarsh.setContext(new MarshallerContextImpl(null, null));
+        opMarsh.setContext(new MarshallerContextImpl(null));
     }
 
     /**
@@ -58,7 +58,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public GridClientOptimizedMarshaller(@Nullable List<PluginProvider> plugins) {
         opMarsh = Marshallers.optimized();
 
-        opMarsh.setContext(new MarshallerContextImpl(plugins, null));
+        opMarsh.setContext(new MarshallerContextImpl(plugins));
     }
 
     /** {@inheritDoc} */

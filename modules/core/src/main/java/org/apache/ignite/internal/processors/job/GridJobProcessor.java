@@ -65,6 +65,7 @@ import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdap
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1249,10 +1250,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     boolean loc = ctx.localNodeId().equals(node.id()) && !ctx.config().isMarshalLocalJobs();
 
                     try {
-                        if (!loc)
-                            req.finishUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        // The job payload waits for this point: only now is there a deployment to unmarshal it with.
+                        if (!loc) {
+                            MessageMarshalling.unmarshal(req, ctx, null,
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        }
 
-                        // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
                             node.id(),
@@ -1614,8 +1617,22 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 false,
                 null);
 
-            if (!loc)
-                jobRes.marshallUserData(marsh, log);
+            if (!loc) {
+                try {
+                    MessageMarshalling.marshal(jobRes, ctx, null);
+                }
+                catch (IgniteCheckedException e) {
+                    // The exception is the only payload of this response, so it is what could not be written.
+                    String errMsg = "Failed to serialize job exception [nodeId=" + sndNode.id() +
+                        ", ses=" + req.sessionId() + ", jobId=" + req.jobId() + ']';
+
+                    U.error(log, errMsg, e);
+
+                    jobRes = jobRes.withError(new IgniteException(errMsg));
+
+                    MessageMarshalling.marshal(jobRes, ctx, null);
+                }
+            }
 
             if (req.sessionFullSupport()) {
                 // Send response to designated job topic.

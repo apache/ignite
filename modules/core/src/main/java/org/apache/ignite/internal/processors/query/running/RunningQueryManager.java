@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.systemview.SqlPlanHistoryViewWalker;
 import org.apache.ignite.internal.systemview.SqlQueryHistoryViewWalker;
 import org.apache.ignite.internal.systemview.SqlQueryViewWalker;
@@ -77,8 +76,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
-import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 
 /**
  * Keep information about all running queries.
@@ -375,8 +372,6 @@ public class RunningQueryManager {
 
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
-        run.span().addTag(SQL_QRY_ID, run::globalQueryId);
-
         if (!mapQry && !qryStartedListeners.isEmpty()) {
             GridQueryStartedInfo info = new GridQueryStartedInfo(
                 run.id(),
@@ -432,104 +427,94 @@ public class RunningQueryManager {
         if (qry == null)
             return;
 
-        Span qrySpan = qry.span();
+        if (isSqlQuery(qry)) {
+            qry.runningFuture().onDone();
 
-        try {
-            if (failed)
-                qrySpan.addTag(ERROR, failReason::getMessage);
+            if (qry.mapQuery())
+                return;
 
-            if (isSqlQuery(qry)) {
-                qry.runningFuture().onDone();
+            // We need to collect query history and metrics only for SQL queries initiated by user.
+            qryHistTracker.collectHistory(qry, failed);
 
-                if (qry.mapQuery())
-                    return;
+            if (!failed)
+                successQrsCnt.increment();
+            else {
+                failedQrsCnt.increment();
 
-                // We need to collect query history and metrics only for SQL queries initiated by user.
-                qryHistTracker.collectHistory(qry, failed);
-
-                if (!failed)
-                    successQrsCnt.increment();
-                else {
-                    failedQrsCnt.increment();
-
-                    // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
-                    // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
-                    // right when query failed due to some other reason.
-                    if (QueryUtils.wasCancelled(failReason))
-                        canceledQrsCnt.increment();
-                }
-            }
-
-            if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
-                String flags = null;
-
-                // Create string for flags with not default values.
-                if (qry.local())
-                    flags = "local";
-
-                if (qry.distributedJoins())
-                    flags = (flags == null ? "" : flags + ", ") + "distributedJoins";
-
-                if (qry.enforceJoinOrder())
-                    flags = (flags == null ? "" : flags + ", ") + "enforceJoinOrder";
-
-                if (flags != null) {
-                    ctx.performanceStatistics().queryProperty(
-                        qry.queryType(),
-                        qry.nodeId(),
-                        qry.id(),
-                        "Flags",
-                        flags
-                    );
-                }
-
-                ctx.performanceStatistics().query(
-                    qry.queryType(),
-                    qry.query(),
-                    qry.id(),
-                    qry.startTime(),
-                    System.nanoTime() - qry.startTimeNanos(),
-                    !failed);
-            }
-
-            if (!qryFinishedListeners.isEmpty()) {
-                GridQueryFinishedInfo info = new GridQueryFinishedInfo(
-                    qry.id(),
-                    localNodeId,
-                    qry.query(),
-                    qry.queryType(),
-                    qry.schemaName(),
-                    qry.startTime(),
-                    U.currentTimeMillis(),
-                    qry.local(),
-                    qry.enforceJoinOrder(),
-                    qry.distributedJoins(),
-                    failed,
-                    failReason,
-                    qry.queryInitiatorId()
-                );
-
-                try {
-                    closure.runLocal(
-                        () -> qryFinishedListeners.forEach(lsnr -> {
-                            try {
-                                lsnr.accept(info);
-                            }
-                            catch (Exception ex) {
-                                log.error("Listener fails during handling query finished" +
-                                    " event [qryId=" + qryId + "]", ex);
-                            }
-                        }),
-                        GridIoPolicy.PUBLIC_POOL
-                    );
-                }
-                catch (IgniteCheckedException ex) {
-                    throw new IgniteException(ex.getMessage(), ex);
-                }
+                // We measure cancel metric as "number of times user's queries ended up with query cancelled exception",
+                // not "how many user's KILL QUERY command succeeded". These may be not the same if cancel was issued
+                // right when query failed due to some other reason.
+                if (QueryUtils.wasCancelled(failReason))
+                    canceledQrsCnt.increment();
             }
         }
-        finally {
-            qrySpan.end();
+
+        if (ctx.performanceStatistics().enabled() && qry.startTimeNanos() > 0) {
+            String flags = null;
+
+            // Create string for flags with not default values.
+            if (qry.local())
+                flags = "local";
+
+            if (qry.distributedJoins())
+                flags = (flags == null ? "" : flags + ", ") + "distributedJoins";
+
+            if (qry.enforceJoinOrder())
+                flags = (flags == null ? "" : flags + ", ") + "enforceJoinOrder";
+
+            if (flags != null) {
+                ctx.performanceStatistics().queryProperty(
+                    qry.queryType(),
+                    qry.nodeId(),
+                    qry.id(),
+                    "Flags",
+                    flags
+                );
+            }
+
+            ctx.performanceStatistics().query(
+                qry.queryType(),
+                qry.query(),
+                qry.id(),
+                qry.startTime(),
+                System.nanoTime() - qry.startTimeNanos(),
+                !failed);
+        }
+
+        if (!qryFinishedListeners.isEmpty()) {
+            GridQueryFinishedInfo info = new GridQueryFinishedInfo(
+                qry.id(),
+                localNodeId,
+                qry.query(),
+                qry.queryType(),
+                qry.schemaName(),
+                qry.startTime(),
+                U.currentTimeMillis(),
+                qry.local(),
+                qry.enforceJoinOrder(),
+                qry.distributedJoins(),
+                failed,
+                failReason,
+                qry.queryInitiatorId()
+            );
+
+            try {
+                closure.runLocal(
+                    () -> qryFinishedListeners.forEach(lsnr -> {
+                        try {
+                            lsnr.accept(info);
+                        }
+                        catch (Exception ex) {
+                            log.error("Listener fails during handling query finished" +
+                                " event [qryId=" + qryId + "]", ex);
+                        }
+                    }),
+                    GridIoPolicy.PUBLIC_POOL
+                );
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex.getMessage(), ex);
+            }
         }
     }
 

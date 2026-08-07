@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,14 +58,6 @@ public class Marshallers {
     /** @return Default instance of {@link JdkMarshaller}. */
     public static JdkMarshaller jdk() {
         return factory.jdk();
-    }
-
-    /**
-     * @param clsFilter Class filter.
-     * @return Filtered instance of {@link JdkMarshaller}.
-     */
-    public static JdkMarshaller jdk(@Nullable IgnitePredicate<String> clsFilter) {
-        return factory.jdk(clsFilter);
     }
 
     /** @return Optimized marshaller instance. */
