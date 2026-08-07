@@ -173,10 +173,8 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
         assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.4).returns(0).check();
         assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.6).returns(0).check();
-        assertThrows("SELECT id FROM person ORDER BY id LIMIT ?", IgniteSQLException.class, null,
-            BigDecimal.valueOf(-1.5));
-        assertThrows("SELECT id FROM person ORDER BY id LIMIT ?", IgniteSQLException.class, null,
-            BigDecimal.valueOf(-0.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id LIMIT ?", null, BigDecimal.valueOf(-1.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id LIMIT ?", null, BigDecimal.valueOf(-0.5));
 
         assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
             .withParams(BigDecimal.valueOf(1.3))
@@ -186,10 +184,8 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             .withParams(BigDecimal.valueOf(1.6))
             .returns(0)
             .check();
-        assertThrows("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", IgniteSQLException.class, null,
-            BigDecimal.valueOf(-1.5));
-        assertThrows("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", IgniteSQLException.class, null,
-            BigDecimal.valueOf(-0.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", null, BigDecimal.valueOf(-1.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", null, BigDecimal.valueOf(-0.5));
 
         assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
             .withParams(BigDecimal.valueOf(2.3))
@@ -203,10 +199,8 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             .returns(3)
             .returns(4)
             .check();
-        assertThrows("SELECT id FROM person ORDER BY id OFFSET ? ROWS", IgniteSQLException.class, null,
-            BigDecimal.valueOf(-0.5));
-        assertThrows("SELECT id FROM person ORDER BY id OFFSET ? ROWS", IgniteSQLException.class, null,
-            BigDecimal.valueOf(-1.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id OFFSET ? ROWS", null, BigDecimal.valueOf(-0.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id OFFSET ? ROWS", null, BigDecimal.valueOf(-1.5));
     }
 
     /** Tests the same query with different type of parameters to cover case with check right plans cache work. **/

@@ -73,7 +73,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** @return input type, input value, target type, expected result. */
     private static List<List<Object>> numericsToRound() {
-        List<List<Object>> lst = new ArrayList<>(90);
+        List<List<Object>> lst = new ArrayList<>();
 
         Exception overflowErr = new ArithmeticException("overflow");
 

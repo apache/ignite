@@ -122,11 +122,9 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS",
             IgniteSQLException.class, null);
 
-        assertThrows("SELECT * FROM TEST_REPL OFFSET -1.5 ROWS",
-            IgniteSQLException.class, null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1.5 ROWS", null);
 
-        assertThrows("SELECT * FROM TEST_REPL OFFSET -0.5 ROWS",
-            IgniteSQLException.class, null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -0.5 ROWS", null);
 
         assertThrows("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS",
             IgniteSQLException.class, null);
