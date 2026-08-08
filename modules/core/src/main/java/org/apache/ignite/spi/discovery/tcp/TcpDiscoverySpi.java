@@ -54,6 +54,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
@@ -1845,6 +1846,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 if (msg != null && sslMsgPattern.matcher(msg).matches())
                     streamCorruptedCause.initCause(new SSLException("Detected SSL alert in StreamCorruptedException"));
             }
+
+            if (X.hasCause(e, ClassNotFoundException.class)) {
+                LT.error(log, e, "Failed to read message due to an unknown class to unmarshal received. Unable to " +
+                    "process the Discovery protocol. Stopping the Discovery SPI and invoking the failure handler. " +
+                    "RmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
+
+                ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                // Prevents following cycling attempts to reconnect and logs flooding.
+                spiStop();
+            }
+
             throw e;
         }
         finally {
