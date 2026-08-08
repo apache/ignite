@@ -59,7 +59,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageResultsCollector;
@@ -952,7 +952,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         hnd = hnd.clone();
 
         String clsName = null;
-        GridDeploymentInfoBean dep = null;
+        GridDeploymentInfoMessage dep = null;
 
         if (ctx.config().isPeerClassLoadingEnabled()) {
             // Handle peer deployment for projection predicate.
@@ -966,7 +966,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 if (dep0 == null)
                     throw new IgniteDeploymentCheckedException("Failed to deploy projection predicate: " + nodeFilter);
 
-                dep = new GridDeploymentInfoBean(dep0);
+                dep = new GridDeploymentInfoMessage(dep0);
             }
         }
 

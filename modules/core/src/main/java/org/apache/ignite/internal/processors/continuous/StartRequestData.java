@@ -22,7 +22,7 @@ import org.apache.ignite.internal.DeploymentAware;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
@@ -44,7 +44,7 @@ public class StartRequestData implements DeploymentAware {
 
     /** Deployment info. */
     @Order(2)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
     /** Handler. */
     @Marshalled("hndBytes")
@@ -116,7 +116,7 @@ public class StartRequestData implements DeploymentAware {
     /**
      * @param depInfo New deployment info.
      */
-    public void deploymentInfo(GridDeploymentInfoBean depInfo) {
+    public void deploymentInfo(GridDeploymentInfoMessage depInfo) {
         this.depInfo = depInfo;
     }
 

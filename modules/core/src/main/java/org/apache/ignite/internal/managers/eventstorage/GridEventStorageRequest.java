@@ -23,7 +23,7 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -47,7 +47,7 @@ public class GridEventStorageRequest implements DeploymentAware, DeferredUnmarsh
 
     /** Deployment of the filter classes. */
     @Order(2)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
     /** */
     @Order(3)
@@ -66,7 +66,7 @@ public class GridEventStorageRequest implements DeploymentAware, DeferredUnmarsh
     GridEventStorageRequest(IgniteUuid resTopicId, IgnitePredicate<?> filter, GridDeploymentInfo depInfo) {
         this.resTopicId = resTopicId;
         this.filter = filter;
-        this.depInfo = new GridDeploymentInfoBean(depInfo);
+        this.depInfo = new GridDeploymentInfoMessage(depInfo);
 
         filterClsName = filter.getClass().getName();
     }

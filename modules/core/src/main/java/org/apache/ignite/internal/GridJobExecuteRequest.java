@@ -25,7 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -72,7 +72,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
 
     /** Deployment of the task classes. */
     @Order(6)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
     /** */
     @Order(7)
@@ -224,7 +224,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.sesId = sesId;
         this.jobId = jobId;
         this.taskName = taskName;
-        this.depInfo = new GridDeploymentInfoBean(depInfo);
+        this.depInfo = new GridDeploymentInfoMessage(depInfo);
         this.taskClsName = taskClsName;
         this.job = job;
         this.startTaskTime = startTaskTime;

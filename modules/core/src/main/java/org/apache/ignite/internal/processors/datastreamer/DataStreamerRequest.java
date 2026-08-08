@@ -22,7 +22,7 @@ import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.StripedMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -70,7 +70,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** Deployment of the streamed classes. */
     @Order(8)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
     /** */
     @Order(9)
@@ -133,7 +133,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
-        this.depInfo = depInfo != null ? new GridDeploymentInfoBean(depInfo) : null;
+        this.depInfo = depInfo != null ? new GridDeploymentInfoMessage(depInfo) : null;
         this.sampleClsName = sampleClsName;
         this.forceLocDep = forceLocDep;
         this.topVer = topVer;

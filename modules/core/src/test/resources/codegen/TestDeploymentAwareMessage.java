@@ -18,7 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 
 public class TestDeploymentAwareMessage implements DeploymentAware {
     @Marshalled("dataBytes")
@@ -28,7 +28,7 @@ public class TestDeploymentAwareMessage implements DeploymentAware {
     byte[] dataBytes;
 
     @Order(1)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
     @Order(2)
     String clsName;

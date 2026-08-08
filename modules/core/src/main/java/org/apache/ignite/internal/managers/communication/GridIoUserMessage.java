@@ -21,7 +21,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +47,7 @@ public class GridIoUserMessage implements Message {
 
     /** Deployment of the message classes. */
     @Order(2)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
     /** Deployment class name. */
     @Order(3)
@@ -76,7 +76,7 @@ public class GridIoUserMessage implements Message {
         this.depClsName = depClsName;
         this.topic = topic;
         this.topicBytes = topicBytes;
-        this.depInfo = depInfo != null ? new GridDeploymentInfoBean(depInfo) : null;
+        this.depInfo = depInfo != null ? new GridDeploymentInfoMessage(depInfo) : null;
     }
 
     /**

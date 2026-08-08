@@ -27,7 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,7 +74,7 @@ class CacheContinuousQueryDeployableObject implements Externalizable {
         if (dep == null)
             throw new IgniteDeploymentCheckedException("Failed to deploy object: " + obj);
 
-        depInfo = new GridDeploymentInfoBean(dep);
+        depInfo = new GridDeploymentInfoMessage(dep);
 
         bytes = U.marshal(ctx, obj);
     }
