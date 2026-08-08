@@ -219,21 +219,18 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         srvcPermissions = normalizeResourcePermissions(srvcPerms);
     }
 
-    /**
-     * @param fields Fields of the Java-serialized form.
-     * @param name Field to read.
-     * @return Permissions per resource name, empty if the field is absent from the stream.
-     */
-    @SuppressWarnings("unchecked")
-    private static Map<String, EnumSet<SecurityPermission>> readPermissions(ObjectInputStream.GetField fields,
-        String name
-    ) throws IOException {
-        return normalizeResourcePermissions((Map<String, ? extends Collection<SecurityPermission>>)fields.get(name, null));
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SecurityBasicPermissionSet.class, this);
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private static Map<String, EnumSet<SecurityPermission>> readPermissions(
+        ObjectInputStream.GetField fields,
+        String name
+    ) throws IOException {
+        return normalizeResourcePermissions((Map<String, ? extends Collection<SecurityPermission>>)fields.get(name, null));
     }
 
     /** */

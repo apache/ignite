@@ -565,7 +565,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             String implType = resolveCollectionImplementationType(type);
 
-            return "new MessageCollectionType(" + messageCollectionItemTypeDescriptor(typeArgs.get(0), field) +
+            return "new MessageCollectionType(" + messageCollectionItemTypeDescriptor(itemType, field) +
                 ", CollectionImplementationType." + implType + ")";
         }
         else if (enumType(env, type)) {

@@ -116,7 +116,6 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        // No marshaller: enum fields need no marshalling, so its generation is skipped.
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)

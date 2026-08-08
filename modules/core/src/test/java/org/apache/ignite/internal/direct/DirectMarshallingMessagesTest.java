@@ -110,7 +110,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
             assertTrue(col instanceof EnumSet);
     }
 
-    /** Null containers stay null: an absent collection must not come back as an empty one. */
+    /** */
     @Test
     public void testNullContainers() {
         TestNestedContainersMessage resMsg = doMarshalUnmarshalChunked(new TestNestedContainersMessage());
