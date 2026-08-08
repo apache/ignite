@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -571,7 +573,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx,
                 rowType,
                 idxBndRel.first() ? cmp : cmp.reversed(),
-                0,
+                SortNode.OFFSET_DEFAULT,
                 1
             );
 
@@ -1076,21 +1078,17 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
         }
 
-        long paramAsLong;
-
         try {
-            paramAsLong = IgniteMath.convertToLongExact((Number)param);
+            BigDecimal paramAsDecimal = IgniteMath.convertToBigDecimal((Number)param);
+
+            if (paramAsDecimal.signum() < 0)
+                throw new IllegalArgumentException("Negative value for " + op);
+
+            return IgniteMath.convertToLongExact(paramAsDecimal, RoundingMode.DOWN);
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
                 IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE, ex);
         }
-
-        if (paramAsLong < 0) {
-            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
-                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
-        }
-
-        return paramAsLong;
     }
 }
