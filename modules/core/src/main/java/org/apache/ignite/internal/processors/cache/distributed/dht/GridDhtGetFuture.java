@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -502,14 +501,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
             assert val != null;
 
-            GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-            info.cacheId(cctx.cacheId());
-            info.key(entry.getKey());
-            info.value(skipVals ? null : (CacheObject)val.value());
-            info.version(val.version());
-            info.expireTime(val.expireTime());
-            info.ttl(val.ttl());
+            GridCacheEntryInfo info = new GridCacheEntryInfo(
+                cctx.cacheId(),
+                entry.getKey(),
+                skipVals ? null : val.value(),
+                val.version(),
+                val.expireTime(),
+                val.ttl()
+            );
 
             infos.add(info);
         }
