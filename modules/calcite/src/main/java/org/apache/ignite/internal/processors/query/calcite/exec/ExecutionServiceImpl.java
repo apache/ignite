@@ -210,6 +210,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private final Map<String, FragmentPlan> fragmentPlanCache = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
+    /** Binary marshaller. */
+    private Function<Object, Object> binaryMarshaller;
+
     /**
      * @param ctx Kernal.
      */
@@ -472,6 +475,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         udfQryLimit.set(ctx.config().getQueryThreadPoolSize() - 1);
 
+        binaryMarshaller = obj -> {
+            return ctx.cacheObjects().binary().toBinary(obj);
+        };
+
         init();
     }
 
@@ -683,7 +690,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 createIoTracker(locNodeId, qry.localQueryId()),
                 timeout,
                 qryParams,
-                userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
+                userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()),
+                binaryMarshaller
+                );
 
             Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
                 exchangeService(), failureProcessor()).go(fragment.root());
@@ -960,7 +969,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 createIoTracker(nodeId, msg.originatingQueryId()),
                 msg.timeout(),
                 Commons.parametersMap(msg.parameters()),
-                msg.queryTransactionEntries()
+                msg.queryTransactionEntries(),
+                binaryMarshaller
             );
 
             executeFragment(qry, fragmentPlan, ectx);
