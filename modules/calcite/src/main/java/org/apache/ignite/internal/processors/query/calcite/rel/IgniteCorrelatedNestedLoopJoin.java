@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelOptCluster;
@@ -265,11 +264,5 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     /** */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw).item("correlationVariables", getVariablesSet());
-    }
-
-    /** {@inheritDoc} */
-    @Override public double estimateRowCount(RelMetadataQuery mq) {
-        // condition selectivity already counted within the external filter
-        return super.estimateRowCount(mq) / mq.getSelectivity(this, getCondition());
     }
 }
