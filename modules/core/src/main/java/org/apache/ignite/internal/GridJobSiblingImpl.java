@@ -40,10 +40,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 public class GridJobSiblingImpl implements ComputeJobSibling {
     /** */
-    private IgniteUuid sesId;
+    IgniteUuid sesId;
 
     /** */
-    private final IgniteUuid jobId;
+    final IgniteUuid jobId;
 
     /** */
     private Object taskTopic;

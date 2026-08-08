@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.job;
 
 import java.util.AbstractCollection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -35,7 +37,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
@@ -1259,10 +1260,21 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
 
                         // TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
-                        Collection<ComputeJobSibling> siblings = F.isEmpty(req.siblingJobsIds())
-                            ? null
-                            : req.siblingJobsIds().stream().map(sibJobId -> new GridJobSiblingImpl(null, sibJobId, node.id(), ctx))
-                                .collect(Collectors.toList());
+                        List<IgniteUuid> siblJobsIds = req.siblingJobsIds();
+                        List<IgniteUuid> siblJobsSesIds = req.siblingJobsSessionIds();
+
+                        assert F.isEmpty(siblJobsIds) == F.isEmpty(siblJobsSesIds);
+
+                        Collection<ComputeJobSibling> siblings = null;
+
+                        if (!F.isEmpty(siblJobsIds)) {
+                            assert siblJobsSesIds.size() == siblJobsIds.size();
+
+                            siblings = new ArrayList<>(siblJobsIds.size());
+
+                            for (int i = 0; i < siblJobsIds.size(); ++i)
+                                siblings.add(new GridJobSiblingImpl(siblJobsSesIds.get(i), siblJobsIds.get(i), node.id(), ctx));
+                        }
 
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
