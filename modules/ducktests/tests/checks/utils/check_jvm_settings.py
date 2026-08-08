@@ -19,7 +19,8 @@ Checks JVM settings.
 
 import pytest
 
-from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings, DEFAULT_HEAP
+from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings, validate_gc_settings, \
+    DEFAULT_HEAP, GC_PROFILES, GC_G1, GC_SERIAL, MultipleGcSelectedError
 
 
 class CheckJVMSettings:
@@ -75,3 +76,56 @@ class CheckJVMSettings:
                 res[param] = 1
 
         assert res == expected
+
+    def check_default_gc(self):
+        """
+        Without an explicit collector, create_jvm_settings yields the default profile and nothing from
+        any other one.
+        """
+        jvm_settings = create_jvm_settings()
+
+        for opt in GC_PROFILES[GC_G1]:
+            assert opt in jvm_settings
+
+        assert "-XX:+UseStringDeduplication" not in create_jvm_settings(gc_settings=GC_PROFILES[GC_SERIAL])
+
+    @pytest.mark.parametrize('gc_settings', [GC_PROFILES[GC_SERIAL], "-XX:+UseSerialGC"])
+    def check_gc_settings_accepts_list_and_string(self, gc_settings):
+        """
+        A stray caller passing a string keeps working.
+        """
+        assert "-XX:+UseSerialGC" in create_jvm_settings(gc_settings=gc_settings)
+
+    @pytest.mark.parametrize(
+        'jvm_opts',
+        [
+            ["-XX:+UseG1GC", "-XX:+UseZGC"],
+            ["-XX:+UseSerialGC", "-XX:+UseParallelGC", "-XX:+UseZGC"],
+            "-XX:+UseG1GC -XX:+UseShenandoahGC",
+        ]
+    )
+    def check_multiple_gc_selectors_raise(self, jvm_opts):
+        """
+        Two enabled collectors abort the JVM at startup; catch it in Python instead.
+        """
+        with pytest.raises(MultipleGcSelectedError):
+            validate_gc_settings(jvm_opts)
+
+        with pytest.raises(MultipleGcSelectedError):
+            merge_jvm_settings([], jvm_opts)
+
+    @pytest.mark.parametrize(
+        'jvm_opts',
+        [
+            ["-XX:+UseG1GC"],
+            ["-XX:+UseG1GC", "-XX:-UseZGC"],
+            ["-XX:+UseG1GC", "-XX:-UseG1GC", "-XX:+UseZGC"],  # last occurrence per collector wins
+            # neither of these is a collector selector, despite matching on a naive pattern
+            ["-XX:+UseG1GC", "-XX:+DisableExplicitGC", "-XX:+UseStringDeduplication"],
+        ]
+    )
+    def check_single_gc_selector_passes(self, jvm_opts):
+        """
+        One enabled collector, however it was arrived at, is fine.
+        """
+        assert validate_gc_settings(jvm_opts) == jvm_opts

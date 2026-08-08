@@ -183,6 +183,7 @@ You can modify test environments at execution time using global flags injected t
 
 | Global Parameter Key | Definition | Example Configuration |
 |---------------------|------------|----------------------|
+| **gc** | Garbage collector to run nodes with, selectable independently for the `server` and `client` roles. Default is `G1` for both. See [Garbage Collector Selection](#garbage-collector-selection) below. | ```{"gc": {"server": "ZGC", "client": "SERIAL"}}``` |
 | **jfr_enabled** | Boolean flag to enable Java Flight Recorder for performance profiling. Default is False. | ```{"jfr_enabled": true}``` |
 | **safepoint_log_enabled** | Boolean flag to enable safepoint logging for debugging JVM behavior. Default is False. | ```{"safepoint_log_enabled": true}``` |
 | **jmx_remote** | JMX remote monitoring configuration with nested parameters. Enabled flag controls remote JMX access, port specifies the listening port (default is 1098). | ```{"jmx_remote": {"enabled": true, "port": 1099}}``` |
@@ -227,6 +228,51 @@ You can target specific cross-product version compatibility combinations inside 
 ```
 
 
+### Garbage Collector Selection
+
+The collector is chosen with the `gc` global. It is *mutually-exclusive group replacement*: a collector and the tuning flags that are meaningful for it travel together, so selecting one swaps the whole group. This is why it cannot be done by passing `-XX:+UseZGC` in `jvm_opts` — that leaves two selectors on the command line and the JVM aborts at startup with "Multiple garbage collectors selected".
+
+Three shapes are accepted:
+
+```bash
+# Both roles
+--global-json '{"gc": "ZGC"}'
+
+# Servers only; clients keep the default
+--global-json '{"gc": {"server": "ZGC"}}'
+
+# Per role
+--global-json '{"gc": {"server": "ZGC", "client": "SERIAL"}}'
+
+# Raw JVM options -- escape hatch, bypasses the registry and its validation
+--global-json '{"gc": {"server": ["-XX:+UseZGC", "-XX:SoftMaxHeapSize=2G"]}}'
+```
+
+Profile names are case-insensitive (`"zgc"` == `"ZGC"`). An unknown name fails immediately with the list of valid names rather than silently falling back.
+
+| Profile | Options set |
+|---------|-------------|
+| **G1** (default) | `-XX:+UseG1GC`, `-XX:MaxGCPauseMillis=100`, `-XX:ConcGCThreads`, `-XX:ParallelGCThreads`, `-XX:+UseStringDeduplication` |
+| **PARALLEL** | `-XX:+UseParallelGC`, `-XX:ParallelGCThreads` — deliberately no `MaxGCPauseMillis`, which would flip ParallelGC into adaptive pause-goal sizing |
+| **SERIAL** | `-XX:+UseSerialGC` |
+| **ZGC** | `-XX:+UseZGC`, `-XX:ConcGCThreads`, `-XX:ParallelGCThreads` |
+| **SHENANDOAH** | `-XX:+UseShenandoahGC`, `-XX:ConcGCThreads`, `-XX:ParallelGCThreads` — OpenJDK builds only, absent from Oracle JDK |
+
+`-XX:+UseStringDeduplication` is part of the G1 profile because it is G1-only through JDK 17; it is not applied under any other collector.
+
+**Roles** are determined semantically, not by service class: a service is a `server` only if it is a full Ignite node that is not in client mode. Client-mode `IgniteService`s, application services, thin clients, thin JDBC and the Kafka-CDC `kafka-to-ignite` utility all resolve as `client`.
+
+**Precedence**, lowest to highest:
+
+```
+G1 default  <  gc global for the role  <  jvm_opts passed by the test
+```
+
+Caveats:
+* A service constructed with `merge_with_default=False` drops every default, so the `gc` global does not reach it — its collector comes from `jvm_opts` alone. A warning is logged when this happens.
+* The raw-list form is used verbatim and is *not* validated, so two selectors in one list still reach the JVM.
+* Conflicting selectors from any other route raise a Python exception when the service is constructed, rather than failing later in a remote JVM.
+
 ### Diagnostics & Performance Utilities
 ```bash
 # Enable Java Flight Recorder (JFR) tracing
@@ -234,6 +280,9 @@ You can target specific cross-product version compatibility combinations inside 
 
 # Enable JVM Safepoints performance logging
 --global-json '{"safepoint_log_enabled": true}'
+
+# Run servers under ZGC and clients under SerialGC
+--global-json '{"gc": {"server": "ZGC", "client": "SERIAL"}}'
 ```
 
 ### Security Settings
