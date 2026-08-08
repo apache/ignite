@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.job;
 import java.util.AbstractCollection;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -1256,6 +1257,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
+                        Collection<ComputeJobSibling> siblings = Collections.emptyList();
+
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
                             node.id(),
@@ -1266,7 +1269,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTopologyPredicate(),
                             req.startTaskTime(),
                             endTime,
-                            req.getSiblings(),
+                            siblings,
                             req.getSessionAttributes(),
                             req.sessionFullSupport(),
                             req.internal(),

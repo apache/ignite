@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -107,13 +108,13 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     @Order(11)
     String cpSpi;
 
-    /** Left unset for a continuous task: such a job requests its siblings from the task node instead. */
-    @Marshalled("siblingsBytes")
-    Collection<ComputeJobSibling> siblings;
-
-    /** */
+    /**
+     * Sibling jobs ids. Plain representation of {@link GridJobSiblingImpl#jobId} to reduce the messages number.
+     *
+     * @see ComputeJobSibling
+     */
     @Order(12)
-    byte[] siblingsBytes;
+    @Nullable Collection<IgniteUuid> sibJobIds;
 
     /** Transient since needs to hold local creation time. */
     private final long createTime = U.currentTimeMillis();
@@ -253,7 +254,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.top = top;
         this.topVer = topVer;
         this.topPred = topPred;
-        this.siblings = dynamicSiblings ? null : siblings;
         this.sesAttrs = sesAttrs;
         this.jobAttrs = jobAttrs;
         this.clsLdrId = clsLdrId;
@@ -269,6 +269,9 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.execName = execName;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
+
+        if(!dynamicSiblings && !F.isEmpty(siblings))
+            sibJobIds = F.viewReadOnly(siblings, ComputeJobSibling::getJobId);
     }
 
     /**
@@ -337,10 +340,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     }
 
     /**
-     * @return Job siblings.
+     * @return Sibling job ids.
      */
-    public Collection<ComputeJobSibling> getSiblings() {
-        return siblings;
+    public @Nullable Collection<IgniteUuid> getSiblings() {
+        return sibJobIds;
     }
 
     /**

@@ -27,7 +27,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
@@ -37,15 +36,12 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 /**
  * This class provides implementation for job sibling.
  */
-public class GridJobSiblingImpl implements ComputeJobSibling, Message {
+public class GridJobSiblingImpl implements ComputeJobSibling {
     /** */
-    @Order(0)
-    IgniteUuid sesId;
+    private IgniteUuid sesId;
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @Order(1)
-    IgniteUuid jobId;
+    private final IgniteUuid jobId;
 
     /** */
     private Object taskTopic;
@@ -60,12 +56,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Message {
     private boolean isJobDone;
 
     /** */
-    private transient GridKernalContext ctx;
-
-    /** Empty constructor for serialization purposes. */
-    public GridJobSiblingImpl() {
-        // No-op.
-    }
+    private GridKernalContext ctx;
 
     /**
      * @param sesId Task session ID.
