@@ -65,7 +65,6 @@ public class GridJobSiblingImpl implements ComputeJobSibling {
      * @param ctx Managers registry.
      */
     public GridJobSiblingImpl(IgniteUuid sesId, IgniteUuid jobId, UUID nodeId, GridKernalContext ctx) {
-        assert sesId != null;
         assert jobId != null;
         assert nodeId != null;
         assert ctx != null;

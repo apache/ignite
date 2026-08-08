@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.job;
 import java.util.AbstractCollection;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -1259,10 +1258,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
-                        Collection<ComputeJobSibling> siblings = Collections.emptyList();
-
-                        if (!F.isEmpty(req.siblingJobsIds()))
-                            siblings = req.siblingJobsIds().stream().map(sibJobId -> new GridJobSiblingImpl(null, sibJobId, null, null)).collect(Collectors.toList());
+                        Collection<ComputeJobSibling> siblings = F.isEmpty(req.siblingJobsIds()) ?
+                            null
+                            : req.siblingJobsIds().stream().map(sibJobId -> new GridJobSiblingImpl(null, sibJobId, node.id(), ctx))
+                                .collect(Collectors.toList());
 
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
