@@ -210,7 +210,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        cacheMetricsSnapshot = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
