@@ -20,6 +20,7 @@ package org.apache.ignite.plugin.security;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -27,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,42 +35,48 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.copySafe;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.downcast;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.normalizeValueType;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.normalizeResourcePermissions;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.upcast;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.toEnumSet;
 
 /**
  * Simple implementation of {@link SecurityPermissionSet} interface.
  * Provides convenient way to specify permission set in the XML configuration.
  */
-public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMarshallingMessage {
+public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final ObjectStreamField[] serialPersistentFields = {
+        new ObjectStreamField("dfltAllowAll", boolean.class),
+        new ObjectStreamField("cachePermissions", Map.class),
+        new ObjectStreamField("sysPermissions", Collection.class),
+        new ObjectStreamField("taskPermissions", Map.class)
+    };
 
     /** Cache permissions. */
     @GridToStringInclude
     @Order(0)
-    Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
+    Map<String, EnumSet<SecurityPermission>> cachePermissions = new HashMap<>();
 
     /** Task permissions. */
     @GridToStringInclude
     @Order(1)
-    Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
+    Map<String, EnumSet<SecurityPermission>> taskPermissions = new HashMap<>();
 
     /** Service permissions. */
     @GridToStringInclude
     @Order(2)
-    transient Map<String, Collection<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
-            ? compatibleServicePermissions()
-            : new HashMap<>();
+    transient Map<String, EnumSet<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
+        ? compatibleServicePermissions()
+        : new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude
     @Order(3)
-    @Nullable Collection<SecurityPermission> sysPermissions;
+    @Nullable EnumSet<SecurityPermission> sysPermissions;
 
     /** Default allow all. */
     @Order(4)
@@ -82,9 +88,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMa
      * @param cachePermissions Cache permissions.
      */
     public void setCachePermissions(Map<String, EnumSet<SecurityPermission>> cachePermissions) {
-        A.notNull(cachePermissions, "cachePermissions");
-
-        this.cachePermissions = normalizeValueType(upcast(cachePermissions));
+        this.cachePermissions = checkPermissions(cachePermissions, "cachePermissions");
     }
 
     /**
@@ -93,9 +97,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMa
      * @param taskPermissions Task permissions.
      */
     public void setTaskPermissions(Map<String, EnumSet<SecurityPermission>> taskPermissions) {
-        A.notNull(taskPermissions, "taskPermissions");
-
-        this.taskPermissions = normalizeValueType(upcast(taskPermissions));
+        this.taskPermissions = checkPermissions(taskPermissions, "taskPermissions");
     }
 
     /**
@@ -104,9 +106,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMa
      * @param srvcPermissions Service permissions.
      */
     public void setServicePermissions(Map<String, EnumSet<SecurityPermission>> srvcPermissions) {
-        A.notNull(srvcPermissions, "servicePermissions");
-
-        this.srvcPermissions = normalizeValueType(upcast(srvcPermissions));
+        this.srvcPermissions = checkPermissions(srvcPermissions, "servicePermissions");
     }
 
     /**
@@ -129,22 +129,22 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMa
 
     /** {@inheritDoc} */
     @Override public Map<String, EnumSet<SecurityPermission>> cachePermissions() {
-        return downcast(cachePermissions);
+        return cachePermissions;
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, EnumSet<SecurityPermission>> taskPermissions() {
-        return downcast(taskPermissions);
+        return taskPermissions;
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, EnumSet<SecurityPermission>> servicePermissions() {
-        return downcast(srvcPermissions);
+        return srvcPermissions;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public EnumSet<SecurityPermission> systemPermissions() {
-        return (EnumSet<SecurityPermission>)sysPermissions;
+        return sysPermissions;
     }
 
     /** {@inheritDoc} */
@@ -183,28 +183,40 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMa
 
     /** */
     private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
+        ObjectOutputStream.PutField fields = out.putFields();
+
+        fields.put("dfltAllowAll", dfltAllowAll);
+        fields.put("cachePermissions", cachePermissions);
+        fields.put("sysPermissions", sysPermissions);
+        fields.put("taskPermissions", taskPermissions);
+
+        out.writeFields();
 
         if (serializeVersion() >= 2)
             U.writeMap(out, srvcPermissions);
     }
 
     /** */
+    @SuppressWarnings("unchecked")
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
+        ObjectInputStream.GetField fields = in.readFields();
 
-        if (serializeVersion() >= 2)
-            srvcPermissions = U.readMap(in);
+        dfltAllowAll = fields.get("dfltAllowAll", false);
+        cachePermissions = readPermissions(fields, "cachePermissions");
+        taskPermissions = readPermissions(fields, "taskPermissions");
 
-        if (srvcPermissions == null) {
+        Collection<SecurityPermission> sysPerms = (Collection<SecurityPermission>)fields.get("sysPermissions", null);
+
+        sysPermissions = sysPerms == null ? null : toEnumSet(sysPerms);
+
+        Map<String, ? extends Collection<SecurityPermission>> srvcPerms = serializeVersion() >= 2 ? U.readMap(in) : null;
+
+        if (srvcPerms == null) {
             // Allow all for compatibility mode
-            if (serializeVersion() < 2)
-                srvcPermissions = compatibleServicePermissions();
-            else
-                srvcPermissions = Collections.emptyMap();
+            srvcPerms = serializeVersion() < 2 ? compatibleServicePermissions() : Collections.emptyMap();
         }
 
-        normalize();
+        srvcPermissions = normalizeResourcePermissions(srvcPerms);
     }
 
     /** {@inheritDoc} */
@@ -212,23 +224,23 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet, SelfMa
         return S.toString(SecurityBasicPermissionSet.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
-        // Message framework uses ArrayList for ordinary collections,
-        // so we need to convert it to appropriate form explicitly.
-        normalize();
+    /** */
+    @SuppressWarnings("unchecked")
+    private static Map<String, EnumSet<SecurityPermission>> readPermissions(
+        ObjectInputStream.GetField fields,
+        String name
+    ) throws IOException {
+        return normalizeResourcePermissions((Map<String, ? extends Collection<SecurityPermission>>)fields.get(name, null));
     }
 
     /** */
-    private void normalize() {
-        cachePermissions = normalizeValueType(cachePermissions);
-        taskPermissions = normalizeValueType(taskPermissions);
-        srvcPermissions = normalizeValueType(srvcPermissions);
-        sysPermissions = sysPermissions == null ? null : copySafe(sysPermissions);
+    private static Map<String, EnumSet<SecurityPermission>> checkPermissions(
+        Map<String, EnumSet<SecurityPermission>> perms,
+        String name
+    ) {
+        A.notNull(perms, name);
+        A.ensure(perms.values().stream().noneMatch(Objects::isNull), name + " must not contain a null permission set");
+
+        return perms;
     }
 }
