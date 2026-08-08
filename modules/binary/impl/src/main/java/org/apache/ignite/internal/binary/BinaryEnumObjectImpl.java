@@ -171,8 +171,10 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
         ClassLoader resolveLdr = ldr == null ? ctx.classLoader() : ldr;
 
+/*
         if (ldr != null)
             Marshallers.USE_CACHE.set(Boolean.FALSE);
+*/
 
         try {
             Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
@@ -193,7 +195,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
-        assert !Marshallers.USE_CACHE.get();
+        //assert !Marshallers.USE_CACHE.get();
 
         if (ord >= 0) {
             Object[] vals = cls.getEnumConstants();
