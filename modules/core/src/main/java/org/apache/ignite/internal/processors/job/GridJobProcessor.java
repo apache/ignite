@@ -1258,8 +1258,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
-                        Collection<ComputeJobSibling> siblings = F.isEmpty(req.siblingJobsIds()) ?
-                            null
+                        // TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
+                        Collection<ComputeJobSibling> siblings = F.isEmpty(req.siblingJobsIds())
+                            ? null
                             : req.siblingJobsIds().stream().map(sibJobId -> new GridJobSiblingImpl(null, sibJobId, node.id(), ctx))
                                 .collect(Collectors.toList());
 

@@ -109,7 +109,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     String cpSpi;
 
     /**
-     * Sibling jobs ids. Plain representation of {@link GridJobSiblingImpl#jobId} to reduce the messages number.
+     * Sibling jobs ids. Plain representation of {@link GridJobSiblingImpl#getJobId()} to reduce the messages number.
      *
      * @see ComputeJobSibling
      */
@@ -216,6 +216,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
             long timeout,
             @Nullable Collection<UUID> top,
             @Nullable IgnitePredicate<ClusterNode> topPred,
+            // TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
             Collection<ComputeJobSibling> siblings,
             Map<Object, Object> sesAttrs,
             Map<? extends Serializable, ? extends Serializable> jobAttrs,

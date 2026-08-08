@@ -27,6 +27,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
@@ -35,6 +36,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 
 /**
  * This class provides implementation for job sibling.
+ * TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
  */
 public class GridJobSiblingImpl implements ComputeJobSibling {
     /** */
@@ -64,7 +66,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling {
      * @param nodeId ID of the node where this sibling was sent for execution.
      * @param ctx Managers registry.
      */
-    public GridJobSiblingImpl(IgniteUuid sesId, IgniteUuid jobId, UUID nodeId, GridKernalContext ctx) {
+    public GridJobSiblingImpl(@Nullable IgniteUuid sesId, IgniteUuid jobId, UUID nodeId, GridKernalContext ctx) {
         assert jobId != null;
         assert nodeId != null;
         assert ctx != null;
