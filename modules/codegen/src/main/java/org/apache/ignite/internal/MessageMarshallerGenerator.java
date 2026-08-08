@@ -27,8 +27,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.Set;
+import java.util.function.BiFunction;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
@@ -99,7 +99,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** */
     private final TypeMirror deploymentAwareMsgType;
-
 
     /** */
     private final TypeMirror selfMarshallingMsgType;

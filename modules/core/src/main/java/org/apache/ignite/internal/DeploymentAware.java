@@ -26,8 +26,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * object context.
  * <p>
  * Resolving may have to request the deployment from its owner and block, so a message stating this must be unmarshalled
- * where blocking is allowed: not from a socket-reading thread. A message that cannot promise that keeps its deployment
- * as a plain field and asks {@code GridDeploymentManager} for the loader itself, as {@code StartRequestData} does.
+ * where blocking is allowed, never from a socket-reading thread. A message read on such a thread states
+ * {@code DeferredUnmarshalMessage} as well, leaving the read to its owner.
  *
  * @see MarshallableMessage
  */
