@@ -690,7 +690,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
                         appMsg = new DataStreamerRequest(
                             req.requestId(),
-                            req.responseTopic(),
+                            req.resTopicId,
                             req.cacheName(),
                             req.updaterBytes(),
                             req.entries(),

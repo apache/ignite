@@ -129,11 +129,25 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testEmptyMessage() {
-        Compilation compilation = compile("EmptyMessage.java");
+    public void testIncorrectEmptyMessage() {
+        Compilation compilation = compile("IncorrectEmptyMessage.java");
 
         assertThat(compilation).succeeded();
         assertTrue(compilation.generatedSourceFiles().isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testCorrectEmptyMessage() {
+        Compilation compilation = compile("CorrectEmptyMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.CorrectEmptyMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CorrectEmptyMessageSerializer.java"));
     }
 
     /** */

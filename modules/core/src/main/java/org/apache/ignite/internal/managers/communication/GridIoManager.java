@@ -142,6 +142,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
+import static org.apache.ignite.internal.StripedMessage.ANY_STRIPE;
+import static org.apache.ignite.internal.StripedMessage.NO_STRIPE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -1384,21 +1386,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             if (msg0.processFromNioThread())
                 c.run();
             else
-                ctx.pools().getStripedExecutorService().execute(-1, c);
+                ctx.pools().getStripedExecutorService().execute(ANY_STRIPE, c);
 
             return;
         }
 
-        final int part = msg.partition(); // Store partition to avoid possible recalculation.
+        final int stripeIdx = msg.stripeIdx(); // Store to avoid possible recalculation.
 
-        if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.pools().getStripedExecutorService().execute(part, c);
+        if (plc == GridIoPolicy.SYSTEM_POOL && stripeIdx != NO_STRIPE) {
+            ctx.pools().getStripedExecutorService().execute(stripeIdx, c);
 
             return;
         }
 
-        if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.pools().getDataStreamerExecutorService().execute(part, c);
+        if (plc == GridIoPolicy.DATA_STREAMER_POOL && stripeIdx != NO_STRIPE) {
+            ctx.pools().getDataStreamerExecutorService().execute(stripeIdx, c);
 
             return;
         }

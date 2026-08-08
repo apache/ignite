@@ -1766,7 +1766,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             nodeId,
             req.futureId(),
-            req.partition(),
+            req.stripeIdx(),
             false);
 
         res.addFailedKeys(req.keys(), e);
@@ -1789,7 +1789,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             node.id(),
             req.futureId(),
-            req.partition(),
+            req.stripeIdx(),
             false);
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
@@ -3241,7 +3241,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             nodeId,
             checkReq.futureId(),
-            checkReq.partition(),
+            checkReq.stripeIdx(),
             false);
 
         GridCacheReturn ret = new GridCacheReturn(false, true);
@@ -3263,7 +3263,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ", writeVer=" + req.writeVersion() + ", node=" + nodeId + ']');
         }
 
-        assert req.partition() >= 0 : req;
+        assert req.stripeIdx() >= 0 : req;
 
         GridCacheVersion ver = req.writeVersion();
 
@@ -3273,7 +3273,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (req.nearNodeId() != null) {
             nearRes = new GridDhtAtomicNearResponse(ctx.cacheId(),
-                req.partition(),
+                req.stripeIdx(),
                 req.nearFutureId(),
                 nodeId,
                 req.flags());
@@ -3407,7 +3407,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             if (nearEvicted != null) {
                 dhtRes = new GridDhtAtomicUpdateResponse(ctx.cacheId(),
-                    req.partition(),
+                    req.stripeIdx(),
                     req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
@@ -3441,7 +3441,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (dhtRes != null)
             sendDhtPrimaryResponse(nodeId, req, dhtRes);
         else
-            sendDeferredUpdateResponse(req.partition(), nodeId, req.futureId());
+            sendDeferredUpdateResponse(req.stripeIdx(), nodeId, req.futureId());
     }
 
     /**

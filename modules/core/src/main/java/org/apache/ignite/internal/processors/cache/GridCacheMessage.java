@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.StripedMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
@@ -44,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see DeployableMessage
  */
-public abstract class GridCacheMessage implements DeferredUnmarshalMessage {
+public abstract class GridCacheMessage implements DeferredUnmarshalMessage, StripedMessage {
     /** Maximum number of cache lookup indexes. */
     public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 7;
 
@@ -123,11 +124,9 @@ public abstract class GridCacheMessage implements DeferredUnmarshalMessage {
         return -1;
     }
 
-    /**
-     * @return Partition ID this message is targeted to or {@code -1} if it cannot be determined.
-     */
-    public int partition() {
-        return -1;
+    /** {@inheritDoc} */
+    @Override public int stripeIdx() {
+        return ANY_STRIPE;
     }
 
     /**

@@ -112,7 +112,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return partId;
     }
 
