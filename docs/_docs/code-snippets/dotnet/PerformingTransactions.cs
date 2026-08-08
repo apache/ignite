@@ -148,5 +148,19 @@ namespace dotnet_helloworld
             Ignition.Start(cfg);
             // end::pmeTimeout[]
         }
+
+        public static void TxTimeout()
+        {
+            // tag::txTimeout[]
+            var cfg = new IgniteConfiguration
+            {
+                TransactionConfiguration = new TransactionConfiguration
+                {
+                    DefaultTimeout = TimeSpan.FromSeconds(300)
+                }
+            };
+            Ignition.Start(cfg);
+            // end::txTimeout[]
+        }
     }
 }
