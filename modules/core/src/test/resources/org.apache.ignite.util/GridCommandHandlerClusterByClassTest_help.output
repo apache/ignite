@@ -162,6 +162,16 @@ This utility can do the following commands:
     Parameters:
       new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
+  Kill all SQL/scan/continuous queries matching specified criteria:
+    control.(sh|bat) --kill all SQL|SCAN|CONTINUOUS [--node-id node_id] [--min-duration 60]
+
+    Parameters:
+      SQL                - SQL queries.
+      SCAN               - SCAN queries.
+      CONTUNUOUS         - CONTUNUOUS queries.
+      --node-id node_id  - Originating node ID to filter targets.
+      --min-duration 60  - Minimum duration in seconds.
+
   Kill compute task by session id:
     control.(sh|bat) --kill compute session_id
 
