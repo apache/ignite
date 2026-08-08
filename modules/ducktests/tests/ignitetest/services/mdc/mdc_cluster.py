@@ -25,6 +25,11 @@ MDC test fixture.
 
         net.enable_network_partition(DC_1, DC_2)
         ...
+
+Globals:
+
+    mdc_cache_topology_validator - whether the MDC caches are created with the cache level
+    MdcTopologyValidator, default true.
 """
 from typing import Dict, List, Optional, Union
 
@@ -44,6 +49,9 @@ DC_2 = "DC2"
 DCS = (DC_1, DC_2)
 
 IGNITE_STARTUP_TIMEOUT_SEC = 90
+
+# Global: set to false to create the MDC caches without the cache level topology validator.
+CACHE_TOP_VALIDATOR_GLOBAL = "mdc_cache_topology_validator"
 
 DATA_CENTER_ATTR = "IGNITE_DATA_CENTER_ID"
 IGNITE_SQL_RETRY_TIMEOUT_ATTR = "IGNITE_SQL_RETRY_TIMEOUT"
@@ -147,6 +155,13 @@ class MdcCluster:
 
         # Admissibility checks run on reusable services, so each check needs a unique result prefix.
         self._adm_checks = 0
+
+        # Cache parameters applied to every cache this fixture creates, unless a call overrides them.
+        self.cache_defaults = {
+            "topologyValidator": self.test_context.globals.get(CACHE_TOP_VALIDATOR_GLOBAL, True)
+        }
+
+        self.logger.info(f"MDC cache defaults [{self.cache_defaults}]")
 
     def sync_service_discovery(self):
         """
@@ -258,12 +273,13 @@ class MdcCluster:
                      java_class: str = LOAD_APP) -> IgniteApplicationService:
         """
         Starts a background load application (runs until stopped). Any exception raised
-        by the application surfaces in :meth:`stop_loader`.
+        by the application surfaces in :meth:`stop_loader`. :attr:`cache_defaults` are
+        merged in.
         """
         svc = self.loaders[dc][loader]
 
         svc.java_class_name = java_class
-        svc.params = params
+        svc.params = {**self.cache_defaults, **params}
 
         svc.start(clean=self._first_start(svc))
 
@@ -292,10 +308,12 @@ class MdcCluster:
         """
         Creates the MDC cache (if absent) and populates keys ``[from_idx, to_idx)``.
         Extra cache parameters (``atomicity``, ``writeSync``, ``readFromBackup``,
-        ``partitions``, ...) are passed through to the cache configuration builder.
+        ``partitions``, ...) are passed through to the cache configuration builder, on top
+        of :attr:`cache_defaults`.
         """
         params = {"cacheName": cache_name, "backups": backups, "mainDc": main_dc,
-                  "from": from_idx, "to": to_idx, "sqlMode": sql_mode, **cache_params}
+                  "from": from_idx, "to": to_idx, "sqlMode": sql_mode,
+                  **self.cache_defaults, **cache_params}
 
         return self.run_app(dc, GENERATOR_APP, params)
 
@@ -336,8 +354,10 @@ class MdcCluster:
         """
         Runs a load burst (see ``MdcContinuousLoadApplication``) and returns the service.
         ``result_prefix`` must be unique per burst because runner services are reused.
+        :attr:`cache_defaults` are merged in.
         """
-        load_params = {"mode": mode, "cacheName": cache_name, "resultPrefix": result_prefix, **params}
+        load_params = {"mode": mode, "cacheName": cache_name, "resultPrefix": result_prefix,
+                       **self.cache_defaults, **params}
 
         return self.run_app(dc, LOAD_APP, load_params, runner=runner)
 
