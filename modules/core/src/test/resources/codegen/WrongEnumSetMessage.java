@@ -15,46 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.direct;
+package org.apache.ignite.internal;
 
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
 
-/** */
-class TestNestedContainersMessage implements Message {
-    /** */
-    public static final short TYPE = Short.MAX_VALUE;
-
-    /** */
+public class WrongEnumSetMessage<E extends Enum<E>> implements Message {
     @Order(0)
-    Map<Integer, Map<Integer, Long>> nestedMap;
+    EnumSet<E> enums;
 
-    /** */
-    @Order(1)
-    Map<Integer, List<Integer>> nestedCollection;
-
-    /** */
-    @Order(2)
-    Map<Integer, String[]> nestedArr;
-
-    /** */
-    @Order(3)
-    EnumSet<TransactionIsolation> isolations;
-
-    /** */
-    @Order(4)
-    Map<String, EnumSet<TransactionIsolation>> isolationsMap;
-
-    /** */
-    @Order(5)
-    List<EnumSet<TransactionIsolation>> isolationsList;
-
-    /** Default constructor for {@link MessageFactory}. */
-    public TestNestedContainersMessage() {
-        // No-op.
+    public short directType() {
+        return 0;
     }
 }

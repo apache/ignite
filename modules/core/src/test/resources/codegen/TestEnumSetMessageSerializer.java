@@ -17,35 +17,36 @@
 
 package org.apache.ignite.internal;
 
-import java.util.List;
-import org.apache.ignite.internal.GridTopicMessage;
-import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
+import org.apache.ignite.internal.TestEnumSetMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
-import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * This class is generated automatically.
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class TestMarshalledArrayMapMessageSerializer implements MessageSerializer<TestMarshalledArrayMapMessage> {
+public final class TestEnumSetMessageSerializer implements MessageSerializer<TestEnumSetMessage> {
     /** */
-    private static final MessageArrayType fixedMapKeysCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridTopicMessage.class);
+    private static final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
     /** */
-    private static final MessageArrayType fixedMapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), CollectionImplementationType.ARRAY_LIST), List.class);
+    private static final MessageCollectionType isolationsCollDesc = new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), CollectionImplementationType.ENUM_SET);
     /** */
-    private static final MessageArrayType mapKeysCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridTopicMessage.class);
+    private static final MessageCollectionType isolationsListCollDesc = new MessageCollectionType(new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), CollectionImplementationType.ENUM_SET), CollectionImplementationType.ARRAY_LIST);
     /** */
-    private static final MessageArrayType mapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), CollectionImplementationType.ARRAY_LIST), List.class);
+    private static final MessageMapType isolationsMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), CollectionImplementationType.ENUM_SET), false);
 
     /** */
-    @Override public final boolean writeTo(TestMarshalledArrayMapMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestEnumSetMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -55,25 +56,19 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeObjectArray(msg.mapKeys, mapKeysCollDesc))
+                if (!writer.writeCollection(msg.isolations, isolationsCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeObjectArray(msg.mapVals, mapValsCollDesc))
+                if (!writer.writeMap(msg.isolationsMap, isolationsMapCollDesc))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeObjectArray(msg.fixedMapKeys, fixedMapKeysCollDesc))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeObjectArray(msg.fixedMapVals, fixedMapValsCollDesc))
+                if (!writer.writeCollection(msg.isolationsList, isolationsListCollDesc))
                     return false;
 
                 writer.incrementState();
@@ -83,10 +78,10 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
     }
 
     /** */
-    @Override public final boolean readFrom(TestMarshalledArrayMapMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestEnumSetMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                msg.mapKeys = reader.readObjectArray(mapKeysCollDesc);
+                msg.isolations = reader.readCollection(isolationsCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -94,7 +89,7 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
                 reader.incrementState();
 
             case 1:
-                msg.mapVals = reader.readObjectArray(mapValsCollDesc);
+                msg.isolationsMap = reader.readMap(isolationsMapCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -102,15 +97,7 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
                 reader.incrementState();
 
             case 2:
-                msg.fixedMapKeys = reader.readObjectArray(fixedMapKeysCollDesc);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                msg.fixedMapVals = reader.readObjectArray(fixedMapValsCollDesc);
+                msg.isolationsList = reader.readCollection(isolationsListCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -122,7 +109,7 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
     }
 
     /** {@inheritDoc} */
-    @Override public final TestMarshalledArrayMapMessage createMessage() {
-        return new TestMarshalledArrayMapMessage();
+    @Override public final TestEnumSetMessage createMessage() {
+        return new TestEnumSetMessage();
     }
 }
