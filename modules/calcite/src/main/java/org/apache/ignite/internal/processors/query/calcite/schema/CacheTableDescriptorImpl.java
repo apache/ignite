@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +43,7 @@ import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -148,11 +150,14 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         descriptors.add(
             new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.valueClass(), false, QueryUtils.VAL_COL));
 
-        int fldIdx = QueryUtils.VAL_COL + 1;
+        descriptors.add(new RowIdDescriptor());
+
+        int fldIdx = QueryUtils.ROW_ID_COL + 1;
 
         int keyField = QueryUtils.KEY_COL;
         int valField = QueryUtils.VAL_COL;
 
+        // TODO: IGNITE-xxxxx-rowid-poc Пока ничего тут не понял
         for (String field : fields) {
             GridQueryProperty prop = typeDesc.property(field);
 
@@ -616,6 +621,78 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
+    private static class RowIdDescriptor implements CacheColumnDescriptor {
+        /** */
+        private volatile RelDataType logicalType;
+
+        /** {@inheritDoc} */
+        @Override public boolean field() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasDefaultValue() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object defaultValue() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return QueryUtils.ROW_ID_FIELD_NAME;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int fieldIndex() {
+            return QueryUtils.ROW_ID_COL;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType logicalType(IgniteTypeFactory f) {
+            if (logicalType == null) {
+                logicalType = TypeUtils.sqlType(f, storageType(), PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED, true);
+            }
+
+            return logicalType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> storageType() {
+            return String.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
+            // TODO: IGNITE-xxxxx-rowid-poc Как-то реализовать
+            try {
+                byte[] bytes = src.key().valueBytes(cctx.cacheObjectContext());
+
+                String base64Str = Base64.getEncoder().encodeToString(bytes);
+
+                //cctx.logger(getClass()).warning(">>>>> Encoded rowid=" + base64Str, new Exception());
+                cctx.logger(getClass()).info(">>>>> Encoded rowid=" + base64Str);
+
+                return base64Str;
+            } catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to get rowid", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void set(Object dst, Object val) {
+            throw new AssertionError();
+        }
+    }
+
+    /** */
     private static class KeyValDescriptor implements CacheColumnDescriptor {
         /** */
         private final GridQueryProperty desc;
@@ -707,7 +784,15 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
-            return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), ectx.keepBinary(), null);
+            if (isKey) {
+                Object o = cctx.unwrapBinaryIfNeeded(src.key(), ectx.keepBinary(), null);
+
+                cctx.logger(getClass()).info(">>>>> Encoded _key=" + o);
+
+                return o;
+            } else {
+                return cctx.unwrapBinaryIfNeeded(src.value(), ectx.keepBinary(), null);
+            }
         }
 
         /** {@inheritDoc} */
