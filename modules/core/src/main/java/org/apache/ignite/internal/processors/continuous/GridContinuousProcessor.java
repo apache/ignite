@@ -58,6 +58,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -981,7 +982,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             reqData.deploymentInfo(dep);
         }
 
-        reqData.marshal(ctx);
+        if (ctx.config().isPeerClassLoadingEnabled()) {
+            // Handle peer deployment for other handler-specific objects.
+            hnd.p2pMarshal(ctx);
+        }
+
+        // Marshalled here rather than left to the discovery layer: doing it there would marshal the user classes on
+        // the thread that writes the ring.
+        MessageMarshalling.marshal(reqData, ctx, null);
 
         if (!immutableDiscoCustomMsg) {
             StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(routineId, reqData, Mode.MUTABLE);
@@ -1339,6 +1347,32 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Reads a start request the discovery layer left untouched. Obtaining the deployment of the node filter and
+     * restoring the handler both take work that must not run on the thread reading the ring.
+     *
+     * @param msg Message carrying the request.
+     * @param sndId Node that started the routine.
+     */
+    private void unmarshalStartRequest(StartRoutineDiscoveryMessage msg, UUID sndId) throws IgniteCheckedException {
+        MessageMarshalling.unmarshal(msg, ctx);
+
+        StartRequestData data = msg.startRequestData();
+
+        GridContinuousHandler hnd = data.handler();
+
+        if (hnd != null) {
+            if (ctx.config().isPeerClassLoadingEnabled())
+                hnd.p2pUnmarshal(sndId, ctx);
+
+            if (data.keepBinary) {
+                assert hnd instanceof CacheContinuousQueryHandler : hnd;
+
+                ((CacheContinuousQueryHandler<?, ?>)hnd).keepBinary(true);
+            }
+        }
+    }
+
+    /**
      * @param node Sender.
      * @param req Start request.
      */
@@ -1353,7 +1387,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         IgniteCheckedException err = null;
 
         try {
-            data.unmarshal(ctx, node.id());
+            unmarshalStartRequest(req, node.id());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal start request data [nodeId=" + node.id() +
@@ -1495,7 +1529,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 Exception err = null;
 
                 try {
-                    reqData.unmarshal(ctx, snd.id());
+                    unmarshalStartRequest(msg, snd.id());
                 }
                 catch (IgniteCheckedException e) {
                     err = e;

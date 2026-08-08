@@ -88,11 +88,7 @@ class CacheContinuousQueryDeployableObject implements Externalizable {
     <T> T unmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
-        GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
-            depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
-
-        if (dep == null)
-            throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+        GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName);
 
         return U.unmarshal(ctx, bytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
     }
