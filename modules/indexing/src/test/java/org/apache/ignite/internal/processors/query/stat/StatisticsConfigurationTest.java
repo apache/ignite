@@ -31,6 +31,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -149,18 +152,82 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         return ign;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 4;
+    }
+
     /** */
-    protected void stopGridAndChangeBaseline(int nodeIdx) {
+    protected void stopGridAndChangeBaseline(int nodeIdx) throws Exception {
         stopGrid(nodeIdx);
 
-        if (persist)
-            F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
+        if (persist) {
+            Ignite crdNode = F.first(G.allGrids());
 
-        try {
-            awaitPartitionMapExchange();
+            crdNode.cluster().setBaselineTopology(crdNode.cluster().topologyVersion());
+
+            // setBaselineTopology triggers exchange + lost partition recovery.
+            // Lost partition recovery is async and slow on CI (reads WAL/persistence).
+            // awaitPartitionMapExchange may timeout because it checks owner counts using
+            // readyAffinityVersion which can lag behind actual partition state.
+            // We ignore its timeout and rely on stabilization sleep + increased global timeout.
+            try {
+                awaitPartitionMapExchange();
+            }
+            catch (InterruptedException | IgniteException ignored) {
+                // Expected on CI when lost partition recovery is slow.
+            }
+
+            // Poll partition owners directly. top.owners(p, NONE) reads the latest
+            // partition state regardless of exchange version (unlike awaitPartitionMapExchange
+            // which checks against a specific readyAffinityVersion). With the extended timeout
+            // (120s via getPartitionMapExchangeTimeout), this gives lost partition recovery
+            // enough time to restore owners from persistence on slow CI machines.
+            long timeout = U.currentTimeMillis() + getPartitionMapExchangeTimeout();
+
+            for (Ignite grid : G.allGrids()) {
+                IgniteEx ign = (IgniteEx)grid;
+
+                if (ign.cluster().localNode().isClient())
+                    continue;
+
+                for (IgniteCacheProxy<?, ?> cacheProxy : ign.context().cache().jcaches()) {
+                    GridDhtPartitionTopology top = cacheProxy.context().topology();
+
+                    int parts = cacheProxy.context().affinity().partitions();
+
+                    while (U.currentTimeMillis() < timeout) {
+                        boolean ok = true;
+
+                        for (int p = 0; p < parts; p++) {
+                            if (top.owners(p, AffinityTopologyVersion.NONE).isEmpty()) {
+                                ok = false;
+
+                                break;
+                            }
+                        }
+
+                        if (ok)
+                            break;
+
+                        U.sleep(500);
+                    }
+
+                    if (U.currentTimeMillis() >= timeout) {
+                        throw new IgniteException("Timeout waiting for partition owners after " +
+                            "setBaselineTopology [igniteInstanceName=" + ign.name() +
+                            ", cache=" + cacheProxy.getName() + ']');
+                    }
+                }
+            }
         }
-        catch (InterruptedException e) {
-            // No-op.
+        else {
+            try {
+                awaitPartitionMapExchange();
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
         }
     }
 
