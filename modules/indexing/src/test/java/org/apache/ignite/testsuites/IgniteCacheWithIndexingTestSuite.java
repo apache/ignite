@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesT
 import org.apache.ignite.internal.processors.cache.WrongIndexedTypesTest;
 import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExceptionTest;
 import org.apache.ignite.internal.processors.cache.index.IndexCorruptionRebuildTest;
+import org.apache.ignite.internal.processors.cache.index.InlineIndexTreeTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SQLCacheConfigStoragePathTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheSizeTtlTest;
@@ -67,6 +68,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     InlineIndexColumnTest.class,
     ComputeInlineSizeTest.class,
+    InlineIndexTreeTest.class,
 
     GridIndexingWithNoopSwapSelfTest.class,
     GridCacheOffHeapSelfTest.class,
