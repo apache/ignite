@@ -55,8 +55,7 @@ public final class TestDeploymentAwareMessageMarshaller implements MessageMarsha
     @Override public void unmarshal(TestDeploymentAwareMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
-        if (clsLdr == null)
-            clsLdr = kctx.deploy().classLoader(msg);
+        clsLdr = kctx.deploy().classLoader(msg);
 
         if (msg.depInfo != null)
             MessageMarshalling.unmarshal(msg.depInfo, kctx, ctx, clsLdr);

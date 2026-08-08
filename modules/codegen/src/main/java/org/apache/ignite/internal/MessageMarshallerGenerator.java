@@ -312,7 +312,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
                 appendBlock(body, List.of(ctxResolutionLine()));
 
             if (isDeploymentAware())
-                appendBlock(body, deploymentResolutionLines());
+                appendBlock(body, List.of(deploymentResolutionLine()));
 
             appendFields(body, fields, MarshalMode.UNMARSHAL, wireFieldSkip);
 
@@ -1048,21 +1048,12 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /**
-     * Returns the lines resolving the class loader of a {@code DeploymentAware} message: the caller may pass one, and
-     * when it does not, the deployment the message carries gives it. Mirrors {@link #ctxResolutionLine()}.
+     * Returns the line resolving the class loader of a {@code DeploymentAware} message. The deployment the message
+     * carries wins over whatever the caller passed: the caller cannot know the loader of classes deployed elsewhere,
+     * and the overloads defaulting to the local one would silently read them without peer class loading.
      */
-    private List<String> deploymentResolutionLines() {
-        List<String> code = new ArrayList<>();
-
-        code.add(indentedLine("if (clsLdr == null)"));
-
-        indent++;
-
-        code.add(indentedLine("clsLdr = kctx.deploy().classLoader(msg);"));
-
-        indent--;
-
-        return code;
+    private String deploymentResolutionLine() {
+        return indentedLine("clsLdr = kctx.deploy().classLoader(msg);");
     }
 
     /** @return {@code true} if the message carries the deployment of its classes. */

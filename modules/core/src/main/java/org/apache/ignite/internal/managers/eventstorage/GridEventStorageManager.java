@@ -1242,8 +1242,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    // No class loader: the message carries its own deployment, see GridEventStorageRequest.
-                    MessageMarshalling.unmarshal(req, ctx, null, null);
+                    MessageMarshalling.unmarshal(req, ctx);
 
                     filter = (IgnitePredicate<Event>)req.filter();
 
