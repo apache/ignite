@@ -1809,7 +1809,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         // Get rid of metrics provider: current logic ignores metrics field if provider != null.
         setField(node, "metricsProvider", null);
 
-        ClusterMetricsImpl original = getField(node, "metrics");
+        ClusterMetricsSnapshot original = getField(node, "metrics");
 
         setField(node, "metrics", new MockedClusterMetrics(original));
 
@@ -1964,7 +1964,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
          * @param original - original cluster metrics object. Required to leave the original behaviour for not overriden
          * methods.
          */
-        public MockedClusterMetrics(ClusterMetricsImpl original) throws Exception {
+        public MockedClusterMetrics(ClusterMetricsSnapshot original) throws Exception {
             super(
                 getField(original, "ctx"),
                 getField(original, "nodeStartTime"));

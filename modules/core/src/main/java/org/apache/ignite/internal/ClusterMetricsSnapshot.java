@@ -97,227 +97,227 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
 
     /** */
     @Order(0)
-    public long lastUpdateTime = -1;
-
-    /** */
-    @Order(1)
     public int maxActiveJobs = -1;
 
     /** */
-    @Order(2)
+    @Order(1)
     public int curActiveJobs = -1;
 
     /** */
-    @Order(3)
+    @Order(2)
     public float avgActiveJobs = -1;
 
     /** */
-    @Order(4)
+    @Order(3)
     public int maxWaitingJobs = -1;
 
     /** */
-    @Order(5)
+    @Order(4)
     public int curWaitingJobs = -1;
 
     /** */
-    @Order(6)
+    @Order(5)
     public float avgWaitingJobs = -1;
 
     /** */
-    @Order(7)
+    @Order(6)
     public int maxRejectedJobs = -1;
 
     /** */
-    @Order(8)
+    @Order(7)
     public int curRejectedJobs = -1;
 
     /** */
-    @Order(9)
+    @Order(8)
     public float avgRejectedJobs = -1;
 
     /** */
-    @Order(10)
+    @Order(9)
     public int maxCancelledJobs = -1;
 
     /** */
-    @Order(11)
+    @Order(10)
     public int curCancelledJobs = -1;
 
     /** */
-    @Order(12)
+    @Order(11)
     public float avgCancelledJobs = -1;
 
     /** */
-    @Order(13)
+    @Order(12)
     public int totalRejectedJobs = -1;
 
     /** */
-    @Order(14)
+    @Order(13)
     public int totalCancelledJobs = -1;
 
     /** */
-    @Order(15)
+    @Order(14)
     public int totalExecutedJobs = -1;
 
     /** */
-    @Order(16)
+    @Order(15)
     public long maxJobWaitTime = -1;
 
     /** */
-    @Order(17)
+    @Order(16)
     public long curJobWaitTime = Long.MAX_VALUE;
 
     /** */
-    @Order(18)
+    @Order(17)
     public double avgJobWaitTime = -1;
 
     /** */
-    @Order(19)
+    @Order(18)
     public long maxJobExecTime = -1;
 
     /** */
-    @Order(20)
+    @Order(19)
     public long curJobExecTime = -1;
 
     /** */
-    @Order(21)
+    @Order(20)
     public double avgJobExecTime = -1;
 
     /** */
-    @Order(22)
+    @Order(21)
     public int totalExecTasks = -1;
 
     /** */
-    @Order(23)
+    @Order(22)
     public long totalIdleTime = -1;
 
     /** */
-    @Order(24)
+    @Order(23)
     public long curIdleTime = -1;
 
     /** */
-    @Order(25)
+    @Order(24)
     public int totalCpus = -1;
 
     /** */
-    @Order(26)
+    @Order(25)
     public double curCpuLoad = -1;
 
     /** */
-    @Order(27)
+    @Order(26)
     public double avgCpuLoad = -1;
 
     /** */
-    @Order(28)
+    @Order(27)
     public double curGcCpuLoad = -1;
 
     /** */
-    @Order(29)
+    @Order(28)
     public long heapInit = -1;
 
     /** */
-    @Order(30)
+    @Order(29)
     public long heapUsed = -1;
 
     /** */
-    @Order(31)
+    @Order(30)
     public long heapCommitted = -1;
 
     /** */
-    @Order(32)
+    @Order(31)
     public long heapMax = -1;
 
     /** */
-    @Order(33)
+    @Order(32)
     public long heapTotal = -1;
 
     /** */
-    @Order(34)
+    @Order(33)
     public long nonHeapInit = -1;
 
     /** */
-    @Order(35)
+    @Order(34)
     public long nonHeapUsed = -1;
 
     /** */
-    @Order(36)
+    @Order(35)
     public long nonHeapCommitted = -1;
 
     /** */
-    @Order(37)
+    @Order(36)
     public long nonHeapMax = -1;
 
     /** */
-    @Order(38)
+    @Order(37)
     public long nonHeapTotal = -1;
 
     /** */
-    @Order(39)
+    @Order(38)
     public long upTime = -1;
 
     /** */
-    @Order(40)
+    @Order(39)
     public long startTime = -1;
 
     /** */
-    @Order(41)
+    @Order(40)
     public long nodeStartTime = -1;
 
     /** */
-    @Order(42)
+    @Order(41)
     public int threadCnt = -1;
 
     /** */
-    @Order(43)
+    @Order(42)
     public int peakThreadCnt = -1;
 
     /** */
-    @Order(44)
+    @Order(43)
     public long startedThreadCnt = -1;
 
     /** */
-    @Order(45)
+    @Order(44)
     public int daemonThreadCnt = -1;
 
     /** */
-    @Order(46)
+    @Order(45)
     public long lastDataVer = -1;
 
     /** */
-    @Order(47)
+    @Order(46)
     public int sentMsgsCnt = -1;
 
     /** */
-    @Order(48)
+    @Order(47)
     public long sentBytesCnt = -1;
 
     /** */
-    @Order(49)
+    @Order(48)
     public int rcvdMsgsCnt = -1;
 
     /** */
-    @Order(50)
+    @Order(49)
     public long rcvdBytesCnt = -1;
 
     /** */
-    @Order(51)
+    @Order(50)
     public int outMesQueueSize = -1;
 
     /** */
-    @Order(52)
+    @Order(51)
     public int totalNodes = -1;
 
     /** */
-    @Order(53)
+    @Order(52)
     public long totalJobsExecTime = -1;
 
     /** */
-    @Order(54)
+    @Order(53)
     public long curPmeDuration = -1;
+
+    /** */
+    public long lastUpdateTime = -1;
 
     /** Empty constructor for serialization purposes. */
     public ClusterMetricsSnapshot() {
-        // No-op.
+        // Like in deserealize()
+        lastUpdateTime = System.currentTimeMillis();
     }
 
     /**
@@ -561,6 +561,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
 
         sentBytesCnt = metrics.getSentBytesCount();
         rcvdBytesCnt = metrics.getReceivedBytesCount();
+
+        lastUpdateTime = metrics.getLastUpdateTime();
     }
 
     /** */
