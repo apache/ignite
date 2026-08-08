@@ -108,11 +108,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** Node metrics. */
     @GridToStringExclude
     @Order(6)
-    volatile ClusterMetricsSnapshot metrics;
+    volatile ClusterMetricsSnapshot clusterMetricsSnapshot;
 
     /** Node cache metrics. */
     @GridToStringExclude
-    private volatile Map<Integer, CacheMetrics> cacheMetrics;
+    private volatile Map<Integer, CacheMetrics> cacheMetricsSnapshot;
 
     /** Node order in the topology. */
     @Order(7)
@@ -210,8 +210,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        metrics = ClusterMetricsSnapshot.of(metricsProvider.metrics());
-        cacheMetrics = metricsProvider.cacheMetrics();
+        cacheMetricsSnapshot = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
@@ -297,40 +296,28 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
-        if (metricsProvider != null) {
-            ClusterMetrics metrics0 = metricsProvider.metrics();
+        assert clusterMetricsSnapshot != null || metricsProvider != null;
 
-            metrics = ClusterMetricsSnapshot.of(metrics0);
-
-            return metrics0;
-        }
-
-        return metrics;
+        return metricsProvider == null ? clusterMetricsSnapshot : metricsProvider.metrics();
     }
 
     /** {@inheritDoc} */
     @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
-        this.metrics = ClusterMetricsSnapshot.of(metrics);
+        this.clusterMetricsSnapshot = ClusterMetricsSnapshot.of(metrics);
     }
 
     /** {@inheritDoc} */
     @Override public Map<Integer, CacheMetrics> cacheMetrics() {
-        if (metricsProvider != null) {
-            Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
+        assert cacheMetricsSnapshot != null || metricsProvider != null;
 
-            cacheMetrics = cacheMetrics0;
-
-            return cacheMetrics0;
-        }
-
-        return cacheMetrics;
+        return metricsProvider == null ? cacheMetricsSnapshot : metricsProvider.cacheMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
-        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
+        this.cacheMetricsSnapshot = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
     }
 
     /**
@@ -591,7 +578,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         // Cluster metrics
         byte[] mtr = null;
 
-        ClusterMetrics metrics = this.metrics;
+        var metrics = this.clusterMetricsSnapshot;
 
         if (metrics != null)
             mtr = ClusterMetricsSnapshot.serialize(metrics);
@@ -622,7 +609,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
-            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
+            clusterMetricsSnapshot = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
         // Legacy: Cache metrics
         int size = in.readInt();

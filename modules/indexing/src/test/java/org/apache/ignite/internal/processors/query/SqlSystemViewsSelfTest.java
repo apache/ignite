@@ -73,7 +73,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
@@ -1809,9 +1808,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         // Get rid of metrics provider: current logic ignores metrics field if provider != null.
         setField(node, "metricsProvider", null);
 
-        ClusterMetricsSnapshot original = getField(node, "metrics");
+        ClusterMetricsSnapshot original = getField(node, "clusterMetricsSnapshot");
 
-        setField(node, "metrics", new MockedClusterMetrics(original));
+        setField(node, "clusterMetricsSnapshot", new MockedClusterMetrics(original));
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -1952,9 +1951,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.
+     * Mock for {@link ClusterMetricsSnapshot} that always returns big (more than 24h) duration for all duration metrics.
      */
-    public static class MockedClusterMetrics extends ClusterMetricsImpl {
+    public static class MockedClusterMetrics extends ClusterMetricsSnapshot {
         /** Some long (> 24h) duration. */
         public static final long LONG_DURATION_MS = TimeUnit.DAYS.toMillis(365);
 
@@ -1965,9 +1964,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
          * methods.
          */
         public MockedClusterMetrics(ClusterMetricsSnapshot original) throws Exception {
-            super(
-                getField(original, "ctx"),
-                getField(original, "nodeStartTime"));
+            super(original);
         }
 
         /** {@inheritDoc} */

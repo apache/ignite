@@ -761,6 +761,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         discoveryData = spi.collectExchangeData(dataPacket);
                     }
 
+                    node.setMetrics(spi.metricsProvider.metrics());
+
                     msg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
                 }
                 else
