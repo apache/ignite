@@ -51,11 +51,8 @@ public class StartRequestData implements Message {
     GridDeploymentInfoBean depInfo;
 
     /** Handler. */
-    private GridContinuousHandler hnd;
-
-    /** Serialized handler. */
     @Order(3)
-    byte[] hndBytes;
+    GridContinuousHandler hnd;
 
     /** Buffer size. */
     @Order(4)
@@ -172,14 +169,8 @@ public class StartRequestData implements Message {
 
     /** */
     public void marshal(GridKernalContext ctx) throws IgniteCheckedException {
-        if (hnd != null) {
-            if (ctx.config().isPeerClassLoadingEnabled()) {
-                // Handle peer deployment for other handler-specific objects.
-                hnd.p2pMarshal(ctx);
-            }
-
-            hndBytes = U.marshal(ctx.marshaller(), hnd);
-        }
+        if (hnd != null)
+            hnd.prepareToMarshal(ctx, ctx.config().isPeerClassLoadingEnabled());
 
         if (nodeFilter != null)
             nodeFilterBytes = U.marshal(ctx.marshaller(), nodeFilter);
@@ -210,17 +201,12 @@ public class StartRequestData implements Message {
                 U.resolveClassLoader(ctx.config()));
         }
 
-        if (hndBytes != null) {
-            hnd = U.unmarshal(ctx.marshaller(), hndBytes, U.resolveClassLoader(ctx.config()));
+        hnd.finishUnmarshal(sndId, ctx, ctx.config().isPeerClassLoadingEnabled());
 
-            if (ctx.config().isPeerClassLoadingEnabled())
-                hnd.p2pUnmarshal(sndId, ctx);
+        if (keepBinary) {
+            assert hnd instanceof CacheContinuousQueryHandler : hnd;
 
-            if (keepBinary) {
-                assert hnd instanceof CacheContinuousQueryHandler : hnd;
-
-                ((CacheContinuousQueryHandler<?, ?>)hnd).keepBinary(true);
-            }
+            ((CacheContinuousQueryHandler<?, ?>)hnd).keepBinary(true);
         }
     }
 }
