@@ -310,9 +310,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public Map<Integer, CacheMetrics> cacheMetrics() {
-        assert cacheMetricsSnapshot != null || metricsProvider != null;
+        if (metricsProvider != null)
+            cacheMetricsSnapshot = metricsProvider.cacheMetrics();
 
-        return metricsProvider == null ? cacheMetricsSnapshot : metricsProvider.cacheMetrics();
+        return cacheMetricsSnapshot;
     }
 
     /** {@inheritDoc} */
