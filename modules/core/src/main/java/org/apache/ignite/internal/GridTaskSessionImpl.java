@@ -81,7 +81,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final GridKernalContext ctx;
 
     /** */
-    private @Nullable Collection<ComputeJobSibling> siblings;
+    private Collection<ComputeJobSibling> siblings;
 
     /** Guarded by {@link #mux}. */
     private Map<Object, Object> attrs;
@@ -215,8 +215,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      *
      * @see LocalComputeJobSiblingWrap
      */
-    private static @Nullable Collection<ComputeJobSibling> localSiblingsWrap(@Nullable Collection<IgniteUuid> siblingJobsIds) {
-        return F.isEmpty(siblingJobsIds) ? null : siblingJobsIds.stream().map(LocalComputeJobSiblingWrap::new)
+    private static Collection<ComputeJobSibling> localSiblingsWrap(@Nullable Collection<IgniteUuid> siblingJobsIds) {
+        return F.isEmpty(siblingJobsIds) ? Collections.emptyList() : siblingJobsIds.stream().map(LocalComputeJobSiblingWrap::new)
             .collect(Collectors.toList());
     }
 
@@ -546,7 +546,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Collection<ComputeJobSibling> getJobSiblings() {
+    @Override public Collection<ComputeJobSibling> getJobSiblings() {
         synchronized (mux) {
             return siblings;
         }
