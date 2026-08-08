@@ -36,6 +36,7 @@ import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerLegacyClientTest;
 import org.apache.ignite.util.GridCommandHandlerManagementPoolTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
+import org.apache.ignite.util.GridCommandHandlerSslReloadTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridCommandHandlerWalTest;
@@ -59,6 +60,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerIncompatibleSslConfigTest.class,
     GridCommandHandlerClusterByClassTest.class,
     GridCommandHandlerClusterByClassWithSSLTest.class,
+    GridCommandHandlerSslReloadTest.class,
     GridCommandHandlerSslTest.class,
     GridPersistenceCommandsTest.class,
 

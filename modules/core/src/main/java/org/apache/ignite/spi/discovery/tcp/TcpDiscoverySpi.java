@@ -40,10 +40,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,6 +60,8 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -420,11 +422,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL server socket factory. */
-    protected SSLServerSocketFactory sslSrvSockFactory;
-
-    /** SSL socket factory. */
-    protected SSLSocketFactory sslSockFactory;
+    /** Owner of the SSL context connections are opened and accepted with, {@code null} if SSL is disabled. */
+    @GridToStringExclude
+    private volatile SslContextProvider sslCtxProvider;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1668,7 +1668,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslSockFactory.createSocket();
+                sock = sslCtxProvider.context().getSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1684,6 +1684,29 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             throw e;
         }
+    }
+
+    /**
+     * Wraps a socket accepted by the server into an SSL socket, if SSL is enabled. The SSL context is taken at accept
+     * time rather than captured once at bind time, so connections accepted after a certificate reload are served with
+     * the updated certificates.
+     *
+     * @param sock Accepted socket.
+     * @return Socket to serve the connection with.
+     * @throws IOException If failed.
+     */
+    Socket acceptedSocket(Socket sock) throws IOException {
+        if (!isSslEnabled())
+            return sock;
+
+        SSLSocket sslSock = (SSLSocket)sslCtxProvider.context()
+            .getSocketFactory().createSocket(sock, null, sock.getPort(), true);
+
+        // Set after the factory has applied the configured SSL parameters, which carry the default client auth mode.
+        sslSock.setUseClientMode(false);
+        sslSock.setNeedClientAuth(true);
+
+        return sslSock;
     }
 
     /**
@@ -2173,10 +2196,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
+                Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
 
-                sslSockFactory = sslCtx.getSocketFactory();
-                sslSrvSockFactory = sslCtx.getServerSocketFactory();
+                // A node that is not an IgniteEx cannot be reached by the reload command, so it owns its context
+                // alone instead of sharing a provider through the registry.
+                sslCtxProvider = ignite instanceof IgniteEx
+                    ? ((IgniteEx)ignite).context().internalSubscriptionProcessor()
+                        .sslContextProvider(factory, SslContextReloadable.DISCOVERY, true)
+                    : new SslContextProvider(factory);
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "

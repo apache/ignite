@@ -1622,3 +1622,273 @@ Examples:
 ----
 control.sh|bat --event list --enabled
 ----
+
+== TLS Certificates
+
+A node reads its TLS certificates once, when it starts. Updating them normally means restarting it. The
+`--ssl reload` command does it on a running cluster instead: every node, server and client, re-reads its key and
+trust stores. It covers the communication, discovery, client connector and REST transports, binary and HTTP alike.
+
+Everything that takes part in a rotation needs the files placed at the paths it is configured with. What differs is
+what you run afterwards:
+
+* *server nodes* — run the reload command once, and it reaches every node in the topology;
+* *client nodes*, meaning an application started as an Ignite node — nothing to run, the same command reaches them
+too;
+* *JDBC and ODBC applications* — nothing to run and nothing to restart: every new connection reads the stores from
+disk again;
+* *thin-client applications* — nothing to run either, but one that is already running keeps the stores it read at
+start. It reads them again only after a handshake was refused: that attempt fails, and the next one uses the files
+that are on disk now.
+
+The command reaches what is in the topology at the moment it is started, and nothing else. Applications are never reached, which
+is why the steps below say when each of their files has to be in place; a node that was down during a step comes
+back with the files it had when it stopped, so give it the current ones before it rejoins.
+
+Place a file by writing it next to the one in use and renaming it over, so that nothing can read a half-written
+store.
+
+A reload never revokes anything. A peer you removed from a trust store keeps its open connections until they close
+on their own. A node logs a refused handshake with the reason reported by the TLS engine, so a rotation done out of
+order is visible rather than silent.
+
+Everything reloads except two arrangements, which the first report names as `cannot be reloaded` and the second
+as `not reloaded`, rather than as a success:
+
+* a factory of your own whose `create()` hands back a cached context;
+* a Jetty configuration for HTTP REST that sets a ready-made `sslContext` instead of a key store path.
+
+Neither has a file to read again. They take no part in a rotation and keep the certificate they started with until
+the node restarts, so a rotation that ends with the old authority removed locks them out.
+
+=== Reloading Certificates
+
+Put the new key store or trust store at the path a node is already configured with, and run the command. Nothing in
+the configuration changes: the node re-reads what it points at.
+
+[source, shell]
+----
+control.sh|bat --ssl reload
+----
+
+The command works in two phases. First every node builds the certificates that are on disk and checks them,
+without putting any of them in use, and reports what each of them would then serve:
+
+[source,text]
+----
+e1e18f84-0fb5-484d-a623-15ffe3800000: can be reloaded client connector, communication, discovery; will serve CN=node01 until 2041-02-14, issued by CN=ca
+0cf9e4e2-bb7a-466a-a113-b6230b500001: can be reloaded client connector, communication, discovery; will serve CN=node01 until 2041-02-14, issued by CN=ca
+----
+
+One line per SSL context factory: transports configured with the same one share the context, so they are reloaded
+together and reported together. A node configured with several factories answers with several lines.
+
+Nearly everything that can fail happens in this phase; the one thing that can fail later is named further down. A
+node that would not be able to use the new certificate says so, and the command stops without having changed
+anything on any node:
+
+[source,text]
+----
+e1e18f84-0fb5-484d-a623-15ffe3800000: can be reloaded client connector, communication, discovery; will serve CN=node01 until 2041-02-14, issued by CN=newca
+46db5416-d199-48d6-a807-88b7f1300000: would fail on client connector, communication, discovery (No trusted certificate found)
+----
+
+Every node is in the report either way, so it also shows which of them were ready. The command ends with an error,
+not with a result.
+
+A certificate the node's own trust store rejects counts as unusable, and is checked whenever any of the transports
+sharing that factory connects nodes to each other. This assumes every node runs the same key and trust store
+configuration. The same answer comes back when the trust stores hold the node certificates themselves rather than
+the certificate of an authority, which is the scheme the link:security/ssl-tls[SSL/TLS] page describes; replacing
+a certificate is then a change of trust, so give the new one to every trust store first, the way the next section
+gives them a new authority.
+
+When every node is ready, the command asks before it goes on. The second phase then puts in use exactly what the
+first one checked — a node applies only what the same run prepared, never what some other run left behind — and
+reports it:
+
+[source,text]
+----
+e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, discovery; serving CN=node01 until 2041-02-14, issued by CN=ca
+0cf9e4e2-bb7a-466a-a113-b6230b500001: reloaded client connector, communication, discovery; serving CN=node01 until 2041-02-14, issued by CN=ca
+----
+
+A node that joined while the question was on screen has nothing prepared, is reported as not reloaded, and keeps
+the certificates it read when it started. A node that left is reported as having left, which on its own does not
+fail the command. Run the command again once the topology has settled.
+
+The HTTP REST connector is the one part that rebuilds in place instead of holding the new certificates aside, so
+it is also the only one that can still fail in this phase. It is then reported as failed and keeps serving the
+certificate it had, while everything else on that node, and on every other node, has already moved. It carries no
+traffic between nodes, so a failure there cannot split the cluster.
+
+New connections use the new certificate. Existing ones keep the certificate they were opened with, and nothing
+interrupts them, so for a while a node serves both.
+
+`--dry-run` stops after the first phase and throws away what it built, so it changes nothing and asks nothing.
+The report is the same one, so it also names the certificate each node would serve:
+
+[source, shell]
+----
+control.sh|bat --ssl reload --dry-run
+----
+
+=== Replacing the Certificate Authority
+
+Nodes and clients authenticate each other, so the order is not a matter of taste: everything has to trust the new
+authority before anything starts presenting a certificate issued by it, and the old authority has to stay until
+nothing presents it any more.
+
+. *Trust the new authority.* Everything then trusts both, and still presents the old certificate.
++
+--
+*On every node*, server and client alike:
+
+* work on a copy, so that nothing ever reads a half-written store:
++
+.Example
+[source, shell]
+----
+cp trust.jks trust.jks.new
+----
+* add the certificate of the new authority, keeping the old one. Without `-noprompt` keytool asks whether to trust
+it, and a run that cannot answer leaves the store unchanged and still exits with zero:
++
+.Example
+[source, shell]
+----
+keytool -importcert -keystore trust.jks.new -alias newca -file newca.crt -noprompt
+----
+* put it in place:
++
+.Example
+[source, shell]
+----
+mv trust.jks.new trust.jks
+----
+
+*Applications.* The same edit to their own trust store, with the path each one is configured with. Any moment
+before step 2 will do. From that step on the cluster presents a certificate issued by the new authority, and an
+application that does not trust it yet cannot open a connection.
+
+*Once for the whole cluster.* Put it in use on the nodes:
+
+[source, shell]
+----
+control.sh|bat --ssl reload
+----
+--
+
+. *Present the new certificate.* Everything then presents it, and is still trusted because the old authority is
+also still there.
++
+--
+*On every node:*
+
+* work on a copy of the key store this node already runs on — its key stays, only the certificate changes:
++
+.Example
+[source, shell]
+----
+cp node.jks node.jks.new
+----
+* install the certificate the new authority issued for that key. A reply that carries the whole chain goes in as
+it is; one that carries the node certificate alone needs the authority's own certificate imported before it, or
+there is nothing to chain the reply to:
++
+.Example
+[source, shell]
+----
+keytool -importcert -keystore node.jks.new -alias node -file node.crt -noprompt
+----
+* put it in place:
++
+.Example
+[source, shell]
+----
+mv node.jks.new node.jks
+----
+
+The store and the private key inside it have to open with the one password the node is configured with, because it
+opens both with that one. Keep one key entry per store as well: if it holds several, the JSSE key manager picks one
+of them and you cannot influence which.
+
+*Applications that present a certificate of their own.* Place the new key store at any moment after step 1 and
+before step 3. Earlier, the cluster does not trust the new authority yet; later, step 3 has already checked what
+the application was given.
+
+*Once for the whole cluster.* This is the step that catches a node whose new key store its own trust store does
+not accept, which is what a skipped step 1 looks like on that node. The command reports it before it puts anything
+in use anywhere, so read the report and answer the question it asks:
+
+[source, shell]
+----
+control.sh|bat --ssl reload
+----
+--
+
+. *Check that nothing presents the old certificate any more.* Step 4 takes the old authority away, and anything
+that still presents a certificate from it is locked out. This is the gate for that step, not a formality.
++
+--
+*Nodes.* Step 2 has already answered this for every node that was in the topology: its report names the authority
+that issued what each of them serves.
+
+*Everything the command does not reach* — applications that present a certificate of their own, and whatever nodes
+and applications are provisioned from, such as images and configuration management. Nothing reports on those, so
+read back the issuer of the certificate each of them holds, and expect the new authority in every answer:
+
+.Example
+[source, shell]
+----
+keytool -list -v -keystore node.jks -alias node | grep Issuer
+----
+
+What matters here is the key stores, not the connections.
+--
+
+. *Stop trusting the old authority.* Nothing presents a certificate signed by it, so nothing loses trust.
++
+--
+*On every node:*
+
+* work on a copy again:
++
+.Example
+[source, shell]
+----
+cp trust.jks trust.jks.new
+----
+* remove the entry of the old authority, and leave the rest alone. Its alias is whatever it was given when the
+store was made, so list the store first:
++
+.Example
+[source, shell]
+----
+keytool -list -keystore trust.jks.new
+keytool -delete -keystore trust.jks.new -alias oldca
+----
+* put it in place:
++
+.Example
+[source, shell]
+----
+mv trust.jks.new trust.jks
+----
+
+*Applications.* The same edit to their own trust store, in any order with the nodes — by now nothing presents a
+certificate from the old authority. A JDBC or ODBC application uses the narrowed store on its next connection; a
+thin client that is already running keeps the wider one until it is restarted, because nothing refuses its
+handshake any more.
+
+*Once for the whole cluster.* A node that never got its new certificate is refused here, because its own trust
+store no longer accepts what it presents. Read the report and answer the question it asks:
+
+[source, shell]
+----
+control.sh|bat --ssl reload
+----
+--
+
+Doing the last step before the one before it throws nodes out of the cluster: they would stop trusting a
+certificate that some peer still presents.
