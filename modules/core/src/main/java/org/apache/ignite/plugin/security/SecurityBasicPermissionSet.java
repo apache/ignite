@@ -22,7 +22,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamField;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,10 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.normalizeResourcePermissions;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.toEnumSet;
 
 /**
@@ -69,9 +65,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Service permissions. */
     @GridToStringInclude
     @Order(2)
-    transient Map<String, EnumSet<SecurityPermission>> srvcPermissions = isSecurityCompatibilityMode()
-        ? compatibleServicePermissions()
-        : new HashMap<>();
+    transient Map<String, EnumSet<SecurityPermission>> srvcPermissions = new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude
@@ -192,8 +186,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
         out.writeFields();
 
-        if (serializeVersion() >= 2)
-            U.writeMap(out, srvcPermissions);
+        U.writeMap(out, srvcPermissions);
     }
 
     /** */
@@ -209,14 +202,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
         sysPermissions = sysPerms == null ? null : toEnumSet(sysPerms);
 
-        Map<String, ? extends Collection<SecurityPermission>> srvcPerms = serializeVersion() >= 2 ? U.readMap(in) : null;
-
-        if (srvcPerms == null) {
-            // Allow all for compatibility mode
-            srvcPerms = serializeVersion() < 2 ? compatibleServicePermissions() : Collections.emptyMap();
-        }
-
-        srvcPermissions = normalizeResourcePermissions(srvcPerms);
+        srvcPermissions = normalizeResourcePermissions(U.readMap(in));
     }
 
     /** {@inheritDoc} */
