@@ -214,10 +214,10 @@ def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
                 else self.service.thin_client_config_file
 
         def script(self, cmd):
-            if self.service.config.version.is_dev:
-                return os.path.join(self.service.spec.extensions_home(), "modules", "cdc-ext", "bin", cmd)
-            else:
+            if self._is_binary_layout(self.service.config.version):
                 return self.service.script(cmd)
+
+            return os.path.join(self.service.spec.extensions_home(), "modules", "cdc-ext", "bin", cmd)
 
     return KafkaToIgniteSpec(service, service.spec.jvm_opts)
 

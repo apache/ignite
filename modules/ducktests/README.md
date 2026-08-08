@@ -205,6 +205,7 @@ You can modify test environments at execution time using global flags injected t
 |---------------------|------------|----------------------|
 | **persistent_root** | Root directory for persistent storage in tests. Used for storing test data and logs. Default is typically the test working directory. | ```{"persistent_root": "/opt/ignite/test-data"}``` |
 | **install_root** | Root directory for Ignite installation. Points to the base directory where Ignite is installed for testing. Default is typically "/opt/ignite". | ```{"install_root": "/opt/ignite-testing"}``` |
+| **dev_binary_distribution** | Boolean flag declaring that dev folders (e.g. "ignite-dev") contain a complete binary distribution with a release layout, rather than a compiled source tree. Affects classpath building on service startup: all modules, including "ducktests" and "-ext" extensions, are resolved from `libs/optional/ignite-<module>` inside the distribution instead of `modules/<module>/target` and the neighbouring "ignite-extensions" directory. Default is false. | ```{"dev_binary_distribution": true}``` |
 
 ### Custom Ignites & Forks Testing
 You can test arbitrary binary releases or custom compiled forks by overriding the execution path:
