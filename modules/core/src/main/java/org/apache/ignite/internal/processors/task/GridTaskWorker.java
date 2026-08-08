@@ -1392,7 +1392,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         timeout,
                         ses.getTopology(),
                         ses.getTopologyPredicate(),
-                        ses.getJobSiblings(),
+                        downcast(ses.getJobSiblings()),
                         sesAttrs,
                         jobAttrs,
                         ses.getCheckpointSpi(),
@@ -1471,6 +1471,19 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             onResponse(fakeRes);
         }
+    }
+
+    /**
+     * TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
+     * Downcasts collection type.
+     *
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param p Initial collection.
+     * @return Resulting collection.downcast
+     */
+    private static <P, C extends P> Collection<C> downcast(Collection<P> p) {
+        return (Collection<C>)p;
     }
 
     /**

@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +27,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
@@ -39,17 +36,14 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 
 /**
  * This class provides implementation for job sibling.
+ * TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
  */
-public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
+public class GridJobSiblingImpl implements ComputeJobSibling {
     /** */
-    private static final long serialVersionUID = 0L;
+    IgniteUuid sesId;
 
     /** */
-    private IgniteUuid sesId;
-
-    /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private IgniteUuid jobId;
+    final IgniteUuid jobId;
 
     /** */
     private Object taskTopic;
@@ -64,12 +58,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
     private boolean isJobDone;
 
     /** */
-    private transient GridKernalContext ctx;
-
-    /** */
-    public GridJobSiblingImpl() {
-        // No-op.
-    }
+    private GridKernalContext ctx;
 
     /**
      * @param sesId Task session ID.
@@ -77,8 +66,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
      * @param nodeId ID of the node where this sibling was sent for execution.
      * @param ctx Managers registry.
      */
-    public GridJobSiblingImpl(IgniteUuid sesId, IgniteUuid jobId, UUID nodeId, GridKernalContext ctx) {
-        assert sesId != null;
+    public GridJobSiblingImpl(@Nullable IgniteUuid sesId, IgniteUuid jobId, UUID nodeId, GridKernalContext ctx) {
         assert jobId != null;
         assert nodeId != null;
         assert ctx != null;
@@ -171,20 +159,6 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
 
         // Cancel local jobs directly.
         ctx.job().cancelJob(sesId, jobId, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // Don't serialize node ID.
-        U.writeIgniteUuid(out, sesId);
-        U.writeIgniteUuid(out, jobId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // Don't serialize node ID.
-        sesId = U.readIgniteUuid(in);
-        jobId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

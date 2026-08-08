@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.job;
 
 import java.util.AbstractCollection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSessionImpl;
+import org.apache.ignite.internal.GridJobSiblingImpl;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1256,6 +1259,23 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
+                        // TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
+                        List<IgniteUuid> siblJobsIds = req.siblingJobsIds();
+                        List<IgniteUuid> siblJobsSesIds = req.siblingJobsSessionIds();
+
+                        assert F.isEmpty(siblJobsIds) == F.isEmpty(siblJobsSesIds);
+
+                        Collection<ComputeJobSibling> siblings = null;
+
+                        if (!F.isEmpty(siblJobsIds)) {
+                            assert siblJobsSesIds.size() == siblJobsIds.size();
+
+                            siblings = new ArrayList<>(siblJobsIds.size());
+
+                            for (int i = 0; i < siblJobsIds.size(); ++i)
+                                siblings.add(new GridJobSiblingImpl(siblJobsSesIds.get(i), siblJobsIds.get(i), node.id(), ctx));
+                        }
+
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
                             node.id(),
@@ -1266,7 +1286,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTopologyPredicate(),
                             req.startTaskTime(),
                             endTime,
-                            req.getSiblings(),
+                            siblings,
                             req.getSessionAttributes(),
                             req.sessionFullSupport(),
                             req.internal(),
