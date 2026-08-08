@@ -108,6 +108,18 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
     /** Test checkpoint command with persistence enabled. */
     @Test
     public void testCheckpointPersistenceCluster() throws Exception {
+        LogListener checkpointReasonLsnr = LogListener.matches("reason='test_reason'").build();
+        LogListener startMetricsLsnr = LogListener.matches(Pattern.compile(
+                "^.*Checkpoint started .*checkpointBeforeLockTime=\\d+ms.*$")).build();
+        LogListener skipMetricsCheckpointLsnr = LogListener.matches(Pattern.compile(
+                "^.*Skipping checkpoint .*checkpointListenersExecuteTime=\\d+ms.*$")).build();
+        LogListener finishMetricsCheckPointLsnr = LogListener.matches(Pattern.compile(
+                "^.*Checkpoint finished .*total=\\d+ms.*$")).build();
+        listeningLog.registerListener(checkpointReasonLsnr);
+        listeningLog.registerListener(startMetricsLsnr);
+        listeningLog.registerListener(skipMetricsCheckpointLsnr);
+        listeningLog.registerListener(finishMetricsCheckPointLsnr);
+
         persistenceEnable(true);
 
         IgniteEx srv = startGrids(2);
@@ -133,12 +145,10 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
 
-        LogListener checkpointReasonLsnr = LogListener.matches("reason='test_reason'").build();
-
-        listeningLog.registerListener(checkpointReasonLsnr);
-
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
         assertTrue(GridTestUtils.waitForCondition(checkpointReasonLsnr::check, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(startMetricsLsnr::check, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(finishMetricsCheckPointLsnr::check, 10_000));
         assertFalse(testOut.toString().contains("persistence disabled"));
 
         outputContains(": Checkpoint started");
@@ -146,11 +156,15 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         testOut.reset();
 
         checkpointFinishedLsnr.reset();
+        startMetricsLsnr.reset();
+        finishMetricsCheckPointLsnr.reset();
 
         cacheCli.put(3, 3);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(startMetricsLsnr::check, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(finishMetricsCheckPointLsnr::check, 10_000));
         assertFalse(testOut.toString().contains("persistence disabled"));
     }
 

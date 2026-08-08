@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -48,10 +49,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -61,22 +60,17 @@ import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.LongJVMPauseDetector.DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
@@ -100,22 +94,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
  */
 @SuppressWarnings("NakedNotify")
 public class Checkpointer extends GridWorker {
-    /** Checkpoint started log message format. */
-    private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started [" +
-        "checkpointId=%s, " +
-        "startPtr=%s, " +
-        "checkpointBeforeLockTime=%dms, " +
-        "checkpointLockWait=%dms, " +
-        "checkpointListenersExecuteTime=%dms, " +
-        "checkpointLockHoldTime=%dms, " +
-        "walCpRecordFsyncDuration=%dms, " +
-        "splitAndSortCpPagesDuration=%dms, " +
-        "writeRecoveryDataDuration=%dms, " +
-        "writeCheckpointEntryDuration=%dms, " +
-        "%s" +
-        "pages=%d, " +
-        "reason='%s']";
-
     /** Skip sync. */
     private final boolean skipSync = getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
 
@@ -124,10 +102,6 @@ public class Checkpointer extends GridWorker {
 
     /** Avoid the start checkpoint if checkpointer was canceled. */
     private volatile boolean skipCheckpointOnNodeStop = getBoolean(IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, false);
-
-    /** Long JVM pause threshold. */
-    private final int longJvmPauseThreshold =
-        getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD);
 
     /** Pause detector. */
     private final LongJVMPauseDetector pauseDetector;
@@ -395,7 +369,7 @@ public class Checkpointer extends GridWorker {
         Checkpoint chp = null;
 
         try {
-            CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
+            CheckpointMetricsTracker tracker = new CheckpointMetricsTracker(log, pauseDetector);
 
             startCheckpointProgress();
 
@@ -414,31 +388,7 @@ public class Checkpointer extends GridWorker {
                         checkpointRecoveryFileStorage.clear();
 
                         if (writeRecoveryData) {
-                            if (log.isInfoEnabled()) {
-                                log.info(String.format("Checkpoint recovery data write started [" +
-                                        "checkpointId=%s, " +
-                                        "startPtr=%s, " +
-                                        "pages=%d, " +
-                                        "checkpointBeforeLockTime=%dms, " +
-                                        "checkpointLockWait=%dms, " +
-                                        "checkpointListenersExecuteTime=%dms, " +
-                                        "checkpointLockHoldTime=%dms, " +
-                                        "walCpRecordFsyncDuration=%dms, " +
-                                        "splitAndSortCpPagesDuration=%dms, " +
-                                        "reason='%s']",
-                                    chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
-                                    chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
-                                    chp.pagesSize,
-                                    tracker.beforeLockDuration(),
-                                    tracker.lockWaitDuration(),
-                                    tracker.listenersExecuteDuration(),
-                                    tracker.lockHoldDuration(),
-                                    tracker.walCpRecordFsyncDuration(),
-                                    tracker.splitAndSortCpPagesDuration(),
-                                    chp.progress.reason()
-                                ));
-                            }
-
+                            tracker.logCheckPointRecoveryDataWriteStart(chp);
                             recoveryDataSize = writeRecoveryData(chp);
                         }
                     }
@@ -464,45 +414,12 @@ public class Checkpointer extends GridWorker {
             updateHeartbeat();
 
             if (chp.hasDelta()) {
-                if (log.isInfoEnabled()) {
-                    long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
-
-                    log.info(
-                        String.format(
-                            CHECKPOINT_STARTED_LOG_FORMAT,
-                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
-                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
-                            tracker.beforeLockDuration(),
-                            tracker.lockWaitDuration(),
-                            tracker.listenersExecuteDuration(),
-                            tracker.lockHoldDuration(),
-                            tracker.walCpRecordFsyncDuration(),
-                            tracker.splitAndSortCpPagesDuration(),
-                            tracker.recoveryDataWriteDuration(),
-                            tracker.writeCheckpointEntryDuration(),
-                            possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
-                            chp.pagesSize,
-                            chp.progress.reason()
-                        )
-                    );
-                }
-
+                tracker.logCheckPointStart(chp);
                 if (!writePages(tracker, chp.cpPages, chp.progress, this, this::isShutdownNow))
                     return;
             }
             else {
-                if (log.isInfoEnabled())
-                    LT.info(log, String.format(
-                        "Skipping checkpoint (no pages were modified) [" +
-                            "checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, " +
-                            "checkpointListenersExecuteTime=%dms, checkpointLockHoldTime=%dms, reason='%s']",
-                        tracker.beforeLockDuration(),
-                        tracker.lockWaitDuration(),
-                        tracker.listenersExecuteDuration(),
-                        tracker.lockHoldDuration(),
-                        chp.progress.reason())
-                    );
-
+                tracker.logCheckpointSkip(chp);
                 tracker.onPagesWriteStart();
                 tracker.onFsyncStart();
             }
@@ -514,24 +431,11 @@ public class Checkpointer extends GridWorker {
 
             tracker.onEnd();
 
-            if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
-                if (log.isInfoEnabled()) {
-                    log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                            "walSegmentsCovered=%s, markDuration=%dms, recoveryWrite=%dms, pagesWrite=%dms, " +
-                            "fsync=%dms, total=%dms]",
-                        chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
-                        chp.pagesSize,
-                        chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
-                        walRangeStr(chp.walSegsCoveredRange),
-                        tracker.markDuration(),
-                        tracker.recoveryDataWriteDuration(),
-                        tracker.pagesWriteDuration(),
-                        tracker.fsyncDuration(),
-                        tracker.totalDuration()));
-                }
-            }
+            if (chp.hasDelta() || destroyedPartitionsCnt > 0)
+                tracker.logCheckpointFinish(chp);
 
-            updateMetrics(chp, tracker);
+            tracker.updatePerformanceStatistics(chp, psproc);
+            tracker.storeMetrics(chp, persStoreMetrics, cacheProcessor);
         }
         catch (IgniteCheckedException e) {
             chp.progress.fail(e);
@@ -684,83 +588,6 @@ public class Checkpointer extends GridWorker {
         }
 
         return true;
-    }
-
-    /**
-     * @param chp Checkpoint.
-     * @param tracker Tracker.
-     */
-    private void updateMetrics(Checkpoint chp, CheckpointMetricsTracker tracker) {
-        if (psproc.enabled()) {
-            psproc.checkpoint(
-                tracker.beforeLockDuration(),
-                tracker.lockWaitDuration(),
-                tracker.listenersExecuteDuration(),
-                tracker.markDuration(),
-                tracker.lockHoldDuration(),
-                tracker.pagesWriteDuration(),
-                tracker.fsyncDuration(),
-                tracker.walCpRecordFsyncDuration(),
-                tracker.writeCheckpointEntryDuration(),
-                tracker.splitAndSortCpPagesDuration(),
-                tracker.recoveryDataWriteDuration(),
-                tracker.totalDuration(),
-                tracker.checkpointStartTime(),
-                chp.pagesSize,
-                tracker.dataPagesWritten(),
-                tracker.cowPagesWritten());
-        }
-
-        if (persStoreMetrics.metricsEnabled()) {
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProcessor.context().database();
-
-            persStoreMetrics.onCheckpoint(
-                tracker.beforeLockDuration(),
-                tracker.lockWaitDuration(),
-                tracker.listenersExecuteDuration(),
-                tracker.markDuration(),
-                tracker.lockHoldDuration(),
-                tracker.pagesWriteDuration(),
-                tracker.fsyncDuration(),
-                tracker.walCpRecordFsyncDuration(),
-                tracker.writeCheckpointEntryDuration(),
-                tracker.splitAndSortCpPagesDuration(),
-                tracker.recoveryDataWriteDuration(),
-                tracker.totalDuration(),
-                tracker.checkpointStartTime(),
-                chp.pagesSize,
-                tracker.dataPagesWritten(),
-                tracker.cowPagesWritten(),
-                tracker.recoveryDataSize(),
-                dbMgr.forAllPageStores(PageStore::size),
-                dbMgr.forAllPageStores(PageStore::getSparseSize)
-            );
-        }
-    }
-
-    /**
-     * Creates a string of a range WAL segments.
-     *
-     * @param walRange Range of WAL segments.
-     * @return The message about how many WAL segments was between previous checkpoint and current one.
-     */
-    private String walRangeStr(@Nullable IgniteBiTuple<Long, Long> walRange) {
-        if (walRange == null)
-            return "";
-
-        String res;
-
-        long startIdx = walRange.get1();
-        long endIdx = walRange.get2();
-
-        if (endIdx < 0 || endIdx < startIdx)
-            res = "[]";
-        else if (endIdx == startIdx)
-            res = "[" + endIdx + "]";
-        else
-            res = "[" + startIdx + " - " + endIdx + "]";
-
-        return res;
     }
 
     /**
@@ -927,31 +754,6 @@ public class Checkpointer extends GridWorker {
     }
 
     /**
-     * @param tracker Checkpoint metrics tracker.
-     * @return Duration of possible JVM pause, if it was detected, or {@code -1} otherwise.
-     */
-    private long possibleLongJvmPauseDuration(CheckpointMetricsTracker tracker) {
-        if (LongJVMPauseDetector.enabled()) {
-            if (tracker.lockWaitDuration() + tracker.lockHoldDuration() > longJvmPauseThreshold) {
-                long now = System.currentTimeMillis();
-
-                // We must get last wake up time before search possible pause in events map.
-                long wakeUpTime = pauseDetector.getLastWakeUpTime();
-
-                IgniteBiTuple<Long, Long> lastLongPause = pauseDetector.getLastLongPause();
-
-                if (lastLongPause != null && tracker.checkpointStartTime() < lastLongPause.get1())
-                    return lastLongPause.get2();
-
-                if (now - wakeUpTime > longJvmPauseThreshold)
-                    return now - wakeUpTime;
-            }
-        }
-
-        return -1L;
-    }
-
-    /**
      * Update the current checkpoint info from the scheduled one.
      */
     private void startCheckpointProgress() {
@@ -995,6 +797,7 @@ public class Checkpointer extends GridWorker {
      *
      * @deprecated Should be rewritten to public API.
      */
+    @Deprecated
     public IgniteInternalFuture<Void> enableCheckpoints(boolean enable) {
         GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
