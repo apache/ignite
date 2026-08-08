@@ -63,4 +63,5 @@ class DataStorageConfiguration(NamedTuple):
     write_recovery_data_on_checkpoint: bool = None
     checkpoint_recovery_data_compression: str = None
     checkpoint_recovery_data_compression_level: int = None
+    checkpoint_write_order: str = None
     default_warm_up_configuration: Bean = None
