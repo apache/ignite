@@ -270,8 +270,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
 
-        if(!dynamicSiblings && !F.isEmpty(siblings))
-            sibJobIds = F.viewReadOnly(siblings, ComputeJobSibling::getJobId);
+        if (!dynamicSiblings && !F.isEmpty(siblings))
+            sibJobIds = siblings.stream().map(sib -> sib.getJobId()).toList();
     }
 
     /**
@@ -342,7 +342,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     /**
      * @return Sibling job ids.
      */
-    public @Nullable Collection<IgniteUuid> getSiblings() {
+    public @Nullable Collection<IgniteUuid> siblingJobsIds() {
         return sibJobIds;
     }
 

@@ -36,6 +36,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSessionImpl;
+import org.apache.ignite.internal.GridJobSiblingImpl;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1258,6 +1260,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
 
                         Collection<ComputeJobSibling> siblings = Collections.emptyList();
+
+                        if (!F.isEmpty(req.siblingJobsIds()))
+                            siblings = req.siblingJobsIds().stream().map(sibJobId -> new GridJobSiblingImpl(null, sibJobId, null, null)).collect(Collectors.toList());
 
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
