@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,10 +36,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 /**
  * This class provides implementation for job sibling.
  */
-public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridJobSiblingImpl implements ComputeJobSibling {
     /** */
     private IgniteUuid sesId;
 
@@ -171,20 +164,6 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
 
         // Cancel local jobs directly.
         ctx.job().cancelJob(sesId, jobId, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // Don't serialize node ID.
-        U.writeIgniteUuid(out, sesId);
-        U.writeIgniteUuid(out, jobId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // Don't serialize node ID.
-        sesId = U.readIgniteUuid(in);
-        jobId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

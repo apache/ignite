@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -109,7 +108,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
 
     /** Left unset for a continuous task: such a job requests its siblings from the task node instead. */
     @Marshalled("siblingsBytes")
-    Collection<ComputeJobSibling> siblings;
+    Collection<IgniteUuid> siblingJobsIds;
 
     /** */
     @Order(12)
@@ -188,7 +187,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
      * @param timeout Task execution timeout.
      * @param top Topology.
      * @param topPred Topology predicate.
-     * @param siblings Collection of split siblings.
+     * @param siblingJobsIds Collection sibling jobs ids.
      * @param sesAttrs Session attributes.
      * @param jobAttrs Job attributes.
      * @param cpSpi Collision SPI.
@@ -215,7 +214,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
             long timeout,
             @Nullable Collection<UUID> top,
             @Nullable IgnitePredicate<ClusterNode> topPred,
-            Collection<ComputeJobSibling> siblings,
+            @Nullable Collection<IgniteUuid> siblingJobsIds,
             Map<Object, Object> sesAttrs,
             Map<? extends Serializable, ? extends Serializable> jobAttrs,
             String cpSpi,
@@ -253,7 +252,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.top = top;
         this.topVer = topVer;
         this.topPred = topPred;
-        this.siblings = dynamicSiblings ? null : siblings;
+        this.siblingJobsIds = dynamicSiblings ? null : siblingJobsIds;
         this.sesAttrs = sesAttrs;
         this.jobAttrs = jobAttrs;
         this.clsLdrId = clsLdrId;
@@ -337,10 +336,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     }
 
     /**
-     * @return Job siblings.
+     * @return Siblings jobs ids.
      */
-    public Collection<ComputeJobSibling> getSiblings() {
-        return siblings;
+    public Collection<IgniteUuid> siblingJobsIds() {
+        return siblingJobsIds;
     }
 
     /**

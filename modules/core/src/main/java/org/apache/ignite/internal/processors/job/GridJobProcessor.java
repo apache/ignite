@@ -1266,7 +1266,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTopologyPredicate(),
                             req.startTaskTime(),
                             endTime,
-                            req.getSiblings(),
+                            req.siblingJobsIds(),
                             req.getSessionAttributes(),
                             req.sessionFullSupport(),
                             req.internal(),

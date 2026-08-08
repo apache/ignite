@@ -1381,6 +1381,10 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                     boolean forceLocDep = internal || !ctx.deploy().enabled();
 
+                    Collection<IgniteUuid> siblingJobsIds = F.isEmpty(ses.getJobSiblings())
+                        ? null
+                        : ses.getJobSiblings().stream().map(ComputeJobSibling::getJobId).toList();
+
                     req = new GridJobExecuteRequest(
                         ses.getId(),
                         res.getJobContext().getJobId(),
@@ -1392,7 +1396,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         timeout,
                         ses.getTopology(),
                         ses.getTopologyPredicate(),
-                        ses.getJobSiblings(),
+                        siblingJobsIds,
                         sesAttrs,
                         jobAttrs,
                         ses.getCheckpointSpi(),
