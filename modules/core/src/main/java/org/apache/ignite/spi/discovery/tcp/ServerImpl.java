@@ -1158,6 +1158,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         DiscoveryDataPacket discoveryData = spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId()));
 
+        // Set initial metrics for node validation.
+        // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28965
+        locNode.setMetrics(spi.metricsProvider.metrics());
+
         TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
         while (true) {
