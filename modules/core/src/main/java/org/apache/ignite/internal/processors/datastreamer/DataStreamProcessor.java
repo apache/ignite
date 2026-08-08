@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,9 +68,6 @@ public class DataStreamProcessor extends GridProcessorAdapter {
     /** Data Streamer flusher. */
     private final DataStreamerFlusher flusher = new DataStreamerFlusher();
 
-    /** Marshaller. */
-    private final Marshaller marsh;
-
     /**
      * @param ctx Kernal context.
      */
@@ -86,8 +83,6 @@ public class DataStreamProcessor extends GridProcessorAdapter {
                 }
             });
         }
-
-        marsh = ctx.marshaller();
     }
 
     /** {@inheritDoc} */
@@ -240,7 +235,10 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             StreamReceiver<?, ?> updater;
 
             try {
-                updater = U.unmarshal(marsh, req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
+                // The request carries user classes, so it is read here, with the deployment class loader at hand.
+                MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(clsLdr, ctx.config()));
+
+                updater = req.updater();
 
                 if (updater != null)
                     ctx.resource().injectGeneric(updater);

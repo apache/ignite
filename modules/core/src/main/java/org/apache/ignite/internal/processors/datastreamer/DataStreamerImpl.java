@@ -155,9 +155,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
 
-    /** */
-    private byte[] updaterBytes;
-
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
 
@@ -1943,12 +1940,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (val != null)
                             val.marshal(cacheObjCtx);
                     }
-
-                    if (updaterBytes == null) {
-                        assert rcvr != null;
-
-                        updaterBytes = U.marshal(ctx, rcvr);
-                    }
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal.", e);
@@ -1995,7 +1986,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     reqId,
                     topicId,
                     cacheName,
-                    updaterBytes,
+                    rcvr,
                     entries,
                     true,
                     skipStore,

@@ -692,7 +692,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             req.requestId(),
                             req.resTopicId,
                             req.cacheName(),
-                            req.updaterBytes(),
+                            req.updater(),
                             req.entries(),
                             req.ignoreDeploymentOwnership(),
                             req.skipStore(),

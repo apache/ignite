@@ -22,20 +22,24 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.StripedMessage;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 
-/** */
+/** A batch of streamed entries. The receiver is a user class, hence the deferred unmarshalling. */
+@UseBinaryMarshaller
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
@@ -49,8 +53,11 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** */
-    // TODO: Refactor bytes serialization - IGNITE-27977
+    /** Cache receiver. */
+    @Marshalled("updaterBytes")
+    StreamReceiver<?, ?> updater;
+
+    /** Serialized cache receiver. */
     @Order(3)
     byte[] updaterBytes;
 
@@ -112,7 +119,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterBytes Cache receiver.
+     * @param updater Cache receiver.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -130,7 +137,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         long reqId,
         IgniteUuid resTopicId,
         @Nullable String cacheName,
-        byte[] updaterBytes,
+        StreamReceiver<?, ?> updater,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
@@ -149,7 +156,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.reqId = reqId;
         this.resTopicId = resTopicId;
         this.cacheName = cacheName;
-        this.updaterBytes = updaterBytes;
+        this.updater = updater;
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
@@ -180,8 +187,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     }
 
     /** @return Updater. */
-    byte[] updaterBytes() {
-        return updaterBytes;
+    StreamReceiver<?, ?> updater() {
+        return updater;
     }
 
     /** @return Entries to update. */
