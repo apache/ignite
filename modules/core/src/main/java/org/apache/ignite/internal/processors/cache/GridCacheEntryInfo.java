@@ -53,7 +53,10 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     /** Base time to calculate {@link #expireTime()}. */
     long initTime;
 
-    /** Expiration time delta to transfer. {@link Long#MIN_VALUE} means no expiration is set. */
+    /** Expiration time delta to transfer. {@link Long#MIN_VALUE} means no expiration is set. In theory, calculating and
+     * comparing times could be biased by GC thread pauses. There might be chance to get negaive values. This would mean
+     * expired timeout and shouldn't be treated as disabled expiration. So, we use the farthest value as minimal chance
+     * to get met. */
     @Order(4)
     long expireTimeTransferDelta = Long.MIN_VALUE;
 
@@ -77,14 +80,18 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
 
     /** */
     public GridCacheEntryInfo(int cacheId, KeyCacheObject key, @Nullable CacheObject val, GridCacheVersion ver, long expireTime, long ttl) {
+        assert expireTime >= 0;
+
         if (expireTime == 0) {
             /** {@link Long#MIN_VALUE} means no expiration is set. */
             expireTimeTransferDelta = Long.MIN_VALUE;
         }
         else {
+            // In theory, thread could be paused around here. Thus, the expiration delta becomes negative.
+            // This shouldn't be treated as disabled expiration. The correct behavior would be an expired timeout.
             initTime = System.currentTimeMillis();
 
-            expireTimeTransferDelta = expireTime == 0 ? Long.MIN_VALUE : expireTime - initTime;
+            expireTimeTransferDelta = expireTime - initTime;
         }
 
         this.cacheId = cacheId;
@@ -124,6 +131,8 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
      * @return Expire time.
      */
     public long expireTime() {
+        assert (initTime == 0) == (expireTimeTransferDelta == Long.MIN_VALUE);
+
         return expireTimeTransferDelta == Long.MIN_VALUE ? 0 : initTime + expireTimeTransferDelta;
     }
 
