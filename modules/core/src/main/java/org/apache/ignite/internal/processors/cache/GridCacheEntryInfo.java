@@ -50,15 +50,12 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     @Order(3)
     long ttl;
 
-    /** Base time to calculate {@link #expireTime()}. */
+    /** Base time to calculate {@link #expireTime()}. 0 if no expiration is used. */
     long initTime;
 
-    /** Expiration time delta to transfer. {@link Long#MIN_VALUE} means no expiration is set. In theory, calculating and
-     * comparing times could be biased by GC thread pauses. There might be chance to get negaive values. This would mean
-     * expired timeout and shouldn't be treated as disabled expiration. So, we use the farthest value as minimal chance
-     * to get met. */
+    /** Expiration time delta to transfer. */
     @Order(4)
-    long expireTimeTransferDelta = Long.MIN_VALUE;
+    long expireTimeDelta;
 
     /** Entry version. */
     @Order(5)
@@ -72,7 +69,7 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
 
     /**
      * Empty constructor for serialization purposes.
-     * see {@link #expireTimeTransferDelta}.
+     * see {@link #expireTimeDelta}.
      */
     public GridCacheEntryInfo() {
         initTime = System.currentTimeMillis();
@@ -82,16 +79,10 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     public GridCacheEntryInfo(int cacheId, KeyCacheObject key, @Nullable CacheObject val, GridCacheVersion ver, long expireTime, long ttl) {
         assert expireTime >= 0;
 
-        if (expireTime == 0) {
-            /** {@link Long#MIN_VALUE} means no expiration is set. */
-            expireTimeTransferDelta = Long.MIN_VALUE;
-        }
-        else {
-            // In theory, thread could be paused around here. Thus, the expiration delta becomes negative.
-            // This shouldn't be treated as disabled expiration. The correct behavior would be an expired timeout.
+        if (expireTime != 0) {
             initTime = System.currentTimeMillis();
 
-            expireTimeTransferDelta = expireTime - initTime;
+            expireTimeDelta = expireTime - initTime;
         }
 
         this.cacheId = cacheId;
@@ -131,9 +122,9 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
      * @return Expire time.
      */
     public long expireTime() {
-        assert (initTime == 0) == (expireTimeTransferDelta == Long.MIN_VALUE);
+        assert initTime >= 0;
 
-        return expireTimeTransferDelta == Long.MIN_VALUE ? 0 : initTime + expireTimeTransferDelta;
+        return initTime == 0L ? 0L : initTime + expireTimeDelta;
     }
 
     /**
