@@ -51,7 +51,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache receiver, in the message that carries it. Holds a user object, hence out of {@code toString()}. */
+    /** Cache receiver, in the message that carries it. Out of {@code toString()}: it is a user object. */
     @GridToStringExclude
     @Order(3)
     StreamReceiverMessage updaterMsg;

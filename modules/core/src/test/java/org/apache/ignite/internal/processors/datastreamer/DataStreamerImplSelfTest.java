@@ -711,9 +711,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            Message sentMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : null;
+
             // The message is already marshalled at this point, so the serialized receiver is in place.
-            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof DataStreamerRequest)
-                sentReceivers.add(((DataStreamerRequest)((GridIoMessage)msg).message()).updaterMsg);
+            if (sentMsg instanceof DataStreamerRequest)
+                sentReceivers.add(((DataStreamerRequest)sentMsg).updaterMsg);
 
             // Send stale topology only in the first request to avoid indefinitely getting failures.
             if (needStaleTop) {

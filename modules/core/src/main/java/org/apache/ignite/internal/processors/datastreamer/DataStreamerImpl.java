@@ -510,7 +510,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvrMsg = new StreamReceiverMessage(allow ? DataStreamerCacheUpdaters.individual() : ISOLATED_UPDATER);
+        rcvrMsg = new StreamReceiverMessage(allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER);
     }
 
     /** {@inheritDoc} */
@@ -889,12 +889,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         assert key != null;
 
                         if (initPda) {
+                            StreamReceiver<K, V> rcvr = receiver();
+
                             if (cacheObjCtx.addDeploymentInfo())
                                 jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
                                     entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
-                                    receiver());
-                            else if (receiver() != null)
-                                jobPda = new DataStreamerPda(receiver());
+                                    rcvr);
+                            else if (rcvr != null)
+                                jobPda = new DataStreamerPda(rcvr);
 
                             initPda = false;
                         }
