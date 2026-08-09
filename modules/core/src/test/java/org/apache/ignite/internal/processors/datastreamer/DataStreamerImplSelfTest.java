@@ -89,16 +89,21 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Indicates whether we need to make the topology stale */
     private static boolean needStaleTop = false;
 
-    /** Collects the receiver carrier of every streamer request sent, when set. */
-    private static volatile Collection<StreamReceiverMessage> sentReceivers;
+    /** Receiver carriers of the streamer requests sent since the current test started. */
+    private static final Collection<StreamReceiverMessage> sentReceivers = new ConcurrentLinkedQueue<>();
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        sentReceivers.clear();
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
-
-        sentReceivers = null;
 
         // Unbinds the log listeners from single static log instance.
         U.<AtomicReference<IgniteLogger>>field(DataStreamerImpl.class, "logRef").set(null);
@@ -159,8 +164,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt = 0;
 
         startGrids(2);
-
-        sentReceivers = new ConcurrentLinkedQueue<>();
 
         try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             ldr.perNodeBufferSize(1);
@@ -708,13 +711,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
-            // Read once: the field is cleared after the test, while nodes still stopping send through this SPI.
-            Collection<StreamReceiverMessage> rcvrs = sentReceivers;
-
             // The message is already marshalled at this point, so the serialized receiver is in place.
-            if (rcvrs != null && msg instanceof GridIoMessage
-                && ((GridIoMessage)msg).message() instanceof DataStreamerRequest)
-                rcvrs.add(((DataStreamerRequest)((GridIoMessage)msg).message()).updaterMsg);
+            if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof DataStreamerRequest)
+                sentReceivers.add(((DataStreamerRequest)((GridIoMessage)msg).message()).updaterMsg);
 
             // Send stale topology only in the first request to avoid indefinitely getting failures.
             if (needStaleTop) {
