@@ -34,7 +34,11 @@ public class StreamReceiverMessage implements Message {
     @Marshalled("rcvrBytes")
     StreamReceiver<?, ?> rcvr;
 
-    /** Serialized {@link #rcvr}, written by whichever batch is marshalled first and read by the rest. */
+    /**
+     * Serialized {@link #rcvr}, written by whichever batch is marshalled first and read by the rest. Those batches
+     * leave on different threads, hence the {@code volatile}: a reader seeing the reference before the contents would
+     * skip the marshalling and send a half-written array.
+     */
     @Order(0)
     volatile byte[] rcvrBytes;
 
