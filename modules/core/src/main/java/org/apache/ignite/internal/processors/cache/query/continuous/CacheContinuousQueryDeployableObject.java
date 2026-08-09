@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
@@ -80,12 +79,11 @@ class CacheContinuousQueryDeployableObject implements Externalizable {
     }
 
     /**
-     * @param nodeId Node ID.
      * @param ctx Kernal context.
      * @return Deserialized object.
      * @throws IgniteCheckedException In case of error.
      */
-    <T> T unmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+    <T> T unmarshal(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName);

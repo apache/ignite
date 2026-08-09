@@ -89,7 +89,7 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
+    public void p2pUnmarshal(GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
      * Creates new batch.

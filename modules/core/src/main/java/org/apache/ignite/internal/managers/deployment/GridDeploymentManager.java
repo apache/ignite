@@ -434,8 +434,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /**
-     * Resolves the deployment {@code depInfo} describes, for the classes of {@code clsName}. The sender of those
-     * classes is the node that created the class loader, or a participant when the deployment has any.
+     * Resolves the deployment {@code depInfo} describes, for the classes of {@code clsName}.
      *
      * @param depInfo Deployment of the classes, as it came with the message carrying them.
      * @param clsName Name of a class the deployment must be able to load.
@@ -469,7 +468,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             rsrcName,
             clsName,
             depInfo.userVersion(),
-            depInfo.classLoaderId().globalId(),
+            depInfo.nodeId(),
             depInfo.classLoaderId(),
             depInfo.participants());
     }
