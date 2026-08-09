@@ -119,7 +119,7 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     }
 
     /**
-     * @return Expire time.
+     * @return Expire time >= 0. 0 means no expiration is set.
      */
     public long expireTime() {
         assert initTime >= 0;
