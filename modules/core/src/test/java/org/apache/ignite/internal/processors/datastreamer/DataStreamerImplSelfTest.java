@@ -715,7 +715,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             // The message is already marshalled at this point, so the serialized receiver is in place.
             if (rcvrs != null && msg instanceof GridIoMessage
                 && ((GridIoMessage)msg).message() instanceof DataStreamerRequest)
-                rcvrs.add(((DataStreamerRequest)((GridIoMessage)msg).message()).updater);
+                rcvrs.add(((DataStreamerRequest)((GridIoMessage)msg).message()).updaterMsg);
 
             // Send stale topology only in the first request to avoid indefinitely getting failures.
             if (needStaleTop) {

@@ -51,10 +51,10 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache receiver. A user object, kept out of the message {@code toString()}. */
+    /** Cache receiver, in the message that carries it. Holds a user object, hence out of {@code toString()}. */
     @GridToStringExclude
     @Order(3)
-    StreamReceiverMessage updater;
+    StreamReceiverMessage updaterMsg;
 
     /** Entries to update. */
     @Order(4)
@@ -114,7 +114,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updater Cache receiver.
+     * @param updaterMsg Cache receiver, in the message that carries it.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -132,7 +132,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         long reqId,
         IgniteUuid resTopicId,
         @Nullable String cacheName,
-        StreamReceiverMessage updater,
+        StreamReceiverMessage updaterMsg,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
@@ -151,7 +151,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.reqId = reqId;
         this.resTopicId = resTopicId;
         this.cacheName = cacheName;
-        this.updater = updater;
+        this.updaterMsg = updaterMsg;
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
@@ -183,7 +183,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** @return Updater. */
     StreamReceiver<?, ?> updater() {
-        return updater != null ? updater.receiver() : null;
+        return updaterMsg != null ? updaterMsg.receiver() : null;
     }
 
     /** @return Entries to update. */

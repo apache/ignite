@@ -491,13 +491,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** @return Cache receiver. */
     @SuppressWarnings("unchecked")
-    private StreamReceiver<K, V> rcvr() {
+    private StreamReceiver<K, V> receiver() {
         return (StreamReceiver<K, V>)rcvrMsg.receiver();
     }
 
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return rcvr() != ISOLATED_UPDATER;
+        return receiver() != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -658,7 +658,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (rcvr() instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
+        if (receiver() instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
             log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
@@ -892,9 +892,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             if (cacheObjCtx.addDeploymentInfo())
                                 jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
                                     entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
-                                    rcvr());
-                            else if (rcvr() != null)
-                                jobPda = new DataStreamerPda(rcvr());
+                                    receiver());
+                            else if (receiver() != null)
+                                jobPda = new DataStreamerPda(receiver());
 
                             initPda = false;
                         }
@@ -1853,7 +1853,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 false,
                                 skipStore,
                                 keepBinary,
-                                rcvr()),
+                                receiver()),
                             plc);
 
                         locFuts.add(callFut);
