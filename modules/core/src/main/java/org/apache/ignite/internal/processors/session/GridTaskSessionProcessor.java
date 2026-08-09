@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -76,7 +77,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param topPred Topology predicate.
      * @param startTime Execution start time.
      * @param endTime Execution end time.
-     * @param siblingJobsIds Collection of sibling jons ids.
+     * @param siblings Collection of siblings.
      * @param attrs Map of attributes.
      * @param fullSup {@code True} to enable distributed session attributes and checkpoints.
      * @param internal {@code True} in case of internal task.
@@ -94,7 +95,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
-        @Nullable Collection<IgniteUuid> siblingJobsIds,
+        @Nullable Collection<ComputeJobSibling> siblings,
         Map<Object, Object> attrs,
         boolean fullSup,
         boolean internal,
@@ -112,7 +113,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 topPred,
                 startTime,
                 endTime,
-                siblingJobsIds,
+                siblings,
                 attrs,
                 ctx,
                 false,
@@ -138,7 +139,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         topPred,
                         startTime,
                         endTime,
-                        siblingJobsIds,
+                        siblings,
                         attrs,
                         ctx,
                         true,

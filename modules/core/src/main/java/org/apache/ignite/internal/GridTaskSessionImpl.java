@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -149,7 +148,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param topPred Topology predicate.
      * @param startTime Task execution start time.
      * @param endTime Task execution end time.
-     * @param siblingJobsIds Collection of sibling jobs ids.
+     * @param siblings Collection of siblings.
      * @param attrs Session attributes.
      * @param ctx Grid Kernal Context.
      * @param fullSup Session full support enabled flag.
@@ -167,7 +166,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
-        @Nullable Collection<IgniteUuid> siblingJobsIds,
+        @Nullable Collection<ComputeJobSibling> siblings,
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
         boolean fullSup,
@@ -192,7 +191,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.sesId = sesId;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.siblings = localSiblingsWrap(siblingJobsIds);
+        this.siblings = siblings != null ? unmodifiableCollection(siblings) : null;
         this.ctx = ctx;
 
         if (attrs != null && !attrs.isEmpty()) {
@@ -208,16 +207,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
 
         this.secCtx = secCtx;
-    }
-
-    /**
-     * Creates local representation of {@link ComputeJobSibling}s.
-     *
-     * @see LocalComputeJobSiblingWrap
-     */
-    private static Collection<ComputeJobSibling> localSiblingsWrap(@Nullable Collection<IgniteUuid> siblingJobsIds) {
-        return F.isEmpty(siblingJobsIds) ? Collections.emptyList() : siblingJobsIds.stream().map(LocalComputeJobSiblingWrap::new)
-            .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
@@ -999,27 +988,5 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTaskSessionImpl.class, this);
-    }
-
-    /** A {@link ComputeJobSibling} providing {@link ComputeJobSibling#getJobId()} and unable to {@link ComputeJobSibling#cancel()}. */
-    private static class LocalComputeJobSiblingWrap implements ComputeJobSibling {
-        /** */
-        private final IgniteUuid jobId;
-
-        /** */
-        private LocalComputeJobSiblingWrap(IgniteUuid id) {
-            jobId = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid getJobId() {
-            return jobId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() throws IgniteException {
-            throw new IgniteException(new UnsupportedOperationException("Cancelation of sibling compute jobs is allowed " +
-                "only where it started."));
-        }
     }
 }

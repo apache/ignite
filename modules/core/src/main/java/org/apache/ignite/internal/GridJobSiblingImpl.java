@@ -38,11 +38,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 public class GridJobSiblingImpl implements ComputeJobSibling {
     /** */
-    private IgniteUuid sesId;
+    IgniteUuid sesId;
 
     /** */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private IgniteUuid jobId;
+    final IgniteUuid jobId;
 
     /** */
     private Object taskTopic;
@@ -57,12 +56,7 @@ public class GridJobSiblingImpl implements ComputeJobSibling {
     private boolean isJobDone;
 
     /** */
-    private transient GridKernalContext ctx;
-
-    /** */
-    public GridJobSiblingImpl() {
-        // No-op.
-    }
+    private GridKernalContext ctx;
 
     /**
      * @param sesId Task session ID.

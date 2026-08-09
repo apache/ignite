@@ -35,6 +35,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
@@ -1256,6 +1257,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
+                        Collection<ComputeJobSibling> siblings = null;
+
+                        if (!F.isEmpty(req.siblingJobsIds()))
+                            siblings = req.siblingJobsIds().stream().map(LocalComputeJobSibling::new).collect(Collectors.toList());
+
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
                             node.id(),
@@ -1266,7 +1272,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTopologyPredicate(),
                             req.startTaskTime(),
                             endTime,
-                            req.siblingJobsIds(),
+                            siblings,
                             req.getSessionAttributes(),
                             req.sessionFullSupport(),
                             req.internal(),
@@ -2506,5 +2512,27 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     public long computeJobWorkerInterruptTimeout() {
         return computeJobWorkerInterruptTimeout.getOrDefault(ctx.config().getFailureDetectionTimeout());
+    }
+
+    /** */
+    private static class LocalComputeJobSibling implements ComputeJobSibling {
+        /** */
+        private final IgniteUuid sibJobId;
+
+        /** */
+        private LocalComputeJobSibling(IgniteUuid sibJobId) {
+            this.sibJobId = sibJobId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid getJobId() {
+            return sibJobId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() throws IgniteException {
+            throw new IgniteException(new UnsupportedOperationException("Cancelation of sibling compute jobs are allowed " +
+                "only where it started."));
+        }
     }
 }
