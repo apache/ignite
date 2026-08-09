@@ -25,9 +25,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * resolve the class loader those classes are read with, the same way {@code CacheIdAware} lets it resolve the cache
  * object context.
  * <p>
- * Resolving may have to request the deployment from its owner and block, so a message stating this must be unmarshalled
- * where blocking is allowed, never from a socket-reading thread. A message read on such a thread states
- * {@code DeferredUnmarshalMessage} as well, leaving the read to its owner.
+ * Resolving may have to request the deployment from its owner and block, and it fails when the classes are gone, so a
+ * message stating this must be unmarshalled where blocking is allowed and where the failure reaches whoever waits for
+ * it. A message read on a socket-reading thread promises neither: a discovery custom message, for one, is a nested
+ * field of its envelope, so the envelope's marshaller reads the whole tree there, and a missing class is swallowed
+ * with a warning. Such a message keeps its deployment as a plain field and asks {@code GridDeploymentManager} for the
+ * loader where it is read, as {@code StartRequestData} does.
  *
  * @see MarshallableMessage
  */
