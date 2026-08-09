@@ -424,14 +424,15 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     /**
      * Resolves the deployment {@code depInfo} describes, for the classes of {@code clsName}.
      *
-     * @param depInfo Deployment of the classes, as it came with the message carrying them.
+     * @param depInfo Deployment of the classes, or {@code null} when the message carries none.
      * @param clsName Name of a class the deployment must be able to load.
      * @param sndNodeId Node the classes came from. It is not always the node that created the class loader: a node
      *     that got the classes by peer loading passes them on as a participant of the same deployment.
      * @return The deployment the classes are loaded with.
-     * @throws IgniteDeploymentCheckedException If the deployment is gone or peer class loading is off.
+     * @throws IgniteDeploymentCheckedException If there is no deployment to resolve, it is gone, or peer class
+     *     loading is off.
      */
-    public GridDeployment globalDeployment(GridDeploymentInfo depInfo, String clsName, UUID sndNodeId)
+    public GridDeployment globalDeployment(@Nullable GridDeploymentInfo depInfo, String clsName, UUID sndNodeId)
         throws IgniteDeploymentCheckedException {
         GridDeployment dep = globalDeployment(depInfo, clsName, clsName, sndNodeId);
 
@@ -449,14 +450,17 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * deployed under a name of its own) and returns {@code null} instead of throwing, for callers that have somewhere
      * else to look.
      *
-     * @param depInfo Deployment of the classes, as it came with the message carrying them.
+     * @param depInfo Deployment of the classes, or {@code null} when the message carries none.
      * @param rsrcName Name the classes are deployed under.
      * @param clsName Name of a class the deployment must be able to load.
      * @param sndNodeId Node the classes came from.
-     * @return The deployment, or {@code null} when there is none.
+     * @return The deployment, or {@code null} when there is none to resolve or none is found.
      */
-    @Nullable public GridDeployment globalDeployment(GridDeploymentInfo depInfo, String rsrcName, String clsName,
-        UUID sndNodeId) {
+    @Nullable public GridDeployment globalDeployment(@Nullable GridDeploymentInfo depInfo, String rsrcName,
+        String clsName, UUID sndNodeId) {
+        if (depInfo == null)
+            return null;
+
         return getGlobalDeployment(depInfo.deployMode(),
             rsrcName,
             clsName,
