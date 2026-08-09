@@ -235,7 +235,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             StreamReceiver<?, ?> updater;
 
             try {
-                // The request carries user classes, so it is read here, with the deployment class loader at hand.
+                // Read here, not on the inbound pass: the deployment class loader is known only at this point.
                 MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(clsLdr, ctx.config()));
 
                 updater = req.updater();

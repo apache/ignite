@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 
-/** A batch of streamed entries. The receiver is a user class, hence the deferred unmarshalling. */
+/** Batch of streamed entries. The receiver is a user class. */
 @UseBinaryMarshaller
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
