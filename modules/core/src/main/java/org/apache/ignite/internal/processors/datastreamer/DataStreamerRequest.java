@@ -22,10 +22,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
-import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.StripedMessage;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -39,8 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 
-/** Batch of streamed entries. The receiver is a user class. */
-@UseBinaryMarshaller
+/** Batch of streamed entries. The receiver it carries is a user class, hence the deferred unmarshalling. */
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
@@ -56,12 +53,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** Cache receiver. A user object, kept out of the message {@code toString()}. */
     @GridToStringExclude
-    @Marshalled("updaterBytes")
-    StreamReceiver<?, ?> updater;
-
-    /** Serialized cache receiver. */
     @Order(3)
-    byte[] updaterBytes;
+    StreamReceiverMessage updater;
 
     /** Entries to update. */
     @Order(4)
@@ -139,7 +132,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         long reqId,
         IgniteUuid resTopicId,
         @Nullable String cacheName,
-        StreamReceiver<?, ?> updater,
+        StreamReceiverMessage updater,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
@@ -190,23 +183,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** @return Updater. */
     StreamReceiver<?, ?> updater() {
-        return updater;
-    }
-
-    /** @return Serialized updater, {@code null} until the message is marshalled. */
-    byte[] updaterBytes() {
-        return updaterBytes;
-    }
-
-    /**
-     * Hands the message the serialized form of its updater, so the marshaller keeps it instead of producing its own.
-     * The receiver of a streamer does not change between batches, hence the sender marshals it once and passes the
-     * result on.
-     *
-     * @param updaterBytes Serialized updater taken from an already marshalled request.
-     */
-    void updaterBytes(byte[] updaterBytes) {
-        this.updaterBytes = updaterBytes;
+        return updater != null ? updater.receiver() : null;
     }
 
     /** @return Entries to update. */

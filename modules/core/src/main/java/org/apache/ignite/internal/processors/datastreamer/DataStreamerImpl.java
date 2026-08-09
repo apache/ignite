@@ -104,7 +104,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -153,11 +152,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver. */
-    private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
-
-    /** A receiver paired with the bytes the marshaller produced for it; a replaced receiver invalidates the pair. */
-    private volatile T2<StreamReceiver<K, V>, byte[]> marshalledRcvr;
+    /** Cache receiver, in the message that carries it to the remote nodes. */
+    private volatile StreamReceiverMessage rcvrMsg = new StreamReceiverMessage(ISOLATED_UPDATER);
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -490,12 +486,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public void receiver(StreamReceiver<K, V> rcvr) {
         A.notNull(rcvr, "rcvr");
 
-        this.rcvr = rcvr;
+        rcvrMsg = new StreamReceiverMessage(rcvr);
+    }
+
+    /** @return Cache receiver. */
+    @SuppressWarnings("unchecked")
+    private StreamReceiver<K, V> rcvr() {
+        return (StreamReceiver<K, V>)rcvrMsg.receiver();
     }
 
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return rcvr != ISOLATED_UPDATER;
+        return rcvr() != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -508,7 +510,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvr = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
+        rcvrMsg = new StreamReceiverMessage(allow ? DataStreamerCacheUpdaters.individual() : ISOLATED_UPDATER);
     }
 
     /** {@inheritDoc} */
@@ -656,7 +658,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
+        if (rcvr() instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
             log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
@@ -890,9 +892,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             if (cacheObjCtx.addDeploymentInfo())
                                 jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
                                     entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
-                                    rcvr);
-                            else if (rcvr != null)
-                                jobPda = new DataStreamerPda(rcvr);
+                                    rcvr());
+                            else if (rcvr() != null)
+                                jobPda = new DataStreamerPda(rcvr());
 
                             initPda = false;
                         }
@@ -1851,7 +1853,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 false,
                                 skipStore,
                                 keepBinary,
-                                rcvr),
+                                rcvr()),
                             plc);
 
                         locFuts.add(callFut);
@@ -1986,13 +1988,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-                StreamReceiver<K, V> rcvr0 = rcvr;
+                StreamReceiverMessage rcvrMsg0 = rcvrMsg;
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicId,
                     cacheName,
-                    rcvr0,
+                    rcvrMsg0,
                     entries,
                     true,
                     skipStore,
@@ -2004,21 +2006,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    (rcvr0 == ISOLATED_UPDATER) ? partId : NO_STRIPE);
-
-                // Every batch carries the same receiver, so it is marshalled once: the message is handed the bytes of
-                // an earlier request, and yields its own when it is the first to be marshalled.
-                T2<StreamReceiver<K, V>, byte[]> marshalled = marshalledRcvr;
-
-                byte[] rcvrBytes = marshalled != null && marshalled.get1() == rcvr0 ? marshalled.get2() : null;
-
-                req.updaterBytes(rcvrBytes);
+                    (rcvrMsg0.receiver() == ISOLATED_UPDATER) ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
-
-                    if (rcvrBytes == null)
-                        marshalledRcvr = new T2<>(rcvr0, req.updaterBytes());
 
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');
