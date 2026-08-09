@@ -98,6 +98,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
+        sentReceivers = null;
+
         // Unbinds the log listeners from single static log instance.
         U.<AtomicReference<IgniteLogger>>field(DataStreamerImpl.class, "logRef").set(null);
         GridTestUtils.setFieldValue(null, DataStreamerImpl.class, "log", null);
@@ -158,9 +160,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        Collection<StreamReceiverMessage> sent = new ConcurrentLinkedQueue<>();
-
-        sentReceivers = sent;
+        sentReceivers = new ConcurrentLinkedQueue<>();
 
         try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             ldr.perNodeBufferSize(1);
@@ -168,17 +168,15 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < KEYS_COUNT; i++)
                 ldr.addData(i, i);
         }
-        finally {
-            sentReceivers = null;
-        }
 
-        assertTrue("Expected more than one request to a remote node, got " + sent.size(), sent.size() > 1);
+        assertTrue("Expected more than one request to a remote node, got " + sentReceivers.size(),
+            sentReceivers.size() > 1);
 
-        StreamReceiverMessage first = F.first(sent);
+        StreamReceiverMessage first = F.first(sentReceivers);
 
         assertNotNull(first.rcvrBytes);
 
-        for (StreamReceiverMessage rcvr : sent)
+        for (StreamReceiverMessage rcvr : sentReceivers)
             assertTrue("The receiver was marshalled more than once", first.rcvrBytes == rcvr.rcvrBytes);
     }
 
@@ -710,6 +708,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            // Read once: the field is cleared after the test, while nodes still stopping send through this SPI.
             Collection<StreamReceiverMessage> rcvrs = sentReceivers;
 
             // The message is already marshalled at this point, so the serialized receiver is in place.
