@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.TestMapMessage;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -63,11 +64,11 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
     /** */
     private static final MessageMapType floatArrayCharArrayMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.FLOAT_ARR), new MessageItemType(MessageCollectionItemType.CHAR_ARR), false);
     /** */
-    private static final MessageMapType gridCacheObjectMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.KEY_CACHE_OBJECT), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CACHE_OBJECT), false), false), false);
+    private static final MessageMapType gridCacheObjectMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.KEY_CACHE_OBJECT), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.CACHE_OBJECT), CollectionImplementationType.ARRAY_LIST), false), false);
     /** */
     private static final MessageMapType gridLongListIntegerMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageItemType(MessageCollectionItemType.INT), false);
     /** */
-    private static final MessageMapType gridlistDoubleMapUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), false), false), false);
+    private static final MessageMapType gridlistDoubleMapUuidMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.GRID_LONG_LIST), new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageCollectionType(new MessageItemType(MessageCollectionItemType.DOUBLE), CollectionImplementationType.ARRAY_LIST), false), false);
     /** */
     private static final MessageMapType igniteUuidBitSetMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.IGNITE_UUID), new MessageItemType(MessageCollectionItemType.BIT_SET), false);
     /** */
