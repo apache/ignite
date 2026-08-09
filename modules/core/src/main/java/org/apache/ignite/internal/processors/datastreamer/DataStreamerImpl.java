@@ -104,6 +104,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -154,6 +155,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
+
+    /** A receiver paired with the bytes the marshaller produced for it; a replaced receiver invalidates the pair. */
+    private volatile T2<StreamReceiver<K, V>, byte[]> marshalledRcvr;
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -1982,11 +1986,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
+                StreamReceiver<K, V> rcvr0 = rcvr;
+
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicId,
                     cacheName,
-                    rcvr,
+                    rcvr0,
                     entries,
                     true,
                     skipStore,
@@ -1998,10 +2004,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    (rcvr == ISOLATED_UPDATER) ? partId : NO_STRIPE);
+                    (rcvr0 == ISOLATED_UPDATER) ? partId : NO_STRIPE);
+
+                // Every batch carries the same receiver, so it is marshalled once: the message is handed the bytes of
+                // an earlier request, and yields its own when it is the first to be marshalled.
+                T2<StreamReceiver<K, V>, byte[]> marshalled = marshalledRcvr;
+
+                byte[] rcvrBytes = marshalled != null && marshalled.get1() == rcvr0 ? marshalled.get2() : null;
+
+                req.updaterBytes(rcvrBytes);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
+
+                    if (rcvrBytes == null)
+                        marshalledRcvr = new T2<>(rcvr0, req.updaterBytes());
 
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');

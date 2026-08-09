@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -88,6 +89,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Indicates whether we need to make the topology stale */
     private static boolean needStaleTop = false;
 
+    /** Collects the serialized receiver of every streamer request sent, when set. */
+    private static volatile Collection<byte[]> sentUpdaterBytes;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -140,6 +144,42 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         for (IgniteFuture fut : futures)
             assertTrue(fut.isDone());
+    }
+
+    /**
+     * The receiver does not change between batches, so it is marshalled once: every request carries the very bytes
+     * produced for the first one.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReceiverMarshalledOncePerStreamer() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        Collection<byte[]> sent = new ConcurrentLinkedQueue<>();
+
+        sentUpdaterBytes = sent;
+
+        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            ldr.perNodeBufferSize(1);
+
+            for (int i = 0; i < KEYS_COUNT; i++)
+                ldr.addData(i, i);
+        }
+        finally {
+            sentUpdaterBytes = null;
+        }
+
+        assertTrue("Expected more than one request to a remote node, got " + sent.size(), sent.size() > 1);
+
+        byte[] first = F.first(sent);
+
+        assertNotNull(first);
+
+        for (byte[] bytes : sent)
+            assertTrue("The receiver was marshalled more than once", first == bytes);
     }
 
     /**
@@ -670,6 +710,13 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            Collection<byte[]> updaterBytes = sentUpdaterBytes;
+
+            // The message is already marshalled at this point, so the serialized receiver is in place.
+            if (updaterBytes != null && msg instanceof GridIoMessage
+                && ((GridIoMessage)msg).message() instanceof DataStreamerRequest)
+                updaterBytes.add(((DataStreamerRequest)((GridIoMessage)msg).message()).updaterBytes());
+
             // Send stale topology only in the first request to avoid indefinitely getting failures.
             if (needStaleTop) {
                 if (msg instanceof GridIoMessage) {

@@ -193,6 +193,22 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         return updater;
     }
 
+    /** @return Serialized updater, {@code null} until the message is marshalled. */
+    byte[] updaterBytes() {
+        return updaterBytes;
+    }
+
+    /**
+     * Hands the message the serialized form of its updater, so the marshaller keeps it instead of producing its own.
+     * The receiver of a streamer does not change between batches, hence the sender marshals it once and passes the
+     * result on.
+     *
+     * @param updaterBytes Serialized updater taken from an already marshalled request.
+     */
+    void updaterBytes(byte[] updaterBytes) {
+        this.updaterBytes = updaterBytes;
+    }
+
     /** @return Entries to update. */
     Collection<DataStreamerEntry> entries() {
         return entries;
