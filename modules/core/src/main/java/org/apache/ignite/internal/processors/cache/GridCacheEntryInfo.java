@@ -54,9 +54,9 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     long initTime;
 
     /**
-     * Expiration time delta to transfer. In theory, we can get the calculating time delta thread paused causing
-     * a negative delta value. This shouldn't be treated as disabled expiration. Correct behavior is expired timeout.
-     * {@link Long#MIN_VALUE} is taken as one with unrealistic chance to appear.
+     * Expiration time delta to transfer. {@link Long#MIN_VALUE} means no expiration enabled. In theory, we can get
+     * the calculating time delta thread paused causing a negative delta value. This shouldn't be treated as disabled
+     * expiration. Correct behavior is expired timeout. {@link Long#MIN_VALUE} is taken as one with unrealistic chance to appear.
      */
     @Order(4)
     long expireTimeDelta = Long.MIN_VALUE;
