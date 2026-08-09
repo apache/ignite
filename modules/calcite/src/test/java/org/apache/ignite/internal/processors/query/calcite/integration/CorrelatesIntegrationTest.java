@@ -97,22 +97,20 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
         sql("INSERT INTO test2 VALUES (11, 1), (12, 1), (13, 4)");
 
         for (HintDefinition noHint : List.of(NO_NL_JOIN, NO_CNL_JOIN, NO_HASH_JOIN)) {
-            if (noHint.toString().toUpperCase().startsWith("NO_")) {
-                System.out.println(">>> Check with: " + noHint);
-                // Collision by correlate variables in the left hand.
-                assertQuery("SELECT /*+ %s */ * FROM test1 WHERE ".formatted(noHint) +
-                    "EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<>test2.c) " +
-                    "AND NOT EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<test2.c)")
-                    .returns(12, 2)
-                    .check();
+            log.info(">>> Check with: " + noHint);
+            // Collision by correlate variables in the left hand.
+            assertQuery("SELECT /*+ %s */ * FROM test1 WHERE ".formatted(noHint) +
+                "EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<>test2.c) " +
+                "AND NOT EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<test2.c)")
+                .returns(12, 2)
+                .check();
 
-                // Collision by correlate variables in both, left and right hands.
-                assertQuery("SELECT /*+ %s */ * FROM test1 WHERE ".formatted(noHint) +
-                    "EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<>test2.c) " +
-                    "AND NOT EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<test2.c)")
-                    .returns(12, 2)
-                    .check();
-            }
+            // Collision by correlate variables in both, left and right hands.
+            assertQuery("SELECT /*+ %s */ * FROM test1 WHERE ".formatted(noHint) +
+                "EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<>test2.c) " +
+                "AND NOT EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<test2.c)")
+                .returns(12, 2)
+                .check();
         }
     }
 
