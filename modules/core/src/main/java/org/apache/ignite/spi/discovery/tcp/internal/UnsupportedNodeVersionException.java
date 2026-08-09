@@ -15,13 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rollingupgrade.feature;
+package org.apache.ignite.spi.discovery.tcp.internal;
+
+import org.apache.ignite.IgniteCheckedException;
 
 /** */
-public class TestPluginReleaseFeatures_3_0_0 {
+public class UnsupportedNodeVersionException extends IgniteCheckedException {
     /** */
-    public static final IgniteFeature VER_3_0_0_ID_2_FEATURE = new TestPluginFeature(2);
+    private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteFeature VER_3_0_0_ID_3_FEATURE = new TestPluginFeature(3);
+    public UnsupportedNodeVersionException(String message) {
+        super(message);
+    }
 }

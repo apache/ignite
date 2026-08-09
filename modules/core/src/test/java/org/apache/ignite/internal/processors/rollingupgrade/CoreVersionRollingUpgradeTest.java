@@ -313,12 +313,28 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
     /** */
     @Test
+    public void testJoinOfNodeWithGreaterUnsupportedVersion() throws Exception {
+        startCluster("2.19.0");
+
+        checkJoinFailed(3, "2.21.0", NOT_SUPPORTED_VER_ERR);
+    }
+
+    /** */
+    @Test
+    public void testJoinOfNodeWithSmallerUnsupportedVersion() throws Exception {
+        startCluster("2.21.0");
+
+        checkJoinFailed(3, "2.19.0", NOT_SUPPORTED_VER_ERR);
+    }
+
+    /** */
+    @Test
     public void testUpgradeBetweenVersionsWithCherryPicks() throws Exception {
         startCluster("2.19.3");
 
         ru(1).enableVersionUpgrade();
 
-        checkJoinFailed(3, "2.20.0", RU_UNAVAILABLE_BETWEEN_VER_ERR);
+        checkJoinFailed(3, "2.20.0", NOT_SUPPORTED_VER_ERR);
 
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.3", "2.20.1"));
 

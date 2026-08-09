@@ -19,6 +19,8 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +37,10 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     @Order(1)
     @Nullable String dcId;
 
+    /** */
+    @Order(2)
+    IgniteComponentFeatureSet[] nodeFeatures;
+
     /**
      * Default constructor for {@link MessageFactory}.
      */
@@ -46,9 +52,12 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
+     * @param locNodeFeatures Local node features.
      */
-    public TcpDiscoveryHandshakeRequest(UUID creatorNodeId) {
+    public TcpDiscoveryHandshakeRequest(UUID creatorNodeId, IgniteNodeFeatureSet locNodeFeatures) {
         super(creatorNodeId);
+
+        this.nodeFeatures = locNodeFeatures.values();
     }
 
     /**
@@ -77,6 +86,11 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** @param dcId DataCenter id. */
     public void dcId(String dcId) {
         this.dcId = dcId;
+    }
+
+    /** @return Features supported by the sender node. */
+    public IgniteNodeFeatureSet nodeFeatures() {
+        return nodeFeatures == null ? null : new IgniteNodeFeatureSet(nodeFeatures);
     }
 
     /** {@inheritDoc} */
