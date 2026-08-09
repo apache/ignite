@@ -19,6 +19,8 @@ package org.apache.ignite.internal.direct;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
@@ -26,9 +28,13 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -75,6 +81,46 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         assertEquals(msg.nestedCollection, resMsg.nestedCollection);
         assertArrayEquals(msg.nestedArr.get(1), resMsg.nestedArr.get(1));
         assertArrayEquals(msg.nestedArr.get(2), resMsg.nestedArr.get(2));
+    }
+
+    /** */
+    @Test
+    public void testEnumSets() {
+        TestNestedContainersMessage msg = new TestNestedContainersMessage();
+
+        msg.isolations = EnumSet.of(READ_COMMITTED, SERIALIZABLE);
+
+        msg.isolationsMap = Map.of(
+            "empty", EnumSet.noneOf(TransactionIsolation.class),
+            "one", EnumSet.of(REPEATABLE_READ)
+        );
+
+        msg.isolationsList = Arrays.asList(EnumSet.of(READ_COMMITTED), EnumSet.allOf(TransactionIsolation.class));
+
+        TestNestedContainersMessage resMsg = doMarshalUnmarshalChunked(msg);
+
+        assertEquals(msg.isolations, resMsg.isolations);
+        assertEquals(msg.isolationsMap, resMsg.isolationsMap);
+        assertEquals(msg.isolationsList, resMsg.isolationsList);
+
+        for (Collection<TransactionIsolation> col : resMsg.isolationsMap.values())
+            assertTrue(col instanceof EnumSet);
+
+        for (Collection<TransactionIsolation> col : resMsg.isolationsList)
+            assertTrue(col instanceof EnumSet);
+    }
+
+    /** */
+    @Test
+    public void testNullContainers() {
+        TestNestedContainersMessage resMsg = doMarshalUnmarshalChunked(new TestNestedContainersMessage());
+
+        assertNull(resMsg.nestedMap);
+        assertNull(resMsg.nestedCollection);
+        assertNull(resMsg.nestedArr);
+        assertNull(resMsg.isolations);
+        assertNull(resMsg.isolationsMap);
+        assertNull(resMsg.isolationsList);
     }
 
     /**
