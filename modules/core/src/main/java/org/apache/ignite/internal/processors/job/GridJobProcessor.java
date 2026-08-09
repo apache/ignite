@@ -1209,7 +1209,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             GridDeployment tmpDep = req.forceLocalDeployment() ?
                 ctx.deploy().getLocalDeployment(req.taskClassName()) :
-                ctx.deploy().globalDeployment(req.deploymentInfo(), req.taskName(), req.taskClassName());
+                ctx.deploy().globalDeployment(req.deploymentInfo(), req.taskName(), req.taskClassName(), node.id());
 
             if (tmpDep == null) {
                 if (log.isDebugEnabled())

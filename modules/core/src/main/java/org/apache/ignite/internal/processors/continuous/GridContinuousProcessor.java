@@ -679,7 +679,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     // Run the deployment task in the system pool to avoid blocking of the discovery thread.
                     ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
                         try {
-                            hnd.p2pUnmarshal(ctx);
+                            hnd.p2pUnmarshal(srcNodeId, ctx);
                         }
                         catch (IgniteCheckedException | IgniteException e) {
                             U.error(log, "Failed to unmarshal continuous routine handler [" +
@@ -1357,13 +1357,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         StartRequestData data = msg.startRequestData();
 
         data.nodeFilter = U.unmarshal(marsh, data.nodeFilterBytes,
-            ctx.deploy().classLoader(data.depInfo, data.clsName));
+            ctx.deploy().classLoader(data.depInfo, data.clsName, sndId));
 
         if (data.hndBytes != null) {
             data.hnd = U.unmarshal(marsh, data.hndBytes, U.resolveClassLoader(ctx.config()));
 
             if (ctx.config().isPeerClassLoadingEnabled())
-                data.hnd.p2pUnmarshal(ctx);
+                data.hnd.p2pUnmarshal(sndId, ctx);
 
             if (data.keepBinary) {
                 assert data.hnd instanceof CacheContinuousQueryHandler : data.hnd;
@@ -1437,7 +1437,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
                     !locInfos.containsKey(routineId)) {
                     if (ctx.config().isPeerClassLoadingEnabled())
-                        hnd.p2pUnmarshal(ctx);
+                        hnd.p2pUnmarshal(node.id(), ctx);
 
                     registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);

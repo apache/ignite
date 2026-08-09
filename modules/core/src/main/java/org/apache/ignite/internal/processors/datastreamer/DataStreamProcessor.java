@@ -218,7 +218,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
                 GridDeployment dep;
 
                 try {
-                    dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.sampleClassName());
+                    dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.sampleClassName(), nodeId);
                 }
                 catch (IgniteDeploymentCheckedException e) {
                     // The sender waits for an answer, so a missing deployment is reported back, not thrown.

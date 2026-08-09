@@ -517,24 +517,6 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("needs a cache object context to unmarshal");
     }
 
-    /** A message carrying its own deployment has the class loader resolved from it. */
-    @Test
-    public void testDeploymentAwareMessage() {
-        Compilation compilation = compile("TestDeploymentAwareMessage.java");
-
-        assertThat(compilation).succeeded();
-
-        assertEquals(2, compilation.generatedSourceFiles().size());
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestDeploymentAwareMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("TestDeploymentAwareMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestDeploymentAwareMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("TestDeploymentAwareMessageMarshaller.java"));
-    }
-
     /** Verifies that {@code @Marshalled} generates {@code U.unmarshal} with a blank line before the null-out. */
     @Test
     public void testMarshalledMessage() {

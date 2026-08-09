@@ -3633,7 +3633,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     if (dep == null && ctx.config().isPeerClassLoadingEnabled() &&
                         ioMsg.deploymentClassName() != null) {
                         dep = ctx.deploy().globalDeployment(ioMsg.deploymentInfo(), ioMsg.deploymentClassName(),
-                            ioMsg.deploymentClassName());
+                            ioMsg.deploymentClassName(), nodeId);
 
                         if (dep == null) {
                             throw new IgniteDeploymentCheckedException(

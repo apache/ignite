@@ -172,12 +172,13 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+        assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         try {
-            ClassLoader ldr = ctx.deploy().globalDeployment(depInfo, clsName).classLoader();
+            ClassLoader ldr = ctx.deploy().globalDeployment(depInfo, clsName, nodeId).classLoader();
 
             if (topicBytes != null)
                 topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));

@@ -46,7 +46,6 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
-import static org.apache.ignite.internal.MessageProcessor.DEPLOYMENT_AWARE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.IGNITE_CHECKED_EXCEPTION_CLS;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
@@ -98,9 +97,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private final TypeMirror nonMarshallableType;
 
     /** */
-    private final TypeMirror deploymentAwareMsgType;
-
-    /** */
     private final TypeMirror selfMarshallingMsgType;
 
     /** */
@@ -144,7 +140,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
-        deploymentAwareMsgType = type(DEPLOYMENT_AWARE_MESSAGE_INTERFACE);
         selfMarshallingMsgType = type(SELF_MARSHALLING_MESSAGE_INTERFACE);
         cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
         mapType = type(Map.class.getName());
@@ -310,9 +305,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             if (needsCtx(fields) || !wireFieldSkip.isEmpty())
                 appendBlock(body, List.of(ctxResolutionLine()));
-
-            if (isDeploymentAware())
-                appendBlock(body, List.of(deploymentResolutionLine()));
 
             appendFields(body, fields, MarshalMode.UNMARSHAL, wireFieldSkip);
 
@@ -1045,20 +1037,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
                     "kctx.cache().cacheGroup(msg.groupId()).cacheObjectContext();");
         else
             return indentedLine("CacheObjectContext ctx = cacheObjCtx;");
-    }
-
-    /**
-     * Returns the line resolving the class loader of a {@code DeploymentAware} message. The deployment the message
-     * carries wins over whatever the caller passed: the caller cannot know the loader of classes deployed elsewhere,
-     * and the overloads defaulting to the local one would silently read them without peer class loading.
-     */
-    private String deploymentResolutionLine() {
-        return indentedLine("clsLdr = kctx.deploy().classLoader(msg);");
-    }
-
-    /** @return {@code true} if the message carries the deployment of its classes. */
-    private boolean isDeploymentAware() {
-        return deploymentAwareMsgType != null && assignableFrom(type.asType(), deploymentAwareMsgType);
     }
 
     /** Returns {@code true} if any field requires {@code ctx} in generated marshal/unmarshal code. */

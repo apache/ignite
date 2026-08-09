@@ -32,16 +32,6 @@ public interface GridDeploymentInfo {
     public IgniteUuid classLoaderId();
 
     /**
-     * The node that created the class loader. Its ID is part of the loader ID: {@code GridDeploymentClassLoader}
-     * asserts that when it is built and when a participant is added, so the two can never disagree.
-     *
-     * @return ID of the node the classes are deployed from.
-     */
-    public default UUID nodeId() {
-        return classLoaderId().globalId();
-    }
-
-    /**
      * @return User version.
      */
     public String userVersion();

@@ -410,13 +410,14 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+        assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (filterBytes != null) {
             try {
-                GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName);
+                GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName, nodeId);
 
                 filter = U.unmarshal(ctx, filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 

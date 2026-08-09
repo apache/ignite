@@ -1403,18 +1403,19 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void p2pUnmarshal(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+        assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (rmtFilterDep != null)
-            rmtFilter = p2pUnmarshal(rmtFilterDep, ctx);
+            rmtFilter = p2pUnmarshal(rmtFilterDep, nodeId, ctx);
 
         if (rmtFilterFactoryDep != null)
-            rmtFilterFactory = p2pUnmarshal(rmtFilterFactoryDep, ctx);
+            rmtFilterFactory = p2pUnmarshal(rmtFilterFactoryDep, nodeId, ctx);
 
         if (rmtTransFactoryDep != null)
-            rmtTransFactory = p2pUnmarshal(rmtTransFactoryDep, ctx);
+            rmtTransFactory = p2pUnmarshal(rmtTransFactoryDep, nodeId, ctx);
 
         if (!p2pUnmarshalFut.isDone())
             ((GridFutureAdapter)p2pUnmarshalFut).onDone();
@@ -1431,16 +1432,17 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /**
      * @param depObj Deployable object to unmarshal.
+     * @param nodeId Sender node Id.
      * @param ctx Kernal context.
      * @param <T> Result type.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException In case of unmarshalling failures.
      */
     protected <T> T p2pUnmarshal(CacheContinuousQueryDeployableObject depObj,
-        GridKernalContext ctx) throws IgniteCheckedException {
+        UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
         if (depObj != null) {
             try {
-                return depObj.unmarshal(ctx);
+                return depObj.unmarshal(nodeId, ctx);
             }
             catch (IgniteCheckedException e) {
                 ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
