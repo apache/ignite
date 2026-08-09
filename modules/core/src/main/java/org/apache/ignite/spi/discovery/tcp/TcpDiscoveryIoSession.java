@@ -32,7 +32,6 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -198,10 +197,7 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            // A deferred-unmarshal message is left as it arrived: reading it here would run user-class loading, and
-            // whatever else its owner does, on the thread that reads the ring.
-            if (!(msg instanceof DeferredUnmarshalMessage))
-                MessageMarshalling.unmarshal(msg, ((IgniteEx)spi.ignite()).context());
+            MessageMarshalling.unmarshal(msg, ((IgniteEx)spi.ignite()).context());
 
             return (T)msg;
         }

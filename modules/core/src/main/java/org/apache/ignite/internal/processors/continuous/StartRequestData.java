@@ -18,20 +18,17 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.DeploymentAware;
-import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Start request data.
  */
-public class StartRequestData implements DeploymentAware {
-    /** Node filter. */
-    @Marshalled("nodeFilterBytes")
+public class StartRequestData implements Message {
+    /** Node filter, restored by the processor reading this request. */
     IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Serialized node filter. */
@@ -46,8 +43,7 @@ public class StartRequestData implements DeploymentAware {
     @Order(2)
     GridDeploymentInfoMessage depInfo;
 
-    /** Handler. */
-    @Marshalled("hndBytes")
+    /** Handler, restored by the processor reading this request. */
     GridContinuousHandler hnd;
 
     /** Serialized handler. */
@@ -165,15 +161,5 @@ public class StartRequestData implements DeploymentAware {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StartRequestData.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDeploymentInfo deploymentInfo() {
-        return depInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String deployedClassName() {
-        return clsName;
     }
 }
