@@ -28,6 +28,7 @@ import org.apache.ignite.internal.StripedMessage;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -53,7 +54,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache receiver. */
+    /** Cache receiver. A user object, kept out of the message {@code toString()}. */
+    @GridToStringExclude
     @Marshalled("updaterBytes")
     StreamReceiver<?, ?> updater;
 
