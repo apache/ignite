@@ -316,7 +316,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
 
     /** Empty constructor for serialization purposes. */
     public ClusterMetricsSnapshot() {
-        // Like in deserealize()
+        // Like in deserialize().
         lastUpdateTime = System.currentTimeMillis();
     }
 
