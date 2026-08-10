@@ -234,7 +234,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
 
                 updater = req.updater();
 
-                if (req.hasCustomUpdater())
+                if (req.customUpdater())
                     ctx.resource().injectGeneric(updater);
             }
             catch (IgniteCheckedException e) {

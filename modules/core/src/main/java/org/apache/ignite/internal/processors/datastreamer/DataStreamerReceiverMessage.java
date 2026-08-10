@@ -28,18 +28,16 @@ import org.jetbrains.annotations.Nullable;
 @UseBinaryMarshaller
 public class DataStreamerReceiverMessage implements Message {
     /** Custom cache receiver/updater; {@code null} when {@link #builtIn} is effective. */
-    @Nullable
     @Marshalled("rcvrBytes")
-    StreamReceiver<?, ?> rcvr;
+    @Nullable StreamReceiver<?, ?> rcvr;
 
     /** Serialized {@link #rcvr}. */
     @Order(0)
-    volatile byte[] rcvrBytes;
+    volatile @Nullable byte[] rcvrBytes;
 
     /** A built-in updater every node has; {@code null} when {@link #rcvr} is effective. */
-    @Nullable
     @Order(1)
-    DataStreamerBuiltInUpdater builtIn;
+    @Nullable DataStreamerBuiltInUpdater builtIn;
 
     /** Empty constructor for serialization purposes. */
     public DataStreamerReceiverMessage() {
@@ -53,7 +51,7 @@ public class DataStreamerReceiverMessage implements Message {
         this.rcvr = rcvr;
     }
 
-    /** @param builtIn A built-in updater every node has, named rather than carried. */
+    /** @param builtIn Built-in updater every node has, named rather than sent. */
     DataStreamerReceiverMessage(DataStreamerBuiltInUpdater builtIn) {
         this.builtIn = builtIn;
     }
@@ -63,7 +61,7 @@ public class DataStreamerReceiverMessage implements Message {
         return builtIn == null;
     }
 
-    /** @return Receiver: the custom one carried here, or the built-in one this message names. */
+    /** @return Receiver: the custom one sent here, or the built-in one this message names. */
     StreamReceiver<?, ?> receiver() {
         return builtIn == null ? rcvr : builtIn.updater();
     }
