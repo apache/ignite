@@ -38,6 +38,7 @@ import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteCon
 import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan.LockTarget;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlSelectForUpdate;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -159,7 +161,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
      * <ol>
      *   <li>Unwrap optional ORDER BY and validate that the inner query is a plain {@link SqlSelect}
      *       (not UNION etc.).</li>
-     *   <li>Collect base tables from the FROM clause.</li>
+     *   <li>Collect and validate cache-based tables from the FROM clause.</li>
      *   <li>Append OF columns for validation and lock columns for every table.</li>
      *   <li>Prepare the modified SELECT as a normal {@link MultiStepQueryPlan}.</li>
      *   <li>Resolve tables selected by OF using aliases and validated column origins.</li>
@@ -200,6 +202,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         List<TableRef> tableRefs = new ArrayList<>();
 
         collectTableRefs(from, ctx.schemaName(), tableRefs);
+        validateSelectForUpdateTables(tableRefs, ctx);
 
         SqlNodeList origList = select.getSelectList();
         SqlNodeList newList = new SqlNodeList(SqlParserPos.ZERO);
@@ -345,6 +348,25 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
             qualifier = tableId.getComponent(nameCnt - 1);
 
         tableRefs.add(new TableRef(schemaName, tableName, qualifier));
+    }
+
+    /**
+     * Ensures that every table referenced by SELECT FOR UPDATE is cache-based.
+     *
+     * @param tableRefs Tables referenced by the FROM clause.
+     * @param ctx Planning context used to resolve tables.
+     */
+    private void validateSelectForUpdateTables(List<TableRef> tableRefs, PlanningContext ctx) {
+        for (TableRef tableRef : tableRefs) {
+            SqlValidatorTable table = ctx.catalogReader().getTable(List.of(tableRef.schemaName, tableRef.tableName));
+
+            if (table != null && table.unwrap(IgniteCacheTable.class) == null) {
+                throw new IgniteSQLException(
+                    "SELECT FOR UPDATE is not supported because the table is not cache-based [table="
+                        + tableRef.schemaName + '.' + tableRef.tableName + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+        }
     }
 
     /** Resolves an OF column to one table reference. */

@@ -318,7 +318,7 @@ public class SelectForUpdateIntegrationTest extends AbstractBasicIntegrationTest
     public void testSelectForUpdateRejectsSystemView() {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             assertThrows(ignite0, "SELECT node_id FROM SYS.NODES FOR UPDATE", IgniteSQLException.class,
-                "Column '_KEY' not found in table 'NODES'");
+                "SELECT FOR UPDATE is not supported because the table is not cache-based [table=SYS.NODES]");
         }
     }
 
