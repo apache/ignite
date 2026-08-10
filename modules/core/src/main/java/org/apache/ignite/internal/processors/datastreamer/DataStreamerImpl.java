@@ -146,7 +146,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     private final Map<Long, ThreadBuffer> threadBufMap = new ConcurrentHashMap<>();
 
-    /** Default, isolated receiver. */
+    /** Default, Isolated receiver. */
     static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
@@ -497,7 +497,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         return rcvrMsg0 == null ? ISOLATED_UPDATER : (StreamReceiver<K, V>)rcvrMsg0.receiver();
     }
 
-    /** @return {@code True} if the default, isolated receiver is in use. */
+    /** @return {@code True} if the default, Isolated receiver is in use. */
     private boolean isolated() {
         return rcvrMsg == null;
     }

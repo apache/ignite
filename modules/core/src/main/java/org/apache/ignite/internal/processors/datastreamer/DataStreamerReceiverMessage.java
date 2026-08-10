@@ -23,10 +23,10 @@ import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.stream.StreamReceiver;
 
-/** Cache updater. */
+/** DataStreamer cache receiver/updater message. */
 @UseBinaryMarshaller
 public class DataStreamerReceiverMessage implements Message {
-    /** */
+    /** DataStreamer cache receiver/updater. */
     @Marshalled("rcvrBytes")
     StreamReceiver<?, ?> rcvr;
 
