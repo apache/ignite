@@ -23,7 +23,7 @@ import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.stream.StreamReceiver;
 
-/** Cache updater together with its serialized form, shared by the batches of one streamer. */
+/** Cache updater. */
 @UseBinaryMarshaller
 public class DataStreamerReceiverMessage implements Message {
     /** */
