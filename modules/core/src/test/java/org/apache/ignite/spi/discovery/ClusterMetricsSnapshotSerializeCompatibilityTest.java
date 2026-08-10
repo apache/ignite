@@ -84,7 +84,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
     private OptimizedMarshaller marshaller() {
         ClassLoaderUtils.clearClassCache();
 
-        OptimizedMarshaller marsh = Marshallers.optimized();
+        OptimizedMarshaller marsh = Marshallers.optimizedForSerializable();
 
         marsh.setContext(new MarshallerContextTestImpl());
 
