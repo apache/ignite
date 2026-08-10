@@ -794,14 +794,14 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
-                if (e instanceof UnsupportedNodeVersionException) {
+                if (e instanceof UnsupportedNodeVersionException unsupportedVerEx) {
                     LT.error(log, e, "Failed to initialize a connection with the remote node. The remote node is running" +
                         " components with an incompatible versions, so the nodes cannot agree on serialization protocol" +
-                        " [rmtAddr=" + addr + ']');
+                        " [rmtAddr=" + addr + ", errMsg=" + unsupportedVerEx.getMessage() + ']');
 
                     throw new IgniteSpiException("Failed to initialize a connection with the remote node. The remote node" +
                         " is running components with an incompatible versions, so the nodes cannot agree on serialization" +
-                        " protocol [rmtAddr=" + addr + ']', e);
+                        " protocol [rmtAddr=" + addr + ", errMsg=" + unsupportedVerEx.getMessage() + ']', e);
                 }
 
                 if (X.hasCause(e, SSLException.class)) {

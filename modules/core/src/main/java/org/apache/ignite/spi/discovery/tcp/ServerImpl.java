@@ -1600,14 +1600,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
-                if (e instanceof UnsupportedNodeVersionException) {
+                if (e instanceof UnsupportedNodeVersionException unsupportedVerEx) {
                     LT.error(log, e, "Failed to initialize a connection with the remote node. The remote node is running" +
                         " components with an incompatible versions, so the nodes cannot agree on serialization protocol" +
-                        " [rmtAddr=" + addr + ']');
+                        " [rmtAddr=" + addr + ", errMsg=" + unsupportedVerEx.getMessage() + ']');
 
                     throw new IgniteException("Failed to initialize a connection with the remote node. The remote node" +
                         " is running components with an incompatible versions, so the nodes cannot agree on a serialization" +
-                        " protocol [rmtAddr=" + addr + ']', e);
+                        " protocol [rmtAddr=" + addr + ", errMsg=" + unsupportedVerEx.getMessage() + ']', e);
                 }
 
                 if (X.hasCause(e, SSLException.class)) {
@@ -6824,10 +6824,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    if (e instanceof UnsupportedNodeVersionException) {
+                    if (e instanceof UnsupportedNodeVersionException unsupportedVerEx) {
                         LT.warn(log, "Failed to initialize a connection with the remote node. The remote node is running" +
                             " components with an incompatible versions, so the nodes cannot agree on serialization protocol" +
-                            " [rmtAddr=" + rmtAddr + ']', e);
+                            " [rmtAddr=" + rmtAddr + ", errMsg=" + unsupportedVerEx.getMessage() + ']', e);
                     }
                     else if (e.hasCause(SocketTimeoutException.class)) {
                         LT.warn(log, "Socket operation timed out on handshake " +
