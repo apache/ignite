@@ -17,47 +17,39 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.util.function.Supplier;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * The built-in updaters. Every node has them, so a request names the one it needs instead of carrying a serialized
- * copy. Both the updater and its message are built on demand: a node that streams with a custom receiver, or does not
- * stream at all, builds neither.
+ * copy. The message naming one is built on demand: a node that streams with a custom receiver builds none.
  */
 enum DataStreamerBuiltInUpdater {
     /** {@link DataStreamerImpl#ISOLATED_UPDATER}. */
-    ISOLATED(() -> DataStreamerImpl.ISOLATED_UPDATER),
+    ISOLATED(DataStreamerImpl.ISOLATED_UPDATER),
 
     /** {@link DataStreamerCacheUpdaters#individual()}. */
-    INDIVIDUAL(DataStreamerCacheUpdaters::individual),
+    INDIVIDUAL(DataStreamerCacheUpdaters.individual()),
 
     /** {@link DataStreamerCacheUpdaters#batched()}. */
-    BATCHED(DataStreamerCacheUpdaters::batched),
+    BATCHED(DataStreamerCacheUpdaters.batched()),
 
     /** {@link DataStreamerCacheUpdaters#batchedSorted()}. */
-    BATCHED_SORTED(DataStreamerCacheUpdaters::batchedSorted);
+    BATCHED_SORTED(DataStreamerCacheUpdaters.batchedSorted());
 
     /** */
-    private final Supplier<StreamReceiver<?, ?>> updaterSupplier;
-
-    /** */
-    private StreamReceiver<?, ?> updater;
+    private final StreamReceiver<?, ?> updater;
 
     /** */
     private DataStreamerReceiverMessage msg;
 
-    /** @param updaterSupplier Supplier of the updater this constant stands for. */
-    DataStreamerBuiltInUpdater(Supplier<StreamReceiver<?, ?>> updaterSupplier) {
-        this.updaterSupplier = updaterSupplier;
+    /** @param updater Updater this constant stands for. */
+    DataStreamerBuiltInUpdater(StreamReceiver<?, ?> updater) {
+        this.updater = updater;
     }
 
     /** @return Updater of this node. */
     StreamReceiver<?, ?> updater() {
-        if (updater == null)
-            updater = updaterSupplier.get();
-
         return updater;
     }
 
@@ -75,7 +67,7 @@ enum DataStreamerBuiltInUpdater {
      */
     static @Nullable DataStreamerBuiltInUpdater of(StreamReceiver<?, ?> updater) {
         for (DataStreamerBuiltInUpdater builtIn : values()) {
-            if (builtIn.updater() == updater)
+            if (builtIn.updater == updater)
                 return builtIn;
         }
 
