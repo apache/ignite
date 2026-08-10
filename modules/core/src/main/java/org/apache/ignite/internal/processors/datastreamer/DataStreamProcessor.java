@@ -235,7 +235,10 @@ public class DataStreamProcessor extends GridProcessorAdapter {
 
                 updater = req.updater();
 
-                if (updater != null)
+                // The isolated updater is not sent: it ships with this node, so the local one is used instead.
+                if (updater == null)
+                    updater = DataStreamerImpl.ISOLATED_UPDATER;
+                else
                     ctx.resource().injectGeneric(updater);
             }
             catch (IgniteCheckedException e) {

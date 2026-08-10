@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -89,8 +89,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Indicates whether we need to make the topology stale */
     private static boolean needStaleTop = false;
 
-    /** Receiver carriers of the streamer requests sent since the current test started. */
-    private static final Collection<DataStreamerReceiverMessage> sentReceivers = new ConcurrentLinkedQueue<>();
+    /** Receiver carriers of the streamer requests sent since the current test started; {@code null} for the isolated one. */
+    private static final List<DataStreamerReceiverMessage> sentReceivers = Collections.synchronizedList(new ArrayList<>());
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -165,7 +165,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
+        awaitPartitionMapExchange();
+
         try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            ldr.receiver(DataStreamerCacheUpdaters.batched());
+
             ldr.perNodeBufferSize(1);
 
             for (int i = 0; i < KEYS_COUNT; i++)
@@ -181,6 +185,37 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         for (DataStreamerReceiverMessage rcvr : sentReceivers)
             assertTrue("The receiver was marshalled more than once", first.rcvrBytes == rcvr.rcvrBytes);
+    }
+
+    /**
+     * The isolated updater ships with every node, so requests carry no updater at all and the data still lands.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIsolatedUpdaterIsNotSent() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            ldr.perNodeBufferSize(1);
+
+            for (int i = 0; i < KEYS_COUNT; i++)
+                ldr.addData(i, i);
+        }
+
+        assertTrue("Expected requests to a remote node, got " + sentReceivers.size(), !sentReceivers.isEmpty());
+
+        for (DataStreamerReceiverMessage rcvr : sentReceivers)
+            assertNull("The isolated updater was sent with a request", rcvr);
+
+        IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < KEYS_COUNT; i++)
+            assertEquals(i, cache.get(i));
     }
 
     /**

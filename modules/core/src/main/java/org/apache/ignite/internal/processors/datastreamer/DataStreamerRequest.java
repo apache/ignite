@@ -49,7 +49,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache updater. */
+    /** Cache updater, {@code null} for the one the node ships with. */
     @GridToStringExclude
     @Order(3)
     DataStreamerReceiverMessage updaterMsg;
@@ -99,7 +99,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterMsg Cache updater.
+     * @param updaterMsg Cache updater, {@code null} for the one the node ships with.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -114,7 +114,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         long reqId,
         IgniteUuid resTopicId,
         @Nullable String cacheName,
-        DataStreamerReceiverMessage updaterMsg,
+        @Nullable DataStreamerReceiverMessage updaterMsg,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,

@@ -146,8 +146,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     private final Map<Long, ThreadBuffer> threadBufMap = new ConcurrentHashMap<>();
 
-    /** Isolated receiver. */
-    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
+    /** Isolated receiver. Ships with the node, so it is never sent with a request. */
+    static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
@@ -1990,11 +1990,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
+                boolean isolated = rcvrMsg.receiver() == ISOLATED_UPDATER;
+
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicId,
                     cacheName,
-                    rcvrMsg,
+                    isolated ? null : rcvrMsg,
                     entries,
                     true,
                     skipStore,
@@ -2003,7 +2005,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? jobPda0.deployClass().getName() : null,
                     dep == null,
                     topVer,
-                    (rcvrMsg.receiver() == ISOLATED_UPDATER) ? partId : NO_STRIPE);
+                    isolated ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
