@@ -152,8 +152,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver in the message that carries it. */
-    private volatile DataStreamerReceiverMessage rcvrMsg = DataStreamerBuiltInUpdater.ISOLATED.message();
+    /** Cache receiver in the message that carries it; {@code null} while none is set. */
+    private volatile DataStreamerReceiverMessage rcvrMsg;
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -491,10 +491,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         rcvrMsg = builtIn != null ? builtIn.message() : new DataStreamerReceiverMessage(rcvr);
     }
 
+    /** @return Message of the receiver in use, the Isolated updater until one is set. */
+    private DataStreamerReceiverMessage receiverMessage() {
+        DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
+
+        return rcvrMsg0 != null ? rcvrMsg0 : DataStreamerBuiltInUpdater.ISOLATED.message();
+    }
+
     /** @return Cache receiver. */
     @SuppressWarnings("unchecked")
     private StreamReceiver<K, V> receiver() {
-        return (StreamReceiver<K, V>)rcvrMsg.receiver();
+        return (StreamReceiver<K, V>)receiverMessage().receiver();
     }
 
     /** {@inheritDoc} */
@@ -1992,7 +1999,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-                DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
+                DataStreamerReceiverMessage rcvrMsg0 = receiverMessage();
 
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
