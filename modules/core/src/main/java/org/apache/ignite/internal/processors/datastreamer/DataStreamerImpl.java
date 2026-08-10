@@ -152,8 +152,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver in its message. */
-    private volatile DataStreamerReceiverMessage rcvrMsg = new DataStreamerReceiverMessage(ISOLATED_UPDATER);
+    /** Cache receiver in the message that carries it. */
+    private volatile DataStreamerReceiverMessage rcvrMsg = DataStreamerBuiltInUpdater.ISOLATED.message();
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -486,7 +486,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public void receiver(StreamReceiver<K, V> rcvr) {
         A.notNull(rcvr, "rcvr");
 
-        rcvrMsg = new DataStreamerReceiverMessage(rcvr);
+        DataStreamerBuiltInUpdater builtIn = DataStreamerBuiltInUpdater.of(rcvr);
+
+        rcvrMsg = builtIn != null ? builtIn.message() : new DataStreamerReceiverMessage(rcvr);
     }
 
     /** @return Cache receiver. */

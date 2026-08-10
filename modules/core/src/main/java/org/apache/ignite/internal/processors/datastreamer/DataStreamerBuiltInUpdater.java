@@ -40,14 +40,24 @@ enum DataStreamerBuiltInUpdater {
     /** */
     private final StreamReceiver<?, ?> updater;
 
+    /** */
+    private final DataStreamerReceiverMessage msg;
+
     /** @param updater Updater this constant stands for. */
     DataStreamerBuiltInUpdater(StreamReceiver<?, ?> updater) {
         this.updater = updater;
+
+        msg = new DataStreamerReceiverMessage(updater);
     }
 
     /** @return Updater of this node. */
     StreamReceiver<?, ?> updater() {
         return updater;
+    }
+
+    /** @return Message holding {@link #updater()}; one per constant, as these updaters never change. */
+    DataStreamerReceiverMessage message() {
+        return msg;
     }
 
     /**
