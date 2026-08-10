@@ -39,7 +39,6 @@ import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
 import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
-import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerOrderedUnmarshalFailureTest;
 import org.apache.ignite.internal.managers.communication.MessageFactoryMarshallerInitializationTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
@@ -70,6 +69,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.PluginVersionRolling
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSetTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.ManagementApiVersionValidationTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.ErrorMessageSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
