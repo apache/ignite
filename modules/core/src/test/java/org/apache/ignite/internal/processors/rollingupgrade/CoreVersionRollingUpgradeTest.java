@@ -317,6 +317,9 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         startCluster("2.19.0");
 
         checkJoinFailed(3, "2.21.0", NOT_SUPPORTED_VER_ERR);
+
+        checkJoinSuccess(3, "2.19.0", false);
+        checkJoinSuccess(4, "2.19.0", true);
     }
 
     /** */
@@ -325,6 +328,9 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         startCluster("2.21.0");
 
         checkJoinFailed(3, "2.19.0", NOT_SUPPORTED_VER_ERR);
+
+        checkJoinSuccess(3, "2.21.0", false);
+        checkJoinSuccess(4, "2.21.0", true);
     }
 
     /** */
