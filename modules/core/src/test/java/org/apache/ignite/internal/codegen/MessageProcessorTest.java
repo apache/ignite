@@ -713,7 +713,7 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("Field \"msgMap\" is Message. Must be written by communication protocol");
     }
 
-    /** Test that {@code @Marshalled} annotation on {@link Message} map field will fail generation. */
+    /** Test that {@code @Marshalled} annotation on {@link Message} array field will fail generation. */
     @Test
     public void testMarshallableOnMessageArrayFieldFailGeneration() {
         Compilation compilation = compile("InternalMessage.java", "InternalMessageArrayContainer.java");

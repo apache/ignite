@@ -26,6 +26,6 @@ public class InternalMessageContainer implements Message {
     InternalMessage msg;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     byte[] msgBytes;
 }

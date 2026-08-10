@@ -1176,19 +1176,19 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private void ensureCorrectlyAnnotated(VariableElement field, Marshalled ann) {
         boolean msgToBytes = false;
 
-        if (assignableFrom(field.asType(), msgType)) {
+        if (assignableFrom(field.asType(), msgType))
             msgToBytes = true;
-        }
         else if (isCollection(field.asType())) {
             DeclaredType type = (DeclaredType)field.asType();
 
             List<? extends TypeMirror> typeArgs = type.getTypeArguments();
 
-            assert typeArgs.size() == 1;
+            if (typeArgs.size() != 1)
+                throw new IllegalStateException("Expecting one type argument for Collection");
 
             msgToBytes = assignableFrom(typeArgs.get(0), msgType);
         }
-        else if (field.asType() instanceof ArrayType) {
+        else if (field.asType().getKind() == TypeKind.ARRAY) {
             msgToBytes = assignableFrom(((ArrayType)field.asType()).getComponentType(), msgType);
         }
         else if (isMap(field.asType()) && !ann.value().isEmpty()) {
@@ -1196,7 +1196,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             List<? extends TypeMirror> typeArgs = type.getTypeArguments();
 
-            assert typeArgs.size() == 2;
+            if (typeArgs.size() != 2)
+                throw new IllegalStateException("Expecting one type argument for Map");
 
             msgToBytes = assignableFrom(typeArgs.get(0), msgType) || assignableFrom(typeArgs.get(1), msgType);
         }

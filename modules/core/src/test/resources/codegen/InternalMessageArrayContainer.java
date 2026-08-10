@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
@@ -27,6 +26,6 @@ public class InternalMessageArrayContainer implements Message {
     InternalMessage[] msgArr;
 
     /** */
-    @Order(value = 0)
+    @Order(0)
     byte[] msgBytes;
 }

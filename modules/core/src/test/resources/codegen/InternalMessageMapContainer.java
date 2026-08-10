@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Map;
-import java.util.Collection;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import java.util.Map;
 
 /** */
 public class InternalMessageMapContainer implements Message {
