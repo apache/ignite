@@ -748,7 +748,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             Message sentMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : null;
 
-            // The message is already marshalled at this point, so the serialized receiver is in place.
+            // Already marshalled at this point.
             if (sentMsg instanceof DataStreamerRequest)
                 sentReceivers.add(((DataStreamerRequest)sentMsg).updaterMsg);
 
@@ -774,7 +774,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             req.requestId(),
                             req.resTopicId,
                             req.cacheName(),
-                            new DataStreamerReceiverMessage(req.updater()),
+                            req.updaterMsg,
                             req.entries(),
                             req.ignoreDeploymentOwnership(),
                             req.skipStore(),

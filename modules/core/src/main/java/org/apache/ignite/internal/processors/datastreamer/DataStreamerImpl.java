@@ -146,13 +146,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     private final Map<Long, ThreadBuffer> threadBufMap = new ConcurrentHashMap<>();
 
-    /** Isolated receiver. Ships with the node, so it is never sent with a request. */
+    /** Isolated receiver. */
     static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver, in the message that carries it; {@code null} for {@link #ISOLATED_UPDATER}, which is not sent. */
+    /** Cache receiver in its message; {@code null} for {@link #ISOLATED_UPDATER}. */
     private volatile DataStreamerReceiverMessage rcvrMsg;
 
     /** IO policy resovler for data load request. */
@@ -1992,7 +1992,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-                // Read once, so the request and the stripe below agree on the receiver.
                 DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
 
                 DataStreamerRequest req = new DataStreamerRequest(

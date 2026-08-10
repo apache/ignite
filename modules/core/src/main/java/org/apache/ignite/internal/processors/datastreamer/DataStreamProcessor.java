@@ -230,12 +230,10 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             StreamReceiver<?, ?> updater;
 
             try {
-                // Read here, not on the inbound pass: the deployment class loader is known only at this point.
                 MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(clsLdr, ctx.config()));
 
                 updater = req.updater();
 
-                // The isolated updater is not sent: it ships with this node, so the local one is used instead.
                 if (updater == null)
                     updater = DataStreamerImpl.ISOLATED_UPDATER;
                 else

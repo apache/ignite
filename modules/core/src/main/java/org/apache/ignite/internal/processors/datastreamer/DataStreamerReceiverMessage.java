@@ -30,7 +30,7 @@ public class DataStreamerReceiverMessage implements Message {
     @Marshalled("rcvrBytes")
     StreamReceiver<?, ?> rcvr;
 
-    /** Serialized {@link #rcvr}. Volatile: the batches sharing it are marshalled on different threads. */
+    /** Serialized {@link #rcvr}. */
     @Order(0)
     volatile byte[] rcvrBytes;
 

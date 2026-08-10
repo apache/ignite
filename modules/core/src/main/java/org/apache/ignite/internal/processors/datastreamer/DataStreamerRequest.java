@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 
-/** Batch of streamed entries. The updater is unmarshalled by the consumer, which has the deployment class loader. */
+/** Batch of streamed entries. */
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
@@ -49,7 +49,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache updater, {@code null} for the one the node ships with. */
+    /** Cache updater; {@code null} for the isolated one, which every node has. */
     @GridToStringExclude
     @Order(3)
     DataStreamerReceiverMessage updaterMsg;
@@ -99,7 +99,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterMsg Cache updater, {@code null} for the one the node ships with.
+     * @param updaterMsg Cache updater, {@code null} for the isolated updater.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -157,7 +157,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         return cacheName;
     }
 
-    /** @return Updater. */
+    /** @return Updater, {@code null} for the isolated one. */
     @Nullable StreamReceiver<?, ?> updater() {
         return updaterMsg != null ? updaterMsg.receiver() : null;
     }
