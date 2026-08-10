@@ -1908,13 +1908,16 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Packages list to expose in configuration view")
     public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
 
+    /** Enables the assertion that a message is finish-unmarshalled at most once. For tests; off in production. */
+    @SystemProperty("Enables the message finish-unmarshal-once self-check (tests only)")
+    public static final String IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK = "IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK";
 
     /**
-     * System property to allow remote HTTP|HTTPS URLs when loading Spring XML configuration.
+     * System property to allow remote HTTP/HTTPS URLs when loading Spring XML configuration.
      * Remote URLs are blocked by default to prevent RCE via attacker-controlled Spring XML.
-     * FTP|FTPS are always blocked regardless of this property due to security risk.
+     * FTP/FTPS are always blocked regardless of this property due to security risk.
      */
-    @SystemProperty(value = "Allow remote HTTP|HTTPS URLs when loading Spring XML configuration")
+    @SystemProperty(value = "Allow remote HTTP/HTTPS URLs when loading Spring XML configuration")
     public static final String IGNITE_ALLOW_REMOTE_SPRING_CFG_URL = "ignite.spring.cfg.allowRemoteUrl";
 
     /**

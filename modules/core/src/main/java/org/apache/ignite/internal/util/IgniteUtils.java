@@ -2598,9 +2598,9 @@ public abstract class IgniteUtils extends CommonUtils {
             if (REMOTE_CFG_SCHEMES.contains(scheme)) {
                 if (ALWAYS_BLOCKED_CFG_SCHEMES.contains(scheme))
                     throw new IgniteCheckedException(
-                        "Spring configuration URL`s with scheme '" + scheme + "' are always blocked " +
+                        "Spring configuration URLs with scheme '" + scheme + "' are always blocked " +
                         "due to security risk. Use a local file or classpath reference instead. " +
-                        "For remote HTTP|HTTPS set system property: -D" +
+                        "For remote HTTP/HTTPS set system property: -D" +
                         prop + "=true. " +
                         "Provided host: " + cfgUrl.getHost()
                     );
@@ -2609,10 +2609,10 @@ public abstract class IgniteUtils extends CommonUtils {
 
                 if (!allowRemote)
                     throw new IgniteCheckedException(
-                        "Remote Spring configuration URL`s (http|https) are not allowed by default " +
+                        "Remote Spring configuration URLs (http/https) are not allowed by default " +
                         "to prevent remote code execution via attacker-controlled Spring XML. " +
                         "Provided host: " + cfgUrl.getHost() + ". " +
-                        "To allow remote URL`s set system property: -D" +
+                        "To allow remote URLs set system property: -D" +
                         prop + "=true"
                     );
             }
@@ -2626,9 +2626,9 @@ public abstract class IgniteUtils extends CommonUtils {
             for (String blockedScheme : ALWAYS_BLOCKED_CFG_SCHEMES) {
                 if (lowerPath.startsWith(blockedScheme + "://"))
                     throw new IgniteCheckedException(
-                        "Spring configuration URL`s with scheme '" + blockedScheme + "' are always blocked " +
+                        "Spring configuration URLs with scheme '" + blockedScheme + "' are always blocked " +
                         "due to security risk. Use a local file or classpath reference instead. " +
-                        "For remote HTTP|HTTPS set system property: -D" +
+                        "For remote HTTP/HTTPS set system property: -D" +
                         prop + "=true.", e
                     );
             }
