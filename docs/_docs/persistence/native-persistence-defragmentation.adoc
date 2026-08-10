@@ -24,7 +24,7 @@ Defragmentation enables a user to shrink data files and claim back disk space.
 
 [NOTE]
 ====
-Defragmentation can only be used with historical rebalance enabled. If historical rebalancing is disabled, the server node always triggers full rebalance after the restart, which would throw away the defragmented partition. A full set of data is transferred to the node from other nodes over a network. Depending on the dataset’s size, transferring may require significant time and slow down the whole cluster as network capacity is essential to fulfill user requests.
+Defragmentation can only be used with link:data-rebalancing[historical rebalancing] enabled. If historical rebalancing is disabled, the server node always triggers full rebalance after the restart, which would throw away the defragmented partition. A full set of data is transferred to the node from other nodes over a network. Depending on the dataset’s size, transferring may require significant time and slow down the whole cluster as network capacity is essential to fulfill user requests.
 ====
 
 == Performing Defragmentation
@@ -34,10 +34,19 @@ Defragmentation is a costly operation in terms of disk IO. To avoid slowing down
 === Starting Defragmentation
 
 To request defragmentation, use the following command:
+[tabs]
+--
+tab:Unix[]
 [source,shell]
 ----
-control.(sh|bat) --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
+control.sh --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
 ----
+tab:Windows[]
+[source,shell]
+----
+control.bat --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
+----
+--
 
 After the manual restart, the node with the requested defragmentation enters a special mode called link:maintenance-mode[Maintenance Mode]. The node in maintenance mode does not join the rest of the cluster but remains isolated until defragmentation is completed (or canceled by explicit user request). After that, the user has to restart the node one more time: it exits maintenance mode and returns to normal operations (joining the cluster and starting to serve regular workload).
 
@@ -49,18 +58,36 @@ Nodes in maintenance mode do not participate in serving the regular workload. It
 === Checking Defragmentation Status
 
 To check the status of an ongoing defragmentation operation, run the following command against the node in Maintenance Mode:
+[tabs]
+--
+tab:Unix[]
 [source,shell]
 ----
-control.(sh|bat) --defragmentation status --host <host> --port <port>
+control.sh --host <host> --port <port> --defragmentation status
 ----
+tab:Windows[]
+[source,shell]
+----
+control.bat --host <host> --port <port> --defragmentation status
+----
+--
 
 === Stopping Defragmentation
 
 When a node executes defragmentation, it is possible to cancel it. To stop defragmentation, run the following command available in the control utility:
+[tabs]
+--
+tab:Unix[]
 [source,shell]
 ----
-control.(sh|bat) --defragmentation cancel --host <host> --port <port>
+control.sh --host <host> --port <port> --defragmentation cancel
 ----
+tab:Windows[]
+[source,shell]
+----
+control.bat --host <host> --port <port> --defragmentation cancel
+----
+--
 
 [NOTE]
 ====
