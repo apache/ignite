@@ -61,6 +61,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.core.appender.WriterAppender;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -91,13 +92,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
     /** Receiver carriers of the streamer requests sent since the current test started; {@code null} for the isolated one. */
     private static final List<DataStreamerReceiverMessage> sentReceivers = Collections.synchronizedList(new ArrayList<>());
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        sentReceivers.clear();
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -154,6 +148,33 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Streams {@link #KEYS_COUNT} entries from the first node, one entry per request, and collects the receiver
+     * carrier of every request that leaves the node.
+     *
+     * @param rcvr Receiver to set, or {@code null} to keep the default one.
+     * @throws Exception If failed.
+     */
+    private void streamToRemoteNode(@Nullable StreamReceiver<Object, Object> rcvr) throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        sentReceivers.clear();
+
+        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            if (rcvr != null)
+                ldr.receiver(rcvr);
+
+            ldr.perNodeBufferSize(1);
+
+            for (int i = 0; i < KEYS_COUNT; i++)
+                ldr.addData(i, i);
+        }
+    }
+
+    /**
      * The receiver does not change between batches, so it is marshalled once: every request carries the very bytes
      * produced for the first one.
      *
@@ -161,20 +182,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReceiverMarshalledOncePerStreamer() throws Exception {
-        cnt = 0;
-
-        startGrids(2);
-
-        awaitPartitionMapExchange();
-
-        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            ldr.receiver(DataStreamerCacheUpdaters.batched());
-
-            ldr.perNodeBufferSize(1);
-
-            for (int i = 0; i < KEYS_COUNT; i++)
-                ldr.addData(i, i);
-        }
+        streamToRemoteNode(DataStreamerCacheUpdaters.batched());
 
         assertTrue("Expected more than one request to a remote node, got " + sentReceivers.size(),
             sentReceivers.size() > 1);
@@ -194,18 +202,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testIsolatedUpdaterIsNotSent() throws Exception {
-        cnt = 0;
-
-        startGrids(2);
-
-        awaitPartitionMapExchange();
-
-        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            ldr.perNodeBufferSize(1);
-
-            for (int i = 0; i < KEYS_COUNT; i++)
-                ldr.addData(i, i);
-        }
+        streamToRemoteNode(null);
 
         assertTrue("Expected requests to a remote node, got " + sentReceivers.size(), !sentReceivers.isEmpty());
 
