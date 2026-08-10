@@ -39,7 +39,6 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalWrapper;
@@ -75,16 +74,6 @@ public class SecurityUtils {
     /** Ignite internal package. */
     public static final String IGNITE_INTERNAL_PACKAGE = "org.apache.ignite.internal";
 
-    /** Default serialization version. */
-    private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
-
-    /** Current serialization version. */
-    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>() {
-        @Override protected Integer initialValue() {
-            return DFLT_SERIALIZE_VERSION;
-        }
-    };
-
     /** Permissions that contain {@code AllPermission}. */
     public static final Permissions ALL_PERMISSIONS;
 
@@ -101,73 +90,19 @@ public class SecurityUtils {
     private SecurityUtils() {
     }
 
-    /**
-     * @return Security compatibility mode flag.
-     */
-    public static boolean isSecurityCompatibilityMode() {
-        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE, false);
-    }
-
-    /**
-     * @param ver Serialize version.
-     */
-    public static void serializeVersion(int ver) {
-        SERIALIZE_VERSION.set(ver);
-    }
-
-    /**
-     * @return Serialize version.
-     */
-    public static int serializeVersion() {
-        return SERIALIZE_VERSION.get();
-    }
-
-    /**
-     * Sets default serialize version {@link #DFLT_SERIALIZE_VERSION}.
-     */
-    public static void restoreDefaultSerializeVersion() {
-        serializeVersion(DFLT_SERIALIZE_VERSION);
-    }
-
-    /**
-     * @return Allow all service permissions.
-     */
-    public static Map<String, Collection<SecurityPermission>> compatibleServicePermissions() {
-        Map<String, EnumSet<SecurityPermission>> srvcPerms = new HashMap<>();
-
-        srvcPerms.put("*", EnumSet.of(
-            SecurityPermission.SERVICE_CANCEL,
-            SecurityPermission.SERVICE_DEPLOY,
-            SecurityPermission.SERVICE_INVOKE));
-
-        return upcast(srvcPerms);
-    }
-
     /** */
-    @SuppressWarnings("rawtypes")
-    public static Map<String, Collection<SecurityPermission>> upcast(Map<String, EnumSet<SecurityPermission>> map) {
-        return (Map<String, Collection<SecurityPermission>>)(Map)map;
-    }
-
-    /** */
-    @SuppressWarnings("rawtypes")
-    public static Map<String, EnumSet<SecurityPermission>> downcast(Map<String, Collection<SecurityPermission>> map) {
-        return (Map<String, EnumSet<SecurityPermission>>)(Map)map;
-    }
-
-    /**
-     * @param permissionsMap Permissions map.
-     * @return Map with enum sets of security permissions.
-     */
-    public static Map<String, Collection<SecurityPermission>> normalizeValueType(
-        Map<String, Collection<SecurityPermission>> permissionsMap
+    public static Map<String, EnumSet<SecurityPermission>> normalizeResourcePermissions(
+        Map<String, ? extends Collection<SecurityPermission>> rsrcPerms
     ) {
-        return permissionsMap.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> copySafe(e.getValue())));
+        if (rsrcPerms == null)
+            return new HashMap<>();
+
+        return rsrcPerms.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> toEnumSet(e.getValue())));
     }
 
     /** */
-    public static EnumSet<SecurityPermission> copySafe(Collection<SecurityPermission> col) {
+    public static EnumSet<SecurityPermission> toEnumSet(Collection<SecurityPermission> col) {
         if (col instanceof EnumSet<SecurityPermission> enumSet)
             return enumSet;
 

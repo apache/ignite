@@ -30,7 +30,7 @@ import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
@@ -688,7 +688,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
-        register(GridDeploymentInfoBean.class);
+        register(GridDeploymentInfoMessage.class);
         register(GridDeploymentRequest.class);
         register(GridDeploymentResponse.class);
         register(MissingMappingRequestMessage.class);

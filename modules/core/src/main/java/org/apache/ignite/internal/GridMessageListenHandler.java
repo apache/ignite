@@ -28,7 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
@@ -64,7 +64,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
     private String clsName;
 
     /** */
-    private GridDeploymentInfoBean depInfo;
+    private GridDeploymentInfoMessage depInfo;
 
     /** */
     private boolean depEnabled;
@@ -166,7 +166,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         if (dep == null)
             throw new IgniteDeploymentCheckedException("Failed to deploy message listener.");
 
-        depInfo = new GridDeploymentInfoBean(dep);
+        depInfo = new GridDeploymentInfoMessage(dep);
 
         depEnabled = true;
     }
@@ -178,13 +178,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         assert ctx.config().isPeerClassLoadingEnabled();
 
         try {
-            GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
-                depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
-
-            if (dep == null)
-                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
-
-            ClassLoader ldr = dep.classLoader();
+            ClassLoader ldr = ctx.deploy().globalDeployment(depInfo, clsName, nodeId).classLoader();
 
             if (topicBytes != null)
                 topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));
@@ -260,7 +254,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
             topicBytes = U.readByteArray(in);
             predBytes = U.readByteArray(in);
             clsName = U.readString(in);
-            depInfo = (GridDeploymentInfoBean)in.readObject();
+            depInfo = (GridDeploymentInfoMessage)in.readObject();
         }
         else {
             topic = in.readObject();

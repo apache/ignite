@@ -2001,11 +2001,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     true,
                     skipStore,
                     keepBinary,
-                    dep != null ? dep.deployMode() : null,
+                    dep,
                     dep != null ? jobPda0.deployClass().getName() : null,
-                    dep != null ? dep.userVersion() : null,
-                    dep != null ? dep.participants() : null,
-                    dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
                     (rcvrMsg0.receiver() == ISOLATED_UPDATER) ? partId : NO_STRIPE);
