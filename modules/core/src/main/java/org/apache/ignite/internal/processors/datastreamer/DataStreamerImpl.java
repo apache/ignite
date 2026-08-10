@@ -495,14 +495,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         return (StreamReceiver<K, V>)rcvrMsg.receiver();
     }
 
-    /** @return {@code True} if the default, Isolated receiver is in use. */
-    private boolean isolated() {
-        return rcvrMsg.receiver() == ISOLATED_UPDATER;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return !isolated();
+        return receiver() != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -515,7 +510,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvrMsg = new DataStreamerReceiverMessage(allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER);
+        receiver(allow ? DataStreamerCacheUpdaters.individual() : ISOLATED_UPDATER);
     }
 
     /** {@inheritDoc} */
@@ -663,7 +658,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (isolated() && inconsistencyWarned.compareAndSet(false, true))
+        if (!allowOverwrite() && inconsistencyWarned.compareAndSet(false, true))
             log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
