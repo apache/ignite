@@ -62,7 +62,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     private OptimizedMarshaller marshaller(boolean requireSer) {
         ClassLoaderUtils.clearClassCache();
 
-        OptimizedMarshaller marsh = Marshallers.optimized(requireSer);
+        OptimizedMarshaller marsh = requireSer ? Marshallers.optimizedForSerializable() : Marshallers.optimizedForAllClasses();
 
         marsh.setContext(new MarshallerContextTestImpl());
 
