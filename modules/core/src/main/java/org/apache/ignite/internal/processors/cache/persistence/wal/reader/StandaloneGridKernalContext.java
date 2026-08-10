@@ -91,6 +91,8 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
@@ -176,6 +178,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** Operation context dispacther. */
     private final OperationContextDispatcher opCtxDispatcher = new OperationContextDispatcher();
+
+    /** */
+    private final IgniteNodeFeatureSet locNodeFeatures = new IgniteNodeFeatureSet(IgniteCoreFeatureSet.local());
 
     /**
      * @param log Logger.
@@ -315,6 +320,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public GridKernalGateway gateway() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet localNodeFeatures() {
+        return locNodeFeatures;
     }
 
     /** {@inheritDoc} */
