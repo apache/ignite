@@ -56,7 +56,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         return marshaller(true);
     }
 
-
     /**
      * @return Marshaller.
      */
