@@ -60,7 +60,7 @@ public class Marshallers {
         return factory.jdk();
     }
 
-    /** @return Optimized marshaller instance for clasees implementing {@link Serializable}, only. */
+    /** @return Optimized marshaller instance for classes implementing {@link Serializable}, only. */
     public static OptimizedMarshaller optimizedForSerializable() {
         return factory.optimizedForSerializable();
     }
