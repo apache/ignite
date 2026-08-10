@@ -59,7 +59,7 @@ control.(sh|bat) --defragmentation status --host <host> --port <port>
 When a node executes defragmentation, it is possible to cancel it. To stop defragmentation, run the following command available in the control utility:
 [source,shell]
 ----
-control.(sh|bat) --defragmentation cancel --host --port
+control.(sh|bat) --defragmentation cancel --host <host> --port <port>
 ----
 
 [NOTE]
