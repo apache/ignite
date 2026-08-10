@@ -25,15 +25,17 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 
-/** */
+/** Batch of streamed entries. */
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
@@ -47,10 +49,10 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** */
-    // TODO: Refactor bytes serialization - IGNITE-27977
+    /** Cache updater. */
+    @GridToStringExclude
     @Order(3)
-    byte[] updaterBytes;
+    DataStreamerReceiverMessage updaterMsg;
 
     /** Entries to update. */
     @Order(4)
@@ -97,7 +99,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterBytes Cache receiver.
+     * @param updaterMsg Cache updater.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -112,7 +114,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         long reqId,
         IgniteUuid resTopicId,
         @Nullable String cacheName,
-        byte[] updaterBytes,
+        DataStreamerReceiverMessage updaterMsg,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
@@ -128,7 +130,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.reqId = reqId;
         this.resTopicId = resTopicId;
         this.cacheName = cacheName;
-        this.updaterBytes = updaterBytes;
+        this.updaterMsg = updaterMsg;
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
@@ -155,9 +157,14 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         return cacheName;
     }
 
+    /** @return {@code True} if the request sends a custom updater rather than naming a built-in one. */
+    boolean customUpdater() {
+        return updaterMsg.customUpdater();
+    }
+
     /** @return Updater. */
-    byte[] updaterBytes() {
-        return updaterBytes;
+    StreamReceiver<?, ?> updater() {
+        return updaterMsg.receiver();
     }
 
     /** @return Entries to update. */
