@@ -45,6 +45,8 @@ public class DataStreamerReceiverMessage implements Message {
 
     /** @param rcvr User receiver. */
     DataStreamerReceiverMessage(StreamReceiver<?, ?> rcvr) {
+        assert DataStreamerBuiltInUpdater.of(rcvr) == null : "A built-in updater travels by name: " + rcvr;
+
         this.rcvr = rcvr;
     }
 
