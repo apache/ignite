@@ -90,7 +90,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Indicates whether we need to make the topology stale */
     private static boolean needStaleTop = false;
 
-    /** Receiver carriers of the streamer requests sent since the current test started; {@code null} for the isolated one. */
+    /** Receiver carriers of the streamer requests sent since the current test started. */
     private static final List<DataStreamerReceiverMessage> sentReceivers = Collections.synchronizedList(new ArrayList<>());
 
     /** {@inheritDoc} */
@@ -207,7 +207,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         assertTrue("Expected requests to a remote node, got " + sentReceivers.size(), !sentReceivers.isEmpty());
 
         for (DataStreamerReceiverMessage rcvr : sentReceivers)
-            assertNull("A built-in updater was sent with a request", rcvr);
+            assertFalse("A built-in updater was sent with a request", rcvr.user());
 
         IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
@@ -227,7 +227,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         assertFalse("Expected requests to a remote node", sentReceivers.isEmpty());
 
         for (DataStreamerReceiverMessage rcvr : sentReceivers)
-            assertNull("A built-in updater was sent with a request", rcvr);
+            assertFalse("A built-in updater was sent with a request", rcvr.user());
     }
 
     /**
@@ -798,7 +798,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             req.requestId(),
                             req.resTopicId,
                             req.cacheName(),
-                            new DataStreamerReceiverMessage(req.updater()),
+                            req.updaterMsg,
                             req.entries(),
                             req.ignoreDeploymentOwnership(),
                             req.skipStore(),

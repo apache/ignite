@@ -26,7 +26,7 @@ import org.apache.ignite.stream.StreamReceiver;
 /** DataStreamer cache receiver/updater message. */
 @UseBinaryMarshaller
 public class DataStreamerReceiverMessage implements Message {
-    /** DataStreamer cache receiver/updater. */
+    /** DataStreamer cache receiver/updater; {@code null} when {@link #builtIn} names it. */
     @Marshalled("rcvrBytes")
     StreamReceiver<?, ?> rcvr;
 
@@ -34,18 +34,32 @@ public class DataStreamerReceiverMessage implements Message {
     @Order(0)
     volatile byte[] rcvrBytes;
 
+    /** The updater every node has; {@code null} when {@link #rcvr} is a user one. */
+    @Order(1)
+    DataStreamerBuiltInUpdater builtIn;
+
     /** Empty constructor for serialization purposes. */
     public DataStreamerReceiverMessage() {
         // No-op.
     }
 
-    /** @param rcvr Receiver. */
+    /** @param rcvr User receiver. */
     DataStreamerReceiverMessage(StreamReceiver<?, ?> rcvr) {
         this.rcvr = rcvr;
     }
 
-    /** @return Receiver. */
+    /** @param builtIn Updater every node has, named rather than carried. */
+    DataStreamerReceiverMessage(DataStreamerBuiltInUpdater builtIn) {
+        this.builtIn = builtIn;
+    }
+
+    /** @return {@code True} if the receiver travels with this message rather than being named. */
+    boolean user() {
+        return builtIn == null;
+    }
+
+    /** @return Receiver: the one carried here, or the node's own that this message names. */
     StreamReceiver<?, ?> receiver() {
-        return rcvr;
+        return builtIn == null ? rcvr : builtIn.updater();
     }
 }

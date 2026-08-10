@@ -47,7 +47,7 @@ enum DataStreamerBuiltInUpdater {
     DataStreamerBuiltInUpdater(StreamReceiver<?, ?> updater) {
         this.updater = updater;
 
-        msg = new DataStreamerReceiverMessage(updater);
+        msg = new DataStreamerReceiverMessage(this);
     }
 
     /** @return Updater of this node. */

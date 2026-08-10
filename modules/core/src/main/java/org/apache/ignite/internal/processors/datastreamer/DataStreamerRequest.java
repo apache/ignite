@@ -49,7 +49,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache updater; {@code null} when {@link #builtInUpdater} names it. */
+    /** Cache updater. */
     @GridToStringExclude
     @Order(3)
     DataStreamerReceiverMessage updaterMsg;
@@ -90,10 +90,6 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(12)
     int partId;
 
-    /** Cache updater of the streamer itself; {@code null} when {@link #updaterMsg} carries a user one. */
-    @Order(13)
-    DataStreamerBuiltInUpdater builtInUpdater;
-
     /** Empty constructor. */
     public DataStreamerRequest() {
         // No-op.
@@ -103,7 +99,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterMsg Cache updater. One of the streamer's own is stored as a name, see {@link #builtInUpdater}.
+     * @param updaterMsg Cache updater.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -134,8 +130,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.reqId = reqId;
         this.resTopicId = resTopicId;
         this.cacheName = cacheName;
-        builtInUpdater = DataStreamerBuiltInUpdater.of(updaterMsg.receiver());
-        this.updaterMsg = builtInUpdater == null ? updaterMsg : null;
+        this.updaterMsg = updaterMsg;
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
@@ -164,12 +159,12 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** @return {@code True} if the updater travelled with the request instead of being named. */
     boolean hasUserUpdater() {
-        return updaterMsg != null;
+        return updaterMsg.user();
     }
 
-    /** @return Updater: the one carried by the request, or the streamer's own that it named. */
+    /** @return Updater. */
     StreamReceiver<?, ?> updater() {
-        return updaterMsg != null ? updaterMsg.receiver() : builtInUpdater.updater();
+        return updaterMsg.receiver();
     }
 
     /** @return Entries to update. */
