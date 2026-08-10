@@ -92,7 +92,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static boolean needStaleTop = false;
 
     /** Distinct updaters sent since the current test started: the serialized bytes, or the built-in constant. */
-    private final Set<Object> sentUpdaters = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<Object> SENT_UPDATERS = Collections.synchronizedSet(new HashSet<>());
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -158,9 +158,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     public void testReceiverMarshalledOncePerStreamer() throws Exception {
         startGridsAndStream(new TestReceiver());
 
-        assertEquals("The receiver was marshalled more than once", 1, sentUpdaters.size());
+        assertEquals("The receiver was marshalled more than once", 1, SENT_UPDATERS.size());
 
-        assertTrue("A custom receiver must be sent, not named", F.first(sentUpdaters) instanceof byte[]);
+        assertTrue("A custom receiver must be sent, not named", F.first(SENT_UPDATERS) instanceof byte[]);
     }
 
     /**
@@ -174,7 +174,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             startGridsAndStream(builtIn.updater());
 
             assertEquals("Expected " + builtIn + " to be sent as a name", Collections.singleton(builtIn),
-                sentUpdaters);
+                SENT_UPDATERS);
 
             IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
@@ -201,7 +201,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        sentUpdaters.clear();
+        SENT_UPDATERS.clear();
 
         try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             ldr.receiver((StreamReceiver<Object, Object>)rcvr);
@@ -750,7 +750,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * Simulate stale (not up-to-date) topology
      */
-    private class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
+    private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             Message sentMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : null;
@@ -759,7 +759,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             if (sentMsg instanceof DataStreamerRequest) {
                 DataStreamerReceiverMessage updaterMsg = ((DataStreamerRequest)sentMsg).updaterMsg;
 
-                sentUpdaters.add(updaterMsg.customUpdater() ? updaterMsg.rcvrBytes : updaterMsg.builtIn);
+                SENT_UPDATERS.add(updaterMsg.customUpdater() ? updaterMsg.rcvrBytes : updaterMsg.builtIn);
             }
 
             // Send stale topology only in the first request to avoid indefinitely getting failures.
