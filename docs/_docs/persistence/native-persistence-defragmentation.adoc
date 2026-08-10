@@ -24,7 +24,7 @@ Defragmentation enables a user to shrink data files and claim back disk space.
 
 [NOTE]
 ====
-Defragmentation can only be used with link:data-rebalancing[historical rebalancing] enabled. If historical rebalancing is disabled, the server node always triggers full rebalance after the restart, which would throw away the defragmented partition. A full set of data is transferred to the node from other nodes over a network. Depending on the dataset’s size, transferring may require significant time and slow down the whole cluster as network capacity is essential to fulfill user requests.
+Defragmentation itself does not require link:data-rebalancing[historical rebalancing]. However, when the node returns to the cluster after defragmentation, it has to rebalance its partitions. If historical rebalancing is unavailable, the node performs a full rebalance, which transfers complete partitions from other nodes and can overwrite the defragmented files, negating the reclaimed disk space. Make sure that the required WAL history remains available on the supplier nodes until the defragmented node rejoins the cluster.
 ====
 
 == Performing Defragmentation
@@ -91,7 +91,9 @@ control.bat --host <host> --port <port> --defragmentation cancel
 
 [NOTE]
 ====
-To reduce disk space requirements during defragmentation, caches are defragmented one by one (if a defragmentation of more than one cache is requested). To calculate additional required space, find the cache that occupies the most disk space. The same amount of disk space is required for defragmentation at max.
+During defragmentation, the original partition and index files coexist with their defragmented copies. Cache groups are processed one at a time, and the original files are replaced only after the whole cache group has been defragmented. Reserve free disk space approximately equal to the on-disk size of the largest cache group being defragmented. If little space can be reclaimed, the peak disk usage for that cache group can approach twice its original size, plus temporary link-mapping files.
+
+If a cache belongs to a shared cache group, selecting that cache for defragmentation causes the entire cache group to be defragmented.
 ====
 
 == Conclusion
