@@ -683,6 +683,46 @@ public class MessageProcessorTest {
             "or SelfMarshallingMessage, nor declare @Marshalled fields");
     }
 
+    /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
+    @Test
+    public void testMarshallableOnMessageFieldFailGeneration() {
+        Compilation compilation = compile("InternalMessage.java", "InternalMessageContainer.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("Field \"msg\" is Message. Must be written by communication protocol");
+    }
+
+    /** Test that {@code @Marshalled} annotation on {@link Message} collection field will fail generation. */
+    @Test
+    public void testMarshallableOnMessageCollectionFieldFailGeneration() {
+        Compilation compilation = compile("InternalMessage.java", "InternalMessageCollectionContainer.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("Field \"msgColl\" is Message. Must be written by communication protocol");
+    }
+
+    /** Test that {@code @Marshalled} annotation on {@link Message} map field will fail generation. */
+    @Test
+    public void testMarshallableOnMessageMapFieldFailGeneration() {
+        Compilation compilation = compile("InternalMessage.java", "InternalMessageMapContainer.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("Field \"msgMap\" is Message. Must be written by communication protocol");
+    }
+
+    /** Test that {@code @Marshalled} annotation on {@link Message} map field will fail generation. */
+    @Test
+    public void testMarshallableOnMessageArrayFieldFailGeneration() {
+        Compilation compilation = compile("InternalMessage.java", "InternalMessageArrayContainer.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("Field \"msgArr\" is Message. Must be written by communication protocol");
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);

@@ -1147,6 +1147,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         if (ann == null)
             return null;
 
+        ensureCorrectlyAnnotated(field, ann);
+
         boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
 
         if (map == !ann.value().isEmpty() || (map && (ann.keys().isEmpty() || ann.values().isEmpty()))) {
@@ -1168,6 +1170,41 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         }
 
         return MarshalledKind.ELEMENT_BLOBS;
+    }
+
+    /** */
+    private void ensureCorrectlyAnnotated(VariableElement field, Marshalled ann) {
+        boolean msgToBytes = false;
+
+        if (assignableFrom(field.asType(), msgType)) {
+            msgToBytes = true;
+        }
+        else if (isCollection(field.asType())) {
+            DeclaredType type = (DeclaredType)field.asType();
+
+            List<? extends TypeMirror> typeArgs = type.getTypeArguments();
+
+            assert typeArgs.size() == 1;
+
+            msgToBytes = assignableFrom(typeArgs.get(0), msgType);
+        }
+        else if (field.asType() instanceof ArrayType) {
+            msgToBytes = assignableFrom(((ArrayType)field.asType()).getComponentType(), msgType);
+        }
+        else if (isMap(field.asType()) && !ann.value().isEmpty()) {
+            DeclaredType type = (DeclaredType)field.asType();
+
+            List<? extends TypeMirror> typeArgs = type.getTypeArguments();
+
+            assert typeArgs.size() == 2;
+
+            msgToBytes = assignableFrom(typeArgs.get(0), msgType) || assignableFrom(typeArgs.get(1), msgType);
+        }
+
+        if (msgToBytes) {
+            throw new IllegalArgumentException("Field \"" + field + "\" is Message. Must be written by communication protocol" +
+                ". Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.");
+        }
     }
 
     /** Returns the enclosed field named {@code name}, or throws if absent. */
