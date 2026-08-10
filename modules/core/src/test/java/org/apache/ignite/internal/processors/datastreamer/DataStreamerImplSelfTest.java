@@ -21,9 +21,11 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -61,7 +63,6 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.core.appender.WriterAppender;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -90,8 +91,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Indicates whether we need to make the topology stale */
     private static boolean needStaleTop = false;
 
-    /** Receiver carriers of the streamer requests sent since the current test started. */
-    private static final List<DataStreamerReceiverMessage> sentReceivers = Collections.synchronizedList(new ArrayList<>());
+    /** Distinct updaters sent since the current test started: the serialized bytes, or the built-in constant. */
+    private final Set<Object> sentUpdaters = Collections.synchronizedSet(new HashSet<>());
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -148,33 +149,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Streams {@link #KEYS_COUNT} entries from the first node, one entry per request, and collects the receiver
-     * carrier of every request that leaves the node.
-     *
-     * @param rcvr Receiver to set, or {@code null} to keep the default one.
-     * @throws Exception If failed.
-     */
-    private void streamToRemoteNode(@Nullable StreamReceiver<Object, Object> rcvr) throws Exception {
-        cnt = 0;
-
-        startGrids(2);
-
-        awaitPartitionMapExchange();
-
-        sentReceivers.clear();
-
-        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            if (rcvr != null)
-                ldr.receiver(rcvr);
-
-            ldr.perNodeBufferSize(1);
-
-            for (int i = 0; i < KEYS_COUNT; i++)
-                ldr.addData(i, i);
-        }
-    }
-
-    /**
      * The receiver does not change between batches, so it is marshalled once: every request carries the very bytes
      * produced for the first one.
      *
@@ -182,52 +156,61 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReceiverMarshalledOncePerStreamer() throws Exception {
-        streamToRemoteNode(new TestReceiver());
+        startGridsAndStream(new TestReceiver());
 
-        assertTrue("Expected more than one request to a remote node, got " + sentReceivers.size(),
-            sentReceivers.size() > 1);
+        assertEquals("The receiver was marshalled more than once", 1, sentUpdaters.size());
 
-        DataStreamerReceiverMessage first = F.first(sentReceivers);
-
-        assertNotNull(first.rcvrBytes);
-
-        for (DataStreamerReceiverMessage rcvr : sentReceivers)
-            assertTrue("The receiver was marshalled more than once", first.rcvrBytes == rcvr.rcvrBytes);
+        assertTrue("The receiver was named instead of sent", F.first(sentUpdaters) instanceof byte[]);
     }
 
     /**
-     * A built-in updater is named rather than sent, and the data still lands.
+     * Every built-in updater is named rather than sent, and the data still lands.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testBuiltInUpdaterIsNotSent() throws Exception {
-        streamToRemoteNode(null);
+        for (DataStreamerBuiltInUpdater builtIn : DataStreamerBuiltInUpdater.values()) {
+            startGridsAndStream(builtIn.updater());
 
-        assertTrue("Expected requests to a remote node, got " + sentReceivers.size(), !sentReceivers.isEmpty());
+            assertEquals("Expected " + builtIn + " to be named, not sent", Collections.singleton(builtIn),
+                sentUpdaters);
 
-        for (DataStreamerReceiverMessage rcvr : sentReceivers)
-            assertFalse("A built-in updater was sent with a request", rcvr.custom());
+            IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
+            for (int i = 0; i < KEYS_COUNT; i++)
+                assertEquals(i, cache.get(i));
 
-        for (int i = 0; i < KEYS_COUNT; i++)
-            assertEquals(i, cache.get(i));
+            stopAllGrids();
+        }
     }
 
     /**
-     * A built-in receiver set explicitly is named rather than sent, just like the default one.
+     * Starts two nodes and streams {@link #KEYS_COUNT} entries from the first one, a request per entry, collecting
+     * the updaters they carry. Waits for the partition map first: until it is ready every partition is primary here,
+     * and a streamer that overwrites sends nothing to the remote node.
      *
+     * @param rcvr Receiver to stream with.
      * @throws Exception If failed.
      */
-    @Test
-    public void testBuiltInReceiverIsNotSent() throws Exception {
-        streamToRemoteNode(DataStreamerCacheUpdaters.batched());
+    @SuppressWarnings("unchecked")
+    private void startGridsAndStream(StreamReceiver<?, ?> rcvr) throws Exception {
+        cnt = 0;
 
-        assertFalse("Expected requests to a remote node", sentReceivers.isEmpty());
+        startGrids(2);
 
-        for (DataStreamerReceiverMessage rcvr : sentReceivers)
-            assertFalse("A built-in updater was sent with a request", rcvr.custom());
+        awaitPartitionMapExchange();
+
+        sentUpdaters.clear();
+
+        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            ldr.receiver((StreamReceiver<Object, Object>)rcvr);
+
+            ldr.perNodeBufferSize(1);
+
+            for (int i = 0; i < KEYS_COUNT; i++)
+                ldr.addData(i, i);
+        }
     }
 
     /**
@@ -767,14 +750,17 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * Simulate stale (not up-to-date) topology
      */
-    private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
+    private class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
             Message sentMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : null;
 
             // Already marshalled at this point.
-            if (sentMsg instanceof DataStreamerRequest)
-                sentReceivers.add(((DataStreamerRequest)sentMsg).updaterMsg);
+            if (sentMsg instanceof DataStreamerRequest) {
+                DataStreamerReceiverMessage updaterMsg = ((DataStreamerRequest)sentMsg).updaterMsg;
+
+                sentUpdaters.add(updaterMsg.custom() ? updaterMsg.rcvrBytes : updaterMsg.builtIn);
+            }
 
             // Send stale topology only in the first request to avoid indefinitely getting failures.
             if (needStaleTop) {
