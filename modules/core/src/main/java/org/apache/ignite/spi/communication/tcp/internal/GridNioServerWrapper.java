@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
@@ -914,7 +915,7 @@ public class GridNioServerWrapper {
 
                 if (stateProvider.isSslEnabled()) {
                     GridNioSslFilter sslFilter = U.sslFilter(
-                        igniteCfg.getSslContextFactory().create(),
+                        stateProvider.sslContextProvider(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
                         log,
@@ -964,6 +965,10 @@ public class GridNioServerWrapper {
                 }
 
                 GridNioServer<Message> srvr = builder.build();
+
+                // Named only once the port is taken: a busy port makes this method try the next one.
+                if (stateProvider.isSslEnabled())
+                    stateProvider.sslContextProvider().addUser(SslContextReloadable.COMMUNICATION, true);
 
                 if (mreg != null)
                     U.registerNioServerMetrics(srvr, filtersArr, mreg);

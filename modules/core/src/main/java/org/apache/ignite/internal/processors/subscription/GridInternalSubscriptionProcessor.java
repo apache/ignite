@@ -17,7 +17,13 @@
 package org.apache.ignite.internal.processors.subscription;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
@@ -26,7 +32,10 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -58,6 +67,12 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
 
     /** */
     private final List<IgniteChangeGlobalStateSupport> globalStateListeners = new ArrayList<>();
+
+    /** One provider per configured factory, so transports sharing a factory share the context it hands out. */
+    private final Map<Factory<SSLContext>, SslContextProvider> sslCtxProviders = new IdentityHashMap<>();
+
+    /** Everything on this node whose certificates the reload command can replace. Read from the management pool. */
+    private final Collection<SslContextReloadable> sslCtxReloadables = new CopyOnWriteArrayList<>();
 
     /**
      * @param ctx Kernal context.
@@ -135,5 +150,50 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     public List<IgniteChangeGlobalStateSupport> getGlobalStateListeners() {
         return globalStateListeners;
+    }
+
+    /**
+     * Registers a component that has SSL configured, so that the {@code --ssl reload} command can replace its
+     * certificates at runtime.
+     *
+     * @param reloadable Component to register.
+     */
+    public void registerSslContextReloadable(@NotNull SslContextReloadable reloadable) {
+        requireNonNull(reloadable, "SSL context reloadable should be not-null.");
+
+        sslCtxReloadables.add(reloadable);
+    }
+
+    /**
+     * Hands out the provider that owns the context of the given factory, creating it on first ask. Transports
+     * configured with the same factory get the same provider, so a reload cannot leave them on certificates read
+     * at different moments.
+     *
+     * @param factory Factory the transport is configured with.
+     * @param user Transport asking for the context, or {@code null} to say so once it has started.
+     * @param interNode Whether that transport connects nodes to each other.
+     * @return Provider to take the context from.
+     */
+    public synchronized SslContextProvider sslContextProvider(@NotNull Factory<SSLContext> factory,
+        @Nullable String user, boolean interNode) {
+        SslContextProvider provider = sslCtxProviders.get(factory);
+
+        if (provider == null) {
+            provider = new SslContextProvider(factory);
+
+            sslCtxProviders.put(factory, provider);
+            sslCtxReloadables.add(provider);
+        }
+
+        // A transport that can still fail to start says so later, once it has taken its port.
+        if (user != null)
+            provider.addUser(user, interNode);
+
+        return provider;
+    }
+
+    /** */
+    public Collection<SslContextReloadable> getSslContextReloadables() {
+        return sslCtxReloadables;
     }
 }

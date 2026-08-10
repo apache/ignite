@@ -63,7 +63,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -6307,16 +6306,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    if (spi.isSslEnabled()) {
-                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
-                            .createServerSocket(port, 0, spi.locHost);
-
-                        sslSock.setNeedClientAuth(true);
-
-                        srvrSock = sslSock;
-                    }
-                    else
-                        srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    // Bound as a plain socket even when SSL is enabled: each accepted connection is wrapped
+                    // separately, which lets reloaded certificates take effect without rebinding the port.
+                    srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -6360,6 +6352,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     finally {
                         blockingSectionEnd();
+                    }
+
+                    try {
+                        sock = spi.acceptedSocket(sock);
+                    }
+                    catch (IOException e) {
+                        // The peer hung up before any TLS could start. No certificate is checked here: the handshake
+                        // runs on the first read, in the reader below, and a peer refused there loses its connection
+                        // and nothing else. Letting this out would end the accept worker instead, which the failure
+                        // processor takes for a critical failure of the node.
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to set TLS up on an accepted connection [rmtAddr=" +
+                                sock.getInetAddress() + ", err=" + e + ']');
+
+                        U.closeQuiet(sock);
+
+                        continue;
                     }
 
                     if (log.isInfoEnabled()) {
@@ -6758,10 +6767,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0()) {
-                        LT.warn(log, "Failed to initialize connection " +
-                            "(missing SSL configuration on remote node?) " +
-                            "[rmtAddr=" + sock.getInetAddress() + ']', true);
+                    SSLException sslErr = X.cause(e, SSLException.class);
+
+                    if (sslErr != null && spi.isSslEnabled() && !spi.isNodeStopping0()) {
+                        LT.warn(log, "Failed to initialize connection [rmtAddr=" + sock.getInetAddress() +
+                            ", err=" + sslErr.getMessage() + "]. The remote " +
+                            "node has no SSL configured, or presents a certificate this node does not trust. " +
+                            "While certificates are being rotated, a new authority has to be trusted everywhere " +
+                            "before anything presents a certificate issued by it.", true);
 
                         spi.stats.onSslConnectionRejected();
                     }

@@ -173,11 +173,17 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             connector.setPort(port);
 
             if (startJetty()) {
+                SslConnectionFactory sslConnFactory = connector.getConnectionFactory(SslConnectionFactory.class);
+
+                if (sslConnFactory != null) {
+                    ctx.internalSubscriptionProcessor().registerSslContextReloadable(
+                        new JettySslContextReloadable(sslConnFactory.getSslContextFactory()));
+                }
+
                 if (log.isInfoEnabled()) {
                     log.info(startInfo());
 
-                    boolean isSsl = connector.getConnectionFactory(SslConnectionFactory.class) != null;
-                    String proto = isSsl ? "https" : "http";
+                    String proto = sslConnFactory != null ? "https" : "http";
 
                     log.info("HTTP REST protocol address: " + proto + "://" + host + ":" + port + "/");
                 }

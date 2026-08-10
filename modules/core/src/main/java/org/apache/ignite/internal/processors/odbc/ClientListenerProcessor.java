@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
+import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -494,7 +496,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to create client listener " +
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
-            GridNioSslFilter sslFilter = U.sslFilter(sslCtxFactory.create(),
+            SslContextProvider sslCtxProvider = ctx.internalSubscriptionProcessor()
+                .sslContextProvider(sslCtxFactory, SslContextReloadable.CLIENT_CONNECTOR, false);
+
+            GridNioSslFilter sslFilter = U.sslFilter(sslCtxProvider,
                 true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);
