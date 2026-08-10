@@ -18,11 +18,13 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestCollectionsMessage;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
@@ -32,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public final class TestCollectionsMessageMarshaller implements MessageMarshaller<TestCollectionsMessage> {
     /** */
-    @Override public void marshal(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void marshal(TestCollectionsMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.cacheObjectSet != null) {
@@ -44,7 +46,7 @@ public final class TestCollectionsMessageMarshaller implements MessageMarshaller
     }
 
     /** */
-    @Override public void unmarshal(TestCollectionsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestCollectionsMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.cacheObjectSet != null) {

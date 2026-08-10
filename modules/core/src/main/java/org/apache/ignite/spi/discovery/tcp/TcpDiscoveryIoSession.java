@@ -28,10 +28,13 @@ import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -197,7 +200,11 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            MessageMarshalling.unmarshal(msg, ((IgniteEx)spi.ignite()).context());
+            GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
+
+            // Discovery marshals with jdk: binary registers an unknown type cluster-wide and waits for discovery,
+            // which cannot happen on a discovery thread.
+            MessageMarshalling.unmarshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx);
 
             return (T)msg;
         }
@@ -241,7 +248,9 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        MessageMarshalling.marshal(m, ((IgniteEx)spi.ignite()).context(), null);
+        GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
+
+        MessageMarshalling.marshal(m, kctx.marshallerContext().jdkMarshaller(), kctx, null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);

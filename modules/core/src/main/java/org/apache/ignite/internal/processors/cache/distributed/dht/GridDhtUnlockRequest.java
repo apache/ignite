@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * DHT cache unlock request.
  */
-@UseBinaryMarshaller
 public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /** Near keys. */
     @Order(0)

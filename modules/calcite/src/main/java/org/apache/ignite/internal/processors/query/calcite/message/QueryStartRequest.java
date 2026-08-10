@@ -20,16 +20,15 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.jetbrains.annotations.Nullable;
 
 /** Message sent to remote nodes to start a query fragment execution. */
-@UseBinaryMarshaller
 public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)

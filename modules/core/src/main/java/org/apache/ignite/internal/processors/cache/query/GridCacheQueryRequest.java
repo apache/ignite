@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -46,7 +46,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Query request.
  */
-@UseBinaryMarshaller
 public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
     private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Map;
+
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -30,7 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
-@UseBinaryMarshaller
 public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
     @Order(0)

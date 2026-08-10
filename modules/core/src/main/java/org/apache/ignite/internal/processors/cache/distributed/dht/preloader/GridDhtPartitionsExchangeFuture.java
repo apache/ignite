@@ -42,7 +42,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import javax.cache.expiry.EternalExpiryPolicy;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -3821,7 +3823,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Marshal eagerly: the heavy partition-map copy lands in the "Full message preparing" stage, and the
             // message cached in FinishState is sent to late joiners as is (the send-path marshal-once turns no-op).
-            MessageMarshalling.marshal(msg, cctx.kernalContext(), null);
+            MessageMarshalling.marshal(msg, cctx.marshaller(), cctx.kernalContext(), null);
 
             timeBag.finishGlobalStage("Full message preparing");
 

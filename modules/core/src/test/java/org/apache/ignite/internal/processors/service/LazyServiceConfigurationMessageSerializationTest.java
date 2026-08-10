@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -54,7 +55,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
 
     /** */
     private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh)});
+        new MessageFactoryProvider[] {new CoreMessagesProvider()});
 
     /**
      * ServiceConfiguration declares {@code svc}, {@code nodeFilter}, {@code interceptors} as non-transient,
@@ -125,7 +126,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
 
         GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
-        MessageMarshalling.marshal(msg, kctx, null);
+        MessageMarshalling.marshal(msg, marsh, kctx, null);
 
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
@@ -145,7 +146,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
         assertEquals("Reads" + ERROR_SUFFIX, expReadsWritesCnt, reader.state());
 
-        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
+        MessageMarshalling.unmarshal(res, marsh, kctx, null, U.gridClassLoader());
 
         return res;
     }

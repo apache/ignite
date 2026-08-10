@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1539,7 +1540,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
             }
 
-            MessageMarshalling.unmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
+            MessageMarshalling.unmarshal(cacheMsg, cctx.marshaller(), cctx.kernalContext(), null, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -28,7 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Task session request.
  */
-@UseBinaryMarshaller
 public class GridTaskSessionRequest implements Message {
     /** Task session ID. */
     @Order(0)

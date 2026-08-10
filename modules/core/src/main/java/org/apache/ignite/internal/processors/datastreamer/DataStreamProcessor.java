@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -230,7 +231,7 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             StreamReceiver<?, ?> updater;
 
             try {
-                MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(clsLdr, ctx.config()));
+                MessageMarshalling.unmarshal(req, ctx.marshaller(), ctx, null, U.resolveClassLoader(clsLdr, ctx.config()));
 
                 updater = req.updater();
 

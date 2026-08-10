@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,7 +46,6 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Super class for all communication self tests.
@@ -154,7 +154,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-                new CoreMessagesProvider(jdk(), jdk()), customMessageFactory()}));
+                new CoreMessagesProvider(), customMessageFactory()}));
 
             ctx.setLocalNode(node);
 

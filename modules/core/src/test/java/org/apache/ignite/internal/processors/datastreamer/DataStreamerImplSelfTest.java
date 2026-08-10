@@ -32,7 +32,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.cache.CacheException;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
@@ -806,7 +809,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                         );
 
                         try {
-                            MessageMarshalling.marshal(msg, ((IgniteEx)ignite).context(), null);
+                            MessageMarshalling.marshal(msg, Marshallers.jdk(), ((IgniteEx)ignite).context(), null);
                         }
                         catch (IgniteCheckedException e) {
                             throw new RuntimeException(e);

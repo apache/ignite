@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -3507,7 +3508,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return;
 
             try {
-                MessageMarshalling.unmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
+                MessageMarshalling.unmarshal(cacheMsg, cctx.marshaller(), cctx.kernalContext(), null, cctx.deploy().globalLoader());
             }
             catch (IgniteCheckedException e) {
                 cacheMsg.onClassError(e);

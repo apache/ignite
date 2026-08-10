@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -824,7 +825,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         boolean loc = ctx.localNodeId().equals(res.nodeId()) && !ctx.config().isMarshalLocalJobs();
 
                         if (!loc)
-                            MessageMarshalling.unmarshal(res, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                            MessageMarshalling.unmarshal(res, ctx.marshaller(), ctx, null,
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                         jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 

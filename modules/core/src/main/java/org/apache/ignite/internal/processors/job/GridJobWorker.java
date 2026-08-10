@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -884,7 +885,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                             if (!loc) {
                                 try {
-                                    MessageMarshalling.marshal(jobRes, ctx, null);
+                                    MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
                                 }
                                 catch (IgniteCheckedException e) {
                                     String ids = "[nodeId=" + sndNode.id() + ", ses=" + ses.getId() +
@@ -898,7 +899,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                         : U.convertException(e));
 
                                     try {
-                                        MessageMarshalling.marshal(jobRes, ctx, null);
+                                        MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
                                     }
                                     catch (IgniteCheckedException e0) {
                                         // Then the exception itself is what could not be written.
@@ -908,7 +909,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                                         jobRes = jobRes.withError(new IgniteException(errMsg));
 
-                                        MessageMarshalling.marshal(jobRes, ctx, null);
+                                        MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
                                     }
                                 }
                             }

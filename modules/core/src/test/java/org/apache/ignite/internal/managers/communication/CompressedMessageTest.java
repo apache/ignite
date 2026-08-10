@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.zip.Deflater;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -42,7 +43,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 public class CompressedMessageTest {
     /** */
     private static final MessageFactory MSG_FACTORY = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-        new CoreMessagesProvider(jdk(), jdk())});
+        new CoreMessagesProvider()});
 
     /** */
     @Test

@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
+
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -30,7 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
  * Diagnostic info block that dumps the state of cache entries for the given keys. Requested when a transaction
  * lock future waits for a remote node's response for too long.
  */
-@UseBinaryMarshaller
 public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo implements CacheIdAware {
     /** */
     @Order(0)

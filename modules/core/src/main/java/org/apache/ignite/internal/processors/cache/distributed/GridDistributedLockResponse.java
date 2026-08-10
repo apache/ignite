@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -36,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
  * Lock response message.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-@UseBinaryMarshaller
 public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     /** Future ID. */
     @Order(0)

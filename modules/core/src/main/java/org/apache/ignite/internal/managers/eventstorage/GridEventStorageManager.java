@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
@@ -1242,7 +1243,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    MessageMarshalling.unmarshal(req, ctx, null,
+                    MessageMarshalling.unmarshal(req, ctx.marshaller(), ctx, null,
                         ctx.deploy().classLoader(req.deploymentInfo(), req.filterClassName(), nodeId));
 
                     filter = (IgnitePredicate<Event>)req.filter();

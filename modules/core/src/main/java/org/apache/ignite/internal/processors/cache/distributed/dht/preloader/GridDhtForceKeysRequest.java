@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
+
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -33,7 +33,6 @@ import org.apache.ignite.lang.IgniteUuid;
  * Force keys request. This message is sent by node while preloading to force another node to put given keys into the
  * next batch of transmitting entries.
  */
-@UseBinaryMarshaller
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
     @Order(0)

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
+
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -31,7 +32,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -51,7 +51,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     /** Message factory. */
     private final MessageFactory msgFactory =
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(jdk(), jdk()),
+            new CoreMessagesProvider(),
             factory -> factory.register(TestNestedContainersMessage.TYPE, new TestNestedContainersMessageSerializer())
         });
 

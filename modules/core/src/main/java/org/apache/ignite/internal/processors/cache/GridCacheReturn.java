@@ -21,12 +21,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.cache.processor.EntryProcessorResult;
+
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-@UseBinaryMarshaller
 public class GridCacheReturn implements Message, CacheIdAware {
     /** Value. */
     @GridToStringInclude(sensitive = true)

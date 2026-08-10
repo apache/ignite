@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,22 +35,24 @@ public interface MessageMarshaller<M extends Message> {
      * Marshals the message on the user thread before sending.
      *
      * @param msg Message to marshal.
+     * @param marsh Marshaller of the transport the message goes out on.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
+    public void marshal(M msg, Marshaller marsh, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
         throws IgniteCheckedException;
 
     /**
      * Unmarshals the message with full cache context and class loader.
      *
      * @param msg Message to unmarshal.
+     * @param marsh Marshaller of the transport the message arrived on.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
      */
-    public void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
-        throws IgniteCheckedException;
+    public void unmarshal(M msg, Marshaller marsh, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
+        ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
      * Unmarshals the message without a cache context, using the configuration class loader — the cache-free receive
@@ -57,10 +60,11 @@ public interface MessageMarshaller<M extends Message> {
      * context, so per-message marshallers need only implement the cache-aware method.
      *
      * @param msg Message to unmarshal.
+     * @param marsh Marshaller of the transport the message arrived on.
      * @param kctx Kernal context.
      */
-    default void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
-        unmarshal(msg, kctx, null, U.resolveClassLoader(kctx.config()));
+    default void unmarshal(M msg, Marshaller marsh, GridKernalContext kctx) throws IgniteCheckedException {
+        unmarshal(msg, marsh, kctx, null, U.resolveClassLoader(kctx.config()));
     }
 
     /**
@@ -68,8 +72,9 @@ public interface MessageMarshaller<M extends Message> {
      * overloads, which restore the full payload later on a worker thread. No-op unless the message has {@code @NioField}s.
      *
      * @param msg Message to unmarshal.
+     * @param marsh Marshaller of the transport the message arrived on.
      * @param kctx Kernal context.
      */
-    default void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    default void unmarshalNio(M msg, Marshaller marsh, GridKernalContext kctx) throws IgniteCheckedException {
     }
 }

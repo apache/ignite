@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
+
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -45,7 +47,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  *
@@ -194,7 +195,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     /** @return Entry read back from the bytes {@code e} is written to. */
     private CacheContinuousQueryEntry roundTrip(CacheContinuousQueryEntry e) throws Exception {
         IgniteMessageFactoryImpl msgFactory =
-            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk())});
+            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider()});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);

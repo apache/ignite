@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,7 +64,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESSAGE_FACTORY;
 
 /**
@@ -434,7 +434,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), jdk()), GRID_TEST_MESSAGE_FACTORY})
+                new MessageFactoryProvider[] {new CoreMessagesProvider(), GRID_TEST_MESSAGE_FACTORY})
             );
 
             ctx.setLocalNode(node);

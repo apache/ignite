@@ -20,12 +20,14 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
@@ -35,7 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public final class TestMapMessageMarshaller implements MessageMarshaller<TestMapMessage> {
     /** */
-    @Override public void marshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void marshal(TestMapMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {
@@ -59,7 +61,7 @@ public final class TestMapMessageMarshaller implements MessageMarshaller<TestMap
     }
 
     /** */
-    @Override public void unmarshal(TestMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMapMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.gridCacheObjectMap != null) {

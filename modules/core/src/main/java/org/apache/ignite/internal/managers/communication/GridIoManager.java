@@ -68,6 +68,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
@@ -1180,12 +1181,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             // Not a double unmarshal: the @NioField routing header is restored here on the NIO thread, its full
             // payload below on a pool thread — disjoint fields.
-            MessageMarshalling.unmarshalNio(initMsg, ctx);
+            MessageMarshalling.unmarshalNio(initMsg, ctx.marshaller(), ctx);
 
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
                     try {
-                        MessageMarshalling.unmarshal(initMsg, ctx);
+                        MessageMarshalling.unmarshal(initMsg, ctx.marshaller(), ctx);
 
                         processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
                             (SocketChannel)channel);
@@ -1258,7 +1259,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             // After the delayed-message gate: a replayed message re-enters this method, so its NIO-thread header
             // unmarshal is kept here to run exactly once.
-            MessageMarshalling.unmarshalNio(msg, ctx);
+            MessageMarshalling.unmarshalNio(msg, ctx.marshaller(), ctx);
 
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
@@ -1468,7 +1469,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             return;
 
         try {
-            MessageMarshalling.unmarshal(msg.message(), ctx);
+            MessageMarshalling.unmarshal(msg.message(), ctx.marshaller(), ctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshal message payload", e);
@@ -2053,7 +2054,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     private void marshal(GridIoMessage ioMsg) throws IgniteCheckedException {
         assert !ioMsg.marshalled() : "GridIoMessage is marshalled twice: " + ioMsg;
 
-        MessageMarshalling.marshal(ioMsg, ctx, null);
+        MessageMarshalling.marshal(ioMsg, ctx.marshaller(), ctx, null);
 
         ioMsg.markMarshalled();
     }

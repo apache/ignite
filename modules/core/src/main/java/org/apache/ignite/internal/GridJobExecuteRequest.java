@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
@@ -38,7 +39,6 @@ import org.jetbrains.annotations.Nullable;
  * Job execution request.
  */
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
-@UseBinaryMarshaller
 public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnmarshalMessage {
     /** */
     @Order(0)

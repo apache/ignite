@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshalledObjectsMessage;
@@ -35,32 +36,24 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public final class TestMarshalledObjectsMessageMarshaller implements MessageMarshaller<TestMarshalledObjectsMessage> {
     /** */
-    private final Marshaller marshaller;
-
-    /** */
-    public TestMarshalledObjectsMessageMarshaller(Marshaller marshaller) {
-        this.marshaller = marshaller;
-    }
-
-    /** */
-    @Override public void marshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledObjectsMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.data != null && msg.dataBytes == null) {
             msg.dataBytes = new ArrayList<>(msg.data.size());
 
             for (Object e : msg.data)
-                msg.dataBytes.add(U.marshal(marshaller, e));
+                msg.dataBytes.add(U.marshal(marsh, e));
         }
     }
 
     /** */
-    @Override public void unmarshal(TestMarshalledObjectsMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledObjectsMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.dataBytes != null) {
             msg.data = new ArrayList<>(msg.dataBytes.size());
 
             for (byte[] e : msg.dataBytes) {
-                Object o = U.unmarshal(marshaller, e, clsLdr);
+                Object o = U.unmarshal(marsh, e, clsLdr);
 
                 if (o instanceof Map.Entry) {
                     Object key = ((Map.Entry<?, ?>)o).getKey();

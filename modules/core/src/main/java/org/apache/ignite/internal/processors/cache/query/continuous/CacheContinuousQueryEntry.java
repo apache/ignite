@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
+
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Continuous query entry.
  */
-@UseBinaryMarshaller
 public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, CacheIdAware {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;

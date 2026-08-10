@@ -21,14 +21,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -56,7 +57,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-@UseBinaryMarshaller
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest implements MarshallableMessage, DeployableMessage {
     /** Keys to update. */
     @Order(0)

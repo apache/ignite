@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT transaction prepare response.
  */
-@UseBinaryMarshaller
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Evicted readers. */
     @GridToStringInclude

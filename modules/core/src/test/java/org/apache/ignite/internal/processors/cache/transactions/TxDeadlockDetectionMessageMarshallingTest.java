@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -67,7 +69,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof TxLocksResponse) {
                         try {
-                            MessageMarshalling.unmarshal((TxLocksResponse)msg,
+                            MessageMarshalling.unmarshal((TxLocksResponse)msg, Marshallers.jdk(),
                                 clientCtx.kernalContext(), null, clientCtx.deploy().globalLoader());
 
                             res.set(true);

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -44,7 +45,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.openjdk.jmh.annotations.Mode.Throughput;
 
 /** Benchmarks the {@link DirectMessageReader} compressed-field hot path. */
@@ -122,6 +122,6 @@ public class JmhDirectMessageReaderBenchmark {
     /** */
     private static MessageFactory msgFactory() {
         return new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new CoreMessagesProvider(jdk(), jdk())});
+            new CoreMessagesProvider()});
     }
 }

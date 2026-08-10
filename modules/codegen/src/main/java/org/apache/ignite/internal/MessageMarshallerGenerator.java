@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
@@ -42,6 +43,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
+
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.jetbrains.annotations.Nullable;
 
@@ -184,14 +186,11 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             imports.add(type.toString());
             imports.add(MESSAGE_MARSHALLER_CLS);
 
-            if (marshallable || hasMarshalled)
-                imports.add(MARSHALLER_CLS);
+            imports.add(MARSHALLER_CLS);
 
             writeClassHeader(writer, "MessageMarshaller", marshallerClsName);
 
             writer.write(" {" + NL);
-
-            writeConstructor(writer, marshallerClsName);
 
             for (String line : marshall)
                 writer.write(line + NL);
@@ -202,39 +201,14 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         }
     }
 
-    /** Writes the {@code marshaller} field and the constructor initializing it, when the marshaller is needed. */
-    private void writeConstructor(Writer writer, String marshallerClsName) throws IOException {
-        if (!marshallable && !hasMarshalled)
-            return;
-
-        writer.write(indentedLine(METHOD_JAVADOC));
-        writer.write(NL);
-        writer.write(indentedLine("private final Marshaller marshaller;"));
-        writer.write(NL + NL);
-
-        writer.write(indentedLine(METHOD_JAVADOC));
-        writer.write(NL);
-        writer.write(indentedLine("public " + marshallerClsName + "(Marshaller marshaller) {"));
-        writer.write(NL);
-
-        indent++;
-
-        writer.write(indentedLine("this.marshaller = marshaller;"));
-        writer.write(NL);
-
-        indent--;
-
-        writer.write(indentedLine("}"));
-        writer.write(NL + NL);
-    }
-
     /** Generates the {@code marshal} method body and appends it to {@link #marshall}. */
     private void generateMarshalMethod(List<VariableElement> orderedFields) {
         imports.add(IGNITE_CHECKED_EXCEPTION_CLS);
         imports.add(GRID_KERNAL_CONTEXT_CLS);
         imports.add(CACHE_OBJECT_CONTEXT_CLS);
 
-        String signature = "marshal(" + simpleNameWithGeneric(type) + " msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
+        String signature = "marshal(" + simpleNameWithGeneric(type)
+            + " msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx)";
 
         hasStatements |= emitMethod(marshall, signature, body -> {
             usesMsgFactory = false;
@@ -249,7 +223,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendMarshalledPrepare(body);
 
             if (marshallable)
-                appendBlock(body, List.of(indentedLine("msg.marshal(marshaller);")));
+                appendBlock(body, List.of(indentedLine("msg.marshal(marsh);")));
 
             appendFields(body, orderedFields, MarshalMode.MARSHAL);
 
@@ -288,7 +262,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         if (usesU)
             imports.add(U_CLS);
 
-        String msgParam = simpleNameWithGeneric(type) + " msg, GridKernalContext kctx";
+        String msgParam = simpleNameWithGeneric(type) + " msg, Marshaller marsh, GridKernalContext kctx";
 
         generateUnmarshalMethod(msgParam + ", CacheObjectContext cacheObjCtx, ClassLoader clsLdr", workerFields);
 
@@ -309,7 +283,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendFields(body, fields, MarshalMode.UNMARSHAL, wireFieldSkip);
 
             if (marshallable)
-                appendBlock(body, List.of(indentedLine("msg.unmarshal(marshaller, clsLdr);")));
+                appendBlock(body, List.of(indentedLine("msg.unmarshal(marsh, clsLdr);")));
 
             appendMarshalledFinish(body);
 
@@ -342,7 +316,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        code.add(indentedLine("MessageMarshalling.unmarshal(%s, kctx);", accessor));
+        code.add(indentedLine("MessageMarshalling.unmarshal(%s, marsh, kctx);", accessor));
 
         indent--;
 
@@ -382,7 +356,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        code.add(indentedLine("%s.add(U.marshal(marshaller, e));", bytesField));
+        code.add(indentedLine("%s.add(U.marshal(marsh, e));", bytesField));
 
         indent--;
         indent--;
@@ -454,7 +428,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             indent++;
 
-            code.add(indentedLine("%s = U.marshal(marshaller, %s);", bytesAcc, objAcc));
+            code.add(indentedLine("%s = U.marshal(marsh, %s);", bytesAcc, objAcc));
 
             indent--;
 
@@ -471,7 +445,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             indent++;
 
-            code.add(indentedLine("%s = U.unmarshal(marshaller, %s, clsLdr);", objAcc, bytesAcc));
+            code.add(indentedLine("%s = U.unmarshal(marsh, %s, clsLdr);", objAcc, bytesAcc));
             code.add(EMPTY);
 
             // Drop the serialized cache once the object is restored: keeping both the deserialized value and its bytes
@@ -545,7 +519,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             indent++;
 
-            code.add(indentedLine("Object o = U.unmarshal(marshaller, e, clsLdr);"));
+            code.add(indentedLine("Object o = U.unmarshal(marsh, e, clsLdr);"));
             code.add(EMPTY);
             code.add(indentedLine("if (o instanceof Map.Entry) {"));
 
@@ -861,13 +835,13 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             usesMsgFactory = true;
 
             code.add(mode == MarshalMode.MARSHAL
-                ? indentedLine("MessageMarshalling.marshal(msgFactory, %s, kctx, ctx);", accessor)
-                : indentedLine("MessageMarshalling.unmarshal(msgFactory, %s, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageMarshalling.marshal(msgFactory, %s, marsh, kctx, ctx);", accessor)
+                : indentedLine("MessageMarshalling.unmarshal(msgFactory, %s, marsh, kctx, ctx, clsLdr);", accessor));
         }
         else {
             code.add(mode == MarshalMode.MARSHAL
-                ? indentedLine("MessageMarshalling.marshal(%s, kctx, ctx);", accessor)
-                : indentedLine("MessageMarshalling.unmarshal(%s, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageMarshalling.marshal(%s, marsh, kctx, ctx);", accessor)
+                : indentedLine("MessageMarshalling.unmarshal(%s, marsh, kctx, ctx, clsLdr);", accessor));
         }
 
         indent--;

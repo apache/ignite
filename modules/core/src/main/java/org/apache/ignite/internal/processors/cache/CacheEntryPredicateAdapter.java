@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Objects;
+
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /** A unified container for common, typical cache entry predicates. */
-@UseBinaryMarshaller
 public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
     private static final long serialVersionUID = 4647110502545358709L;

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridKernalContext;
@@ -183,7 +184,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private void onMessageInternal(UUID nodeId, Message msg, boolean unmarshal) {
         if (unmarshal) {
             try {
-                MessageMarshalling.unmarshal(msg, kctx);
+                MessageMarshalling.unmarshal(msg, kctx.marshaller(), kctx);
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);

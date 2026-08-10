@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -36,7 +37,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_QUERY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -50,7 +50,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstractTest {
     /** */
     private final MessageFactory<? extends Message> msgFactory = new IgniteMessageFactoryImpl<>(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), jdk())});
+        new MessageFactoryProvider[] {new CoreMessagesProvider()});
 
     /** */
     @Test

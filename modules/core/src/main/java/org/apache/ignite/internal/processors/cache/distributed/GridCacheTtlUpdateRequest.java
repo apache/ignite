@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  *
  */
-@UseBinaryMarshaller
 public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     /** Entries keys. */
     @GridToStringInclude

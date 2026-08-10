@@ -36,6 +36,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
@@ -1244,7 +1245,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     try {
                         // The job payload waits for this point: only now is there a deployment to unmarshal it with.
                         if (!loc) {
-                            MessageMarshalling.unmarshal(req, ctx, null,
+                            MessageMarshalling.unmarshal(req, ctx.marshaller(), ctx, null,
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
@@ -1609,7 +1610,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             if (!loc) {
                 try {
-                    MessageMarshalling.marshal(jobRes, ctx, null);
+                    MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
                 }
                 catch (IgniteCheckedException e) {
                     // The exception is the only payload of this response, so it is what could not be written.
@@ -1620,7 +1621,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                     jobRes = jobRes.withError(new IgniteException(errMsg));
 
-                    MessageMarshalling.marshal(jobRes, ctx, null);
+                    MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
                 }
             }
 

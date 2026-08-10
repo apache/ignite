@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.CoreMessagesProvider;
@@ -35,7 +36,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper.wrap;
 
 /**
@@ -124,7 +124,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         assert !started();
 
         msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(jdk(), jdk()),
+            new CoreMessagesProvider(),
             msgFactoryProvider
         });
     }

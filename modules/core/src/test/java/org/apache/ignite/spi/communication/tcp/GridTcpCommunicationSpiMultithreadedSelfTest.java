@@ -34,6 +34,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.CoreMessagesProvider;
@@ -64,7 +65,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESSAGE_FACTORY;
 
 /**
@@ -468,7 +468,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                    new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), jdk()), GRID_TEST_MESSAGE_FACTORY})
+                    new MessageFactoryProvider[] {new CoreMessagesProvider(), GRID_TEST_MESSAGE_FACTORY})
             );
 
             ctx.timeoutProcessor(timeoutProcessor);

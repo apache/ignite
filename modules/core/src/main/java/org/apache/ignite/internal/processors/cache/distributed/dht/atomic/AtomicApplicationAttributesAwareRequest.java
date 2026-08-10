@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.Map;
+
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 
 /** Wraps atomic updates with application attributes. */
-@UseBinaryMarshaller
 public class AtomicApplicationAttributesAwareRequest extends GridCacheIdMessage {
     /** Original update message. */
     @Order(0)

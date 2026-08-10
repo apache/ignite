@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -77,7 +78,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
     /** */
     private final MessageFactory<?> msgFactory = new IgniteMessageFactoryImpl<>(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh)});
+        new MessageFactoryProvider[] {new CoreMessagesProvider()});
 
     /** */
     @Test
@@ -172,7 +173,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
-        MessageMarshalling.marshal(msg, kctx, null);
+        MessageMarshalling.marshal(msg, marsh, kctx, null);
 
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
@@ -194,7 +195,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         assertEquals("Reads" + ERROR_SUFFIX,
             expReadsWritesCnt, reader.state());
 
-        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
+        MessageMarshalling.unmarshal(res, marsh, kctx, null, U.gridClassLoader());
 
         return res;
     }

@@ -19,17 +19,16 @@ package org.apache.ignite.internal.managers.eventstorage;
 
 import java.util.Collection;
 import java.util.Collections;
+
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** Events collected for a {@link GridEventStorageRequest}, or the failure that prevented it. */
-@UseBinaryMarshaller
 public class GridEventStorageResponse implements Message {
     /** */
     @Marshalled("evtsBytes")

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
@@ -32,7 +32,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-@UseBinaryMarshaller
 public class NearCacheUpdates implements Message {
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
     @Order(0)

@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -94,7 +95,7 @@ public class DiscoveryMessageParser {
         msgWriter.setBuffer(msgBuf);
 
         try {
-            MessageMarshalling.marshal(m, kctx, null);
+            MessageMarshalling.marshal(m, kctx.marshallerContext().jdkMarshaller(), kctx, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal discovery message", e);
@@ -141,7 +142,7 @@ public class DiscoveryMessageParser {
         while (!finished);
 
         try {
-            MessageMarshalling.unmarshal(msg, kctx);
+            MessageMarshalling.unmarshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal discovery message", e);

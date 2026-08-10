@@ -41,7 +41,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.cache.CacheException;
+
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.Ignite;
@@ -111,7 +113,6 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
-import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -1312,7 +1313,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller()));
+        compMsgs.add(new CoreMessagesProvider());
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
@@ -1333,22 +1334,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
-        for (MessageFactoryProvider msg : msgs)
-            initProvider(msg);
-
         msgFactory = new IgniteMessageFactoryImpl(msgs);
-    }
-
-    /**
-     * Re-init {@link AbstractMessageFactoryProvider} with a proper marshaller.
-     *
-     * @param factoryProvider Message factory provider.
-     */
-    private void initProvider(MessageFactoryProvider factoryProvider) {
-        if (factoryProvider instanceof AbstractMessageFactoryProvider) {
-            ((AbstractMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
-                ctx.marshaller());
-        }
     }
 
     /**

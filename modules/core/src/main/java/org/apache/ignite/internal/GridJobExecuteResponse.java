@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -29,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job execution response.
  */
-@UseBinaryMarshaller
 public class GridJobExecuteResponse implements DeferredUnmarshalMessage {
     /** */
     @Order(0)
