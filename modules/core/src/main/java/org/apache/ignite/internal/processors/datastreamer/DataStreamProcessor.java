@@ -234,9 +234,8 @@ public class DataStreamProcessor extends GridProcessorAdapter {
 
                 updater = req.updater();
 
-                if (updater == null)
-                    updater = DataStreamerImpl.ISOLATED_UPDATER;
-                else
+                // Only a user updater arrives with the request and needs its resources injected.
+                if (req.updaterMsg != null)
                     ctx.resource().injectGeneric(updater);
             }
             catch (IgniteCheckedException e) {

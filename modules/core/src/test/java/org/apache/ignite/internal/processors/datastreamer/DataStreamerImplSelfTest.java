@@ -182,7 +182,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReceiverMarshalledOncePerStreamer() throws Exception {
-        streamToRemoteNode(DataStreamerCacheUpdaters.batched());
+        streamToRemoteNode(new TestReceiver());
 
         assertTrue("Expected more than one request to a remote node, got " + sentReceivers.size(),
             sentReceivers.size() > 1);
@@ -196,23 +196,38 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * The isolated updater ships with every node, so requests carry no updater at all and the data still lands.
+     * The updaters the streamer ships with are named rather than sent, and the data still lands.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testIsolatedUpdaterIsNotSent() throws Exception {
+    public void testBuiltInUpdaterIsNotSent() throws Exception {
         streamToRemoteNode(null);
 
         assertTrue("Expected requests to a remote node, got " + sentReceivers.size(), !sentReceivers.isEmpty());
 
         for (DataStreamerReceiverMessage rcvr : sentReceivers)
-            assertNull("The isolated updater was sent with a request", rcvr);
+            assertNull("A built-in updater was sent with a request", rcvr);
 
         IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEYS_COUNT; i++)
             assertEquals(i, cache.get(i));
+    }
+
+    /**
+     * A built-in receiver set explicitly is named rather than sent, just like the default one.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBuiltInReceiverIsNotSent() throws Exception {
+        streamToRemoteNode(DataStreamerCacheUpdaters.batched());
+
+        assertFalse("Expected requests to a remote node", sentReceivers.isEmpty());
+
+        for (DataStreamerReceiverMessage rcvr : sentReceivers)
+            assertNull("A built-in updater was sent with a request", rcvr);
     }
 
     /**
@@ -737,6 +752,18 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         return cacheCfg;
     }
 
+    /** A receiver of the test itself: unlike the built-in ones, it travels with the requests. */
+    private static class TestReceiver implements StreamReceiver<Object, Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache<Object, Object> cache, Collection<Map.Entry<Object, Object>> entries) {
+            for (Map.Entry<Object, Object> e : entries)
+                cache.put(e.getKey(), e.getValue());
+        }
+    }
+
     /**
      * Simulate stale (not up-to-date) topology
      */
@@ -772,6 +799,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             req.resTopicId,
                             req.cacheName(),
                             req.updaterMsg,
+                            req.builtInUpdater,
                             req.entries(),
                             req.ignoreDeploymentOwnership(),
                             req.skipStore(),

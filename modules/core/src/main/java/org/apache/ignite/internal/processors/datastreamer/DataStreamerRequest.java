@@ -49,7 +49,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache updater; {@code null} for the default one. */
+    /** Cache updater; {@code null} when {@link #builtInUpdater} names it. */
     @GridToStringExclude
     @Order(3)
     DataStreamerReceiverMessage updaterMsg;
@@ -90,6 +90,10 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(12)
     int partId;
 
+    /** Cache updater of the streamer itself; {@code null} when {@link #updaterMsg} carries a user one. */
+    @Order(13)
+    DataStreamerBuiltInUpdater builtInUpdater;
+
     /** Empty constructor. */
     public DataStreamerRequest() {
         // No-op.
@@ -99,7 +103,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterMsg Cache updater, {@code null} for the default one.
+     * @param updaterMsg Cache updater, {@code null} when {@code builtInUpdater} names it.
+     * @param builtInUpdater Cache updater of the streamer itself, {@code null} for a user one.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -115,6 +120,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         IgniteUuid resTopicId,
         @Nullable String cacheName,
         @Nullable DataStreamerReceiverMessage updaterMsg,
+        @Nullable DataStreamerBuiltInUpdater builtInUpdater,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
@@ -131,6 +137,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.resTopicId = resTopicId;
         this.cacheName = cacheName;
         this.updaterMsg = updaterMsg;
+        this.builtInUpdater = builtInUpdater;
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
@@ -157,9 +164,9 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         return cacheName;
     }
 
-    /** @return Updater, {@code null} for the default one. */
-    @Nullable StreamReceiver<?, ?> updater() {
-        return updaterMsg != null ? updaterMsg.receiver() : null;
+    /** @return Updater: the one carried by the request, or the streamer's own that it named. */
+    StreamReceiver<?, ?> updater() {
+        return updaterMsg != null ? updaterMsg.receiver() : builtInUpdater.updater();
     }
 
     /** @return Entries to update. */

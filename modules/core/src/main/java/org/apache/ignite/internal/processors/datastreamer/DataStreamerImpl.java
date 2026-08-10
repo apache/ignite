@@ -152,8 +152,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver in its message; {@code null} for {@link #ISOLATED_UPDATER}. */
-    private volatile DataStreamerReceiverMessage rcvrMsg;
+    /** Cache receiver in its message. */
+    private volatile DataStreamerReceiverMessage rcvrMsg = new DataStreamerReceiverMessage(ISOLATED_UPDATER);
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -492,14 +492,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** @return Cache receiver. */
     @SuppressWarnings("unchecked")
     private StreamReceiver<K, V> receiver() {
-        DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
-
-        return rcvrMsg0 == null ? ISOLATED_UPDATER : (StreamReceiver<K, V>)rcvrMsg0.receiver();
+        return (StreamReceiver<K, V>)rcvrMsg.receiver();
     }
 
     /** @return {@code True} if the default, Isolated receiver is in use. */
     private boolean isolated() {
-        return rcvrMsg == null;
+        return rcvrMsg.receiver() == ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -517,7 +515,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvrMsg = allow ? new DataStreamerReceiverMessage(DataStreamerCacheUpdaters.<K, V>individual()) : null;
+        rcvrMsg = new DataStreamerReceiverMessage(allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER);
     }
 
     /** {@inheritDoc} */
@@ -1999,11 +1997,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
 
+                // The updaters the streamer ships with are named rather than sent: every node has them.
+                DataStreamerBuiltInUpdater builtIn = DataStreamerBuiltInUpdater.of(rcvrMsg0.receiver());
+
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicId,
                     cacheName,
-                    rcvrMsg0,
+                    builtIn == null ? rcvrMsg0 : null,
+                    builtIn,
                     entries,
                     true,
                     skipStore,
@@ -2012,7 +2014,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? jobPda0.deployClass().getName() : null,
                     dep == null,
                     topVer,
-                    rcvrMsg0 == null ? partId : NO_STRIPE);
+                    builtIn == DataStreamerBuiltInUpdater.ISOLATED ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
