@@ -491,17 +491,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         rcvrMsg = builtIn != null ? builtIn.message() : new DataStreamerReceiverMessage(rcvr);
     }
 
-    /** @return Message of the receiver in use, the Isolated updater until one is set. */
+    /** @return Message of the receiver in use, a new one naming the Isolated updater until a receiver is set. */
     private DataStreamerReceiverMessage receiverMessage() {
         DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
 
         return rcvrMsg0 != null ? rcvrMsg0 : DataStreamerBuiltInUpdater.ISOLATED.message();
     }
 
-    /** @return Cache receiver. */
+    /** @return Cache receiver, the Isolated updater until one is set. */
     @SuppressWarnings("unchecked")
     private StreamReceiver<K, V> receiver() {
-        return (StreamReceiver<K, V>)receiverMessage().receiver();
+        DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
+
+        return (StreamReceiver<K, V>)(rcvrMsg0 == null ? ISOLATED_UPDATER : rcvrMsg0.receiver());
     }
 
     /** {@inheritDoc} */

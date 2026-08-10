@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The built-in updaters. Every node has them, so a request names the one it needs instead of carrying a serialized
- * copy. The message naming one is built on demand: a node that streams with a custom receiver builds none.
+ * copy.
  */
 enum DataStreamerBuiltInUpdater {
     /** {@link DataStreamerImpl#ISOLATED_UPDATER}. */
@@ -40,9 +40,6 @@ enum DataStreamerBuiltInUpdater {
     /** */
     private final StreamReceiver<?, ?> updater;
 
-    /** */
-    private DataStreamerReceiverMessage msg;
-
     /** @param updater Updater this constant stands for. */
     DataStreamerBuiltInUpdater(StreamReceiver<?, ?> updater) {
         this.updater = updater;
@@ -53,12 +50,9 @@ enum DataStreamerBuiltInUpdater {
         return updater;
     }
 
-    /** @return Message naming this updater; one per constant, as a built-in updater never changes. */
+    /** @return New message naming this updater. */
     DataStreamerReceiverMessage message() {
-        if (msg == null)
-            msg = new DataStreamerReceiverMessage(this);
-
-        return msg;
+        return new DataStreamerReceiverMessage(this);
     }
 
     /**
