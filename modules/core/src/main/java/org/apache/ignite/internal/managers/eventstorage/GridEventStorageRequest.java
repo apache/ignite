@@ -17,19 +17,15 @@
 
 package org.apache.ignite.internal.managers.eventstorage;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 
@@ -48,26 +44,13 @@ public class GridEventStorageRequest implements DeferredUnmarshalMessage {
     @Order(1)
     byte[] filterBytes;
 
-    /** */
+    /** Deployment of the filter classes. */
     @Order(2)
-    IgniteUuid clsLdrId;
+    GridDeploymentInfoMessage depInfo;
 
     /** */
     @Order(3)
-    DeploymentMode depMode;
-
-    /** */
-    @Order(4)
     String filterClsName;
-
-    /** */
-    @Order(5)
-    String userVer;
-
-    /** Node class loader participants. */
-    @GridToStringInclude
-    @Order(6)
-    Map<UUID, IgniteUuid> ldrParties;
 
     /** */
     public GridEventStorageRequest() {
@@ -77,24 +60,12 @@ public class GridEventStorageRequest implements DeferredUnmarshalMessage {
     /**
      * @param resTopicId Id of the node waiting for the response.
      * @param filter Query filter.
-     * @param clsLdrId Class loader ID.
-     * @param depMode Deployment mode.
-     * @param userVer User version.
-     * @param ldrParties Node loader participant map.
+     * @param depInfo Deployment of the filter classes.
      */
-    GridEventStorageRequest(
-        IgniteUuid resTopicId,
-        IgnitePredicate<?> filter,
-        IgniteUuid clsLdrId,
-        DeploymentMode depMode,
-        String userVer,
-        Map<UUID, IgniteUuid> ldrParties) {
+    GridEventStorageRequest(IgniteUuid resTopicId, IgnitePredicate<?> filter, GridDeploymentInfo depInfo) {
         this.resTopicId = resTopicId;
         this.filter = filter;
-        this.clsLdrId = clsLdrId;
-        this.depMode = depMode;
-        this.userVer = userVer;
-        this.ldrParties = ldrParties;
+        this.depInfo = new GridDeploymentInfoMessage(depInfo);
 
         filterClsName = filter.getClass().getName();
     }
@@ -109,29 +80,14 @@ public class GridEventStorageRequest implements DeferredUnmarshalMessage {
         return filter;
     }
 
-    /** @return Class loader ID. */
-    IgniteUuid classLoaderId() {
-        return clsLdrId;
-    }
-
-    /** @return Deployment mode. */
-    DeploymentMode deploymentMode() {
-        return depMode;
+    /** @return Deployment of the filter classes. */
+    GridDeploymentInfo deploymentInfo() {
+        return depInfo;
     }
 
     /** @return Filter class name. */
     String filterClassName() {
         return filterClsName;
-    }
-
-    /** @return User version. */
-    String userVersion() {
-        return userVer;
-    }
-
-    /** @return Node class loader participant map. */
-    @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
-        return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 
     /** {@inheritDoc} */
