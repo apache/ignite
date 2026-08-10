@@ -759,7 +759,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             if (sentMsg instanceof DataStreamerRequest) {
                 DataStreamerReceiverMessage updaterMsg = ((DataStreamerRequest)sentMsg).updaterMsg;
 
-                sentUpdaters.add(updaterMsg.custom() ? updaterMsg.rcvrBytes : updaterMsg.builtIn);
+                sentUpdaters.add(updaterMsg.customUpdater() ? updaterMsg.rcvrBytes : updaterMsg.builtIn);
             }
 
             // Send stale topology only in the first request to avoid indefinitely getting failures.

@@ -57,7 +57,7 @@ public class DataStreamerReceiverMessage implements Message {
     }
 
     /** @return {@code True} if this is a custom receiver, {@code false} if a built-in one. */
-    boolean custom() {
+    boolean customUpdater() {
         return builtIn == null;
     }
 

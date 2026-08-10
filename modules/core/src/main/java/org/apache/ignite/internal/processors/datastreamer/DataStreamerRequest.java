@@ -159,7 +159,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
 
     /** @return {@code True} if the request sends a custom updater rather than naming a built-in one. */
     boolean customUpdater() {
-        return updaterMsg.custom();
+        return updaterMsg.customUpdater();
     }
 
     /** @return Updater. */
