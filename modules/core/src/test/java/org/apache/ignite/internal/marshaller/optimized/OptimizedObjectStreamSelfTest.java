@@ -340,7 +340,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPool() throws Exception {
+    public void testMultithreadMarshalling() throws Exception {
         final TestObject obj = new TestObject();
 
         obj.longVal = 100L;
@@ -354,22 +354,14 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         final OptimizedMarshaller marsh = Marshallers.optimized();
 
         marsh.setContext(CTX);
+        multithreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < 50; i++)
+                    assertEquals(obj, marsh.unmarshal(marsh.marshal(obj), null));
 
-        marsh.setPoolSize(5);
-
-        try {
-            multithreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    for (int i = 0; i < 50; i++)
-                        assertEquals(obj, marsh.unmarshal(marsh.marshal(obj), null));
-
-                    return null;
-                }
-            }, 20);
-        }
-        finally {
-            marsh.setPoolSize(0);
-        }
+                return null;
+            }
+        }, 20);
     }
 
     /**
@@ -1027,7 +1019,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReadToArray() throws Exception {
-        OptimizedObjectStreamRegistry reg = new OptimizedObjectSharedStreamRegistry();
+        OptimizedObjectSharedStreamRegistry reg = new OptimizedObjectSharedStreamRegistry();
 
         OptimizedObjectInputStream in = reg.in();
 
@@ -1181,7 +1173,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         OptimizedObjectOutputStream out = null;
         OptimizedObjectInputStream in = null;
 
-        OptimizedObjectStreamRegistry reg = new OptimizedObjectSharedStreamRegistry();
+        OptimizedObjectSharedStreamRegistry reg = new OptimizedObjectSharedStreamRegistry();
 
         try {
             out = reg.out();
