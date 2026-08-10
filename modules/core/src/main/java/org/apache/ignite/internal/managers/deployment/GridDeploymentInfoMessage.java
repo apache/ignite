@@ -28,9 +28,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Deployment info bean.
+ * Deployment of classes, as it travels inside the messages carrying them.
  */
-public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Serializable {
+public class GridDeploymentInfoMessage implements Message, GridDeploymentInfo, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,7 +54,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Seri
     /**
      * Empty constructor for a message factory.
      */
-    public GridDeploymentInfoBean() {
+    public GridDeploymentInfoMessage() {
         /* No-op. */
     }
 
@@ -64,7 +64,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Seri
      * @param depMode Deployment mode.
      * @param participants Participants.
      */
-    public GridDeploymentInfoBean(
+    public GridDeploymentInfoMessage(
         IgniteUuid clsLdrId,
         String userVer,
         DeploymentMode depMode,
@@ -79,7 +79,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Seri
     /**
      * @param dep Grid deployment.
      */
-    public GridDeploymentInfoBean(GridDeploymentInfo dep) {
+    public GridDeploymentInfoMessage(GridDeploymentInfo dep) {
         clsLdrId = dep.classLoaderId();
         depMode = dep.deployMode();
         userVer = dep.userVersion();
@@ -118,12 +118,12 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Seri
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return o == this || o instanceof GridDeploymentInfoBean &&
-            clsLdrId.equals(((GridDeploymentInfoBean)o).clsLdrId);
+        return o == this || o instanceof GridDeploymentInfoMessage &&
+            clsLdrId.equals(((GridDeploymentInfoMessage)o).clsLdrId);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDeploymentInfoBean.class, this);
+        return S.toString(GridDeploymentInfoMessage.class, this);
     }
 }

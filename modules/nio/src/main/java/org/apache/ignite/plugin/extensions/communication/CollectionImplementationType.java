@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rollingupgrade.feature;
+package org.apache.ignite.plugin.extensions.communication;
 
-/** */
-public class TestPluginReleaseFeatures_3_0_0 {
-    /** */
-    public static final IgniteFeature VER_3_0_0_ID_2_FEATURE = new TestPluginFeature(2);
+/** Collection implementation a {@link MessageCollectionType} is read back into. */
+public enum CollectionImplementationType {
+    /** {@link java.util.ArrayList} (the default implementation type). */
+    ARRAY_LIST,
 
-    /** */
-    public static final IgniteFeature VER_3_0_0_ID_3_FEATURE = new TestPluginFeature(3);
+    /** {@link java.util.HashSet}. */
+    HASH_SET,
+
+    /** {@link java.util.EnumSet}. */
+    ENUM_SET
 }
