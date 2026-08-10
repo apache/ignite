@@ -56,12 +56,14 @@ enum DataStreamerBuiltInUpdater {
     }
 
     /**
+     * Matches by class, so an updater built anew is still recognized as built-in: these updaters hold no state.
+     *
      * @param updater Updater to look up.
      * @return Constant standing for {@code updater}, or {@code null} when it is a custom one.
      */
     static @Nullable DataStreamerBuiltInUpdater of(StreamReceiver<?, ?> updater) {
         for (DataStreamerBuiltInUpdater builtIn : values()) {
-            if (builtIn.updater == updater)
+            if (builtIn.updater.getClass() == updater.getClass())
                 return builtIn;
         }
 
