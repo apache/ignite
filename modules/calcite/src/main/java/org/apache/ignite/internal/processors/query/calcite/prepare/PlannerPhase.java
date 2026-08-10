@@ -298,8 +298,8 @@ public enum PlannerPhase {
                     MergeJoinConverterRule.INSTANCE,
                     CorrelatedNestedLoopJoinRule.INSTANCE,
                     CorrelateToNestedLoopRule.INSTANCE,
-                    NestedLoopJoinConverterRule.INSTANCE,
-                    HashJoinConverterRule.INSTANCE,
+                    //NestedLoopJoinConverterRule.INSTANCE,
+                    //HashJoinConverterRule.INSTANCE,
 
                     // This rule replaces input refs to literals in the window agg calls.
                     // Since ignite aggregate calculation bounded to input field index - this rule should be excluded from rule set.

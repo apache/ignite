@@ -25,9 +25,9 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_CNL_JOIN;
-import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_HASH_JOIN;
-import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NO_NL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.HASH_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.NL_JOIN;
+import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
 
 /**
  * Tests correlated queries.
@@ -96,22 +96,45 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
         sql("INSERT INTO test1 VALUES (11, 1), (12, 2), (13, 3)");
         sql("INSERT INTO test2 VALUES (11, 1), (12, 1), (13, 4)");
 
-        for (HintDefinition noHint : List.of(NO_NL_JOIN, NO_CNL_JOIN, NO_HASH_JOIN)) {
-            log.info(">>> Check with: " + noHint);
-            // Collision by correlate variables in the left hand.
-            assertQuery("SELECT /*+ %s */ * FROM test1 WHERE ".formatted(noHint) +
-                "EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<>test2.c) " +
-                "AND NOT EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<test2.c)")
-                .returns(12, 2)
-                .check();
+        // Collision by correlate variables in the left hand.
+        assertQuery("SELECT * FROM test1 WHERE " +
+            "EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<>test2.c) " +
+            "AND NOT EXISTS(SELECT * FROM test2 WHERE test1.a=test2.a AND test1.b<test2.c)")
+            .returns(12, 2)
+            .check();
 
+        for (HintDefinition noHint : List.of(MERGE_JOIN, HASH_JOIN, NL_JOIN)) {
+            log.info(">>> Check with: " + noHint);
             // Collision by correlate variables in both, left and right hands.
-            assertQuery("SELECT /*+ %s */ * FROM test1 WHERE ".formatted(noHint) +
-                "EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<>test2.c) " +
+            assertQuery("SELECT * FROM test1 WHERE " +
+                "EXISTS(SELECT /*+ %s */ * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<>test2.c) ".formatted(noHint) +
                 "AND NOT EXISTS(SELECT * FROM test2 WHERE (SELECT test1.a)=test2.a AND (SELECT test1.b)<test2.c)")
                 .returns(12, 2)
                 .check();
         }
+    }
+
+    @Test
+    public void testMergeJoinUnderCorrelateSurvivesRewind() {
+        sql("CREATE TABLE t0 (a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("CREATE TABLE t1 (a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("CREATE TABLE t2 (a INTEGER, b INTEGER) WITH " + atomicity());
+
+        sql("INSERT INTO t0 VALUES (1, 1), (2, 2), (3, 3)");
+        sql("INSERT INTO t1 VALUES (1, 1), (2, 2), (3, 3)");
+        sql("INSERT INTO t2 VALUES (1, 1)");
+
+        String qry = "SELECT t0.a, (SELECT /*+ MERGE_JOIN */ count(*) FROM t1 LEFT JOIN t2 ON t1.a = t2.a " +
+            "WHERE t1.a = (SELECT t0.a)) FROM t0";
+
+        // The defect is only reachable while the plan keeps a merge join under the correlate.
+        assertQuery(qry)
+            .matches(QueryChecker.containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
+            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
+            .returns(1, 1L)
+            .returns(2, 1L)
+            .returns(3, 1L)
+            .check();
     }
 
     /**
