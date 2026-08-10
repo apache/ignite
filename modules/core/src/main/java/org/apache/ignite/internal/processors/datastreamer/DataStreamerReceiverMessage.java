@@ -22,11 +22,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.stream.StreamReceiver;
+import org.jetbrains.annotations.Nullable;
 
 /** DataStreamer cache receiver/updater message. */
 @UseBinaryMarshaller
 public class DataStreamerReceiverMessage implements Message {
-    /** DataStreamer cache receiver/updater; {@code null} when {@link #builtIn} names it. */
+    /** Custom cache receiver/updater; {@code null} when {@link #builtIn} is effective. */
+    @Nullable
     @Marshalled("rcvrBytes")
     StreamReceiver<?, ?> rcvr;
 
@@ -34,7 +36,8 @@ public class DataStreamerReceiverMessage implements Message {
     @Order(0)
     volatile byte[] rcvrBytes;
 
-    /** The updater every node has; {@code null} when {@link #rcvr} is a user one. */
+    /** A built-in updater every node has; {@code null} when {@link #rcvr} is effective. */
+    @Nullable
     @Order(1)
     DataStreamerBuiltInUpdater builtIn;
 
@@ -43,24 +46,24 @@ public class DataStreamerReceiverMessage implements Message {
         // No-op.
     }
 
-    /** @param rcvr User receiver. */
+    /** @param rcvr Custom receiver. */
     DataStreamerReceiverMessage(StreamReceiver<?, ?> rcvr) {
         assert DataStreamerBuiltInUpdater.of(rcvr) == null : "A built-in updater travels by name: " + rcvr;
 
         this.rcvr = rcvr;
     }
 
-    /** @param builtIn Updater every node has, named rather than carried. */
+    /** @param builtIn A built-in updater every node has, named rather than carried. */
     DataStreamerReceiverMessage(DataStreamerBuiltInUpdater builtIn) {
         this.builtIn = builtIn;
     }
 
-    /** @return {@code True} if the receiver travels with this message rather than being named. */
-    boolean user() {
+    /** @return {@code True} if this is a custom receiver, {@code false} if a built-in one. */
+    boolean custom() {
         return builtIn == null;
     }
 
-    /** @return Receiver: the one carried here, or the node's own that this message names. */
+    /** @return Receiver: the custom one carried here, or the built-in one this message names. */
     StreamReceiver<?, ?> receiver() {
         return builtIn == null ? rcvr : builtIn.updater();
     }

@@ -667,6 +667,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
+        // Without overwrite the Isolated updater is in use, and it is the one the warning is about.
         if (!allowOverwrite() && inconsistencyWarned.compareAndSet(false, true))
             log.warning(WRN_INCONSISTENT_UPDATES);
 
