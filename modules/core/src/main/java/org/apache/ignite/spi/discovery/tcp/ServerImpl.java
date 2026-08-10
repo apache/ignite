@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -1333,16 +1332,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 try {
                     IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
-                    Integer res;
-
-                    try {
-                        SecurityUtils.serializeVersion(1);
-
-                        res = sendMessageDirectly(joinMsg, addr, timeoutHelper);
-                    }
-                    finally {
-                        SecurityUtils.restoreDefaultSerializeVersion();
-                    }
+                    Integer res = sendMessageDirectly(joinMsg, addr, timeoutHelper);
 
                     assert res != null;
 
@@ -3662,8 +3652,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs);
 
                             try {
-                                SecurityUtils.serializeVersion(1);
-
                                 long tsNanos = System.nanoTime();
 
                                 if (timeoutHelper == null)
@@ -3706,8 +3694,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                             }
                             finally {
-                                SecurityUtils.restoreDefaultSerializeVersion();
-
                                 clearNodeAddedMessage(msg);
                             }
 
@@ -6827,8 +6813,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 while (!isInterrupted()) {
                     try {
-                        SecurityUtils.serializeVersion(1);
-
                         // Use inifinite timeout for accepting new messages.
                         TcpDiscoveryAbstractMessage msg = spi.readMessage(ses, 0);
 
@@ -7120,9 +7104,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", rmtNodeId=" + nodeId + ']', e);
 
                         return;
-                    }
-                    finally {
-                        SecurityUtils.restoreDefaultSerializeVersion();
                     }
                 }
             }
