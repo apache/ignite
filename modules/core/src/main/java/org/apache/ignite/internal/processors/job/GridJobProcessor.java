@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.job;
 
 import java.util.AbstractCollection;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -56,7 +54,6 @@ import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSessionImpl;
-import org.apache.ignite.internal.GridJobSiblingImpl;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1179,11 +1176,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      * @param node Node.
      * @param req Request.
+     * @param locJobSiblings Local siblings of the job. TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28964
      */
     @SuppressWarnings("TooBroadScope")
-    public void processJobExecuteRequest(ClusterNode node, final GridJobExecuteRequest req) {
+    public void processJobExecuteRequest(
+        ClusterNode node, GridJobExecuteRequest req,
+        @Nullable Collection<ComputeJobSibling> locJobSiblings
+    ) {
         if (log.isDebugEnabled())
-            log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
+            log.debug("Processing job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
         PartitionsReservation partsReservation = null;
 
@@ -1198,7 +1199,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (!rwLock.tryReadLock()) {
             if (log.isDebugEnabled())
-                log.debug("Received job execution request while stopping this node (will ignore): " + req);
+                log.debug("Processing job execution request while stopping this node (will ignore): " + req);
 
             return;
         }
@@ -1255,25 +1256,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     try {
                         // The job payload waits for this point: only now is there a deployment to unmarshal it with.
                         if (!loc) {
+                            // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28964
                             MessageMarshalling.unmarshal(req, ctx, null,
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
-                        }
-
-                        // TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
-                        List<IgniteUuid> siblJobsIds = req.siblingJobsIds();
-                        List<IgniteUuid> siblJobsSesIds = req.siblingJobsSessionIds();
-
-                        assert F.isEmpty(siblJobsIds) == F.isEmpty(siblJobsSesIds);
-
-                        Collection<ComputeJobSibling> siblings = null;
-
-                        if (!F.isEmpty(siblJobsIds)) {
-                            assert siblJobsSesIds.size() == siblJobsIds.size();
-
-                            siblings = new ArrayList<>(siblJobsIds.size());
-
-                            for (int i = 0; i < siblJobsIds.size(); ++i)
-                                siblings.add(new GridJobSiblingImpl(siblJobsSesIds.get(i), siblJobsIds.get(i), node.id(), ctx));
                         }
 
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
@@ -1286,7 +1271,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTopologyPredicate(),
                             req.startTaskTime(),
                             endTime,
-                            siblings,
+                            locJobSiblings,
                             req.getSessionAttributes(),
                             req.sessionFullSupport(),
                             req.internal(),
@@ -2228,7 +2213,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             assert node != null;
 
-            processJobExecuteRequest(node, (GridJobExecuteRequest)msg);
+            processJobExecuteRequest(node, (GridJobExecuteRequest)msg, null);
         }
     }
 
