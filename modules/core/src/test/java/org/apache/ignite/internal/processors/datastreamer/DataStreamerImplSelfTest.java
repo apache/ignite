@@ -160,11 +160,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         assertEquals("The receiver was marshalled more than once", 1, sentUpdaters.size());
 
-        assertTrue("The receiver was named instead of sent", F.first(sentUpdaters) instanceof byte[]);
+        assertTrue("A custom receiver must be sent, not named", F.first(sentUpdaters) instanceof byte[]);
     }
 
     /**
-     * Every built-in updater is named rather than sent, and the data still lands.
+     * Every built-in updater is sent as a name rather than as a copy, and the data still lands.
      *
      * @throws Exception If failed.
      */
@@ -173,7 +173,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         for (DataStreamerBuiltInUpdater builtIn : DataStreamerBuiltInUpdater.values()) {
             startGridsAndStream(builtIn.updater());
 
-            assertEquals("Expected " + builtIn + " to be named, not sent", Collections.singleton(builtIn),
+            assertEquals("Expected " + builtIn + " to be sent as a name", Collections.singleton(builtIn),
                 sentUpdaters);
 
             IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
@@ -187,8 +187,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
     /**
      * Starts two nodes and streams {@link #KEYS_COUNT} entries from the first one, a request per entry, collecting
-     * the updaters they carry. Waits for the partition map first: until it is ready every partition is primary here,
-     * and a streamer that overwrites sends nothing to the remote node.
+     * the updaters they carry, custom or built-in. Waits for the partition map first: until it is ready every
+     * partition is primary here, and a streamer that overwrites sends nothing to the remote node.
      *
      * @param rcvr Receiver to stream with.
      * @throws Exception If failed.
@@ -735,7 +735,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         return cacheCfg;
     }
 
-    /** A custom receiver: unlike the built-in ones, it travels with the requests. */
+    /** A custom receiver: unlike the built-in ones, it is sent with the requests. */
     private static class TestReceiver implements StreamReceiver<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;

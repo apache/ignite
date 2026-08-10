@@ -152,8 +152,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver in the message that carries it; {@code null} while none is set. */
-    private volatile DataStreamerReceiverMessage rcvrMsg;
+    /** Message of the cache receiver; {@code null} until a receiver is set, the Isolated updater being used so far. */
+    private volatile @Nullable DataStreamerReceiverMessage rcvrMsg;
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -491,14 +491,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         rcvrMsg = builtIn != null ? builtIn.message() : new DataStreamerReceiverMessage(rcvr);
     }
 
-    /** @return Message of the receiver in use, a new one naming the Isolated updater until a receiver is set. */
+    /** @return Message of the receiver in use, one of the Isolated updater until a receiver is set. */
     private DataStreamerReceiverMessage receiverMessage() {
         DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
 
         return rcvrMsg0 != null ? rcvrMsg0 : DataStreamerBuiltInUpdater.ISOLATED.message();
     }
 
-    /** @return Cache receiver, the Isolated updater until one is set. */
+    /** @return Cache receiver, custom or built-in, the Isolated updater until one is set. */
     @SuppressWarnings("unchecked")
     private StreamReceiver<K, V> receiver() {
         DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;

@@ -31,7 +31,7 @@ public class DataStreamerReceiverMessage implements Message {
     @Marshalled("rcvrBytes")
     @Nullable StreamReceiver<?, ?> rcvr;
 
-    /** Serialized {@link #rcvr}. */
+    /** Serialized {@link #rcvr}; {@code null} when {@link #builtIn} is effective. */
     @Order(0)
     volatile @Nullable byte[] rcvrBytes;
 
@@ -51,7 +51,7 @@ public class DataStreamerReceiverMessage implements Message {
         this.rcvr = rcvr;
     }
 
-    /** @param builtIn Built-in updater every node has, named rather than sent. */
+    /** @param builtIn Built-in updater, sent as a name rather than as a copy. */
     DataStreamerReceiverMessage(DataStreamerBuiltInUpdater builtIn) {
         this.builtIn = builtIn;
     }
@@ -61,7 +61,7 @@ public class DataStreamerReceiverMessage implements Message {
         return builtIn == null;
     }
 
-    /** @return Receiver: the custom one sent here, or the built-in one this message names. */
+    /** @return Receiver: the custom one sent here, or the built-in one of this node. */
     StreamReceiver<?, ?> receiver() {
         return builtIn == null ? rcvr : builtIn.updater();
     }
