@@ -22,6 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -50,17 +51,12 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     @Order(3)
     long ttl;
 
-    /** Base time to calculate {@link #expireTime()}. 0 if no expiration is used. */
+    /** Base time to calculate {@link #expireTime()}. */
     long initTime;
 
-    /**
-     * Expiration time delta to transfer. {@link Long#MIN_VALUE} means no expiration enabled. In theory, we can get
-     * the calculating time delta thread paused causing a negative delta value. This shouldn't be treated as disabled
-     * expiration. Correct behavior is expired timeout. {@link Long#MIN_VALUE} is taken as one with unrealistic chance
-     * to appear.
-     */
+    /** Expiration time delta to transfer. -1 if no expiration is used. */
     @Order(4)
-    long expireTimeDelta = Long.MIN_VALUE;
+    long expireTimeDelta = -1L;
 
     /** Entry version. */
     @Order(5)
@@ -77,7 +73,7 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
      * see {@link #expireTimeDelta}.
      */
     public GridCacheEntryInfo() {
-        initTime = System.currentTimeMillis();
+        initTime = U.currentTimeMillis();
     }
 
     /** */
@@ -85,11 +81,14 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
         assert expireTime >= 0;
 
         if (expireTime != 0) {
-            // In theory, here we can get the thread paused causing a negative delta value. Possible negative values
-            // shouldn't be treated as disabled expiration. Correct behavior is expired timeout.
-            initTime = System.currentTimeMillis();
+            initTime = U.currentTimeMillis();
 
             expireTimeDelta = expireTime - initTime;
+
+            // In theory, here we can get the thread paused causing a negative delta value. Possible negative values
+            // shouldn't be treated as disabled expiration. Correct behavior is expired timeout.
+            if (expireTimeDelta < 0)
+                expireTimeDelta = 0;
         }
 
         this.cacheId = cacheId;
@@ -129,9 +128,10 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
      * @return Expire time >= 0. 0 means no expiration is set.
      */
     public long expireTime() {
-        assert initTime >= 0;
+        assert initTime > 0;
+        assert expireTimeDelta >= -1L;
 
-        return expireTimeDelta == Long.MIN_VALUE ? 0L : initTime + expireTimeDelta;
+        return expireTimeDelta == -1L ? 0L : initTime + expireTimeDelta;
     }
 
     /**
