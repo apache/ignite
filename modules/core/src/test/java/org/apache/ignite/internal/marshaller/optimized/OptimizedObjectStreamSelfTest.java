@@ -82,7 +82,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap<>();
 
     /**
      * @throws Exception If failed.
@@ -276,7 +276,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     @Test
     public void testRequireSerializable() throws Exception {
         try {
-            OptimizedMarshaller marsh = Marshallers.optimized(true);
+            OptimizedMarshaller marsh = Marshallers.optimizedForSerializable();
 
             marsh.setContext(CTX);
 
@@ -299,7 +299,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedUnmarshallingLogging() throws Exception {
-        OptimizedMarshaller marsh = Marshallers.optimized(true);
+        OptimizedMarshaller marsh = Marshallers.optimizedForSerializable();
 
         marsh.setContext(CTX);
 
@@ -321,7 +321,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailedMarshallingLogging() throws Exception {
-        OptimizedMarshaller marsh = Marshallers.optimized(true);
+        OptimizedMarshaller marsh = Marshallers.optimizedForSerializable();
 
         marsh.setContext(CTX);
 
@@ -351,7 +351,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Arrays.fill(obj.longArr, 100L);
         Arrays.fill(obj.doubleArr, 100.0d);
 
-        final OptimizedMarshaller marsh = Marshallers.optimized();
+        final OptimizedMarshaller marsh = Marshallers.optimizedForSerializable();
 
         marsh.setContext(CTX);
         multithreaded(new Callable<Object>() {
@@ -1178,7 +1178,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         try {
             out = reg.out();
 
-            out.context(clsMap, CTX, null, true);
+            out.context(clsMap, CTX, true);
 
             out.writeObject(obj);
 
@@ -1186,7 +1186,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = reg.in();
 
-            in.context(clsMap, CTX, null, getClass().getClassLoader());
+            in.context(clsMap, CTX, getClass().getClassLoader());
 
             in.in().bytes(arr, arr.length);
 

@@ -60,20 +60,19 @@ public class Marshallers {
         return factory.jdk();
     }
 
-    /** @return Optimized marshaller instance. */
-    public static OptimizedMarshaller optimized() {
-        return factory.optimized();
+    /** @return Optimized marshaller instance for clasees implementing {@link Serializable}, only. */
+    public static OptimizedMarshaller optimizedForSerializable() {
+        return factory.optimizedForSerializable();
     }
 
     /**
-     * Creates new marshaller providing whether it should
-     * require {@link Serializable} interface or not.
+     * Creates new marshaller with support of all classes.
+     * No {@code implements Serializable} required.
      *
-     * @param requireSer Whether to require {@link Serializable}.
      * @return Optimized marshaller instance.
      */
-    public static OptimizedMarshaller optimized(boolean requireSer) {
-        return factory.optimized(requireSer);
+    public static OptimizedMarshaller optimizedForAllClasses() {
+        return factory.optimizedForAllClasses();
     }
 
     /**
