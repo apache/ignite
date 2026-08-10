@@ -166,7 +166,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
-        Collection<ComputeJobSibling> siblings,
+        @Nullable Collection<ComputeJobSibling> siblings,
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
         boolean fullSup,
