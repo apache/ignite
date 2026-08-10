@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 
-/** Batch of streamed entries. The receiver it carries is a user class, hence the deferred unmarshalling. */
+/** Batch of streamed entries. The updater is unmarshalled by the consumer, which has the deployment class loader. */
 public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
@@ -49,10 +49,10 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     @Order(2)
     String cacheName;
 
-    /** Cache receiver, in the message that carries it. Out of {@code toString()}: it is a user object. */
+    /** Cache updater. */
     @GridToStringExclude
     @Order(3)
-    StreamReceiverMessage updaterMsg;
+    DataStreamerReceiverMessage updaterMsg;
 
     /** Entries to update. */
     @Order(4)
@@ -99,7 +99,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterMsg Cache receiver, in the message that carries it.
+     * @param updaterMsg Cache updater.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -114,7 +114,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         long reqId,
         IgniteUuid resTopicId,
         @Nullable String cacheName,
-        StreamReceiverMessage updaterMsg,
+        DataStreamerReceiverMessage updaterMsg,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
@@ -158,7 +158,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     }
 
     /** @return Updater. */
-    StreamReceiver<?, ?> updater() {
+    @Nullable StreamReceiver<?, ?> updater() {
         return updaterMsg != null ? updaterMsg.receiver() : null;
     }
 

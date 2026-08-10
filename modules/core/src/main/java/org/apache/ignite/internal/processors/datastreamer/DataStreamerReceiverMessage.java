@@ -23,32 +23,24 @@ import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.stream.StreamReceiver;
 
-/**
- * The receiver of a streamer on its way to the nodes that own the data: a user object here, its serialized form on
- * the wire. One instance serves every batch of a streamer, so the receiver is marshalled once and the batches share
- * the result; a streamer given another receiver builds another instance.
- */
+/** Cache updater together with its serialized form, shared by the batches of one streamer. */
 @UseBinaryMarshaller
-public class StreamReceiverMessage implements Message {
+public class DataStreamerReceiverMessage implements Message {
     /** */
     @Marshalled("rcvrBytes")
     StreamReceiver<?, ?> rcvr;
 
-    /**
-     * Serialized {@link #rcvr}, written by whichever batch is marshalled first and read by the rest. Those batches
-     * leave on different threads, hence the {@code volatile}: a reader seeing the reference before the contents would
-     * skip the marshalling and send a half-written array.
-     */
+    /** Serialized {@link #rcvr}. Volatile: the batches sharing it are marshalled on different threads. */
     @Order(0)
     volatile byte[] rcvrBytes;
 
-    /** Empty constructor. */
-    public StreamReceiverMessage() {
+    /** Empty constructor for serialization purposes. */
+    public DataStreamerReceiverMessage() {
         // No-op.
     }
 
     /** @param rcvr Receiver. */
-    StreamReceiverMessage(StreamReceiver<?, ?> rcvr) {
+    DataStreamerReceiverMessage(StreamReceiver<?, ?> rcvr) {
         this.rcvr = rcvr;
     }
 

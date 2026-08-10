@@ -90,7 +90,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     private static boolean needStaleTop = false;
 
     /** Receiver carriers of the streamer requests sent since the current test started. */
-    private static final Collection<StreamReceiverMessage> sentReceivers = new ConcurrentLinkedQueue<>();
+    private static final Collection<DataStreamerReceiverMessage> sentReceivers = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -175,11 +175,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         assertTrue("Expected more than one request to a remote node, got " + sentReceivers.size(),
             sentReceivers.size() > 1);
 
-        StreamReceiverMessage first = F.first(sentReceivers);
+        DataStreamerReceiverMessage first = F.first(sentReceivers);
 
         assertNotNull(first.rcvrBytes);
 
-        for (StreamReceiverMessage rcvr : sentReceivers)
+        for (DataStreamerReceiverMessage rcvr : sentReceivers)
             assertTrue("The receiver was marshalled more than once", first.rcvrBytes == rcvr.rcvrBytes);
     }
 
@@ -739,7 +739,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                             req.requestId(),
                             req.resTopicId,
                             req.cacheName(),
-                            new StreamReceiverMessage(req.updater()),
+                            new DataStreamerReceiverMessage(req.updater()),
                             req.entries(),
                             req.ignoreDeploymentOwnership(),
                             req.skipStore(),

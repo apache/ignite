@@ -153,7 +153,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
     /** Cache receiver, in the message that carries it to the remote nodes. */
-    private volatile StreamReceiverMessage rcvrMsg = new StreamReceiverMessage(ISOLATED_UPDATER);
+    private volatile DataStreamerReceiverMessage rcvrMsg = new DataStreamerReceiverMessage(ISOLATED_UPDATER);
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -486,7 +486,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public void receiver(StreamReceiver<K, V> rcvr) {
         A.notNull(rcvr, "rcvr");
 
-        rcvrMsg = new StreamReceiverMessage(rcvr);
+        rcvrMsg = new DataStreamerReceiverMessage(rcvr);
     }
 
     /** @return Cache receiver. */
@@ -510,7 +510,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvrMsg = new StreamReceiverMessage(allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER);
+        rcvrMsg = new DataStreamerReceiverMessage(allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER);
     }
 
     /** {@inheritDoc} */
@@ -1990,13 +1990,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-                StreamReceiverMessage rcvrMsg0 = rcvrMsg;
-
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicId,
                     cacheName,
-                    rcvrMsg0,
+                    rcvrMsg,
                     entries,
                     true,
                     skipStore,
@@ -2005,7 +2003,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? jobPda0.deployClass().getName() : null,
                     dep == null,
                     topVer,
-                    (rcvrMsg0.receiver() == ISOLATED_UPDATER) ? partId : NO_STRIPE);
+                    (rcvrMsg.receiver() == ISOLATED_UPDATER) ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
