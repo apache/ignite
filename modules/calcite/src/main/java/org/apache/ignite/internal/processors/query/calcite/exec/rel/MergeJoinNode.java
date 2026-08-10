@@ -84,9 +84,6 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
      */
     protected final boolean distributed;
 
-    /** Flag indicating that join is in finishing stage (one of the inputs are ended, no more rows will be produced). */
-    protected boolean finishing;
-
     /**
      * @param ctx Execution context.
      * @param comp Join expression.
@@ -242,17 +239,14 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
 
     /** */
     protected boolean checkJoinFinished() throws Exception {
-        if (!finishing) {
-            finishing = true;
+        if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
+            requested = 0;
             leftInBuf.clear();
             rightInBuf.clear();
             rightMaterialization = null;
             rightIdx = 0;
             drainMaterialization = false;
-        }
 
-        if (!distributed || (waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING)) {
-            requested = 0;
             downstream().end();
 
             return true;
