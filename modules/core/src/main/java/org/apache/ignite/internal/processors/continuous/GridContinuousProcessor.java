@@ -58,7 +58,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageResultsCollector;
@@ -951,7 +951,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         hnd = hnd.clone();
 
         String clsName = null;
-        GridDeploymentInfoBean dep = null;
+        GridDeploymentInfoMessage dep = null;
 
         if (ctx.config().isPeerClassLoadingEnabled()) {
             // Handle peer deployment for projection predicate.
@@ -965,7 +965,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 if (dep0 == null)
                     throw new IgniteDeploymentCheckedException("Failed to deploy projection predicate: " + nodeFilter);
 
-                dep = new GridDeploymentInfoBean(dep0);
+                dep = new GridDeploymentInfoMessage(dep0);
             }
         }
 
@@ -981,7 +981,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             reqData.deploymentInfo(dep);
         }
 
-        reqData.marshal(ctx);
+        if (ctx.config().isPeerClassLoadingEnabled()) {
+            // Handle peer deployment for other handler-specific objects.
+            hnd.p2pMarshal(ctx);
+        }
+
+        reqData.hndBytes = U.marshal(marsh, hnd);
+
+        if (nodeFilter != null)
+            reqData.nodeFilterBytes = U.marshal(marsh, nodeFilter);
 
         if (!immutableDiscoCustomMsg) {
             StartRoutineDiscoveryMessage msg = new StartRoutineDiscoveryMessage(routineId, reqData, Mode.MUTABLE);
@@ -1339,6 +1347,33 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Restores the objects a start request carries. The discovery layer reads the message on the thread that reads
+     * the ring, where obtaining a deployment must not happen, so the request keeps them serialized until here.
+     *
+     * @param msg Message carrying the request.
+     * @param sndId Node that started the routine.
+     */
+    private void unmarshalStartRequest(StartRoutineDiscoveryMessage msg, UUID sndId) throws IgniteCheckedException {
+        StartRequestData data = msg.startRequestData();
+
+        data.nodeFilter = U.unmarshal(marsh, data.nodeFilterBytes,
+            ctx.deploy().classLoader(data.depInfo, data.clsName, sndId));
+
+        if (data.hndBytes != null) {
+            data.hnd = U.unmarshal(marsh, data.hndBytes, U.resolveClassLoader(ctx.config()));
+
+            if (ctx.config().isPeerClassLoadingEnabled())
+                data.hnd.p2pUnmarshal(sndId, ctx);
+
+            if (data.keepBinary) {
+                assert data.hnd instanceof CacheContinuousQueryHandler : data.hnd;
+
+                ((CacheContinuousQueryHandler<?, ?>)data.hnd).keepBinary(true);
+            }
+        }
+    }
+
+    /**
      * @param node Sender.
      * @param req Start request.
      */
@@ -1353,7 +1388,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         IgniteCheckedException err = null;
 
         try {
-            data.unmarshal(ctx, node.id());
+            unmarshalStartRequest(req, node.id());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal start request data [nodeId=" + node.id() +
@@ -1495,7 +1530,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 Exception err = null;
 
                 try {
-                    reqData.unmarshal(ctx, snd.id());
+                    unmarshalStartRequest(msg, snd.id());
                 }
                 catch (IgniteCheckedException e) {
                     err = e;

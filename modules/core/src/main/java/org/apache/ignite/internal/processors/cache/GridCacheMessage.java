@@ -29,7 +29,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.StripedMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -65,7 +65,7 @@ public abstract class GridCacheMessage implements DeferredUnmarshalMessage, Stri
     /** */
     @GridToStringInclude
     @Order(1)
-    public GridDeploymentInfoBean depInfo;
+    public GridDeploymentInfoMessage depInfo;
 
     /** */
     @GridToStringInclude
@@ -257,8 +257,8 @@ public abstract class GridCacheMessage implements DeferredUnmarshalMessage, Stri
                 if (((GridDeployment)depInfo).local())
                     return;
 
-            this.depInfo = depInfo instanceof GridDeploymentInfoBean ?
-                (GridDeploymentInfoBean)depInfo : new GridDeploymentInfoBean(depInfo);
+            this.depInfo = depInfo instanceof GridDeploymentInfoMessage ?
+                (GridDeploymentInfoMessage)depInfo : new GridDeploymentInfoMessage(depInfo);
         }
     }
 
@@ -266,7 +266,7 @@ public abstract class GridCacheMessage implements DeferredUnmarshalMessage, Stri
      * @return Preset deployment info.
      * @see GridCacheDeployable#deployInfo()
      */
-    public GridDeploymentInfoBean deployInfo() {
+    public GridDeploymentInfoMessage deployInfo() {
         return depInfo;
     }
 
