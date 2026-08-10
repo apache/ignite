@@ -52,7 +52,7 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     long ttl;
 
     /** Base time to calculate {@link #expireTime()}. */
-    long initTime;
+    private long initTime;
 
     /** Expiration time delta to transfer. -1 if no expiration is used. */
     @Order(4)
@@ -69,8 +69,8 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     private boolean deleted;
 
     /**
-     * Empty constructor for serialization purposes.
-     * see {@link #expireTimeDelta}.
+     * Empty constructor for serialization purposes. Initializes {@link #initTime} to properly calculate {@link #expireTime()}
+     .
      */
     public GridCacheEntryInfo() {
         initTime = U.currentTimeMillis();
@@ -85,8 +85,7 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
 
             expireTimeDelta = expireTime - initTime;
 
-            // In theory, here we can get the thread paused causing a negative delta value. Possible negative values
-            // shouldn't be treated as disabled expiration. Correct behavior is expired timeout.
+            // Timeouted mark.
             if (expireTimeDelta < 0)
                 expireTimeDelta = 0;
         }
@@ -128,9 +127,6 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
      * @return Expire time >= 0. 0 means no expiration is set.
      */
     public long expireTime() {
-        assert initTime > 0;
-        assert expireTimeDelta >= -1L;
-
         return expireTimeDelta == -1L ? 0L : initTime + expireTimeDelta;
     }
 
