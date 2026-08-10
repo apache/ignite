@@ -146,7 +146,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     private final Map<Long, ThreadBuffer> threadBufMap = new ConcurrentHashMap<>();
 
-    /** Isolated receiver. */
+    /** Default, isolated receiver. */
     static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
@@ -497,9 +497,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         return rcvrMsg0 == null ? ISOLATED_UPDATER : (StreamReceiver<K, V>)rcvrMsg0.receiver();
     }
 
+    /** @return {@code True} if the default, isolated receiver is in use. */
+    private boolean isolated() {
+        return rcvrMsg == null;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return rcvrMsg != null;
+        return !isolated();
     }
 
     /** {@inheritDoc} */
@@ -660,7 +665,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (rcvrMsg == null && inconsistencyWarned.compareAndSet(false, true))
+        if (isolated() && inconsistencyWarned.compareAndSet(false, true))
             log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
