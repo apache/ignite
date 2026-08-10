@@ -1701,10 +1701,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     void validateRemoteFeatures(IgniteNodeFeatureSet rmtFeatures) throws IgniteCheckedException {
-        if (rmtFeatures == null)
-            throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
-                " [locComponents=" + locNodeFeatures +
-                ", rmtComponents=" + rmtFeatures + ']');
+        if (rmtFeatures == null) {
+            throw new UnsupportedNodeVersionException(
+                "Failed to obtain remote node features. The remote node may be running an unsupported Ignite version," +
+                    " which may result in unexpected handshake message serialization");
+        }
 
         for (IgniteComponentFeatureSet rmtCmpFeatures : rmtFeatures.values()) {
             IgniteComponentFeatureSet locCmpFeatures = locNodeFeatures.componentFeatures(rmtCmpFeatures.componentName());
