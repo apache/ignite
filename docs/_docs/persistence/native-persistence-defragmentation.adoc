@@ -46,6 +46,14 @@ After the manual restart, the node with the requested defragmentation enters a s
 Nodes in maintenance mode do not participate in serving the regular workload. It is not recommended to execute defragmentation on several nodes simultaneously as it reduces the number of backups, thus increasing the risk of partition loss.
 ====
 
+=== Checking Defragmentation Status
+
+To check the status of an ongoing defragmentation operation, run the following command against the node in Maintenance Mode:
+[source,shell]
+----
+control.(sh|bat) --defragmentation status --host <host> --port <port>
+----
+
 === Stopping Defragmentation
 
 When a node executes defragmentation, it is possible to cancel it. To stop defragmentation, run the following command available in the control utility:
