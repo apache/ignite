@@ -1997,15 +1997,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
 
-                // The updaters the streamer ships with are named rather than sent: every node has them.
-                DataStreamerBuiltInUpdater builtIn = DataStreamerBuiltInUpdater.of(rcvrMsg0.receiver());
-
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicId,
                     cacheName,
-                    builtIn == null ? rcvrMsg0 : null,
-                    builtIn,
+                    rcvrMsg0,
                     entries,
                     true,
                     skipStore,
@@ -2014,7 +2010,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? jobPda0.deployClass().getName() : null,
                     dep == null,
                     topVer,
-                    builtIn == DataStreamerBuiltInUpdater.ISOLATED ? partId : NO_STRIPE);
+                    rcvrMsg0.receiver() == ISOLATED_UPDATER ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);

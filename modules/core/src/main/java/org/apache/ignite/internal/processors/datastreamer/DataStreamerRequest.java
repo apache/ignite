@@ -103,8 +103,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
      * @param reqId Request ID.
      * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterMsg Cache updater, {@code null} when {@code builtInUpdater} names it.
-     * @param builtInUpdater Cache updater of the streamer itself, {@code null} for a user one.
+     * @param updaterMsg Cache updater. One of the streamer's own is stored as a name, see {@link #builtInUpdater}.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
@@ -119,8 +118,7 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         long reqId,
         IgniteUuid resTopicId,
         @Nullable String cacheName,
-        @Nullable DataStreamerReceiverMessage updaterMsg,
-        @Nullable DataStreamerBuiltInUpdater builtInUpdater,
+        DataStreamerReceiverMessage updaterMsg,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
@@ -136,8 +134,8 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
         this.reqId = reqId;
         this.resTopicId = resTopicId;
         this.cacheName = cacheName;
-        this.updaterMsg = updaterMsg;
-        this.builtInUpdater = builtInUpdater;
+        builtInUpdater = DataStreamerBuiltInUpdater.of(updaterMsg.receiver());
+        this.updaterMsg = builtInUpdater == null ? updaterMsg : null;
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
@@ -162,6 +160,11 @@ public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAwa
     /** @return Cache name. */
     String cacheName() {
         return cacheName;
+    }
+
+    /** @return {@code True} if the updater travelled with the request instead of being named. */
+    boolean hasUserUpdater() {
+        return updaterMsg != null;
     }
 
     /** @return Updater: the one carried by the request, or the streamer's own that it named. */

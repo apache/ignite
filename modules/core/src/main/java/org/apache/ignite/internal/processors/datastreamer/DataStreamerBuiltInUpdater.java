@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
  * The updaters DataStreamer ships with. Every node has them, so a request names the one it needs instead of carrying
  * a serialized copy.
  */
-public enum DataStreamerBuiltInUpdater {
+enum DataStreamerBuiltInUpdater {
     /** {@link DataStreamerImpl#ISOLATED_UPDATER}. */
     ISOLATED(DataStreamerImpl.ISOLATED_UPDATER),
 
