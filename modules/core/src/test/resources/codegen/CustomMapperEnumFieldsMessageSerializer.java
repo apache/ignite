@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
 import org.apache.ignite.internal.TransactionIsolationEnumMapper;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
@@ -37,7 +38,7 @@ public final class CustomMapperEnumFieldsMessageSerializer implements MessageSer
     /** */
     private static final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
     /** */
-    private static final MessageCollectionType isolationsCollDesc = new MessageCollectionType(new MessageCollectionType(new MessageEnumType<>(transactionIsolationMapper::encode, transactionIsolationMapper::decode), false), false);
+    private static final MessageCollectionType isolationsCollDesc = new MessageCollectionType(new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, transactionIsolationMapper::encode, transactionIsolationMapper::decode), CollectionImplementationType.ARRAY_LIST), CollectionImplementationType.ARRAY_LIST);
 
     /** */
     @Override public final boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {

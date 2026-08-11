@@ -103,8 +103,7 @@ class GridAffinityUtils {
             msg.userVersion(),
             sndNodeId,
             msg.classLoaderId(),
-            msg.loaderParticipants(),
-            null);
+            msg.loaderParticipants());
 
         if (dep == null)
             throw new IgniteDeploymentCheckedException("Failed to obtain affinity object (is peer class loading turned on?): " +

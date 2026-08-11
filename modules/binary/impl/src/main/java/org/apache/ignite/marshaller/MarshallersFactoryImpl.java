@@ -32,12 +32,12 @@ public class MarshallersFactoryImpl implements MarshallersFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public OptimizedMarshaller optimized() {
-        return new OptimizedMarshallerImpl();
+    @Override public OptimizedMarshaller optimizedForSerializable() {
+        return new OptimizedMarshallerImpl(true);
     }
 
     /** {@inheritDoc} */
-    @Override public OptimizedMarshaller optimized(boolean requireSer) {
-        return new OptimizedMarshallerImpl(requireSer);
+    @Override public OptimizedMarshaller optimizedForAllClasses() {
+        return new OptimizedMarshallerImpl(false);
     }
 }

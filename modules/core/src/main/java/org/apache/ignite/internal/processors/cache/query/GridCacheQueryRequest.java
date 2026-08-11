@@ -580,9 +580,14 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
-     * @return Partition.
+     * @return Partition to scan, {@code -1} to scan all of them.
      */
-    @Override public int partition() {
+    public int partition() {
+        return part;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int stripeIdx() {
         return part;
     }
 

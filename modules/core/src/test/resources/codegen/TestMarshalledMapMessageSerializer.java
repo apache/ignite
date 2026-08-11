@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.TestMarshalledMapMessage;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
@@ -32,9 +33,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public final class TestMarshalledMapMessageSerializer implements MessageSerializer<TestMarshalledMapMessage> {
     /** */
-    private static final MessageCollectionType mapKeysCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
+    private static final MessageCollectionType mapKeysCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), CollectionImplementationType.ARRAY_LIST);
     /** */
-    private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), false);
+    private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), CollectionImplementationType.ARRAY_LIST);
 
     /** */
     @Override public final boolean writeTo(TestMarshalledMapMessage msg, MessageWriter writer) {

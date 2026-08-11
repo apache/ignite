@@ -335,7 +335,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         assert !F.isEmpty(keys);
 
         return keys.get(0).partition();

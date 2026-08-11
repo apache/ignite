@@ -17,17 +17,10 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -35,8 +28,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Start request data.
  */
 public class StartRequestData implements Message {
-    /** Node filter. */
-    private IgnitePredicate<ClusterNode> nodeFilter;
+    /** Node filter, restored by the processor reading this request. */
+    IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Serialized node filter. */
     @Order(0)
@@ -48,9 +41,9 @@ public class StartRequestData implements Message {
 
     /** Deployment info. */
     @Order(2)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
-    /** Handler. */
+    /** Handler, restored by the processor reading this request. */
     @Order(3)
     GridContinuousHandler hnd;
 
@@ -116,7 +109,7 @@ public class StartRequestData implements Message {
     /**
      * @param depInfo New deployment info.
      */
-    public void deploymentInfo(GridDeploymentInfoBean depInfo) {
+    public void deploymentInfo(GridDeploymentInfoMessage depInfo) {
         this.depInfo = depInfo;
     }
 

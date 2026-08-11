@@ -251,10 +251,10 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         Collection<KeyCacheObject> keys0 = keyMap != null ? keyMap.keySet() : keys;
 
-        return F.isEmpty(keys0) ? -1 : keys0.iterator().next().partition();
+        return F.isEmpty(keys0) ? ANY_STRIPE : keys0.iterator().next().partition();
     }
 
     /**

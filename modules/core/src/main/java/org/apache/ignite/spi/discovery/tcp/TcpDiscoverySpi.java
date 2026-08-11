@@ -61,6 +61,8 @@ import org.apache.ignite.internal.managers.communication.UnknownMessageException
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -100,6 +102,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -468,6 +471,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
+
+    /** */
+    private IgniteNodeFeatureSet locNodeFeatures;
 
     /**
      * Gets current SPI state.
@@ -1190,6 +1196,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         // Init local node.
         initAddresses();
 
+        locNodeFeatures = ((IgniteEx)ignite).context().localNodeFeatures();
+
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
             addrs.get1(),
@@ -1684,6 +1692,41 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 U.closeQuiet(sock);
 
             throw e;
+        }
+    }
+
+    /** */
+    IgniteNodeFeatureSet localNodeFeatures() {
+        return locNodeFeatures;
+    }
+
+    /** */
+    void validateRemoteFeatures(IgniteNodeFeatureSet rmtFeatures) throws IgniteCheckedException {
+        if (rmtFeatures == null) {
+            throw new UnsupportedNodeVersionException(
+                "Failed to obtain remote node features. The remote node may be running an unsupported Ignite version," +
+                    " which may result in unexpected handshake message serialization");
+        }
+
+        for (IgniteComponentFeatureSet rmtCmpFeatures : rmtFeatures.values()) {
+            IgniteComponentFeatureSet locCmpFeatures = locNodeFeatures.componentFeatures(rmtCmpFeatures.componentName());
+
+            if (locCmpFeatures == null)
+                continue;
+
+            int c = locCmpFeatures.version().compareTo(rmtCmpFeatures.version());
+
+            if (c == 0)
+                continue;
+
+            IgniteComponentFeatureSet src = c > 0 ? rmtCmpFeatures : locCmpFeatures;
+            IgniteComponentFeatureSet target = c > 0 ? locCmpFeatures : rmtCmpFeatures;
+
+            if (!src.isUpgradableTo(target)) {
+                throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
+                    " [locComponents=" + locNodeFeatures +
+                    ", rmtComponents=" + rmtFeatures + ']');
+            }
         }
     }
 
