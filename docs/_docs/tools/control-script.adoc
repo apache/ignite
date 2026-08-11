@@ -1187,6 +1187,39 @@ TASKS                          SYS       Running compute tasks
 Command [SYSTEM-VIEW] finished with code: 0
 
 
+== Network I/O Diagnostics
+
+The `--io-test` commands actively measure network latency between cluster nodes.
+They print a complete result on success or fail with an exception; partial results are not returned.
+
+=== Communication SPI Diagnostic
+
+The `communication` test sends request-response messages from the selected source node to every remote server node through the Communication SPI.
+The source node specified by `--node-id` and at least one remote server node must be available.
+The first failed or timed-out request aborts the test.
+
+[source,shell]
+----
+control.sh --io-test communication --node-id <source-node-id>
+----
+
+=== Discovery SPI Diagnostic
+
+The `discovery` test measures how custom messages traverse the server ring and is executed on the cluster coordinator.
+It requires `TcpDiscoverySpi` on the coordinator and at least two server nodes.
+
+[source,shell]
+----
+control.sh --io-test discovery
+----
+
+WARNING: These tests generate network traffic and consume CPU on participating nodes; high thread counts, long durations, or large payloads can affect cluster workloads.
+The `--process-in-nio-thread` communication option handles test messages directly on network I/O threads and should only be used during a controlled diagnostic run because it can delay normal network processing.
+
+NOTE: Estimated one-way Communication SPI delivery times and per-hop Discovery SPI delays compare wall clocks on different nodes and require synchronized clocks.
+Use RTT and full-ring latency when clocks are not synchronized.
+
+
 == Working With Persistence Data
 
 [WARNING]

@@ -300,6 +300,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node compatibility consistent ID. */
     private Serializable consistentId;
 
+    /** */
+    private IoTestDiscoveryHandler ioTestHnd;
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -523,6 +526,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (ctx.config().getCommunicationFailureResolver() != null)
             ctx.resource().injectGeneric(ctx.config().getCommunicationFailureResolver());
+
+        ioTestHnd = new IoTestDiscoveryHandler(ctx);
 
         // Shared reference between DiscoverySpiListener and DiscoverySpiDataExchange.
         AtomicReference<IgniteFuture<?>> lastStateChangeEvtLsnrFutRef = new AtomicReference<>();
@@ -2673,6 +2678,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         return null;
+    }
+
+    /** @return IO test handler. */
+    public IoTestDiscoveryHandler ioTest() {
+        return ioTestHnd;
     }
 
     /** Network segments checker. */
