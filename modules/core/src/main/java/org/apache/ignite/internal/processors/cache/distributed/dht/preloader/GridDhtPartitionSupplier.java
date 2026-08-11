@@ -294,10 +294,9 @@ public class GridDhtPartitionSupplier {
                 remainingParts = sctx.remainingParts;
             }
 
-            final int msgMaxSize = grp.preloader().batchSize();
-
-            long batchesCnt = 0;
+            int msgMaxSize = grp.preloader().batchSize();
             long curTime = U.currentTimeMillis();
+            long batchesCnt = 0;
 
             while (iter.hasNext()) {
                 if (supplyMsg.messageSize() >= msgMaxSize) {
