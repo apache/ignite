@@ -34,15 +34,14 @@ public interface MarshallersFactory {
     /** @return Default instance of {@link JdkMarshaller}. */
     public JdkMarshaller jdk();
 
-    /** @return Optimized marshaller instance. */
-    public OptimizedMarshaller optimized();
+    /** @return Optimized marshaller instance for clasees implementing {@link Serializable}, only. */
+    public OptimizedMarshaller optimizedForSerializable();
 
     /**
-     * Creates new marshaller providing whether it should
-     * require {@link Serializable} interface or not.
+     * Creates new marshaller with support of all classes.
+     * No implements {@link Serializable} required.
      *
-     * @param requireSer Whether to require {@link Serializable}.
      * @return Optimized marshaller instance.
      */
-    public OptimizedMarshaller optimized(boolean requireSer);
+    public OptimizedMarshaller optimizedForAllClasses();
 }

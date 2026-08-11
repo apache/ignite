@@ -105,6 +105,30 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
             .check();
     }
 
+    /** */
+    @Test
+    public void testMergeJoinUnderCorrelateSurvivesRewind() {
+        sql("CREATE TABLE t0 (a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("CREATE TABLE t1 (a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("CREATE TABLE t2 (a INTEGER, b INTEGER) WITH " + atomicity());
+
+        sql("INSERT INTO t0 VALUES (1, 1), (2, 2), (3, 3)");
+        sql("INSERT INTO t1 VALUES (1, 1), (2, 2), (3, 3)");
+        sql("INSERT INTO t2 VALUES (1, 1)");
+
+        String qry = "SELECT t0.a, (SELECT /*+ MERGE_JOIN */ count(*) FROM t1 LEFT JOIN t2 ON t1.a = t2.a " +
+            "WHERE t1.a = (SELECT t0.a)) FROM t0";
+
+        // The defect is only reachable while the plan keeps a merge join under the correlate.
+        assertQuery(qry)
+            .matches(QueryChecker.containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
+            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
+            .returns(1, 1L)
+            .returns(2, 1L)
+            .returns(3, 1L)
+            .check();
+    }
+
     /**
      * Tests colocated join possible with the help of correlated distribution.
      */
