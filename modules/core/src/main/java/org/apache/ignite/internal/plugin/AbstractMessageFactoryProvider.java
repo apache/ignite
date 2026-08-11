@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.plugin;
 
 import java.lang.reflect.Constructor;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.SelfMarshallingMessage;
@@ -72,10 +71,9 @@ public abstract class AbstractMessageFactoryProvider implements MessageFactoryPr
     }
 
     /**
-     * Instantiates the generated companion class {@code <message>Serializer/Marshaller/Deployer}. Only the marshaller
-     * companion ever takes a {@code Marshaller}, and only when the message has fields to marshal with one, so
-     * {@code marsh} is {@code null} for the other two. Constructor lookups, including missing companions, are cached
-     * per message class in {@link #COMPANIONS}.
+     * Instantiates the generated companion class {@code <message>Serializer/Marshaller/Deployer}. Companions are
+     * stateless: the marshaller, when one is needed, is passed per call by the transport. Constructor lookups,
+     * including missing companions, are cached per message class in {@link #COMPANIONS}.
      *
      * @return the companion, or {@code null} when it is not generated and {@code required} is {@code false}.
      */

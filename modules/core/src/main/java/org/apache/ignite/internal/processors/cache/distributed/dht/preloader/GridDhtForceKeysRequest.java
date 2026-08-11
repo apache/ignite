@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
-
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;

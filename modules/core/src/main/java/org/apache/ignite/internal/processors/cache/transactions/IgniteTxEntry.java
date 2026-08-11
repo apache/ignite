@@ -21,10 +21,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;

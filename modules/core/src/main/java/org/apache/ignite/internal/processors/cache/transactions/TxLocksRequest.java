@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.Set;
-
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;

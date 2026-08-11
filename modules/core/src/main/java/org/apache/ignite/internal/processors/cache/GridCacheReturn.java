@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.cache.processor.EntryProcessorResult;
-
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;

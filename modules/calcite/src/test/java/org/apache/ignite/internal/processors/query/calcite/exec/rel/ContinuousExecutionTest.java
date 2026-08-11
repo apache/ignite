@@ -25,7 +25,6 @@ import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;

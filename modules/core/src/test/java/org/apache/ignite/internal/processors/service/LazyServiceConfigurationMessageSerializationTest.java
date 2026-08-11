@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;

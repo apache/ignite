@@ -28,10 +28,8 @@ import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
-
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;

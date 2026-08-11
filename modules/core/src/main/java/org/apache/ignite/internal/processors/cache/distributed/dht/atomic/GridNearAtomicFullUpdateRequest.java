@@ -21,10 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.MarshallableMessage;

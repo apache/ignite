@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;

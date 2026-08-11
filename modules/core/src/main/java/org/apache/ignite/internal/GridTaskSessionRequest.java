@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;

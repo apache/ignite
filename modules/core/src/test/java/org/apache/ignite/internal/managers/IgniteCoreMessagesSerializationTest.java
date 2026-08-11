@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers;
 
 import java.util.UUID;
-
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;

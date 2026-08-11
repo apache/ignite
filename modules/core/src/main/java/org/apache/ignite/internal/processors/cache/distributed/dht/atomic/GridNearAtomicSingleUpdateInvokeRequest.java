@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
 import javax.cache.processor.EntryProcessor;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.MarshallableMessage;

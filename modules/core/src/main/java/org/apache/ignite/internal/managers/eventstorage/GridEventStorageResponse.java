@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.eventstorage;
 
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;

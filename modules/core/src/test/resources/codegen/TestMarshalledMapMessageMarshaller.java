@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.Iterator;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshalledMapMessage;

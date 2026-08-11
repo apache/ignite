@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Map;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMarshalledObjectsMessage;

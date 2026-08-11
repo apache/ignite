@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
-
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;

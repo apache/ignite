@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Map;
-
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;

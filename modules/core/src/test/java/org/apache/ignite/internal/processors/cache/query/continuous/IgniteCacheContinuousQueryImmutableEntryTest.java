@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
-
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.service;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.F;

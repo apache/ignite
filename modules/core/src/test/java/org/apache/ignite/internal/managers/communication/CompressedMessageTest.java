@@ -25,7 +25,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.zip.Deflater;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;

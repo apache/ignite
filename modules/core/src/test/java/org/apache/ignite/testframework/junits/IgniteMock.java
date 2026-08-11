@@ -22,10 +22,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-
 import javax.cache.CacheException;
 import javax.management.MBeanServer;
-
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.Ignite;

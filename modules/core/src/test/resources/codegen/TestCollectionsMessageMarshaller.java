@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestCollectionsMessage;

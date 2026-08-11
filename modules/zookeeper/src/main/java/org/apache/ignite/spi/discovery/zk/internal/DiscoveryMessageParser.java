@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;

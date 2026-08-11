@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.List;
 import java.util.Map;
-
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException;

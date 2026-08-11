@@ -278,7 +278,6 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -344,7 +343,6 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /**
      * Default plugin-purposes constructor.
      *
-     * @see #init(Marshaller, Marshaller)
      */
     public CoreMessagesProvider() {
         // No-op.

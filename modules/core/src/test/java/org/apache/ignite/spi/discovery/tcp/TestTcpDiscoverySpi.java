@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.CoreMessagesProvider;

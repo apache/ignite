@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.Map;
-
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 

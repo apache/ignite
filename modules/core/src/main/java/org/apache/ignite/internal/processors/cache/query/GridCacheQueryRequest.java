@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;

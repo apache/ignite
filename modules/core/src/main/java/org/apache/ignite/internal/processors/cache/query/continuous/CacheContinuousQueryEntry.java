@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.event.EventType;
-
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;

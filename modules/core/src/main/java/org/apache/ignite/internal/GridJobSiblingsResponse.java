@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
-
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
