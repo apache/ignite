@@ -111,6 +111,31 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testEnumSetMessage() {
+        Compilation compilation = compile("TestEnumSetMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestEnumSetMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestEnumSetMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testEnumSetOfTypeVariableFailed() {
+        Compilation compilation = compile("WrongEnumSetMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining(
+            "Unexpected Enum Set element type [itemType=E, colType=java.util.EnumSet<E>");
+    }
+
+    /** */
+    @Test
     public void testMapMessage() {
         Compilation compilation = compile("TestMapMessage.java");
 
@@ -129,11 +154,25 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testEmptyMessage() {
-        Compilation compilation = compile("EmptyMessage.java");
+    public void testIncorrectEmptyMessage() {
+        Compilation compilation = compile("IncorrectEmptyMessage.java");
 
         assertThat(compilation).succeeded();
         assertTrue(compilation.generatedSourceFiles().isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testCorrectEmptyMessage() {
+        Compilation compilation = compile("CorrectEmptyMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.CorrectEmptyMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CorrectEmptyMessageSerializer.java"));
     }
 
     /** */

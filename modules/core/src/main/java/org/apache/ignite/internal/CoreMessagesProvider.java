@@ -25,13 +25,12 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
@@ -217,6 +216,7 @@ import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMes
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -280,6 +280,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceTopology;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -680,6 +681,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(DataStreamerEntry.class);
         register(DataStreamerRequest.class);
         register(DataStreamerResponse.class);
+        register(DataStreamerReceiverMessage.class);
 
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
@@ -704,7 +706,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
-        register(GridDeploymentInfoBean.class);
+        register(GridDeploymentInfoMessage.class);
         register(GridDeploymentRequest.class);
         register(GridDeploymentResponse.class);
         register(MissingMappingRequestMessage.class);

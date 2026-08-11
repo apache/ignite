@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
@@ -62,7 +62,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
 
     /** P2P deploy info of {@link #pred}. Is {@code null} if the P2P deployment is disabled. */
     @Order(3)
-    @Nullable volatile GridDeploymentInfoBean predDepInfo;
+    @Nullable volatile GridDeploymentInfoMessage predDepInfo;
 
     /** P2P unmarshalling future. */
     private volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
@@ -165,7 +165,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
         if (dep == null)
             throw new IgniteDeploymentCheckedException("Failed to deploy message listener.");
 
-        predDepInfo = new GridDeploymentInfoBean(dep);
+        predDepInfo = new GridDeploymentInfoMessage(dep);
     }
 
     /** {@inheritDoc} */
@@ -191,13 +191,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
             return;
 
         try {
-            GridDeployment dep = ctx.deploy().getGlobalDeployment(predDepInfo.deployMode(), clsName, clsName,
-                predDepInfo.userVersion(), nodeId, predDepInfo.classLoaderId(), predDepInfo.participants(), null);
-
-            if (dep == null)
-                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
-
-            ClassLoader ldr = dep.classLoader();
+            ClassLoader ldr = ctx.deploy().globalDeployment(predDepInfo, clsName, nodeId).classLoader();
 
             if (topicBytes != null)
                 topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));

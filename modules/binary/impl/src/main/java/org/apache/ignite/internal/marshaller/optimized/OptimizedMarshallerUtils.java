@@ -186,25 +186,22 @@ class OptimizedMarshallerUtils {
      * @param cls Class.
      * @param useCache True if class loader cache will be used, false otherwise.
      * @param ctx Context.
-     * @param mapper ID mapper.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
     static OptimizedClassDescriptor classDescriptor(
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
         Class cls,
         boolean useCache,
-        MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper
+        MarshallerContext ctx
     ) throws IOException {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null && !useCache) {
-            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(),
-                mapper), clsMap, ctx, mapper, false);
+            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName()), clsMap, ctx, false);
         }
         else if (desc == null) {
-            int typeId = resolveTypeId(cls.getName(), mapper);
+            int typeId = resolveTypeId(cls.getName());
 
             boolean registered;
 
@@ -215,7 +212,7 @@ class OptimizedMarshallerUtils {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
-            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper);
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx);
 
             if (registered) {
                 OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc);
@@ -230,22 +227,10 @@ class OptimizedMarshallerUtils {
 
     /**
      * @param clsName Class name.
-     * @param mapper Mapper.
      * @return Type ID.
      */
-    private static int resolveTypeId(String clsName, OptimizedMarshallerIdMapper mapper) {
-        int typeId;
-
-        if (mapper != null) {
-            typeId = mapper.typeId(clsName);
-
-            if (typeId == 0)
-                typeId = clsName.hashCode();
-        }
-        else
-            typeId = clsName.hashCode();
-
-        return typeId;
+    private static int resolveTypeId(String clsName) {
+        return clsName.hashCode();
     }
 
     /**
@@ -256,24 +241,22 @@ class OptimizedMarshallerUtils {
      * @param ldr Class loader.
      * @param useCache True if class loader cache will be used, false otherwise.
      * @param ctx Context.
-     * @param mapper ID mapper.
      * @return Descriptor.
      * @throws IOException In case of error.
      * @throws ClassNotFoundException If class was not found.
      */
     static OptimizedClassDescriptor classDescriptor(
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
         int typeId,
         ClassLoader ldr,
         boolean useCache,
-        MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
+        MarshallerContext ctx) throws IOException, ClassNotFoundException {
         OptimizedClassDescriptor desc;
 
         if (useCache)
-            desc = descriptorFromCache(clsMap, typeId, ldr, ctx, mapper);
+            desc = descriptorFromCache(clsMap, typeId, ldr, ctx);
         else
-            desc = descriptorWithoutCache(clsMap, typeId, ldr, ctx, mapper);
+            desc = descriptorWithoutCache(clsMap, typeId, ldr, ctx);
 
         return desc;
     }
@@ -283,12 +266,10 @@ class OptimizedMarshallerUtils {
      * @param typeId Type id.
      * @param ldr Loader.
      * @param ctx Context.
-     * @param mapper Mapper.
      */
     @NotNull
-    private static OptimizedClassDescriptor descriptorWithoutCache(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        int typeId, ClassLoader ldr, MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper) throws ClassNotFoundException, IOException {
+    private static OptimizedClassDescriptor descriptorWithoutCache(ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
+        int typeId, ClassLoader ldr, MarshallerContext ctx) throws ClassNotFoundException, IOException {
         String clsName;
 
         try {
@@ -306,8 +287,7 @@ class OptimizedMarshallerUtils {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null)
-            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(),
-                mapper), clsMap, ctx, mapper, false);
+            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName()), clsMap, ctx, false);
 
         return desc;
     }
@@ -317,12 +297,10 @@ class OptimizedMarshallerUtils {
      * @param typeId Type id.
      * @param ldr Loader.
      * @param ctx Context.
-     * @param mapper Mapper.
      */
     @NotNull
-    private static OptimizedClassDescriptor descriptorFromCache(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        int typeId, ClassLoader ldr, MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper) throws ClassNotFoundException, IOException {
+    private static OptimizedClassDescriptor descriptorFromCache(ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
+        int typeId, ClassLoader ldr, MarshallerContext ctx) throws ClassNotFoundException, IOException {
         Class cls;
 
         try {
@@ -336,7 +314,7 @@ class OptimizedMarshallerUtils {
 
         if (desc == null) {
             OptimizedClassDescriptor old = clsMap.putIfAbsent(cls,
-                desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
+                desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName()), clsMap, ctx));
 
             if (old != null)
                 desc = old;

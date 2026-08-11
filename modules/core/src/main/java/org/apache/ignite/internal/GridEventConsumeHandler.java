@@ -34,7 +34,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -85,7 +85,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
 
     /** Deployment info. Is {@code null} if P2P deployment is disabled. */
     @Order(2)
-    @Nullable volatile GridDeploymentInfoBean depInfo;
+    @Nullable volatile GridDeploymentInfoMessage depInfo;
 
     /** Types. */
     @Order(3)
@@ -406,7 +406,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + filter);
 
-            depInfo = new GridDeploymentInfoBean(dep);
+            depInfo = new GridDeploymentInfoMessage(dep);
 
             filterBytes = U.marshal(ctx.marshaller(), filter);
         }
@@ -424,11 +424,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
 
         if (filterBytes != null) {
             try {
-                GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
-                    depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
-
-                if (dep == null)
-                    throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+                GridDeployment dep = ctx.deploy().globalDeployment(depInfo, clsName, nodeId);
 
                 filter = U.unmarshal(ctx, filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
