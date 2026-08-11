@@ -295,12 +295,23 @@ public class DistributedProcess<I extends Message, R extends Message> {
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
 
-        // The result is marshalled by the sending thread, and marshalling a class the cluster has not seen yet takes
-        // a discovery round to register its name. On a discovery thread that round never completes: this very thread
-        // is the one to deliver the answer.
+        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(), p.resFut.error());
+
+        UUID crdId = p.crdId;
+
+        if (Objects.equals(ctx.localNodeId(), crdId)) {
+            onSingleNodeMessageReceived(singleMsg, crdId);
+
+            return;
+        }
+
+        // The message is marshalled by the sending thread, and marshalling a class the cluster has not seen yet takes
+        // a discovery round to register its name. On a discovery thread that round never completes: this very thread is
+        // the one to deliver the answer. The coordinator is resolved before the handover, so that a coordinator change
+        // in the meantime leaves the resend to the node left listener, exactly as it does for a send that has failed.
         if (Thread.currentThread() instanceof IgniteDiscoveryThread) {
             try {
-                ctx.pools().getSystemExecutorService().execute(() -> sendSingleMessage(p));
+                ctx.pools().getSystemExecutorService().execute(() -> sendToCoordinator(singleMsg, crdId, p.id));
             }
             catch (RejectedExecutionException e) {
                 if (log.isDebugEnabled())
@@ -310,29 +321,30 @@ public class DistributedProcess<I extends Message, R extends Message> {
             return;
         }
 
-        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(), p.resFut.error());
+        sendToCoordinator(singleMsg, crdId, p.id);
+    }
 
-        UUID crdId = p.crdId;
+    /**
+     * @param msg Single node message.
+     * @param crdId Coordinator id.
+     * @param procId Process id.
+     */
+    private void sendToCoordinator(SingleNodeMessage<R> msg, UUID crdId, UUID procId) {
+        try {
+            ctx.io().sendToGridTopic(crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, msg, SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            // The coordinator has failed. The single message will be sent when a new coordinator initialized.
+            if (log.isDebugEnabled()) {
+                log.debug("Failed to send a single message to coordinator: [crdId=" + crdId +
+                    ", processId=" + procId + ", error=" + e.getMessage() + ']');
+            }
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Unable to send message to coordinator.", e);
 
-        if (Objects.equals(ctx.localNodeId(), crdId))
-            onSingleNodeMessageReceived(singleMsg, crdId);
-        else {
-            try {
-                ctx.io().sendToGridTopic(crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
-            }
-            catch (ClusterTopologyCheckedException e) {
-                // The coordinator has failed. The single message will be sent when a new coordinator initialized.
-                if (log.isDebugEnabled()) {
-                    log.debug("Failed to send a single message to coordinator: [crdId=" + crdId +
-                        ", processId=" + p.id + ", error=" + e.getMessage() + ']');
-                }
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Unable to send message to coordinator.", e);
-
-                ctx.failure().process(new FailureContext(CRITICAL_ERROR,
-                    new Exception("Unable to send message to coordinator.", e)));
-            }
+            ctx.failure().process(new FailureContext(CRITICAL_ERROR,
+                new Exception("Unable to send message to coordinator.", e)));
         }
     }
 
