@@ -45,7 +45,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      * Default constructor.
      */
     public GridClientOptimizedMarshaller() {
-        opMarsh = Marshallers.optimized();
+        opMarsh = Marshallers.optimizedForSerializable();
 
         opMarsh.setContext(new MarshallerContextImpl(null));
     }
@@ -56,7 +56,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      * @param plugins Plugins.
      */
     public GridClientOptimizedMarshaller(@Nullable List<PluginProvider> plugins) {
-        opMarsh = Marshallers.optimized();
+        opMarsh = Marshallers.optimizedForSerializable();
 
         opMarsh.setContext(new MarshallerContextImpl(plugins));
     }

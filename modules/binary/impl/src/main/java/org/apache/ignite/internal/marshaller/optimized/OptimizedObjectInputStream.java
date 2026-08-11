@@ -111,9 +111,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private MarshallerContext ctx;
 
     /** */
-    private OptimizedMarshallerIdMapper mapper;
-
-    /** */
     private ClassLoader clsLdr;
 
     /** */
@@ -129,7 +126,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> curCls;
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+    private ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap;
 
     /** The flag shown, the reader uses class loader cache used or not. */
     private boolean useCache;
@@ -146,18 +143,15 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /**
      * @param clsMap Class descriptors by class map.
      * @param ctx Context.
-     * @param mapper ID mapper.
      * @param clsLdr Class loader.
      */
     void context(
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
         ClassLoader clsLdr
     ) {
         this.clsMap = clsMap;
         this.ctx = ctx;
-        this.mapper = mapper;
         this.clsLdr = clsLdr;
         this.useCache = Marshallers.USE_CACHE.get();
     }
@@ -348,9 +342,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                         clsMap,
                         ClassLoaderUtils.forName(readUTF(), clsLdr, useCache),
                         useCache,
-                        ctx,
-                        mapper)
-                    : classDescriptor(clsMap, typeId, clsLdr, useCache, ctx, mapper);
+                        ctx)
+                    : classDescriptor(clsMap, typeId, clsLdr, useCache, ctx);
 
                 curCls = desc.describedClass();
 
@@ -386,7 +379,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int compTypeId = readInt();
 
         return compTypeId == 0 ? ClassLoaderUtils.forName(readUTF(), clsLdr, useCache) :
-            classDescriptor(clsMap, compTypeId, clsLdr, useCache, ctx, mapper).describedClass();
+            classDescriptor(clsMap, compTypeId, clsLdr, useCache, ctx).describedClass();
     }
 
     /**
