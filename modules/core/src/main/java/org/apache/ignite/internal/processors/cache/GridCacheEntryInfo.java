@@ -71,7 +71,7 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     /**
      * Empty constructor for serialization purposes. Initializes {@link #initTime} to properly calculate {@link #expireTime()}
      * if {@link #expireTimeDelta} and the expiration is effective. If no expiration is set, initialization of {@link #initTime}
-     * is not required, but it is a tradeoff for absence of the message serealization awareness.
+     * is not required, but it is a tradeoff for absence of the message serealization lifecycle awareness.
      */
     public GridCacheEntryInfo() {
         initTime = U.currentTimeMillis();
