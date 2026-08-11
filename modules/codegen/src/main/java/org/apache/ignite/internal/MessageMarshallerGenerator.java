@@ -1147,7 +1147,15 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         if (ann == null)
             return null;
 
-        ensureCorrectlyAnnotated(field, ann);
+        /**
+         * Ensures that field annotated with {@link Marshalled} don't perform {@code Message} -> {@code byte[]} transformation
+         * which escapes {@link Order} and other rules implemented on top of communication {@code MessageWriter}, {@code MessageReader} logic.
+         */
+        if (ensureNoMessageToBytesRecursively(field.asType(), field, ann)) {
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Message must be written by communication protocol. " +
+                    "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.", field);
+        }
 
         boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
 
@@ -1172,40 +1180,45 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         return MarshalledKind.ELEMENT_BLOBS;
     }
 
-    /** */
-    private void ensureCorrectlyAnnotated(VariableElement field, Marshalled ann) {
-        boolean msgToBytes = false;
+    /** Recursively checks no {@code Message} -> {@code byte[]} transformation. */
+    private boolean ensureNoMessageToBytesRecursively(TypeMirror type, VariableElement field, Marshalled ann) {
+        if (assignableFrom(type, msgType))
+            return true;
+        else if (isCollection(type)) {
+            DeclaredType colType = (DeclaredType)type;
 
-        if (assignableFrom(field.asType(), msgType))
-            msgToBytes = true;
-        else if (isCollection(field.asType())) {
-            DeclaredType type = (DeclaredType)field.asType();
-
-            List<? extends TypeMirror> typeArgs = type.getTypeArguments();
+            List<? extends TypeMirror> typeArgs = colType.getTypeArguments();
 
             if (typeArgs.size() != 1)
                 env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw collection not supported.", field);
 
-            msgToBytes = assignableFrom(typeArgs.get(0), msgType);
-        }
-        else if (field.asType().getKind() == TypeKind.ARRAY)
-            msgToBytes = assignableFrom(((ArrayType)field.asType()).getComponentType(), msgType);
-        else if (isMap(field.asType()) && !ann.value().isEmpty()) {
-            DeclaredType type = (DeclaredType)field.asType();
+            TypeMirror elType = typeArgs.get(0);
 
-            List<? extends TypeMirror> typeArgs = type.getTypeArguments();
+            return assignableFrom(elType, msgType) || ensureNoMessageToBytesRecursively(elType, field, ann);
+        }
+        else if (type.getKind() == TypeKind.ARRAY) {
+            TypeMirror compType = ((ArrayType)type).getComponentType();
+
+            return assignableFrom(compType, msgType) || ensureNoMessageToBytesRecursively(compType, field, ann);
+        }
+        else if (isMap(type) && !ann.value().isEmpty()) {
+            DeclaredType mapType = (DeclaredType)type;
+
+            List<? extends TypeMirror> typeArgs = mapType.getTypeArguments();
 
             if (typeArgs.size() != 2)
                 env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw Map not supported.", field);
 
-            msgToBytes = assignableFrom(typeArgs.get(0), msgType) || assignableFrom(typeArgs.get(1), msgType);
+            TypeMirror keyType = typeArgs.get(0);
+            TypeMirror valType = typeArgs.get(1);
+
+            return assignableFrom(keyType, msgType)
+                || assignableFrom(valType, msgType)
+                || ensureNoMessageToBytesRecursively(keyType, field, ann)
+                || ensureNoMessageToBytesRecursively(valType, field, ann);
         }
 
-        if (msgToBytes) {
-            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                "Message must be written by communication protocol. " +
-                    "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.", field);
-        }
+        return false;
     }
 
     /** Returns the enclosed field named {@code name}, or throws if absent. */

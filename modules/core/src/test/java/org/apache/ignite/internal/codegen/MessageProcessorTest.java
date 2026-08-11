@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -686,41 +687,24 @@ public class MessageProcessorTest {
     /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
     @Test
     public void testMarshalledOnMessageFieldFailGeneration() {
-        Compilation compilation = compile("TestMessage.java", "MarshalledOnMessage.java");
+        List<String> cases = Arrays.asList(
+            "MarshalledOnMessage.java",
+            "MarshalledOnMessageCollection.java",
+            "MarshalledOnMessageCollection2.java",
+            "MarshalledOnMessageCollection3.java",
+            "MarshalledOnMessageMap.java",
+            "MarshalledOnMessageMap2.java",
+            "MarshalledOnMessageMap3.java",
+            "MarshalledOnMessageArray.java",
+            "MarshalledOnMessageArray2.java"
+        );
 
-        assertThat(compilation).failed();
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
 
-        assertThat(compilation).hadErrorContaining("Message must be written by communication protocol");
-    }
-
-    /** Test that {@code @Marshalled} annotation on {@link Message} collection field will fail generation. */
-    @Test
-    public void testMarshalledOnMessageCollectionFieldFailGeneration() {
-        Compilation compilation = compile("TestMessage.java", "MarshalledOnMessageCollection.java");
-
-        assertThat(compilation).failed();
-
-        assertThat(compilation).hadErrorContaining("Message must be written by communication protocol");
-    }
-
-    /** Test that {@code @Marshalled} annotation on {@link Message} map field will fail generation. */
-    @Test
-    public void testMarshalledOnMessageMapFieldFailGeneration() {
-        Compilation compilation = compile("TestMessage.java", "MarshalledOnMessageMap.java");
-
-        assertThat(compilation).failed();
-
-        assertThat(compilation).hadErrorContaining("Message must be written by communication protocol");
-    }
-
-    /** Test that {@code @Marshalled} annotation on {@link Message} array field will fail generation. */
-    @Test
-    public void testMarshalledOnMessageArrayFieldFailGeneration() {
-        Compilation compilation = compile("TestMessage.java", "MarshalledOnMessageArray.java");
-
-        assertThat(compilation).failed();
-
-        assertThat(compilation).hadErrorContaining("Message must be written by communication protocol");
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Message must be written by communication protocol");
+        }
     }
 
     /** */
