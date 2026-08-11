@@ -23,6 +23,7 @@ import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -697,7 +698,9 @@ public class MessageProcessorTest {
             "MarshalledOnMessageMap3.java",
             "MarshalledOnMessageArray.java",
             "MarshalledOnMessageCollectionArray.java",
-            "MarshalledOnMessageSet.java"
+            "MarshalledOnMessageSet.java",
+            "MarshalledOnMessageList.java",
+            "MarshalledOnMessageList2.java"
         );
 
         for (String file : cases) {
@@ -706,6 +709,31 @@ public class MessageProcessorTest {
             assertThat(compilation).failed();
             assertThat(compilation).hadErrorContaining("Message must be written by dedicated message serializers");
         }
+    }
+
+    /** Test that {@code @Marshalled} annotation on raw {@link Collection} fail generation. */
+    @Test
+    public void testRawCollectionFailGeneration() {
+        List<String> cases = Arrays.asList(
+            "TestRawListMessage.java",
+            "TestRawCollectionMessage.java"
+        );
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Raw collection not supported");
+        }
+    }
+
+    /** Test that {@code @Marshalled} annotation on raw {@link Map} fail generation. */
+    @Test
+    public void testRawMapFailGeneration() {
+        Compilation compilation = compile("TestMessage.java", "TestRawMapMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Raw Map not supported");
     }
 
     /** */

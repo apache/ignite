@@ -18,16 +18,15 @@
 package org.apache.ignite.internal;
 
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshalledOnMessageMap2 implements Message {
+public class TestRawListMessage implements Message {
     /** */
-    @Marshalled("bytes")
-    Map<Integer, List<TestMessage>> msgMap;
+    @Marshalled("msgBytes")
+    List msgColl;
 
     /** */
     @Order(0)
-    byte[] bytes;
+    byte[] msgBytes;
 }

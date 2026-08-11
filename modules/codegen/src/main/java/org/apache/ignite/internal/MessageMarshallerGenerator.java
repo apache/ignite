@@ -1172,14 +1172,14 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
                 res = MarshalledKind.ELEMENT_BLOBS;
         }
 
-        /**
-         * Ensures that field annotated with {@link Marshalled} don't perform {@code Message} -> {@code byte[]} transformation
+        /*
+         * Ensures that field annotated with {@link Marshalled} doesn't perform {@code Message} -> {@code byte[]} transformation
          * which escapes {@link Order} and other rules implemented on top of communication {@code MessageWriter, MessageReader} logic.
          */
-        if (ensureNoMessageToBytesRecursively(field.asType(), field, ann)) {
+        if (foundMessageToBytesTransformation(field.asType(), field, ann)) {
             env.getMessager().printMessage(Diagnostic.Kind.ERROR,
                 "Message must be written by dedicated message serializers. " +
-                    "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.", field);
+                    "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove companion field.", field);
         }
 
         return res;
@@ -1187,9 +1187,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /**
      * Recursively checks no {@code Message} -> {@code byte[]} transformation.
-     * @return {@code True} in case error found.
+     * @return {@code True} in case error transformation found.
      */
-    private boolean ensureNoMessageToBytesRecursively(TypeMirror type, VariableElement field, Marshalled ann) {
+    private boolean foundMessageToBytesTransformation(TypeMirror type, VariableElement field, Marshalled ann) {
         if (assignableFrom(type, msgType))
             return true;
         else if (isCollection(type)) {
@@ -1197,33 +1197,34 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             List<? extends TypeMirror> typeArgs = colType.getTypeArguments();
 
-            if (typeArgs.size() != 1)
+            if (typeArgs.size() != 1) {
                 env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw collection not supported.", field);
 
-            TypeMirror elType = typeArgs.get(0);
+                return false;
+            }
 
-            return assignableFrom(elType, msgType) || ensureNoMessageToBytesRecursively(elType, field, ann);
+            return foundMessageToBytesTransformation(typeArgs.get(0), field, ann);
         }
-        else if (type.getKind() == TypeKind.ARRAY) {
-            TypeMirror compType = ((ArrayType)type).getComponentType();
-
-            return assignableFrom(compType, msgType) || ensureNoMessageToBytesRecursively(compType, field, ann);
-        }
+        else if (type.getKind() == TypeKind.ARRAY)
+            return foundMessageToBytesTransformation(((ArrayType)type).getComponentType(), field, ann);
         else if (isMap(type) && !ann.value().isEmpty()) {
             DeclaredType mapType = (DeclaredType)type;
 
             List<? extends TypeMirror> typeArgs = mapType.getTypeArguments();
 
-            if (typeArgs.size() != 2)
+            if (typeArgs.size() != 2) {
                 env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw Map not supported.", field);
+
+                return false;
+            }
 
             TypeMirror keyType = typeArgs.get(0);
             TypeMirror valType = typeArgs.get(1);
 
             return assignableFrom(keyType, msgType)
                 || assignableFrom(valType, msgType)
-                || ensureNoMessageToBytesRecursively(keyType, field, ann)
-                || ensureNoMessageToBytesRecursively(valType, field, ann);
+                || foundMessageToBytesTransformation(keyType, field, ann)
+                || foundMessageToBytesTransformation(valType, field, ann);
         }
 
         return false;

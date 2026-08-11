@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
 import java.util.Map;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
 public class MarshalledOnMessageMap implements Message {
