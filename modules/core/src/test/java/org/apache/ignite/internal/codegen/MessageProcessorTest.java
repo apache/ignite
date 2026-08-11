@@ -689,18 +689,18 @@ public class MessageProcessorTest {
     @Test
     public void testMarshalledOnMessageFieldFailGeneration() {
         List<String> cases = Arrays.asList(
-            "MarshalledOnMessage.java",
-            "MarshalledOnMessageCollection.java",
-            "MarshalledOnMessageCollection2.java",
-            "MarshalledOnMessageCollection3.java",
-            "MarshalledOnMessageMap.java",
-            "MarshalledOnMessageMap2.java",
-            "MarshalledOnMessageMap3.java",
-            "MarshalledOnMessageArray.java",
-            "MarshalledOnMessageCollectionArray.java",
-            "MarshalledOnMessageSet.java",
-            "MarshalledOnMessageList.java",
-            "MarshalledOnMessageList2.java"
+            "IncorrectMarshalledOnMessage.java",
+            "IncorrectMarshalledOnMessageCollection.java",
+            "IncorrectMarshalledOnMessageCollection2.java",
+            "IncorrectMarshalledOnMessageCollection3.java",
+            "IncorrectMarshalledOnMessageMap.java",
+            "IncorrectMarshalledOnMessageMap2.java",
+            "IncorrectMarshalledOnMessageMap3.java",
+            "IncorrectMarshalledOnMessageArray.java",
+            "IncorrectMarshalledOnMessageCollectionArray.java",
+            "IncorrectMarshalledOnMessageSet.java",
+            "IncorrectMarshalledOnMessageList.java",
+            "IncorrectMarshalledOnMessageList2.java"
         );
 
         for (String file : cases) {
@@ -715,8 +715,8 @@ public class MessageProcessorTest {
     @Test
     public void testRawClassesFailGeneration() {
         List<String> cases = Arrays.asList(
-            "TestRawListMessage.java",
-            "TestRawCollectionMessage.java"
+            "IncorrectRawListMessage.java",
+            "IncorrectRawCollectionMessage.java"
         );
 
         for (String file : cases) {
@@ -726,7 +726,7 @@ public class MessageProcessorTest {
             assertThat(compilation).hadErrorContaining("Raw collection not supported");
         }
 
-        Compilation compilation = compile("TestMessage.java", "TestRawMapMessage.java");
+        Compilation compilation = compile("TestMessage.java", "IncorrectRawMapMessage.java");
 
         assertThat(compilation).failed();
         assertThat(compilation).hadErrorContaining("Raw Map not supported");

@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Map;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class TestRawMapMessage implements Message {
+public class IncorrectMarshalledOnMessage implements Message {
     /** */
     @Marshalled("msgBytes")
-    Map msgColl;
+    TestMessage msg;
 
     /** */
     @Order(0)

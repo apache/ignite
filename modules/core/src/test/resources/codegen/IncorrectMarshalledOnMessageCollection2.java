@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Map;
+import java.util.Collection;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshalledOnMessageMap implements Message {
+public class IncorrectMarshalledOnMessageCollection2 implements Message {
     /** */
-    @Marshalled("bytes")
-    Map<Integer, TestMessage> msgMap;
+    @Marshalled("msgBytes")
+    Collection<TestMessage> msgColl;
 
     /** */
     @Order(0)
-    byte[] bytes;
+    Collection<byte[]> msgBytes;
 }

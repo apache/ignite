@@ -21,10 +21,10 @@ import java.util.Collection;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshalledOnMessageCollectionArray implements Message {
+public class IncorrectRawCollectionMessage implements Message {
     /** */
     @Marshalled("msgBytes")
-    Collection<TestMessage>[] msgArr;
+    Collection msgColl;
 
     /** */
     @Order(0)

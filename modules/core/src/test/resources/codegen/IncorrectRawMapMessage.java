@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class TestRawCollectionMessage implements Message {
+public class IncorrectRawMapMessage implements Message {
     /** */
     @Marshalled("msgBytes")
-    Collection msgColl;
+    Map msgColl;
 
     /** */
     @Order(0)

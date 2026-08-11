@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshalledOnMessageArray implements Message {
+public class IncorrectRawListMessage implements Message {
     /** */
     @Marshalled("msgBytes")
-    TestMessage[] msgArr;
+    List msgColl;
 
     /** */
     @Order(0)

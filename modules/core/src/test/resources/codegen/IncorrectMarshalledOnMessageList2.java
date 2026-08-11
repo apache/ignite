@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshalledOnMessageList2 implements Message {
+public class IncorrectMarshalledOnMessageList2 implements Message {
     /** */
     @Marshalled("msgBytes")
     List<List<TestMessage>> msgColl;
