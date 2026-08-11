@@ -191,7 +191,7 @@ public final class GridMessageListenHandler implements GridContinuousHandler, Ma
             return;
 
         try {
-            ClassLoader ldr = ctx.deploy().globalDeployment(depInfo, clsName, nodeId).classLoader();
+            ClassLoader ldr = ctx.deploy().globalDeployment(predDepInfo, clsName, nodeId).classLoader();
 
             if (topicBytes != null)
                 topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.config()));

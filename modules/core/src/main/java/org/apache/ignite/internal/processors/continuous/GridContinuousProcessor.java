@@ -956,8 +956,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             hnd.p2pMarshal(ctx);
         }
 
-        reqData.hndBytes = U.marshal(marsh, hnd);
-
         if (nodeFilter != null)
             reqData.nodeFilterBytes = U.marshal(marsh, nodeFilter);
 
@@ -1329,17 +1327,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         data.nodeFilter = U.unmarshal(marsh, data.nodeFilterBytes,
             ctx.deploy().classLoader(data.depInfo, data.clsName, sndId));
 
-        if (data.hndBytes != null) {
-            data.hnd = U.unmarshal(marsh, data.hndBytes, U.resolveClassLoader(ctx.config()));
+        if (ctx.config().isPeerClassLoadingEnabled())
+            data.hnd.p2pUnmarshal(sndId, ctx);
 
-            if (ctx.config().isPeerClassLoadingEnabled())
-                data.hnd.p2pUnmarshal(sndId, ctx);
+        if (data.keepBinary) {
+            assert data.hnd instanceof CacheContinuousQueryHandler : data.hnd;
 
-            if (data.keepBinary) {
-                assert data.hnd instanceof CacheContinuousQueryHandler : data.hnd;
-
-                ((CacheContinuousQueryHandler<?, ?>)data.hnd).keepBinary(true);
-            }
+            ((CacheContinuousQueryHandler<?, ?>)data.hnd).keepBinary(true);
         }
     }
 

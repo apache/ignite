@@ -85,7 +85,7 @@ public final class GridEventConsumeHandler implements GridContinuousHandler, Mar
 
     /** Deployment info. Is {@code null} if P2P deployment is disabled. */
     @Order(2)
-    @Nullable volatile GridDeploymentInfoBean depInfo;
+    @Nullable volatile GridDeploymentInfoMessage depInfo;
 
     /** Types. */
     @Order(3)
