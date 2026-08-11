@@ -26,8 +26,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -125,7 +125,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
 
         GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
-        MessageMarshalling.marshal(msg, marsh, kctx, null);
+        DiscoveryMarshalling.marshal(msg, kctx, null);
 
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
@@ -145,7 +145,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
         assertEquals("Reads" + ERROR_SUFFIX, expReadsWritesCnt, reader.state());
 
-        MessageMarshalling.unmarshal(res, marsh, kctx, null, U.gridClassLoader());
+        DiscoveryMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
 
         return res;
     }

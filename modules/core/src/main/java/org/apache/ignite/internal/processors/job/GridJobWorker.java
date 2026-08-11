@@ -46,7 +46,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -884,7 +884,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                             if (!loc) {
                                 try {
-                                    MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
+                                    CommunicationMarshalling.marshal(jobRes, ctx, null);
                                 }
                                 catch (IgniteCheckedException e) {
                                     String ids = "[nodeId=" + sndNode.id() + ", ses=" + ses.getId() +
@@ -898,7 +898,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                         : U.convertException(e));
 
                                     try {
-                                        MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
+                                        CommunicationMarshalling.marshal(jobRes, ctx, null);
                                     }
                                     catch (IgniteCheckedException e0) {
                                         // Then the exception itself is what could not be written.
@@ -908,7 +908,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
                                         jobRes = jobRes.withError(new IgniteException(errMsg));
 
-                                        MessageMarshalling.marshal(jobRes, ctx.marshaller(), ctx, null);
+                                        CommunicationMarshalling.marshal(jobRes, ctx, null);
                                     }
                                 }
                             }

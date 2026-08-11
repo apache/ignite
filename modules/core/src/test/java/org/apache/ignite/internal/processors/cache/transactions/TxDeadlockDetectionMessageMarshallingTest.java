@@ -25,15 +25,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -68,8 +67,8 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof TxLocksResponse) {
                         try {
-                            MessageMarshalling.unmarshal((TxLocksResponse)msg, Marshallers.jdk(),
-                                clientCtx.kernalContext(), null, clientCtx.deploy().globalLoader());
+                            DiscoveryMarshalling.unmarshal((TxLocksResponse)msg, clientCtx.kernalContext(), null,
+                                clientCtx.deploy().globalLoader());
 
                             res.set(true);
                         }

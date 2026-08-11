@@ -46,8 +46,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -55,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
@@ -807,7 +806,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                         );
 
                         try {
-                            MessageMarshalling.marshal(msg, Marshallers.jdk(), ((IgniteEx)ignite).context(), null);
+                            DiscoveryMarshalling.marshal(msg, ((IgniteEx)ignite).context(), null);
                         }
                         catch (IgniteCheckedException e) {
                             throw new RuntimeException(e);

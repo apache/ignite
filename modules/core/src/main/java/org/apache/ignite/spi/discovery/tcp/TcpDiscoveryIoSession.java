@@ -36,7 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
@@ -202,7 +202,7 @@ public class TcpDiscoveryIoSession {
 
             // Discovery marshals with jdk: binary registers an unknown type cluster-wide and waits for discovery,
             // which cannot happen on a discovery thread.
-            MessageMarshalling.unmarshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx);
+            DiscoveryMarshalling.unmarshal(msg, kctx);
 
             return (T)msg;
         }
@@ -248,7 +248,7 @@ public class TcpDiscoveryIoSession {
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
         GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
 
-        MessageMarshalling.marshal(m, kctx.marshallerContext().jdkMarshaller(), kctx, null);
+        DiscoveryMarshalling.marshal(m, kctx, null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);

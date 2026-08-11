@@ -20,13 +20,12 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.processors.cache.CacheObjectNotResolvedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -69,13 +68,13 @@ public class GridCacheQueryResponseUnmarshalTest extends GridCommonAbstractTest 
 
         res.data(List.of(new T2<>(key, "row")));
 
-        MessageMarshalling.marshal(res, Marshallers.jdk(), kctx, null);
+        DiscoveryMarshalling.marshal(res, kctx, null);
 
         GridCacheQueryResponse rcvd = new GridCacheQueryResponse(cctx.cacheId(), 0, true, false);
 
         rcvd.dataBytes = res.dataBytes;
 
-        MessageMarshalling.unmarshal(rcvd, Marshallers.jdk(), kctx, null, getClass().getClassLoader());
+        DiscoveryMarshalling.unmarshal(rcvd, kctx, null, getClass().getClassLoader());
 
         Map.Entry<?, ?> row = (Map.Entry<?, ?>)rcvd.data().iterator().next();
 

@@ -39,10 +39,10 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoManager.SendRetryPolicy;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
@@ -1539,7 +1539,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
             }
 
-            MessageMarshalling.unmarshal(cacheMsg, cctx.marshaller(), cctx.kernalContext(), null, cctx.deploy().globalLoader());
+            CommunicationMarshalling.unmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);

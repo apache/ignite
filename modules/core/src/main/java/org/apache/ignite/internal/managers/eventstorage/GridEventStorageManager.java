@@ -48,9 +48,9 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
@@ -1242,7 +1242,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    MessageMarshalling.unmarshal(req, ctx.marshaller(), ctx, null,
+                    CommunicationMarshalling.unmarshal(req, ctx, null,
                         ctx.deploy().classLoader(req.deploymentInfo(), req.filterClassName(), nodeId));
 
                     filter = (IgnitePredicate<Event>)req.filter();
