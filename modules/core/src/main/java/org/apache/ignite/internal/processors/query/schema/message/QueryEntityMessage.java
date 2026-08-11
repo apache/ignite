@@ -112,7 +112,7 @@ public class QueryEntityMessage implements Message {
             keyFields = qryEntity.getKeyFields().toArray(U.EMPTY_STRS);
 
         if (!F.isEmpty(qryEntity.getIndexes()))
-            idxs = F.viewReadOnly(qryEntity.getIndexes(), QueryIndexMessage::new);
+            idxs = F.transform(qryEntity.getIndexes(), QueryIndexMessage::new);
 
         tableName = qryEntity.getTableName();
 

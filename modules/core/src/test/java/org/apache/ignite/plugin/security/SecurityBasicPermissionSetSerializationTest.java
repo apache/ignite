@@ -18,23 +18,21 @@
 package org.apache.ignite.plugin.security;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
@@ -60,15 +58,48 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         SecurityBasicPermissionSet src = new SecurityBasicPermissionSet();
 
         src.setDefaultAllowAll(true);
-        src.setSystemPermissions(F.asList(ADMIN_CACHE, ADMIN_QUERY, null));
-        src.setTaskPermissions(Map.of("task", F.asList(TASK_EXECUTE, null, TASK_CANCEL)));
-        src.setServicePermissions(Map.of("service", Set.of(SERVICE_INVOKE, SERVICE_CANCEL)));
-        src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
+        src.setSystemPermissions(EnumSet.of(ADMIN_CACHE, ADMIN_QUERY));
+        src.setTaskPermissions(Map.of("task", EnumSet.of(TASK_EXECUTE, TASK_CANCEL)));
+        src.setServicePermissions(Map.of("service", EnumSet.of(SERVICE_INVOKE, SERVICE_CANCEL)));
+        src.setCachePermissions(Map.of("cache", EnumSet.of(CACHE_CREATE, CACHE_PUT)));
 
-        src.setCachePermissions(Map.of("cache", Set.of(CACHE_CREATE, CACHE_PUT)));
         SecurityBasicPermissionSet res = writeAndReadBack(src);
 
-        assertTrue("Permission sets are not equal [src=" + src + ", res=" + res + "]", deepEquals(src, res));
+        assertEquals("Permission sets are not equal", src, res);
+        assertEquals("Hashes of permission sets are not equal [src=" + src + ", res=" + res + "]",
+            src.hashCode(), res.hashCode());
+    }
+
+    /** */
+    @Test
+    public void testWithEmptyPermissions() throws Exception {
+        SecurityBasicPermissionSet src = new SecurityBasicPermissionSet();
+        src.setDefaultAllowAll(true);
+
+        EnumSet<SecurityPermission> emptyPerms = EnumSet.noneOf(SecurityPermission.class);
+
+        src.setSystemPermissions(emptyPerms);
+
+        HashMap<String, EnumSet<SecurityPermission>> taskPerms = new HashMap<>();
+        taskPerms.put("task1", emptyPerms);
+        taskPerms.put("task2", EnumSet.of(TASK_EXECUTE));
+
+        src.setTaskPermissions(taskPerms);
+
+        SecurityBasicPermissionSet res = writeAndReadBack(src);
+
+        assertEquals("Permission sets are not equal", src, res);
+        assertEquals("Hashes of permission sets are not equal [src=" + src + ", res=" + res + "]",
+            src.hashCode(), res.hashCode());
+
+        // Explicitly test 'null' for system permissions.
+        src.setSystemPermissions(null);
+
+        res = writeAndReadBack(src);
+
+        assertEquals("Permission sets are not equal", src, res);
+        assertEquals("Hashes of permission sets are not equal [src=" + src + ", res=" + res + "]",
+            src.hashCode(), res.hashCode());
     }
 
     /**
@@ -99,51 +130,5 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
 
         return res;
-    }
-
-    /**
-     * Perfroms deep equals of permission sets.
-     *
-     * @param lhs First permissions set for equality check.
-     * @param rhs Second permissions set for equality check.
-     * @return Whether specified permission sets are equal.
-     */
-    public static boolean deepEquals(SecurityPermissionSet lhs, SecurityPermissionSet rhs) {
-        if (lhs == rhs)
-            return true;
-
-        return lhs != null
-            && rhs != null
-            && lhs.defaultAllowAll() == rhs.defaultAllowAll()
-            && (F.isEmpty(rhs.systemPermissions()) && F.isEmpty(rhs.systemPermissions())
-            || F.eqNotOrdered(rhs.systemPermissions(), lhs.systemPermissions()))
-            && eqNotOrdered(rhs.taskPermissions(), lhs.taskPermissions())
-            && eqNotOrdered(rhs.servicePermissions(), lhs.servicePermissions())
-            && eqNotOrdered(rhs.cachePermissions(), lhs.cachePermissions());
-    }
-
-    /**
-     * @param m1 First map to check.
-     * @param m2 Second map to check
-     * @return {@code True} is maps are equal, {@code False} otherwise.
-     */
-    public static boolean eqNotOrdered(
-        @Nullable Map<String, Collection<SecurityPermission>> m1,
-        @Nullable Map<String, Collection<SecurityPermission>> m2) {
-        if (m1 == m2)
-            return true;
-
-        if (m1 == null || m2 == null)
-            return false;
-
-        if (m1.size() != m2.size())
-            return false;
-
-        for (Map.Entry<String, Collection<SecurityPermission>> e : m1.entrySet()) {
-            if (!F.eqNotOrdered(e.getValue(), m2.get(e.getKey())))
-                return false;
-        }
-
-        return true;
     }
 }

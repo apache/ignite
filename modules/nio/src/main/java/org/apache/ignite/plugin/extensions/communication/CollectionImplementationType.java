@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.plugin.extensions.communication;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+/** Collection implementation a {@link MessageCollectionType} is read back into. */
+public enum CollectionImplementationType {
+    /** {@link java.util.ArrayList} (the default implementation type). */
+    ARRAY_LIST,
 
-public class EmptyMessage implements Message {
-    public short directType() {
-        return 0;
-    }
+    /** {@link java.util.HashSet}. */
+    HASH_SET,
+
+    /** {@link java.util.EnumSet}. */
+    ENUM_SET
 }

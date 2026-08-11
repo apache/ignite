@@ -15,19 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.marshaller.optimized;
+package org.apache.ignite.internal;
 
-/**
- * ID mapper.
- */
-public interface OptimizedMarshallerIdMapper {
-    /**
-     * Gets type ID for provided class name.
-     * <p>
-     * If {@code 0} is returned, hash code of class name will be used.
-     *
-     * @param clsName Class name.
-     * @return Type ID.
-     */
-    public int typeId(String clsName);
+import org.apache.ignite.plugin.extensions.communication.Message;
+
+@EmptyMessage
+public class CorrectEmptyMessage implements Message {
+    public short directType() {
+        return 0;
+    }
 }

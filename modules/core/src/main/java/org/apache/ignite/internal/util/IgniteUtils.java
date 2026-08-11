@@ -5458,34 +5458,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(
-        String clsName,
-        @Nullable ClassLoader ldr,
-        @Nullable IgnitePredicate<String> clsFilter
-    ) throws ClassNotFoundException {
-        return forName(clsName, ldr, clsFilter, Marshallers.USE_CACHE.get());
-    }
-
-    /**
      * Applies a supplemental hash function to a given hashCode, which
      * defends against poor quality hash functions.  This is critical
      * because ConcurrentHashMap uses power-of-two length hash tables,

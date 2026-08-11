@@ -21,17 +21,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Compress;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
-public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements MarshallableMessage {
+public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements SelfMarshallingMessage {
     /** Local partitions. */
     @Order(0)
     @Compress
@@ -292,12 +290,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
-    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override public void selfMarshal() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void selfUnmarshal() {
         if (dupPartsData != null) {
             assert parts != null;
 

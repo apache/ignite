@@ -142,6 +142,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
+import static org.apache.ignite.internal.StripedMessage.ANY_STRIPE;
+import static org.apache.ignite.internal.StripedMessage.NO_STRIPE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -1384,21 +1386,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             if (msg0.processFromNioThread())
                 c.run();
             else
-                ctx.pools().getStripedExecutorService().execute(-1, c);
+                ctx.pools().getStripedExecutorService().execute(ANY_STRIPE, c);
 
             return;
         }
 
-        final int part = msg.partition(); // Store partition to avoid possible recalculation.
+        final int stripeIdx = msg.stripeIdx(); // Store to avoid possible recalculation.
 
-        if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.pools().getStripedExecutorService().execute(part, c);
+        if (plc == GridIoPolicy.SYSTEM_POOL && stripeIdx != NO_STRIPE) {
+            ctx.pools().getStripedExecutorService().execute(stripeIdx, c);
 
             return;
         }
 
-        if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.pools().getDataStreamerExecutorService().execute(part, c);
+        if (plc == GridIoPolicy.DATA_STREAMER_POOL && stripeIdx != NO_STRIPE) {
+            ctx.pools().getDataStreamerExecutorService().execute(stripeIdx, c);
 
             return;
         }
@@ -1460,6 +1462,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** */
+    // TODO IGNITE-28950: the regular path drops the message without a trace, unlike the ordered one.
     private void unmarshalPayload(GridIoMessage msg) {
         if (msg.message() instanceof DeferredUnmarshalMessage)
             return;
@@ -2419,10 +2422,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             depClsName,
             topic,
             serTopic,
-            dep != null ? dep.classLoaderId() : null,
-            dep != null ? dep.deployMode() : null,
-            dep != null ? dep.userVersion() : null,
-            dep != null ? dep.participants() : null);
+            dep);
 
         if (ordered)
             sendOrderedMessageToGridTopic(nodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL, timeout, true);
@@ -3632,21 +3632,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                     if (dep == null && ctx.config().isPeerClassLoadingEnabled() &&
                         ioMsg.deploymentClassName() != null) {
-                        dep = ctx.deploy().getGlobalDeployment(
-                            ioMsg.deploymentMode(),
-                            ioMsg.deploymentClassName(),
-                            ioMsg.deploymentClassName(),
-                            ioMsg.userVersion(),
-                            nodeId,
-                            ioMsg.classLoaderId(),
-                            ioMsg.loaderParticipants(),
-                            null);
+                        dep = ctx.deploy().globalDeployment(ioMsg.deploymentInfo(), ioMsg.deploymentClassName(),
+                            ioMsg.deploymentClassName(), nodeId);
 
-                        if (dep == null)
+                        if (dep == null) {
                             throw new IgniteDeploymentCheckedException(
                                 "Failed to obtain deployment information for user message. " +
                                     "If you are using custom message or topic class, try implementing " +
                                     "GridPeerDeployAware interface. [msg=" + ioMsg + ']');
+                        }
 
                         ioMsg.deployment(dep); // Cache deployment.
                     }

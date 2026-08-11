@@ -25,13 +25,12 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
@@ -42,8 +41,9 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys;
 import org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageRequest;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
@@ -188,12 +188,16 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
+import org.apache.ignite.internal.processors.cluster.BaselineStateAndHistoryData;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistory;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterIdAndTag;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
@@ -204,6 +208,7 @@ import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMes
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -215,6 +220,9 @@ import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMes
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageClusterNodeData;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageJoiningNodeData;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage;
 import org.apache.ignite.internal.processors.plugin.PluginsDataBagItem;
@@ -264,6 +272,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceTopology;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -315,7 +324,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProvider {
+public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = 11500;
 
@@ -654,6 +663,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(DataStreamerEntry.class);
         register(DataStreamerRequest.class);
         register(DataStreamerResponse.class);
+        register(DataStreamerReceiverMessage.class);
 
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
@@ -678,7 +688,7 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [12200 - 12300]: Binary, classloading and marshalling messages.
         msgIdx = 12200;
-        register(GridDeploymentInfoBean.class);
+        register(GridDeploymentInfoMessage.class);
         register(GridDeploymentRequest.class);
         register(GridDeploymentResponse.class);
         register(MissingMappingRequestMessage.class);
@@ -703,7 +713,8 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
 
         // [13000 - 13300]: Control, configuration, diagnostics and other messages.
         msgIdx = 13000;
-        register(GridEventStorageMessage.class);
+        register(GridEventStorageRequest.class);
+        register(GridEventStorageResponse.class);
         register(ChangeGlobalStateMessage.class);
         register(GridChangeGlobalStateMessageResponse.class);
         register(IgniteDiagnosticRequest.class);
@@ -717,6 +728,13 @@ public class CoreMessagesProvider extends AbstractMarshallableMessageFactoryProv
         register(ClusterUpdateNotifierDataBagItem.class);
         register(PluginsDataBagItem.class);
         register(EventsDataBagItem.class);
+        register(BaselineStateAndHistoryData.class);
+        register(BaselineTopologyHistory.class);
+        register(BaselineTopologyHistoryItem.class);
+        register(DiscoveryDataClusterState.class);
+        register(DistributedMetaStorageHistoryItemMessage.class);
+        register(DistributedMetaStorageJoiningNodeData.class);
+        register(DistributedMetaStorageClusterNodeData.class);
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;

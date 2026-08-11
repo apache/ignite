@@ -111,6 +111,31 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testEnumSetMessage() {
+        Compilation compilation = compile("TestEnumSetMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestEnumSetMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestEnumSetMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testEnumSetOfTypeVariableFailed() {
+        Compilation compilation = compile("WrongEnumSetMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining(
+            "Unexpected Enum Set element type [itemType=E, colType=java.util.EnumSet<E>");
+    }
+
+    /** */
+    @Test
     public void testMapMessage() {
         Compilation compilation = compile("TestMapMessage.java");
 
@@ -129,11 +154,25 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testEmptyMessage() {
-        Compilation compilation = compile("EmptyMessage.java");
+    public void testIncorrectEmptyMessage() {
+        Compilation compilation = compile("IncorrectEmptyMessage.java");
 
         assertThat(compilation).succeeded();
         assertTrue(compilation.generatedSourceFiles().isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testCorrectEmptyMessage() {
+        Compilation compilation = compile("CorrectEmptyMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.CorrectEmptyMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CorrectEmptyMessageSerializer.java"));
     }
 
     /** */
@@ -370,6 +409,24 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshaller.java"));
+    }
+
+    /** The self-marshalling step is called from the generated marshaller, statically. */
+    @Test
+    public void testSelfMarshallingMessage() {
+        Compilation compilation = compile("TestSelfMarshallingMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageMarshaller.java"));
     }
 
     /**
@@ -611,8 +668,19 @@ public class MessageProcessorTest {
 
         assertThat(compilation).failed();
 
-        assertThat(compilation)
-            .hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields");
+        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
+            "or SelfMarshallingMessage, nor declare @Marshalled fields");
+    }
+
+    /** A self-marshalling step of a {@code NonMarshallableMessage} would never run: it gets no marshaller to call it. */
+    @Test
+    public void testNonMarshallableSelfMarshallingFailed() {
+        Compilation compilation = compile("WrongSelfMarshallingMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
+            "or SelfMarshallingMessage, nor declare @Marshalled fields");
     }
 
     /** */

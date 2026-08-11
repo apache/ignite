@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.marshaller.optimized;
+package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import java.io.ObjectInputFilter;
+import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
+import org.apache.ignite.marshaller.MarshallerUtils;
 
-/**
- * Optimized marshaller self test.
- */
-@GridCommonTest(group = "Marshaller")
-public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTest {
-    /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() throws IgniteCheckedException {
-        OptimizedMarshaller m = initTestMarshallerContext(Marshallers.optimized(false));
-
-        m.setPoolSize(8);
-
-        return m;
-    }
+/** */
+public class IgniteObjectInputFilter implements ObjectInputFilter {
+    /** */
+    private final IgniteMarshallerClassFilter clsFilter = MarshallerUtils.classNameFilter();
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        // Reset static registry.
-        Marshallers.optimized().setPoolSize(0);
+    @Override public Status checkInput(FilterInfo filterInfo) {
+        Class<?> cls = filterInfo.serialClass();
+
+        if (cls == null)
+            return Status.UNDECIDED;
+
+        return clsFilter.apply(cls.getName()) ? Status.ALLOWED : Status.REJECTED;
     }
 }
