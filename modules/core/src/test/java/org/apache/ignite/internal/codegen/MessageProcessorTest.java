@@ -696,7 +696,8 @@ public class MessageProcessorTest {
             "MarshalledOnMessageMap2.java",
             "MarshalledOnMessageMap3.java",
             "MarshalledOnMessageArray.java",
-            "MarshalledOnMessageCollectionArray.java"
+            "MarshalledOnMessageCollectionArray.java",
+            "MarshalledOnMessageSet.java"
         );
 
         for (String file : cases) {
@@ -705,12 +706,6 @@ public class MessageProcessorTest {
             assertThat(compilation).failed();
             assertThat(compilation).hadErrorContaining("Message must be written by dedicated message serializers");
         }
-    }
-
-    /** Test that {@code @Marshalled} annotation for {@code Set<Message>} -> {@code Message[]} will succeed. */
-    @Test
-    public void testMarshalledOnMessageSet() {
-        assertThat(compile("TestMessage.java", "MarshalledOnMessageSet.java")).succeeded();
     }
 
     /** */
