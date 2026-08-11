@@ -52,6 +52,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -431,8 +432,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                     ErrorMessage em = new ErrorMessage(new IgniteException("Test exception."));
 
                     try {
-                        // The receiver unmarshals with the transport marshaller of communication.
-                        em.marshal(grid(1).context().marshaller());
+                        em.marshal(jdk());
                     }
                     catch (IgniteCheckedException e) {
                         throw new RuntimeException(e);

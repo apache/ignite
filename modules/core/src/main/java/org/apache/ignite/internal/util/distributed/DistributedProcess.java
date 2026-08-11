@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -292,6 +294,21 @@ public class DistributedProcess<I extends Message, R extends Message> {
      */
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
+
+        // The result is marshalled by the sending thread, and marshalling a class the cluster has not seen yet takes
+        // a discovery round to register its name. On a discovery thread that round never completes: this very thread
+        // is the one to deliver the answer.
+        if (Thread.currentThread() instanceof IgniteDiscoveryThread) {
+            try {
+                ctx.pools().getSystemExecutorService().execute(() -> sendSingleMessage(p));
+            }
+            catch (RejectedExecutionException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send a single message, the node is stopping [processId=" + p.id + ']');
+            }
+
+            return;
+        }
 
         SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(), p.resFut.error());
 
