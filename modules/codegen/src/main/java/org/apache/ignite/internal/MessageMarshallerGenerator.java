@@ -1147,16 +1147,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         if (ann == null)
             return null;
 
-        /**
-         * Ensures that field annotated with {@link Marshalled} don't perform {@code Message} -> {@code byte[]} transformation
-         * which escapes {@link Order} and other rules implemented on top of communication {@code MessageWriter}, {@code MessageReader} logic.
-         */
-        if (ensureNoMessageToBytesRecursively(field.asType(), field, ann)) {
-            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                "Message must be written by communication protocol. " +
-                    "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.", field);
-        }
-
         boolean map = !ann.keys().isEmpty() || !ann.values().isEmpty();
 
         if (map == !ann.value().isEmpty() || (map && (ann.keys().isEmpty() || ann.values().isEmpty()))) {
@@ -1166,21 +1156,39 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             return null;
         }
 
+        MarshalledKind res;
+
         if (map)
-            return MarshalledKind.MAP;
+            res = MarshalledKind.MAP;
+        else {
+            TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
 
-        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
-
-        if (wire.getKind() == TypeKind.ARRAY) {
-            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
-                ? MarshalledKind.BLOB
-                : MarshalledKind.ELEMENTS;
+            if (wire.getKind() == TypeKind.ARRAY) {
+                res = ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
+                    ? MarshalledKind.BLOB
+                    : MarshalledKind.ELEMENTS;
+            }
+            else
+                res = MarshalledKind.ELEMENT_BLOBS;
         }
 
-        return MarshalledKind.ELEMENT_BLOBS;
+        /**
+         * Ensures that field annotated with {@link Marshalled} don't perform {@code Message} -> {@code byte[]} transformation
+         * which escapes {@link Order} and other rules implemented on top of communication {@code MessageWriter, MessageReader} logic.
+         */
+        if (res != MarshalledKind.ELEMENTS && ensureNoMessageToBytesRecursively(field.asType(), field, ann)) {
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Message must be written by communication protocol. " +
+                    "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.", field);
+        }
+
+        return res;
     }
 
-    /** Recursively checks no {@code Message} -> {@code byte[]} transformation. */
+    /**
+     * Recursively checks no {@code Message} -> {@code byte[]} transformation.
+     * @return {@code True} in case error found.
+     */
     private boolean ensureNoMessageToBytesRecursively(TypeMirror type, VariableElement field, Marshalled ann) {
         if (assignableFrom(type, msgType))
             return true;

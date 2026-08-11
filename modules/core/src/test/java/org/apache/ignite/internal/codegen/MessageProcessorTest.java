@@ -707,6 +707,20 @@ public class MessageProcessorTest {
         }
     }
 
+    /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
+    @Test
+    public void testMarshalledOnMessageSet() {
+        assertThat(compile("TestMessage.java", "MarshalledOnMessageSet.java")).succeeded();
+    }
+
+    /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
+    @Test
+    public void testMarshalledOnSetToArraySucceed() {
+        Compilation compilation = compile("TestMessage.java", "MarshalledOnMessageSet.java");
+
+        assertThat(compilation).succeeded();
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);
