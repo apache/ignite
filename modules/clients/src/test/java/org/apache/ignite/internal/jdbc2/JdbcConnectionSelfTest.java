@@ -325,12 +325,13 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that JDBC cfg:// URL with remote HTTP location is allowed when system property is set.
+     * Test that JDBC cfg:// URL with remote HTTP/HTTPS location is allowed when system property is set.
      */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_ALLOW_REMOTE_SPRING_CFG_URL, value = "true")
-    public void testRemoteHttpCfgUrlAllowedWhenFlagSet() {
-        final String url = CFG_URL_PREFIX + "http://127.0.0.1:1/nonexistent.xml";
+    public void testRemoteCfgUrlAllowedWhenFlagSet() {
+        for (String scheme : Arrays.asList("http", "https")) {
+            final String url = CFG_URL_PREFIX + scheme + "://127.0.0.1:1/nonexistent.xml";
 
         Throwable err = GridTestUtils.assertThrows(
             log,
@@ -348,8 +349,9 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         String msg = err.getMessage();
 
         assertFalse(
-            "Security exception should not be thrown when flag is enabled",
-            msg != null && msg.contains("Remote Spring configuration URLs")
+           "Security exception should not be thrown when flag is enabled for scheme " + scheme,
+           msg != null && msg.contains("Remote Spring configuration URLs")
         );
+        }
     }
 }
