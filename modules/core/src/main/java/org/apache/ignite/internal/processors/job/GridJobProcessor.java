@@ -1248,7 +1248,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     try {
                         // The job payload waits for this point: only now is there a deployment to unmarshal it with.
                         if (!loc) {
-                            // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28964
                             MessageMarshalling.unmarshal(req, ctx, null,
                                 U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
