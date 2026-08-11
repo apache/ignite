@@ -21,7 +21,7 @@ import java.util.Collection;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class MarshalledOnMessageArray2 implements Message {
+public class MarshalledOnMessageCollectionArray implements Message {
     /** */
     @Marshalled("msgBytes")
     Collection<TestMessage>[] msgArr;

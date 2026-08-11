@@ -1178,7 +1178,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
          */
         if (res != MarshalledKind.ELEMENTS && ensureNoMessageToBytesRecursively(field.asType(), field, ann)) {
             env.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                "Message must be written by communication protocol. " +
+                "Message must be written by dedicated message serializers. " +
                     "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.", field);
         }
 

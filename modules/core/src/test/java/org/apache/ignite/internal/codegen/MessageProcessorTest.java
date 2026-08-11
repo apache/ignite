@@ -696,29 +696,21 @@ public class MessageProcessorTest {
             "MarshalledOnMessageMap2.java",
             "MarshalledOnMessageMap3.java",
             "MarshalledOnMessageArray.java",
-            "MarshalledOnMessageArray2.java"
+            "MarshalledOnMessageCollectionArray.java"
         );
 
         for (String file : cases) {
             Compilation compilation = compile("TestMessage.java", file);
 
             assertThat(compilation).failed();
-            assertThat(compilation).hadErrorContaining("Message must be written by communication protocol");
+            assertThat(compilation).hadErrorContaining("Message must be written by dedicated message serializers");
         }
     }
 
-    /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
+    /** Test that {@code @Marshalled} annotation for {@code Set<Message>} -> {@code Message[]} will succeed. */
     @Test
     public void testMarshalledOnMessageSet() {
         assertThat(compile("TestMessage.java", "MarshalledOnMessageSet.java")).succeeded();
-    }
-
-    /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
-    @Test
-    public void testMarshalledOnSetToArraySucceed() {
-        Compilation compilation = compile("TestMessage.java", "MarshalledOnMessageSet.java");
-
-        assertThat(compilation).succeeded();
     }
 
     /** */
