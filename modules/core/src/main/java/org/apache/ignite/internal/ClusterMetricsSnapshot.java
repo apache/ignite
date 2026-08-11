@@ -317,7 +317,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
     /** Empty constructor for serialization purposes. */
     public ClusterMetricsSnapshot() {
         // Like in deserialize().
-        lastUpdateTime = System.currentTimeMillis();
+        lastUpdateTime = U.currentTimeMillis();
     }
 
     /**
@@ -637,7 +637,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
 
     /** {@inheritDoc} */
     @Override public float getAverageActiveJobs() {
-        return curActiveJobs;
+        return avgActiveJobs;
     }
 
     /**
