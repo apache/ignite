@@ -333,25 +333,25 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         for (String scheme : Arrays.asList("http", "https")) {
             final String url = CFG_URL_PREFIX + scheme + "://127.0.0.1:1/nonexistent.xml";
 
-        Throwable err = GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
+            Throwable err = GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Connection conn = DriverManager.getConnection(url)) {
+                            return conn;
+                        }
                     }
-                }
-            },
-            SQLException.class,
-            null
-        );
+                },
+                SQLException.class,
+                null
+            );
 
-        String msg = err.getMessage();
+            String msg = err.getMessage();
 
-        assertFalse(
-           "Security exception should not be thrown when flag is enabled for scheme " + scheme,
-           msg != null && msg.contains("Remote Spring configuration URLs")
-        );
+            assertFalse(
+                "Security exception should not be thrown when flag is enabled for scheme " + scheme,
+                msg != null && msg.contains("Remote Spring configuration URLs")
+            );
         }
     }
 }
