@@ -207,16 +207,13 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         SqlNodeList origList = select.getSelectList();
         SqlNodeList newList = new SqlNodeList(SqlParserPos.ZERO);
 
-        for (SqlNode col : origList)
-            newList.add(col);
+        newList.addAll(origList);
 
         SqlNodeList ofList = forUpdate.ofList();
         int ofColumnCnt = ofList == null ? 0 : ofList.size();
 
-        if (ofList != null) {
-            for (SqlNode col : ofList)
-                newList.add(col);
-        }
+        if (ofList != null)
+            newList.addAll(ofList);
 
         for (TableRef tableRef : tableRefs) {
             newList.add(tableRef.column(QueryUtils.KEY_FIELD_NAME));
@@ -242,8 +239,9 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         MultiStepQueryPlan innerPlan = (MultiStepQueryPlan)prepareQuery(modifiedSelect, ctx);
 
-        int lockColumnCnt = tableRefs.size() * 3;
-        int userColCnt = innerPlan.fieldsMetadata().rowType().getFieldCount() - ofColumnCnt - lockColumnCnt;
+        // Three internal lock columns (_KEY, _VAL, and _VER) are appended for each table.
+        int lockSpecificColumnCnt = tableRefs.size() * 3;
+        int requestedColCnt = innerPlan.fieldsMetadata().rowType().getFieldCount() - ofColumnCnt - lockSpecificColumnCnt;
         Set<TableRef> tablesToLock = new LinkedHashSet<>();
 
         if (ofList == null)
@@ -262,7 +260,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                 tablesToLock.add(resolveLockTarget(
                     tableRefs,
                     (SqlIdentifier)ofColumn,
-                    fieldsMeta.get(userColCnt + i)
+                    fieldsMeta.get(requestedColCnt + i)
                 ));
             }
         }
@@ -276,12 +274,12 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                 lockTargets.add(new LockTarget(
                     tableRef.schemaName,
                     tableRef.tableName,
-                    userColCnt + ofColumnCnt + i * 3
+                    requestedColCnt + ofColumnCnt + i * 3
                 ));
             }
         }
 
-        return new SelectForUpdatePlan(innerPlan, userColCnt, forUpdate.waitSeconds(), lockTargets);
+        return new SelectForUpdatePlan(innerPlan, requestedColCnt, forUpdate.waitSeconds(), lockTargets);
     }
 
     /** Rejects SELECT forms whose result rows cannot be mapped one-to-one to cache entries. */

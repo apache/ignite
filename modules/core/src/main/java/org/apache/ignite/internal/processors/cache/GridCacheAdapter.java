@@ -3148,7 +3148,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         // Acquire transactional lock future from concrete cache implementation. Use txLockAsync which
         // delegates to cache-specific lockAllAsync implementations for distributed caches.
+        long lockWaitStartTime = U.currentTimeMillis();
         long timeout = tx.remainingTime();
+        long effectiveWaitTimeout = CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
+        long lockWaitEndTime = effectiveWaitTimeout > 0
+            ? lockWaitStartTime + effectiveWaitTimeout
+            : effectiveWaitTimeout < 0 ? lockWaitStartTime : 0L;
 
         IgniteInternalFuture<Boolean> lockFut = txLockAsync(keys,
             timeout,
@@ -3177,6 +3182,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     for (int i = 0; i < txEntries.size(); i++) {
                         IgniteTxEntry txEntry = txEntries.get(i);
                         EntryGetResult getRes;
+                        int retryCnt = 0;
 
                         while (true) {
                             try {
@@ -3196,6 +3202,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 break;
                             }
                             catch (GridCacheEntryRemovedException ignored) {
+                                // NOWAIT still permits one immediate retry because renewing an obsolete entry does not
+                                // wait for a lock. Other modes stop when their effective timeout expires.
+                                boolean allowNowaitRetry = waitTimeout < 0 && retryCnt == 0;
+
+                                if (!allowNowaitRetry && lockWaitEndTime != 0
+                                    && U.currentTimeMillis() >= lockWaitEndTime) {
+                                    getRes = null;
+
+                                    break;
+                                }
+
                                 if (log.isDebugEnabled())
                                     log.debug("Got removed exception in lockTxEntries postLock (will retry): "
                                         + txEntry.cached());
@@ -3206,6 +3223,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     : entryEx(key, tx.topologyVersion());
 
                                 txEntry.cached(cached);
+                                retryCnt++;
                             }
                         }
 
