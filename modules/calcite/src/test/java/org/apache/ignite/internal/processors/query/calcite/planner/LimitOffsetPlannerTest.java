@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
@@ -59,6 +64,51 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteLimit.class)
             .and(hasChildThat(isInstanceOf(IgniteSort.class)))));
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionPushDown() throws Exception {
+        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
+
+        assertPlan("SELECT * FROM TEST ORDER BY ID FETCH FIRST (ABS(-2)) ROWS ONLY", publicSchema,
+            isInstanceOf(IgniteLimit.class)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(sort -> sort.fetch != null))))));
+
+        assertPlan("SELECT * FROM TEST ORDER BY ID OFFSET 1 ROWS "
+                + "FETCH FIRST (ABS(0.5)) ROWS ONLY", publicSchema,
+            isInstanceOf(IgniteLimit.class)
+                .and(limit -> limit.offset() != null && limit.fetch() != null)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(sort -> sort.offset == null && sort.fetch == null))))));
+
+        assertPlan("SELECT * FROM TEST ORDER BY ID OFFSET 1 ROWS "
+                + "FETCH FIRST (RAND_INTEGER(1) + 2) ROWS ONLY", publicSchema,
+            isInstanceOf(IgniteLimit.class)
+                .and(limit -> limit.offset() != null && limit.fetch() != null)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(sort -> sort.offset == null && sort.fetch == null))))));
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionFieldTrimmingPreservesCollationTrait() throws Exception {
+        IgniteSchema publicSchema = createSchemaWithTable(IgniteDistributions.random());
+        PlanningContext ctx = plannerCtx("SELECT val FROM (SELECT * FROM TEST ORDER BY val "
+            + "FETCH FIRST (1 + 1) ROWS ONLY)", publicSchema);
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            SqlNode sql = planner.validate(planner.parse(ctx.query()));
+            RelRoot root = planner.trimUnusedFields(planner.rel(sql));
+            Sort sort = findFirstNode(root.rel, byClass(Sort.class));
+
+            assertNotNull(sort);
+            assertEquals(sort.getCollation(), sort.getTraitSet().getCollation());
+        }
     }
 
     /** */

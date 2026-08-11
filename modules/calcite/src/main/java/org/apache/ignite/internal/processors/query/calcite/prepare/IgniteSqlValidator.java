@@ -257,6 +257,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (fetch == null)
             return;
 
+        if (SqlUtil.isNullLiteral(fetch, true))
+            throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
         validateFetchExpression(fetch, clauseName);
         deriveDynamicParameterTypes(fetch);
 
@@ -268,19 +271,34 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         validateFetchOffset(fetch, clauseName);
     }
 
-    /** Reject column references in a fetch expression. */
+    /** Reject column references, aggregate functions, and window functions in a fetch expression. */
     // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
     //  Remove this method after upgrading to Calcite 1.43.
     private void validateFetchExpression(SqlNode node, String clauseName) {
-        if (node instanceof SqlIdentifier)
-            throw newValidationError(node, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+        if (node instanceof SqlIdentifier) {
+            if (makeNullaryCall((SqlIdentifier)node) == null)
+                throw newValidationError(node, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+            return;
+        }
 
         if (node instanceof SqlNodeList) {
             for (SqlNode child : (SqlNodeList)node)
                 validateFetchExpression(child, clauseName);
         }
         else if (node instanceof SqlCall) {
-            for (SqlNode child : ((SqlCall)node).getOperandList()) {
+            SqlCall call = (SqlCall)node;
+
+            if (call.isA(SqlKind.QUERY))
+                throw newValidationError(call, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+            if (call.getKind() == SqlKind.OVER)
+                throw newValidationError(call, RESOURCE.windowedAggregateIllegalInClause(clauseName));
+
+            if (call.getOperator().isAggregator())
+                throw newValidationError(call, RESOURCE.aggregateIllegalInClause(clauseName));
+
+            for (SqlNode child : call.getOperandList()) {
                 if (child != null)
                     validateFetchExpression(child, clauseName);
             }

@@ -71,10 +71,12 @@ public class IgniteRelFieldTrimmer extends RelFieldTrimmer {
         if (newInput == input && inputMapping.isIdentity() && fieldsUsed.cardinality() == fieldCnt)
             return result(sort, Mappings.createIdentity(fieldCnt));
 
+        RelCollation newCollation = RexUtil.apply(inputMapping, collation);
+
         RelNode newSort = sort.copy(
-            sort.getTraitSet(),
+            sort.getTraitSet().replace(newCollation),
             newInput,
-            RexUtil.apply(inputMapping, collation),
+            newCollation,
             sort.offset,
             sort.fetch
         );

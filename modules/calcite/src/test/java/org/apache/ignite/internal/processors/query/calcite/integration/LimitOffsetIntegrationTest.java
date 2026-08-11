@@ -211,10 +211,15 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST ('abc') ROWS ONLY", null);
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (SUBSTRING('abc', 1, 1)) ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (CAST(NULL AS INTEGER)) ROWS ONLY", null);
 
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id) ROWS ONLY", null);
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id + 1) ROWS ONLY", null);
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS(id)) ROWS ONLY", null);
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (SUM(1)) ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ROW_NUMBER() OVER ()) ROWS ONLY",  null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS((SELECT 1))) ROWS ONLY", null);
 
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST SQRT(4) ROWS ONLY", null);
     }
@@ -263,6 +268,14 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .returns(1)
             .returns(2)
             .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (EXTRACT(YEAR FROM CURRENT_DATE)) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
     }
 
     /** */
@@ -286,6 +299,23 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .withParams(1)
             .returns(0)
             .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithoutPushDown() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "
+                + "FETCH FIRST (ABS(0.5)) ROWS ONLY")
+            .resultSize(0)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "
+                + "FETCH FIRST (RAND_INTEGER(1) + 2) ROWS ONLY")
+            .returns(1)
+            .returns(2)
             .check();
     }
 

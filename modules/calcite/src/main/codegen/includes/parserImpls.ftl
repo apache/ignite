@@ -818,7 +818,7 @@ SqlDrop SqlDropView(Span s, boolean replace) :
 }
 
 // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
-//  Remove this method and select-fetch-expression.patch after upgrading to Calcite 1.43.
+//  Remove this method and the corresponding replacement in pom.xml after upgrading to Calcite 1.43.
 JAVACODE
 SqlNode FetchCount() {
     SqlNode e;
