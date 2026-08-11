@@ -48,6 +48,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
@@ -243,8 +244,47 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
         super.validateSelect(select, targetRowType);
 
-        validateFetchOffset(select.getFetch(), "fetch / limit");
+        validateFetch(select, "fetch / limit");
         validateFetchOffset(select.getOffset(), "offset");
+    }
+
+    /** Validate fetch expression. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    private void validateFetch(SqlSelect select, String clauseName) {
+        SqlNode fetch = select.getFetch();
+
+        if (fetch == null)
+            return;
+
+        validateFetchExpression(fetch, clauseName);
+        deriveDynamicParameterTypes(fetch);
+
+        RelDataType type = deriveType(getWhereScope(select), fetch);
+
+        if (type.getSqlTypeName().getFamily() != SqlTypeFamily.NUMERIC)
+            throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+        validateFetchOffset(fetch, clauseName);
+    }
+
+    /** Reject column references in a fetch expression. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    private void validateFetchExpression(SqlNode node, String clauseName) {
+        if (node instanceof SqlIdentifier)
+            throw newValidationError(node, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+        if (node instanceof SqlNodeList) {
+            for (SqlNode child : (SqlNodeList)node)
+                validateFetchExpression(child, clauseName);
+        }
+        else if (node instanceof SqlCall) {
+            for (SqlNode child : ((SqlCall)node).getOperandList()) {
+                if (child != null)
+                    validateFetchExpression(child, clauseName);
+            }
+        }
     }
 
     /**
@@ -258,7 +298,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return;
 
         if (n instanceof SqlLiteral) {
-            BigDecimal offsetFetchLimit = ((SqlLiteral)n).bigDecimalValue();
+            SqlLiteral literal = (SqlLiteral)n;
+
+            if (literal.getTypeName().getFamily() != SqlTypeFamily.NUMERIC)
+                throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+            BigDecimal offsetFetchLimit = literal.bigDecimalValue();
 
             checkLimitOffset(offsetFetchLimit, n, clauseName);
         }
@@ -721,6 +766,54 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             throw newValidationError(call, RESOURCE.invalidArgCount(call.getOperator().getName(), 1));
 
         super.validateUnnest(call, scope, targetRowType);
+    }
+
+    /** Derive types of dynamic parameters in a fetch expression. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    private void deriveDynamicParameterTypes(SqlNode n) {
+        if (n instanceof SqlDynamicParam) {
+            SqlDynamicParam paramNode = (SqlDynamicParam)n;
+
+            RelDataType type = typeFactory().createSqlType(SqlTypeName.DECIMAL);
+            RelDataType dataType = typeFactory().createTypeWithNullability(type, true);
+
+            type = deriveDynamicParameterType(paramNode, dataType);
+
+            if (type == null)
+                setValidatedNodeType(paramNode, dataType);
+        }
+        else if (n instanceof SqlNodeList) {
+            for (SqlNode node : (SqlNodeList)n)
+                deriveDynamicParameterTypes(node);
+        }
+        else if (n instanceof SqlCall) {
+            for (SqlNode operand : ((SqlCall)n).getOperandList())
+                deriveDynamicParameterTypes(operand);
+        }
+    }
+
+    /** Derive types of dynamic parameters in all fetch expressions. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    public void deriveLimitDynamicParameterTypes(SqlNode n) {
+        if (n instanceof SqlSelect) {
+            SqlSelect select = (SqlSelect)n;
+
+            deriveDynamicParameterTypes(select.getFetch());
+        }
+        else if (n instanceof SqlOrderBy) {
+            SqlOrderBy orderBy = (SqlOrderBy)n;
+
+            deriveDynamicParameterTypes(orderBy.fetch);
+        }
+
+        if (n instanceof SqlCall) {
+            for (SqlNode operand : ((SqlCall)n).getOperandList()) {
+                if (operand != null)
+                    deriveLimitDynamicParameterTypes(operand);
+            }
+        }
     }
 
     /**

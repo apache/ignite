@@ -351,6 +351,13 @@
                                     outputRoot="${project.build.directory}/generated-sources/fmpp"
                                     data="tdd(${project.build.directory}/codegen/config.fmpp), default: tdd(${project.build.directory}/codegen/default_config.fmpp)"
                                 />
+                                <!-- TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+                                     Remove this workaround and select-fetch-expression.patch after upgrading to Calcite 1.43. -->
+                                <patch
+                                    dir="${project.build.directory}/generated-sources/fmpp"
+                                    patchfile="${project.build.directory}/codegen/patches/select-fetch-expression.patch"
+                                    strip="1"
+                                />
                             </target>
                         </configuration>
                     </execution>

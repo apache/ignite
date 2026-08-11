@@ -816,3 +816,19 @@ SqlDrop SqlDropView(Span s, boolean replace) :
         return SqlDdlNodes.dropView(s.end(this), ifExists, id);
     }
 }
+
+// TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+//  Remove this method and select-fetch-expression.patch after upgrading to Calcite 1.43.
+JAVACODE
+SqlNode FetchCount() {
+    SqlNode e;
+    if (getToken(1).kind == LPAREN) {
+        jj_consume_token(LPAREN);
+        e = Expression(ExprContext.ACCEPT_NON_QUERY);
+        jj_consume_token(RPAREN);
+    }
+    else
+        e = UnsignedNumericLiteralOrParam();
+
+    return e;
+}

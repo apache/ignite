@@ -216,6 +216,139 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertThrowsSqlException("SELECT id FROM person ORDER BY id OFFSET ? ROWS", null, BigDecimal.valueOf(-1.5));
     }
 
+    /** */
+    @Test
+    public void testInvalidFetchExpression() {
+        createAndPopulateTable();
+
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, -2);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, -1.5);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, NULL_RESULT);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, bigValue());
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, "abc");
+
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (1 + ? - 4) ROWS ONLY", null, 1);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (? - (50 - 20)) ROWS ONLY", null, 2);
+
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST SQRT(?) ROWS ONLY", null, 4);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpression() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (?) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + ? - 2) ROWS ONLY")
+            .withParams(5)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + (? - 1) + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (1 + (2 - 1) + ?) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (ABS(?)) ROWS ONLY")
+            .withParams(-2)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + ABS(?)) ROWS ONLY")
+            .withParams(-2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(4)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionCachedQuery() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(4)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY", null, -2);
+        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY", null, -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionNested() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM (SELECT id from PERSON ORDER BY id FETCH FIRST (? + 3) ROWS ONLY) " +
+            "ORDER BY id FETCH NEXT (1 + ?) ROWS ONLY")
+            .withParams(2, 1)
+            .returns(0)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithRewrite() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + NVL(?, 10000)) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+    }
+
     /** Tests the same query with different type of parameters to cover case with check right plans cache work. **/
     @Test
     public void testWithDifferentParametersTypes() {
@@ -390,5 +523,10 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     /** */
     private void assertUnexpectedNumberOfParameters(String qry, Object... params) {
         assertThrows(qry, IgniteSQLException.class, "Wrong number of query parameters", params);
+    }
+
+    /** */
+    private static BigDecimal bigValue() {
+        return BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
     }
 }
