@@ -40,6 +40,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
@@ -1128,18 +1129,94 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             return null;
         }
 
+        MarshalledKind res;
+
         if (map)
-            return MarshalledKind.MAP;
+            res = MarshalledKind.MAP;
+        else {
+            TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
 
-        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
-
-        if (wire.getKind() == TypeKind.ARRAY) {
-            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
-                ? MarshalledKind.BLOB
-                : MarshalledKind.ELEMENTS;
+            if (wire.getKind() == TypeKind.ARRAY) {
+                res = ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
+                    ? MarshalledKind.BLOB
+                    : MarshalledKind.ELEMENTS;
+            }
+            else
+                res = MarshalledKind.ELEMENT_BLOBS;
         }
 
-        return MarshalledKind.ELEMENT_BLOBS;
+        /*
+         * Ensures that field annotated with {@link Marshalled} doesn't perform {@code Message} -> {@code byte[]} transformation
+         * which escapes {@link Order} and other rules implemented on top of communication {@code MessageWriter, MessageReader} logic.
+         */
+        if (messageToBytesTransformation(field.asType(), field, ann)) {
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Message must be written by dedicated message serializers. " +
+                "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove companion field " +
+                "and set @" + Order.class.getSimpleName(), field);
+        }
+
+        return res;
+    }
+
+    /**
+     * Recursively checks no {@code Message} -> {@code byte[]} transformation.
+     * @return {@code True} in case error transformation found.
+     */
+    private boolean messageToBytesTransformation(TypeMirror type, VariableElement field, Marshalled ann) {
+        if (assignableFrom(type, msgType))
+            return true;
+
+        if (isCollection(type)) {
+            DeclaredType colType = (DeclaredType)type;
+
+            List<? extends TypeMirror> typeArgs = colType.getTypeArguments();
+
+            if (typeArgs.size() != 1) {
+                env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw collection not supported.", field);
+
+                return false;
+            }
+
+            return messageToBytesTransformation(typeArgs.get(0), field, ann);
+        }
+
+        if (type.getKind() == TypeKind.ARRAY)
+            return messageToBytesTransformation(((ArrayType)type).getComponentType(), field, ann);
+
+        if (isMap(type) && !ann.value().isEmpty()) {
+            DeclaredType mapType = (DeclaredType)type;
+
+            List<? extends TypeMirror> typeArgs = mapType.getTypeArguments();
+
+            if (typeArgs.size() != 2) {
+                env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw Map not supported.", field);
+
+                return false;
+            }
+
+            TypeMirror keyType = typeArgs.get(0);
+            TypeMirror valType = typeArgs.get(1);
+
+            return assignableFrom(keyType, msgType)
+                || assignableFrom(valType, msgType)
+                || messageToBytesTransformation(keyType, field, ann)
+                || messageToBytesTransformation(valType, field, ann);
+        }
+
+        if (type instanceof WildcardType) {
+            WildcardType wt = (WildcardType)type;
+
+            if (wt.getExtendsBound() != null)
+                return messageToBytesTransformation(wt.getExtendsBound(), field, ann);
+
+            if (wt.getSuperBound() != null)
+                return messageToBytesTransformation(wt.getSuperBound(), field, ann);
+
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw types not supported.", field);
+        }
+
+        return false;
     }
 
     /** Returns the enclosed field named {@code name}, or throws if absent. */
