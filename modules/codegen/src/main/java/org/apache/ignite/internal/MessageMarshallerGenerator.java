@@ -1176,7 +1176,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
          * Ensures that field annotated with {@link Marshalled} doesn't perform {@code Message} -> {@code byte[]} transformation
          * which escapes {@link Order} and other rules implemented on top of communication {@code MessageWriter, MessageReader} logic.
          */
-        if (foundMessageToBytesTransformation(field.asType(), field, ann)) {
+        if (messageToBytesTransformation(field.asType(), field, ann)) {
             env.getMessager().printMessage(Diagnostic.Kind.ERROR,
                 "Message must be written by dedicated message serializers. " +
                     "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove companion field.", field);
@@ -1189,10 +1189,11 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
      * Recursively checks no {@code Message} -> {@code byte[]} transformation.
      * @return {@code True} in case error transformation found.
      */
-    private boolean foundMessageToBytesTransformation(TypeMirror type, VariableElement field, Marshalled ann) {
+    private boolean messageToBytesTransformation(TypeMirror type, VariableElement field, Marshalled ann) {
         if (assignableFrom(type, msgType))
             return true;
-        else if (isCollection(type)) {
+
+        if (isCollection(type)) {
             DeclaredType colType = (DeclaredType)type;
 
             List<? extends TypeMirror> typeArgs = colType.getTypeArguments();
@@ -1203,11 +1204,13 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
                 return false;
             }
 
-            return foundMessageToBytesTransformation(typeArgs.get(0), field, ann);
+            return messageToBytesTransformation(typeArgs.get(0), field, ann);
         }
-        else if (type.getKind() == TypeKind.ARRAY)
-            return foundMessageToBytesTransformation(((ArrayType)type).getComponentType(), field, ann);
-        else if (isMap(type) && !ann.value().isEmpty()) {
+
+        if (type.getKind() == TypeKind.ARRAY)
+            return messageToBytesTransformation(((ArrayType)type).getComponentType(), field, ann);
+
+        if (isMap(type) && !ann.value().isEmpty()) {
             DeclaredType mapType = (DeclaredType)type;
 
             List<? extends TypeMirror> typeArgs = mapType.getTypeArguments();
@@ -1223,8 +1226,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             return assignableFrom(keyType, msgType)
                 || assignableFrom(valType, msgType)
-                || foundMessageToBytesTransformation(keyType, field, ann)
-                || foundMessageToBytesTransformation(valType, field, ann);
+                || messageToBytesTransformation(keyType, field, ann)
+                || messageToBytesTransformation(valType, field, ann);
         }
 
         return false;
