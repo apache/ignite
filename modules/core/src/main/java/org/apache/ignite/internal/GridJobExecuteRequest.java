@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.compute.ComputeJobSibling;
-import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -105,7 +105,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     String cpSpi;
 
     /** Sibling jobs ids. Plain representation of {@link GridJobSiblingImpl#jobId} to reduce the messages number. */
-    @Order(12)
+    @Order(11)
     @Nullable List<IgniteUuid> sibJobsIds;
 
     /** Transient since needs to hold local creation time. */
