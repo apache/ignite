@@ -207,6 +207,7 @@ import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMes
 import org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -661,6 +662,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(DataStreamerEntry.class);
         register(DataStreamerRequest.class);
         register(DataStreamerResponse.class);
+        register(DataStreamerReceiverMessage.class);
 
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
