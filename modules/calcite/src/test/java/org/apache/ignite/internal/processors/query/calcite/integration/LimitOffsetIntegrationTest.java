@@ -218,7 +218,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS(id)) ROWS ONLY", null);
 
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (SUM(1)) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ROW_NUMBER() OVER ()) ROWS ONLY",  null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ROW_NUMBER() OVER ()) ROWS ONLY", null);
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS((SELECT 1))) ROWS ONLY", null);
 
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST SQRT(4) ROWS ONLY", null);
