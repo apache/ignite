@@ -133,10 +133,10 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
         if (!(reducedFetch.get(0) instanceof RexLiteral))
             return false;
 
-        BigDecimal fetchValue = ((RexLiteral)reducedFetch.get(0)).getValueAs(BigDecimal.class);
+        BigDecimal fetchVal = ((RexLiteral)reducedFetch.get(0)).getValueAs(BigDecimal.class);
 
         // SortNode does not accept zero FETCH; the outer IgniteLimit handles it.
-        return fetchValue != null && fetchValue.compareTo(BigDecimal.ONE) >= 0;
+        return fetchVal != null && fetchVal.compareTo(BigDecimal.ONE) >= 0;
     }
 
     /** Returns {@code true} if the expression contains a dynamic parameter. */
