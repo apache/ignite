@@ -297,6 +297,7 @@ public class GridDhtPartitionSupplier {
             final int msgMaxSize = grp.preloader().batchSize();
 
             long batchesCnt = 0;
+            long curTime = U.currentTimeMillis();
 
             while (iter.hasNext()) {
                 if (supplyMsg.messageSize() >= msgMaxSize) {
@@ -349,7 +350,15 @@ public class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = new GridCacheEntryInfo(row.cacheId(), row.key(), row.value(), row.version(), row.expireTime(), 0);
+                GridCacheEntryInfo info = new GridCacheEntryInfo(
+                    row.cacheId(),
+                    row.key(),
+                    row.value(),
+                    row.version(),
+                    curTime,
+                    row.expireTime(),
+                    0
+                );
 
                 supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
 

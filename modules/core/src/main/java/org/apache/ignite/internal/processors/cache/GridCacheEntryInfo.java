@@ -77,18 +77,25 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
     }
 
     /** */
-    public GridCacheEntryInfo(int cacheId, KeyCacheObject key, @Nullable CacheObject val, GridCacheVersion ver, long expireTime, long ttl) {
+    public GridCacheEntryInfo(
+        int cacheId,
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        GridCacheVersion ver,
+        long initTime,
+        long expireTime,
+        long ttl
+    ) {
         assert expireTime >= 0;
+        assert initTime > 0;
 
-        if (expireTime != 0) {
-            initTime = U.currentTimeMillis();
+        this.initTime = initTime;
 
-            expireTimeDelta = expireTime - initTime;
+        expireTimeDelta = expireTime - initTime;
 
-            // Timeouted mark.
-            if (expireTimeDelta < 0)
-                expireTimeDelta = 0;
-        }
+        // Timeouted mark.
+        if (expireTimeDelta < 0)
+            expireTimeDelta = 0;
 
         this.cacheId = cacheId;
         this.key = key;

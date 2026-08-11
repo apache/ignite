@@ -496,6 +496,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         Collection<GridCacheEntryInfo> infos = new ArrayList<>(map.size());
 
+        long initTime = U.currentTimeMillis();
+
         for (Map.Entry<KeyCacheObject, EntryGetResult> entry : map.entrySet()) {
             EntryGetResult val = entry.getValue();
 
@@ -506,6 +508,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 entry.getKey(),
                 skipVals ? null : val.value(),
                 val.version(),
+                initTime,
                 val.expireTime(),
                 val.ttl()
             );

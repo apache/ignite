@@ -467,6 +467,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             key,
             skipVals ? null : val.value(),
             val.version(),
+            U.currentTimeMillis(),
             val.expireTime(),
             val.ttl()
         );
