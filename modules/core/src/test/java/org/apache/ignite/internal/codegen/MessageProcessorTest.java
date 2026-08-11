@@ -693,9 +693,11 @@ public class MessageProcessorTest {
             "IncorrectMarshalledOnMessageCollection.java",
             "IncorrectMarshalledOnMessageCollection2.java",
             "IncorrectMarshalledOnMessageCollection3.java",
+            "IncorrectMarshalledOnMessageCollection4.java",
             "IncorrectMarshalledOnMessageMap.java",
             "IncorrectMarshalledOnMessageMap2.java",
             "IncorrectMarshalledOnMessageMap3.java",
+            "IncorrectMarshalledOnMessageMap4.java",
             "IncorrectMarshalledOnMessageArray.java",
             "IncorrectMarshalledOnMessageCollectionArray.java",
             "IncorrectMarshalledOnMessageSet.java",
@@ -714,16 +716,22 @@ public class MessageProcessorTest {
     /** Test that {@code @Marshalled} annotation on raw {@link Collection} or {@link Map} fail generation. */
     @Test
     public void testRawClassesFailGeneration() {
-        List<String> cases = Arrays.asList(
-            "IncorrectRawListMessage.java",
-            "IncorrectRawCollectionMessage.java"
-        );
+        List<String> cases = Arrays.asList("IncorrectRawListMessage.java", "IncorrectRawCollectionMessage.java");
 
         for (String file : cases) {
             Compilation compilation = compile("TestMessage.java", file);
 
             assertThat(compilation).failed();
             assertThat(compilation).hadErrorContaining("Raw collection not supported");
+        }
+
+        cases = Arrays.asList("IncorrectRawListMessage2.java", "IncorrectRawCollectionMessage2.java", "IncorrectRawMapMessage2.java");
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Raw types not supported");
         }
 
         Compilation compilation = compile("TestMessage.java", "IncorrectRawMapMessage.java");

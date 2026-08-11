@@ -40,6 +40,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
@@ -1229,6 +1230,18 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
                 || assignableFrom(valType, msgType)
                 || messageToBytesTransformation(keyType, field, ann)
                 || messageToBytesTransformation(valType, field, ann);
+        }
+
+        if (type instanceof WildcardType) {
+            WildcardType wt = (WildcardType)type;
+
+            if (wt.getExtendsBound() != null)
+                return messageToBytesTransformation(wt.getExtendsBound(), field, ann);
+
+            if (wt.getSuperBound() != null)
+                return messageToBytesTransformation(wt.getSuperBound(), field, ann);
+
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw types not supported.", field);
         }
 
         return false;
