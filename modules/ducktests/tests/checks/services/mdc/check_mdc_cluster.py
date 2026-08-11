@@ -25,7 +25,6 @@ import pytest
 
 from ignitetest.services.mdc.mdc_cluster import mdc_topology_params, min_backups, all_pairs, isolation_pairs, \
     cross_dc_network, DCS_2, DCS_3, DC_1, DC_2, DC_3
-from ignitetest.services.network_group.configuration import CrossNetworkGroupConfiguration
 
 DELAY_MS = 100
 
@@ -104,29 +103,6 @@ class CheckMdcNetworkLayout:
             assert cfg is not None and cfg.delay == DFLT_DELAY, f"{dc_a} -> {dc_b} is unimpaired"
 
             assert net.network_group_store.get_config(dc_b, dc_a) == cfg, "Impairments are bidirectional"
-
-    def check_per_pair_override_replaces_the_default(self):
-        """An asymmetric WAN: one link is slower, the others keep the default profile."""
-        net = cross_dc_network(None, FakeMdcCluster(DCS_3), delay_ms=DELAY_MS,
-                               pairs={(DC_1, DC_3): CrossNetworkGroupConfiguration(delay="200ms", loss=0.1)})
-
-        overridden = net.network_group_store.get_config(DC_1, DC_3)
-
-        assert overridden.delay == "200ms" and overridden.loss == 0.1
-
-        assert net.network_group_store.get_config(DC_3, DC_1) == overridden
-
-        assert net.network_group_store.get_config(DC_1, DC_2).delay == DFLT_DELAY
-
-    def check_empty_override_leaves_a_pair_unimpaired(self):
-        """An empty per-pair configuration means 'no impairment', not 'the default one'."""
-        net = cross_dc_network(None, FakeMdcCluster(DCS_3), delay_ms=DELAY_MS,
-                               pairs={(DC_2, DC_3): CrossNetworkGroupConfiguration()})
-
-        assert net.network_group_store.get_config(DC_2, DC_3) is None
-        assert net.network_group_store.get_config(DC_3, DC_2) is None
-
-        assert net.network_group_store.get_config(DC_1, DC_2).delay == DFLT_DELAY
 
     def check_no_impairment_leaves_the_store_empty(self):
         """Without delay or loss the manager still owns partitions, but deploys no netem."""

@@ -14,18 +14,6 @@
 # limitations under the License.
 
 """
-MDC test fixture.
-
-    mdc = MdcCluster(self, ignite_version, srv_per_dc=3, runners_per_dc=1)
-
-    with cross_dc_network(self.logger, mdc, delay_ms=20) as net:
-        mdc.start_servers()
-        mdc.generate_data(DC_1, CACHE, 0, 1000)
-        mdc.verify_cache_distribution(CACHE, copies_per_dc=1)
-
-        net.enable_network_partition(DC_1, DC_2)
-        ...
-
 The fixture spans an arbitrary number of data centers, which selects the
 :class:`MdcTopologyValidator` mode (see :func:`mdc_topology_params`):
 
@@ -621,33 +609,28 @@ class MdcCluster:
         return val == "true"
 
 
-def cross_dc_network(logger, mdc: MdcCluster, delay_ms: Optional[int] = None, loss: Optional[float] = None,
-                     pairs: Optional[Dict[Tuple[str, str], CrossNetworkGroupConfiguration]] = None
-                     ) -> NetworkGroupManager:
+def cross_dc_network(logger, mdc: MdcCluster, delay_ms: Optional[int] = None,
+                     loss: Optional[float] = None) -> NetworkGroupManager:
     """
     Builds a :class:`NetworkGroupManager` (context manager) for the cluster, applying the
     same impairment to every DC pair. With no impairments the manager still owns partition
     enable/disable and the final network cleanup.
 
+    A cluster whose links are not all alike needs no fixture support: build the
+    :class:`NetworkGroupStore` and construct the manager directly, the registry is all it
+    takes from here - ``NetworkGroupManager(logger, store, mdc.network_registry())``.
+
     :param delay_ms: One-way cross-DC latency in milliseconds (the effective RTT is twice
            that, since netem delay is applied on egress in both directions).
     :param loss: Cross-DC packet loss fraction in [0.0, 1.0].
-    :param pairs: Per-pair overrides of the symmetric profile, for a cluster whose WAN
-           links are not all alike, e.g. ``{(DC_1, DC_3): CrossNetworkGroupConfiguration(delay="200ms")}``.
-           An empty configuration leaves that pair unimpaired.
     """
-    dflt = CrossNetworkGroupConfiguration(delay=f"{delay_ms}ms" if delay_ms is not None else None, loss=loss)
-
-    matrix = {frozenset(pair): dflt for pair in all_pairs(mdc.dcs)}
-
-    for pair, cfg in (pairs or {}).items():
-        matrix[frozenset(pair)] = cfg
+    cfg = CrossNetworkGroupConfiguration(delay=f"{delay_ms}ms" if delay_ms is not None else None, loss=loss)
 
     store = NetworkGroupStore()
 
-    for pair, cfg in matrix.items():
-        if not cfg.is_empty:
-            store.set_config(*pair, cfg)
+    if not cfg.is_empty:
+        for dc_a, dc_b in all_pairs(mdc.dcs):
+            store.set_config(dc_a, dc_b, cfg)
 
     return NetworkGroupManager(logger, store, mdc.network_registry())
 
