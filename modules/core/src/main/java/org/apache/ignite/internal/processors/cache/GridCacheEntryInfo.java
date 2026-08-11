@@ -70,7 +70,7 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
 
     /**
      * Empty constructor for serialization purposes. Initializes {@link #initTime} to properly calculate {@link #expireTime()}
-     .
+     * if {@link #expireTimeDelta} and the expiration is effective.
      */
     public GridCacheEntryInfo() {
         initTime = U.currentTimeMillis();
@@ -127,7 +127,13 @@ public class GridCacheEntryInfo implements CacheIdAware, Message {
      * @return Expire time >= 0. 0 means no expiration is set.
      */
     public long expireTime() {
-        return expireTimeDelta == -1L ? 0L : initTime + expireTimeDelta;
+        if (expireTimeDelta == -1L)
+            return 0L;
+
+        long res = initTime + expireTimeDelta;
+
+        // Overflow protection.
+        return res < 0 ? 0 : res;
     }
 
     /**
