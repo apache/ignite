@@ -1184,27 +1184,27 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             List<? extends TypeMirror> typeArgs = type.getTypeArguments();
 
             if (typeArgs.size() != 1)
-                throw new IllegalStateException("Expecting one type argument for Collection");
+                env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw collection not supported.", field);
 
             msgToBytes = assignableFrom(typeArgs.get(0), msgType);
         }
-        else if (field.asType().getKind() == TypeKind.ARRAY) {
+        else if (field.asType().getKind() == TypeKind.ARRAY)
             msgToBytes = assignableFrom(((ArrayType)field.asType()).getComponentType(), msgType);
-        }
         else if (isMap(field.asType()) && !ann.value().isEmpty()) {
             DeclaredType type = (DeclaredType)field.asType();
 
             List<? extends TypeMirror> typeArgs = type.getTypeArguments();
 
             if (typeArgs.size() != 2)
-                throw new IllegalStateException("Expecting one type argument for Map");
+                env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw Map not supported.", field);
 
             msgToBytes = assignableFrom(typeArgs.get(0), msgType) || assignableFrom(typeArgs.get(1), msgType);
         }
 
         if (msgToBytes) {
-            throw new IllegalArgumentException("Field \"" + field + "\" is Message. Must be written by communication protocol" +
-                ". Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.");
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Message must be written by communication protocol. " +
+                    "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove corresponding byte[] field.", field);
         }
     }
 

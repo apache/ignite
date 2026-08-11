@@ -20,8 +20,12 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class InternalMessage implements Message {
+public class MarshalledOnMessageArray implements Message {
+    /** */
+    @Marshalled("msgBytes")
+    TestMessage[] msgArr;
+
     /** */
     @Order(0)
-    int num;
+    byte[] msgBytes;
 }
