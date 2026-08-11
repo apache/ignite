@@ -711,9 +711,9 @@ public class MessageProcessorTest {
         }
     }
 
-    /** Test that {@code @Marshalled} annotation on raw {@link Collection} fail generation. */
+    /** Test that {@code @Marshalled} annotation on raw {@link Collection} or {@link Map} fail generation. */
     @Test
-    public void testRawCollectionFailGeneration() {
+    public void testRawClassesFailGeneration() {
         List<String> cases = Arrays.asList(
             "TestRawListMessage.java",
             "TestRawCollectionMessage.java"
@@ -725,11 +725,7 @@ public class MessageProcessorTest {
             assertThat(compilation).failed();
             assertThat(compilation).hadErrorContaining("Raw collection not supported");
         }
-    }
 
-    /** Test that {@code @Marshalled} annotation on raw {@link Map} fail generation. */
-    @Test
-    public void testRawMapFailGeneration() {
         Compilation compilation = compile("TestMessage.java", "TestRawMapMessage.java");
 
         assertThat(compilation).failed();
