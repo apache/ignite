@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -72,22 +72,17 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     @Order(5)
     String taskName;
 
-    /** */
+    /** Deployment of the task classes. */
     @Order(6)
-    String userVer;
+    GridDeploymentInfoMessage depInfo;
 
     /** */
     @Order(7)
     String taskClsName;
 
-    /** Node class loader participants. */
-    @GridToStringInclude
-    @Order(8)
-    Map<UUID, IgniteUuid> ldrParticipants;
-
     /** */
     @GridToStringExclude
-    @Order(9)
+    @Order(8)
     byte[] sesAttrsBytes;
 
     /** */
@@ -97,7 +92,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
 
     /** */
     @GridToStringExclude
-    @Order(10)
+    @Order(9)
     byte[] jobAttrsBytes;
 
     /** */
@@ -106,7 +101,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     Map<? extends Serializable, ? extends Serializable> jobAttrs;
 
     /** Checkpoint SPI name. */
-    @Order(11)
+    @Order(10)
     String cpSpi;
 
     /** Sibling jobs ids. Plain representation of {@link GridJobSiblingImpl#jobId} to reduce the messages number. */
@@ -117,31 +112,23 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     private final long createTime = U.currentTimeMillis();
 
     /** */
-    @Order(13)
-    IgniteUuid clsLdrId;
-
-    /** */
-    @Order(14)
-    DeploymentMode depMode;
-
-    /** */
-    @Order(15)
+    @Order(12)
     boolean dynamicSiblings;
 
     /** */
-    @Order(16)
+    @Order(13)
     boolean forceLocDep;
 
     /** */
-    @Order(17)
+    @Order(14)
     boolean sesFullSup;
 
     /** */
-    @Order(18)
+    @Order(15)
     boolean internal;
 
     /** */
-    @Order(19)
+    @Order(16)
     Collection<UUID> top;
 
     /** */
@@ -149,23 +136,23 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     IgnitePredicate<ClusterNode> topPred;
 
     /** */
-    @Order(20)
+    @Order(17)
     byte[] topPredBytes;
 
     /** */
-    @Order(21)
+    @Order(18)
     int[] cacheIds;
 
     /** */
-    @Order(22)
+    @Order(19)
     int part;
 
     /** */
-    @Order(23)
+    @Order(20)
     AffinityTopologyVersion topVer;
 
     /** */
-    @Order(24)
+    @Order(21)
     String execName;
 
     /**
@@ -179,7 +166,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
      * @param sesId Task session ID.
      * @param jobId Job ID.
      * @param taskName Task name.
-     * @param userVer Code version.
+     * @param depInfo Deployment of the task classes.
      * @param taskClsName Fully qualified task name.
      * @param job Job.
      * @param startTaskTime Task execution start time.
@@ -190,10 +177,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
      * @param sesAttrs Session attributes.
      * @param jobAttrs Job attributes.
      * @param cpSpi Collision SPI.
-     * @param clsLdrId Task local class loader id.
-     * @param depMode Task deployment mode.
      * @param dynamicSiblings {@code True} if siblings are dynamic.
-     * @param ldrParticipants Other node class loader IDs that can also load classes.
      * @param forceLocDep {@code True} If remote node should ignore deployment settings.
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
@@ -206,7 +190,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
             IgniteUuid sesId,
             IgniteUuid jobId,
             String taskName,
-            String userVer,
+            GridDeploymentInfo depInfo,
             String taskClsName,
             ComputeJob job,
             long startTaskTime,
@@ -217,10 +201,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
             Map<Object, Object> sesAttrs,
             Map<? extends Serializable, ? extends Serializable> jobAttrs,
             String cpSpi,
-            IgniteUuid clsLdrId,
-            DeploymentMode depMode,
             boolean dynamicSiblings,
-            Map<UUID, IgniteUuid> ldrParticipants,
             boolean forceLocDep,
             boolean sesFullSup,
             boolean internal,
@@ -236,14 +217,12 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         assert sesAttrs != null || !sesFullSup;
         assert jobAttrs != null;
         assert top != null || topPred != null;
-        assert clsLdrId != null;
-        assert userVer != null;
-        assert depMode != null;
+        assert depInfo != null;
 
         this.sesId = sesId;
         this.jobId = jobId;
         this.taskName = taskName;
-        this.userVer = userVer;
+        this.depInfo = new GridDeploymentInfoMessage(depInfo);
         this.taskClsName = taskClsName;
         this.job = job;
         this.startTaskTime = startTaskTime;
@@ -253,10 +232,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.topPred = topPred;
         this.sesAttrs = sesAttrs;
         this.jobAttrs = jobAttrs;
-        this.clsLdrId = clsLdrId;
-        this.depMode = depMode;
         this.dynamicSiblings = dynamicSiblings;
-        this.ldrParticipants = ldrParticipants;
         this.forceLocDep = forceLocDep;
         this.sesFullSup = sesFullSup;
         this.internal = internal;
@@ -285,6 +261,11 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         return jobId;
     }
 
+    /** @return Deployment of the task classes. */
+    public GridDeploymentInfo deploymentInfo() {
+        return depInfo;
+    }
+
     /**
      * @return Task class name.
      */
@@ -297,13 +278,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
      */
     public String taskName() {
         return taskName;
-    }
-
-    /**
-     * @return Task version.
-     */
-    public String userVersion() {
-        return userVer;
     }
 
     /**
@@ -362,27 +336,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
      */
     public String checkpointSpi() {
         return cpSpi;
-    }
-
-    /**
-     * @return Task local class loader id.
-     */
-    public IgniteUuid classLoaderId() {
-        return clsLdrId;
-    }
-
-    /**
-     * @return Deployment mode.
-     */
-    public DeploymentMode deploymentMode() {
-        return depMode;
-    }
-
-    /**
-     * @return Node class loader participant map.
-     */
-    public Map<UUID, IgniteUuid> loaderParticipants() {
-        return ldrParticipants;
     }
 
     /**
@@ -445,7 +398,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

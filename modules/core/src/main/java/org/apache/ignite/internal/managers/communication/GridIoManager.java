@@ -2422,10 +2422,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             depClsName,
             topic,
             serTopic,
-            dep != null ? dep.classLoaderId() : null,
-            dep != null ? dep.deployMode() : null,
-            dep != null ? dep.userVersion() : null,
-            dep != null ? dep.participants() : null);
+            dep);
 
         if (ordered)
             sendOrderedMessageToGridTopic(nodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL, timeout, true);
@@ -3635,21 +3632,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                     if (dep == null && ctx.config().isPeerClassLoadingEnabled() &&
                         ioMsg.deploymentClassName() != null) {
-                        dep = ctx.deploy().getGlobalDeployment(
-                            ioMsg.deploymentMode(),
-                            ioMsg.deploymentClassName(),
-                            ioMsg.deploymentClassName(),
-                            ioMsg.userVersion(),
-                            nodeId,
-                            ioMsg.classLoaderId(),
-                            ioMsg.loaderParticipants(),
-                            null);
+                        dep = ctx.deploy().globalDeployment(ioMsg.deploymentInfo(), ioMsg.deploymentClassName(),
+                            ioMsg.deploymentClassName(), nodeId);
 
-                        if (dep == null)
+                        if (dep == null) {
                             throw new IgniteDeploymentCheckedException(
                                 "Failed to obtain deployment information for user message. " +
                                     "If you are using custom message or topic class, try implementing " +
                                     "GridPeerDeployAware interface. [msg=" + ioMsg + ']');
+                        }
 
                         ioMsg.deployment(dep); // Cache deployment.
                     }

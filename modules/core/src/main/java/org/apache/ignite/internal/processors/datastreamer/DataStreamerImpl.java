@@ -146,17 +146,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     private final Map<Long, ThreadBuffer> threadBufMap = new ConcurrentHashMap<>();
 
-    /** Isolated receiver. */
-    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
+    /** Default, Isolated receiver. */
+    static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver. */
-    private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
-
-    /** */
-    private byte[] updaterBytes;
+    /** Message of the cache receiver; {@code null} until a receiver is set, the Isolated updater being used so far. */
+    private volatile @Nullable DataStreamerReceiverMessage rcvrMsg;
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -489,12 +486,29 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public void receiver(StreamReceiver<K, V> rcvr) {
         A.notNull(rcvr, "rcvr");
 
-        this.rcvr = rcvr;
+        DataStreamerBuiltInUpdater builtIn = DataStreamerBuiltInUpdater.of(rcvr);
+
+        rcvrMsg = builtIn != null ? builtIn.message() : new DataStreamerReceiverMessage(rcvr);
+    }
+
+    /** @return Message of the receiver in use, one of the Isolated updater until a receiver is set. */
+    private DataStreamerReceiverMessage receiverMessage() {
+        DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
+
+        return rcvrMsg0 != null ? rcvrMsg0 : DataStreamerBuiltInUpdater.ISOLATED.message();
+    }
+
+    /** @return Cache receiver, custom or built-in, the Isolated updater until one is set. */
+    @SuppressWarnings("unchecked")
+    private StreamReceiver<K, V> receiver() {
+        DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
+
+        return (StreamReceiver<K, V>)(rcvrMsg0 == null ? ISOLATED_UPDATER : rcvrMsg0.receiver());
     }
 
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return rcvr != ISOLATED_UPDATER;
+        return receiver() != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -507,7 +521,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvr = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
+        receiver(allow ? DataStreamerCacheUpdaters.individual() : ISOLATED_UPDATER);
     }
 
     /** {@inheritDoc} */
@@ -655,7 +669,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
+        // Without overwrite the Isolated updater is in use, and it is the one the warning is about.
+        if (!allowOverwrite() && inconsistencyWarned.compareAndSet(false, true))
             log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
@@ -886,6 +901,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         assert key != null;
 
                         if (initPda) {
+                            StreamReceiver<K, V> rcvr = receiver();
+
                             if (cacheObjCtx.addDeploymentInfo())
                                 jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
                                     entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
@@ -1850,7 +1867,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 false,
                                 skipStore,
                                 keepBinary,
-                                rcvr),
+                                receiver()),
                             plc);
 
                         locFuts.add(callFut);
@@ -1943,12 +1960,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (val != null)
                             val.marshal(cacheObjCtx);
                     }
-
-                    if (updaterBytes == null) {
-                        assert rcvr != null;
-
-                        updaterBytes = U.marshal(ctx, rcvr);
-                    }
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal.", e);
@@ -1991,23 +2002,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
+                DataStreamerReceiverMessage rcvrMsg0 = receiverMessage();
+
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
                     topicId,
                     cacheName,
-                    updaterBytes,
+                    rcvrMsg0,
                     entries,
                     true,
                     skipStore,
                     keepBinary,
-                    dep != null ? dep.deployMode() : null,
+                    dep,
                     dep != null ? jobPda0.deployClass().getName() : null,
-                    dep != null ? dep.userVersion() : null,
-                    dep != null ? dep.participants() : null,
-                    dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    (rcvr == ISOLATED_UPDATER) ? partId : NO_STRIPE);
+                    rcvrMsg0.receiver() == ISOLATED_UPDATER ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);

@@ -86,30 +86,16 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
     private final ClassLoader dfltClsLdr = getClass().getClassLoader();
 
     /** Whether or not to require an object to be serializable in order to be marshalled. */
-    private boolean requireSer = true;
-
-    /** ID mapper. */
-    private OptimizedMarshallerIdMapper mapper;
+    private final boolean requireSer;
 
     /** Class descriptors by class. */
-    private final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap<>();
 
     /** */
-    private OptimizedObjectStreamRegistry registry = new OptimizedObjectSharedStreamRegistry();
+    private final OptimizedObjectSharedStreamRegistry registry = new OptimizedObjectSharedStreamRegistry();
 
     /** Non cached registry. */
-    private OptimizedObjectSharedStreamRegistry nonCachedRegistry = new OptimizedObjectSharedStreamRegistry();
-
-    /**
-     * Creates new marshaller will all defaults.
-     *
-     * @throws IgniteException If this marshaller is not supported on the current JVM.
-     */
-    public OptimizedMarshallerImpl() {
-        if (!available())
-            throw new IgniteException("Using OptimizedMarshaller on unsupported JVM version (some of " +
-                "JVM-private APIs required for the marshaller to work are missing).");
-    }
+    private final OptimizedObjectSharedStreamRegistry nonCachedRegistry = new OptimizedObjectSharedStreamRegistry();
 
     /**
      * Creates new marshaller providing whether it should
@@ -119,29 +105,10 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
      */
     public OptimizedMarshallerImpl(boolean requireSer) {
         this.requireSer = requireSer;
-    }
 
-    /** {@inheritDoc} */
-    @Override public OptimizedMarshaller setRequireSerializable(boolean requireSer) {
-        this.requireSer = requireSer;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public OptimizedMarshaller setIdMapper(OptimizedMarshallerIdMapper mapper) {
-        this.mapper = mapper;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public OptimizedMarshaller setPoolSize(int poolSize) {
-        registry = poolSize > 0 ?
-            new OptimizedObjectPooledStreamRegistry(poolSize) :
-            new OptimizedObjectSharedStreamRegistry();
-
-        return this;
+        if (!available())
+            throw new IgniteException("Using OptimizedMarshaller on unsupported JVM version (some of " +
+                "JVM-private APIs required for the marshaller to work are missing).");
     }
 
     /** {@inheritDoc} */
@@ -153,7 +120,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
         try {
             objOut = registry.out();
 
-            objOut.context(clsMap, ctx, mapper, requireSer);
+            objOut.context(clsMap, ctx, requireSer);
 
             objOut.out().outputStream(out);
 
@@ -174,7 +141,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
         try {
             objOut = registry.out();
 
-            objOut.context(clsMap, ctx, mapper, requireSer);
+            objOut.context(clsMap, ctx, requireSer);
 
             objOut.writeObject(obj);
 
@@ -199,7 +166,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
         try {
             objIn = !useCache ? nonCachedRegistry.in() : registry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().inputStream(in);
 
@@ -232,7 +199,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
         try {
             objIn = registry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().bytes(arr, arr.length);
 
@@ -272,10 +239,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
 
             return true;
         }
-        catch (Exception ignored) {
-            return false;
-        }
-        catch (NoClassDefFoundError ignored) {
+        catch (Exception | NoClassDefFoundError ignored) {
             return false;
         }
     }
