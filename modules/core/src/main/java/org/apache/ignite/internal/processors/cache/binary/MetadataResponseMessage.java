@@ -55,12 +55,7 @@ public class MetadataResponseMessage implements Message {
      * @param metaVerInfo Binary metadata version info.
      */
     public void metadataVersionInfo(BinaryMetadataVersionInfo metaVerInfo) {
-        // A copy, not the passed instance: it comes from the local metadata cache, and the same instance travels
-        // discovery in the data bag. The two transports marshal with different marshallers, while a marshalled
-        // instance keeps its serialized form - bytes cached by one transport must not leak into the other.
-        this.metaVerInfo = metaVerInfo != null
-            ? new BinaryMetadataVersionInfo(metaVerInfo.metadata(), metaVerInfo.pendingVersion(), metaVerInfo.acceptedVersion())
-            : null;
+        this.metaVerInfo = metaVerInfo;
     }
 
     /**

@@ -115,6 +115,12 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** Whether the message marshals fields of its own, so the generated methods call its step. */
     private boolean selfMarshalling;
 
+    /** Whether the message pins the JDK marshaller, see {@link JdkMarshalled}. */
+    private boolean jdkMarshalled;
+
+    /** Name of the marshaller the generated body uses: the transport one, or the pinned JDK one. */
+    private String marshVar;
+
     /** */
     private boolean hasMarshalled;
 
@@ -170,6 +176,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
         selfMarshalling = selfMarshallingMsgType != null && assignableFrom(type.asType(), selfMarshallingMsgType);
+        jdkMarshalled = type.getAnnotation(JdkMarshalled.class) != null;
+        marshVar = jdkMarshalled ? "jdkMarsh" : "marsh";
         hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
         generateMarshalMethod(fields);
@@ -222,11 +230,12 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendMarshalledPrepare(body);
 
             if (marshallable)
-                appendBlock(body, List.of(indentedLine("msg.marshal(marsh);")));
+                appendBlock(body, List.of(indentedLine("msg.marshal(%s);", marshVar)));
 
             appendFields(body, orderedFields, MarshalMode.MARSHAL);
 
             prependMsgFactoryResolution(body);
+            prependPinnedMarshaller(body);
         });
     }
 
@@ -282,7 +291,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendFields(body, fields, MarshalMode.UNMARSHAL, wireFieldSkip);
 
             if (marshallable)
-                appendBlock(body, List.of(indentedLine("msg.unmarshal(marsh, clsLdr);")));
+                appendBlock(body, List.of(indentedLine("msg.unmarshal(%s, clsLdr);", marshVar)));
 
             appendMarshalledFinish(body);
 
@@ -294,6 +303,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
                 appendBlock(body, List.of(indentedLine("msg.selfUnmarshal();")));
 
             prependMsgFactoryResolution(body);
+            prependPinnedMarshaller(body);
         });
     }
 
@@ -315,7 +325,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        code.add(indentedLine("MessageMarshalling.unmarshal(%s, marsh, kctx);", accessor));
+        code.add(indentedLine("MessageMarshalling.unmarshal(%s, %s, kctx);", accessor, marshVar));
 
         indent--;
 
@@ -355,7 +365,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        code.add(indentedLine("%s.add(U.marshal(marsh, e));", bytesField));
+        code.add(indentedLine("%s.add(U.marshal(%s, e));", bytesField, marshVar));
 
         indent--;
         indent--;
@@ -427,7 +437,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             indent++;
 
-            code.add(indentedLine("%s = U.marshal(marsh, %s);", bytesAcc, objAcc));
+            code.add(indentedLine("%s = U.marshal(%s, %s);", bytesAcc, marshVar, objAcc));
 
             indent--;
 
@@ -444,7 +454,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             indent++;
 
-            code.add(indentedLine("%s = U.unmarshal(marsh, %s, clsLdr);", objAcc, bytesAcc));
+            code.add(indentedLine("%s = U.unmarshal(%s, %s, clsLdr);", objAcc, marshVar, bytesAcc));
             code.add(EMPTY);
 
             // Drop the serialized cache once the object is restored: keeping both the deserialized value and its bytes
@@ -518,7 +528,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             indent++;
 
-            code.add(indentedLine("Object o = U.unmarshal(marsh, e, clsLdr);"));
+            code.add(indentedLine("Object o = U.unmarshal(%s, e, clsLdr);", marshVar));
             code.add(EMPTY);
             code.add(indentedLine("if (o instanceof Map.Entry) {"));
 
@@ -834,13 +844,13 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             usesMsgFactory = true;
 
             code.add(mode == MarshalMode.MARSHAL
-                ? indentedLine("MessageMarshalling.marshal(msgFactory, %s, marsh, kctx, ctx);", accessor)
-                : indentedLine("MessageMarshalling.unmarshal(msgFactory, %s, marsh, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageMarshalling.marshal(msgFactory, %s, %s, kctx, ctx);", accessor, marshVar)
+                : indentedLine("MessageMarshalling.unmarshal(msgFactory, %s, %s, kctx, ctx, clsLdr);", accessor, marshVar));
         }
         else {
             code.add(mode == MarshalMode.MARSHAL
-                ? indentedLine("MessageMarshalling.marshal(%s, marsh, kctx, ctx);", accessor)
-                : indentedLine("MessageMarshalling.unmarshal(%s, marsh, kctx, ctx, clsLdr);", accessor));
+                ? indentedLine("MessageMarshalling.marshal(%s, %s, kctx, ctx);", accessor, marshVar)
+                : indentedLine("MessageMarshalling.unmarshal(%s, %s, kctx, ctx, clsLdr);", accessor, marshVar));
         }
 
         indent--;
@@ -977,6 +987,15 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         body.add(0, EMPTY);
         body.add(0, indentedLine("IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();"));
+    }
+
+    /** Prefixes {@code body} with the pinned marshaller resolution line, see {@link JdkMarshalled}. */
+    private void prependPinnedMarshaller(List<String> body) {
+        if (!jdkMarshalled || body.stream().noneMatch(line -> line.contains(marshVar)))
+            return;
+
+        body.add(0, EMPTY);
+        body.add(0, indentedLine("Marshaller %s = kctx.marshallerContext().jdkMarshaller();", marshVar));
     }
 
     /** Returns empty if {@code inner} is empty; otherwise wraps {@code inner} in a null-guard on {@code nullGuard}. */

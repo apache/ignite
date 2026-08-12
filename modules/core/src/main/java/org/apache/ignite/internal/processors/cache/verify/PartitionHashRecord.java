@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
+@JdkMarshalled
 public class PartitionHashRecord implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -58,7 +60,7 @@ public class PartitionHashRecord implements Message, Serializable {
     /** Bytes of {@link #consistentId}. */
     @Order(2)
     @GridToStringExclude
-    byte[] consistentIdBytes;
+    transient byte[] consistentIdBytes;
 
     /** Partition entries content hash. */
     @Order(3)
@@ -78,7 +80,7 @@ public class PartitionHashRecord implements Message, Serializable {
     /** Bytes of {@link #updateCntr}. */
     @Order(5)
     @GridToStringExclude
-    byte[] updateCntrBytes;
+    transient byte[] updateCntrBytes;
 
     /** Size. */
     @Order(6)

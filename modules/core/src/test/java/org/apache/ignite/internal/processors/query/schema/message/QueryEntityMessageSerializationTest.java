@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -51,7 +50,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** Test for serialization round-trip of {@link QueryEntityMessage} and {@link QueryEntityExMessage}. */
 public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest {
@@ -71,9 +69,6 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         "name", "unknown",
         "price", new BigDecimal("9.99"),
         "id", 42);
-
-    /** */
-    private final Marshaller marsh = jdk();
 
     /** */
     private final MessageFactory<?> msgFactory = new IgniteMessageFactoryImpl<>(

@@ -30,7 +30,6 @@ import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -40,7 +39,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.junit.Assert.assertArrayEquals;
 
 /** Test for serialization round-trip of {@link LazyServiceConfigurationMessage}. */
@@ -48,9 +46,6 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
     /** Error suffix. */
     public static final String ERROR_SUFFIX = " count is not equal to the expected fields count. " +
         "Has the number of fields in the `LazyServiceConfiguration` class changed?";
-
-    /** */
-    private final Marshaller marsh = jdk();
 
     /** */
     private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(

@@ -18,15 +18,13 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
  */
 // TODO IGNITE-28912: move to a common package.
 @SuppressWarnings({"NullableProblems", "unused"})
+@JdkMarshalled
 public class ErrorMessage implements MarshallableMessage {
     /** Error bytes. */
     @Order(0)
@@ -62,13 +61,11 @@ public class ErrorMessage implements MarshallableMessage {
         if (err == null)
             return;
 
-        Marshaller errMarsh = jdkMarshaller(marsh);
-
         try {
-            errBytes = U.marshal(errMarsh, err);
+            errBytes = U.marshal(marsh, err);
         }
         catch (Throwable e) {
-            errBytes = U.marshal(errMarsh, wrapError(true, e));
+            errBytes = U.marshal(marsh, wrapError(true, e));
         }
     }
 
@@ -78,7 +75,7 @@ public class ErrorMessage implements MarshallableMessage {
             return;
 
         try {
-            err = U.unmarshal(jdkMarshaller(marsh), errBytes, clsLdr);
+            err = U.unmarshal(marsh, errBytes, clsLdr);
         }
         catch (Throwable e) {
             err = wrapError(false, e);
@@ -101,26 +98,6 @@ public class ErrorMessage implements MarshallableMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ErrorMessage.class, this);
-    }
-
-    /**
-     * An error carries an arbitrary user class, and this message travels both transports. A schema-aware marshaller
-     * registers class names in the cluster, which sends a discovery message and waits for the answer, while this
-     * message is marshalled on discovery threads as well - such a wait would block the thread that has to deliver the
-     * answer. So errors always go through the JDK marshaller of the local node, whatever the transport marshaller is.
-     *
-     * @param marsh Marshaller of the transport.
-     * @return JDK marshaller of the local node.
-     */
-    private static Marshaller jdkMarshaller(Marshaller marsh) {
-        if (marsh instanceof JdkMarshaller)
-            return marsh;
-
-        MarshallerContext marshCtx = ((AbstractMarshaller)marsh).getContext();
-
-        assert marshCtx != null : "The marshaller is not bound to a node: " + marsh;
-
-        return marshCtx.jdkMarshaller();
     }
 
     /** */
