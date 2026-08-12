@@ -282,14 +282,6 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Serializable data.
-     */
-    public void addNodeSpecificData(Integer cmpId, Serializable data) {
-        addNodeSpecificData(cmpId, new SerializableDataBagItemWrapper(data));
-    }
-
-    /**
-     * @param cmpId Component ID.
      * @param data Message data.
      */
     public void addNodeSpecificData(Integer cmpId, Message data) {

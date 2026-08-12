@@ -178,7 +178,9 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
@@ -199,8 +201,13 @@ import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage
 import org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo;
+import org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
+import org.apache.ignite.internal.processors.continuous.ContinuousRoutinesCommonDiscoveryData;
+import org.apache.ignite.internal.processors.continuous.ContinuousRoutinesJoiningNodeDiscoveryData;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.StartRequestData;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
@@ -628,6 +635,16 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(QueryProposalsDataBagItem.class);
         register(QueryEntityMessage.class);
         register(QueryEntityExMessage.class);
+        register(ContinuousRoutineInfo.class);
+        register(ContinuousRoutinesJoiningNodeDiscoveryData.class);
+        register(CacheContinuousQueryDeployableObject.class);
+        register(CacheContinuousQueryHandler.class);
+        register(GridEventConsumeHandler.class);
+        register(GridMessageListenHandler.class);
+        register(ContinousRoutineLocalInfo.class);
+        register(ContinousRoutineDiscoveryDataItem.class);
+        register(ContinousRoutineDiscoveryData.class);
+        register(ContinuousRoutinesCommonDiscoveryData.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
@@ -668,7 +685,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
         register(CacheMetricsMessage.class);
-        register(NodeMetricsMessage.class);
+        register(ClusterMetricsSnapshot.class);
         register(NodeFullMetricsMessage.class);
         register(ClusterMetricsUpdateMessage.class);
         register(TcpDiscoveryClientNodesMetricsMessage.class);

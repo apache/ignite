@@ -19,24 +19,25 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware {
+public class GridCacheEntryInfo implements CacheIdAware, Message {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
     /** Cache key. */
     @Order(0)
     @GridToStringInclude
-    KeyCacheObject key;
+    @Nullable KeyCacheObject key;
 
     /** Cache ID. */
     @Order(1)
@@ -44,15 +45,18 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
 
     /** Cache value. */
     @Order(2)
-    CacheObject val;
+    @Nullable CacheObject val;
 
     /** Time to live. */
     @Order(3)
     long ttl;
 
-    /** Expiration time. */
+    /** Base time to calculate {@link #expireTime()}. */
+    private long initTime;
+
+    /** Expiration time delta to transfer. -1 if no expiration is used. */
     @Order(4)
-    long expireTime;
+    long expireTimeDelta = -1L;
 
     /** Entry version. */
     @Order(5)
@@ -64,58 +68,82 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
     /** Deleted flag. */
     private boolean deleted;
 
+    /**
+     * Empty constructor for serialization purposes. Initializes {@link #initTime} to properly calculate {@link #expireTime()}
+     * if {@link #expireTimeDelta} and the expiration is effective. If no expiration is set, initialization of {@link #initTime}
+     * is not required, but it is a tradeoff for absence of the message serealization lifecycle awareness.
+     */
+    public GridCacheEntryInfo() {
+        initTime = U.currentTimeMillis();
+    }
+
+    /** */
+    public GridCacheEntryInfo(
+        int cacheId,
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        GridCacheVersion ver,
+        long initTime,
+        long expireTime,
+        long ttl
+    ) {
+        assert expireTime >= 0;
+        assert initTime > 0;
+
+        this.initTime = initTime;
+
+        if (expireTime > 0) {
+            expireTimeDelta = expireTime - initTime;
+
+            // Timeout mark.
+            if (expireTimeDelta < 0)
+                expireTimeDelta = 0;
+        }
+
+        this.cacheId = cacheId;
+        this.key = key;
+        this.val = val;
+        this.ver = ver;
+        this.ttl = ttl;
+    }
+
     /** {@inheritDoc} */
     @Override public int cacheId() {
         return cacheId;
     }
 
     /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /**
      * @param key Entry key.
      */
-    public void key(KeyCacheObject key) {
+    public void key(@Nullable KeyCacheObject key) {
         this.key = key;
     }
 
     /**
      * @return Entry key.
      */
-    public KeyCacheObject key() {
+    @Nullable public KeyCacheObject key() {
         return key;
     }
 
     /**
      * @return Entry value.
      */
-    public CacheObject value() {
+    public @Nullable CacheObject value() {
         return val;
     }
 
     /**
-     * @param val Entry value.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
-    }
-
-    /**
-     * @return Expire time.
+     * @return Expire time >= 0. 0 means no expiration is set.
      */
     public long expireTime() {
-        return expireTime;
-    }
+        if (expireTimeDelta == -1L)
+            return 0L;
 
-    /**
-     * @param expireTime Expiration time.
-     */
-    public void expireTime(long expireTime) {
-        this.expireTime = expireTime;
+        long res = initTime + expireTimeDelta;
+
+        // Overflow protection.
+        return res < 0 ? 0 : res;
     }
 
     /**
@@ -126,24 +154,10 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
     }
 
     /**
-     * @param ttl Time to live.
-     */
-    public void ttl(long ttl) {
-        this.ttl = ttl;
-    }
-
-    /**
      * @return Version.
      */
     public GridCacheVersion version() {
         return ver;
-    }
-
-    /**
-     * @param ver Version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
     }
 
     /**
@@ -188,30 +202,6 @@ public class GridCacheEntryInfo implements SelfMarshallingMessage, CacheIdAware 
         size += key.valueBytes(ctx).length;
 
         return SIZE_OVERHEAD + size;
-    }
-
-    // TODO IGNITE-28920: the rebase still runs inside the message; move it to the code filling and reading the entry.
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
-        if (expireTime == 0)
-            expireTime = -1;
-        else {
-            expireTime -= U.currentTimeMillis();
-
-            if (expireTime < 0)
-                expireTime = 0;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
-        long remaining = expireTime;
-
-        expireTime = remaining < 0 ? 0 : U.currentTimeMillis() + remaining;
-
-        // Account for overflow.
-        if (expireTime < 0)
-            expireTime = 0;
     }
 
     /** {@inheritDoc} */

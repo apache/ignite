@@ -22,6 +22,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -681,6 +683,61 @@ public class MessageProcessorTest {
 
         assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
             "or SelfMarshallingMessage, nor declare @Marshalled fields");
+    }
+
+    /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
+    @Test
+    public void testMarshalledOnMessageFieldFailGeneration() {
+        List<String> cases = Arrays.asList(
+            "IncorrectMarshalledOnMessage.java",
+            "IncorrectMarshalledOnMessageCollection.java",
+            "IncorrectMarshalledOnMessageCollection2.java",
+            "IncorrectMarshalledOnMessageCollection3.java",
+            "IncorrectMarshalledOnMessageCollection4.java",
+            "IncorrectMarshalledOnMessageMap.java",
+            "IncorrectMarshalledOnMessageMap2.java",
+            "IncorrectMarshalledOnMessageMap3.java",
+            "IncorrectMarshalledOnMessageMap4.java",
+            "IncorrectMarshalledOnMessageArray.java",
+            "IncorrectMarshalledOnMessageCollectionArray.java",
+            "IncorrectMarshalledOnMessageSet.java",
+            "IncorrectMarshalledOnMessageList.java",
+            "IncorrectMarshalledOnMessageList2.java"
+        );
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Message must be written by dedicated message serializers");
+        }
+    }
+
+    /** Test that {@code @Marshalled} annotation on raw {@link Collection} or {@link Map} fail generation. */
+    @Test
+    public void testRawClassesFailGeneration() {
+        List<String> cases = Arrays.asList("IncorrectRawListMessage.java", "IncorrectRawCollectionMessage.java");
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Raw collection not supported");
+        }
+
+        cases = Arrays.asList("IncorrectRawListMessage2.java", "IncorrectRawCollectionMessage2.java", "IncorrectRawMapMessage2.java");
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Raw types not supported");
+        }
+
+        Compilation compilation = compile("TestMessage.java", "IncorrectRawMapMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Raw Map not supported");
     }
 
     /** */

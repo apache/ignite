@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.GridTestTaskSession;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.collision.CollisionJobContext;
@@ -91,7 +90,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
         addSpiDependency(rmtNode1);
         addSpiDependency(rmtNode2);
 
-        NodeMetricsMessage metricsMsg = new NodeMetricsMessage();
+        ClusterMetricsSnapshot metricsMsg = new ClusterMetricsSnapshot();
 
         metricsMsg.currentWaitingJobs(2);
 
