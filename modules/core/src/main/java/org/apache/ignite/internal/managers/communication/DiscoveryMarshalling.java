@@ -24,8 +24,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Marshalling of the discovery transport, which speaks the JDK marshaller: a discovery message is marshalled on a
- * discovery thread, where waiting for a cluster-wide type registration would never finish.
+ * Marshalling of the discovery transport. It uses the JDK marshaller, because a discovery message is marshalled on
+ * a discovery thread, where waiting for a cluster-wide type registration would never finish.
  */
 public final class DiscoveryMarshalling {
     /** */

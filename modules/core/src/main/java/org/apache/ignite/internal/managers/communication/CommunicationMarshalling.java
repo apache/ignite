@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Marshalling of the communication transport, which speaks the schema-aware marshaller. */
+/** Marshalling of the communication transport. It uses the schema-aware marshaller. */
 public final class CommunicationMarshalling {
     /** */
     public static <M extends Message> void marshal(M msg, GridKernalContext kctx,
