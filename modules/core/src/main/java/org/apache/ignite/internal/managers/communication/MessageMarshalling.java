@@ -34,7 +34,7 @@ public final class MessageMarshalling {
      * Marshals {@code msg} through its registered marshaller; a no-op when none is registered.
      *
      * @param msg Message to marshal.
-     * @param marsh Marshaller of the transport the message goes out on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
@@ -49,7 +49,7 @@ public final class MessageMarshalling {
      *
      * @param msgFactory Message factory to resolve the marshaller from.
      * @param msg Message to marshal.
-     * @param marsh Marshaller of the transport the message goes out on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
@@ -65,7 +65,7 @@ public final class MessageMarshalling {
      * Unmarshals {@code msg} through its registered marshaller with full cache context; a no-op when none is registered.
      *
      * @param msg Message to unmarshal.
-     * @param marsh Marshaller of the transport the message arrived on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
@@ -81,7 +81,7 @@ public final class MessageMarshalling {
      *
      * @param msgFactory Message factory to resolve the marshaller from.
      * @param msg Message to unmarshal.
-     * @param marsh Marshaller of the transport the message arrived on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
@@ -102,7 +102,7 @@ public final class MessageMarshalling {
      * Cache-free {@code unmarshal} through the registered marshaller; a no-op when none is registered.
      *
      * @param msg Message to unmarshal.
-     * @param marsh Marshaller of the transport the message arrived on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      */
     public static <M extends Message> void unmarshal(M msg, Marshaller marsh, GridKernalContext kctx)
@@ -121,7 +121,7 @@ public final class MessageMarshalling {
      * is registered.
      *
      * @param msg Message to unmarshal.
-     * @param marsh Marshaller of the transport the message arrived on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      */
     public static <M extends Message> void unmarshalNio(M msg, Marshaller marsh, GridKernalContext kctx)

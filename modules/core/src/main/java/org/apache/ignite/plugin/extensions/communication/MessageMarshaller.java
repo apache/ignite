@@ -35,7 +35,7 @@ public interface MessageMarshaller<M extends Message> {
      * Marshals the message on the user thread before sending.
      *
      * @param msg Message to marshal.
-     * @param marsh Marshaller of the transport the message goes out on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
@@ -46,7 +46,7 @@ public interface MessageMarshaller<M extends Message> {
      * Unmarshals the message with full cache context and class loader.
      *
      * @param msg Message to unmarshal.
-     * @param marsh Marshaller of the transport the message arrived on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
@@ -60,7 +60,7 @@ public interface MessageMarshaller<M extends Message> {
      * context, so per-message marshallers need only implement the cache-aware method.
      *
      * @param msg Message to unmarshal.
-     * @param marsh Marshaller of the transport the message arrived on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      */
     default void unmarshal(M msg, Marshaller marsh, GridKernalContext kctx) throws IgniteCheckedException {
@@ -72,7 +72,7 @@ public interface MessageMarshaller<M extends Message> {
      * overloads, which restore the full payload later on a worker thread. No-op unless the message has {@code @NioField}s.
      *
      * @param msg Message to unmarshal.
-     * @param marsh Marshaller of the transport the message arrived on.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      */
     default void unmarshalNio(M msg, Marshaller marsh, GridKernalContext kctx) throws IgniteCheckedException {

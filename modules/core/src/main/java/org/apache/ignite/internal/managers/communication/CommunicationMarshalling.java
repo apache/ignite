@@ -23,45 +23,26 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Entry points of the communication transport: they name the transport instead of making every caller pick its
- * marshaller. Communication speaks the schema-aware marshaller, which registers class names in the cluster and so
- * needs a discovery round for a class the cluster has not seen yet.
- */
+/** Marshalling of the communication transport, which speaks the schema-aware marshaller. */
 public final class CommunicationMarshalling {
-    /**
-     * @param msg Message to marshal.
-     * @param kctx Kernal context.
-     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
-     */
+    /** */
     public static <M extends Message> void marshal(M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         MessageMarshalling.marshal(msg, kctx.marshaller(), kctx, cacheObjCtx);
     }
 
-    /**
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
-     * @param clsLdr Class loader for unmarshalling.
-     */
+    /** */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         MessageMarshalling.unmarshal(msg, kctx.marshaller(), kctx, cacheObjCtx, clsLdr);
     }
 
-    /**
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     */
+    /** */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         MessageMarshalling.unmarshal(msg, kctx.marshaller(), kctx);
     }
 
-    /**
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     */
+    /** */
     public static <M extends Message> void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         MessageMarshalling.unmarshalNio(msg, kctx.marshaller(), kctx);
     }

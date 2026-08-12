@@ -24,37 +24,23 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Entry points of the discovery transport: they name the transport instead of making every caller pick its
- * marshaller. Discovery speaks the JDK marshaller: a discovery message is marshalled on a discovery thread, and a
- * marshaller that registers class names in the cluster would wait there for a discovery round that only this very
- * thread can carry.
+ * Marshalling of the discovery transport, which speaks the JDK marshaller: a discovery message is marshalled on a
+ * discovery thread, where waiting for a cluster-wide type registration would never finish.
  */
 public final class DiscoveryMarshalling {
-    /**
-     * @param msg Message to marshal.
-     * @param kctx Kernal context.
-     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
-     */
+    /** */
     public static <M extends Message> void marshal(M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         MessageMarshalling.marshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx, cacheObjCtx);
     }
 
-    /**
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
-     * @param clsLdr Class loader for unmarshalling.
-     */
+    /** */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         MessageMarshalling.unmarshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx, cacheObjCtx, clsLdr);
     }
 
-    /**
-     * @param msg Message to unmarshal.
-     * @param kctx Kernal context.
-     */
+    /** */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         MessageMarshalling.unmarshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx);
     }

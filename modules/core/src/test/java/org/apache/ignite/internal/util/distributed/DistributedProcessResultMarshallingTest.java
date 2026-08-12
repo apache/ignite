@@ -48,11 +48,9 @@ import static org.apache.ignite.testframework.GridTestUtils.loadMarshaller;
 import static org.apache.ignite.testframework.GridTestUtils.loadSerializer;
 
 /**
- * Tests that the result of a {@link DistributedProcess} is marshalled with the JDK marshaller, whatever the transport
- * speaks. The result is sent to the coordinator by communication and then travels discovery in the {@link FullMessage},
- * while a marshalled field keeps its wire form cached - so a single marshaller has to serve both legs. It also has to
- * be the one that needs no class name registration, because the local step often finishes synchronously and then the
- * message is marshalled on the discovery thread that would have to carry the registration round itself.
+ * Tests that the result of a {@link DistributedProcess} is marshalled with the JDK marshaller on both transports: it
+ * goes to the coordinator by communication and comes back in the {@link FullMessage} by discovery, while a marshalled
+ * field caches its wire form for the second leg.
  */
 public class DistributedProcessResultMarshallingTest extends GridCommonAbstractTest {
     /** Timeout to wait latches. */

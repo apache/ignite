@@ -23,11 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marshals the message with the JDK marshaller of the local node, whatever marshaller the transport speaks.
- * <p>
- * Put it on a message that travels both transports. A {@link Marshalled} field keeps its wire form cached, so an
- * instance marshalled by one transport hands the other transport bytes it cannot read. The JDK marshaller also asks
- * no cluster-wide class name registration, which never completes on a discovery thread.
+ * Marshals the message with the JDK marshaller of the local node, whatever the transport speaks. Put it on a message
+ * that travels both transports: a {@link Marshalled} field caches its wire form, and only the JDK marshaller is read
+ * by both. It also asks no cluster-wide type registration, which never completes on a discovery thread.
  *
  * @see Marshalled
  */
