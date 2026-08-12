@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.marshaller.optimized;
+package org.apache.ignite.spi.discovery.tcp.internal;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-/**
- * Optimized marshaller self test.
- */
-@GridCommonTest(group = "Marshaller")
-public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTest {
-    /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() throws IgniteCheckedException {
-        OptimizedMarshaller m = initTestMarshallerContext(Marshallers.optimized(false));
+/** */
+public class UnsupportedNodeVersionException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        m.setPoolSize(8);
-
-        return m;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        // Reset static registry.
-        Marshallers.optimized().setPoolSize(0);
+    /** */
+    public UnsupportedNodeVersionException(String message) {
+        super(message);
     }
 }

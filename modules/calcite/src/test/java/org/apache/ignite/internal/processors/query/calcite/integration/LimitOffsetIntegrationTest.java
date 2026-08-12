@@ -93,12 +93,12 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** */
     @Test
-    public void testNestedLimitOffsetWithUnion() {
-        sql("INSERT into TEST_REPL VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')");
+    public void testNestedLimitOffsetWithUnion() throws Exception {
+        fillCache(cacheRepl, 4);
 
-        assertQuery("(SELECT id FROM TEST_REPL WHERE id = 2) UNION ALL " +
+        assertQuery("(SELECT id FROM TEST_REPL WHERE id = 1) UNION ALL " +
             "SELECT id FROM (select id from (SELECT id FROM TEST_REPL OFFSET 2) order by id OFFSET 1)"
-        ).returns(2).returns(4).check();
+        ).returns(1).returns(3).check();
     }
 
     /** Tests correctness of fetch / offset params. */
@@ -121,8 +121,31 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS",
             IgniteSQLException.class, null);
 
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1.5 ROWS", null);
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -0.5 ROWS", null);
+
         assertThrows("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS",
             IgniteSQLException.class, null);
+    }
+
+    /** */
+    @Test
+    public void testFractionalLimitOffset() throws Exception {
+        fillCache(cacheRepl, 4);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 0.5").check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.2").returns(0).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.5").returns(0).check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 0.5 ROWS ONLY").check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.3 ROWS ONLY").returns(0).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.6 ROWS ONLY").returns(0).check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 0.5 ROWS")
+            .returns(0).returns(1).returns(2).returns(3).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.3 ROWS").returns(2).returns(3).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.6 ROWS").returns(2).returns(3).check();
     }
 
     /**

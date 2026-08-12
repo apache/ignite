@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -141,8 +142,23 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         if (insert.getTargetColumnList() == null)
             insert.setOperand(3, inferColumnList(insert));
+        else
+            validateInsertTargets(insert);
 
         super.validateInsert(insert);
+    }
+
+    /**
+     * Validates insert target columns to ensure they do not contain the version column.
+     *
+     * @param insert Insert statement.
+     */
+    private void validateInsertTargets(SqlInsert insert) {
+        for (SqlNode node : insert.getTargetColumnList()) {
+            SqlIdentifier id = (SqlIdentifier)node;
+
+            validateVersionColumnDmlTarget(id);
+        }
     }
 
     /** {@inheritDoc} */
@@ -197,10 +213,19 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         SqlIdentifier alias = call.getAlias() != null ? call.getAlias() :
             new SqlIdentifier(deriveAlias(targetTable, 0), SqlParserPos.ZERO);
 
-        table.unwrap(IgniteTable.class).descriptor().selectForUpdateRowType((IgniteTypeFactory)typeFactory)
-            .getFieldNames().stream()
-            .map(name -> alias.plus(name, SqlParserPos.ZERO))
-            .forEach(selectList::add);
+        RelDataType updateRowType = table.unwrap(IgniteTable.class).descriptor()
+            .selectForUpdateRowType(typeFactory());
+
+        for (RelDataTypeField field : updateRowType.getFieldList()) {
+            if (QueryUtils.VER_FIELD_NAME.equals(field.getName())) {
+                selectList.add(SqlValidatorUtil.addAlias(
+                    SqlLiteral.createNull(SqlParserPos.ZERO),
+                    "__IGNITE_DML" + field.getName()
+                ));
+            }
+            else
+                selectList.add(alias.plus(field.getName(), SqlParserPos.ZERO));
+        }
 
         int ordinal = 0;
         // Force unique aliases to avoid a duplicate for Y with SET X=Y
@@ -300,12 +325,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private void checkLimitOffset(Number offsetFetchLimit, SqlNode n, String nodeName) {
         try {
-            long res = IgniteMath.convertToLongExact(offsetFetchLimit);
+            BigDecimal val = IgniteMath.convertToBigDecimal(offsetFetchLimit);
 
-            if (res < 0)
-                throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
+            if (val.signum() < 0)
+                throw new IllegalArgumentException("Negative value for " + nodeName);
+
+            IgniteMath.convertToLongExact(val, RoundingMode.DOWN);
         }
-        catch (ArithmeticException e) {
+        catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
         }
     }
@@ -329,7 +356,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (call.getKind() == SqlKind.AS) {
             final String alias = deriveAlias(call, 0);
 
-            if (isSystemFieldName(alias))
+            if (QueryUtils.isSystemFieldNameIgnoreCase(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
         else if (call.getKind() == SqlKind.CAST) {
@@ -454,18 +481,26 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         SelectScope scope,
         boolean includeSysVars
     ) {
-        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER && isSystemFieldName(deriveAlias(exp, 0))) {
-            SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER) {
+            String alias = deriveAlias(exp, 0);
 
-            if (qualified.namespace == null)
+            // The version column is never exposed via SELECT *.
+            if (QueryUtils.VER_FIELD_NAME.equalsIgnoreCase(alias))
                 return;
 
-            if (qualified.namespace.getTable() != null) {
-                // If child is table and has only system fields, expand star to these fields.
-                // Otherwise, expand star to non-system fields only.
-                for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
-                    if (!isSystemField(fld))
-                        return;
+            if (QueryUtils.isSystemFieldNameIgnoreCase(alias)) {
+                SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+
+                if (qualified.namespace == null)
+                    return;
+
+                if (qualified.namespace.getTable() != null) {
+                    // If child is table and has only system fields, expand star to these fields.
+                    // Otherwise, expand star to non-system fields only.
+                    for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
+                        if (!isSystemField(fld))
+                            return;
+                    }
                 }
             }
         }
@@ -475,7 +510,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
-        return isSystemFieldName(field.getName());
+        return QueryUtils.isSystemFieldNameIgnoreCase(field.getName());
     }
 
     /** */
@@ -559,6 +594,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         for (SqlNode node : call.getTargetColumnList()) {
             SqlIdentifier id = (SqlIdentifier)node;
+            validateVersionColumnDmlTarget(id);
 
             RelDataTypeField target = SqlValidatorUtil.getTargetField(
                 baseType, typeFactory(), id, getCatalogReader(), relOptTable);
@@ -601,12 +637,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return (IgniteTypeFactory)typeFactory;
     }
 
-    /** */
-    private boolean isSystemFieldName(String alias) {
-        return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
-    }
-
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
         if (expr instanceof SqlDynamicParam) {
@@ -617,6 +647,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return super.deriveType(scope, expr);
+    }
+
+    /** */
+    private void validateVersionColumnDmlTarget(SqlIdentifier id) {
+        String fieldName = id.names.get(id.names.size() - 1);
+
+        if (QueryUtils.VER_FIELD_NAME.equalsIgnoreCase(fieldName))
+            throw newValidationError(id, IgniteResource.INSTANCE.cannotModifySystemColumn(id.toString()));
     }
 
     /** @return A derived type or {@code null} if unable to determine. */

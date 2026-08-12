@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -1639,11 +1640,11 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * Reads collection eather as a {@link ArrayList} or a {@link HashSet}.
+     * Reads collection either as an {@link ArrayList}, a {@link HashSet} or an {@link EnumSet}.
      *
      * @param type Item type.
      * @param reader Reader.
-     * @return {@link ArrayList} or a {@link HashSet}.
+     * @return {@link ArrayList}, {@link HashSet} or {@link EnumSet}.
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageReader reader) {
         if (readSize == -1) {
@@ -1657,7 +1658,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (col == null)
-                col = type.set() ? U.newHashSet(readSize) : new ArrayList<>(readSize);
+                col = newCollection(type);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(type.valueType(), reader);
@@ -1680,6 +1681,16 @@ public class DirectByteBufferStream {
         col = null;
 
         return col0;
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private Collection<Object> newCollection(MessageCollectionType type) {
+        return switch (type.collectionImplementationType()) {
+            case ENUM_SET -> (Collection<Object>)((MessageEnumType<?>)type.valueType()).newEnumSet();
+            case HASH_SET -> U.newHashSet(readSize);
+            case ARRAY_LIST -> new ArrayList<>(readSize);
+        };
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord.PartitionState;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
@@ -44,9 +45,9 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
     /** */
     private static final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
     /** */
-    private static final MessageCollectionType partStatesCollDesc = new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(partitionStateVals, b)), false);
+    private static final MessageCollectionType partStatesCollDesc = new MessageCollectionType(new MessageEnumType<>(PartitionState.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(partitionStateVals, b)), CollectionImplementationType.ARRAY_LIST);
     /** */
-    private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), false), new MessageItemType(MessageCollectionItemType.STRING), false);
+    private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), CollectionImplementationType.ARRAY_LIST), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
     @Override public final boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {

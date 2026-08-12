@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.marshaller.optimized;
+package org.apache.ignite.plugin.extensions.communication;
 
-/**
- * ID mapper.
- */
-public interface OptimizedMarshallerIdMapper {
-    /**
-     * Gets type ID for provided class name.
-     * <p>
-     * If {@code 0} is returned, hash code of class name will be used.
-     *
-     * @param clsName Class name.
-     * @return Type ID.
-     */
-    public int typeId(String clsName);
+/** Collection implementation a {@link MessageCollectionType} is read back into. */
+public enum CollectionImplementationType {
+    /** {@link java.util.ArrayList} (the default implementation type). */
+    ARRAY_LIST,
+
+    /** {@link java.util.HashSet}. */
+    HASH_SET,
+
+    /** {@link java.util.EnumSet}. */
+    ENUM_SET
 }

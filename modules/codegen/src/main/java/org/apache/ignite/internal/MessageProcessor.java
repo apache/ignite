@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
  * This processor is typically registered using the {@code META-INF/services/javax.annotation.processing.Processor}
  * service file and triggered during the compilation phase.
  */
-@SupportedAnnotationTypes("org.apache.ignite.internal.Order")
+@SupportedAnnotationTypes({"org.apache.ignite.internal.Order", "org.apache.ignite.internal.EmptyMessage"})
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
@@ -108,13 +108,6 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
 
-    /** Messages with no fields. A serializer must be generated due to restrictions in our communication process. */
-    static final String[] EMPTY_MESSAGES = {
-        "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
-        ZK_NO_SERVERS_MESSAGE,
-        GRID_H2_NULL,
-    };
-
     /** Messages with no fields. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
@@ -139,7 +132,6 @@ public class MessageProcessor extends AbstractProcessor {
 
         TypeMirror msgType = msgEl.asType();
 
-        List<TypeMirror> emptyMsgs = typesToTypeMirrors(EMPTY_MESSAGES);
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
         TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
@@ -172,14 +164,15 @@ public class MessageProcessor extends AbstractProcessor {
 
             List<VariableElement> fields = orderedFields(clazz);
 
-            if (fields.isEmpty() && emptyMsgs.stream().noneMatch(t -> isAssignable(t, clazz))) {
+            if (fields.isEmpty() && el.getAnnotation(EmptyMessage.class) == null) {
                 if (skipMsgs.stream().anyMatch(t -> isAssignable(t, clazz)))
                     continue;
 
                 processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
                     "Message class doesn't have any ordered fields. " +
-                        "Annotate fields with @Order or add to known empty classes MessageProcessor#EMPTY_MESSAGES",
+                        "Annotate fields with @Order if you need to serialize them, " +
+                        "or with @EmptyMessage if you need to serialize message without fields.",
                     clazz);
             }
 
