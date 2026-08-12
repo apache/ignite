@@ -40,7 +40,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Query/fragment colocation group. As a {@link Message}, has to be prepared to send and restored after receiving.
+ * Query/fragment colocation group. As a {@link Message}, has to be prepared to send to another node and restored after
+ * receiving from another node.
  *
  * @see #prepareToSend()
  * @see #received()
@@ -63,7 +64,7 @@ public class ColocationGroup implements Message {
      */
     private boolean primaryAssignment;
 
-    /** Marshalled assignments serialization call holder. */
+    /** Marshaled assignments serialization call holder. */
     @Order(2)
     @Nullable int[] marshalledAssignments;
 
@@ -93,7 +94,7 @@ public class ColocationGroup implements Message {
     /** */
     public ColocationGroup local(UUID nodeId) {
         List<List<UUID>> locAssignments = null;
-        if (assignments() != null) {
+        if (assignments != null) {
             locAssignments = assignments.stream()
                     .map(l -> nodeId.equals(l.get(0)) ? l : Collections.<UUID>emptyList())
                     .collect(Collectors.toList());
@@ -134,9 +135,6 @@ public class ColocationGroup implements Message {
      * {@link GridDhtPartitionState#OWNING} state, calculated for distributed tables, involved in query execution.
      */
     public List<List<UUID>> assignments() {
-        if (marshalledAssignments != null && assignments == null)
-            received();
-
         if (assignments != null)
             return assignments;
 
@@ -187,7 +185,7 @@ public class ColocationGroup implements Message {
         boolean primaryAssignment = this.primaryAssignment || other.primaryAssignment;
 
         List<List<UUID>> assignments;
-        if (assignments() == null || other.assignments == null) {
+        if (this.assignments == null || other.assignments == null) {
             assignments = U.firstNotNull(this.assignments, other.assignments);
 
             if (assignments != null && nodeIds != null) {
@@ -239,8 +237,11 @@ public class ColocationGroup implements Message {
 
     /** */
     public ColocationGroup finalizeMapping() {
-        if (assignments() == null)
+        if (assignments == null)
             return this;
+
+        /** Protects {@link #received()}. */
+        assert marshalledAssignments == null : "Marshalled assignments are already set.";
 
         List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
         Set<UUID> nodes = new HashSet<>();
@@ -257,7 +258,7 @@ public class ColocationGroup implements Message {
 
     /** */
     public ColocationGroup explicitMapping() {
-        if (assignments() == null || !primaryAssignment)
+        if (assignments == null || !primaryAssignment)
             return this;
 
         // Make a shallow copy without cacheAssignment flag.
@@ -266,7 +267,7 @@ public class ColocationGroup implements Message {
 
     /** */
     public ColocationGroup filterByPartitions(int[] parts) {
-        if (!F.isEmpty(assignments())) {
+        if (!F.isEmpty(assignments)) {
             List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> nodes = new HashSet<>();
 
@@ -306,7 +307,7 @@ public class ColocationGroup implements Message {
      * @return Partitions to scan on the given node.
      */
     public int[] partitions(UUID nodeId) {
-        if (F.isEmpty(assignments()))
+        if (F.isEmpty(assignments))
             return null;
 
         GridIntList parts = new GridIntList(assignments.size());
@@ -320,7 +321,7 @@ public class ColocationGroup implements Message {
         return parts.arrayCopy();
     }
 
-    /** Prepares, finalizes colocation group as {@link Message} before sending to another node. */
+    /** Prepares colocation group as {@link Message} to send to another node. */
     public void prepareToSend() {
         if (!F.isEmpty(marshalledAssignments) || assignments == null || primaryAssignment)
             return;
@@ -349,12 +350,11 @@ public class ColocationGroup implements Message {
         marshalledAssignments = builder.build().buffer();
     }
 
-    /** Refills, properly unwraps colocation group as {@link Message} after receiving from another node. */
+    /** Properly unwraps colocation group as {@link Message} after receiving from another node. */
     public void received() {
-        if (marshalledAssignments == null)
+        /** {@link #assignments} are set in constructors or are updated when {@link #marshalledAssignments} is {@code null}. */
+        if (marshalledAssignments == null || assignments != null)
             return;
-
-        assert assignments == null;
 
         int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
 

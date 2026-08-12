@@ -25,7 +25,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Query fragment description. As a {@link Message}, has to be prepared to send and restored after receiving.
+ * Query fragment description. As a {@link Message}, has to be prepared to send to another node and restored after
+ * receiving from another node.
  *
  * @see #prepareToSend()
  * @see #received()
@@ -47,7 +48,7 @@ public class FragmentDescription implements Message {
     @Order(3)
     @Nullable ColocationGroup target;
 
-    /** Transient flag of {@link #received()} - invocked. */
+    /** Transient flag of {@link #received()}-once-invoked. */
     boolean received;
 
     /** */
@@ -66,7 +67,7 @@ public class FragmentDescription implements Message {
             this.target = target.explicitMapping();
     }
 
-    /** Prepares, finalizes fragment description as {@link Message} before sending to another node. */
+    /** Prepares fragment description as {@link Message} to send to another node. */
     public FragmentDescription prepareToSend() {
         if (target != null)
             target.prepareToSend();
@@ -76,7 +77,7 @@ public class FragmentDescription implements Message {
         return this;
     }
 
-    /** Refills, properly unwraps fragment description as {@link Message} after receiving from another node. */
+    /** Properly unwraps fragment description as {@link Message} after receiving from another node. */
     public FragmentDescription received() {
         if (!received) {
             if (target != null)
@@ -107,7 +108,7 @@ public class FragmentDescription implements Message {
 
     /** */
     public @Nullable ColocationGroup target() {
-        return received().target();
+        return target;
     }
 
     /** */
@@ -122,7 +123,7 @@ public class FragmentDescription implements Message {
 
     /** */
     public FragmentMapping mapping() {
-        return received().mapping();
+        return mapping;
     }
 
     /** */
