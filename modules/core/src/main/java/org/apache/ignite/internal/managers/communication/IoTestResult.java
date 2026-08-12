@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
-/** Immutable result of a communication IO test. */
+/** Result of a communication IO test. */
 public class IoTestResult {
     /** Source node ID. */
     private final UUID sourceNodeId;
@@ -66,7 +66,7 @@ public class IoTestResult {
         this.threads = threads;
         this.payloadSize = payloadSize;
         this.processInNioThread = processInNioThread;
-        this.targets = List.copyOf(targets);
+        this.targets = targets;
     }
 
     /** @return Source node ID. */

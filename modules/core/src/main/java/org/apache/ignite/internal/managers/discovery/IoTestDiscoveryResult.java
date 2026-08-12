@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,9 +48,9 @@ public final class IoTestDiscoveryResult {
         List<HopLatencySummary> hopLatencies
     ) {
         this.coordinatorNodeId = coordinatorNodeId;
-        this.nodeConsistentIds = Collections.unmodifiableMap(new LinkedHashMap<>(nodeConsistentIds));
+        this.nodeConsistentIds = nodeConsistentIds;
         this.ringLatency = ringLatency;
-        this.hopLatencies = List.copyOf(hopLatencies);
+        this.hopLatencies = hopLatencies;
     }
 
     /** @return Coordinator node ID. */
