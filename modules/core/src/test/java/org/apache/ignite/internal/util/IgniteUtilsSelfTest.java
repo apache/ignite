@@ -1688,6 +1688,18 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }, IgniteCheckedException.class, "always blocked");
     }
 
+    /**
+     * Test that jar:http://...!/path URLs are unwrapped to their inner scheme
+     * to prevent bypassing remote-scheme validation via the jar: wrapper.
+     */
+    @Test
+    public void testResolveSpringUrlUnwrapsJarSchemeToBlockRemoteBypass() {
+        assertThrows(log, () -> {
+            IgniteUtils.resolveSpringUrl("jar:http://attacker.example.com/evil.xml!/cfg.xml");
+            return null;
+        }, IgniteCheckedException.class, "Remote Spring configuration URLs");
+    }
+
     /** */
     private byte[] asByteArray(String text) {
         String[] split = text.split("-");
