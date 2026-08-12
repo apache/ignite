@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -463,16 +462,15 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         assert val != null;
 
-        GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-        info.cacheId(cctx.cacheId());
-        info.key(key);
-        info.value(skipVals ? null : (CacheObject)val.value());
-        info.version(val.version());
-        info.expireTime(val.expireTime());
-        info.ttl(val.ttl());
-
-        return info;
+        return new GridCacheEntryInfo(
+            cctx.cacheId(),
+            key,
+            skipVals ? null : val.value(),
+            val.version(),
+            U.currentTimeMillis(),
+            val.expireTime(),
+            val.ttl()
+        );
     }
 
     /**
