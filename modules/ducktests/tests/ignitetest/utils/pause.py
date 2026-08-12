@@ -40,7 +40,8 @@ Globals:
     stops only at the named ones.
 
     demo_pause_timeout_sec - how long a single breakpoint may hold the scenario before it
-    resumes on its own, 1800 by default.
+    resumes on its own, 600 by default. Capped by what is left of ducktape's
+    ``--test-runner-timeout``, see :meth:`DemoPause._budgeted_timeout`.
 
     demo_pause_dir - control directory, ``<repository root>/.ducktests-demo`` by default.
 """
@@ -54,7 +55,13 @@ DEMO_PAUSE = "demo_pause"
 DEMO_PAUSE_TIMEOUT_SEC = "demo_pause_timeout_sec"
 DEMO_PAUSE_DIR = "demo_pause_dir"
 
-DEFAULT_TIMEOUT_SEC = 1800
+# Well below ducktape's own --test-runner-timeout (1800s), which a breakpoint must not
+# outsit - see _budgeted_timeout().
+DEFAULT_TIMEOUT_SEC = 600
+
+# Kept free of the runner budget, so that resuming a breakpoint at the very last moment
+# still leaves the scenario time to reach its next event.
+RUNNER_TIMEOUT_MARGIN_SEC = 60
 
 CONTROL_DIR_NAME = ".ducktests-demo"
 
@@ -68,9 +75,11 @@ ABORT = "abort"
 # host, where inotify is not dependable.
 POLL_SEC = .5
 
-# A paused test is silent, and ducktape kills a test client that stays silent for too long
-# (--test-runner-timeout). The heartbeat keeps the client alive and timestamps the demo in
-# the test log.
+# Timestamps the demo in the test log, so that a run can be read back afterwards and it is
+# visible that the scenario is held rather than stuck. Deliberately NOT a keepalive towards
+# ducktape: the test logger writes to files and to stdout only, while the runner listens for
+# zmq events that just the runner client itself emits - _budgeted_timeout() is what keeps a
+# paused test within the runner's patience.
 HEARTBEAT_SEC = 15
 
 # Every breakpoint name matches.
@@ -187,18 +196,32 @@ class DemoPause:
     Disabled unless the ``demo_pause`` global says otherwise, in which case :meth:`pause` is
     a plain return and nothing is written anywhere.
     """
-    def __init__(self, logger, test_globals, test_name, control_dir=None):
+    def __init__(self, logger, test_globals, test_name, control_dir=None, started_at=None,
+                 runner_timeout_sec=None):
+        """
+        :param started_at: Monotonic timestamp the test itself started at, which is both what
+               the banner counts from and what the runner budget is spent from. Defaults to
+               now, which is only right when the first breakpoint is the start of the test.
+        :param runner_timeout_sec: Ducktape's ``--test-runner-timeout`` in seco nds, None when
+               unknown, in which case no breakpoint is cut short by it.
+        """
         self.logger = logger
         self.test_name = test_name
 
         self.names = parse_selector(test_globals.get(DEMO_PAUSE))
         self.timeout_sec = float(test_globals.get(DEMO_PAUSE_TIMEOUT_SEC, DEFAULT_TIMEOUT_SEC))
+        self.runner_timeout_sec = runner_timeout_sec
 
         self.control_dir = control_dir or test_globals.get(DEMO_PAUSE_DIR) or default_control_dir()
 
         self.seq = 0
 
-        self._started_at = time.monotonic()
+        # Identifies this run of this test to the host console, which has no other way of
+        # telling a breakpoint of the current run from one left published by a run that
+        # died while paused: seq alone restarts at 1 for every test.
+        self.run = f"{os.getpid()}-{int(time.time())}"
+
+        self._started_at = time.monotonic() if started_at is None else started_at
         self._prepared = False
         self._continue_all = False
 
@@ -225,19 +248,55 @@ class DemoPause:
 
         self.seq += 1
 
-        banner = self._render(name, describers, services)
+        timeout_sec = self._budgeted_timeout()
 
-        self._publish(name, banner)
+        banner = self._render(name, describers, services, timeout_sec)
+
+        self._publish(name, banner, timeout_sec)
 
         self.logger.info(f"Demo breakpoint reached [seq={self.seq}, name={name}, dir={self.control_dir}]")
 
-        self._await_resume(name)
+        self._await_resume(name, timeout_sec)
 
     def _stops_at(self, name):
         if not self.enabled:
             return False
 
         return self.names == ALL or name in self.names
+
+    def _budgeted_timeout(self):
+        """
+        :return: How long this breakpoint may actually hold the scenario.
+
+        ``demo_pause_timeout_sec`` is what the demo asks for, the runner budget is what it is
+        allowed. Ducktape's runner kills a test client it has received no event from for
+        ``--test-runner-timeout`` and takes the whole session down with it, and a paused test
+        sends no events - so a breakpoint has to give up while the runner is still waiting.
+        The budget is spent from the start of the test rather than from the breakpoint, hence
+        a long setup, or a long earlier pause, leaves less of it for this one.
+        """
+        if self.runner_timeout_sec is None:
+            return self.timeout_sec
+
+        left = self.runner_timeout_sec - (time.monotonic() - self._started_at) - RUNNER_TIMEOUT_MARGIN_SEC
+
+        if left >= self.timeout_sec:
+            return self.timeout_sec
+
+        self.logger.warn(f"Demo breakpoint held for at most {_fmt_duration(max(left, 0))} instead of the requested "
+                         f"{_fmt_duration(self.timeout_sec)}: what is left of ducktape's --test-runner-timeout "
+                         f"({_fmt_duration(self.runner_timeout_sec)}) after {_fmt_duration(self.elapsed_sec)} of "
+                         f"this test. Raise --test-runner-timeout for a longer demo "
+                         f"[seq={self.seq}, test={self.test_name}]")
+
+        return max(left, 0.0)
+
+    @property
+    def elapsed_sec(self):
+        """
+        :return: Seconds since the test started.
+        """
+        return time.monotonic() - self._started_at
 
     def _prepare(self):
         """
@@ -256,12 +315,12 @@ class DemoPause:
 
         self._prepared = True
 
-    def _render(self, name, describers, services):
+    def _render(self, name, describers, services, timeout_sec):
         """
         :return: The banner as a list of lines.
         """
-        elapsed = f" t+{_fmt_duration(time.monotonic() - self._started_at)} since test start"
-        auto = f"auto-continue in {_fmt_duration(self.timeout_sec)} "
+        elapsed = f" t+{_fmt_duration(self.elapsed_sec)} since test start"
+        auto = f"auto-continue in {_fmt_duration(timeout_sec)} "
 
         lines = [
             "=" * _WIDTH,
@@ -320,12 +379,24 @@ class DemoPause:
         log_dir = "/mnt/service/logs"
         config_file = "/mnt/service/config/ignite-config.xml"
 
-        for service in services:
+        # One set of copy-pasteable commands for a service list that is not homogeneous, so
+        # they follow the Ignite services: a ZookeeperService or a KafkaService registered
+        # ahead of them - which the discovery and CDC scenarios do - carries paths of its own
+        # and would have the banner name a zookeeper.properties for nodes that never had one.
+        #
+        # Imported here rather than at module level: docker/demo_console.py loads this module
+        # by path, on a host that has neither ducktape nor ignitetest installed.
+        from ignitetest.services.utils.path import IgnitePathAware  # pylint: disable=import-outside-toplevel
+
+        for service in [s for s in services if isinstance(s, IgnitePathAware)] or list(services):
             try:
-                log_dir = getattr(service, "log_dir", None) or log_dir
-                config_file = getattr(service, "config_file", None) or config_file
+                svc_log_dir = getattr(service, "log_dir", None)
+                svc_config_file = getattr(service, "config_file", None)
             except Exception:  # pylint: disable=broad-except
-                pass
+                continue
+
+            log_dir = svc_log_dir or log_dir
+            config_file = svc_config_file or config_file
 
             break
 
@@ -342,7 +413,7 @@ class DemoPause:
             f" config   docker exec <node> cat {config_file}",
         ]
 
-    def _publish(self, name, banner):
+    def _publish(self, name, banner, timeout_sec):
         """
         Publishes the breakpoint for the host, banner first as text and then as data: both
         files are replaced atomically so the console never reads a half written one.
@@ -352,16 +423,17 @@ class DemoPause:
         self._write(STATUS_TXT, text)
 
         self._write(STATUS_JSON, json.dumps({
+            "run": self.run,
             "seq": self.seq,
             "name": name,
             "test": self.test_name,
-            "elapsed_sec": round(time.monotonic() - self._started_at, 1),
-            "timeout_sec": self.timeout_sec,
+            "elapsed_sec": round(self.elapsed_sec, 1),
+            "timeout_sec": timeout_sec,
             "banner": banner
         }, indent=2))
 
-    def _await_resume(self, name):
-        deadline = time.monotonic() + self.timeout_sec
+    def _await_resume(self, name, timeout_sec):
+        deadline = time.monotonic() + timeout_sec
         heartbeat = time.monotonic() + HEARTBEAT_SEC
 
         while True:
@@ -388,7 +460,7 @@ class DemoPause:
 
             if now >= deadline:
                 self._consume()
-                self.logger.warn(f"Demo breakpoint timed out after {self.timeout_sec}s, resuming "
+                self.logger.warn(f"Demo breakpoint timed out after {timeout_sec}s, resuming "
                                  f"[seq={self.seq}, name={name}]")
 
                 return
@@ -397,7 +469,7 @@ class DemoPause:
                 heartbeat = now + HEARTBEAT_SEC
 
                 self.logger.info(f"Still paused at demo breakpoint [seq={self.seq}, name={name}, "
-                                 f"waiting={_fmt_duration(self.timeout_sec - (deadline - now))}]")
+                                 f"waiting={_fmt_duration(timeout_sec - (deadline - now))}]")
 
             time.sleep(POLL_SEC)
 

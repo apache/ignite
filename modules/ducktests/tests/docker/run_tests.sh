@@ -84,6 +84,10 @@ The options are as follows:
 --image
     Set custom docker image to run tests on.
 
+--test-runner-timeout
+    Milliseconds ducktape waits for a sign of life from a running test before killing the
+    session, 1800000 by default.
+
 EOF
     exit 0
 }
@@ -131,6 +135,7 @@ while [[ $# -ge 1 ]]; do
         --subnet) SUBNET="--subnet $2"; shift 2;;
         --jdk) JDK_VERSION="$2"; shift 2;;
         --image) IMAGE_NAME="$2"; shift 2;;
+        --test-runner-timeout) TEST_RUNNER_TIMEOUT="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
     esac
@@ -167,6 +172,10 @@ fi
 
 if [[ -n "$REPEAT" ]]; then
   DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --repeat $REPEAT"
+fi
+
+if [[ -n "$TEST_RUNNER_TIMEOUT" ]]; then
+  DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --test-runner-timeout $TEST_RUNNER_TIMEOUT"
 fi
 
 "$SCRIPT_DIR"/ducker-ignite test $TC_PATHS "$DUCKTAPE_OPTIONS" \

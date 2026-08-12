@@ -69,6 +69,11 @@ class IgniteTest(Test):
 
         self.__demo_pause = None
 
+        # Stamped here rather than at the first breakpoint: it is what demo breakpoints count
+        # their elapsed time from, and what they measure the runner budget against, and both
+        # of those mean the start of the test - setup included.
+        self.__started_at = monotonic()
+
     def pause(self, name, *describers):
         """
         Holds the scenario at a named demo breakpoint until it is resumed from the host, so
@@ -84,10 +89,24 @@ class IgniteTest(Test):
                breakpoint reports. Any fixture a test drives can implement it.
         """
         if self.__demo_pause is None:
-            self.__demo_pause = DemoPause(self.logger, self.test_context.globals, self.test_context.test_name)
+            self.__demo_pause = DemoPause(self.logger, self.test_context.globals, self.test_context.test_name,
+                                          started_at=self.__started_at,
+                                          runner_timeout_sec=self.__runner_timeout_sec())
 
         # noinspection PyProtectedMember
         self.__demo_pause.pause(name, describers, self.test_context.services._services.values())
+
+    def __runner_timeout_sec(self):
+        """
+        :return: Ducktape's `--test-runner-timeout` in seconds, None when the session carries
+                 none. A breakpoint has to give up inside it, since the runner kills a test
+                 client it hears nothing from for that long - see
+                 :meth:`ignitetest.utils.pause.DemoPause._budgeted_timeout`.
+        """
+        session_context = getattr(self.test_context, "session_context", None)
+        timeout_ms = getattr(session_context, "test_runner_timeout", None)
+
+        return timeout_ms / 1000 if timeout_ms else None
 
     @property
     def available_cluster_size(self):

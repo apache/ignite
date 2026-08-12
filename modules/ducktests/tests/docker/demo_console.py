@@ -68,10 +68,23 @@ def read_status(control_dir):
         return None
 
 
+def breakpoint_key(status):
+    """
+    :return: What identifies the published breakpoint. Not the sequence number on its own:
+             that one is per test, so it restarts at 1 for every test of a session, and a
+             run that died while paused leaves behind a banner numbered like a live one.
+    """
+    return status.get("run"), status.get("seq")
+
+
 def clear_stale(control_dir):
     """
     Removes resume files left behind by an earlier run, which would otherwise skip the first
     breakpoint of this one. The test clears them too, on its side, at its first breakpoint.
+
+    The published breakpoint itself is left alone: a console is just as likely to be started
+    against a test that is already holding one, and a stale banner is told apart by its run
+    id anyway.
     """
     if not os.path.isdir(control_dir):
         return
@@ -149,17 +162,27 @@ def main():
     print(f"Demo console, watching {control_dir}")
     print("Waiting for the first breakpoint... (Ctrl-C to leave)")
 
-    last_seq, resumed_at = 0, None
+    last_key, resumed_at = None, None
 
     while True:
         status = read_status(control_dir)
 
-        if status is None or status.get("seq") == last_seq:
+        if status is None:
+            # The test removes its status files as it resumes, so this is also what tells the
+            # console that the breakpoint it has just driven is over and the next one - which
+            # may well repeat its number, in the next test of the session - is a new one.
+            last_key = None
+
             time.sleep(POLL_SEC)
 
             continue
 
-        last_seq = status.get("seq")
+        if breakpoint_key(status) == last_key:
+            time.sleep(POLL_SEC)
+
+            continue
+
+        last_key = breakpoint_key(status)
 
         print()
 
@@ -169,7 +192,7 @@ def main():
         print("\n".join(status.get("banner", [])))
         print(KEYS)
 
-        if not prompt(control_dir, last_seq):
+        if not prompt(control_dir, status.get("seq")):
             return
 
         resumed_at = time.monotonic()

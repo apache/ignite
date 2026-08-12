@@ -270,10 +270,16 @@ touch .ducktests-demo/abort         # fail the test and tear down
 
 Breakpoints are added to a test with `self.pause("name", mdc, net)` and cost nothing when the global is absent, which is how they stay in the tests without affecting CI. Run one test at a time in demo mode (no `--max-parallel`): a single control directory holds one breakpoint at a time.
 
+A held test reports nothing back to ducktape, which kills a session it has heard nothing from for `--test-runner-timeout` (30 minutes by default) - and that budget is spent by the whole test, setup included, not by the breakpoint alone. Breakpoints therefore auto-continue while the runner is still waiting, shortening themselves below `demo_pause_timeout_sec` when there is not enough of the budget left and saying so in the test log. For a demo that needs longer, raise the runner timeout too (milliseconds):
+```bash
+./docker/run_tests.sh --test-runner-timeout 7200000 -gj '{"demo_pause": "*", "demo_pause_timeout_sec": 1800}' \
+  -t ./ignitetest/tests/mdc/majority_partition_test.py
+```
+
 | Global Parameter Key | Definition | Example Configuration |
 |---------------------|------------|----------------------|
 | **demo_pause** | Which breakpoints stop the scenario. Absent or `false` disables them all (the default); `true` or `"*"` stops at every one; a list or comma separated string stops only at the named ones. | ```{"demo_pause": "split-brain,healed"}``` |
-| **demo_pause_timeout_sec** | How long one breakpoint may hold the scenario before it resumes on its own. Default is 1800. | ```{"demo_pause_timeout_sec": 3600}``` |
+| **demo_pause_timeout_sec** | How long one breakpoint may hold the scenario before it resumes on its own. Default is 600, and it is capped by what is left of `--test-runner-timeout`. | ```{"demo_pause_timeout_sec": 1800}``` |
 | **demo_pause_dir** | Control directory shared with the host. Default is `<repository root>/.ducktests-demo`. | ```{"demo_pause_dir": "/opt/ignite-dev/.demo"}``` |
 
 ### Security Settings

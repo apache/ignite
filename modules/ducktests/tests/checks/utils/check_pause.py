@@ -20,11 +20,14 @@ Checks demo breakpoints.
 import json
 import os
 import threading
+import time
+from types import SimpleNamespace
 
 import pytest
 
-from ignitetest.utils.pause import ALL, CONTINUE_ALL, ABORT, DemoPause, STATUS_JSON, STATUS_TXT, \
-    continue_file, parse_selector
+from ignitetest.services.utils.path import IgnitePathAware
+from ignitetest.utils.pause import ALL, CONTINUE_ALL, ABORT, DemoPause, RUNNER_TIMEOUT_MARGIN_SEC, STATUS_JSON, \
+    STATUS_TXT, continue_file, parse_selector
 
 
 class FakeLogger:
@@ -46,8 +49,68 @@ class FakeLogger:
     error = warn
 
 
-def _pause(control_dir, **test_globals):
-    return DemoPause(FakeLogger(), test_globals, "check.CheckPause.check_something", control_dir=str(control_dir))
+def _fake_nodes(*hostnames):
+    return [SimpleNamespace(account=SimpleNamespace(hostname=host, externally_routable_ip=host))
+            for host in hostnames]
+
+
+class FakeService:
+    """
+    Stands in for a non-Ignite service of the test registry, e.g. a zookeeper one: it carries
+    paths of its own, which the banner must not hand out for Ignite nodes.
+    """
+    log_dir = "/mnt/service/zk-logs"
+    config_file = "/mnt/service/zookeeper.properties"
+
+    def __init__(self, *hostnames):
+        self.nodes = _fake_nodes(*hostnames)
+
+
+class FakeIgniteService(IgnitePathAware):
+    """
+    Stands in for an Ignite service, with the real path layout behind it.
+    """
+    def __init__(self, *hostnames):
+        self.nodes = _fake_nodes(*hostnames)
+
+    @property
+    def product(self):
+        return "ignite-dev"
+
+    @property
+    def globals(self):
+        return {}
+
+
+def _pause(control_dir, started_at=None, runner_timeout_sec=None, **test_globals):
+    return DemoPause(FakeLogger(), test_globals, "check.CheckPause.check_something", control_dir=str(control_dir),
+                     started_at=started_at, runner_timeout_sec=runner_timeout_sec)
+
+
+def _read_published(control_dir, resume_with=None, delay_sec=.05):
+    """
+    Reads the published breakpoint while the test blocks on it, the way the host console does,
+    and optionally resumes it.
+
+    :return: The dict that is filled in once the breakpoint has been published.
+    """
+    published = {}
+
+    def act():
+        try:
+            with open(os.path.join(str(control_dir), STATUS_JSON), encoding="utf-8") as file:
+                published.update(json.load(file))
+        except (OSError, ValueError):
+            pass
+
+        if resume_with:
+            open(os.path.join(str(control_dir), resume_with), "w").close()
+
+    timer = threading.Timer(delay_sec, act)
+    timer.daemon = True
+    timer.start()
+
+    return published
 
 
 def _resume_with(control_dir, name, delay_sec=.05):
@@ -119,21 +182,12 @@ def check_publishes_and_consumes_status(tmp_path):
     """
     demo = _pause(tmp_path, demo_pause=True)
 
-    published = {}
-
-    def resume():
-        with open(str(tmp_path / STATUS_JSON), encoding="utf-8") as file:
-            published.update(json.load(file))
-
-        open(str(tmp_path / continue_file(1)), "w").close()
-
-    timer = threading.Timer(.05, resume)
-    timer.daemon = True
-    timer.start()
+    published = _read_published(tmp_path, resume_with=continue_file(1))
 
     demo.pause("split-brain", services=[])
 
     assert published["seq"] == 1
+    assert published["run"] == demo.run
     assert published["name"] == "split-brain"
     assert published["test"] == "check.CheckPause.check_something"
     assert any("PAUSED 1   split-brain" in line for line in published["banner"])
@@ -207,3 +261,74 @@ def check_timeout_resumes_on_its_own(tmp_path):
     assert demo.seq == 1
     assert demo.enabled, "a timed out breakpoint must not disable the later ones"
     assert not os.path.exists(str(tmp_path / STATUS_JSON))
+
+
+def check_timeout_stays_within_the_runner_budget(tmp_path):
+    """
+    Check that a breakpoint gives up while ducktape's runner is still waiting: it hears
+    nothing from a paused test, and killing the client takes the whole session down instead
+    of just cutting the demo short. The requested timeout only ever shrinks.
+    """
+    demo = _pause(tmp_path, demo_pause=ALL, demo_pause_timeout_sec=3600,
+                  runner_timeout_sec=RUNNER_TIMEOUT_MARGIN_SEC + .3)
+
+    demo.pause("split-brain")
+
+    assert demo.seq == 1
+    assert any("timed out" in msg for msg in demo.logger.messages), \
+        "the breakpoint must not outsit the runner budget it was given"
+    assert any("--test-runner-timeout" in msg for msg in demo.logger.messages), \
+        "shortening a breakpoint must say what to raise to keep it"
+
+
+def check_timeout_is_left_alone_within_the_runner_budget(tmp_path):
+    """
+    Check that the budget only ever caps the requested timeout - a demo that fits must be
+    held for exactly as long as it asked for.
+    """
+    demo = _pause(tmp_path, demo_pause=ALL, demo_pause_timeout_sec=.3, runner_timeout_sec=1800)
+
+    published = _read_published(tmp_path)
+
+    demo.pause("split-brain")
+
+    assert published["timeout_sec"] == .3
+    assert not any("--test-runner-timeout" in msg for msg in demo.logger.messages)
+
+
+def check_elapsed_is_counted_from_test_start(tmp_path):
+    """
+    Check that the banner counts from the start of the test rather than from the first
+    breakpoint: the setup phase of a multi-node scenario is minutes long, and a demo that
+    reports t+00:00 after it hides exactly the part worth showing.
+    """
+    demo = _pause(tmp_path, started_at=time.monotonic() - 600, demo_pause=ALL, demo_pause_timeout_sec=.3)
+
+    published = _read_published(tmp_path)
+
+    demo.pause("split-brain")
+
+    assert published["elapsed_sec"] >= 600
+    assert any("t+10:00 since test start" in line for line in published["banner"])
+
+
+def check_hints_follow_the_ignite_services():
+    """
+    Check that the copy-pasteable commands name the Ignite paths even when a service of
+    another kind was registered first, as the zookeeper discovery scenarios do.
+    """
+    # noinspection PyProtectedMember
+    hints = "\n".join(DemoPause._hints_section([FakeService("ducker02"),  # pylint: disable=protected-access
+                                                FakeIgniteService("ducker03")]))
+
+    # The service paths come from os.path.join, which follows the control machine rather than
+    # the nodes - a check that runs on Windows would otherwise see its separators.
+    hints = hints.replace("\\", "/")
+
+    assert "/mnt/service/config/ignite-config.xml" in hints
+    assert "/mnt/service/logs/ignite*.log" in hints
+    assert "zookeeper.properties" not in hints
+    assert "zk-logs" not in hints
+
+    # Every node is still offered, whichever service it belongs to.
+    assert "ducker02 ducker03" in hints

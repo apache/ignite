@@ -208,10 +208,8 @@ class MdcCluster:
         """
         lines = ["DATA CENTERS"]
 
-        for dc in self.dcs:
-            main = " (main)" if dc == self.main_dc and len(self.dcs) % 2 == 0 else ""
-
-            lines.append(f"  {dc}{main}")
+        for dc in DCS:
+            lines.append(f"  {dc}")
 
             for label, services in (("server", [self.servers[dc]] if dc in self.servers else []),
                                     ("runner", self.runners.get(dc, [])),
