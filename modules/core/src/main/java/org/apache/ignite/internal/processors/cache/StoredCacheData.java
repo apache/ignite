@@ -44,6 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
+// Travels both transports: by discovery when a cache starts, by communication when a snapshot is restored.
 @JdkMarshalled
 public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
     /** */

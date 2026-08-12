@@ -23,11 +23,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marshals the {@link Marshalled} fields of the message with the JDK marshaller of the local node, whatever
- * marshaller the transport speaks. Put it on a message that travels both transports: the wire form of a
- * {@link Marshalled} field is cached in its companion field, so an instance marshalled by one transport would hand
- * the other transport bytes of a format it does not read. A pinned marshaller also keeps the message off the
- * cluster-wide class name registration, which never completes when the marshalling happens on a discovery thread.
+ * Marshals the message with the JDK marshaller of the local node, whatever marshaller the transport speaks.
+ * <p>
+ * Put it on a message that travels both transports. A {@link Marshalled} field keeps its wire form cached, so an
+ * instance marshalled by one transport hands the other transport bytes it cannot read. The JDK marshaller also asks
+ * no cluster-wide class name registration, which never completes on a discovery thread.
  *
  * @see Marshalled
  */

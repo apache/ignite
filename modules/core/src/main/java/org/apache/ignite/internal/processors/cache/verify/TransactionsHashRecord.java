@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Represents committed transactions hash for a pair of nodes. */
+// Travels both transports inside the result of a snapshot check, and carries a user consistent id.
 @JdkMarshalled
 public class TransactionsHashRecord implements Message, Serializable {
     /** */

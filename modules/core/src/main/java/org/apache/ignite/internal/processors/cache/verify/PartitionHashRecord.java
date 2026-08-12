@@ -35,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
+// Travels both transports inside the result of a snapshot check, and carries a user consistent id.
 @JdkMarshalled
 public class PartitionHashRecord implements Message, Serializable {
     /** */

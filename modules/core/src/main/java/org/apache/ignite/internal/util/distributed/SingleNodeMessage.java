@@ -34,12 +34,8 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see InitMessage
  */
-/*
- * The result of a process travels both transports: by communication in this message, and then by discovery in the
- * {@link FullMessage} the coordinator sends. A marshalled field keeps its wire form cached, so a single marshaller
- * has to serve both legs - and it has to be the one that needs no class name registration, because this message is
- * marshalled on a discovery thread whenever the local step of the process finishes synchronously.
- */
+// The process result travels both transports: this message carries it to the coordinator by communication, and the
+// FullMessage of the coordinator carries it back to every node by discovery.
 @JdkMarshalled
 public class SingleNodeMessage<R extends Message> implements Message {
     /** Process id. */
