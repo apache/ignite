@@ -343,14 +343,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
-        // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
-        //  Restore the original implementation after upgrading to Calcite 1.43: use validator() directly and remove
-        //  deriveLimitDynamicParameterTypes().
-        IgniteSqlValidator validator = (IgniteSqlValidator)validator();
-
-        validator.deriveLimitDynamicParameterTypes(sql);
-
-        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
+        SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
 
         return sqlToRelConverter.convertQuery(sql, false, true);
     }

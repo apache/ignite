@@ -48,7 +48,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
@@ -843,29 +842,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         else if (n instanceof SqlCall) {
             for (SqlNode operand : ((SqlCall)n).getOperandList())
                 deriveDynamicParameterTypes(operand);
-        }
-    }
-
-    /** Derive types of dynamic parameters in all fetch expressions. */
-    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
-    //  Remove this method after upgrading to Calcite 1.43.
-    public void deriveLimitDynamicParameterTypes(SqlNode n) {
-        if (n instanceof SqlSelect) {
-            SqlSelect select = (SqlSelect)n;
-
-            deriveDynamicParameterTypes(select.getFetch());
-        }
-        else if (n instanceof SqlOrderBy) {
-            SqlOrderBy orderBy = (SqlOrderBy)n;
-
-            deriveDynamicParameterTypes(orderBy.fetch);
-        }
-
-        if (n instanceof SqlCall) {
-            for (SqlNode operand : ((SqlCall)n).getOperandList()) {
-                if (operand != null)
-                    deriveLimitDynamicParameterTypes(operand);
-            }
         }
     }
 

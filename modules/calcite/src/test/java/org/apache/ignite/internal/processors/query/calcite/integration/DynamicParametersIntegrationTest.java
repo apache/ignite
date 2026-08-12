@@ -224,7 +224,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, -2);
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, -1.5);
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, NULL_RESULT);
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, bigValue());
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, moreThanMaxLong());
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, "abc");
 
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (1 + ? - 4) ROWS ONLY", null, 1);
@@ -526,7 +526,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     }
 
     /** */
-    private static BigDecimal bigValue() {
+    private static BigDecimal moreThanMaxLong() {
         return BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
     }
 }
