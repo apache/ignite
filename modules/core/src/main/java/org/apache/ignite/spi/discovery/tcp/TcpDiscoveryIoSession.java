@@ -200,8 +200,6 @@ public class TcpDiscoveryIoSession {
 
             GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
 
-            // Discovery marshals with jdk: binary registers an unknown type cluster-wide and waits for discovery,
-            // which cannot happen on a discovery thread.
             DiscoveryMarshalling.unmarshal(msg, kctx);
 
             return (T)msg;
