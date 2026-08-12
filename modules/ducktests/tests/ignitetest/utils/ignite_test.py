@@ -93,8 +93,7 @@ class IgniteTest(Test):
                                           started_at=self.__started_at,
                                           runner_timeout_sec=self.__runner_timeout_sec())
 
-        # noinspection PyProtectedMember
-        self.__demo_pause.pause(name, describers, self.test_context.services._services.values())
+        self.__demo_pause.pause(name, describers, self.test_context.services)
 
     def __runner_timeout_sec(self):
         """

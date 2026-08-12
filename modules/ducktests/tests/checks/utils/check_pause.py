@@ -65,6 +65,10 @@ class FakeService:
     def __init__(self, *hostnames):
         self.nodes = _fake_nodes(*hostnames)
 
+    def who_am_i(self, node):
+        """Names the node the way a ducktape service does."""
+        return f"{self.__class__.__name__}-{node.account.hostname}"
+
 
 class FakeIgniteService(IgnitePathAware):
     """
@@ -72,6 +76,10 @@ class FakeIgniteService(IgnitePathAware):
     """
     def __init__(self, *hostnames):
         self.nodes = _fake_nodes(*hostnames)
+
+    def who_am_i(self, node):
+        """Names the node the way a ducktape service does."""
+        return f"{self.__class__.__name__}-{node.account.hostname}"
 
     @property
     def product(self):
@@ -82,35 +90,56 @@ class FakeIgniteService(IgnitePathAware):
         return {}
 
 
+class FakeRegistry:
+    """
+    Stands in for ducktape's ServiceRegistry, which is what a test hands the breakpoint: it is
+    iterable and nothing else, so a banner may not index it or ask it for a length.
+    """
+    def __init__(self, *services):
+        self._services = services
+
+    def __iter__(self):
+        return iter(self._services)
+
+
 def _pause(control_dir, started_at=None, runner_timeout_sec=None, **test_globals):
     return DemoPause(FakeLogger(), test_globals, "check.CheckPause.check_something", control_dir=str(control_dir),
                      started_at=started_at, runner_timeout_sec=runner_timeout_sec)
 
 
-def _read_published(control_dir, resume_with=None, delay_sec=.05):
+def _read_published(control_dir, resume_with=None, timeout_sec=30):
     """
     Reads the published breakpoint while the test blocks on it, the way the host console does,
     and optionally resumes it.
 
-    :return: The dict that is filled in once the breakpoint has been published.
+    Polls for the file rather than reading it once after a fixed delay: a breakpoint that is
+    only held for a fraction of a second - which is what these checks hold them for - would
+    otherwise be a race against the machine the checks happen to run on.
+
+    :return: The dict that is filled in once the breakpoint has been published, and the reader
+             to join before reading it.
     """
     published = {}
 
     def act():
-        try:
-            with open(os.path.join(str(control_dir), STATUS_JSON), encoding="utf-8") as file:
-                published.update(json.load(file))
-        except (OSError, ValueError):
-            pass
+        deadline = time.monotonic() + timeout_sec
+
+        while time.monotonic() < deadline:
+            try:
+                with open(os.path.join(str(control_dir), STATUS_JSON), encoding="utf-8") as file:
+                    published.update(json.load(file))
+
+                break
+            except (OSError, ValueError):
+                time.sleep(.01)
 
         if resume_with:
             open(os.path.join(str(control_dir), resume_with), "w").close()
 
-    timer = threading.Timer(delay_sec, act)
-    timer.daemon = True
-    timer.start()
+    reader = threading.Thread(target=act, daemon=True)
+    reader.start()
 
-    return published
+    return published, reader
 
 
 def _resume_with(control_dir, name, delay_sec=.05):
@@ -138,6 +167,23 @@ def check_selector_parsing():
     assert parse_selector("split-brain") == {"split-brain"}
     assert parse_selector("split-brain, healed ,") == {"split-brain", "healed"}
     assert parse_selector(["split-brain", "healed"]) == {"split-brain", "healed"}
+
+    # The global is typed by hand, the names live in the test source - the two meet case insensitively.
+    assert parse_selector("Split-Brain, HEALED") == {"split-brain", "healed"}
+    assert parse_selector(["Split-Brain"]) == {"split-brain"}
+
+
+def check_names_are_matched_case_insensitively(tmp_path):
+    """
+    Check that a breakpoint is found however the global spells it.
+    """
+    demo = _pause(tmp_path, demo_pause="Split-Brain")
+
+    _resume_with(tmp_path, continue_file(1))
+
+    demo.pause("split-brain")
+
+    assert demo.seq == 1, "the global must not have to repeat the case of the name in the test"
 
 
 def check_disabled_leaves_no_trace(tmp_path):
@@ -182,9 +228,11 @@ def check_publishes_and_consumes_status(tmp_path):
     """
     demo = _pause(tmp_path, demo_pause=True)
 
-    published = _read_published(tmp_path, resume_with=continue_file(1))
+    published, reader = _read_published(tmp_path, resume_with=continue_file(1))
 
     demo.pause("split-brain", services=[])
+
+    reader.join(30)
 
     assert published["seq"] == 1
     assert published["run"] == demo.run
@@ -288,9 +336,11 @@ def check_timeout_is_left_alone_within_the_runner_budget(tmp_path):
     """
     demo = _pause(tmp_path, demo_pause=ALL, demo_pause_timeout_sec=.3, runner_timeout_sec=1800)
 
-    published = _read_published(tmp_path)
+    published, reader = _read_published(tmp_path)
 
     demo.pause("split-brain")
+
+    reader.join(30)
 
     assert published["timeout_sec"] == .3
     assert not any("--test-runner-timeout" in msg for msg in demo.logger.messages)
@@ -304,12 +354,35 @@ def check_elapsed_is_counted_from_test_start(tmp_path):
     """
     demo = _pause(tmp_path, started_at=time.monotonic() - 600, demo_pause=ALL, demo_pause_timeout_sec=.3)
 
-    published = _read_published(tmp_path)
+    published, reader = _read_published(tmp_path)
 
     demo.pause("split-brain")
 
+    reader.join(30)
+
     assert published["elapsed_sec"] >= 600
     assert any("t+10:00 since test start" in line for line in published["banner"])
+
+
+def check_banner_is_rendered_from_the_service_registry(tmp_path):
+    """
+    Check that the banner is built by iterating the services alone: what a test passes is
+    ducktape's ServiceRegistry, which supports nothing else.
+    """
+    demo = _pause(tmp_path, demo_pause=ALL, demo_pause_timeout_sec=.3)
+
+    published, reader = _read_published(tmp_path)
+
+    demo.pause("split-brain", services=FakeRegistry(FakeService("ducker02"), FakeIgniteService("ducker03")))
+
+    reader.join(30)
+
+    banner = "\n".join(published["banner"]).replace("\\", "/")
+
+    assert "FakeService-ducker02" in banner
+    assert "FakeIgniteService-ducker03" in banner
+    assert "/mnt/service/logs/ignite*.log" in banner, "the hints must still follow the Ignite service"
+    assert "ducker02 ducker03" in banner
 
 
 def check_hints_follow_the_ignite_services():

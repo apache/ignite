@@ -242,8 +242,8 @@ Scenarios can be frozen at named breakpoints, so a cluster can be shown to an au
 
 Terminal 1 - run the test with the `demo_pause` global:
 ```bash
-./docker/run_tests.sh -n 10 -gj '{"demo_pause": "*"}' \
-  -t ./ignitetest/tests/mdc/majority_partition_test.py::MdcMajorityPartitionTest.test_minority_dc_isolation
+./docker/run_tests.sh -n 12 -gj '{"demo_pause": "*"}' \
+  -t ./ignitetest/tests/mdc/partition_resilience_test.py::MdcPartitionResilienceTest.test_mdc_cluster_partition_resilience
 ```
 
 Terminal 2 - drive the breakpoints:
@@ -272,13 +272,14 @@ Breakpoints are added to a test with `self.pause("name", mdc, net)` and cost not
 
 A held test reports nothing back to ducktape, which kills a session it has heard nothing from for `--test-runner-timeout` (30 minutes by default) - and that budget is spent by the whole test, setup included, not by the breakpoint alone. Breakpoints therefore auto-continue while the runner is still waiting, shortening themselves below `demo_pause_timeout_sec` when there is not enough of the budget left and saying so in the test log. For a demo that needs longer, raise the runner timeout too (milliseconds):
 ```bash
-./docker/run_tests.sh --test-runner-timeout 7200000 -gj '{"demo_pause": "*", "demo_pause_timeout_sec": 1800}' \
-  -t ./ignitetest/tests/mdc/majority_partition_test.py
+./docker/run_tests.sh -n 12 --test-runner-timeout 7200000 \
+  -gj '{"demo_pause": "*", "demo_pause_timeout_sec": 1800}' \
+  -t ./ignitetest/tests/mdc/partition_resilience_test.py
 ```
 
 | Global Parameter Key | Definition | Example Configuration |
 |---------------------|------------|----------------------|
-| **demo_pause** | Which breakpoints stop the scenario. Absent or `false` disables them all (the default); `true` or `"*"` stops at every one; a list or comma separated string stops only at the named ones. | ```{"demo_pause": "split-brain,healed"}``` |
+| **demo_pause** | Which breakpoints stop the scenario. Absent or `false` disables them all (the default); `true` or `"*"` stops at every one; a list or comma separated string stops only at the named ones, matched case insensitively. | ```{"demo_pause": "split-brain,healed"}``` |
 | **demo_pause_timeout_sec** | How long one breakpoint may hold the scenario before it resumes on its own. Default is 600, and it is capped by what is left of `--test-runner-timeout`. | ```{"demo_pause_timeout_sec": 1800}``` |
 | **demo_pause_dir** | Control directory shared with the host. Default is `<repository root>/.ducktests-demo`. | ```{"demo_pause_dir": "/opt/ignite-dev/.demo"}``` |
 

@@ -22,13 +22,19 @@ cannot read a keypress. What it can do is share files with the host: ``ducker-ig
 mounts the whole Ignite repository into every container, so a control directory below the
 repository root is visible to the test and to the host at the same time.
 
-The protocol over that directory is one sided on purpose - the test is the only party that
-deletes anything, so no step can race with the host:
+The protocol over that directory is one sided while a breakpoint is held - the host only
+ever creates files, the test is the only party that deletes them, so no step of a held
+breakpoint can race with the host:
 
     - the test publishes ``paused.txt`` (a rendered banner) and ``paused.json`` (the same
       content as data) and then blocks;
     - the host creates ``continue-<seq>``, ``continue-all`` or ``abort``;
     - the test consumes that file, removes it along with its own status files, and proceeds.
+
+Between breakpoints both sides sweep the directory for files an earlier run left behind,
+which would otherwise skip the next breakpoint: the test at its first one
+(see :meth:`DemoPause._prepare`), the console at startup - and only while nothing is
+published, so a resume file meant for a breakpoint that is currently held is never swept.
 
 ``docker/demo_console.py`` is the host side of it, but nothing depends on it: reading
 ``paused.txt`` and touching ``continue-<seq>`` by hand works just as well.
@@ -37,7 +43,7 @@ Globals:
 
     demo_pause - absent or false disables every breakpoint (the default, so tests are
     unaffected in CI); true or "*" stops at all of them; a list or a comma separated string
-    stops only at the named ones.
+    stops only at the named ones, matched case insensitively.
 
     demo_pause_timeout_sec - how long a single breakpoint may hold the scenario before it
     resumes on its own, 600 by default. Capped by what is left of ducktape's
@@ -115,8 +121,11 @@ def parse_selector(value):
     """
     Interprets the ``demo_pause`` global.
 
+    Names are matched case insensitively, both here and in :meth:`DemoPause._stops_at`: the
+    global is typed by hand next to a test whose breakpoint names are written in the source.
+
     :return: None when demo pausing is disabled, :data:`ALL` to stop at every breakpoint,
-             or the set of breakpoint names to stop at.
+             or the set of breakpoint names to stop at, lower cased.
     """
     if value is None or value is False:
         return None
@@ -125,7 +134,7 @@ def parse_selector(value):
         return ALL
 
     if isinstance(value, (list, tuple, set, frozenset)):
-        names = {str(name).strip() for name in value}
+        names = {str(name).strip().lower() for name in value}
         names.discard("")
 
         return names or None
@@ -139,7 +148,7 @@ def parse_selector(value):
         if text in (ALL, "all", "true", "yes", "on", "1"):
             return ALL
 
-        names = {name.strip() for name in value.split(",")}
+        names = {name.strip() for name in text.split(",")}
         names.discard("")
 
         return names or None
@@ -202,7 +211,7 @@ class DemoPause:
         :param started_at: Monotonic timestamp the test itself started at, which is both what
                the banner counts from and what the runner budget is spent from. Defaults to
                now, which is only right when the first breakpoint is the start of the test.
-        :param runner_timeout_sec: Ducktape's ``--test-runner-timeout`` in seco nds, None when
+        :param runner_timeout_sec: Ducktape's ``--test-runner-timeout`` in seconds, None when
                unknown, in which case no breakpoint is cut short by it.
         """
         self.logger = logger
@@ -262,7 +271,7 @@ class DemoPause:
         if not self.enabled:
             return False
 
-        return self.names == ALL or name in self.names
+        return self.names == ALL or name.strip().lower() in self.names
 
     def _budgeted_timeout(self):
         """
@@ -469,7 +478,8 @@ class DemoPause:
                 heartbeat = now + HEARTBEAT_SEC
 
                 self.logger.info(f"Still paused at demo breakpoint [seq={self.seq}, name={name}, "
-                                 f"waiting={_fmt_duration(timeout_sec - (deadline - now))}]")
+                                 f"held={_fmt_duration(timeout_sec - (deadline - now))}, "
+                                 f"left={_fmt_duration(deadline - now)}]")
 
             time.sleep(POLL_SEC)
 

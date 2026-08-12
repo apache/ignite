@@ -82,12 +82,19 @@ def clear_stale(control_dir):
     Removes resume files left behind by an earlier run, which would otherwise skip the first
     breakpoint of this one. The test clears them too, on its side, at its first breakpoint.
 
-    The published breakpoint itself is left alone: a console is just as likely to be started
-    against a test that is already holding one, and a stale banner is told apart by its run
-    id anyway.
+    Only ever done while nothing is published: a console is just as likely to be started
+    against a test that is already holding a breakpoint, and a resume file that was written
+    for that one - by hand, or by a console that has just been closed - is the host's answer
+    to it rather than a leftover. The published breakpoint itself is left alone either way,
+    a stale banner is told apart by its run id.
+
+    :return: Whether the sweep was performed.
     """
     if not os.path.isdir(control_dir):
-        return
+        return True
+
+    if read_status(control_dir) is not None:
+        return False
 
     for name in os.listdir(control_dir):
         if name.startswith(pause.CONTINUE_PREFIX) or name == pause.ABORT:
@@ -95,6 +102,8 @@ def clear_stale(control_dir):
                 os.remove(os.path.join(control_dir, name))
             except OSError:
                 pass
+
+    return True
 
 
 def resume(control_dir, name):
@@ -157,10 +166,14 @@ def main():
     args = parser.parse_args()
     control_dir = args.control_dir
 
-    clear_stale(control_dir)
+    swept = clear_stale(control_dir)
 
     print(f"Demo console, watching {control_dir}")
-    print("Waiting for the first breakpoint... (Ctrl-C to leave)")
+
+    if swept:
+        print("Waiting for the first breakpoint... (Ctrl-C to leave)")
+    else:
+        print("A breakpoint is already held, joining it as it is (Ctrl-C to leave)")
 
     last_key, resumed_at = None, None
 
