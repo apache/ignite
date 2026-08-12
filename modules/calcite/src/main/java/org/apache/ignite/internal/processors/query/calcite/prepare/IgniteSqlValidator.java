@@ -828,7 +828,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (n instanceof SqlDynamicParam) {
             SqlDynamicParam paramNode = (SqlDynamicParam)n;
 
-            RelDataType type = typeFactory().createSqlType(SqlTypeName.DECIMAL);
+            RelDataType type = typeFactory().createSqlType(SqlTypeName.BIGINT);
             RelDataType dataType = typeFactory().createTypeWithNullability(type, true);
 
             type = deriveDynamicParameterType(paramNode, dataType);
