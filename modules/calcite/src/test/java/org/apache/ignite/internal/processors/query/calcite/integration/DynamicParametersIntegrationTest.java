@@ -338,7 +338,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     @Test
-    public void testFetchExpressionWithRewrite() {
+    public void testFetchExpressionWithNvlAndCoalesce() {
         createAndPopulateTable();
 
         assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + NVL(?, 10000)) ROWS ONLY")
@@ -346,6 +346,12 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             .returns(0)
             .returns(1)
             .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (COALESCE(?, 10000)) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
             .check();
     }
 

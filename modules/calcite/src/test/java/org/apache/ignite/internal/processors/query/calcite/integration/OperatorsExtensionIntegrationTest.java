@@ -184,15 +184,32 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
     /** */
     @Test
     public void testRowNumRewrite() {
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 2")
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 3")
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < (1 + NVL(2, 10000))")
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < (COALESCE(4, 10000))")
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
         assertQuery("SELECT COUNT(*) FROM ("
             + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 2)")
             .returns(1L)
             .check();
-    }
 
-    /** */
-    @Test
-    public void testRowNumRewriteWithDynamicParameter() {
+
         assertQuery("SELECT COUNT(*) FROM ("
             + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < ?)")
             .withParams(3)

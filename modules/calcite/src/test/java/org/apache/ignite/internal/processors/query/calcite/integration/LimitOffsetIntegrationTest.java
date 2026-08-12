@@ -276,11 +276,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .returns(3)
             .returns(4)
             .check();
-
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST ("
-                + "COALESCE(MOD(EXTRACT(YEAR FROM CURRENT_DATE), EXTRACT(YEAR FROM CURRENT_DATE)), 2)) ROWS ONLY")
-            .resultSize(0)
-            .check();
     }
 
     /** */
@@ -297,10 +292,15 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** */
     @Test
-    public void testFetchExpressionWithRewrite() throws Exception {
+    public void testFetchExpressionWithNvlAndCoalesce() throws Exception {
         fillCache(cacheRepl, 5);
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + NVL(1, 10000)) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (COALESCE(2, 10000)) ROWS ONLY")
             .returns(0)
             .returns(1)
             .check();

@@ -48,6 +48,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
@@ -470,6 +471,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        if (node instanceof SqlOrderBy) {
+            SqlOrderBy orderBy = (SqlOrderBy)node;
+
+            if (orderBy.fetch != null) {
+                // SqlOrderBy does not implement setOperand(). Rewrite FETCH before Calcite visits its operands,
+                // otherwise rewrites such as COALESCE to CASE fail when Calcite tries to replace the FETCH operand.
+                SqlNode fetch = performUnconditionalRewrites(orderBy.fetch, false);
+
+                if (fetch != orderBy.fetch) {
+                    node = new SqlOrderBy(orderBy.getParserPosition(), orderBy.query, orderBy.orderList,
+                        orderBy.offset, fetch);
+                }
+            }
+        }
+
         // Workaround for https://issues.apache.org/jira/browse/CALCITE-4923
         if (node instanceof SqlSelect) {
             SqlSelect select = (SqlSelect)node;
