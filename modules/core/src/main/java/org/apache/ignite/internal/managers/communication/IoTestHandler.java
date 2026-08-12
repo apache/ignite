@@ -209,7 +209,7 @@ public class IoTestHandler {
         A.ensure(threads > 0 && threads <= 64, "threads must be between 1 and 64");
         A.ensure(payloadSize >= 0 && payloadSize <= 1024 * 1024, "payloadSize must be between 0 and 1048576");
 
-        Map<UUID, IoTestNodeResults> results = new ConcurrentHashMap<>();
+        Map<UUID, IoTestNodeResults> results = new TreeMap<>();
         List<ClusterNode> testNodes = new ArrayList<>(nodes.size());
 
         for (ClusterNode node : nodes) {
@@ -261,9 +261,7 @@ public class IoTestHandler {
             CyclicBarrier startBarrier = new CyclicBarrier(threads, () -> startNanos.set(System.nanoTime()));
             long warmupNanos = TimeUnit.MILLISECONDS.toNanos(warmup);
             long durationNanos = TimeUnit.MILLISECONDS.toNanos(duration);
-            long totalNanos = warmupNanos > Long.MAX_VALUE - durationNanos
-                ? Long.MAX_VALUE
-                : warmupNanos + durationNanos;
+            long totalNanos = warmupNanos + durationNanos;
             long resTimeout = Math.max(1, ctx.config().getFailureDetectionTimeout());
 
             for (int i = 0; i < threads; i++) {
@@ -387,7 +385,7 @@ public class IoTestHandler {
         return System.nanoTime() - startNanos;
     }
 
-    /** Creates an immutable test result. */
+    /** Creates a test result. */
     private static IoTestResult createResult(
         ClusterNode src,
         Map<UUID, IoTestNodeResults> rawResults,
@@ -399,7 +397,7 @@ public class IoTestHandler {
     ) {
         List<IoTestResult.TargetResult> targets = new ArrayList<>(rawResults.size());
 
-        for (IoTestNodeResults nodeResults : new TreeMap<>(rawResults).values())
+        for (IoTestNodeResults nodeResults : rawResults.values())
             targets.add(nodeResults.snapshot());
 
         return new IoTestResult(
