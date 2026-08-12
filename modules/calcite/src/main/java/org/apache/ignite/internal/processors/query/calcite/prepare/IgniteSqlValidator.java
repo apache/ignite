@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDesc
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlPaginationPolicy;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
@@ -113,25 +114,31 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private final RelDataType nullType;
 
+    /** */
+    private final @Nullable IgniteSqlPaginationPolicy pagPlc;
+
     /**
      * Creates a validator.
      *
-     * @param opTab         Operator table
-     * @param catalogReader Catalog reader
-     * @param typeFactory   Type factory
-     * @param cfg           Config
-     * @param parameters    Dynamic parameters
+     * @param opTab Operator table.
+     * @param catalogReader Catalog reader.
+     * @param typeFactory Type factory.
+     * @param cfg Config.
+     * @param parameters Dynamic parameters.
+     * @param pagPlc Pagination policy.
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
         CalciteCatalogReader catalogReader,
         IgniteTypeFactory typeFactory,
         SqlValidator.Config cfg,
-        @Nullable Object[] parameters
+        @Nullable Object[] parameters,
+        @Nullable IgniteSqlPaginationPolicy pagPlc
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
+        this.pagPlc = pagPlc;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
@@ -306,7 +313,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (val.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + nodeName);
 
-            IgniteMath.convertToLongExact(val, RoundingMode.DOWN);
+            RoundingMode roundingMode = pagPlc == null ? IgniteMath.NUMERIC_ROUNDING_MODE : pagPlc.roundingMode();
+            IgniteMath.convertToLongExact(val, roundingMode);
         }
         catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));

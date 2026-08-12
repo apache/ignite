@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlPaginationPolicy;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -365,7 +366,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+        SqlValidator validator = createSqlValidator(catalogReader);
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
@@ -426,7 +427,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+            validator = createSqlValidator(catalogReader);
 
         return validator;
     }
@@ -797,5 +798,17 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             super.checkCancel();
         }
+    }
+
+    /** */
+    private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
+        return new IgniteSqlValidator(
+            operatorTbl,
+            catalogReader,
+            typeFactory,
+            validatorCfg,
+            ctx.parameters(),
+            ctx.unwrap(IgniteSqlPaginationPolicy.class)
+        );
     }
 }

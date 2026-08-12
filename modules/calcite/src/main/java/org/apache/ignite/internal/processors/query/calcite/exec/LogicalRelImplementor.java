@@ -125,6 +125,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConve
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlPaginationPolicy;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -1084,7 +1085,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             if (paramAsDecimal.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + op);
 
-            return IgniteMath.convertToLongExact(paramAsDecimal, RoundingMode.DOWN);
+            IgniteSqlPaginationPolicy pagPlc = ctx.unwrap(IgniteSqlPaginationPolicy.class);
+            RoundingMode roundingMode = pagPlc == null ? IgniteMath.NUMERIC_ROUNDING_MODE : pagPlc.roundingMode();
+
+            return IgniteMath.convertToLongExact(paramAsDecimal, roundingMode);
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
