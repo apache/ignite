@@ -817,6 +817,121 @@ SqlDrop SqlDropView(Span s, boolean replace) :
     }
 }
 
+/**
+ * Parses EXPLAIN PLAN, including SELECT ... FOR UPDATE as the explicandum.
+ */
+SqlNode IgniteSqlExplain() :
+{
+    SqlNode stmt;
+    SqlExplainLevel detailLevel = SqlExplainLevel.EXPPLAN_ATTRIBUTES;
+    SqlExplain.Depth depth;
+    final SqlExplainFormat format;
+}
+{
+    <EXPLAIN> <PLAN>
+    [ detailLevel = ExplainDetailLevel() ]
+    depth = ExplainDepth()
+    (
+        LOOKAHEAD(2)
+        <AS> <XML> { format = SqlExplainFormat.XML; }
+    |
+        LOOKAHEAD(2)
+        <AS> <JSON> { format = SqlExplainFormat.JSON; }
+    |
+        <AS> <DOT_FORMAT> { format = SqlExplainFormat.DOT; }
+    |
+        { format = SqlExplainFormat.TEXT; }
+    )
+    <FOR> stmt = IgniteSqlQueryOrDml() {
+        return new SqlExplain(getPos(),
+            stmt,
+            detailLevel.symbol(SqlParserPos.ZERO),
+            depth.symbol(SqlParserPos.ZERO),
+            format.symbol(SqlParserPos.ZERO),
+            nDynamicParams);
+    }
+}
+
+/** Parses a query, including SELECT ... FOR UPDATE, or a DML statement. */
+SqlNode IgniteSqlQueryOrDml() :
+{
+    SqlNode stmt;
+}
+{
+    (
+        stmt = SqlSelectForUpdate()
+    |
+        stmt = SqlInsert()
+    |
+        stmt = SqlDelete()
+    |
+        stmt = SqlUpdate()
+    |
+        stmt = SqlMerge()
+    ) { return stmt; }
+}
+
+/**
+ * Parses a query optionally followed by FOR UPDATE [OF col [, col ...]] [WAIT n | NOWAIT].
+ *
+ * When FOR UPDATE is absent the inner query node is returned unchanged, so this rule
+ * transparently handles all queries that reach the StatementParser.
+ */
+SqlNode SqlSelectForUpdate() :
+{
+    final Span querySpan;
+    SqlNode query;
+    SqlNodeList lockColumns = null;
+    SqlIdentifier lockColumn;
+    Long waitSeconds = null;
+    String waitSecondsText;
+}
+{
+    query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) { querySpan = span(); }
+    [
+        LOOKAHEAD(<FOR> <UPDATE>)
+        <FOR> <UPDATE>
+        [
+            LOOKAHEAD(<OF>)
+            <OF>
+            {
+                lockColumns = new SqlNodeList(querySpan.pos());
+            }
+            lockColumn = CompoundIdentifier() { lockColumns.add(lockColumn); }
+            (
+                <COMMA> lockColumn = CompoundIdentifier() { lockColumns.add(lockColumn); }
+            )*
+        ]
+        [
+            LOOKAHEAD(<WAIT>)
+            <WAIT> <UNSIGNED_INTEGER_LITERAL>
+            {
+                waitSecondsText = token.image;
+
+                try {
+                    waitSeconds = Long.parseLong(waitSecondsText);
+                }
+                catch (NumberFormatException ignored) {
+                    throw SqlUtil.newContextException(getPos(),
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitSecondsText));
+                }
+
+                if (waitSeconds <= 0) {
+                    throw SqlUtil.newContextException(getPos(),
+                        IgniteResource.INSTANCE.illegalWaitTimeout(waitSecondsText));
+                }
+            }
+        |
+            <NOWAIT>
+            {
+                waitSeconds = 0L;
+            }
+        ]
+        { return new IgniteSqlSelectForUpdate(querySpan.end(this), query, lockColumns, waitSeconds); }
+    ]
+    { return query; }
+}
+
 // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
 //  Remove this method and the corresponding replacement in pom.xml after upgrading to Calcite 1.43.
 JAVACODE
