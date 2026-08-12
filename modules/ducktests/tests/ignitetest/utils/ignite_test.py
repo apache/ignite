@@ -23,6 +23,7 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test, TestContext
 
 from ignitetest.services.utils.ducktests_service import DucktestsService
+from ignitetest.utils.pause import DemoPause
 
 # globals:
 JFR_ENABLED = "jfr_enabled"
@@ -65,6 +66,28 @@ class IgniteTest(Test):
             "any IgniteTest MUST BE decorated with the @ignitetest.utils.cluster decorator"
 
         super().__init__(test_context=test_context)
+
+        self.__demo_pause = None
+
+    def pause(self, name, *describers):
+        """
+        Holds the scenario at a named demo breakpoint until it is resumed from the host, so
+        that the cluster can be shown in exactly this state. Does nothing at all unless the
+        `demo_pause` global names this breakpoint - see :mod:`ignitetest.utils.pause`.
+
+        Must be called from the test body: :meth:`tearDown` kills every service, so a
+        breakpoint placed after the body would only ever show a dead cluster.
+
+        :param name: Breakpoint name, matched against the `demo_pause` global.
+        :param describers: Objects exposing `describe() -> list of str`, each contributing a
+               section to the banner shown while paused, on top of the service list every
+               breakpoint reports. Any fixture a test drives can implement it.
+        """
+        if self.__demo_pause is None:
+            self.__demo_pause = DemoPause(self.logger, self.test_context.globals, self.test_context.test_name)
+
+        # noinspection PyProtectedMember
+        self.__demo_pause.pause(name, describers, self.test_context.services._services.values())
 
     @property
     def available_cluster_size(self):

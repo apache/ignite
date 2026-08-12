@@ -236,6 +236,46 @@ You can target specific cross-product version compatibility combinations inside 
 --global-json '{"safepoint_log_enabled": true}'
 ```
 
+### Demo Mode (Breakpoints)
+
+Scenarios can be frozen at named breakpoints, so a cluster can be shown to an audience in exactly that state and then resumed. Ducktape runs the test inside `ducker01` with stdin closed, so the keyboard lives in a second terminal.
+
+Terminal 1 - run the test with the `demo_pause` global:
+```bash
+./docker/run_tests.sh -n 10 -gj '{"demo_pause": "*"}' \
+  -t ./ignitetest/tests/mdc/majority_partition_test.py::MdcMajorityPartitionTest.test_minority_dc_isolation
+```
+
+Terminal 2 - drive the breakpoints:
+```bash
+python docker/demo_console.py
+```
+
+At every breakpoint the console prints the step, the elapsed time, every service node with its liveness, the live network state (netem delays and partition drops as they are actually applied), and ready-to-paste commands for entering nodes and reading their logs and configs. `Enter` continues, `c` runs the rest unattended, `a` aborts the test.
+
+While paused the cluster keeps running and any network impairment stays in effect, so nodes can be inspected freely:
+```bash
+./docker/ducker-ignite ssh ducker03
+docker exec ducker03 bash -c "tail -n 50 /mnt/service/logs/ignite*.log"
+docker exec ducker03 cat /mnt/service/config/ignite-config.xml
+```
+
+The console is optional - the test communicates through files under `<repository root>/.ducktests-demo`, which is shared with the host by the same bind mount that carries the repository into the containers:
+```bash
+cat .ducktests-demo/paused.txt      # the banner of the breakpoint currently held
+touch .ducktests-demo/continue-3    # resume breakpoint 3
+touch .ducktests-demo/continue-all  # resume and skip the remaining breakpoints
+touch .ducktests-demo/abort         # fail the test and tear down
+```
+
+Breakpoints are added to a test with `self.pause("name", mdc, net)` and cost nothing when the global is absent, which is how they stay in the tests without affecting CI. Run one test at a time in demo mode (no `--max-parallel`): a single control directory holds one breakpoint at a time.
+
+| Global Parameter Key | Definition | Example Configuration |
+|---------------------|------------|----------------------|
+| **demo_pause** | Which breakpoints stop the scenario. Absent or `false` disables them all (the default); `true` or `"*"` stops at every one; a list or comma separated string stops only at the named ones. | ```{"demo_pause": "split-brain,healed"}``` |
+| **demo_pause_timeout_sec** | How long one breakpoint may hold the scenario before it resumes on its own. Default is 1800. | ```{"demo_pause_timeout_sec": 3600}``` |
+| **demo_pause_dir** | Control directory shared with the host. Default is `<repository root>/.ducktests-demo`. | ```{"demo_pause_dir": "/opt/ignite-dev/.demo"}``` |
+
 ### Security Settings
 ```bash
 # Enable built-in authentication overrides

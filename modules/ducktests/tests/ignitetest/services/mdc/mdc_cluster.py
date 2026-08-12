@@ -195,6 +195,35 @@ class MdcCluster:
 
         return registry
 
+    def describe(self) -> List[str]:
+        """
+        Describes the cluster per data center for a demo breakpoint banner
+        (see :meth:`ignitetest.utils.ignite_test.IgniteTest.pause`). The generic banner sees
+        a flat list of services, which is where the DC each node belongs to gets lost.
+
+        Structure only - which node is up is what the banner's own service section reports,
+        and it pays an SSH probe per node to find out.
+
+        :return: Section lines, the first one being the section title.
+        """
+        lines = ["DATA CENTERS"]
+
+        for dc in self.dcs:
+            main = " (main)" if dc == self.main_dc and len(self.dcs) % 2 == 0 else ""
+
+            lines.append(f"  {dc}{main}")
+
+            for label, services in (("server", [self.servers[dc]] if dc in self.servers else []),
+                                    ("runner", self.runners.get(dc, [])),
+                                    ("loader", self.loaders.get(dc, [])),
+                                    ("extra", self.extras.get(dc, []))):
+                hosts = [node.account.hostname for svc in services for node in svc.nodes]
+
+                if hosts:
+                    lines.append(f"    {label:<7} {' '.join(hosts)}")
+
+        return lines
+
     def thin_client_addresses(self) -> List[str]:
         """
         :return: Thin client addresses of all server nodes across all DCs.
