@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,7 +52,7 @@ public final class IoTestDiscoveryResult {
         this.coordinatorNodeId = coordinatorNodeId;
         this.nodeConsistentIds = Collections.unmodifiableMap(new LinkedHashMap<>(nodeConsistentIds));
         this.ringLatency = ringLatency;
-        this.hopLatencies = immutableList(hopLatencies);
+        this.hopLatencies = List.copyOf(hopLatencies);
     }
 
     /** @return Coordinator node ID. */
@@ -74,11 +73,6 @@ public final class IoTestDiscoveryResult {
     /** @return Per-hop latency aggregates in ring order. */
     public List<HopLatencySummary> hopLatencies() {
         return hopLatencies;
-    }
-
-    /** Returns an immutable defensive copy of a list. */
-    private static <T> List<T> immutableList(List<T> vals) {
-        return Collections.unmodifiableList(new ArrayList<>(vals));
     }
 
     /** Ring latency aggregate. */

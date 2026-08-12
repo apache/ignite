@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
@@ -68,7 +66,7 @@ public class IoTestResult {
         this.threads = threads;
         this.payloadSize = payloadSize;
         this.processInNioThread = processInNioThread;
-        this.targets = immutableCopy(targets);
+        this.targets = List.copyOf(targets);
     }
 
     /** @return Source node ID. */
@@ -109,11 +107,6 @@ public class IoTestResult {
     /** @return Per-target results, sorted by node ID. */
     public List<TargetResult> targets() {
         return targets;
-    }
-
-    /** Creates an immutable list copy. */
-    private static <T> List<T> immutableCopy(List<T> vals) {
-        return Collections.unmodifiableList(new ArrayList<>(vals));
     }
 
     /** Immutable result for one target node. */
