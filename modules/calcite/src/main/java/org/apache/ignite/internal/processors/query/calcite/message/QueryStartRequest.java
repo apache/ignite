@@ -105,7 +105,7 @@ public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionCon
         this.schema = schema;
         this.root = root;
         this.ver = ver;
-        this.fragmentDesc = fragmentDesc;
+        this.fragmentDesc = fragmentDesc.prepareToSend();
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
@@ -148,7 +148,7 @@ public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionCon
      * @return Fragment description.
      */
     public FragmentDescription fragmentDescription() {
-        return fragmentDesc;
+        return fragmentDesc.received();
     }
 
     /**

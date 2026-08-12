@@ -24,7 +24,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Query fragment description. As a {@link Message}, has to be prepared to send and restored after receiving.
+ *
+ * @see #prepareToSend()
+ * @see #received()
+ */
 public class FragmentDescription implements Message {
     /** */
     @Order(0)
@@ -42,6 +47,9 @@ public class FragmentDescription implements Message {
     @Order(3)
     @Nullable ColocationGroup target;
 
+    /** Transient flag of {@link #received()} - invocked. */
+    boolean received;
+
     /** */
     public FragmentDescription() {
         // No-op.
@@ -56,6 +64,30 @@ public class FragmentDescription implements Message {
 
         if (target != null)
             this.target = target.explicitMapping();
+    }
+
+    /** Prepares, finalizes fragment description as {@link Message} before sending to another node. */
+    public FragmentDescription prepareToSend() {
+        if (target != null)
+            target.prepareToSend();
+
+        mapping.colocationGrps.forEach(ColocationGroup::prepareToSend);
+
+        return this;
+    }
+
+    /** Refills, properly unwraps fragment description as {@link Message} after receiving from another node. */
+    public FragmentDescription received() {
+        if (!received) {
+            if (target != null)
+                target.received();
+
+            mapping.colocationGrps.forEach(ColocationGroup::received);
+
+            received = true;
+        }
+
+        return this;
     }
 
     /** */
@@ -75,7 +107,7 @@ public class FragmentDescription implements Message {
 
     /** */
     public @Nullable ColocationGroup target() {
-        return target;
+        return received().target();
     }
 
     /** */
@@ -90,7 +122,7 @@ public class FragmentDescription implements Message {
 
     /** */
     public FragmentMapping mapping() {
-        return mapping;
+        return received().mapping();
     }
 
     /** */
