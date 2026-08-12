@@ -182,14 +182,13 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     /** Marshaller that only counts {@code marshal} calls — no idempotency guard, so it counts raw invocations. */
     private static class CountingMarshaller implements MessageMarshaller<MarshalOnceCheckMessage> {
         /** {@inheritDoc} */
-        @Override public void marshal(MarshalOnceCheckMessage msg, Marshaller marsh, GridKernalContext kctx,
-            CacheObjectContext nested) {
+        @Override public void marshal(MarshalOnceCheckMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext nested) {
             MARSHAL_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void unmarshal(MarshalOnceCheckMessage msg, Marshaller marsh, GridKernalContext kctx,
-            CacheObjectContext nested, ClassLoader clsLdr) {
+        @Override public void unmarshal(MarshalOnceCheckMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext nested,
+            ClassLoader clsLdr) {
             // No-op.
         }
 
@@ -235,14 +234,13 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     /** Marshaller that only counts {@code marshal} calls of {@link RetryCheckMessage}. */
     private static class RetryCountingMarshaller implements MessageMarshaller<RetryCheckMessage> {
         /** {@inheritDoc} */
-        @Override public void marshal(RetryCheckMessage msg, Marshaller marsh, GridKernalContext kctx,
-            CacheObjectContext nested) {
+        @Override public void marshal(RetryCheckMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext nested) {
             RETRY_MARSHAL_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void unmarshal(RetryCheckMessage msg, Marshaller marsh, GridKernalContext kctx,
-            CacheObjectContext nested, ClassLoader clsLdr) {
+        @Override public void unmarshal(RetryCheckMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext nested,
+            ClassLoader clsLdr) {
             // No-op.
         }
 

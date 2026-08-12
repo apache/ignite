@@ -176,7 +176,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
         selfMarshalling = selfMarshallingMsgType != null && assignableFrom(type.asType(), selfMarshallingMsgType);
-        jdkMarshalled = type.getAnnotation(JdkMarshalled.class) != null;
+        jdkMarshalled = pinsJdkMarshaller(type);
         marshVar = jdkMarshalled ? "jdkMarsh" : "marsh";
         hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
@@ -312,6 +312,8 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         hasStatements |= emitMethod(marshall, "unmarshalNio(" + params + ")", body -> {
             for (VariableElement f : nioFields)
                 appendBlock(body, unmarshalNioField(fieldAccessor(f)));
+
+            prependPinnedMarshaller(body);
         });
     }
 
@@ -987,6 +989,25 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
         body.add(0, EMPTY);
         body.add(0, indentedLine("IgniteMessageFactory msgFactory = (IgniteMessageFactory)kctx.messageFactory();"));
+    }
+
+    /**
+     * The pin belongs to the message as a whole, so a subclass marshals the inherited fields the same way its parent
+     * does.
+     *
+     * @return {@code True} if {@code type} or any of its ancestors is annotated with {@link JdkMarshalled}.
+     */
+    private boolean pinsJdkMarshaller(TypeElement type) {
+        for (TypeElement el = type; el != null; ) {
+            if (el.getAnnotation(JdkMarshalled.class) != null)
+                return true;
+
+            Element superEl = env.getTypeUtils().asElement(el.getSuperclass());
+
+            el = superEl instanceof TypeElement ? (TypeElement)superEl : null;
+        }
+
+        return false;
     }
 
     /** Prefixes {@code body} with the pinned marshaller resolution line, see {@link JdkMarshalled}. */
