@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -28,13 +25,46 @@ import org.junit.Test;
 public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
-    public void testHierarchicalQueryIsNotSupported() {
+    public void testEmployeeHierarchy() {
+        createEmployeeTable();
+
+        assertQuery("WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (" +
+            "SELECT id, manager_id, name, 0 FROM employee WHERE manager_id IS NULL " +
+            "UNION ALL " +
+            "SELECT e.id, e.manager_id, e.name, h.depth + 1 " +
+            "FROM employee e " +
+            "JOIN employee_hierarchy h ON e.manager_id = h.id" +
+            ") " +
+            "SELECT id, manager_id, name, depth FROM employee_hierarchy ORDER BY depth, id")
+            .returns(1, null, "CEO", 0)
+            .returns(2, 1, "Manager", 1)
+            .returns(4, 1, "Accountant", 1)
+            .returns(3, 2, "Developer", 2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursionStopsWhenDeltaIsEmpty() {
         sql("CREATE TABLE employee (id INT PRIMARY KEY, manager_id INT, name VARCHAR)");
-        sql("INSERT INTO employee VALUES " +
-            "(1, NULL, 'CEO'), " +
-            "(2, 1, 'Manager'), " +
-            "(3, 2, 'Developer'), " +
-            "(4, 1, 'Accountant')");
+        sql("INSERT INTO employee VALUES (1, NULL, 'CEO')");
+
+        assertQuery("WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (" +
+            "SELECT id, manager_id, name, 0 FROM employee WHERE manager_id IS NULL " +
+            "UNION ALL " +
+            "SELECT e.id, e.manager_id, e.name, h.depth + 1 " +
+            "FROM employee e " +
+            "JOIN employee_hierarchy h ON e.manager_id = h.id" +
+            ") " +
+            "SELECT id, manager_id, name, depth FROM employee_hierarchy")
+            .returns(1, null, "CEO", 0)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testExplainRecursiveCte() {
+        createEmployeeTable();
 
         String qry = "WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (" +
             "SELECT id, manager_id, name, 0 FROM employee WHERE manager_id IS NULL " +
@@ -43,18 +73,24 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             "FROM employee e " +
             "JOIN employee_hierarchy h ON e.manager_id = h.id" +
             ") " +
-            "SELECT id, manager_id, name, depth FROM employee_hierarchy ORDER BY depth, id";
+            "SELECT id, manager_id, name, depth FROM employee_hierarchy";
 
-        Throwable err = GridTestUtils.assertThrows(
-            log,
-            () -> sql(qry),
-            IgniteSQLException.class,
-            "Failed to plan query"
-        );
+        String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
 
-        assertEquals(1, err.getSuppressed().length);
-        assertTrue(err.getSuppressed()[0] instanceof RelOptPlanner.CannotPlanException);
-        assertTrue(err.getSuppressed()[0].getMessage().contains(
-            "There are not enough rules to produce a node with desired properties"));
+        info("PVD:: " + plan);
+
+        assertTrue(plan, plan.contains("IgniteRepeatUnion"));
+        assertTrue(plan, plan.contains("IgniteRecursiveTableSpool"));
+    }
+
+    /** */
+    private void createEmployeeTable() {
+        sql("CREATE TABLE employee (id INT PRIMARY KEY, manager_id INT, name VARCHAR)");
+
+        sql("INSERT INTO employee VALUES " +
+            "(1, NULL, 'CEO'), " +
+            "(2, 1, 'Manager'), " +
+            "(3, 2, 'Developer'), " +
+            "(4, 1, 'Accountant')");
     }
 }
