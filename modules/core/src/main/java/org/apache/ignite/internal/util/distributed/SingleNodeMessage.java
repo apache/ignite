@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.distributed;
 
 import java.util.UUID;
+import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
@@ -33,6 +34,13 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see InitMessage
  */
+/*
+ * The result of a process travels both transports: by communication in this message, and then by discovery in the
+ * {@link FullMessage} the coordinator sends. A marshalled field keeps its wire form cached, so a single marshaller
+ * has to serve both legs - and it has to be the one that needs no class name registration, because this message is
+ * marshalled on a discovery thread whenever the local step of the process finishes synchronously.
+ */
+@JdkMarshalled
 public class SingleNodeMessage<R extends Message> implements Message {
     /** Process id. */
     @Order(0)

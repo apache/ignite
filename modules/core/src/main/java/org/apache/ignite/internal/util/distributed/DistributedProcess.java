@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -42,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -299,29 +297,10 @@ public class DistributedProcess<I extends Message, R extends Message> {
 
         UUID crdId = p.crdId;
 
-        if (Objects.equals(ctx.localNodeId(), crdId)) {
+        if (Objects.equals(ctx.localNodeId(), crdId))
             onSingleNodeMessageReceived(singleMsg, crdId);
-
-            return;
-        }
-
-        // The message is marshalled by the sending thread, and marshalling a class the cluster has not seen yet takes
-        // a discovery round to register its name. On a discovery thread that round never completes: this very thread is
-        // the one to deliver the answer. The coordinator is resolved before the handover, so that a coordinator change
-        // in the meantime leaves the resend to the node left listener, exactly as it does for a send that has failed.
-        if (Thread.currentThread() instanceof IgniteDiscoveryThread) {
-            try {
-                ctx.pools().getSystemExecutorService().execute(() -> sendToCoordinator(singleMsg, crdId, p.id));
-            }
-            catch (RejectedExecutionException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send a single message, the node is stopping [processId=" + p.id + ']');
-            }
-
-            return;
-        }
-
-        sendToCoordinator(singleMsg, crdId, p.id);
+        else
+            sendToCoordinator(singleMsg, crdId, p.id);
     }
 
     /**
