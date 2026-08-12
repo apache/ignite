@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.job;
 import java.util.AbstractCollection;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -35,6 +36,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSessionImpl;
+import org.apache.ignite.internal.GridJobSiblingImpl;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridKernalContext;
@@ -735,9 +738,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 // Error is set?
                 if (t.get1() != null)
                     throw new IgniteCheckedException(t.get1());
-                else
-                    // Return result
-                    return t.get2().jobSiblings();
+                else {
+                    IgniteUuid[] siblingJobsIds = t.get2().siblingJobsIds;
+
+                    return F.isEmpty(siblingJobsIds)
+                        ? Collections.emptyList()
+                        : Stream.of(siblingJobsIds).map(sibJobId -> new GridJobSiblingImpl(ses.getId(), sibJobId, taskNodeId, ctx))
+                            .collect(Collectors.toList());
+                }
             }
             catch (InterruptedException e) {
                 throw new IgniteCheckedException("Interrupted while waiting for job siblings response: " + ses, e);
