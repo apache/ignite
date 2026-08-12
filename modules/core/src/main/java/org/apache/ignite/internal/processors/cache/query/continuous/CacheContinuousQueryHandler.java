@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.io.IOException;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -437,11 +435,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
      */
     public void localOnly(boolean locOnly) {
         this.locOnly = locOnly;
-    }
-
-    /** @return {@code True} if handler are local only, {@code false} otherwise. */
-    public boolean localOnly() {
-        return locOnly;
     }
 
     /**
@@ -1285,13 +1278,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
         }
     }
 
-    /**
-     * @return Task name.
-     */
-    private String taskName() {
-        return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
-    }
-
     /** {@inheritDoc} */
     @Override public void onClientDisconnected() {
         if (internal)
@@ -1594,15 +1580,6 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheContinuousQueryHandler.class, this);
-    }
-
-    /** */
-    private static void writeDeployable(ObjectOutput out, Object obj, CacheContinuousQueryDeployableObject dep) throws IOException {
-        boolean b = dep != null;
-
-        out.writeBoolean(b);
-
-        out.writeObject(b ? dep : obj);
     }
 
     /**
