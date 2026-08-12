@@ -1278,6 +1278,13 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
         }
     }
 
+    /**
+     * @return Task name.
+     */
+    private String taskName() {
+        return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
+    }
+
     /** {@inheritDoc} */
     @Override public void onClientDisconnected() {
         if (internal)
