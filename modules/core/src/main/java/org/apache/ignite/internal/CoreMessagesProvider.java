@@ -201,7 +201,6 @@ import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage
 import org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData;
 import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem;
 import org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo;
@@ -686,7 +685,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
         register(CacheMetricsMessage.class);
-        register(NodeMetricsMessage.class);
+        register(ClusterMetricsSnapshot.class);
         register(NodeFullMetricsMessage.class);
         register(ClusterMetricsUpdateMessage.class);
         register(TcpDiscoveryClientNodesMetricsMessage.class);
