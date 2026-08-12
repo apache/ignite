@@ -29,11 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * needs a discovery round for a class the cluster has not seen yet.
  */
 public final class CommunicationMarshalling {
-    /** */
-    private CommunicationMarshalling() {
-        // No-op.
-    }
-
     /**
      * @param msg Message to marshal.
      * @param kctx Kernal context.

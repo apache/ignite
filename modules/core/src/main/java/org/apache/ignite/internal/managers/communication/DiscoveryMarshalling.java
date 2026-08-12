@@ -30,11 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * thread can carry.
  */
 public final class DiscoveryMarshalling {
-    /** */
-    private DiscoveryMarshalling() {
-        // No-op.
-    }
-
     /**
      * @param msg Message to marshal.
      * @param kctx Kernal context.
