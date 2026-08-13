@@ -23,17 +23,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -75,9 +80,22 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     /** Marshallers the payload of the process result was handed, on every leg it travels. */
     private static final Collection<Marshaller> PAYLOAD_MARSH = new ConcurrentLinkedQueue<>();
 
+    /** Marshallers of the communication leg: those the payload got before the single node message went out. */
+    private static final Collection<Marshaller> COMM_MARSH = new ConcurrentLinkedQueue<>();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        // The message is marshalled by the sending thread, so by the time the SPI sees it the communication leg is done.
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi() {
+            @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof SingleNodeMessage)
+                    COMM_MARSH.addAll(PAYLOAD_MARSH);
+
+                super.sendMessage(node, msg, ackC);
+            }
+        });
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -96,10 +114,16 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         PAYLOAD_MARSH.clear();
+        COMM_MARSH.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
 
         super.afterTest();
     }
@@ -131,8 +155,10 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         assertTrue("The process has not finished", finishLatch.await(TIMEOUT, MILLISECONDS));
 
         // The result goes to the coordinator by communication and comes back in the FullMessage by discovery.
-        assertTrue("The payload was marshalled on one leg only, the test proves nothing: " + PAYLOAD_MARSH,
-            PAYLOAD_MARSH.size() > 1);
+        assertFalse("The result never went out by communication, the test proves nothing", COMM_MARSH.isEmpty());
+
+        assertTrue("The result never travelled discovery, the test proves half of what it claims",
+            PAYLOAD_MARSH.size() > COMM_MARSH.size());
 
         for (Marshaller marsh : PAYLOAD_MARSH) {
             assertTrue("The result of a distributed process must be marshalled with the JDK marshaller on every "
@@ -281,6 +307,9 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void unmarshal(PayloadMessage msg, Marshaller marsh, GridKernalContext kctx,
             CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+            if (msg.err != null)
+                MessageMarshalling.unmarshal(msg.err, marsh, kctx, cacheObjCtx, clsLdr);
+
             if (msg.valBytes != null) {
                 msg.val = U.unmarshal(marsh, msg.valBytes, clsLdr);
 
