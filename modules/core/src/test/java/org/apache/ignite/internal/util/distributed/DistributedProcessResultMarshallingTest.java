@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.util.distributed;
 
+import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -67,8 +68,8 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     /** Direct type of the process result. */
     private static final short PAYLOAD_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 2);
 
-    /** Marshaller the payload of the process result was handed. */
-    private static final AtomicReference<Marshaller> PAYLOAD_MARSH = new AtomicReference<>();
+    /** Marshallers the payload of the process result was handed, on every leg it travels. */
+    private static final Collection<Marshaller> PAYLOAD_MARSH = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -94,7 +95,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        PAYLOAD_MARSH.set(null);
+        PAYLOAD_MARSH.clear();
 
         super.afterTest();
     }
@@ -125,13 +126,15 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
 
         assertTrue("The process has not finished", finishLatch.await(TIMEOUT, MILLISECONDS));
 
-        Marshaller marsh = PAYLOAD_MARSH.get();
+        // The result goes to the coordinator by communication and comes back in the FullMessage by discovery.
+        assertTrue("The payload was marshalled on one leg only, the test proves nothing: " + PAYLOAD_MARSH,
+            PAYLOAD_MARSH.size() > 1);
 
-        assertNotNull("The payload was not marshalled, the test proves nothing", marsh);
-
-        assertTrue("The result of a distributed process must be marshalled with the JDK marshaller on every transport, "
-            + "so that the discovery leg reads the wire form the communication leg has cached, but got " + marsh,
-            marsh instanceof JdkMarshaller);
+        for (Marshaller marsh : PAYLOAD_MARSH) {
+            assertTrue("The result of a distributed process must be marshalled with the JDK marshaller on every "
+                + "transport, so that the discovery leg reads the wire form the communication leg has cached, but got "
+                + marsh, marsh instanceof JdkMarshaller);
+        }
     }
 
     /**
@@ -194,7 +197,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void marshal(PayloadMessage msg, Marshaller marsh, GridKernalContext kctx,
             CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-            PAYLOAD_MARSH.compareAndSet(null, marsh);
+            PAYLOAD_MARSH.add(marsh);
 
             if (msg.val != null && msg.valBytes == null)
                 msg.valBytes = U.marshal(marsh, msg.val);
