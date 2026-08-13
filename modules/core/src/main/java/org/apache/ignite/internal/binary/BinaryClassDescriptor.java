@@ -235,8 +235,8 @@ public class BinaryClassDescriptor {
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
             U.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
-                BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
-                "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
+                BinaryMarshaller.class.getSimpleName() + " because it is a record, implements Externalizable, or " +
+                "has writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
                 "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
                 "have this class in classpath. To enable binary serialization either implement " +
                 Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +

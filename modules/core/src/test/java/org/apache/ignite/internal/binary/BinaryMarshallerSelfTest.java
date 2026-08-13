@@ -30,6 +30,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.AbstractQueue;
@@ -56,6 +61,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -110,6 +117,7 @@ import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.THREAD_LOCAL;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -124,6 +132,46 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     @Test
     public void testNull() throws Exception {
         assertNull(marshalUnmarshal(null));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSerializableRecord() throws Exception {
+        assumeTrue("Records require Java 16 or later.", U.majorJavaVersion(U.jdkVersion()) >= 16);
+
+        Path tmpDir = Files.createTempDirectory("ignite-record-test");
+        Path srcDir = tmpDir.resolve("test");
+        Path srcFile = srcDir.resolve("TestRecord.java");
+
+        try {
+            Files.createDirectories(srcDir);
+            String src = "package test; " +
+                "public record TestRecord(String value, long timestamp) implements java.io.Serializable {}";
+
+            Files.write(srcFile, src.getBytes(StandardCharsets.UTF_8));
+
+            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
+            assertNotNull(compiler);
+            assertEquals(0, compiler.run(null, null, null, "-d", tmpDir.toString(), srcFile.toString()));
+
+            URL[] urls = {tmpDir.toUri().toURL()};
+
+            try (URLClassLoader clsLdr = new URLClassLoader(urls, getClass().getClassLoader())) {
+                Class<?> recordCls = clsLdr.loadClass("test.TestRecord");
+                Object record = recordCls.getConstructor(String.class, long.class).newInstance("value", 42L);
+                BinaryMarshaller marsh = binaryMarshaller();
+                Object restored = marsh.unmarshal(marsh.marshal(record), clsLdr);
+
+                assertEquals("value", recordCls.getMethod("value").invoke(restored));
+                assertEquals(42L, recordCls.getMethod("timestamp").invoke(restored));
+            }
+        }
+        finally {
+            U.delete(tmpDir.toFile());
+        }
     }
 
     /**
