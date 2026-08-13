@@ -307,24 +307,24 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Verifies parameter upper limits and ensures rejected calls do not block subsequent runs. */
+    /** Verifies IO test parameter constraints and ensures rejected calls do not block subsequent runs. */
     @SuppressWarnings("deprecation")
     @Test
-    public void testIoTestParameterUpperLimits() throws Exception {
+    public void testIoTestParameterConstraints() throws Exception {
         IgniteKernal src = (IgniteKernal)grid(0);
         IoTestHandler ioTest = src.context().io().ioTest();
         List<ClusterNode> targets = new ArrayList<>(src.cluster().forServers().forRemotes().nodes());
         IgniteMXBeanImpl mxBean = new IgniteMXBeanImpl(src);
 
         List<Runnable> invalidRuns = List.of(
-            () -> mxBean.runIoTest(
-                0, 100, 65, MILLISECONDS.toNanos(100), 5, 0, false),
-            () -> ioTest.runIoTest(
-                3_600_001, 100, 1, 0, false, targets),
-            () -> ioTest.runIoTest(
-                0, 3_600_001, 1, 0, false, targets),
-            () -> ioTest.runIoTest(
-                0, 100, 1, 1024 * 1024 + 1, false, targets)
+            // Thread count exceeds 64.
+            () -> mxBean.runIoTest(0, 100, 65, MILLISECONDS.toNanos(100), 5, 0, false),
+            // Warm-up exceeds one hour.
+            () -> ioTest.runIoTest(3_600_001, 100, 1, 0, false, targets),
+            // Duration exceeds one hour.
+            () -> ioTest.runIoTest(0, 3_600_001, 1, 0, false, targets),
+            // Payload size exceeds 1 MiB.
+            () -> ioTest.runIoTest(0, 100, 1, 1024 * 1024 + 1, false, targets)
         );
 
         for (Runnable invalidRun : invalidRuns)
