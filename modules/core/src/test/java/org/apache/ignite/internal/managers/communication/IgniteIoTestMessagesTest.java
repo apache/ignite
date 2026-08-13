@@ -83,15 +83,6 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Verifies RTT and timestamps used for one-way delivery measurements. */
-    private static void assertTimings(IgniteIoTestMessage res) {
-        assertTrue(res.roundTripNanos() > 0);
-        assertTrue(res.reqSndTsMillis > 0);
-        assertTrue(res.reqRcvTsMillis > 0);
-        assertTrue(res.resSndTsMillis > 0);
-        assertTrue(res.resRcvTsMillis > 0);
-    }
-
     /** Verifies that a successful short run samples every target even when the first request exceeds the deadline. */
     @Test
     public void testRunSamplesEveryTargetDespiteShortDuration() throws Exception {
@@ -316,7 +307,7 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Verifies that public and internal entry points enforce upper limits before acquiring the single-test guard. */
+    /** Verifies parameter upper limits and ensures rejected calls do not block subsequent runs. */
     @SuppressWarnings("deprecation")
     @Test
     public void testIoTestParameterUpperLimits() throws Exception {
@@ -350,5 +341,14 @@ public class IgniteIoTestMessagesTest extends GridCommonAbstractTest {
 
         assertEquals(8, result.threads());
         assertTrue(result.targets().stream().allMatch(target -> target.samples() > 0));
+    }
+
+    /** Verifies RTT and timestamps used for one-way delivery measurements. */
+    private void assertTimings(IgniteIoTestMessage res) {
+        assertTrue(res.roundTripNanos() > 0);
+        assertTrue(res.reqSndTsMillis > 0);
+        assertTrue(res.reqRcvTsMillis > 0);
+        assertTrue(res.resSndTsMillis > 0);
+        assertTrue(res.resRcvTsMillis > 0);
     }
 }
