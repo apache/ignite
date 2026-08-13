@@ -35,7 +35,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 
 /**
  * This class provides implementation for job sibling.
- * TODO : Revise after https://issues.apache.org/jira/browse/IGNITE-28964
  */
 public class GridJobSiblingImpl implements ComputeJobSibling {
     /** */

@@ -2215,7 +2215,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             Collection<ComputeJobSibling> siblingJobs = F.isEmpty(req.siblingJobsIds())
                 ? null
                 : Stream.of(req.siblingJobsIds()).map(sibJobId -> new GridJobSiblingImpl(req.sessionId(), sibJobId, nodeId, ctx))
-                .collect(Collectors.toList());
+                    .collect(Collectors.toList());
 
             processJobExecuteRequest(node, (GridJobExecuteRequest)msg, siblingJobs);
         }
