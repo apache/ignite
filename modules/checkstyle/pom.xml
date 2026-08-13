@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>23</version>
+        <version>39</version>
         <relativePath/>
     </parent>
 
@@ -39,6 +39,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release/>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <revision>2.19.0-SNAPSHOT</revision>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
