@@ -61,12 +61,9 @@ import static org.apache.ignite.events.EventType.EVTS_ALL;
 /**
  * Continuous routine handler for remote event listening.
  */
-class GridEventConsumeHandler implements GridContinuousHandler {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public final class GridEventConsumeHandler implements GridContinuousHandler, MarshallableMessage {
     /** Default callback. */
-    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<UUID, Event>() {
+    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<>() {
         @Override public boolean apply(UUID uuid, Event e) {
             return true;
         }
@@ -76,28 +73,32 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private IgniteBiPredicate<UUID, Event> cb;
 
     /** Filter. */
-    private IgnitePredicate<Event> filter;
+    @Nullable volatile IgnitePredicate<Event> filter;
 
-    /** Serialized filter. */
-    private byte[] filterBytes;
+    /** Marshaled {@link #filter}. */
+    @Order(0)
+    @Nullable volatile byte[] filterBytes;
 
-    /** Deployment class name. */
-    private String clsName;
+    /** Deployment class name. Is {@code null} if P2P deployment is disabled. */
+    @Order(1)
+    @Nullable volatile String clsName;
 
-    /** Deployment info. */
-    private GridDeploymentInfo depInfo;
+    /** Deployment info. Is {@code null} if P2P deployment is disabled. */
+    @Order(2)
+    @Nullable volatile GridDeploymentInfoMessage depInfo;
 
     /** Types. */
-    private int[] types;
+    @Order(3)
+    int[] types;
 
     /** Listener. */
     private GridLocalEventListener lsnr;
 
     /** P2P unmarshalling future. */
-    private IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+    private volatile IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor for serialization purposes.
      */
     public GridEventConsumeHandler() {
         // No-op.
@@ -225,8 +226,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                 EventWrapper wrapper = new EventWrapper(evt);
 
                                                 if (evt instanceof CacheEvent) {
-                                                    String cacheName = ((CacheEvent)evt).cacheName();
-
                                                     ClusterNode node = ctx.discovery().node(t3.get1());
 
                                                     if (node == null)
@@ -393,6 +392,10 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
 
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (filterBytes != null)
+            return;
+
         if (filter != null) {
             Class cls = U.detectClass(filter);
 
@@ -414,6 +417,10 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         assert nodeId != null;
         assert ctx != null;
         assert ctx.config().isPeerClassLoadingEnabled();
+
+        // TODO : Remove this check after https://issues.apache.org/jira/browse/IGNITE-28945
+        if (filter != null)
+            return;
 
         if (filterBytes != null) {
             try {
@@ -467,36 +474,27 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        boolean b = filterBytes != null;
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        assert (clsName == null) == (depInfo == null);
 
-        out.writeBoolean(b);
-
-        if (b) {
-            U.writeByteArray(out, filterBytes);
-            U.writeString(out, clsName);
-            out.writeObject(depInfo);
-        }
-        else
-            out.writeObject(filter);
-
-        out.writeObject(types);
+        /** Are marshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
+        if (filter != null && depInfo == null)
+            filterBytes = marsh.marshal(filter);
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean b = in.readBoolean();
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        assert (clsName == null) == (depInfo == null);
 
-        if (b) {
+        /** Are unmarshaled in {@link #p2pUnmarshal(UUID, GridKernalContext)}. */
+        if (depInfo != null) {
             p2pUnmarshalFut = new GridFutureAdapter<>();
-            filterBytes = U.readByteArray(in);
-            clsName = U.readString(in);
-            depInfo = (GridDeploymentInfo)in.readObject();
-        }
-        else
-            filter = (IgnitePredicate<Event>)in.readObject();
 
-        types = (int[])in.readObject();
+            return;
+        }
+
+        if (filterBytes != null)
+            filter = marsh.unmarshal(filterBytes, clsLdr);
     }
 
     /**
