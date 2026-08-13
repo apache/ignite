@@ -35,12 +35,6 @@ public final class DiscoveryMarshalling {
     }
 
     /** */
-    public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx,
-        @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        MessageMarshalling.unmarshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx, cacheObjCtx, clsLdr);
-    }
-
-    /** */
     public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
         MessageMarshalling.unmarshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx);
     }

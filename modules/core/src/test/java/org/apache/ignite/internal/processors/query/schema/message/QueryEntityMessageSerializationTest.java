@@ -40,7 +40,6 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -189,7 +188,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         assertEquals("Reads" + ERROR_SUFFIX,
             expReadsWritesCnt, reader.state());
 
-        DiscoveryMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
+        DiscoveryMarshalling.unmarshal(res, kctx);
 
         return res;
     }

@@ -29,7 +29,6 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -140,7 +139,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
         assertEquals("Reads" + ERROR_SUFFIX, expReadsWritesCnt, reader.state());
 
-        DiscoveryMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
+        DiscoveryMarshalling.unmarshal(res, kctx);
 
         return res;
     }
