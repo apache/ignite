@@ -172,7 +172,7 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
         try (Transaction tx = client.transactions().txStart()) {
             cache.put(testKey, 1);
 
-            sql(client, "KILL TRANSACTION '" + tx.xid() + "'");
+            sql(grid(0), "KILL TRANSACTION '" + tx.xid() + "'");
 
             assertThrowsWithCause(tx::commit, IgniteException.class);
         }
