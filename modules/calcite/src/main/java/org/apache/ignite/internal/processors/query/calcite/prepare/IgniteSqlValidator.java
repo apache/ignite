@@ -310,9 +310,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             for (SqlNode child : (SqlNodeList)node)
                 validateFetchExpression(child, clauseName);
         }
-        else if (node instanceof SqlCall) {
-            SqlCall call = (SqlCall)node;
-
+        else if (node instanceof SqlCall call) {
             if (call.isA(SqlKind.QUERY))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
 

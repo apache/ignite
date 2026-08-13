@@ -35,6 +35,16 @@ import org.junit.Test;
  *  Dynamic parameters types inference test.
  */
 public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final String ILLEGAL_FETCH_VAL_ERR_MSG = "Illegal value of fetch / limit. " +
+        "The value must be non-negative and less than or equal to 9223372036854775807";
+
+    /** */
+    private static final String INCORRECT_FETCH_TYPE_ERR_MSG = "Incorrect type of a dynamic parameter. Expected <BIGINT> but got";
+
+    /** */
+    private static final String ENCOUNTERED_ERR_MSG = "Encountered";
+
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
@@ -221,16 +231,17 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     public void testInvalidFetchExpression() {
         createAndPopulateTable();
 
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, -2);
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, -1.5);
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, NULL_RESULT);
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, moreThanMaxLong());
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", null, "abc");
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -2);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -1.5);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", INCORRECT_FETCH_TYPE_ERR_MSG, new Object[]{null});
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, moreThanMaxLong());
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, "abc");
 
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (1 + ? - 4) ROWS ONLY", null, 1);
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (? - (50 - 20)) ROWS ONLY", null, 2);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (1 + ? - 4) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 1);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (? - (50 - 20)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 2);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (NULLIF(?, 1)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 1);
 
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST SQRT(?) ROWS ONLY", null, 4);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST SQRT(?) ROWS ONLY", ENCOUNTERED_ERR_MSG, 4);
     }
 
     /** */
@@ -285,6 +296,11 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             .returns(1)
             .returns(2)
             .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? - 1) ROWS ONLY")
+            .withParams(1)
+            .resultSize(0)
+            .check();
     }
 
     /** */
@@ -319,8 +335,8 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             .check();
 
         // Check negative param.
-        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY", null, -2);
-        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY", null, -2);
+        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -2);
+        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -2);
     }
 
     /** */

@@ -77,6 +77,15 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                     .and(input(isInstanceOf(IgniteSort.class)
                         .and(sort -> sort.fetch != null))))));
 
+        assertPlan(contextBuilder()
+                .query("SELECT * FROM TEST ORDER BY ID FETCH FIRST (? + 1) ROWS ONLY")
+                .schema(publicSchema)
+                .params(1),
+            isInstanceOf(IgniteLimit.class)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(sort -> sort.fetch != null))))));
+
         assertPlan("SELECT * FROM TEST ORDER BY ID OFFSET 1 ROWS "
                 + "FETCH FIRST (ABS(0.5)) ROWS ONLY", publicSchema,
             isInstanceOf(IgniteLimit.class)

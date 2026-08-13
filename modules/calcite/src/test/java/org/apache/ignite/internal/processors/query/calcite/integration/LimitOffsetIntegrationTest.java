@@ -38,6 +38,16 @@ import static java.util.Collections.singletonList;
  */
 public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
+    private static final String ILLEGAL_FETCH_VAL_ERR_MSG = "Illegal value of fetch / limit. " +
+        "The value must be non-negative and less than or equal to 9223372036854775807";
+
+    /** */
+    private static final String ENCOUNTERED_ERR_MSG = "Encountered";
+
+    /** */
+    private static final String FAIL_PARSE_ERR_MSG = "Failed to parse query";
+
+    /** */
     private static IgniteCache<Integer, String> cacheRepl;
 
     /** */
@@ -107,12 +117,12 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             SqlValidatorException.class, "Illegal value of offset");
 
         assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + moreThanMaxLong() + " ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit");
+            SqlValidatorException.class, ILLEGAL_FETCH_VAL_ERR_MSG);
 
         assertThrows("SELECT * FROM TEST_REPL LIMIT " + moreThanMaxLong(),
-            SqlValidatorException.class, "Illegal value of fetch / limit");
+            SqlValidatorException.class, ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY", FAIL_PARSE_ERR_MSG);
 
         assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1 ROWS", null);
         assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1.5 ROWS", null);
@@ -120,11 +130,11 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS", null);
         assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET id ROWS", null);
 
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -1 ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -1.5 ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -0.5 ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST 2+1 ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST id ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -1 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -1.5 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -0.5 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST 2+1 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST id ROWS ONLY", ENCOUNTERED_ERR_MSG);
     }
 
     /** */
@@ -200,28 +210,38 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
     /** */
     @Test
     public void testInvalidFetchExpression() {
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (" + moreThanMaxLong() + ") ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (" + moreThanMaxLong() + " + 1) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (1 + " + moreThanMaxLong() + ") ROWS ONLY", null);
+        BigDecimal moreThanMaxLong = moreThanMaxLong();
 
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (-2) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (2 - 3) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (1 + 2 - 4) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (-1.5) ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (" + moreThanMaxLong + ") ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (" + moreThanMaxLong + " + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (1 + " + moreThanMaxLong + ") ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST ('abc') ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (SUBSTRING('abc', 1, 1)) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (CAST(NULL AS INTEGER)) ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (-2) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (2 - 3) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (1 + 2 - 4) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (-1.5) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id + 1) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS(id)) ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST ('abc') ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (SUBSTRING('abc', 1, 1)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (CAST(NULL AS INTEGER)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (NULLIF(1, 1)) ROWS ONLY",
+            ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (SUM(1)) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ROW_NUMBER() OVER ()) ROWS ONLY", null);
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS((SELECT 1))) ROWS ONLY", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS(id)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST SQRT(4) ROWS ONLY", null);
+        assertThrowsSqlException(
+            "SELECT * FROM TEST_REPL FETCH FIRST (SUM(1)) ROWS ONLY",
+            "Aggregate expression is illegal in fetch / limit clause"
+        );
+        assertThrowsSqlException(
+            "SELECT * FROM TEST_REPL FETCH FIRST (ROW_NUMBER() OVER ()) ROWS ONLY",
+            "Windowed aggregate expression is illegal in fetch / limit clause"
+        );
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS((SELECT 1))) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST SQRT(4) ROWS ONLY", ENCOUNTERED_ERR_MSG);
     }
 
     /** */

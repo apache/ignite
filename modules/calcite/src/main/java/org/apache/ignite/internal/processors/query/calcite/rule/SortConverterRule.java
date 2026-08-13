@@ -122,8 +122,12 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
         if (!RexUtil.isDeterministic(fetch))
             return false;
 
-        if (!RexUtil.isConstant(fetch) || containsDynamicParameter(fetch))
+        if (!RexUtil.isConstant(fetch))
             return false;
+
+        // Dynamic parameters are constant within an execution and have the same value on every fragment.
+        if (containsDynamicParameter(fetch))
+            return true;
 
         List<RexNode> reducedFetch = new ArrayList<>(1);
 
