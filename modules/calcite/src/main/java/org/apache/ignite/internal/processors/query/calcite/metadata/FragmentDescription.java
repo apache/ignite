@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  * Query fragment description. As a {@link Message}, has to be prepared to send to another node and restored after
  * receiving from another node.
  *
- * @see #prepareToSend()
+ * @see #preparedToSend()
  * @see #receivedFragment()
  */
 public class FragmentDescription implements Message {
@@ -68,7 +68,7 @@ public class FragmentDescription implements Message {
     }
 
     /** Prepares fragment description as {@link Message} to send to another node. */
-    public FragmentDescription prepareToSend() {
+    public FragmentDescription preparedToSend() {
         if (target != null)
             target.prepareToSend();
 

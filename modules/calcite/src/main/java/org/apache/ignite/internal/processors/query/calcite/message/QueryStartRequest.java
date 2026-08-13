@@ -105,7 +105,7 @@ public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionCon
         this.schema = schema;
         this.root = root;
         this.ver = ver;
-        this.fragmentDesc = fragmentDesc.prepareToSend();
+        this.fragmentDesc = fragmentDesc.preparedToSend();
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
