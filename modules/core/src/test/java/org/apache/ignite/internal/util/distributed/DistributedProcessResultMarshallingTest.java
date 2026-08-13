@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.ObjectStreamConstants;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -161,10 +161,18 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
 
         assertNotNull("The nested message was not marshalled", msg.err.errBytes);
 
-        assertTrue("A pinned message nested into a plain one must still go through the JDK marshaller",
-            msg.err.errBytes.length > 1
-                && msg.err.errBytes[0] == (byte)(ObjectStreamConstants.STREAM_MAGIC >> 8)
-                && msg.err.errBytes[1] == (byte)ObjectStreamConstants.STREAM_MAGIC);
+        // Only the JDK marshaller reads what the JDK marshaller wrote, so a successful read is the proof.
+        Object err;
+
+        try {
+            err = U.unmarshal(Marshallers.jdk(), msg.err.errBytes, U.gridClassLoader());
+        }
+        catch (IgniteCheckedException e) {
+            throw new AssertionError("A pinned message nested into a plain one must still go through the JDK "
+                + "marshaller, but its wire form is not a JDK stream", e);
+        }
+
+        assertTrue("The nested message carries " + err, err instanceof IllegalStateException);
     }
 
     /**
