@@ -240,7 +240,7 @@ public class ColocationGroup implements Message {
         if (assignments == null)
             return this;
 
-        // Protects afterReceive(): assignments must not be marshaled yet.
+        /** Protects {@link #afterReceive()}: assignments must not be marshaled yet. */
         assert marshalledAssignments == null : "Marshalled assignments are already set.";
 
         List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
