@@ -1392,17 +1392,18 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         timeout,
                         ses.getTopology(),
                         ses.getTopologyPredicate(),
+                        ses.getJobSiblings(),
                         sesAttrs,
                         jobAttrs,
                         ses.getCheckpointSpi(),
+                        continuous,
                         forceLocDep,
                         ses.isFullSupport(),
                         internal,
                         affCacheIds,
                         affPartId,
                         mapTopVer,
-                        ses.executorName()
-                    );
+                        ses.executorName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req, ses.getJobSiblings());

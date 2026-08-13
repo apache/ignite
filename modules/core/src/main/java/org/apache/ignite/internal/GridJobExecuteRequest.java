@@ -23,10 +23,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -101,23 +103,27 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     @Order(10)
     String cpSpi;
 
+    /** */
+    @Order(11)
+    @Nullable IgniteUuid[] siblingJobsIds;
+
     /** Transient since needs to hold local creation time. */
     private final long createTime = U.currentTimeMillis();
 
     /** */
-    @Order(11)
+    @Order(12)
     boolean forceLocDep;
 
     /** */
-    @Order(12)
+    @Order(13)
     boolean sesFullSup;
 
     /** */
-    @Order(13)
+    @Order(14)
     boolean internal;
 
     /** */
-    @Order(14)
+    @Order(15)
     Collection<UUID> top;
 
     /** */
@@ -125,23 +131,23 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     IgnitePredicate<ClusterNode> topPred;
 
     /** */
-    @Order(15)
+    @Order(16)
     byte[] topPredBytes;
 
     /** */
-    @Order(16)
+    @Order(17)
     int[] cacheIds;
 
     /** */
-    @Order(17)
+    @Order(18)
     int part;
 
     /** */
-    @Order(18)
+    @Order(19)
     AffinityTopologyVersion topVer;
 
     /** */
-    @Order(19)
+    @Order(20)
     String execName;
 
     /**
@@ -162,9 +168,11 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
      * @param timeout Task execution timeout.
      * @param top Topology.
      * @param topPred Topology predicate.
+     * @param siblings Collection of split siblings.
      * @param sesAttrs Session attributes.
      * @param jobAttrs Job attributes.
      * @param cpSpi Collision SPI.
+     * @param dynamicSiblings {@code True} if siblings are dynamic.
      * @param forceLocDep {@code True} If remote node should ignore deployment settings.
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
@@ -184,9 +192,11 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
             long timeout,
             @Nullable Collection<UUID> top,
             @Nullable IgnitePredicate<ClusterNode> topPred,
+            Collection<ComputeJobSibling> siblings,
             Map<Object, Object> sesAttrs,
             Map<? extends Serializable, ? extends Serializable> jobAttrs,
             String cpSpi,
+            boolean dynamicSiblings,
             boolean forceLocDep,
             boolean sesFullSup,
             boolean internal,
@@ -226,6 +236,9 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.execName = execName;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
+
+        if (!dynamicSiblings && !F.isEmpty(siblings))
+            siblingJobsIds = siblings.stream().map(ComputeJobSibling::getJobId).toArray(IgniteUuid[]::new);
     }
 
     /**
@@ -289,6 +302,13 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
      */
     public long getCreateTime() {
         return createTime;
+    }
+
+    /**
+     * @return Siblings jobs ids.
+     */
+    public @Nullable IgniteUuid[] siblingJobsIds() {
+        return siblingJobsIds;
     }
 
     /**

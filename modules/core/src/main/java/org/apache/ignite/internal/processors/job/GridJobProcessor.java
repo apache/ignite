@@ -1184,12 +1184,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      * @param node Node.
      * @param req Request.
-     * @param locJobSiblings Local siblings of the job. TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28964
+     * @param siblingJobs Siblings jobs. TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28964
      */
     @SuppressWarnings("TooBroadScope")
     public void processJobExecuteRequest(
         ClusterNode node, GridJobExecuteRequest req,
-        @Nullable Collection<ComputeJobSibling> locJobSiblings
+        @Nullable Collection<ComputeJobSibling> siblingJobs
     ) {
         if (log.isDebugEnabled())
             log.debug("Processing job request message [req=" + req + ", nodeId=" + node.id() + ']');
@@ -1270,7 +1270,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTopologyPredicate(),
                             req.startTaskTime(),
                             endTime,
-                            locJobSiblings,
+                            siblingJobs,
                             req.getSessionAttributes(),
                             req.sessionFullSupport(),
                             req.internal(),
@@ -2210,7 +2210,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             assert node != null;
 
-            processJobExecuteRequest(node, (GridJobExecuteRequest)msg, null);
+            GridJobExecuteRequest req = (GridJobExecuteRequest)msg;
+
+            Collection<ComputeJobSibling> siblingJobs = F.isEmpty(req.siblingJobsIds())
+                ? null
+                : Stream.of(req.siblingJobsIds()).map(sibJobId -> new GridJobSiblingImpl(req.sessionId(), sibJobId, nodeId, ctx))
+                .collect(Collectors.toList());
+
+            processJobExecuteRequest(node, (GridJobExecuteRequest)msg, siblingJobs);
         }
     }
 
