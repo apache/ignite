@@ -218,6 +218,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         boolean firstClientReq,
         boolean allowWaitTopFut
     ) {
+        // Of all tx messages, only the near prepare request transfers entry expiry policies.
         if (!F.isEmpty(writes)) {
             for (IgniteTxEntry we : writes)
                 we.transferExpiryPolicy(true);
