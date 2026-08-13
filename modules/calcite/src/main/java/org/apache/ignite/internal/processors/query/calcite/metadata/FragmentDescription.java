@@ -81,9 +81,9 @@ public class FragmentDescription implements Message {
     public FragmentDescription receivedFragment() {
         if (!received) {
             if (target != null)
-                target.receivedGroup();
+                target.afterReceive();
 
-            mapping.colocationGrps.forEach(ColocationGroup::receivedGroup);
+            mapping.colocationGrps.forEach(ColocationGroup::afterReceive);
 
             received = true;
         }
