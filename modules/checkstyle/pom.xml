@@ -25,13 +25,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>39</version>
-        <relativePath/>
-    </parent>
-
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-checkstyle</artifactId>
     <version>${revision}</version>
@@ -39,7 +32,6 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.release/>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <revision>2.19.0-SNAPSHOT</revision>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
