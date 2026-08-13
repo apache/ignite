@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.distributed;
 
+import java.io.ObjectStreamConstants;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -27,7 +28,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
+import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -137,6 +141,32 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         }
     }
 
+
+    /**
+     * A pin belongs to the message that carries it, so a pinned message nested into a message that is not pinned is
+     * still marshalled with the JDK marshaller, whatever its parent got from the transport.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNestedPinnedMessageKeepsItsMarshaller() throws Exception {
+        startGrids(NODES_CNT);
+
+        PayloadMessage msg = new PayloadMessage(UUID.randomUUID());
+
+        // Communication hands the schema-aware marshaller over, and the payload of the parent takes it.
+        CommunicationMarshalling.marshal(msg, grid(0).context(), null);
+
+        assertTrue("The parent was marshalled with " + PAYLOAD_MARSH, PAYLOAD_MARSH.stream().noneMatch(m -> m instanceof JdkMarshaller));
+
+        assertNotNull("The nested message was not marshalled", msg.err.errBytes);
+
+        assertTrue("A pinned message nested into a plain one must still go through the JDK marshaller",
+            msg.err.errBytes.length > 1
+                && msg.err.errBytes[0] == (byte)(ObjectStreamConstants.STREAM_MAGIC >> 8)
+                && msg.err.errBytes[1] == (byte)ObjectStreamConstants.STREAM_MAGIC);
+    }
+
     /**
      * Result of the process. It carries an object field, so that the payload really goes through a marshaller, and it
      * carries no {@code JdkMarshalled} of its own: the test checks that pinning {@link SingleNodeMessage} covers every
@@ -149,6 +179,9 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         /** Wire form of {@link #val}. */
         private byte[] valBytes;
 
+        /** A pinned message nested into a message that is not pinned itself. */
+        private ErrorMessage err;
+
         /** Default constructor for {@link MessageFactory}. */
         public PayloadMessage() {
             // No-op.
@@ -157,6 +190,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         /** @param val Payload. */
         PayloadMessage(Object val) {
             this.val = val;
+            this.err = new ErrorMessage(new IllegalStateException("nested"));
         }
 
         /** {@inheritDoc} */
@@ -176,14 +210,44 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
                 writer.onHeaderWritten();
             }
 
-            return writer.writeByteArray(msg.valBytes);
+            switch (writer.state()) {
+                case 0:
+                    if (!writer.writeByteArray(msg.valBytes))
+                        return false;
+
+                    writer.incrementState();
+
+                case 1:
+                    if (!writer.writeMessage(msg.err))
+                        return false;
+
+                    writer.incrementState();
+            }
+
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(PayloadMessage msg, MessageReader reader) {
-            msg.valBytes = reader.readByteArray();
+            switch (reader.state()) {
+                case 0:
+                    msg.valBytes = reader.readByteArray();
 
-            return reader.isLastRead();
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+
+                case 1:
+                    msg.err = reader.readMessage();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+            }
+
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -201,6 +265,9 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
 
             if (msg.val != null && msg.valBytes == null)
                 msg.valBytes = U.marshal(marsh, msg.val);
+
+            if (msg.err != null)
+                MessageMarshalling.marshal(msg.err, marsh, kctx, cacheObjCtx);
         }
 
         /** {@inheritDoc} */
