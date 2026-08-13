@@ -28,14 +28,15 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Single node result message.
+ * <p>
+ * The process result travels both transports: this message carries it to the coordinator by communication, and the
+ * {@link FullMessage} of the coordinator carries it back to every node by discovery.
  *
  * @param <R> Result type.
  * @see DistributedProcess
  * @see FullMessage
  * @see InitMessage
  */
-// The process result travels both transports: this message carries it to the coordinator by communication, and the
-// FullMessage of the coordinator carries it back to every node by discovery.
 @JdkMarshalled
 public class SingleNodeMessage<R extends Message> implements Message {
     /** Process id. */

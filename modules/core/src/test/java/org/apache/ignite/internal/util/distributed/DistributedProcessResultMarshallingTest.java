@@ -17,26 +17,21 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.ObjectStreamConstants;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -72,26 +67,12 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     /** Direct type of the process result. */
     private static final short PAYLOAD_TYPE = (short)(CoreMessagesProvider.MAX_MESSAGE_ID + 2);
 
-    /** Wire form of the process result, captured on its way out. */
-    private static final AtomicReference<byte[]> PAYLOAD_BYTES = new AtomicReference<>();
+    /** Marshaller the payload of the process result was handed. */
+    private static final AtomicReference<Marshaller> PAYLOAD_MARSH = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        // A message is marshalled by the sending thread right before the SPI call, so the payload is ready by now.
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
-                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof SingleNodeMessage) {
-                    SingleNodeMessage<?> singleMsg = (SingleNodeMessage<?>)((GridIoMessage)msg).message();
-
-                    if (singleMsg.response() instanceof PayloadMessage)
-                        PAYLOAD_BYTES.compareAndSet(null, ((PayloadMessage)singleMsg.response()).valBytes);
-                }
-
-                super.sendMessage(node, msg, ackC);
-            }
-        });
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -113,7 +94,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        PAYLOAD_BYTES.set(null);
+        PAYLOAD_MARSH.set(null);
 
         super.afterTest();
     }
@@ -144,19 +125,13 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
 
         assertTrue("The process has not finished", finishLatch.await(TIMEOUT, MILLISECONDS));
 
-        byte[] bytes = PAYLOAD_BYTES.get();
+        Marshaller marsh = PAYLOAD_MARSH.get();
 
-        assertNotNull("The payload was not marshalled, the test proves nothing", bytes);
+        assertNotNull("The payload was not marshalled, the test proves nothing", marsh);
 
         assertTrue("The result of a distributed process must be marshalled with the JDK marshaller on every transport, "
-            + "so that the discovery leg reads the wire form the communication leg has cached", jdkStream(bytes));
-    }
-
-    /** @return {@code True} if the bytes are a JDK serialization stream. */
-    private static boolean jdkStream(byte[] bytes) {
-        return bytes.length > 1
-            && bytes[0] == (byte)(ObjectStreamConstants.STREAM_MAGIC >> 8)
-            && bytes[1] == (byte)ObjectStreamConstants.STREAM_MAGIC;
+            + "so that the discovery leg reads the wire form the communication leg has cached, but got " + marsh,
+            marsh instanceof JdkMarshaller);
     }
 
     /**
@@ -219,6 +194,8 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void marshal(PayloadMessage msg, Marshaller marsh, GridKernalContext kctx,
             CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+            PAYLOAD_MARSH.compareAndSet(null, marsh);
+
             if (msg.val != null && msg.valBytes == null)
                 msg.valBytes = U.marshal(marsh, msg.val);
         }

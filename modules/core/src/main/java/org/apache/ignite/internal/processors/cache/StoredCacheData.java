@@ -43,8 +43,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * in order to be serialization wise agnostic to further additions or removals of fields.
  * <p>
  * All changes must be made with the respect of RU rules.
+ * <p>
+ * Travels both transports: by discovery when a cache starts, by communication when a snapshot is restored.
  */
-// Travels both transports: by discovery when a cache starts, by communication when a snapshot is restored.
 @JdkMarshalled
 public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
     /** */

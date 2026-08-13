@@ -53,7 +53,12 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
         };
     }
 
-    /** @return Generated marshaller of the message, or {@code null} when the message has nothing to marshal. */
+    /**
+     * A marshaller companion is generated only for a message that has something to marshal, and the loader throws
+     * when there is no such class. Test messages are mostly plain, so a missing companion is the normal case here.
+     *
+     * @return Generated marshaller of the message, or {@code null} when the message has nothing to marshal.
+     */
     private static <T extends Message> @Nullable MessageMarshaller<T> marshaller(Class<? extends Message> msg) {
         try {
             return loadMarshaller(msg);
