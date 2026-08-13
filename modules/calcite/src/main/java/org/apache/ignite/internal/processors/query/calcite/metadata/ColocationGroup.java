@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  * receiving from another node.
  *
  * @see #prepareToSend()
- * @see #received()
+ * @see #afterReceive()
  */
 public class ColocationGroup implements Message {
     /** */
@@ -64,7 +64,7 @@ public class ColocationGroup implements Message {
      */
     private boolean primaryAssignment;
 
-    /** Marshaled assignments serialization call holder. */
+    /** Marshalled assignments serialization call holder. */
     @Order(2)
     @Nullable int[] marshalledAssignments;
 
@@ -240,7 +240,7 @@ public class ColocationGroup implements Message {
         if (assignments == null)
             return this;
 
-        /** Protects {@link #received()}. */
+        // Protects afterReceive(): assignments must not be marshaled yet.
         assert marshalledAssignments == null : "Marshalled assignments are already set.";
 
         List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
@@ -351,7 +351,7 @@ public class ColocationGroup implements Message {
     }
 
     /** Properly unwraps colocation group as {@link Message} after receiving from another node. */
-    public void received() {
+    public void afterReceive() {
         /** {@link #assignments} are set in constructors or are updated when {@link #marshalledAssignments} is {@code null}. */
         if (marshalledAssignments == null || assignments != null)
             return;
