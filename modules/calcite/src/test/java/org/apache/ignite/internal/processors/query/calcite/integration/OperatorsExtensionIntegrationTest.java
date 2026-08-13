@@ -209,7 +209,6 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .returns(1L)
             .check();
 
-
         assertQuery("SELECT COUNT(*) FROM ("
             + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < ?)")
             .withParams(3)
