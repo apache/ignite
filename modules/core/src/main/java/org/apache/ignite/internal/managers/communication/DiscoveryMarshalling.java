@@ -24,8 +24,13 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Marshalling of the discovery transport. It uses the JDK marshaller, because a discovery message is marshalled on
- * a discovery thread, where waiting for a cluster-wide type registration would never finish.
+ * Marshalling of the discovery transport. It uses the JDK marshaller, which asks for no type registration at all.
+ * <p>
+ * A discovery message is marshalled by a thread that has to move discovery forward itself: the ring worker writing
+ * it to the socket, a custom event listener marshalling inline, or a node that is not in the ring yet. The binary
+ * marshaller would make such a thread wait for a cluster-wide round - a class name mapping, or a new metadata
+ * version - and only a discovery thread delivers the answer, so the wait never ends and the ring stops with it.
+ * A type the cluster has already accepted marshals fine, but a message cannot rely on that.
  */
 public final class DiscoveryMarshalling {
     /** */

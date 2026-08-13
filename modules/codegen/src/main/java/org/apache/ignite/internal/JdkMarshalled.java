@@ -25,7 +25,8 @@ import java.lang.annotation.Target;
 /**
  * Marshals the message with the JDK marshaller of the local node, whatever marshaller the transport uses. Put it on a
  * message that travels both transports: a {@link Marshalled} field caches its wire form, and only the JDK marshaller
- * is read by both. It also asks no cluster-wide type registration, which never completes on a discovery thread.
+ * is read by both. It also asks for no cluster-wide type registration, which a discovery thread cannot wait
+ * for: the answer comes back through discovery, which that very thread has to move forward.
  *
  * @see Marshalled
  */
