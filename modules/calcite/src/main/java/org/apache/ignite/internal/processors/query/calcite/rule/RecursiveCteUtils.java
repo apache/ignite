@@ -47,12 +47,12 @@ final class RecursiveCteUtils {
     static int referenceCount(RelNode rel, String stateId) {
         rel = original(rel);
 
-        int count = isRecursiveScan(rel, stateId) ? 1 : 0;
+        int cnt = isRecursiveScan(rel, stateId) ? 1 : 0;
 
         for (RelNode input : rel.getInputs())
-            count += referenceCount(input, stateId);
+            cnt += referenceCount(input, stateId);
 
-        return count;
+        return cnt;
     }
 
     /** Materializes maximal iteration subtrees that do not depend on the current delta. */
