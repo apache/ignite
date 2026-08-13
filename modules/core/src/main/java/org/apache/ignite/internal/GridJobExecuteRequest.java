@@ -28,6 +28,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -102,35 +103,27 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     @Order(10)
     String cpSpi;
 
-    /** Left unset for a continuous task: such a job requests its siblings from the task node instead. */
-    @Marshalled("siblingsBytes")
-    Collection<ComputeJobSibling> siblings;
-
     /** */
     @Order(11)
-    byte[] siblingsBytes;
+    @Nullable IgniteUuid[] siblingJobsIds;
 
     /** Transient since needs to hold local creation time. */
     private final long createTime = U.currentTimeMillis();
 
     /** */
     @Order(12)
-    boolean dynamicSiblings;
-
-    /** */
-    @Order(13)
     boolean forceLocDep;
 
     /** */
-    @Order(14)
+    @Order(13)
     boolean sesFullSup;
 
     /** */
-    @Order(15)
+    @Order(14)
     boolean internal;
 
     /** */
-    @Order(16)
+    @Order(15)
     Collection<UUID> top;
 
     /** */
@@ -138,23 +131,23 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     IgnitePredicate<ClusterNode> topPred;
 
     /** */
-    @Order(17)
+    @Order(16)
     byte[] topPredBytes;
 
     /** */
-    @Order(18)
+    @Order(17)
     int[] cacheIds;
 
     /** */
-    @Order(19)
+    @Order(18)
     int part;
 
     /** */
-    @Order(20)
+    @Order(19)
     AffinityTopologyVersion topVer;
 
     /** */
-    @Order(21)
+    @Order(20)
     String execName;
 
     /**
@@ -232,10 +225,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.top = top;
         this.topVer = topVer;
         this.topPred = topPred;
-        this.siblings = dynamicSiblings ? null : siblings;
         this.sesAttrs = sesAttrs;
         this.jobAttrs = jobAttrs;
-        this.dynamicSiblings = dynamicSiblings;
         this.forceLocDep = forceLocDep;
         this.sesFullSup = sesFullSup;
         this.internal = internal;
@@ -245,6 +236,9 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
         this.execName = execName;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
+
+        if (!dynamicSiblings && !F.isEmpty(siblings))
+            siblingJobsIds = siblings.stream().map(ComputeJobSibling::getJobId).toArray(IgniteUuid[]::new);
     }
 
     /**
@@ -311,10 +305,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnma
     }
 
     /**
-     * @return Job siblings.
+     * @return Siblings jobs ids.
      */
-    public Collection<ComputeJobSibling> getSiblings() {
-        return siblings;
+    public @Nullable IgniteUuid[] siblingJobsIds() {
+        return siblingJobsIds;
     }
 
     /**
