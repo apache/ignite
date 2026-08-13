@@ -146,15 +146,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest imp
         int taskNameHash,
         boolean storeWriteThrough,
         boolean retVal,
-        Collection<PartitionUpdateCountersMessage> updCntrs) {
-        super(tx,
-            timeout,
-            null,
-            dhtWrites,
-            txNodes,
-            retVal,
-            last,
-            onePhaseCommit);
+        Collection<PartitionUpdateCountersMessage> updCntrs)
+    {
+        super(tx, timeout, null, dhtWrites, txNodes, retVal, last, onePhaseCommit);
 
         assert futId != null;
         assert miniId != 0;

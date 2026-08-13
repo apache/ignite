@@ -510,27 +510,21 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         MiniFuture fut,
         long timeout,
         Collection<IgniteTxEntry> reads,
-        Collection<IgniteTxEntry> writes) {
+        Collection<IgniteTxEntry> writes
+    ) {
         GridDistributedTxMapping m = fut.mapping();
 
-        GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
-            futId,
-            tx.topologyVersion(),
-            tx,
-            timeout,
+        GridNearTxPrepareRequest req = createPrepareRequest(
+            txNodes,
+            m,
             reads,
             writes,
-            m.hasNearCacheEntries(),
-            txNodes,
+            timeout,
             m.last(),
             tx.onePhaseCommit(),
-            tx.needReturnValue() && tx.implicit(),
-            tx.implicitSingle(),
-            m.explicitLock(),
-            tx.taskNameHash(),
             m.clientFirst(),
-            txNodes.size() == 1,
-            tx.txState().recovery());
+            txNodes.size() == 1
+        );
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)

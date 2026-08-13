@@ -507,24 +507,17 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             long timeout = tx.remainingTime();
 
             if (timeout != -1) {
-                GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
-                    futId,
-                    tx.topologyVersion(),
-                    tx,
-                    timeout,
+                GridNearTxPrepareRequest req = createPrepareRequest(
+                    txMapping.transactionNodes(),
+                    m,
                     null,
                     m.writes(),
-                    m.hasNearCacheEntries(),
-                    txMapping.transactionNodes(),
+                    timeout,
                     m.last(),
                     tx.onePhaseCommit(),
-                    tx.needReturnValue() && tx.implicit(),
-                    tx.implicitSingle(),
-                    m.explicitLock(),
-                    tx.taskNameHash(),
                     m.clientFirst(),
-                    txMapping.transactionNodes().size() == 1,
-                    tx.txState().recovery());
+                    txMapping.transactionNodes().size() == 1
+                );
 
                 for (IgniteTxEntry txEntry : m.entries()) {
                     if (txEntry.op() == TRANSFORM)
@@ -556,7 +549,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         m.hasNearCacheEntries() ? cctx.tm().txHandler().prepareNearTxLocal(tx, req)
                         : cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
-                    prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+                    prepFut.listen(new CI1<>() {
                         @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
                             try {
                                 fut.onResult(prepFut.get());
