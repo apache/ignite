@@ -126,7 +126,7 @@ jobs:
 
       - name: Check javadocs.
         run : |
-          ./mvnw -DskipTests install -pl modules/commons,modules/tools,modules/codegen,modules/core,modules/binary -B -V && ./mvnw initialize -Pjavadoc -B -V
+          ./mvnw -DskipTests install -pl modules/commons,modules/tools,modules/codegen,modules/core,modules/binary/api,modules/core,modules/binary/impl,modules/core,modules/unsafe,modules/thin-client/api,modules/thin-client/impl,modules/nio,modules/indexing  -B -V && ./mvnw initialize -Pjavadoc -B -V
 
       - name: Documentation code snippets compilation check
         run: |
