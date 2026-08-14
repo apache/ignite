@@ -21,14 +21,12 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** Continous routine local info Discovery data.  */
-@UseBinaryMarshaller
 public final class ContinousRoutineLocalInfo implements Message, GridContinuousProcessor.RoutineInfo {
     /** Source node id. */
     @Order(0)
