@@ -212,7 +212,17 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes
     ) {
-        GridNearTxPrepareRequest req = createPrepareRequest(txNodes, m, reads, writes, timeout, true, tx.onePhaseCommit(), false, true);
+        GridNearTxPrepareRequest req = createPrepareRequest(
+            txNodes,
+            m,
+            reads,
+            writes,
+            timeout,
+            true,
+            tx.onePhaseCommit(),
+            false,
+            true
+        );
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)

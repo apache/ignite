@@ -33,13 +33,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest implements Message {
+public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final int NEAR_FLAG_MASK = 0x01;
 
