@@ -103,8 +103,6 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
         String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
 
-        info("PVD:: " + plan);
-
         assertTrue(plan, plan.contains("IgniteRepeatUnion"));
         assertTrue(plan, plan.contains("IgniteRecursiveTableSpool"));
     }
@@ -138,6 +136,39 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             "SELECT n FROM numbers")
             .returns(1)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursiveTermWithMultipleSelfReferencesIsRejected() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT left_numbers.n + 1 " +
+                "FROM numbers left_numbers " +
+                "JOIN numbers right_numbers ON left_numbers.n = right_numbers.n " +
+                "WHERE left_numbers.n < 3" +
+            ") " +
+            "SELECT n FROM numbers",
+            IgniteSQLException.class,
+            "the recursive term must contain no more than one self-reference"
+        );
+    }
+
+    /** */
+    @Test
+    public void testRecursiveCteWithDistinctUnionIsRejected() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION " +
+                "SELECT n + 1 FROM numbers WHERE n < 3" +
+            ") " +
+            "SELECT n FROM numbers",
+            IgniteSQLException.class,
+            "only UNION ALL is supported"
+        );
     }
 
     /** */
