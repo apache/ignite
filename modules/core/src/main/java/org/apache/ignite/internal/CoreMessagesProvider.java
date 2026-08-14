@@ -385,6 +385,8 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         // [300 - 500] - CalciteMessageFactory.
         // [-4..-22, -30..-35, -54..-57] - SQL
 
+        // [1000 - 1999]: Reserved for custom user plugins.
+
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
         msgIdx = 5000;
         register(CompressedMessage.class);
