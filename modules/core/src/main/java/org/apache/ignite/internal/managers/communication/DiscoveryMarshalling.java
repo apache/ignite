@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * A type the cluster has already accepted marshals fine, but a message cannot rely on that.
  */
 public final class DiscoveryMarshalling {
-    /** Not to be instantiated. */
+    /** Guards against instantiation: the class is a set of static entry points, and this says so. */
     private DiscoveryMarshalling() {
         // No-op.
     }

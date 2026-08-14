@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * writes a type once and refers to it by id afterwards, so a type unknown to the cluster has to be registered first.
  */
 public final class CommunicationMarshalling {
-    /** Not to be instantiated. */
+    /** Guards against instantiation: the class is a set of static entry points, and this says so. */
     private CommunicationMarshalling() {
         // No-op.
     }

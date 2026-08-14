@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * message's direct type in {@code kctx.messageFactory()} and delegates to it, or skips when none is registered.
  */
 public final class MessageMarshalling {
-    /** Not to be instantiated. */
+    /** Guards against instantiation: the class is a set of static entry points, and this says so. */
     private MessageMarshalling() {
         // No-op.
     }
