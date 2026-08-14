@@ -65,7 +65,7 @@ public class DiscoveryDataBag {
         <T extends Message> T commonData();
 
         /**
-         * @param <T> Data type.
+         * @param <T> Message type.
          * @return Discovery data that is mapped to the particular cluster node and sent to the joining node.
          */
         <T extends Message> Map<UUID, T> nodeSpecificData();
@@ -289,7 +289,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param cmnData Cmn data.
+     * @param cmnData Common data.
      */
     public void commonData(Map<Integer, Message> cmnData) {
         commonData.putAll(cmnData);
