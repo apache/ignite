@@ -120,7 +120,7 @@ public class DiscoveryDataBag {
         /** {@inheritDoc} */
         @Override @Nullable public <T extends Message> T commonData() {
             if (commonData != null)
-                commonData.get(cmpId);
+                return (T)commonData.get(cmpId);
 
             return null;
         }
