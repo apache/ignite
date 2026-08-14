@@ -299,7 +299,6 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
-import org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -399,7 +398,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(CacheVersionedValue.class);
         register(KeyedVersionedValue.class);
         register(WALPointer.class);
-        register(SerializableDataBagItemWrapper.class);
+        msgIdx++; // Former 'SerializableDataBagItemWrapper'
         register(GridTopicMessage.class);
         register(GridIntList.class);
 
