@@ -30,6 +30,11 @@ import org.jetbrains.annotations.Nullable;
  * message's direct type in {@code kctx.messageFactory()} and delegates to it, or skips when none is registered.
  */
 public final class MessageMarshalling {
+    /** Not to be instantiated. */
+    private MessageMarshalling() {
+        // No-op.
+    }
+
     /**
      * Marshals {@code msg} through its registered marshaller; a no-op when none is registered.
      *

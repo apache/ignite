@@ -29,6 +29,11 @@ import org.jetbrains.annotations.Nullable;
  * writes a type once and refers to it by id afterwards, so a type unknown to the cluster has to be registered first.
  */
 public final class CommunicationMarshalling {
+    /** Not to be instantiated. */
+    private CommunicationMarshalling() {
+        // No-op.
+    }
+
     /** */
     public static <M extends Message> void marshal(M msg,
         GridKernalContext kctx,

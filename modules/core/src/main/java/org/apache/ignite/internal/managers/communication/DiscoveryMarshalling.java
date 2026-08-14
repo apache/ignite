@@ -33,6 +33,11 @@ import org.jetbrains.annotations.Nullable;
  * A type the cluster has already accepted marshals fine, but a message cannot rely on that.
  */
 public final class DiscoveryMarshalling {
+    /** Not to be instantiated. */
+    private DiscoveryMarshalling() {
+        // No-op.
+    }
+
     /** */
     public static <M extends Message> void marshal(M msg,
         GridKernalContext kctx,
