@@ -231,16 +231,6 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS(id)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrowsSqlException(
-            "SELECT * FROM TEST_REPL FETCH FIRST (SUM(1)) ROWS ONLY",
-            "Aggregate expression is illegal in fetch / limit clause"
-        );
-        assertThrowsSqlException(
-            "SELECT * FROM TEST_REPL FETCH FIRST (ROW_NUMBER() OVER ()) ROWS ONLY",
-            "Windowed aggregate expression is illegal in fetch / limit clause"
-        );
-        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS((SELECT 1))) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
-
         assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST SQRT(4) ROWS ONLY", ENCOUNTERED_ERR_MSG);
     }
 

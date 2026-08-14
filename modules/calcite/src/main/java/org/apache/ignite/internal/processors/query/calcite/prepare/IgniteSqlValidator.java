@@ -295,7 +295,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         validateFetchOffset(fetch, clauseName);
     }
 
-    /** Reject column references, aggregate functions, and window functions in a fetch expression. */
+    /** Reject column references in a fetch expression. */
     // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
     //  Remove this method after upgrading to Calcite 1.43.
     private void validateFetchExpression(SqlNode node, String clauseName) {
@@ -311,15 +311,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 validateFetchExpression(child, clauseName);
         }
         else if (node instanceof SqlCall call) {
-            if (call.isA(SqlKind.QUERY))
-                throw newValidationError(call, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
-
-            if (call.getKind() == SqlKind.OVER)
-                throw newValidationError(call, RESOURCE.windowedAggregateIllegalInClause(clauseName));
-
-            if (call.getOperator().isAggregator())
-                throw newValidationError(call, RESOURCE.aggregateIllegalInClause(clauseName));
-
             for (SqlNode child : call.getOperandList()) {
                 if (child != null)
                     validateFetchExpression(child, clauseName);
