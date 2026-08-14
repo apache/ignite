@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.Assert;
@@ -84,8 +83,6 @@ public class PlanExecutionTest extends AbstractPlannerTest {
         super.beforeTest();
 
         CalciteMessageFactory msgFactory = new CalciteMessageFactory();
-
-        msgFactory.init(Marshallers.jdk(), Marshallers.jdk());
 
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{msgFactory});

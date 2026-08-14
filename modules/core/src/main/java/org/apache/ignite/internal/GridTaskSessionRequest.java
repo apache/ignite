@@ -28,7 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Task session request.
  */
-@UseBinaryMarshaller
 public class GridTaskSessionRequest implements Message {
     /** Task session ID. */
     @Order(0)

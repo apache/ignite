@@ -15,17 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.managers.AbstractMessageSerializationTest;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/** */
-public class CalciteCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
-    /** {@inheritDoc} */
-    @Override protected MessageFactoryProvider messageFactory() {
-        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
-
-        return msgFactory;
-    }
+/**
+ * Marshals the message with the JDK marshaller of the local node, whatever marshaller the transport uses. Put it on a
+ * message that travels both transports: a {@link Marshalled} field caches its wire form, and only the JDK marshaller
+ * is read by both. It also asks for no cluster-wide type registration, which a discovery thread cannot wait
+ * for: the answer comes back through discovery, which that very thread has to move forward.
+ *
+ * @see Marshalled
+ */
+@Retention(RetentionPolicy.CLASS)
+@Target(ElementType.TYPE)
+public @interface JdkMarshalled {
 }
