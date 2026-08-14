@@ -1406,7 +1406,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         ses.executorName());
 
                     if (loc)
-                        ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
+                        ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req, ses.getJobSiblings());
                     else {
                         byte plc;
 
