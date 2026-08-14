@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -28,6 +31,9 @@ import org.junit.Test;
  * Integration tests for recursive common table expressions.
  */
 public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Number of invocations of a non-deterministic function. */
+    private static final AtomicInteger nonDeterministicCallCnt = new AtomicInteger();
+
     /** Global memory quota for SQL queries. */
     private static final long GLOBAL_MEMORY_QUOTA = 10_000_000L;
 
@@ -159,6 +165,42 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(2, 11)
             .returns(3, 12)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testIndependentNonDeterministicSubtreeIsEvaluatedForEveryIteration() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("recursive_functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(RecursiveFunctions.class));
+
+        nonDeterministicCallCnt.set(0);
+
+        String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
+            "SELECT 1, 0 " +
+            "UNION ALL " +
+            "SELECT n + 1, v.marker " +
+            "FROM numbers " +
+            "CROSS JOIN (SELECT nextRecursiveValue() AS marker) v " +
+            "WHERE n < 4" +
+            ") " +
+            "SELECT n, marker FROM numbers ORDER BY n";
+
+        assertQuery(qry)
+            .returns(1, 0)
+            .returns(2, 1)
+            .returns(3, 2)
+            .returns(4, 3)
+            .check();
+    }
+
+    /** SQL functions used by recursive CTE tests. */
+    public static class RecursiveFunctions {
+        /** Returns a different value on every invocation. */
+        @QuerySqlFunction(deterministic = false)
+        public static int nextRecursiveValue() {
+            return nonDeterministicCallCnt.incrementAndGet();
+        }
     }
 
     /** */

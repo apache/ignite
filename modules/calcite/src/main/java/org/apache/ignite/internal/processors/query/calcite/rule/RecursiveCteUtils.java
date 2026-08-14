@@ -21,10 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
+import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.schema.TransientTable;
+import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalRecursiveStaticSpool;
 
@@ -76,13 +85,42 @@ final class RecursiveCteUtils {
         List<RelNode> newInputs = new ArrayList<>(inputs.size());
 
         for (RelNode input : inputs) {
-            if (referenceCount(input, table) == 0)
+            if (referenceCount(input, table) == 0 && isInvariant(input))
                 newInputs.add(new IgniteLogicalRecursiveStaticSpool(input));
             else
                 newInputs.add(materializeStaticInputs(input, table));
         }
 
         return rel.copy(rel.getTraitSet(), newInputs);
+    }
+
+    /** Returns whether the subtree produces the same result on every recursive iteration. */
+    private static boolean isInvariant(RelNode rel) {
+        rel = original(rel);
+
+        if (!RelOptUtil.getVariablesUsed(rel).isEmpty())
+            return false;
+
+        DeterminismChecker checker = new DeterminismChecker();
+
+        rel.accept(checker);
+
+        if (!checker.deterministic)
+            return false;
+
+        if (rel instanceof Aggregate) {
+            for (AggregateCall call : ((Aggregate)rel).getAggCallList()) {
+                if (!call.getAggregation().isDeterministic())
+                    return false;
+            }
+        }
+
+        for (RelNode input : rel.getInputs()) {
+            if (!isInvariant(input))
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -114,5 +152,44 @@ final class RecursiveCteUtils {
     private static boolean isRecursiveScan(RelNode rel, RelOptTable table) {
         return rel instanceof TableScan
             && sameTransientTable(((TableScan)rel).getTable(), table);
+    }
+
+    /** Finds non-deterministic expressions in one relational node. */
+    private static class DeterminismChecker extends RexShuttle {
+        /** Whether all visited expressions are deterministic. */
+        private boolean deterministic = true;
+
+        /** {@inheritDoc} */
+        @Override public RexNode visitCall(RexCall call) {
+            if (!call.getOperator().isDeterministic() || isNonDeterministicUdf(call)) {
+                deterministic = false;
+
+                return call;
+            }
+
+            return super.visitCall(call);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RexNode visitSubQuery(RexSubQuery subQuery) {
+            if (!isInvariant(subQuery.rel)) {
+                deterministic = false;
+
+                return subQuery;
+            }
+
+            return super.visitSubQuery(subQuery);
+        }
+
+        /** Returns whether the call targets an Ignite UDF declared as non-deterministic. */
+        private static boolean isNonDeterministicUdf(RexCall call) {
+            if (!(call.getOperator() instanceof SqlUserDefinedFunction))
+                return false;
+
+            Object function = ((SqlUserDefinedFunction)call.getOperator()).getFunction();
+
+            return function instanceof IgniteScalarFunction
+                && !((IgniteScalarFunction)function).isDeterministic();
+        }
     }
 }
