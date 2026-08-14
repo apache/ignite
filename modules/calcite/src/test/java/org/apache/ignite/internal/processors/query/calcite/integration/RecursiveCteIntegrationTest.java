@@ -17,12 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.junit.Test;
 
 /**
  * Integration tests for recursive common table expressions.
  */
 public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Global memory quota for SQL queries. */
+    private static final long GLOBAL_MEMORY_QUOTA = 10_000_000L;
+
+    /** Query memory quota deliberately smaller than the largest recursive delta in the test below. */
+    private static final long QUERY_MEMORY_QUOTA = 1_000_000L;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
+            new SqlConfiguration().setQueryEnginesConfiguration(
+                new CalciteQueryEngineConfiguration()
+                    .setGlobalMemoryQuota(GLOBAL_MEMORY_QUOTA)
+                    .setQueryMemoryQuota(QUERY_MEMORY_QUOTA)));
+    }
+
     /** */
     @Test
     public void testEmployeeHierarchy() {
@@ -81,6 +100,24 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertTrue(plan, plan.contains("IgniteRepeatUnion"));
         assertTrue(plan, plan.contains("IgniteRecursiveTableSpool"));
+    }
+
+    /** */
+    @Test
+    public void testRecursiveDeltaIsAccountedForMemoryQuota() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 " +
+                "FROM numbers " +
+                "CROSS JOIN (VALUES (1), (2)) AS fanout(x) " +
+                "WHERE n < 19" +
+                ") " +
+                "SELECT COUNT(*) FROM numbers",
+            IgniteSQLException.class,
+            "Query quota exceeded"
+        );
     }
 
     /** */

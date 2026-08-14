@@ -1064,7 +1064,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** Returns the state shared by the repeat union, spool and scan of one recursive CTE. */
     private RecursiveCteState<Row> recursiveState(String stateId) {
-        return recursiveStates.computeIfAbsent(stateId, key -> new RecursiveCteState<>());
+        return recursiveStates.computeIfAbsent(stateId, key -> new RecursiveCteState<>(ctx));
     }
 
     /** */

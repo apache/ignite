@@ -142,6 +142,13 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         state.clear();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void closeInternal() {
+        state.clear();
+
+        super.closeInternal();
+    }
+
     /** */
     private Node<Row> source() {
         return sources().get(curSrc);
@@ -150,6 +157,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** */
     private void finish() throws Exception {
         waiting = -1;
+        state.clear();
         downstream().end();
     }
 }
