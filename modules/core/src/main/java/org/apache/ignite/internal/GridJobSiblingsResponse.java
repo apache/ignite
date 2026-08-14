@@ -19,22 +19,19 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import org.apache.ignite.compute.ComputeJobSibling;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job siblings response.
  */
-@UseBinaryMarshaller
 public class GridJobSiblingsResponse implements Message {
     /** */
-    @Marshalled("siblingsBytes")
-    @Nullable Collection<ComputeJobSibling> siblings;
-
-    /** */
     @Order(0)
-    byte[] siblingsBytes;
+    public @Nullable IgniteUuid[] siblingJobsIds;
 
     /**
      * Empty constructor.
@@ -47,14 +44,10 @@ public class GridJobSiblingsResponse implements Message {
      * @param siblings Siblings.
      */
     public GridJobSiblingsResponse(@Nullable Collection<ComputeJobSibling> siblings) {
-        this.siblings = siblings;
-    }
+        if (F.isEmpty(siblings))
+            return;
 
-    /**
-     * @return Job siblings.
-     */
-    public @Nullable Collection<ComputeJobSibling> jobSiblings() {
-        return siblings;
+        siblingJobsIds = siblings.stream().map(ComputeJobSibling::getJobId).toArray(IgniteUuid[]::new);
     }
 
     /** {@inheritDoc} */

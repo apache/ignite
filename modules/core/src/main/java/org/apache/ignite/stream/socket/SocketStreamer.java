@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.nio.GridBufferedParser;
 import org.apache.ignite.internal.util.nio.GridDelimitedParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
@@ -228,7 +227,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
          * @param igniteInstanceName Ignite instance name.
          */
         private DefaultConverter(@Nullable String igniteInstanceName) {
-            marsh = Marshallers.jdk(((IgniteKernal)ignite).context().marshallerContext().classNameFilter());
+            marsh = Marshallers.jdk();
 
             marsh.nodeName(igniteInstanceName);
         }

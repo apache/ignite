@@ -33,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.MultiDataCenterSplitTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiCoordinatorChangeTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryUnresolvedHostTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientTopologyGapTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryConcurrentStartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryDeadNodeAddressResolvingTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderFailureTest;
@@ -74,6 +75,7 @@ import org.junit.runners.Suite;
     LongClientConnectToClusterTest.class,
     TcpClientDiscoverySpiCoordinatorChangeTest.class,
     TcpClientDiscoveryUnresolvedHostTest.class,
+    TcpDiscoveryClientTopologyGapTest.class,
     TcpDiscoveryNodeConsistentIdSelfTest.class,
     TcpDiscoveryNodeConfigConsistentIdSelfTest.class,
     TcpDiscoveryRestartTest.class,
@@ -88,7 +90,13 @@ import org.junit.runners.Suite;
     TcpDiscoverySslSelfTest.class,
     TcpDiscoverySslTrustedUntrustedTest.class,
     IgniteDiscoveryCacheReuseSelfTest.class,
-    DiscoveryUnmarshalVulnerabilityTest.class,
+    DiscoveryUnmarshalVulnerabilityTest.NoListsTest.class,
+    DiscoveryUnmarshalVulnerabilityTest.WhiteListIncludedTest.class,
+    DiscoveryUnmarshalVulnerabilityTest.WhiteListExcludedTest.class,
+    DiscoveryUnmarshalVulnerabilityTest.BlackListIncludedTest.class,
+    DiscoveryUnmarshalVulnerabilityTest.BlackListExcludedTest.class,
+    DiscoveryUnmarshalVulnerabilityTest.BothListIncludedTest.class,
+    DiscoveryUnmarshalVulnerabilityTest.ExploitDirectlyTest.class,
     FilterDataForClientNodeDiscoveryTest.class,
     IgniteMetricsOverflowTest.class,
     DiscoverySpiDataExchangeTest.class,

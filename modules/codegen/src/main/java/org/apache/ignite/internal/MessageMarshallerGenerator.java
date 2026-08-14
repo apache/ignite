@@ -40,6 +40,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
@@ -51,6 +52,7 @@ import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.SELF_MARSHALLING_MESSAGE_INTERFACE;
 
 /**
  * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
@@ -96,6 +98,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private final TypeMirror nonMarshallableType;
 
     /** */
+    private final TypeMirror selfMarshallingMsgType;
+
+    /** */
     private final TypeMirror cacheGrpIdMsgType;
 
     /** */
@@ -106,6 +111,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** */
     private boolean marshallable;
+
+    /** Whether the message marshals fields of its own, so the generated methods call its step. */
+    private boolean selfMarshalling;
 
     /** */
     private boolean hasMarshalled;
@@ -133,6 +141,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+        selfMarshallingMsgType = type(SELF_MARSHALLING_MESSAGE_INTERFACE);
         cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
         mapType = type(Map.class.getName());
         colType = type(Collection.class.getName());
@@ -160,6 +169,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         }
 
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
+        selfMarshalling = selfMarshallingMsgType != null && assignableFrom(type.asType(), selfMarshallingMsgType);
         hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
         generateMarshalMethod(fields);
@@ -233,6 +243,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             if (needsCtx(orderedFields))
                 appendBlock(body, List.of(ctxResolutionLine()));
 
+            if (selfMarshalling)
+                appendBlock(body, List.of(indentedLine("msg.selfMarshal();")));
+
             appendMarshalledFieldsPrepare(body);
             appendMarshalledPrepare(body);
 
@@ -304,6 +317,9 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendMarshalledElementsFinish(body);
             appendMarshalledMapFinish(body);
             appendMarshalledElementBlobsFinish(body);
+
+            if (selfMarshalling)
+                appendBlock(body, List.of(indentedLine("msg.selfUnmarshal();")));
 
             prependMsgFactoryResolution(body);
         });
@@ -1141,18 +1157,94 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             return null;
         }
 
+        MarshalledKind res;
+
         if (map)
-            return MarshalledKind.MAP;
+            res = MarshalledKind.MAP;
+        else {
+            TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
 
-        TypeMirror wire = requireEnclosed(enclosed, ann.value(), "@Marshalled").asType();
-
-        if (wire.getKind() == TypeKind.ARRAY) {
-            return ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
-                ? MarshalledKind.BLOB
-                : MarshalledKind.ELEMENTS;
+            if (wire.getKind() == TypeKind.ARRAY) {
+                res = ((ArrayType)wire).getComponentType().getKind() == TypeKind.BYTE
+                    ? MarshalledKind.BLOB
+                    : MarshalledKind.ELEMENTS;
+            }
+            else
+                res = MarshalledKind.ELEMENT_BLOBS;
         }
 
-        return MarshalledKind.ELEMENT_BLOBS;
+        /*
+         * Ensures that field annotated with {@link Marshalled} doesn't perform {@code Message} -> {@code byte[]} transformation
+         * which escapes {@link Order} and other rules implemented on top of communication {@code MessageWriter, MessageReader} logic.
+         */
+        if (messageToBytesTransformation(field.asType(), field, ann)) {
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                "Message must be written by dedicated message serializers. " +
+                "Remove @" + Marshalled.class.getSimpleName() + " annotation and remove companion field " +
+                "and set @" + Order.class.getSimpleName(), field);
+        }
+
+        return res;
+    }
+
+    /**
+     * Recursively checks no {@code Message} -> {@code byte[]} transformation.
+     * @return {@code True} in case error transformation found.
+     */
+    private boolean messageToBytesTransformation(TypeMirror type, VariableElement field, Marshalled ann) {
+        if (assignableFrom(type, msgType))
+            return true;
+
+        if (isCollection(type)) {
+            DeclaredType colType = (DeclaredType)type;
+
+            List<? extends TypeMirror> typeArgs = colType.getTypeArguments();
+
+            if (typeArgs.size() != 1) {
+                env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw collection not supported.", field);
+
+                return false;
+            }
+
+            return messageToBytesTransformation(typeArgs.get(0), field, ann);
+        }
+
+        if (type.getKind() == TypeKind.ARRAY)
+            return messageToBytesTransformation(((ArrayType)type).getComponentType(), field, ann);
+
+        if (isMap(type) && !ann.value().isEmpty()) {
+            DeclaredType mapType = (DeclaredType)type;
+
+            List<? extends TypeMirror> typeArgs = mapType.getTypeArguments();
+
+            if (typeArgs.size() != 2) {
+                env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw Map not supported.", field);
+
+                return false;
+            }
+
+            TypeMirror keyType = typeArgs.get(0);
+            TypeMirror valType = typeArgs.get(1);
+
+            return assignableFrom(keyType, msgType)
+                || assignableFrom(valType, msgType)
+                || messageToBytesTransformation(keyType, field, ann)
+                || messageToBytesTransformation(valType, field, ann);
+        }
+
+        if (type instanceof WildcardType) {
+            WildcardType wt = (WildcardType)type;
+
+            if (wt.getExtendsBound() != null)
+                return messageToBytesTransformation(wt.getExtendsBound(), field, ann);
+
+            if (wt.getSuperBound() != null)
+                return messageToBytesTransformation(wt.getSuperBound(), field, ann);
+
+            env.getMessager().printMessage(Diagnostic.Kind.ERROR, "Raw types not supported.", field);
+        }
+
+        return false;
     }
 
     /** Returns the enclosed field named {@code name}, or throws if absent. */

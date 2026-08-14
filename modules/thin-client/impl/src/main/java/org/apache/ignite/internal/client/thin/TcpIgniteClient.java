@@ -76,12 +76,11 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -849,12 +848,15 @@ public class TcpIgniteClient implements IgniteClient {
         /** System types. */
         private final Collection<String> sysTypes = new HashSet<>();
 
+        /** JDK marshaller. */
+        private final JdkMarshaller jdkMarsh = Marshallers.jdk();
+
         /**
          * Default constructor.
          */
         public ClientMarshallerContext() {
             try {
-                MarshallerUtils.processSystemClasses(CommonUtils.gridClassLoader(), sysTypes::add);
+                MarshallerUtils.processSystemClasses(sysTypes::add);
             }
             catch (IOException e) {
                 throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -920,8 +922,7 @@ public class TcpIgniteClient implements IgniteClient {
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 
-            return CommonUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr, null,
-                Marshallers.USE_CACHE.get());
+            return ClassLoaderUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr);
         }
 
         /** {@inheritDoc} */
@@ -966,13 +967,8 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
-        @Override public IgnitePredicate<String> classNameFilter() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return Marshallers.jdk();
+            return jdkMarsh;
         }
 
         /**

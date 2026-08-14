@@ -1890,15 +1890,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param exp Expected.
      * @param act Actual.
      */
-    protected static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
+    public static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
         if (exp.size() != act.size())
             fail("Maps are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 
         for (Map.Entry<K, V> e : exp.entrySet()) {
             if (!act.containsKey(e.getKey()))
                 fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
-            else if (!Objects.equals(e.getValue(), act.get(e.getKey())))
-                fail("Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
+
+            assertEqualsArraysAware(
+                "Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act,
+                e.getValue(),
+                act.get(e.getKey())
+            );
         }
     }
 

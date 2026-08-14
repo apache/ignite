@@ -88,6 +88,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
@@ -708,7 +709,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryIoSession ses = createSession(sock);
 
-                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
+                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, spi.localNodeFeatures());
 
                 req.client(true);
                 req.dcId(locNode.dataCenterId());
@@ -716,6 +717,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, ackTimeout0);
+
+                spi.validateRemoteFeatures(res.nodeFeatures());
 
                 // Convert the addresses once.
                 Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();
@@ -761,6 +764,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         discoveryData = spi.collectExchangeData(dataPacket);
                     }
 
+                    // Set initial metrics for node validation.
+                    // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28965
+                    node.setMetrics(spi.metricsProvider.metrics());
+
                     msg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
                 }
                 else
@@ -776,7 +783,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
                         ", rmtNodeId=" + rmtNodeId + ']');
 
-                return new T2<>(new SocketStream(sock), spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)));
+                return new T2<>(new SocketStream(sock, ses), spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)));
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
@@ -790,6 +797,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                     errs = new ArrayList<>();
 
                 errs.add(e);
+
+                if (e instanceof UnsupportedNodeVersionException unsupportedVerEx) {
+                    LT.error(log, e, "Failed to initialize a connection with the remote node. The remote node is running" +
+                        " components with an incompatible versions, so the nodes cannot agree on serialization protocol" +
+                        " [rmtAddr=" + addr + ", errMsg=" + unsupportedVerEx.getMessage() + ']');
+
+                    throw new IgniteSpiException("Failed to initialize a connection with the remote node. The remote node" +
+                        " is running components with an incompatible versions, so the nodes cannot agree on serialization" +
+                        " protocol [rmtAddr=" + addr + ", errMsg=" + unsupportedVerEx.getMessage() + ']', e);
+                }
 
                 if (X.hasCause(e, SSLException.class)) {
                     if (--sslConnectAttempts == 0)
@@ -847,7 +864,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     * Marshals credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
      * @throws IgniteSpiException If marshalling failed.
@@ -1162,7 +1179,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     + ":" + sockStream.sock.getPort());
 
                 try {
-                    TcpDiscoveryIoSession ses = createSession(sock);
+                    TcpDiscoveryIoSession ses = sockStream.session();
 
                     assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                         " KeepAlive " + sock.getKeepAlive() +
@@ -1573,7 +1590,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     sockStream = joinRes;
 
                     Socket sock = sockStream.socket();
-                    TcpDiscoveryIoSession ses = createSession(sock);
+                    TcpDiscoveryIoSession ses = sockStream.session();
 
                     if (isInterrupted())
                         throw new InterruptedException();
@@ -2710,13 +2727,22 @@ class ClientImpl extends TcpDiscoveryImpl {
         private final Socket sock;
 
         /**
-         * @param sock Socket.
-         * @throws IOException If failed to create stream.
+         * The only session ever used to read messages from the socket. Shared by all socket users
+         * ({@link Reconnector}, {@link SocketReader}), otherwise messages buffered by one session's
+         * read-ahead would be lost when another session takes the socket over.
          */
-        public SocketStream(Socket sock) throws IOException {
+        private final TcpDiscoveryIoSession ses;
+
+        /**
+         * @param sock Socket.
+         * @param ses Session bound to the socket.
+         */
+        SocketStream(Socket sock, TcpDiscoveryIoSession ses) {
             assert sock != null;
+            assert ses != null;
 
             this.sock = sock;
+            this.ses = ses;
         }
 
         /**
@@ -2724,7 +2750,13 @@ class ClientImpl extends TcpDiscoveryImpl {
          */
         Socket socket() {
             return sock;
+        }
 
+        /**
+         * @return Session bound to the socket.
+         */
+        TcpDiscoveryIoSession session() {
+            return ses;
         }
 
         /** {@inheritDoc} */
