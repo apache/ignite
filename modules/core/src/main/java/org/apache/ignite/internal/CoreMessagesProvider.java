@@ -33,6 +33,8 @@ import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
+import org.apache.ignite.internal.managers.discovery.IoTestDiscoveryAckMessage;
+import org.apache.ignite.internal.managers.discovery.IoTestDiscoveryMessage;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -383,6 +385,8 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         // [300 - 500] - CalciteMessageFactory.
         // [-4..-22, -30..-35, -54..-57] - SQL
 
+        // [1000 - 1999]: Reserved for custom user plugins.
+
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
         msgIdx = 5000;
         register(CompressedMessage.class);
@@ -499,6 +503,8 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(CacheJoinNodeDiscoveryData.class);
         register(CacheReconnectInfo.class);
         register(ClusterCacheGroupRecoveryData.class);
+        register(IoTestDiscoveryMessage.class);
+        register(IoTestDiscoveryAckMessage.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;

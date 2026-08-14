@@ -15,21 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.internal.management.io;
 
-import java.util.Map;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/**
- *
- */
-public class IgniteIoTestSendRandomBenchmark extends IgniteIoTestAbstractBenchmark {
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        ClusterNode node = targetNodes.get(nextRandom(targetNodes.size()));
-
-        ignite.context().io().ioTest().sendIoTest(node, null, false).get();
-
-        return true;
+/** */
+public class IoTestCommand extends CommandRegistryImpl {
+    /** */
+    public IoTestCommand() {
+        super(
+            new IoTestCommunicationCommand(),
+            new IoTestDiscoveryCommand()
+        );
     }
 }
