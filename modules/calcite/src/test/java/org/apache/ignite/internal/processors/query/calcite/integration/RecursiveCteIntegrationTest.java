@@ -121,6 +121,19 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testRecursiveTermWithoutSelfReferenceAfterOptimization() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+            "SELECT 1 " +
+            "UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE FALSE" +
+            ") " +
+            "SELECT n FROM numbers")
+            .returns(1)
+            .check();
+    }
+
+    /** */
     private void createEmployeeTable() {
         sql("CREATE TABLE employee (id INT PRIMARY KEY, manager_id INT, name VARCHAR)");
 

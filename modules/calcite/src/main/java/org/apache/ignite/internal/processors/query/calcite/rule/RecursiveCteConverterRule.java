@@ -57,8 +57,8 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
 
         String stateId = RecursiveCteUtils.stateId(table);
 
-        if (RecursiveCteUtils.referenceCount(rel.getIterativeRel(), stateId) != 1)
-            throw unsupported("the recursive term must contain exactly one self-reference");
+        if (RecursiveCteUtils.referenceCount(rel.getIterativeRel(), stateId) > 1)
+            throw unsupported("the recursive term must contain no more than one self-reference");
 
         validateSpool(rel.getSeedRel(), stateId, "seed");
         validateSpool(rel.getIterativeRel(), stateId, "recursive term");
