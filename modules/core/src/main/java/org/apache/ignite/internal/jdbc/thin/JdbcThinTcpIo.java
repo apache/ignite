@@ -273,7 +273,7 @@ public class JdbcThinTcpIo {
     private HandshakeResult handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null, null));
+        marsh.setContext(new MarshallerContextImpl(null));
 
         BinaryWriterEx writer = BinaryUtils.writer(U.binaryContext(marsh), BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE), null);
 

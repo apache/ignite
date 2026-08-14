@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.Serializable;
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class ContinuousRoutinesJoiningNodeDiscoveryData implements Serializable {
+public final class ContinuousRoutinesJoiningNodeDiscoveryData implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    List<ContinuousRoutineInfo> startedRoutines;
 
-    /** */
-    final List<ContinuousRoutineInfo> startedRoutines;
+    /** Empty constructor for serialization purposes. */
+    public ContinuousRoutinesJoiningNodeDiscoveryData() {
+        // No-op.
+    }
 
     /**
      * @param startedRoutines Routines registered on nodes, to be started in cluster.

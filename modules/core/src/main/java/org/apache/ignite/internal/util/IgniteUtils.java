@@ -181,7 +181,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -5459,34 +5458,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
-        return forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
-    }
-
-    /**
-     * Gets class for provided name. Accepts primitive types names.
-     *
-     * @param clsName Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class not found.
-     */
-    public static Class<?> forName(
-        String clsName,
-        @Nullable ClassLoader ldr,
-        @Nullable IgnitePredicate<String> clsFilter
-    ) throws ClassNotFoundException {
-        return forName(clsName, ldr, clsFilter, Marshallers.USE_CACHE.get());
-    }
-
-    /**
      * Applies a supplemental hash function to a given hashCode, which
      * defends against poor quality hash functions.  This is critical
      * because ConcurrentHashMap uses power-of-two length hash tables,
@@ -7723,7 +7694,7 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     public static <T extends IgniteDataTransferObject> IgniteDataTransferObjectSerializer<T> loadSerializer(Class<T> cls) {
         try {
-            Class cls0 = IgniteUtils.class.getClassLoader()
+            Class<?> cls0 = IgniteUtils.class.getClassLoader()
                 .loadClass(cls.getPackage().getName() + "." + cls.getSimpleName() + "Serializer");
 
             return (IgniteDataTransferObjectSerializer<T>)cls0.getDeclaredConstructor().newInstance();
@@ -7735,13 +7706,14 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Unwraps messsage if it is wrapped by {@link SecurityAwareCustomMessageWrapper}.
+     * Unwraps messsage as {@link DiscoveryCustomMessage}.
      *
      * @param msg Message.
      */
-    public static DiscoveryCustomMessage unwrapCustomMessage(DiscoverySpiCustomMessage msg) {
-        return msg instanceof SecurityAwareCustomMessageWrapper ?
-            ((SecurityAwareCustomMessageWrapper)msg).delegate() : (DiscoveryCustomMessage)msg;
+    public static DiscoveryCustomMessage unwrapCustomMessage(@Nullable DiscoverySpiCustomMessage msg) {
+        assert msg == null || msg instanceof DiscoveryCustomMessage;
+
+        return (DiscoveryCustomMessage)msg;
     }
 
     /**

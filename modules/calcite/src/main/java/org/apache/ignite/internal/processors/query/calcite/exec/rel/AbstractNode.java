@@ -37,8 +37,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_MODIF
  * Abstract node of execution tree.
  */
 public abstract class AbstractNode<Row> implements Node<Row> {
+    /** Special flag which marks that all the rows are received. */
+    static final int NOT_WAITING = -1;
+
     /** */
-    protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE, 512);
+    public static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE, 512);
 
     /** */
     protected static final int MODIFY_BATCH_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE, 100);

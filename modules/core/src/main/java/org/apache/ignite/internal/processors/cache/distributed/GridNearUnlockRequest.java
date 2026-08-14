@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Lock request message.
  */
+@UseBinaryMarshaller
 public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
@@ -89,31 +90,15 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
+    @Override public int stripeIdx() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : ANY_STRIPE;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
     }
-
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearUnlockRequest.class, this, "super", super.toString());

@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.query.NoOpQueryEngine;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -103,13 +104,6 @@ public enum IgniteComponentType {
         CompressionProcessor.class.getName(),
         "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
         "ignite-compress"
-    ),
-
-    /** OpenCensus tracing implementation. */
-    TRACING(
-        null,
-        "org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi",
-        "ignite-opencensus"
     ),
 
     /** Calcite based query engine. */
@@ -326,7 +320,7 @@ public enum IgniteComponentType {
     @Nullable public MessageFactoryProvider messageFactory() throws IgniteCheckedException {
         Class<?> cls;
 
-        if (msgFactoryCls == null || null == (cls = U.classForName(msgFactoryCls, null)))
+        if (msgFactoryCls == null || null == (cls = ClassLoaderUtils.classForName(msgFactoryCls)))
             return null;
 
         return (MessageFactoryProvider)U.newInstance(cls);

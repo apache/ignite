@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +89,9 @@ final class ReliableChannelImpl implements ReliableChannelEx {
     /** Client configuration. */
     private final ClientConfiguration clientCfg;
 
+    /** Effective user attributes. */
+    private final Map<String, String> effectiveUserAttrs;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -141,10 +145,14 @@ final class ReliableChannelImpl implements ReliableChannelEx {
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
+        Map<String, String> cfgUserAttrs = clientCfg.getUserAttributes();
+
         String dcId = IgniteCommonsSystemProperties.getString(IgniteCommonsSystemProperties.IGNITE_DATA_CENTER_ID);
 
-        if (dcId == null && !F.isEmpty(clientCfg.getUserAttributes()))
-            dcId = clientCfg.getUserAttributes().get(IgniteCommonsSystemProperties.IGNITE_DATA_CENTER_ID);
+        if (dcId == null && !F.isEmpty(cfgUserAttrs))
+            dcId = cfgUserAttrs.get(IgniteCommonsSystemProperties.IGNITE_DATA_CENTER_ID);
+
+        effectiveUserAttrs = effectiveUserAttributes(cfgUserAttrs, dcId);
 
         affinityCtx = new ClientCacheAffinityContext(
             binary,
@@ -701,14 +709,14 @@ final class ReliableChannelImpl implements ReliableChannelEx {
 
                 if (hld != null) {
                     if (!hld.getAddresses().equals(addrs)) // Enrich holder addresses.
-                        hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs));
+                        hld.setConfiguration(new ClientChannelConfiguration(clientCfg, addrs, effectiveUserAttrs));
 
                     break;
                 }
             }
 
             if (hld == null) { // If not found, create the new one.
-                hld = new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs));
+                hld = new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs, effectiveUserAttrs));
 
                 reinitHolders.add(hld);
 
@@ -747,6 +755,27 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         }
 
         finishChannelsReInit = System.currentTimeMillis();
+    }
+
+    /**
+     * Adds the effective data center ID to user attributes.
+     *
+     * @param cfgUserAttrs Configured user attributes.
+     * @param dcId Effective data center ID.
+     * @return Effective user attributes.
+     */
+    private static Map<String, String> effectiveUserAttributes(
+        @Nullable Map<String, String> cfgUserAttrs,
+        @Nullable String dcId
+    ) {
+        if (dcId == null)
+            return cfgUserAttrs;
+
+        Map<String, String> attrs = cfgUserAttrs == null ? new HashMap<>() : new HashMap<>(cfgUserAttrs);
+
+        attrs.put(IgniteCommonsSystemProperties.IGNITE_DATA_CENTER_ID, dcId);
+
+        return Collections.unmodifiableMap(attrs);
     }
 
     /**
@@ -942,7 +971,6 @@ final class ReliableChannelImpl implements ReliableChannelEx {
 
                     return function.apply(channel);
                 }
-
                 catch (ClientConnectionException err) {
                     failures = new ArrayList<>();
 
@@ -1034,7 +1062,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         private volatile ClientChannel ch;
 
         /** ID of the last server node that {@link #ch} is or was connected to. */
-        private volatile UUID serverNodeId;
+        volatile UUID serverNodeId;
 
         /** Address that holder is bind to (chCfg.addr) is not in use now. So close the holder. */
         private volatile boolean close;
@@ -1075,7 +1103,7 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         /**
          * Get or create channel.
          */
-        private ClientChannel getOrCreateChannel()
+        public ClientChannel getOrCreateChannel()
             throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
             return getOrCreateChannel(false);
         }
@@ -1173,6 +1201,19 @@ final class ReliableChannelImpl implements ReliableChannelEx {
         void setConfiguration(ClientChannelConfiguration chCfg) {
             this.chCfg = chCfg;
         }
+    }
+
+    /**
+     * @param id Node id.
+     * @return Client channel for node.
+     */
+    public ClientChannel nodeClientChannel(UUID id) {
+        ClientChannelHolder cliCh = nodeChannels.get(id);
+
+        if (cliCh == null)
+            throw new ClientConnectionException("Node can't be found [id=" + id + ']');
+
+        return cliCh.getOrCreateChannel();
     }
 
     /**

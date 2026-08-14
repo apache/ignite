@@ -33,7 +33,6 @@ import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,28 +40,21 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -76,6 +68,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -98,17 +91,9 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -145,6 +130,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
+import static org.apache.ignite.internal.StripedMessage.NO_STRIPE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -159,12 +145,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.tracing.MTC.support;
-import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_ORDERED_PROCESS;
-import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
-import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newCachedThreadPool;
-import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
@@ -352,16 +333,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     private volatile boolean stopping;
 
     /** */
-    private final AtomicReference<ConcurrentHashMap<Long, IoTestFuture>> ioTestMap = new AtomicReference<>();
-
-    /** */
-    private final AtomicLong ioTestId = new AtomicLong();
-
-    /** */
     private final TcpCommunicationInverseConnectionHandler invConnHandler = new TcpCommunicationInverseConnectionHandler();
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = () -> {};
+
+    /** */
+    private IoTestHandler ioTestHnd;
 
     /**
      * @param ctx Grid kernal context.
@@ -459,7 +437,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
-                    try (Scope ignored = ctx.operationContextDispatcher().restoreDistributedAttributes(msg0.opCtxMsg)) {
+                    try (Scope ignored = ctx.operationContextDispatcher().restoreSnapshot(msg0.opCtxSnp)) {
                         onMessage0(nodeId, msg0, msgC);
                     }
                 }
@@ -490,44 +468,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (log.isDebugEnabled())
             log.debug(startInfo());
 
-        addMessageListener(GridTopic.TOPIC_IO_TEST, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                ClusterNode node = ctx.discovery().node(nodeId);
-
-                if (node == null)
-                    return;
-
-                IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg;
-
-                msg0.senderNodeId(nodeId);
-
-                if (msg0.request()) {
-                    IgniteIoTestMessage res = new IgniteIoTestMessage(msg0.id(), false, null);
-
-                    res.flags(msg0.flags());
-                    res.onRequestProcessed();
-
-                    res.copyDataFromRequest(msg0);
-
-                    try {
-                        sendToGridTopic(node, GridTopic.TOPIC_IO_TEST, res, GridIoPolicy.SYSTEM_POOL);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send IO test response [msg=" + msg0 + "]", e);
-                    }
-                }
-                else {
-                    IoTestFuture fut = ioTestMap().get(msg0.id());
-
-                    msg0.onResponseProcessed();
-
-                    if (fut == null)
-                        U.warn(log, "Failed to find IO test future [msg=" + msg0 + ']');
-                    else
-                        fut.onResponse(msg0);
-                }
-            }
-        });
+        ioTestHnd = new IoTestHandler(ctx);
     }
 
     /** {@inheritDoc} */
@@ -535,357 +476,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         locNodeId = ctx.localNodeId();
 
         return super.onReconnected(clusterRestarted);
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @param payload Payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
-        long id = ioTestId.getAndIncrement();
-
-        IoTestFuture fut = new IoTestFuture(id, nodes.size());
-
-        IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
-
-        msg.processFromNioThread(procFromNioThread);
-
-        ioTestMap().put(id, fut);
-
-        for (int i = 0; i < nodes.size(); i++) {
-            ClusterNode node = nodes.get(i);
-
-            try {
-                sendToGridTopic(node, GridTopic.TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
-            }
-            catch (IgniteCheckedException e) {
-                ioTestMap().remove(msg.id());
-
-                return new GridFinishedFuture(e);
-            }
-        }
-
-        return fut;
-    }
-
-    /**
-     * @param node Node.
-     * @param payload Payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture<List<IgniteIoTestMessage>> sendIoTest(
-        ClusterNode node,
-        byte[] payload,
-        boolean procFromNioThread
-    ) {
-        long id = ioTestId.getAndIncrement();
-
-        IoTestFuture fut = new IoTestFuture(id, 1);
-
-        IgniteIoTestMessage msg = new IgniteIoTestMessage(id, true, payload);
-
-        msg.processFromNioThread(procFromNioThread);
-
-        ioTestMap().put(id, fut);
-
-        try {
-            sendToGridTopic(node, GridTopic.TOPIC_IO_TEST, msg, GridIoPolicy.SYSTEM_POOL);
-        }
-        catch (IgniteCheckedException e) {
-            ioTestMap().remove(msg.id());
-
-            return new GridFinishedFuture(e);
-        }
-
-        return fut;
-    }
-
-    /**
-     * @return IO test futures map.
-     */
-    private ConcurrentHashMap<Long, IoTestFuture> ioTestMap() {
-        ConcurrentHashMap<Long, IoTestFuture> map = ioTestMap.get();
-
-        if (map == null) {
-            if (!ioTestMap.compareAndSet(null, map = new ConcurrentHashMap<>()))
-                map = ioTestMap.get();
-        }
-
-        return map;
-    }
-
-    /**
-     * @param warmup Warmup duration in milliseconds.
-     * @param duration Test duration in milliseconds.
-     * @param threads Thread count.
-     * @param latencyLimit Max latency in nanoseconds.
-     * @param rangesCnt Ranges count in resulting histogram.
-     * @param payLoadSize Payload size in bytes.
-     * @param procFromNioThread {@code True} to process requests in NIO threads.
-     * @param nodes Nodes participating in test.
-     */
-    public void runIoTest(
-        final long warmup,
-        final long duration,
-        final int threads,
-        final long latencyLimit,
-        final int rangesCnt,
-        final int payLoadSize,
-        final boolean procFromNioThread,
-        final List<ClusterNode> nodes
-    ) {
-        ExecutorService svc = newFixedThreadPool("io-latency-inspector", ctx.igniteInstanceName(), threads + 1);
-
-        final AtomicBoolean warmupFinished = new AtomicBoolean();
-        final AtomicBoolean done = new AtomicBoolean();
-        final CyclicBarrier bar = new CyclicBarrier(threads + 1);
-        final LongAdder cnt = new LongAdder();
-        final long sleepDuration = 5000;
-        final byte[] payLoad = new byte[payLoadSize];
-        final Map<UUID, IoTestThreadLocalNodeResults>[] res = new Map[threads];
-
-        boolean failed = true;
-
-        try {
-            svc.execute(new Runnable() {
-                @Override public void run() {
-                    boolean failed = true;
-
-                    try {
-                        bar.await();
-
-                        long start = System.currentTimeMillis();
-
-                        if (log.isInfoEnabled())
-                            log.info("IO test started " +
-                                "[warmup=" + warmup +
-                                ", duration=" + duration +
-                                ", threads=" + threads +
-                                ", latencyLimit=" + latencyLimit +
-                                ", rangesCnt=" + rangesCnt +
-                                ", payLoadSize=" + payLoadSize +
-                                ", procFromNioThreads=" + procFromNioThread + ']'
-                            );
-
-                        for (;;) {
-                            if (!warmupFinished.get() && System.currentTimeMillis() - start > warmup) {
-                                if (log.isInfoEnabled())
-                                    log.info("IO test warmup finished.");
-
-                                warmupFinished.set(true);
-
-                                start = System.currentTimeMillis();
-                            }
-
-                            if (warmupFinished.get() && System.currentTimeMillis() - start > duration) {
-                                if (log.isInfoEnabled())
-                                    log.info("IO test finished, will wait for all threads to finish.");
-
-                                done.set(true);
-
-                                bar.await();
-
-                                failed = false;
-
-                                break;
-                            }
-
-                            if (log.isInfoEnabled())
-                                log.info("IO test [opsCnt/sec=" + (cnt.sumThenReset() * 1000 / sleepDuration) +
-                                    ", warmup=" + !warmupFinished.get() +
-                                    ", elapsed=" + (System.currentTimeMillis() - start) + ']');
-
-                            Thread.sleep(sleepDuration);
-                        }
-
-                        // At this point all threads have finished the test and
-                        // stored data to the resulting array of maps.
-                        // Need to iterate it over and sum values for all threads.
-                        printIoTestResults(res);
-                    }
-                    catch (InterruptedException | BrokenBarrierException e) {
-                        U.error(log, "IO test failed.", e);
-                    }
-                    finally {
-                        if (failed)
-                            bar.reset();
-                    }
-                }
-            });
-
-            for (int i = 0; i < threads; i++) {
-                final int i0 = i;
-
-                res[i] = U.newHashMap(nodes.size());
-
-                svc.execute(new Runnable() {
-                    @Override public void run() {
-                        boolean failed = true;
-                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-                        int size = nodes.size();
-                        Map<UUID, IoTestThreadLocalNodeResults> res0 = res[i0];
-
-                        try {
-                            boolean warmupFinished0 = false;
-
-                            bar.await();
-
-                            for (;;) {
-                                if (done.get())
-                                    break;
-
-                                if (!warmupFinished0)
-                                    warmupFinished0 = warmupFinished.get();
-
-                                ClusterNode node = nodes.get(rnd.nextInt(size));
-
-                                List<IgniteIoTestMessage> msgs = sendIoTest(node, payLoad, procFromNioThread).get();
-
-                                cnt.increment();
-
-                                for (IgniteIoTestMessage msg : msgs) {
-                                    UUID nodeId = msg.senderNodeId();
-
-                                    assert nodeId != null;
-
-                                    IoTestThreadLocalNodeResults nodeRes = res0.get(nodeId);
-
-                                    if (nodeRes == null)
-                                        res0.put(nodeId,
-                                            nodeRes = new IoTestThreadLocalNodeResults(rangesCnt, latencyLimit));
-
-                                    nodeRes.onResult(msg);
-                                }
-                            }
-
-                            bar.await();
-
-                            failed = false;
-                        }
-                        catch (Exception e) {
-                            U.error(log, "IO test worker thread failed.", e);
-                        }
-                        finally {
-                            if (failed)
-                                bar.reset();
-                        }
-                    }
-                });
-            }
-
-            failed = false;
-        }
-        finally {
-            if (failed)
-                U.shutdownNow(GridIoManager.class, svc, log);
-        }
-    }
-
-    /**
-     * @param rawRes Resulting map.
-     */
-    private void printIoTestResults(
-        Map<UUID, IoTestThreadLocalNodeResults>[] rawRes
-    ) {
-        Map<UUID, IoTestNodeResults> res = new HashMap<>();
-
-        for (Map<UUID, IoTestThreadLocalNodeResults> r : rawRes) {
-            for (Entry<UUID, IoTestThreadLocalNodeResults> e : r.entrySet()) {
-                IoTestNodeResults r0 = res.get(e.getKey());
-
-                if (r0 == null)
-                    res.put(e.getKey(), r0 = new IoTestNodeResults());
-
-                r0.add(e.getValue());
-            }
-        }
-
-        StringBuilder b = new StringBuilder(U.nl())
-            .append("IO test results (round-trip count per each latency bin).")
-            .append(U.nl());
-
-        for (Entry<UUID, IoTestNodeResults> e : res.entrySet()) {
-            ClusterNode node = ctx.discovery().node(e.getKey());
-
-            long binLatencyMcs = e.getValue().binLatencyMcs();
-
-            b.append("Node ID: ").append(e.getKey()).append(" (addrs=")
-                .append(node != null ? node.addresses().toString() : "n/a")
-                .append(", binLatency=").append(binLatencyMcs).append("mcs")
-                .append(')').append(U.nl());
-
-            b.append("Latency bin, mcs | Count exclusive | Percentage exclusive | " +
-                "Count inclusive | Percentage inclusive ").append(U.nl());
-
-            long[] nodeRes = e.getValue().resLatency;
-
-            long sum = 0;
-
-            for (int i = 0; i < nodeRes.length; i++)
-                sum += nodeRes[i];
-
-            long curSum = 0;
-
-            for (int i = 0; i < nodeRes.length; i++) {
-                curSum += nodeRes[i];
-
-                if (i < nodeRes.length - 1)
-                    b.append(String.format("<%11d mcs | %15d | %19.6f%% | %15d | %19.6f%%\n",
-                        (i + 1) * binLatencyMcs,
-                        nodeRes[i], (100.0 * nodeRes[i]) / sum,
-                        curSum, (100.0 * curSum) / sum));
-                else
-                    b.append(String.format(">%11d mcs | %15d | %19.6f%% | %15d | %19.6f%%\n",
-                        i * binLatencyMcs,
-                        nodeRes[i], (100.0 * nodeRes[i]) / sum,
-                        curSum, (100.0 * curSum) / sum));
-            }
-
-            b.append(U.nl()).append("Total latency (ns): ").append(U.nl())
-                .append(String.format("%15d", e.getValue().totalLatency)).append(U.nl());
-
-            b.append(U.nl()).append("Max latencies (ns):").append(U.nl());
-            format(b, e.getValue().maxLatency);
-
-            b.append(U.nl()).append("Max request send queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxReqSendQueueTime);
-
-            b.append(U.nl()).append("Max request receive queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxReqRcvQueueTime);
-
-            b.append(U.nl()).append("Max response send queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxResSendQueueTime);
-
-            b.append(U.nl()).append("Max response receive queue times (ns):").append(U.nl());
-            format(b, e.getValue().maxResRcvQueueTime);
-
-            b.append(U.nl()).append("Max request wire times (millis):").append(U.nl());
-            format(b, e.getValue().maxReqWireTimeMillis);
-
-            b.append(U.nl()).append("Max response wire times (millis):").append(U.nl());
-            format(b, e.getValue().maxResWireTimeMillis);
-
-            b.append(U.nl());
-        }
-
-        if (log.isInfoEnabled())
-            log.info(b.toString());
-    }
-
-    /**
-     * @param b Builder.
-     * @param pairs Pairs to format.
-     */
-    private static void format(StringBuilder b, Collection<IgnitePair<Long>> pairs) {
-        for (IgnitePair<Long> p : pairs) {
-            b.append(String.format("%15d", p.get1()))
-                .append(" ")
-                .append(IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(p.get2())))
-                .append(U.nl());
-        }
     }
 
     /** {@inheritDoc} */
@@ -1092,6 +682,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void onKernalStop0(boolean cancel) {
+        if (ioTestHnd != null)
+            ioTestHnd.stop();
+
         // No more communication messages.
         getSpi().setListener(null);
 
@@ -1175,10 +768,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             byte plc = initMsg.policy();
 
+            // Not a double unmarshal: the @NioField routing header is restored here on the NIO thread, its full
+            // payload below on a pool thread — disjoint fields.
+            MessageMarshalling.unmarshalNio(initMsg, ctx);
+
             pools.poolForPolicy(plc).execute(new Runnable() {
                 @Override public void run() {
-                    processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
-                        (SocketChannel)channel);
+                    try {
+                        MessageMarshalling.unmarshal(initMsg, ctx);
+
+                        processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
+                            (SocketChannel)channel);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to process channel creation event due to exception " +
+                            "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']', e);
+                    }
                 }
             });
         }
@@ -1240,6 +845,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     lock.readLock().unlock();
                 }
             }
+
+            // After the delayed-message gate: a replayed message re-enters this method, so its NIO-thread header
+            // unmarshal is kept here to run exactly once.
+            MessageMarshalling.unmarshalNio(msg, ctx);
 
             // If message is P2P, then process in P2P service.
             // This is done to avoid extra waiting and potential deadlocks
@@ -1307,16 +916,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     threadProcessingMessage(true, msgC);
 
-                    GridMessageListener lsnr = listenerGet0(msg.topic());
-
-                    if (lsnr == null)
-                        return;
-
-                    Object obj = msg.message();
-
-                    assert obj != null;
-
-                    invokeListener(msg.policy(), lsnr, nodeId, obj);
+                    processRegularMessage0(msg, nodeId);
                 }
                 finally {
                     threadProcessingMessage(false, null);
@@ -1351,11 +951,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         final byte plc,
         final IgniteRunnable msgC
     ) throws IgniteCheckedException {
-        Runnable c = new TraceRunnable(ctx.tracing(), COMMUNICATION_REGULAR_PROCESS) {
-            @Override public void execute() {
+        Runnable c = new Runnable() {
+            @Override public void run() {
                 try {
-                    MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(msg));
-
                     threadProcessingMessage(true, msgC);
 
                     processRegularMessage0(msg, nodeId);
@@ -1372,29 +970,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             }
         };
 
-        MTC.span().addLog(() -> "Regular process queued");
+        final int stripeIdx = msg.stripeIdx(); // Store to avoid possible recalculation.
 
-        if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
-            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
-
-            if (msg0.processFromNioThread())
-                c.run();
-            else
-                ctx.pools().getStripedExecutorService().execute(-1, c);
+        if (plc == GridIoPolicy.SYSTEM_POOL && stripeIdx != NO_STRIPE) {
+            ctx.pools().getStripedExecutorService().execute(stripeIdx, c);
 
             return;
         }
 
-        final int part = msg.partition(); // Store partition to avoid possible recalculation.
-
-        if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.pools().getStripedExecutorService().execute(part, c);
-
-            return;
-        }
-
-        if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.pools().getDataStreamerExecutorService().execute(part, c);
+        if (plc == GridIoPolicy.DATA_STREAMER_POOL && stripeIdx != NO_STRIPE) {
+            ctx.pools().getDataStreamerExecutorService().execute(stripeIdx, c);
 
             return;
         }
@@ -1402,7 +987,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
             IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
 
-            if (msg0.processFromNioThread()) {
+            if (msg0.processInNioThread()) {
                 c.run();
 
                 return;
@@ -1450,11 +1035,23 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         if (lsnr == null)
             return;
 
-        Object obj = msg.message();
+        unmarshalPayload(msg);
 
-        assert obj != null;
+        invokeListener(msg.policy(), lsnr, nodeId, msg.message());
+    }
 
-        invokeListener(msg.policy(), lsnr, nodeId, obj);
+    /** */
+    // TODO IGNITE-28950: the regular path drops the message without a trace, unlike the ordered one.
+    private void unmarshalPayload(GridIoMessage msg) {
+        if (msg.message() instanceof DeferredUnmarshalMessage)
+            return;
+
+        try {
+            MessageMarshalling.unmarshal(msg.message(), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshal message payload", e);
+        }
     }
 
     /**
@@ -1764,8 +1361,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         };
 
         try {
-            MTC.span().addLog(() -> "Ordered process queued");
-
             pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
@@ -1820,8 +1415,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * @param msg Message.
      */
     private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
-        MTC.span().addLog(() -> "Invoke listener");
-
         Byte oldPlc = CUR_PLC.get();
 
         boolean change = !Objects.equals(oldPlc, plc);
@@ -1942,6 +1535,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             false
         );
 
+        marshal(ioMsg);
+
         try {
             return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
         }
@@ -1986,51 +1581,180 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         assert msg != null;
         assert !async || msg instanceof GridIoUserMessage : msg; // Async execution was added only for IgniteMessaging.
 
-        try (TraceSurroundings ignored = support(null)) {
-            MTC.span().addLog(() -> "Create communication msg - " + traceName(msg));
+        GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
 
-            GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
+        if (locNodeId.equals(node.id())) {
 
-            if (locNodeId.equals(node.id())) {
+            assert plc != P2P_POOL;
 
-                assert plc != P2P_POOL;
+            CommunicationListener commLsnr = this.commLsnr;
 
-                CommunicationListener commLsnr = this.commLsnr;
+            if (commLsnr == null)
+                throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
 
-                if (commLsnr == null)
-                    throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
+            if (ordered)
+                processOrderedMessage(locNodeId, ioMsg, plc, null);
+            else if (async)
+                processRegularMessage(locNodeId, ioMsg, plc, NOOP);
+            else
+                processRegularMessage0(ioMsg, locNodeId);
 
-                if (ordered)
-                    processOrderedMessage(locNodeId, ioMsg, plc, null);
-                else if (async)
-                    processRegularMessage(locNodeId, ioMsg, plc, NOOP);
-                else
-                    processRegularMessage0(ioMsg, locNodeId);
+            if (ackC != null)
+                ackC.apply(null);
+        }
+        else {
+            marshal(ioMsg);
 
-                if (ackC != null)
-                    ackC.apply(null);
+            sendMarshalled(node, ioMsg, ackC);
+        }
+    }
+
+    /**
+     * Wraps {@code msg} into a marshalled {@link GridIoMessage} without sending it. Message marshalling is not
+     * idempotent (see {@code MessageMarshalOnceTest}), so {@link #sendWithRetry} prepares the message once and
+     * re-sends it via {@link #sendPrepared} on each attempt.
+     */
+    private GridIoMessage prepare(Object topic, Message msg, byte plc, boolean ordered, long timeout,
+        boolean skipOnTimeout) throws IgniteCheckedException {
+        assert !ordered || timeout > 0 || skipOnTimeout;
+
+        GridIoMessage ioMsg = createGridIoMessage(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+        marshal(ioMsg);
+
+        return ioMsg;
+    }
+
+    /**
+     * Marshals {@code ioMsg} enforcing the marshal-once contract: a wrap is marshalled exactly once before
+     * transmission (marshalling is not idempotent, see {@code MessageMarshalOnceTest}).
+     */
+    private void marshal(GridIoMessage ioMsg) throws IgniteCheckedException {
+        assert !ioMsg.marshalled() : "GridIoMessage is marshalled twice: " + ioMsg;
+
+        MessageMarshalling.marshal(ioMsg, ctx, null);
+
+        ioMsg.markMarshalled();
+    }
+
+    /**
+     * Sends a message created by {@link #prepare} to a remote node. Sending does not mutate the message,
+     * so it can be safely retried.
+     */
+    public void sendPrepared(ClusterNode node, GridIoMessage ioMsg) throws IgniteCheckedException {
+        assert !locNodeId.equals(node.id()) : node;
+        assert ioMsg.marshalled() : "Message must be prepared via prepare() before sendPrepared(): " + ioMsg;
+
+        sendMarshalled(node, ioMsg, null);
+    }
+
+    /**
+     * Sends a message to a remote node, marshalling it once and retrying only the transmission: repeat failed
+     * attempts reuse the prepared message. Waits {@code IgniteConfiguration#getNetworkSendRetryDelay()} between
+     * attempts; {@code retryPlc} decides whether an attempt failure is retried.
+     *
+     * @param node Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @param ordered Ordered flag.
+     * @param timeout Timeout to keep a message on receiving queue.
+     * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @param retryPlc Failure policy.
+     */
+    public void sendWithRetry(ClusterNode node, Object topic, Message msg, byte plc, boolean ordered, long timeout,
+        boolean skipOnTimeout, SendRetryPolicy retryPlc) throws IgniteCheckedException {
+        GridIoMessage ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+        for (int attempt = 1;; attempt++) {
+            try {
+                sendPrepared(node, ioMsg);
+
+                return;
             }
-            else {
-                try {
-                    if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
-                        getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
-                    else
-                        getSpi().sendMessage(node, ioMsg);
-                }
-                catch (IgniteSpiException e) {
-                    if (e.getCause() instanceof ClusterTopologyCheckedException)
-                        throw (ClusterTopologyCheckedException)e.getCause();
+            catch (ClusterTopologyCheckedException e) {
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                if (!retryPlc.onFailure(node, e, attempt))
+                    throw e;
+            }
 
-                    if (!ctx.discovery().alive(node))
-                        throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
+            U.sleep(ctx.config().getNetworkSendRetryDelay());
+        }
+    }
 
-                    throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
-                        "TCP connection cannot be established due to firewall issues) " +
-                        "[node=" + node + ", topic=" + topic +
-                        ", msg=" + msg + ", policy=" + plc + ']', e);
+    /** Failure policy for {@link #sendWithRetry}: decides whether a failed transmission attempt is retried. */
+    @FunctionalInterface public interface SendRetryPolicy {
+        /**
+         * @param node Destination node of the failed attempt.
+         * @param e Transmission failure.
+         * @param attempt Failed attempt number, starting with {@code 1}.
+         * @return {@code true} to retry, {@code false} to rethrow {@code e}.
+         * @throws IgniteCheckedException To replace {@code e} with a more specific failure.
+         */
+        public boolean onFailure(ClusterNode node, IgniteCheckedException e, int attempt) throws IgniteCheckedException;
+    }
+
+    /**
+     * Sends an already-marshalled message to a remote node. Marshalling is the caller's job, so one {@code ioMsg} can
+     * be prepared once and delivered to many nodes (see {@link #sendToMany}).
+     */
+    private void sendMarshalled(ClusterNode node, GridIoMessage ioMsg, IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException {
+        assert ioMsg.marshalled() : "GridIoMessage is transmitted unmarshalled: " + ioMsg;
+
+        try {
+            if ((CommunicationSpi<?>)getSpi() instanceof TcpCommunicationSpi)
+                getTcpCommunicationSpi().sendMessage(node, ioMsg, ackC);
+            else
+                getSpi().sendMessage(node, ioMsg);
+        }
+        catch (IgniteSpiException e) {
+            if (e.getCause() instanceof ClusterTopologyCheckedException)
+                throw (ClusterTopologyCheckedException)e.getCause();
+
+            if (!ctx.discovery().alive(node))
+                throw new ClusterTopologyCheckedException("Failed to send message, node left: " + node.id(), e);
+
+            throw new IgniteCheckedException("Failed to send message (node may have left the grid or " +
+                "TCP connection cannot be established due to firewall issues) " +
+                "[node=" + node + ", topic=" + ioMsg.topic() +
+                ", msg=" + ioMsg.message() + ", policy=" + ioMsg.policy() + ']', e);
+        }
+    }
+
+    /**
+     * Marshals {@code msg} once and delivers it to every node, instead of re-marshalling per destination. The local
+     * node, if present, goes through the regular per-node path, unmarshalled.
+     */
+    private void sendToMany(Collection<? extends ClusterNode> nodes, Object topic, Message msg, byte plc,
+        boolean ordered, long timeout, boolean skipOnTimeout) throws IgniteCheckedException {
+        GridIoMessage ioMsg = null;
+
+        IgniteCheckedException err = null;
+
+        for (ClusterNode node : nodes) {
+            try {
+                if (locNodeId.equals(node.id()))
+                    send(node, topic, msg, plc, ordered, timeout, skipOnTimeout, null, false);
+                else {
+                    if (ioMsg == null)
+                        ioMsg = prepare(topic, msg, plc, ordered, timeout, skipOnTimeout);
+
+                    sendMarshalled(node, ioMsg, null);
                 }
+            }
+            catch (IgniteCheckedException e) {
+                if (err == null)
+                    err = e;
+                else
+                    err.addSuppressed(e);
             }
         }
+
+        if (err != null)
+            throw err;
     }
 
     /** */
@@ -2047,13 +1771,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         long timeout,
         boolean skipOnTimeout
     ) {
-        GridIoMessage res;
-
-        res = new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout);
-
-        res.opCtxMsg = ctx.operationContextDispatcher().collectDistributedAttributes();
-
-        return res;
+        return new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout, ctx.operationContextDispatcher().createSnapshot());
     }
 
     /**
@@ -2185,22 +1903,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         throws IgniteCheckedException {
         assert timeout > 0 || skipOnTimeout;
 
-        IgniteCheckedException err = null;
-
-        for (ClusterNode node : nodes) {
-            try {
-                send(node, topic, msg, plc, true, timeout, skipOnTimeout, null, false);
-            }
-            catch (IgniteCheckedException e) {
-                if (err == null)
-                    err = e;
-                else
-                    err.addSuppressed(e);
-            }
-        }
-
-        if (err != null)
-            throw err;
+        sendToMany(nodes, topic, msg, plc, true, timeout, skipOnTimeout);
     }
 
     /**
@@ -2216,22 +1919,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        IgniteCheckedException err = null;
-
-        for (ClusterNode node : nodes) {
-            try {
-                send(node, topic, msg, plc, false, 0, false, null, false);
-            }
-            catch (IgniteCheckedException e) {
-                if (err == null)
-                    err = e;
-                else
-                    err.addSuppressed(e);
-            }
-        }
-
-        if (err != null)
-            throw err;
+        sendToMany(nodes, topic, msg, plc, false, 0, false);
     }
 
     /**
@@ -2313,10 +2001,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             depClsName,
             topic,
             serTopic,
-            dep != null ? dep.classLoaderId() : null,
-            dep != null ? dep.deployMode() : null,
-            dep != null ? dep.userVersion() : null,
-            dep != null ? dep.participants() : null);
+            dep);
 
         if (ordered)
             sendOrderedMessageToGridTopic(nodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL, timeout, true);
@@ -2988,6 +2673,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         X.println(">>>  discoWaitMapSize: " + waitMap.size());
     }
 
+    /** @return IO test handler. */
+    public IoTestHandler ioTest() {
+        return ioTestHnd;
+    }
+
     /**
      * Read context holds all the information about current transfer read from channel process.
      */
@@ -3526,21 +3216,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
                     if (dep == null && ctx.config().isPeerClassLoadingEnabled() &&
                         ioMsg.deploymentClassName() != null) {
-                        dep = ctx.deploy().getGlobalDeployment(
-                            ioMsg.deploymentMode(),
-                            ioMsg.deploymentClassName(),
-                            ioMsg.deploymentClassName(),
-                            ioMsg.userVersion(),
-                            nodeId,
-                            ioMsg.classLoaderId(),
-                            ioMsg.loaderParticipants(),
-                            null);
+                        dep = ctx.deploy().globalDeployment(ioMsg.deploymentInfo(), ioMsg.deploymentClassName(),
+                            ioMsg.deploymentClassName(), nodeId);
 
-                        if (dep == null)
+                        if (dep == null) {
                             throw new IgniteDeploymentCheckedException(
                                 "Failed to obtain deployment information for user message. " +
                                     "If you are using custom message or topic class, try implementing " +
                                     "GridPeerDeployAware interface. [msg=" + ioMsg + ']');
+                        }
 
                         ioMsg.deployment(dep); // Cache deployment.
                     }
@@ -3684,7 +3368,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
             lastTs = U.currentTimeMillis();
 
-            msgs.add(new OrderedMessageContainer(msg, lastTs, msgC, MTC.span()));
+            msgs.add(new OrderedMessageContainer(msg, lastTs, msgC));
         }
 
         /** {@inheritDoc} */
@@ -3802,12 +3486,19 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             assert reserved.get();
 
             for (OrderedMessageContainer mc = msgs.poll(); mc != null; mc = msgs.poll()) {
-                try (TraceSurroundings ignore = support(ctx.tracing().create(
-                    COMMUNICATION_ORDERED_PROCESS, mc.parentSpan))) {
+                try (Scope ignored0 = ctx.operationContextDispatcher().restoreSnapshot(mc.message.opCtxSnp)) {
                     try {
-                        OrderedMessageContainer fmc = mc;
+                        try {
+                            unmarshalPayload(mc.message);
+                        }
+                        catch (IgniteException e) {
+                            // Skip the failed message: rethrowing would abandon the rest of the set until
+                            // the next message arrives on this topic.
+                            U.error(log, "Failed to unmarshal ordered message (will skip) [nodeId=" + nodeId +
+                                ", msg=" + mc.message + ']', e);
 
-                        MTC.span().addTag(SpanTags.MESSAGE, () -> traceName(fmc.message));
+                            continue;
+                        }
 
                         invokeListener(plc, lsnr, nodeId, mc.message.message());
                     }
@@ -3827,7 +3518,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             GridIoMessage msg,
             @Nullable IgniteRunnable msgC
         ) {
-            msgs.add(new OrderedMessageContainer(msg, U.currentTimeMillis(), msgC, MTC.span()));
+            msgs.add(new OrderedMessageContainer(msg, U.currentTimeMillis(), msgC));
         }
 
         /**
@@ -3872,21 +3563,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         /** */
         IgniteRunnable closure;
 
-        /** */
-        Span parentSpan;
-
         /**
          *
          * @param msg Received message.
          * @param addedTime Time of added to queue.
          * @param c Message closure.
-         * @param parentSpan Span of process which added this message.
          */
-        private OrderedMessageContainer(GridIoMessage msg, Long addedTime, IgniteRunnable c, Span parentSpan) {
+        private OrderedMessageContainer(GridIoMessage msg, Long addedTime, IgniteRunnable c) {
             this.message = msg;
             this.addedTime = addedTime;
             this.closure = c;
-            this.parentSpan = parentSpan;
         }
     }
 
@@ -3970,271 +3656,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DelayedMessage.class, this, super.toString());
-        }
-    }
-
-    /**
-     *
-     */
-    private class IoTestFuture extends GridFutureAdapter<List<IgniteIoTestMessage>> {
-        /** */
-        private final long id;
-
-        /** */
-        private final int cntr;
-
-        /** */
-        private final List<IgniteIoTestMessage> ress;
-
-        /**
-         * @param id ID.
-         * @param cntr Counter.
-         */
-        IoTestFuture(long id, int cntr) {
-            assert cntr > 0 : cntr;
-
-            this.id = id;
-            this.cntr = cntr;
-
-            ress = new ArrayList<>(cntr);
-        }
-
-        /**
-         *
-         */
-        void onResponse(IgniteIoTestMessage res) {
-            boolean complete;
-
-            synchronized (this) {
-                ress.add(res);
-
-                complete = cntr == ress.size();
-            }
-
-            if (complete)
-                onDone(ress);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(List<IgniteIoTestMessage> res, @Nullable Throwable err) {
-            if (super.onDone(res, err)) {
-                ioTestMap().remove(id);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(IoTestFuture.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class IoTestThreadLocalNodeResults {
-        /** */
-        private final long[] resLatency;
-
-        /** */
-        private final int rangesCnt;
-
-        /** */
-        private long totalLatency;
-
-        /** */
-        private long maxLatency;
-
-        /** */
-        private long maxLatencyTs;
-
-        /** */
-        private long maxReqSendQueueTime;
-
-        /** */
-        private long maxReqSendQueueTimeTs;
-
-        /** */
-        private long maxReqRcvQueueTime;
-
-        /** */
-        private long maxReqRcvQueueTimeTs;
-
-        /** */
-        private long maxResSendQueueTime;
-
-        /** */
-        private long maxResSendQueueTimeTs;
-
-        /** */
-        private long maxResRcvQueueTime;
-
-        /** */
-        private long maxResRcvQueueTimeTs;
-
-        /** */
-        private long maxReqWireTimeMillis;
-
-        /** */
-        private long maxReqWireTimeTs;
-
-        /** */
-        private long maxResWireTimeMillis;
-
-        /** */
-        private long maxResWireTimeTs;
-
-        /** */
-        private final long latencyLimit;
-
-        /**
-         * @param rangesCnt Ranges count.
-         * @param latencyLimit
-         */
-        public IoTestThreadLocalNodeResults(int rangesCnt, long latencyLimit) {
-            this.rangesCnt = rangesCnt;
-            this.latencyLimit = latencyLimit;
-
-            resLatency = new long[rangesCnt + 1];
-        }
-
-        /**
-         * @param msg
-         */
-        public void onResult(IgniteIoTestMessage msg) {
-            long now = System.currentTimeMillis();
-
-            long latency = msg.responseProcessedTs() - msg.requestCreateTs();
-
-            int idx = latency >= latencyLimit ?
-                rangesCnt /* Timed out. */ :
-                (int)Math.floor((1.0 * latency) / ((1.0 * latencyLimit) / rangesCnt));
-
-            resLatency[idx]++;
-
-            totalLatency += latency;
-
-            if (maxLatency < latency) {
-                maxLatency = latency;
-                maxLatencyTs = now;
-            }
-
-            long reqSndQueueTime = msg.requestSendTs() - msg.requestCreateTs();
-
-            if (maxReqSendQueueTime < reqSndQueueTime) {
-                maxReqSendQueueTime = reqSndQueueTime;
-                maxReqSendQueueTimeTs = now;
-            }
-
-            long reqRcvQueueTime = msg.requestProcessTs() - msg.requestReceiveTs();
-
-            if (maxReqRcvQueueTime < reqRcvQueueTime) {
-                maxReqRcvQueueTime = reqRcvQueueTime;
-                maxReqRcvQueueTimeTs = now;
-            }
-
-            long resSndQueueTime = msg.responseSendTs() - msg.requestProcessTs();
-
-            if (maxResSendQueueTime < resSndQueueTime) {
-                maxResSendQueueTime = resSndQueueTime;
-                maxResSendQueueTimeTs = now;
-            }
-
-            long resRcvQueueTime = msg.responseProcessedTs() - msg.responseReceiveTs();
-
-            if (maxResRcvQueueTime < resRcvQueueTime) {
-                maxResRcvQueueTime = resRcvQueueTime;
-                maxResRcvQueueTimeTs = now;
-            }
-
-            long reqWireTimeMillis = msg.requestReceivedTsMillis() - msg.requestSendTsMillis();
-
-            if (maxReqWireTimeMillis < reqWireTimeMillis) {
-                maxReqWireTimeMillis = reqWireTimeMillis;
-                maxReqWireTimeTs = now;
-            }
-
-            long resWireTimeMillis = msg.responseReceivedTsMillis() - msg.requestSendTsMillis();
-
-            if (maxResWireTimeMillis < resWireTimeMillis) {
-                maxResWireTimeMillis = resWireTimeMillis;
-                maxResWireTimeTs = now;
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class IoTestNodeResults {
-        /** */
-        private long latencyLimit;
-
-        /** */
-        private long[] resLatency;
-
-        /** */
-        private long totalLatency;
-
-        /** */
-        private Collection<IgnitePair<Long>> maxLatency = new ArrayList<>();
-
-        /** */
-        private Collection<IgnitePair<Long>> maxReqSendQueueTime = new ArrayList<>();
-
-        /** */
-        private Collection<IgnitePair<Long>> maxReqRcvQueueTime = new ArrayList<>();
-
-        /** */
-        private Collection<IgnitePair<Long>> maxResSendQueueTime = new ArrayList<>();
-
-        /** */
-        private Collection<IgnitePair<Long>> maxResRcvQueueTime = new ArrayList<>();
-
-        /** */
-        private Collection<IgnitePair<Long>> maxReqWireTimeMillis = new ArrayList<>();
-
-        /** */
-        private Collection<IgnitePair<Long>> maxResWireTimeMillis = new ArrayList<>();
-
-        /**
-         * @param res Node results to add.
-         */
-        public void add(IoTestThreadLocalNodeResults res) {
-            if (resLatency == null) {
-                resLatency = res.resLatency.clone();
-                latencyLimit = res.latencyLimit;
-            }
-            else {
-                assert latencyLimit == res.latencyLimit;
-                assert resLatency.length == res.resLatency.length;
-
-                for (int i = 0; i < resLatency.length; i++)
-                    resLatency[i] += res.resLatency[i];
-            }
-
-            totalLatency += res.totalLatency;
-
-            maxLatency.add(F.pair(res.maxLatency, res.maxLatencyTs));
-            maxReqSendQueueTime.add(F.pair(res.maxReqSendQueueTime, res.maxReqSendQueueTimeTs));
-            maxReqRcvQueueTime.add(F.pair(res.maxReqRcvQueueTime, res.maxReqRcvQueueTimeTs));
-            maxResSendQueueTime.add(F.pair(res.maxResSendQueueTime, res.maxResSendQueueTimeTs));
-            maxResRcvQueueTime.add(F.pair(res.maxResRcvQueueTime, res.maxResRcvQueueTimeTs));
-            maxReqWireTimeMillis.add(F.pair(res.maxReqWireTimeMillis, res.maxReqWireTimeTs));
-            maxResWireTimeMillis.add(F.pair(res.maxResWireTimeMillis, res.maxResWireTimeTs));
-        }
-
-        /**
-         * @return Bin latency in microseconds.
-         */
-        public long binLatencyMcs() {
-            if (resLatency == null)
-                throw new IllegalStateException();
-
-            return latencyLimit / (1000 * (resLatency.length - 1));
         }
     }
 

@@ -19,11 +19,10 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
-import org.apache.ignite.internal.OperationContextMessage;
+import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.processors.tracing.messages.SpanTransport;
+import org.apache.ignite.internal.StripedMessage;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.nio.GridNioServer.MessageWrapper;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,15 +32,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
-    /** */
-    public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
-
+public class GridIoMessage implements StripedMessage, MessageWrapper {
     /** Policy. */
     @Order(0)
     byte plc;
 
     /** Topic message. */
+    @NioField
     @Order(1)
     @GridToStringInclude
     GridTopicMessage topicMsg;
@@ -62,14 +59,13 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     @Order(5)
     Message msg;
 
-    /** Serialized span */
-    @Order(6)
-    byte[] span;
-
     /** Effective operation context attributes to propagate. */
-    @Order(7)
+    @Order(6)
     @GridToStringInclude
-    public @Nullable OperationContextMessage opCtxMsg;
+    @Nullable OperationContextSnapshotMessage opCtxSnp;
+
+    /** Set once the payload is marshalled; guards double marshal and unmarshalled transmit. Not on the wire. */
+    private boolean marshalled;
 
     /**
      * Default constructor.
@@ -85,6 +81,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
      * @param ordered Message ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @param opCtxSnp Operation Context snapshot.
      */
     public GridIoMessage(
         byte plc,
@@ -92,7 +89,8 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         Message msg,
         boolean ordered,
         long timeout,
-        boolean skipOnTimeout
+        boolean skipOnTimeout,
+        @Nullable OperationContextSnapshotMessage opCtxSnp
     ) {
         assert topic != null;
         assert msg != null;
@@ -103,6 +101,7 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
+        this.opCtxSnp = opCtxSnp;
     }
 
     /**
@@ -145,6 +144,16 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
         return skipOnTimeout;
     }
 
+    /** Marks this message as marshalled. */
+    void markMarshalled() {
+        marshalled = true;
+    }
+
+    /** @return {@code true} if this message has been marshalled. */
+    boolean marshalled() {
+        return marshalled;
+    }
+
     /**
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
@@ -163,27 +172,8 @@ public class GridIoMessage implements Message, SpanTransport, MessageWrapper {
     }
 
     /** {@inheritDoc} */
-    @Override public void span(byte[] span) {
-        this.span = span;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte[] span() {
-        return span;
-    }
-
-    /**
-     * Get single partition for this message (if applicable).
-     *
-     * @return Partition ID.
-     */
-    public int partition() {
-        if (msg instanceof GridCacheMessage)
-            return ((GridCacheMessage)msg).partition();
-        if (msg instanceof DataStreamerRequest)
-            return ((DataStreamerRequest)msg).partition();
-        else
-            return STRIPE_DISABLED_PART;
+    @Override public int stripeIdx() {
+        return msg instanceof StripedMessage ? ((StripedMessage)msg).stripeIdx() : NO_STRIPE;
     }
 
     /**

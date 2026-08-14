@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.UseBinaryMarshaller;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
+@UseBinaryMarshaller
 public class CacheInvokeDirectResult implements Message {
     /** Cache key. */
     @Order(0)
@@ -112,19 +113,6 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
-
-        assert unprepareRes == null : "marshalResult() was not called for the result: " + this;
-
-        if (res != null)
-            res.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /**
      * Converts the entry processor unprepared result to a cache object instance.
      *
      * @param ctx Cache context.
@@ -138,19 +126,6 @@ public class CacheInvokeDirectResult implements Message {
             unprepareRes = null;
         }
     }
-
-    /**
-     * @param ctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-
-        if (res != null)
-            res.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -22,6 +22,7 @@ import org.apache.ignite.internal.commandline.indexreader.IgniteIndexReaderTest;
 import org.apache.ignite.util.CacheMetricsCommandTest;
 import org.apache.ignite.util.CdcCommandTest;
 import org.apache.ignite.util.CdcResendCommandTest;
+import org.apache.ignite.util.GridCommandHandlerClassPathTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyBinaryTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencySensitiveTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyTest;
@@ -32,8 +33,8 @@ import org.apache.ignite.util.GridCommandHandlerIndexListTest;
 import org.apache.ignite.util.GridCommandHandlerIndexRebuildStatusTest;
 import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
 import org.apache.ignite.util.GridCommandHandlerScheduleIndexRebuildTest;
-import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
 import org.apache.ignite.util.IdleVerifyDumpTest;
+import org.apache.ignite.util.IoTestCommandTest;
 import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
 import org.apache.ignite.util.SystemViewCommandTest;
@@ -50,8 +51,6 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexRebuildStatusTest.class,
     GridCommandHandlerScheduleIndexRebuildTest.class,
 
-    GridCommandHandlerTracingConfigurationTest.class,
-
     GridCommandHandlerPropertiesTest.class,
 
     GridCommandHandlerDefragmentationTest.class,
@@ -64,6 +63,7 @@ import org.junit.runners.Suite;
 
     SystemViewCommandTest.class,
     MetricCommandTest.class,
+    IoTestCommandTest.class,
     PerformanceStatisticsCommandTest.class,
     CacheMetricsCommandTest.class,
 
@@ -74,7 +74,8 @@ import org.junit.runners.Suite;
 
     SecurityCommandHandlerPermissionsTest.class,
 
-    IdleVerifyDumpTest.class
+    IdleVerifyDumpTest.class,
+    GridCommandHandlerClassPathTest.class
 })
 public class IgniteControlUtilityTestSuite2 {
 }

@@ -18,16 +18,22 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -55,6 +61,7 @@ import org.apache.ignite.client.events.ClientFailEvent;
 import org.apache.ignite.client.events.ClientLifecycleEventListener;
 import org.apache.ignite.client.events.ClientStartEvent;
 import org.apache.ignite.client.events.ClientStopEvent;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
@@ -69,12 +76,11 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -626,6 +632,61 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /**
+     * @param node Node to upload file to.
+     * @param icpID Classpath ID.
+     * @param file File to upload.
+     */
+    public void uploadClasspathFile(ClusterNode node, UUID icpID, Path file) throws IOException {
+        ClientChannel cliCh = ch.nodeClientChannel(node.id());
+
+        String name = file.getFileName().toString();
+        byte[] batch = new byte[(int)(CommonUtils.MB)];
+
+        try (InputStream fis = Files.newInputStream(file)) {
+            long[] offset = new long[]{0};
+            int[] bytesCnt = new int[1];
+
+            // We want to create empty file on the server side.
+            // So, even 0 bytes read, one request need to be sent.
+            bytesCnt[0] = fis.read(batch);
+
+            do {
+                cliCh.service(
+                    ClientOperation.FILE_UPLOAD,
+                    ch -> {
+                        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), ch.out(), null)) {
+                            w.writeUuid(node.id());
+                            w.writeUuid(icpID);
+                            w.writeString(name);
+                            w.writeLong(offset[0]);
+                            w.writeByteArray(batch, 0, Math.max(0, bytesCnt[0]));
+                        }
+                    },
+                    in -> null
+                );
+
+                if (bytesCnt[0] > 0)
+                    offset[0] += bytesCnt[0];
+
+                bytesCnt[0] = fis.read(batch);
+            }
+            while (bytesCnt[0] > 0);
+
+            // Check all data read and sent.
+            if (offset[0] != Files.size(file))
+                throw new IOException("Can't read all data from file");
+        }
+    }
+
+    /** @return Node IDs client connected to. */
+    public List<UUID> connectedToNodes() {
+        return ch.getChannelHolders().stream()
+            .map(hldr -> hldr.serverNodeId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Thin client implementation of {@link BinaryMetadataHandler}.
      */
     private class ClientBinaryMetadataHandler implements BinaryMetadataHandler {
@@ -787,12 +848,15 @@ public class TcpIgniteClient implements IgniteClient {
         /** System types. */
         private final Collection<String> sysTypes = new HashSet<>();
 
+        /** JDK marshaller. */
+        private final JdkMarshaller jdkMarsh = Marshallers.jdk();
+
         /**
          * Default constructor.
          */
         public ClientMarshallerContext() {
             try {
-                MarshallerUtils.processSystemClasses(CommonUtils.gridClassLoader(), sysTypes::add);
+                MarshallerUtils.processSystemClasses(sysTypes::add);
             }
             catch (IOException e) {
                 throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -858,8 +922,7 @@ public class TcpIgniteClient implements IgniteClient {
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 
-            return CommonUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr, null,
-                Marshallers.USE_CACHE.get());
+            return ClassLoaderUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr);
         }
 
         /** {@inheritDoc} */
@@ -904,13 +967,8 @@ public class TcpIgniteClient implements IgniteClient {
         }
 
         /** {@inheritDoc} */
-        @Override public IgnitePredicate<String> classNameFilter() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return Marshallers.jdk();
+            return jdkMarsh;
         }
 
         /**

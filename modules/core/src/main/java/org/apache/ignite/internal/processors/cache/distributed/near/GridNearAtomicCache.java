@@ -319,8 +319,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         assert ver != null;
 
-        boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
-
         boolean needTaskName = ctx.events().isRecordable(EVT_CACHE_OBJECT_READ) ||
             ctx.events().isRecordable(EVT_CACHE_OBJECT_PUT) ||
             ctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED);
@@ -347,10 +345,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         }
 
                         CacheObject val = req.nearValue(i);
-                        EntryProcessor<Object, Object, Object> entryProc = req.nearEntryProcessor(i);
 
-                        GridCacheOperation op = entryProc != null ? TRANSFORM :
-                            (val != null) ? UPDATE : DELETE;
+                        GridCacheOperation op = val != null ? UPDATE : DELETE;
 
                         long ttl = req.nearTtl(i);
                         long expireTime = req.nearExpireTime(i);
@@ -360,8 +356,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             nodeId,
                             nodeId,
                             op,
-                            op == TRANSFORM ? entryProc : val,
-                            op == TRANSFORM ? req.invokeArguments() : null,
+                            val,
+                            null,
                             /*write-through*/false,
                             /*read-through*/false,
                             /*retval*/false,
@@ -371,7 +367,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*event*/true,
                             /*metrics*/true,
                             /*primary*/false,
-                            /*check version*/!req.forceTransformBackups(),
+                            /*check version*/true,
                             false,
                             req.topologyVersion(),
                             CU.empty0(),
@@ -380,7 +376,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             expireTime,
                             null,
                             false,
-                            intercept,
+                            /*intercept*/false,
                             taskName,
                             null,
                             null,

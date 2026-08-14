@@ -54,12 +54,15 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -72,6 +75,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -98,6 +102,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -466,6 +471,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
+
+    /** */
+    private IgniteNodeFeatureSet locNodeFeatures;
 
     /**
      * Gets current SPI state.
@@ -1188,6 +1196,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         // Init local node.
         initAddresses();
 
+        locNodeFeatures = ((IgniteEx)ignite).context().localNodeFeatures();
+
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
             addrs.get1(),
@@ -1269,7 +1279,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         // Do not give own loopback to avoid requesting current node.
         if (!node.equals(locNode))
-            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+            addrs.removeIf(addr -> addr.getAddress() == null ||
+                (addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr)));
 
         addrs.sort(U.inetAddressesComparator(sameHost));
 
@@ -1684,6 +1695,41 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
     }
 
+    /** */
+    IgniteNodeFeatureSet localNodeFeatures() {
+        return locNodeFeatures;
+    }
+
+    /** */
+    void validateRemoteFeatures(IgniteNodeFeatureSet rmtFeatures) throws IgniteCheckedException {
+        if (rmtFeatures == null) {
+            throw new UnsupportedNodeVersionException(
+                "Failed to obtain remote node features. The remote node may be running an unsupported Ignite version," +
+                    " which may result in unexpected handshake message serialization");
+        }
+
+        for (IgniteComponentFeatureSet rmtCmpFeatures : rmtFeatures.values()) {
+            IgniteComponentFeatureSet locCmpFeatures = locNodeFeatures.componentFeatures(rmtCmpFeatures.componentName());
+
+            if (locCmpFeatures == null)
+                continue;
+
+            int c = locCmpFeatures.version().compareTo(rmtCmpFeatures.version());
+
+            if (c == 0)
+                continue;
+
+            IgniteComponentFeatureSet src = c > 0 ? rmtCmpFeatures : locCmpFeatures;
+            IgniteComponentFeatureSet target = c > 0 ? locCmpFeatures : rmtCmpFeatures;
+
+            if (!src.isUpgradableTo(target)) {
+                throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
+                    " [locComponents=" + locNodeFeatures +
+                    ", rmtComponents=" + rmtFeatures + ']');
+            }
+        }
+    }
+
     /**
      * Writes message to the socket.
      *
@@ -1809,7 +1855,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IOException If IO failed or read timed out.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException, IgniteCheckedException {
+    protected <T extends Message> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException, IgniteCheckedException {
         Socket sock = ses.socket();
 
         assert sock != null;
@@ -1843,6 +1889,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 if (msg != null && sslMsgPattern.matcher(msg).matches())
                     streamCorruptedCause.initCause(new SSLException("Detected SSL alert in StreamCorruptedException"));
             }
+
+            if (X.hasCause(e, ClassNotFoundException.class)) {
+                LT.error(log, e, "Failed to read message due to an unknown class to unmarshal received. Unable to " +
+                    "process the Discovery protocol. Stopping the Discovery SPI and invoking the failure handler. " +
+                    "RmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
+
+                ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                // Prevents following cycling attempts to reconnect and logs flooding.
+                spiStop();
+            }
+
             throw e;
         }
         finally {

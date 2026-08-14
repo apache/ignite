@@ -21,10 +21,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.NotNull;
@@ -32,10 +35,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.service.ServiceTopology.EMPTY;
 
-/**
- * Service's information container.
- */
-public class ServiceInfo implements ServiceDescriptor {
+/** Service's information container. */
+public class ServiceInfo implements ServiceDescriptor, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,23 +44,36 @@ public class ServiceInfo implements ServiceDescriptor {
     private transient volatile GridKernalContext ctx;
 
     /** Origin node ID. */
-    private final UUID originNodeId;
+    @Order(0)
+    UUID originNodeId;
 
     /** Service id. */
-    private final IgniteUuid srvcId;
+    @Order(1)
+    IgniteUuid srvcId;
 
     /** Service configuration. */
-    private final LazyServiceConfiguration cfg;
+    private LazyServiceConfiguration cfg;
+
+    /** Service configuration message. */
+    @Order(2)
+    transient LazyServiceConfigurationMessage cfgMsg;
 
     /** Statically configured flag. */
-    private final boolean staticCfg;
+    @Order(3)
+    boolean staticCfg;
 
     /** Topology snapshot. */
+    @Order(4)
     @GridToStringInclude
-    private volatile ServiceTopology top = EMPTY;
+    volatile ServiceTopology top = EMPTY;
 
     /** Service class. */
     private transient volatile Class<? extends Service> srvcCls;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceInfo() {
+        // No-op.
+    }
 
     /**
      * @param originNodeId Initiating node id.
@@ -82,6 +96,8 @@ public class ServiceInfo implements ServiceDescriptor {
         this.srvcId = srvcId;
         this.cfg = cfg;
         this.staticCfg = staticCfg;
+
+        cfgMsg = new LazyServiceConfigurationMessage(cfg);
     }
 
     /**
@@ -107,34 +123,27 @@ public class ServiceInfo implements ServiceDescriptor {
         return top;
     }
 
-    /**
-     * Returns service's configuration.
-     *
-     * @return Service configuration.
-     */
+    /** @return Service configuration. */
     public LazyServiceConfiguration configuration() {
+        if (cfg == null && cfgMsg != null)
+            cfg = cfgMsg.toConfiguration();
+
         return cfg;
     }
 
-    /**
-     * @return {@code true} if statically configured.
-     */
+    /** @return {@code true} if statically configured. */
     public boolean staticallyConfigured() {
         return staticCfg;
     }
 
-    /**
-     * Returns services id.
-     *
-     * @return Service id.
-     */
+    /** @return Service id. */
     public IgniteUuid serviceId() {
         return srvcId;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cfg.getName();
+        return configuration().getName();
     }
 
     /** {@inheritDoc} */
@@ -142,7 +151,7 @@ public class ServiceInfo implements ServiceDescriptor {
         if (srvcCls != null)
             return srvcCls;
 
-        String clsName = cfg.serviceClassName();
+        String clsName = configuration().serviceClassName();
 
         try {
             srvcCls = (Class<? extends Service>)Class.forName(clsName);
@@ -167,22 +176,22 @@ public class ServiceInfo implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public int totalCount() {
-        return cfg.getTotalCount();
+        return configuration().getTotalCount();
     }
 
     /** {@inheritDoc} */
     @Override public int maxPerNodeCount() {
-        return cfg.getMaxPerNodeCount();
+        return configuration().getMaxPerNodeCount();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String cacheName() {
-        return cfg.getCacheName();
+        return configuration().getCacheName();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K> K affinityKey() {
-        return (K)cfg.getAffinityKey();
+        return (K)configuration().getAffinityKey();
     }
 
     /** {@inheritDoc} */

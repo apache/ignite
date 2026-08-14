@@ -89,6 +89,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -110,8 +111,8 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
-import org.apache.ignite.internal.managers.tracing.GridTracingManager;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -170,6 +171,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
@@ -201,10 +203,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
@@ -917,10 +917,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
 
-        IgniteMarshallerClassFilter clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
-
-        MarshallerUtils.autoconfigureObjectInputFilter(clsFilter);
-
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -928,7 +924,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 cfg,
                 gw,
                 plugins,
-                clsFilter,
                 workerRegistry,
                 hnd,
                 longJVMPauseDetector
@@ -1000,12 +995,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            try {
-                startManager(new GridTracingManager(ctx, false));
-            }
-            catch (IgniteCheckedException e) {
-                startManager(new GridTracingManager(ctx, true));
-            }
             startManager(new GridMetricManager(ctx));
             startManager(new GridSystemViewManager(ctx));
 
@@ -1031,6 +1020,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Start the encryption manager after assigning the discovery manager to context, so it will be
             // able to register custom event listener.
             startManager(new GridEncryptionManager(ctx));
+            startProcessor(new ClassPathProcessor(ctx));
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 
@@ -1324,9 +1314,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
-
-        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
+        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller()));
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
@@ -1348,21 +1336,20 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         for (MessageFactoryProvider msg : msgs)
-            initProvider(msg, resolvedClsLdr);
+            initProvider(msg);
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
     }
 
     /**
-     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller and classloader.
+     * Re-init {@link AbstractMessageFactoryProvider} with a proper marshaller.
      *
      * @param factoryProvider Message factory provider.
-     * @param clsLdr Class loader.
      */
-    private void initProvider(MessageFactoryProvider factoryProvider, ClassLoader clsLdr) {
-        if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
-            ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
-                ctx.marshaller(), clsLdr);
+    private void initProvider(MessageFactoryProvider factoryProvider) {
+        if (factoryProvider instanceof AbstractMessageFactoryProvider) {
+            ((AbstractMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
+                ctx.marshaller());
         }
     }
 
@@ -1654,7 +1641,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         addSpiAttributes(cfg.getCheckpointSpi());
         addSpiAttributes(cfg.getLoadBalancingSpi());
         addSpiAttributes(cfg.getDeploymentSpi());
-        addSpiAttributes(cfg.getTracingSpi());
 
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
@@ -1870,7 +1856,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            U.clearClassCache();
+            ClassLoaderUtils.clearClassCache();
             MarshallerExclusions.clearCache();
             BinaryUtils.clearCache();
 
@@ -2773,15 +2759,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated(forRemoval = true)
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        guard();
-
-        try {
-            return ctx.tracing().configuration();
-        }
-        finally {
-            unguard();
-        }
+        return NoopTracingConfigurationManager.INSTANCE;
     }
 
     /** {@inheritDoc} */
@@ -3380,26 +3360,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         catch (Exception e) {
             U.error(log, "Failed to dump debug info for node: " + e, e);
         }
-    }
-
-    /**
-     * @param node Node.
-     * @param payload Message payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean procFromNioThread) {
-        return ctx.io().sendIoTest(node, payload, procFromNioThread);
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @param payload Message payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
-        return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
     }
 
     /** Registers configuration system view. */

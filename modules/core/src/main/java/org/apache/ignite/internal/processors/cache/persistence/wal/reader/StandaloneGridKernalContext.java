@@ -44,6 +44,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -91,6 +92,8 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
@@ -100,8 +103,6 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -109,7 +110,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -180,6 +180,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Operation context dispacther. */
     private final OperationContextDispatcher opCtxDispatcher = new OperationContextDispatcher();
 
+    /** */
+    private final IgniteNodeFeatureSet locNodeFeatures = new IgniteNodeFeatureSet(IgniteCoreFeatureSet.local());
+
     /**
      * @param log Logger.
      * @param ft Node file tree.
@@ -205,7 +208,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         this.ft = ft;
         this.marsh = new BinaryMarshaller();
 
-        marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
+        marshallerCtx = new MarshallerContextImpl(null);
         cfg = prepareIgniteConfiguration();
 
         try {
@@ -321,6 +324,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet localNodeFeatures() {
+        return locNodeFeatures;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         final IgniteEx kernal = new IgniteKernal() {
             /**
@@ -416,11 +424,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tracing tracing() {
-        return new NoopTracing();
     }
 
     /** {@inheritDoc} */
@@ -759,6 +762,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public RollingUpgradeProcessor rollingUpgrade() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassPathProcessor classPath() {
         return null;
     }
 

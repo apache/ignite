@@ -209,8 +209,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         UUID nodeId = m.primary().id();
 
-        for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
-            IgniteTxEntry txEntry = tx.entry(entry.getKey());
+        for (KeyedVersionedValue tup : res.ownedValues()) {
+            IgniteTxEntry txEntry = tx.entry(tup.txKey());
 
             assert txEntry != null;
 
@@ -221,8 +221,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                     if (cacheCtx.isNear()) {
                         GridNearCacheEntry nearEntry = (GridNearCacheEntry)txEntry.cached();
 
-                        CacheVersionedValue tup = entry.getValue();
-
                         nearEntry.resetFromPrimary(tup.value(),
                             tx.xidVersion(),
                             tup.version(),
@@ -231,8 +229,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                     }
                     else if (txEntry.cached().detached()) {
                         GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
-
-                        CacheVersionedValue tup = entry.getValue();
 
                         detachedEntry.resetFromPrimary(tup.value(), tx.xidVersion());
                     }

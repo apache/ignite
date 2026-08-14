@@ -54,7 +54,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
 
         this.updateReq = updateReq;
         this.cacheId = updateReq.cacheId();
-        this.partId = updateReq.partition();
+        this.partId = updateReq.stripeIdx();
         this.futId = updateReq.futureId();
 
         assert partId >= 0;
@@ -74,8 +74,12 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
         return updateReq;
     }
 
-    /** {@inheritDoc} */
-    @Override public int partition() {
+    /**
+     * The value travels because the primary puts it into the response, it cannot restore it otherwise.
+     *
+     * {@inheritDoc}
+     */
+    @Override public int stripeIdx() {
         return partId;
     }
 

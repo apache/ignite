@@ -30,16 +30,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -48,7 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -63,7 +61,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <tt>public</tt> due to certain limitations of Java technology.
  */
 public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable, MarshallableMessage {
+    Comparable<TcpDiscoveryNode>, Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,7 +71,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Consistent ID. */
     @GridToStringInclude
-    private Object consistentId;
+    @Marshalled("consistentIdBytes")
+    Object consistentId;
 
     /** Serialized {@link #consistentId}. */
     @Order(1)
@@ -81,7 +80,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Node attributes. */
     @GridToStringExclude
-    private Map<String, Object> attrs;
+    @Marshalled("attrsBytes")
+    Map<String, Object> attrs;
 
     /** Serialized {@link #attrs}. */
     @Order(2)
@@ -107,16 +107,12 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Node metrics. */
     @GridToStringExclude
-    volatile ClusterMetrics metrics;
-
-    /** Node metrics message. */
-    @GridToStringExclude
     @Order(6)
-    volatile NodeMetricsMessage metricsMsg;
+    volatile ClusterMetricsSnapshot clusterMetricsSnapshot;
 
     /** Node cache metrics. */
     @GridToStringExclude
-    private volatile Map<Integer, CacheMetrics> cacheMetrics;
+    private volatile Map<Integer, CacheMetrics> cacheMetricsSnapshot;
 
     /** Node order in the topology. */
     @Order(7)
@@ -214,36 +210,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        metrics = metricsProvider.metrics();
-        cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (attrs != null)
-            attrsBytes = U.marshal(marsh, attrs);
-
-        if (consistentId != null)
-            consistentIdBytes = U.marshal(marsh, consistentId);
-
-        metricsMsg = new NodeMetricsMessage(metrics);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (attrsBytes != null)
-            attrs = U.unmarshal(marsh, attrsBytes, clsLdr);
-
-        if (consistentIdBytes != null)
-            consistentId = U.unmarshal(marsh, consistentIdBytes, clsLdr);
-
-        if (metricsMsg != null)
-            metrics = new ClusterMetricsSnapshot(metricsMsg);
-
-        attrsBytes = null;
-        consistentIdBytes = null;
-        metricsMsg = null;
     }
 
     /**
@@ -311,6 +278,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
+
+        // Invalidate the @Marshalled cache: attrs are mutated after the first marshal (auth adds the security
+        // subject on join), and a stale attrsBytes would propagate the pre-auth attributes.
+        attrsBytes = null;
     }
 
     /**
@@ -324,40 +295,31 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
-        if (metricsProvider != null) {
-            ClusterMetrics metrics0 = metricsProvider.metrics();
+        assert clusterMetricsSnapshot != null || metricsProvider != null;
 
-            metrics = metrics0;
-
-            return metrics0;
-        }
-
-        return metrics;
+        return metricsProvider == null ? clusterMetricsSnapshot : metricsProvider.metrics();
     }
 
     /** {@inheritDoc} */
     @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
-        this.metrics = metrics;
+        this.clusterMetricsSnapshot = ClusterMetricsSnapshot.of(metrics);
     }
 
     /** {@inheritDoc} */
     @Override public Map<Integer, CacheMetrics> cacheMetrics() {
         if (metricsProvider != null) {
-            Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
-
-            cacheMetrics = cacheMetrics0;
-
-            return cacheMetrics0;
+            // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28965
+            cacheMetricsSnapshot = metricsProvider.cacheMetrics();
         }
 
-        return cacheMetrics;
+        return cacheMetricsSnapshot;
     }
 
     /** {@inheritDoc} */
     @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
-        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
+        this.cacheMetricsSnapshot = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
     }
 
     /**
@@ -618,7 +580,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         // Cluster metrics
         byte[] mtr = null;
 
-        ClusterMetrics metrics = this.metrics;
+        var metrics = this.clusterMetricsSnapshot;
 
         if (metrics != null)
             mtr = ClusterMetricsSnapshot.serialize(metrics);
@@ -649,7 +611,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
-            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
+            clusterMetricsSnapshot = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
         // Legacy: Cache metrics
         int size = in.readInt();
