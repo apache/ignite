@@ -215,7 +215,7 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     private static Map<String, EnumSet<SecurityPermission>> readPermissions(
         ObjectInputStream.GetField fields,
         String name
-    ) throws IOException {
+    ) throws IOException, ClassNotFoundException {
         return normalizeResourcePermissions((Map<String, ? extends Collection<SecurityPermission>>)fields.get(name, null));
     }
 
