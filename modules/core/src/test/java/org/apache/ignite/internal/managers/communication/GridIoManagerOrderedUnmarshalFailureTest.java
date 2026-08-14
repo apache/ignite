@@ -243,7 +243,9 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     /** Fails the unmarshal of the flagged messages. */
     private static class FailingMarshaller implements MessageMarshaller<FailingUnmarshalMessage> {
         /** {@inheritDoc} */
-        @Override public void marshal(FailingUnmarshalMessage msg, Marshaller marsh, GridKernalContext kctx,
+        @Override public void marshal(FailingUnmarshalMessage msg,
+            Marshaller marsh,
+            GridKernalContext kctx,
             @Nullable CacheObjectContext cacheObjCtx) {
             // No-op.
         }

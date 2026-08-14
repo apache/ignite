@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
  * It can be updated dynamically from different nodes and threads on the same node.
  * <p>
- * Travels both transports: by discovery in the data bag, by communication in the {@link MetadataResponseMessage}.
+ * Travels both transports: Discovery in the data bag, Communication in the {@link MetadataResponseMessage}.
  */
 @JdkMarshalled
 public final class BinaryMetadataVersionInfo implements Serializable, Message {

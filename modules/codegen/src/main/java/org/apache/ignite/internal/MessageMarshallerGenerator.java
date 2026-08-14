@@ -121,9 +121,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     /** Name of the marshaller the generated body uses: the transport one, or the pinned JDK one. */
     private String marshVar;
 
-    /** */
-    private boolean hasMarshalled;
-
     /** Whether any generated method got a non-empty body; a marshaller without one is skipped entirely. */
     private boolean hasStatements;
 
@@ -178,7 +175,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         selfMarshalling = selfMarshallingMsgType != null && assignableFrom(type.asType(), selfMarshallingMsgType);
         jdkMarshalled = pinsJdkMarshaller(type);
         marshVar = jdkMarshalled ? "jdkMarsh" : "marsh";
-        hasMarshalled = kinds.values().stream().anyMatch(k -> k == MarshalledKind.BLOB || k == MarshalledKind.ELEMENT_BLOBS);
 
         generateMarshalMethod(fields);
         generateUnmarshalMethods(fields);

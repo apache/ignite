@@ -30,7 +30,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message used to transfer {@link Throwable} objects.
  * <p>
- * Travels both transports, and an error is an arbitrary user class the cluster may not know yet.
+ * Travels both transports, Communication and Discovery, and an error is an arbitrary user class the cluster may
+ * not know yet.
  */
 // TODO IGNITE-28912: move to a common package.
 @SuppressWarnings({"NullableProblems", "unused"})

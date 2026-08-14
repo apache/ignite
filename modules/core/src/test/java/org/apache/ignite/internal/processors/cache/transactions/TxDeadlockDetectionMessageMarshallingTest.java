@@ -67,7 +67,9 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof TxLocksResponse) {
                         try {
-                            CommunicationMarshalling.unmarshal((TxLocksResponse)msg, clientCtx.kernalContext(), null,
+                            CommunicationMarshalling.unmarshal((TxLocksResponse)msg,
+                                clientCtx.kernalContext(),
+                                null,
                                 clientCtx.deploy().globalLoader());
 
                             res.set(true);

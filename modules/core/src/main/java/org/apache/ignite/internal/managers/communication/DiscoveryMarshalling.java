@@ -34,7 +34,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class DiscoveryMarshalling {
     /** */
-    public static <M extends Message> void marshal(M msg, GridKernalContext kctx,
+    public static <M extends Message> void marshal(M msg,
+        GridKernalContext kctx,
         @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         MessageMarshalling.marshal(msg, kctx.marshallerContext().jdkMarshaller(), kctx, cacheObjCtx);
     }
