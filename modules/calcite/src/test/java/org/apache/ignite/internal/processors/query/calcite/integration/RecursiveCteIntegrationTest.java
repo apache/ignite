@@ -21,6 +21,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.junit.Test;
 
 /**
@@ -130,6 +131,33 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             ") " +
             "SELECT n FROM numbers")
             .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testStateIsIsolatedBetweenSameNamedRecursiveCtes() {
+        assertQuery("SELECT /*+ MERGE_JOIN */ l.n, r.n " +
+            "FROM (" +
+                "WITH RECURSIVE numbers(n) AS (" +
+                    "SELECT 1 " +
+                    "UNION ALL " +
+                    "SELECT n + 1 FROM numbers WHERE n < 3" +
+                ") " +
+                "SELECT n, n + 9 AS join_key FROM numbers" +
+            ") l " +
+            "JOIN (" +
+                "WITH RECURSIVE numbers(n) AS (" +
+                    "SELECT 10 " +
+                    "UNION ALL " +
+                    "SELECT n + 1 FROM numbers WHERE n < 12" +
+                ") " +
+                "SELECT n, n - 9 AS join_key FROM numbers" +
+            ") r ON l.join_key = r.n")
+            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
+            .returns(1, 10)
+            .returns(2, 11)
+            .returns(3, 12)
             .check();
     }
 

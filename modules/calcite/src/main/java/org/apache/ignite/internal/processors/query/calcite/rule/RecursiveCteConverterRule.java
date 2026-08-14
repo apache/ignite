@@ -55,17 +55,17 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
         if (!rel.all)
             throw unsupported("only UNION ALL is supported");
 
-        String stateId = RecursiveCteUtils.stateId(table);
+        String stateId = RecursiveCteUtils.stateId(planner, table);
 
-        if (RecursiveCteUtils.referenceCount(rel.getIterativeRel(), stateId) > 1)
+        if (RecursiveCteUtils.referenceCount(rel.getIterativeRel(), table) > 1)
             throw unsupported("the recursive term must contain no more than one self-reference");
 
-        validateSpool(rel.getSeedRel(), stateId, "seed");
-        validateSpool(rel.getIterativeRel(), stateId, "recursive term");
+        validateSpool(rel.getSeedRel(), table, "seed");
+        validateSpool(rel.getIterativeRel(), table, "recursive term");
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(single());
-        RelNode iterative = RecursiveCteUtils.materializeStaticInputs(rel.getIterativeRel(), stateId);
+        RelNode iterative = RecursiveCteUtils.materializeStaticInputs(rel.getIterativeRel(), table);
 
         return new IgniteRepeatUnion(
             cluster,
@@ -78,7 +78,7 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
     }
 
     /** */
-    private static void validateSpool(RelNode rel, String stateId, String term) {
+    private static void validateSpool(RelNode rel, RelOptTable table, String term) {
         rel = RecursiveCteUtils.original(rel);
 
         if (!(rel instanceof LogicalTableSpool))
@@ -86,8 +86,7 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
 
         LogicalTableSpool spool = (LogicalTableSpool)rel;
 
-        if (!RecursiveCteUtils.isTransient(spool.getTable())
-            || !stateId.equals(RecursiveCteUtils.stateId(spool.getTable()))) {
+        if (!RecursiveCteUtils.sameTransientTable(spool.getTable(), table)) {
             throw unsupported("the " + term + " must target the recursive transient table");
         }
 

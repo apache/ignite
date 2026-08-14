@@ -56,7 +56,7 @@ public class RecursiveTableSpoolConverterRule extends AbstractIgniteConverterRul
             rel.getCluster(),
             traits,
             input,
-            RecursiveCteUtils.stateId(rel.getTable())
+            RecursiveCteUtils.stateId(planner, rel.getTable())
         );
     }
 }

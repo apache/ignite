@@ -57,7 +57,7 @@ public class RecursiveTableScanConverterRule extends AbstractIgniteConverterRule
             rel.getCluster(),
             traits,
             rel.getRowType(),
-            RecursiveCteUtils.stateId(rel.getTable())
+            RecursiveCteUtils.stateId(planner, rel.getTable())
         );
     }
 }

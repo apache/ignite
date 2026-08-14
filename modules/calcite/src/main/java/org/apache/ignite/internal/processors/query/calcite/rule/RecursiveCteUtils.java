@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.schema.TransientTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalRecursiveStaticSpool;
 
 /** Utilities shared by recursive CTE converter rules. */
@@ -39,27 +41,31 @@ final class RecursiveCteUtils {
     }
 
     /** Stable identifier preserved in the serialized physical plan. */
-    static String stateId(RelOptTable table) {
-        return String.join(".", table.getQualifiedName());
+    static String stateId(RelOptPlanner planner, RelOptTable table) {
+        BaseQueryContext ctx = planner.getContext().unwrap(BaseQueryContext.class);
+
+        assert ctx != null;
+
+        return ctx.recursiveCteStateId(table);
     }
 
     /** Counts scans of the recursive transient table. */
-    static int referenceCount(RelNode rel, String stateId) {
+    static int referenceCount(RelNode rel, RelOptTable table) {
         rel = original(rel);
 
-        int cnt = isRecursiveScan(rel, stateId) ? 1 : 0;
+        int cnt = isRecursiveScan(rel, table) ? 1 : 0;
 
         for (RelNode input : rel.getInputs())
-            cnt += referenceCount(input, stateId);
+            cnt += referenceCount(input, table);
 
         return cnt;
     }
 
     /** Materializes maximal iteration subtrees that do not depend on the current delta. */
-    static RelNode materializeStaticInputs(RelNode rel, String stateId) {
+    static RelNode materializeStaticInputs(RelNode rel, RelOptTable table) {
         rel = original(rel);
 
-        if (isRecursiveScan(rel, stateId))
+        if (isRecursiveScan(rel, table))
             return rel;
 
         List<RelNode> inputs = rel.getInputs();
@@ -70,10 +76,10 @@ final class RecursiveCteUtils {
         List<RelNode> newInputs = new ArrayList<>(inputs.size());
 
         for (RelNode input : inputs) {
-            if (referenceCount(input, stateId) == 0)
+            if (referenceCount(input, table) == 0)
                 newInputs.add(new IgniteLogicalRecursiveStaticSpool(input));
             else
-                newInputs.add(materializeStaticInputs(input, stateId));
+                newInputs.add(materializeStaticInputs(input, table));
         }
 
         return rel.copy(rel.getTraitSet(), newInputs);
@@ -96,10 +102,17 @@ final class RecursiveCteUtils {
         return rel;
     }
 
+    /** Returns whether both optimizer tables represent the same transient table instance. */
+    static boolean sameTransientTable(RelOptTable first, RelOptTable second) {
+        TransientTable firstTable = first == null ? null : first.unwrap(TransientTable.class);
+        TransientTable secondTable = second == null ? null : second.unwrap(TransientTable.class);
+
+        return firstTable != null && firstTable == secondTable;
+    }
+
     /** */
-    private static boolean isRecursiveScan(RelNode rel, String stateId) {
+    private static boolean isRecursiveScan(RelNode rel, RelOptTable table) {
         return rel instanceof TableScan
-            && isTransient(((TableScan)rel).getTable())
-            && stateId(((TableScan)rel).getTable()).equals(stateId);
+            && sameTransientTable(((TableScan)rel).getTable(), table);
     }
 }
