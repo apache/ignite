@@ -66,7 +66,7 @@ public class ColocationGroup implements Message {
 
     /** Marshalled assignments serialization call holder. */
     @Order(2)
-    @Nullable int[] marshalledAssignments;
+    int @Nullable [] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
@@ -110,7 +110,7 @@ public class ColocationGroup implements Message {
     }
 
     /** */
-    private ColocationGroup(long[] srcIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
+    private ColocationGroup(long[] srcIds, List<UUID> nodeIds, @Nullable List<List<UUID>> assignments) {
         this.srcIds = srcIds;
         this.nodeIds = nodeIds;
         this.assignments = assignments;
@@ -134,9 +134,9 @@ public class ColocationGroup implements Message {
      * @return List of partitions (index) and nodes (items) having an appropriate partition in
      * {@link GridDhtPartitionState#OWNING} state, calculated for distributed tables, involved in query execution.
      */
-    public List<List<UUID>> assignments() {
+    public @Nullable List<List<UUID>> assignments() {
         if (assignments != null)
-            return assignments;
+            return Collections.unmodifiableList(assignments);
 
         if (!F.isEmpty(nodeIds))
             return nodeIds.stream().map(Collections::singletonList).collect(Collectors.toList());

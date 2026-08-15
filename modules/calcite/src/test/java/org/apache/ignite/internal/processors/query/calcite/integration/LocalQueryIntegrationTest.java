@@ -16,10 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -27,6 +25,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -242,20 +241,14 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
 
                 return aff.isPrimary(locNode, part);
             }
-        ).collect(Collectors.toList());;
+        ).toList();
 
         assertEquals(primaries.size(), res.size());
     }
 
-    /** Cache value. */
-    private static class TestValue implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private String idxVal;
-
-        /** */
-        private String val;
-    }
+    /**
+     * @param idx_val
+     * @param val
+     */
+    private record TestValue(@QuerySqlField String idx_val, @QuerySqlField String val) {}
 }
