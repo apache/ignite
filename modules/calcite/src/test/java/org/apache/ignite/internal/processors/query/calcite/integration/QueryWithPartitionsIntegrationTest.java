@@ -16,8 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -26,9 +28,13 @@ import java.util.stream.Stream;
 import com.google.common.primitives.Ints;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
@@ -44,6 +50,12 @@ import org.junit.runners.Parameterized;
 public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final int ENTRIES_COUNT = 10000;
+
+    /** */
+    private static final String CACHE_NAME = "cache_name";
+
+    /** */
+    private static final String PERSON_TABLE = '"' + CACHE_NAME + '"' + ".Person";
 
     /** */
     private volatile int[] parts;
@@ -80,6 +92,27 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("ID", Integer.class.getName());
+        fields.put("IDX_VAL", String.class.getName());
+        fields.put("VAL", String.class.getName());
+
+        QueryEntity qryEntity = new QueryEntity()
+            .setTableName("Person")
+            .setKeyType(Integer.class.getName())
+            .setValueType(TestValue.class.getName())
+            .setFields(fields)
+            .setKeyFieldName("ID");
+
+        CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<Integer, TestValue>()
+            .setName(CACHE_NAME)
+            .setQueryEntities(F.asList(qryEntity))
+            .setAffinity(new RendezvousAffinityFunction(false, 8))
+            .setCacheMode(CacheMode.PARTITIONED);
+
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -192,13 +225,23 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     }
 
     /** */
-    private void testJoin(String table1, String table2, String joinCol) {
-        String sqlStr = "select * from " + table1 + " join " + table2 +
-                " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
+    @Test
+    public void testPartitionsQueryWithDifferentDistribution() {
+        Stream.of("ID", "IDX_VAL", "VAL").forEach(col -> assertThrowsSqlException(
+            fillJoinQuery("T1", PERSON_TABLE, col), "Execution of non-collocated query"));
+    }
 
-        List<?> res = sql(sqlStr);
+    /** */
+    private void testJoin(String table1, String table2, String joinCol) {
+        List<?> res = sql(fillJoinQuery(table1, table2, joinCol));
 
         assertEquals(res.size(), cacheSize(table1 + "_CACHE", parts));
+    }
+
+    /** */
+    private String fillJoinQuery(String table1, String table2, String joinCol) {
+        return "select * from " + table1 + " join " + table2 +
+            " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
     }
 
     /** */
@@ -283,5 +326,17 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
             else
                 return cache.sizeLong(p, CachePeekMode.PRIMARY);
         }).sum();
+    }
+
+    /** Cache value. */
+    private static class TestValue implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String idxVal;
+
+        /** */
+        private String val;
     }
 }

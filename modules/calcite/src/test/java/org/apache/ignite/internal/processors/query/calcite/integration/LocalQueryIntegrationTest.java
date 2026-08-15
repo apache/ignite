@@ -16,17 +16,24 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.io.Serializable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /** */
@@ -34,10 +41,37 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final int ENTRIES_COUNT = 10000;
 
+    /** */
+    private static final String CACHE_NAME = "cache_name";
+
+    /** */
+    private static final String PERSON_TABLE = '"' + CACHE_NAME + '"' + ".Person";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("ID", Integer.class.getName());
+        fields.put("IDX_VAL", String.class.getName());
+        fields.put("VAL", String.class.getName());
+
+        QueryEntity qryEntity = new QueryEntity()
+            .setTableName("Person")
+            .setKeyType(Integer.class.getName())
+            .setValueType(TestValue.class.getName())
+            .setFields(fields)
+            .setKeyFieldName("ID");
+
+        CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<Integer, TestValue>()
+            .setName(CACHE_NAME)
+            .setQueryEntities(F.asList(qryEntity))
+            .setAffinity(new RendezvousAffinityFunction(false, 8))
+            .setCacheMode(CacheMode.PARTITIONED);
+
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -121,6 +155,13 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testLocalQueryWithDifferentDistribution() {
+        Stream.of("ID", "IDX_VAL", "VAL").forEach(col -> assertThrowsSqlException(
+            fillJoinQuery("T1", PERSON_TABLE, col), "Execution of non-collocated query"));
+    }
+
+    /** */
+    @Test
     public void testInsertFromSelect() {
         try {
             sql("CREATE TABLE T3(ID INT PRIMARY KEY, IDX_VAL VARCHAR, VAL VARCHAR) WITH cache_name=t3_cache");
@@ -180,10 +221,13 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     private void testJoin(String table1, String table2, String joinCol) {
-        String sql = "select * from " + table1 + " join " + table2 +
-                        " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
+        test(fillJoinQuery(table1, table2, joinCol), table1 + "_CACHE");
+    }
 
-        test(sql, table1 + "_CACHE");
+    /** */
+    private String fillJoinQuery(String table1, String table2, String joinCol) {
+        return "select * from " + table1 + " join " + table2 +
+            " on " + table1 + "." + joinCol + "=" + table2 + "." + joinCol;
     }
 
     /** */
@@ -201,5 +245,17 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
         ).collect(Collectors.toList());;
 
         assertEquals(primaries.size(), res.size());
+    }
+
+    /** Cache value. */
+    private static class TestValue implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String idxVal;
+
+        /** */
+        private String val;
     }
 }

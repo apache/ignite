@@ -144,6 +144,11 @@ public class ColocationGroup implements Message {
         return Collections.emptyList();
     }
 
+    /** Returns {@code true} if this group represents partitioned data. */
+    boolean hasAssignments() {
+        return assignments != null;
+    }
+
     /** */
     public boolean belongs(long srcId) {
         if (srcIds == null)
@@ -210,7 +215,11 @@ public class ColocationGroup implements Message {
             }
         }
         else {
-            assert this.assignments.size() == other.assignments.size();
+            if (this.assignments.size() != other.assignments.size()) {
+                throw new ColocationMappingException("Failed to map fragment to location. " +
+                    "Caches have different numbers of partitions");
+            }
+
             assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> filter = nodeIds == null ? null : new HashSet<>(nodeIds);
             for (int i = 0; i < this.assignments.size(); i++) {
