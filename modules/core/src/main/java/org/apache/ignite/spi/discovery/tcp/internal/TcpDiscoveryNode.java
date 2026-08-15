@@ -18,9 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -41,10 +38,8 @@ import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -60,11 +55,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode, Comparable<TcpDiscoveryNode>, Message {
     /** Node ID. */
     @Order(0)
     volatile UUID id;
@@ -147,7 +138,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Alive check time (used by clients). */
     @GridToStringExclude
-    private transient volatile long aliveCheckTimeNanos;
+    private volatile long aliveCheckTimeNanos;
 
     /** Client router node ID. */
     @GridToStringExclude
@@ -156,15 +147,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringExclude
-    private transient volatile InetSocketAddress lastSuccessfulAddr;
+    private volatile InetSocketAddress lastSuccessfulAddr;
 
     /** Cache client initialization flag. */
     @GridToStringExclude
-    private transient volatile boolean cacheCliInit;
+    private volatile boolean cacheCliInit;
 
     /** Cache client flag. */
     @GridToStringExclude
-    private transient boolean cacheCli;
+    private boolean cacheCli;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -264,11 +255,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public Map<String, Object> attributes() {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
-        return F.view(attrs, new IgnitePredicate<String>() {
-            @Override public boolean apply(String s) {
-                return !IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
-            }
-        });
+        return attrs;
     }
 
     /**
@@ -567,69 +554,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         }
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeUuid(out, id);
-        U.writeMap(out, attrs);
-        U.writeCollection(out, addrs);
-        U.writeCollection(out, hostNames);
-        out.writeInt(discPort);
-
-        // Cluster metrics
-        byte[] mtr = null;
-
-        var metrics = this.clusterMetricsSnapshot;
-
-        if (metrics != null)
-            mtr = ClusterMetricsSnapshot.serialize(metrics);
-
-        U.writeByteArray(out, mtr);
-
-        // Legacy: Number of cache metrics
-        out.writeInt(0);
-
-        out.writeLong(order);
-        out.writeLong(intOrder);
-        out.writeObject(ver);
-        U.writeUuid(out, clientRouterNodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readUuid(in);
-
-        attrs = U.sealMap(U.<String, Object>readMap(in));
-        addrs = U.readCollection(in);
-        hostNames = U.readCollection(in);
-        discPort = in.readInt();
-
-        Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
-
-        // Cluster metrics
-        byte[] mtr = U.readByteArray(in);
-
-        if (mtr != null)
-            clusterMetricsSnapshot = ClusterMetricsSnapshot.deserialize(mtr, 0);
-
-        // Legacy: Cache metrics
-        int size = in.readInt();
-
-        for (int i = 0; i < size; i++) {
-            in.readInt();
-            in.readObject();
-        }
-
-        order = in.readLong();
-        intOrder = in.readLong();
-        ver = (IgniteProductVersion)in.readObject();
-        clientRouterNodeId = U.readUuid(in);
-
-        if (clientRouterNodeId() != null)
-            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
-        else
-            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
     }
 
     /** {@inheritDoc} */
