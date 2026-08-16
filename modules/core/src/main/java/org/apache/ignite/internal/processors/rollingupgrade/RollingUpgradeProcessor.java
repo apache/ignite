@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
@@ -57,7 +58,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ROLLING_UPGRADE_PROC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ABORT_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_COMPLETE_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ENABLE;
@@ -174,19 +174,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** */
     IgniteComponentUpgradeState state(String cmpName) {
         synchronized (topGuard) {
-            return detectComponentUpgradeState(clusterFeatures(), cmpName);
+            return detectComponentUpgradeState(clusterNodes(), cmpName);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(
-            ATTR_IGNITE_FEATURES,
-            U.marshal(
-                ctx.marshallerContext().jdkMarshaller(),
-                featureMgr.localVersionFeatures().values())
-        );
-
         ctx.event().addLocalEventListener(
             evt -> {
                 synchronized (topGuard) {
@@ -236,16 +229,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                         " cluster version finalization process is complete [joiningNode=" + joiningNode + ']');
             }
 
-            IgniteNodeFeatureSet joiningNodeFeatures;
-
-            try {
-                joiningNodeFeatures = extractNodeFeatures(joiningNode);
-            }
-            catch (IgniteCheckedException e) {
-                return new IgniteNodeValidationResult(
-                    joiningNode.id(),
-                    "Failed to resolve joining node features [joiningNode=" + joiningNode + ", errMsg=" + e.getMessage() + ']');
-            }
+            IgniteNodeFeatureSet joiningNodeFeatures = extractNodeFeatures(joiningNode);
 
             if (isVerUpgradeEnabled) {
                 if (!joiningNode.isClient() && !joiningNodeFeatures.components().containsAll(featureMgr.activeFeatures().components())) {
@@ -258,10 +242,10 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                     );
                 }
 
-                Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures = clusterFeatures();
+                Set<ClusterNode> clusterNodes = clusterNodes();
 
                 for (IgniteComponentFeatureSet rmtCmpFeatures : joiningNodeFeatures.values()) {
-                    IgniteComponentUpgradeState state = detectComponentUpgradeState(clusterFeatures, rmtCmpFeatures.componentName());
+                    IgniteComponentUpgradeState state = detectComponentUpgradeState(clusterNodes, rmtCmpFeatures.componentName());
 
                     if (!state.isCompatible(rmtCmpFeatures.version())) {
                         return new IgniteNodeValidationResult(
@@ -316,11 +300,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     }
 
     /** */
-    private IgniteComponentUpgradeState detectComponentUpgradeState(
-        Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures,
-        String cmpName
-    ) {
-        SortedSet<IgniteProductVersion> clusterCmpVersions = distinctClusterComponentVersions(clusterFeatures, cmpName);
+    private IgniteComponentUpgradeState detectComponentUpgradeState(Collection<ClusterNode> clusterNodes, String cmpName) {
+        SortedSet<IgniteProductVersion> clusterCmpVersions = distinctClusterComponentVersions(clusterNodes, cmpName);
 
         assert !clusterCmpVersions.isEmpty() && clusterCmpVersions.size() <= 2 : "Cluster nodes must run no more than" +
             " two versions of the component [cmpName=" + cmpName + ", clusterCmpVersions=" + clusterCmpVersions.size() + "]";
@@ -342,14 +323,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     }
 
     /** */
-    private SortedSet<IgniteProductVersion> distinctClusterComponentVersions(
-        Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures,
-        String cmpName
-    ) {
+    private SortedSet<IgniteProductVersion> distinctClusterComponentVersions(Collection<ClusterNode> clusterNodes, String cmpName) {
         SortedSet<IgniteProductVersion> distinctCmpVersions = new TreeSet<>(Comparator.nullsFirst(Comparator.naturalOrder()));
 
-        clusterFeatures.forEach((node, nodeFeatures) -> {
-            IgniteComponentFeatureSet cmpFeatures = nodeFeatures.componentFeatures(cmpName);
+        clusterNodes.forEach(node -> {
+            IgniteComponentFeatureSet cmpFeatures = extractNodeFeatures(node).componentFeatures(cmpName);
 
             if (node.isClient() && cmpFeatures == null)
                 return; // Components are optional on client nodes, even when they are configured on servers.
@@ -371,16 +349,16 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     private boolean isReadyForVersionFinalization() {
-        Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures = clusterFeatures();
+        Collection<ClusterNode> clusterNodes = clusterNodes();
 
         Set<IgniteNodeFeatureSet> distinctServerNodeFeatureSets = new HashSet<>();
         Set<IgniteNodeFeatureSet> distinctClientNodeFeatureSets = new HashSet<>();
 
-        clusterFeatures.forEach((node, features) -> {
+        clusterNodes.forEach(node -> {
             if (!node.isClient())
-                distinctServerNodeFeatureSets.add(features);
+                distinctServerNodeFeatureSets.add(extractNodeFeatures(node));
             else
-                distinctClientNodeFeatureSets.add(features);
+                distinctClientNodeFeatureSets.add(extractNodeFeatures(node));
         });
 
         if (distinctServerNodeFeatureSets.size() != 1)
@@ -402,39 +380,15 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     }
 
     /** */
-    private IgniteNodeFeatureSet extractNodeFeatures(ClusterNode node) throws IgniteCheckedException {
-        byte[] attrVal = node.attribute(ATTR_IGNITE_FEATURES);
+    private static IgniteNodeFeatureSet extractNodeFeatures(ClusterNode node) {
+        assert node instanceof IgniteClusterNode : node;
 
-        IgniteComponentFeatureSet[] nodeFeatures = U.unmarshal(
-            ctx.marshallerContext().jdkMarshaller(),
-            attrVal,
-            U.resolveClassLoader(ctx.config()));
-
-        return new IgniteNodeFeatureSet(nodeFeatures);
+        return ((IgniteClusterNode)node).features();
     }
 
     /** */
     private static Throwable firstError(Map<UUID, Throwable> errors) {
         return F.isEmpty(errors) ? null : F.firstValue(errors);
-    }
-
-    /** */
-    private Map<ClusterNode, IgniteNodeFeatureSet> clusterFeatures() {
-        assert Thread.holdsLock(topGuard);
-
-        try {
-            Map<ClusterNode, IgniteNodeFeatureSet> res = new HashMap<>();
-
-            for (ClusterNode node : clusterNodes())
-                res.put(node, extractNodeFeatures(node));
-
-            return res;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to resolve cluster features", e);
-
-            throw new IgniteException("Failed to resolve cluster features", e);
-        }
     }
 
     /** */
@@ -560,13 +514,14 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
                 curFinalizeProcId = reqId;
 
-                if (!isReadyForVersionFinalization())
+                if (!isReadyForVersionFinalization()) {
                     return new GridFinishedFuture<>(new IgniteException(
-                    "Cluster version finalization failed. The cluster contains nodes running" +
-                        " different versions of one or more components. Retry the operation after upgrading" +
-                        " all cluster node components to the same version" +
-                        " [clusterFeatures=" + clusterFeatures().entrySet().stream().collect(
-                        Collectors.toMap(e -> e.getKey().id(), Map.Entry::getValue)) + ']'));
+                        "Cluster version finalization failed. The cluster contains nodes running" +
+                            " different versions of one or more components. Retry the operation after upgrading" +
+                            " all cluster node components to the same version" +
+                            " [clusterFeatures=" + clusterNodes().stream().collect(Collectors.toMap(
+                            ClusterNode::id, RollingUpgradeProcessor::extractNodeFeatures)) + ']'));
+                }
 
                 return new GridFinishedFuture<>();
             }

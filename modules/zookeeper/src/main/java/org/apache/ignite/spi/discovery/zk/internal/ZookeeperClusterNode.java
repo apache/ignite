@@ -27,19 +27,24 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
@@ -147,6 +152,18 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public Object consistentId() {
         return consistentId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet features() {
+        byte[] nodeFeaturesAttr = (byte[])attrs.get(ATTR_IGNITE_FEATURES);
+
+        try {
+            return Marshallers.jdk().unmarshal(nodeFeaturesAttr, U.gridClassLoader());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to resolve Ignite Node Features", e);
+        }
     }
 
     /** {@inheritDoc} */

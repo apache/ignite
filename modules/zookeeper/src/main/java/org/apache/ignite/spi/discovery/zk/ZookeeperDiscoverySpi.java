@@ -23,9 +23,11 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -66,6 +69,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -364,7 +368,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             log.debug("Node version to set: " + ver);
         }
 
-        locNodeAttrs = attrs;
+        locNodeAttrs = enrichLocalNodeAttributes(attrs);
         locNodeVer = ver;
     }
 
@@ -536,7 +540,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             consistentId(),
             sesTimeout,
             cfg.isClientMode(),
-            metricsProvider);
+            metricsProvider
+        );
 
         locNode.local(true);
 
@@ -554,6 +559,20 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         }
 
         return locNode;
+    }
+
+    /** */
+    private Map<String, Object> enrichLocalNodeAttributes(Map<String, Object> attrs) {
+        Map<String, Object> copy = new HashMap<>(attrs);
+
+        try {
+            copy.put(ATTR_IGNITE_FEATURES, Marshallers.jdk().marshal(ignite.context().localNodeFeatures()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to initialize local node attribute [attrName=" + ATTR_IGNITE_FEATURES + ']', e);
+        }
+
+        return copy;
     }
 
     /** {@inheritDoc} */

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -154,6 +155,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     @Order(10)
     UUID clientRouterNodeId;
 
+    /** Node features. */
+    @GridToStringExclude
+    @Order(11)
+    IgniteNodeFeatureSet features;
+
     /** */
     @GridToStringExclude
     private transient volatile InetSocketAddress lastSuccessfulAddr;
@@ -183,6 +189,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param metricsProvider Metrics provider.
      * @param ver Version.
      * @param consistentId Node consistent ID.
+     * @param features Node features.
      */
     public TcpDiscoveryNode(UUID id,
         Collection<String> addrs,
@@ -190,11 +197,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId
+        Serializable consistentId,
+        IgniteNodeFeatureSet features
     ) {
         assert id != null;
         assert metricsProvider != null;
         assert ver != null;
+        assert features != null;
 
         this.id = id;
 
@@ -207,6 +216,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         this.discPort = discPort;
         this.metricsProvider = metricsProvider;
         this.ver = ver;
+        this.features = features;
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
@@ -357,6 +367,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet features() {
+        return features;
     }
 
     /**
@@ -544,7 +559,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public TcpDiscoveryNode clientReconnectNode(Map<String, Object> nodeAttrs) {
         TcpDiscoveryNode node = new TcpDiscoveryNode(
-            id, addrs, hostNames, discPort, metricsProvider, ver, null
+            id,
+            addrs,
+            hostNames,
+            discPort,
+            metricsProvider,
+            ver,
+            null,
+            features
         );
 
         node.attrs = Collections.unmodifiableMap(new HashMap<>(nodeAttrs));
