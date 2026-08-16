@@ -326,14 +326,14 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     private SortedSet<IgniteProductVersion> distinctClusterComponentVersions(Collection<ClusterNode> clusterNodes, String cmpName) {
         SortedSet<IgniteProductVersion> distinctCmpVersions = new TreeSet<>(Comparator.nullsFirst(Comparator.naturalOrder()));
 
-        clusterNodes.forEach(node -> {
+        for (ClusterNode node : clusterNodes) {
             IgniteComponentFeatureSet cmpFeatures = extractNodeFeatures(node).componentFeatures(cmpName);
 
             if (node.isClient() && cmpFeatures == null)
-                return; // Components are optional on client nodes, even when they are configured on servers.
+                continue; // Components are optional on client nodes, even when they are configured on servers.
 
             distinctCmpVersions.add(cmpFeatures == null ? null : cmpFeatures.version());
-        });
+        }
 
         return distinctCmpVersions;
     }
@@ -354,12 +354,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         Set<IgniteNodeFeatureSet> distinctServerNodeFeatureSets = new HashSet<>();
         Set<IgniteNodeFeatureSet> distinctClientNodeFeatureSets = new HashSet<>();
 
-        clusterNodes.forEach(node -> {
+        for (ClusterNode node : clusterNodes) {
             if (!node.isClient())
                 distinctServerNodeFeatureSets.add(extractNodeFeatures(node));
             else
                 distinctClientNodeFeatureSets.add(extractNodeFeatures(node));
-        });
+        }
 
         if (distinctServerNodeFeatureSets.size() != 1)
             return false;
