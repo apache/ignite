@@ -3218,6 +3218,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (log.isDebugEnabled())
                 log.debug("Centralized affinity exchange, send affinity change message: " + msg);
 
+            assert false : "Reserach failure";
+
             cctx.discovery().sendCustomEvent(msg);
         }
         catch (IgniteCheckedException e) {

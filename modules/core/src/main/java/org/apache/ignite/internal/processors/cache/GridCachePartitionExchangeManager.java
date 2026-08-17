@@ -1311,7 +1311,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Creates partitions full message for selected cache groups.
+     * Creates partitions full message for selected cache groups and prepares it to send to another node.
      *
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
