@@ -28,7 +28,6 @@ import java.util.stream.IntStream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -47,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
  */
-public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements SelfMarshallingMessage {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
@@ -385,12 +384,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         flags = rebalanced ? (byte)(flags | REBALANCED_FLAG_MASK) : (byte)(flags & ~REBALANCED_FLAG_MASK);
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
-        if (!F.isEmpty(parts) && locParts == null)
-            locParts = copyPartitionsMap(parts);
-    }
-
     /**
      * @return Topology version.
      */
@@ -405,8 +398,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
+    /** */
+    public void afterReceive() {
+        if (!F.isEmpty(parts) && locParts == null)
+            locParts = copyPartitionsMap(parts);
+
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 

@@ -4247,7 +4247,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert msg != null;
         assert msg.exchangeId() != null : msg;
 
-        initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+        msg.afterReceive();
+
+        initFut.listen(new CI1<>() {
             @Override public void apply(IgniteInternalFuture<Boolean> f) {
                 try {
                     if (!f.get())
