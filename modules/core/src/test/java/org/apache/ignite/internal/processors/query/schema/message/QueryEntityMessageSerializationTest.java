@@ -35,13 +35,11 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -51,7 +49,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** Test for serialization round-trip of {@link QueryEntityMessage} and {@link QueryEntityExMessage}. */
 public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest {
@@ -73,11 +70,8 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         "id", 42);
 
     /** */
-    private final Marshaller marsh = jdk();
-
-    /** */
     private final MessageFactory<?> msgFactory = new IgniteMessageFactoryImpl<>(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh)});
+        new MessageFactoryProvider[] {new CoreMessagesProvider()});
 
     /** */
     @Test
@@ -172,7 +166,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
-        MessageMarshalling.marshal(msg, kctx, null);
+        DiscoveryMarshalling.marshal(msg, kctx, null);
 
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
@@ -194,7 +188,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         assertEquals("Reads" + ERROR_SUFFIX,
             expReadsWritesCnt, reader.state());
 
-        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
+        DiscoveryMarshalling.unmarshal(res, kctx);
 
         return res;
     }

@@ -40,7 +40,6 @@ import org.apache.ignite.internal.codegen.MessageProcessorTest;
 import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerOrderedUnmarshalFailureTest;
-import org.apache.ignite.internal.managers.communication.MessageFactoryMarshallerInitializationTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -167,7 +166,6 @@ import org.junit.runners.Suite;
     DefaultEnumMapperTest.class,
     IgniteDataTransferObjectProcessorTest.class,
     CompressedMessageTest.class,
-    MessageFactoryMarshallerInitializationTest.class,
 
     LogEvictionResultsTest.class,
 
