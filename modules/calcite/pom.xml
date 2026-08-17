@@ -262,6 +262,17 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/codegen</directory>
+                <targetPath>codegen</targetPath>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -290,6 +301,26 @@
                             </resources>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>copy-test-parser-resources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/test-codegen</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/codegen</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>src/test/codegen</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -307,18 +338,11 @@
                                 <artifactItem>
                                     <groupId>org.apache.calcite</groupId>
                                     <artifactId>calcite-core</artifactId>
+                                    <version>${calcite.version}</version>
                                     <type>jar</type>
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/</outputDirectory>
-                                    <includes>codegen/templates/Parser.jj</includes>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.apache.calcite</groupId>
-                                    <artifactId>calcite-core</artifactId>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/</outputDirectory>
-                                    <includes>codegen/default_config.fmpp</includes>
+                                    <includes>codegen/templates/Parser.jj,codegen/default_config.fmpp</includes>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>
@@ -362,6 +386,55 @@
                             </target>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>patch-test-parser-grammar</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <replace file="${project.build.directory}/test-codegen/templates/Parser.jj"
+                                         token="$${parser.package}"
+                                         value="$${plugin.parser.package}"
+                                         failOnNoReplacements="true" />
+                                <replace file="${project.build.directory}/test-codegen/templates/Parser.jj"
+                                         token="$${parser.class}"
+                                         value="$${plugin.parser.class}"
+                                         failOnNoReplacements="true" />
+                                <replace file="${project.build.directory}/test-codegen/templates/Parser.jj"
+                                         token="(parser.statementParserMethods!default.parser.statementParserMethods)"
+                                         value="((parser.statementParserMethods!default.parser.statementParserMethods) + plugin.parser.statementParserMethods)"
+                                         failOnNoReplacements="true" />
+                                <replace file="${project.build.directory}/test-codegen/templates/Parser.jj"
+                                         token="(parser.implementationFiles!default.parser.implementationFiles)"
+                                         value="((parser.implementationFiles!default.parser.implementationFiles) + plugin.parser.implementationFiles)"
+                                         failOnNoReplacements="true" />
+                                <replace file="${project.build.directory}/test-codegen/templates/Parser.jj"
+                                         token="(parser.keywords!default.parser.keywords)"
+                                         value="((parser.keywords!default.parser.keywords) + plugin.parser.keywords)"
+                                         failOnNoReplacements="true" />
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-test-fmpp-sources</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <taskdef name="fmpp" classname="fmpp.tools.AntTask" />
+                                <fmpp
+                                    configuration="${project.build.directory}/test-codegen/config.fmpp"
+                                    sourceRoot="${project.build.directory}/test-codegen/templates"
+                                    outputRoot="${project.build.directory}/generated-test-sources/fmpp"
+                                    data="tdd(${project.build.directory}/test-codegen/config.fmpp), default: tdd(${project.build.directory}/test-codegen/default_config.fmpp), plugin: tdd(${project.build.directory}/test-codegen/plugin.tdd)"
+                                />
+                            </target>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -382,6 +455,40 @@
                             </includes>
                             <lookAhead>2</lookAhead>
                             <isStatic>false</isStatic>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-test-parser</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>javacc</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirectory>${project.build.directory}/generated-test-sources/fmpp</sourceDirectory>
+                            <outputDirectory>${project.build.directory}/generated-test-sources/javacc</outputDirectory>
+                            <includes>
+                                <include>**/Parser.jj</include>
+                            </includes>
+                            <lookAhead>2</lookAhead>
+                            <isStatic>false</isStatic>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-generated-test-parser</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-test-sources/javacc</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>
