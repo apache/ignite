@@ -26,9 +26,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -37,6 +40,9 @@ import static java.util.Collections.singletonList;
  * Limit / offset tests.
  */
 public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
+    /** Log listener. */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
     /** */
     private static final String ILLEGAL_FETCH_VAL_ERR_MSG = "Illegal value of fetch / limit. " +
         "The value must be non-negative and less than or equal to 9223372036854775807";
@@ -87,6 +93,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .addQueryField("val", String.class.getName(), null);
 
         return super.getConfiguration(igniteInstanceName)
+            .setGridLogger(listeningLog)
             .setCacheConfiguration(
                 cacheConfiguration()
                     .setName(eRepl.getTableName())
@@ -286,6 +293,28 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .returns(3)
             .returns(4)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testZeroFetchExpressionWithLiteralDoesNotFailFragments() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        LogListener sortAssertionError = LogListener.matches(msg ->
+            msg.contains(AssertionError.class.getName()) && msg.contains(SortNode.class.getName())).build();
+
+        listeningLog.registerListener(sortAssertionError);
+
+        try {
+            assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (ABS(0)) ROWS ONLY")
+                .resultSize(0)
+                .check();
+
+            assertFalse("Unexpected AssertionError in SortNode", sortAssertionError.check(1_000L));
+        }
+        finally {
+            listeningLog.unregisterListener(sortAssertionError);
+        }
     }
 
     /** */

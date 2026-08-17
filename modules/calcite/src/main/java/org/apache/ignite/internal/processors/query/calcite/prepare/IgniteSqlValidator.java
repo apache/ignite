@@ -54,6 +54,7 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -285,11 +286,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
 
         validateFetchExpression(fetch, clauseName);
-        deriveDynamicParameterTypes(fetch);
 
-        RelDataType type = deriveType(getWhereScope(select), fetch);
+        SqlValidatorScope scope = getEmptyScope();
 
-        if (type.getSqlTypeName().getFamily() != SqlTypeFamily.NUMERIC)
+        inferUnknownTypes(typeFactory().createSqlType(SqlTypeName.DECIMAL), scope, fetch);
+        RelDataType type = deriveType(scope, fetch);
+
+        if (type.getSqlTypeName().getFamily() != SqlTypeFamily.NUMERIC && !(fetch instanceof SqlDynamicParam))
             throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
 
         validateFetchOffset(fetch, clauseName);
@@ -755,7 +758,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             && deriveDynamicParameterType((SqlDynamicParam)node, unknownType.equals(inferredType) ? nullType : inferredType) != null)
             return;
 
-        if (node instanceof SqlCall) {
+        if (node instanceof SqlCase) {
+            // SqlValidatorImpl assigns context-specific types to WHEN and result operands.
+            super.inferUnknownTypes(inferredType, scope, node);
+        }
+        else if (node instanceof SqlCall) {
             final SqlValidatorScope newScope = scopes.get(node);
 
             if (newScope != null)
@@ -823,31 +830,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             throw newValidationError(call, RESOURCE.invalidArgCount(call.getOperator().getName(), 1));
 
         super.validateUnnest(call, scope, targetRowType);
-    }
-
-    /** Derive types of dynamic parameters in a fetch expression. */
-    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
-    //  Remove this method after upgrading to Calcite 1.43.
-    private void deriveDynamicParameterTypes(SqlNode n) {
-        if (n instanceof SqlDynamicParam) {
-            SqlDynamicParam paramNode = (SqlDynamicParam)n;
-
-            RelDataType type = typeFactory().createSqlType(SqlTypeName.BIGINT);
-            RelDataType dataType = typeFactory().createTypeWithNullability(type, true);
-
-            type = deriveDynamicParameterType(paramNode, dataType);
-
-            if (type == null)
-                setValidatedNodeType(paramNode, dataType);
-        }
-        else if (n instanceof SqlNodeList) {
-            for (SqlNode node : (SqlNodeList)n)
-                deriveDynamicParameterTypes(node);
-        }
-        else if (n instanceof SqlCall) {
-            for (SqlNode operand : ((SqlCall)n).getOperandList())
-                deriveDynamicParameterTypes(operand);
-        }
     }
 
     /**

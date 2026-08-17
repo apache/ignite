@@ -27,14 +27,21 @@ import java.time.Period;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 /**
  *  Dynamic parameters types inference test.
  */
 public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
     /** */
     private static final String ILLEGAL_FETCH_VAL_ERR_MSG = "Illegal value of fetch / limit. " +
         "The value must be non-negative and less than or equal to 9223372036854775807";
@@ -44,6 +51,11 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
     /** */
     private static final String ENCOUNTERED_ERR_MSG = "Encountered";
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setGridLogger(listeningLog);
+    }
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
@@ -235,7 +247,7 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -1.5);
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", INCORRECT_FETCH_TYPE_ERR_MSG, new Object[]{null});
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, moreThanMaxLong());
-        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, "abc");
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", INCORRECT_FETCH_TYPE_ERR_MSG, "abc");
 
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (1 + ? - 4) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 1);
         assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (? - (50 - 20)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 2);
@@ -296,11 +308,42 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             .returns(1)
             .returns(2)
             .check();
+    }
 
-        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? - 1) ROWS ONLY")
-            .withParams(1)
-            .resultSize(0)
+    /** */
+    @Test
+    public void testFetchExpressionWithContextTypedNullParameter() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id "
+                + "FETCH FIRST (CASE WHEN ? THEN 1 ELSE 2 END) ROWS ONLY")
+            .withParams((Object)null)
+            .returns(0)
+            .returns(1)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testZeroFetchExpressionWithDynamicParameterDoesNotFailFragments() throws Exception {
+        createAndPopulateTable();
+
+        LogListener sortAssertionError = LogListener.matches(msg ->
+            msg.contains(AssertionError.class.getName()) && msg.contains(SortNode.class.getName())).build();
+
+        listeningLog.registerListener(sortAssertionError);
+
+        try {
+            assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? - 1) ROWS ONLY")
+                .withParams(1)
+                .resultSize(0)
+                .check();
+
+            assertFalse("Unexpected AssertionError in SortNode", sortAssertionError.check(1_000L));
+        }
+        finally {
+            listeningLog.unregisterListener(sortAssertionError);
+        }
     }
 
     /** */

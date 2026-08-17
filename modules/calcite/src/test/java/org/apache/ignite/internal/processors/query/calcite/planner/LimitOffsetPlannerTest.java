@@ -21,6 +21,7 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
@@ -117,6 +118,25 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
 
             assertNotNull(sort);
             assertEquals(sort.getCollation(), sort.getTraitSet().getCollation());
+        }
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionMinRowCount() throws Exception {
+        PlanningContext ctx = plannerCtx(
+            "SELECT * FROM (VALUES (1), (2)) AS t(x) FETCH FIRST (2 - 2) ROWS ONLY",
+            createSchema());
+
+        try (IgnitePlanner planner = ctx.planner()) {
+            SqlNode sql = planner.validate(planner.parse(ctx.query()));
+            RelRoot root = planner.rel(sql);
+            Sort sort = findFirstNode(root.rel, byClass(Sort.class));
+
+            assertNotNull(sort);
+            assertFalse(sort.fetch instanceof RexLiteral);
+            assertEquals(2D, sort.getCluster().getMetadataQuery().getMinRowCount(sort.getInput()), 0D);
+            assertEquals(0D, sort.getCluster().getMetadataQuery().getMinRowCount(sort), 0D);
         }
     }
 

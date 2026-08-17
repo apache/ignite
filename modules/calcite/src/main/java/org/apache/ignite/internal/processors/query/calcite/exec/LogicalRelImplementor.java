@@ -656,6 +656,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         long offset = validateAndGetOffset(rel.offset, SortNode.OFFSET_DEFAULT);
         long fetch = validateAndGetFetch(rel.fetch, SortNode.FETCH_DEFAULT);
 
+        // Zero FETCH is enforced by the outer IgniteLimit, while SortNode accepts only positive FETCH values.
+        if (fetch == 0)
+            fetch = SortNode.FETCH_DEFAULT;
+
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
 
