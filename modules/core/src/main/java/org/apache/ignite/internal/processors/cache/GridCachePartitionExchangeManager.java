@@ -386,6 +386,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
+                    msg.afterReceive();
+
                     GridDhtPartitionExchangeId exchangeId = msg.exchangeId();
 
                     if (exchangeId != null) {

@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.ErrorMessage;
@@ -37,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
-public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage implements SelfMarshallingMessage {
+public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** Local partitions. */
     @Order(0)
     @Compress
@@ -289,13 +288,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         this.exchangeStartTime = exchangeStartTime;
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
+    /** */
+    public void afterReceive() {
         if (dupPartsData != null) {
             assert parts != null;
 
