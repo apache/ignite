@@ -29,12 +29,15 @@ import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Information about partitions of a single node. <br>
+ * Information about partitions of a single node. Sent in response to {@link GridDhtPartitionsSingleRequest} and during
+ * processing partitions exchange future. <br>
+ * As a {@link Message}, has to be restored after receiving from another node.
  *
- * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
+ * @see #afterReceive()
  */
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** Local partitions. */
@@ -288,7 +291,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         this.exchangeStartTime = exchangeStartTime;
     }
 
-    /** */
+    /** Properly unwraps partitions after receiving from another node. */
     public void afterReceive() {
         if (dupPartsData != null) {
             assert parts != null;
