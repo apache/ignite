@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,10 @@ import org.jetbrains.annotations.Nullable;
  * Information about partitions of all nodes in topology. <br> Is sent by topology coordinator: when all {@link
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
+ * As a {@link Message}, has to be prepared to send to another node and restored after receiving from another node.
+ *
+ * @see #prepareToSend()
+ * @see #afterReceive()
  */
 public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
@@ -398,13 +403,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
     }
 
-    /** */
+    /** Prepares this partitions full map {@link Message} to send to another node. */
     public void prepareToSend() {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
     }
 
-    /** */
+    /** Properly unwraps this partitions full map {@link Message} after receiving from another node. */
     public void afterReceive() {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
