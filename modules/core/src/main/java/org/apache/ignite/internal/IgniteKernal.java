@@ -215,7 +215,6 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.thread.IgniteThread;
@@ -245,7 +244,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_I
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
@@ -1615,9 +1613,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             add(ATTR_DATA_CENTER_ID, IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID));
         else if (userAttrs != null && userAttrs.get(IGNITE_DATA_CENTER_ID) != null)
             add(ATTR_DATA_CENTER_ID, (Serializable)userAttrs.get(IGNITE_DATA_CENTER_ID));
-
-        if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi))
-            add(ATTR_IGNITE_FEATURES, ctx.marshallerContext().jdkMarshaller().marshal(ctx.localNodeFeatures()));
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());

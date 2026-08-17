@@ -19,16 +19,10 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.spi.IgniteSpiException;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 
 /**
  *
@@ -39,16 +33,7 @@ public interface IgniteClusterNode extends ClusterNode {
      *
      * @return Ignite Node Feature set.
      */
-    default IgniteNodeFeatureSet features() {
-        byte[] nodeFeaturesAttr = attribute(ATTR_IGNITE_FEATURES);
-
-        try {
-            return Marshallers.jdk().unmarshal(nodeFeaturesAttr, U.gridClassLoader());
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve Ignite Node Features", e);
-        }
-    }
+    public IgniteNodeFeatureSet features();
 
     /**
      * Sets consistent globally unique node ID which survives node restarts.
