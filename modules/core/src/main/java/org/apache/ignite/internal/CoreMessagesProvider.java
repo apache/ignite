@@ -264,6 +264,7 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage;
@@ -756,6 +757,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(IgniteCoreFeatureSet.class);
         register(IgnitePluginFeatureSet.class);
         register(RollingUpgradeClusterData.class);
+        register(IgniteNodeFeatureSet.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
