@@ -42,14 +42,16 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteNodeFeatureSet LOCAL_CORE_FEATURES = IgniteNodeFeatureSet.of(IgniteCoreFeatureSet.local());
+    public static final IgniteNodeFeatureSet LOCAL_CORE_FEATURES = new IgniteNodeFeatureSet(new IgniteComponentFeatureSet[] {
+        IgniteCoreFeatureSet.local()
+    });
 
     /** */
     @Order(0)
     IgniteComponentFeatureSet[] features;
 
     /** */
-    @Nullable private volatile Map<String, IgniteComponentFeatureSet> indexedFeatures;
+    @Nullable private volatile Map<String, IgniteComponentFeatureSet> featuresByComponent;
 
     /** */
     public IgniteNodeFeatureSet() {
@@ -61,12 +63,12 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
         assert features != null;
 
         this.features = features;
-        this.indexedFeatures = indexByComponentName(features);
+        this.featuresByComponent = indexByComponentName(features);
     }
 
     /** */
     public Set<String> components() {
-        return Collections.unmodifiableSet(indexedFeatures().keySet());
+        return Collections.unmodifiableSet(featuresByComponent().keySet());
     }
 
     /** */
@@ -76,7 +78,7 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
 
     /** */
     @Nullable public IgniteComponentFeatureSet componentFeatures(String cmpName) {
-        return indexedFeatures().get(cmpName);
+        return featuresByComponent().get(cmpName);
     }
 
     /** */
@@ -85,7 +87,7 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
             return false;
 
         for (IgniteComponentFeatureSet otherCmpFeatures : other.features) {
-            if (!otherCmpFeatures.equals(indexedFeatures().get(otherCmpFeatures.componentName())))
+            if (!otherCmpFeatures.equals(featuresByComponent().get(otherCmpFeatures.componentName())))
                 return false;
         }
 
@@ -94,23 +96,23 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
 
     /** */
     public boolean contains(IgniteFeature feature) {
-        IgniteComponentFeatureSet cmpFeatures = indexedFeatures().get(feature.componentName());
+        IgniteComponentFeatureSet cmpFeatures = featuresByComponent().get(feature.componentName());
 
         return cmpFeatures != null && cmpFeatures.contains(feature.id());
     }
 
     /** */
-    private Map<String, IgniteComponentFeatureSet> indexedFeatures() {
-        Map<String, IgniteComponentFeatureSet> indexedFeatures = this.indexedFeatures;
+    private Map<String, IgniteComponentFeatureSet> featuresByComponent() {
+        Map<String, IgniteComponentFeatureSet> featuresByComponent = this.featuresByComponent;
 
-        if (indexedFeatures != null)
-            return indexedFeatures;
+        if (featuresByComponent != null)
+            return featuresByComponent;
 
-        indexedFeatures = indexByComponentName(features);
+        featuresByComponent = indexByComponentName(features);
 
-        this.indexedFeatures = indexedFeatures;
+        this.featuresByComponent = featuresByComponent;
 
-        return indexedFeatures;
+        return featuresByComponent;
     }
 
     /** {@inheritDoc} */
@@ -136,12 +138,12 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
 
         IgniteNodeFeatureSet other = (IgniteNodeFeatureSet)o;
 
-        return Objects.equals(indexedFeatures(), other.indexedFeatures());
+        return Objects.equals(featuresByComponent(), other.featuresByComponent());
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hashCode(indexedFeatures());
+        return Objects.hashCode(featuresByComponent());
     }
 
     /** {@inheritDoc} */
@@ -159,10 +161,5 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
         }
 
         return res;
-    }
-
-    /** */
-    public static IgniteNodeFeatureSet of(IgniteComponentFeatureSet... features) {
-        return new IgniteNodeFeatureSet(features);
     }
 }
