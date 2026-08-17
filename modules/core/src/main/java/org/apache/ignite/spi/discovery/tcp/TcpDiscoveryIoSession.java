@@ -32,10 +32,11 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
@@ -197,7 +198,9 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
-            MessageMarshalling.unmarshal(msg, ((IgniteEx)spi.ignite()).context());
+            GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
+
+            DiscoveryMarshalling.unmarshal(msg, kctx);
 
             return (T)msg;
         }
@@ -241,7 +244,9 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        MessageMarshalling.marshal(m, ((IgniteEx)spi.ignite()).context(), null);
+        GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
+
+        DiscoveryMarshalling.marshal(m, kctx, null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);

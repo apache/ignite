@@ -784,4 +784,21 @@ public class MessageProcessorTest {
             throw new RuntimeException("Unable to locate JAR for: " + clazz.getName(), e);
         }
     }
+
+    /** Verifies that {@code @JdkMarshalled} makes the generated companion take the JDK marshaller of the node. */
+    @Test
+    public void testJdkMarshalledMessage() {
+        Compilation compilation = compile("TestJdkMarshalledMessage.java", "TestJdkMarshalledChildMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestJdkMarshalledMessageMarshaller.java"));
+
+        // The pin belongs to the message, so a subclass marshals the inherited fields the same way.
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledChildMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestJdkMarshalledChildMessageMarshaller.java"));
+    }
 }

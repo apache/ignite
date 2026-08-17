@@ -29,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job execution response.
  */
-@UseBinaryMarshaller
 public class GridJobExecuteResponse implements DeferredUnmarshalMessage {
     /** */
     @Order(0)

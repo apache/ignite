@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -37,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Page of cache query response.
  */
-@UseBinaryMarshaller
 public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
     @Order(0)
