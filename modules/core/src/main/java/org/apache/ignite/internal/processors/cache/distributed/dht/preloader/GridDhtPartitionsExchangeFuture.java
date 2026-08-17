@@ -2110,7 +2110,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
-            partsToReload);
+            partsToReload,
+            cctx.cache().cacheGroups()
+        );
 
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
             m.setErrorsMap(exchangeGlobalExceptions);
@@ -4247,9 +4249,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert msg != null;
         assert msg.exchangeId() != null : msg;
 
-        msg.afterReceive();
-
-        initFut.listen(new CI1<>() {
+        initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> f) {
                 try {
                     if (!f.get())

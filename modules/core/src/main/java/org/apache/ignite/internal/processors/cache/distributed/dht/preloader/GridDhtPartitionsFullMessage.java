@@ -399,10 +399,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** */
-    public void afterReceive() {
+    public void prepareToSend() {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
+    }
 
+    /** */
+    public void afterReceive() {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 
