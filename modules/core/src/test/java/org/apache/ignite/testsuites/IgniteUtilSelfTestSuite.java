@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.IgniteUtilsUnitTest;
 import org.apache.ignite.internal.util.distributed.DistributedProcessClientAwaitTest;
 import org.apache.ignite.internal.util.distributed.DistributedProcessCoordinatorLeftTest;
 import org.apache.ignite.internal.util.distributed.DistributedProcessErrorHandlingTest;
-import org.apache.ignite.internal.util.distributed.DistributedProcessResultMarshallingTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioServerTest;
@@ -51,6 +50,7 @@ import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
+import org.apache.ignite.internal.util.tostring.SBLimitedLengthSelfTest;
 import org.apache.ignite.internal.util.tostring.TransactionSensitiveDataTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSelfTest;
@@ -92,6 +92,7 @@ import org.junit.runners.Suite;
     GridStringBuilderFactorySelfTest.class,
     GridToStringBuilderSelfTest.class,
     CircularStringBuilderSelfTest.class,
+    SBLimitedLengthSelfTest.class,
     GridByteArrayListSelfTest.class,
     GridMBeanSelfTest.class,
     GridMBeanDisableSelfTest.class,
@@ -148,7 +149,6 @@ import org.junit.runners.Suite;
     DistributedProcessErrorHandlingTest.class,
     DistributedProcessCoordinatorLeftTest.class,
     DistributedProcessClientAwaitTest.class,
-    DistributedProcessResultMarshallingTest.class,
 
     BasicRateLimiterTest.class,
 

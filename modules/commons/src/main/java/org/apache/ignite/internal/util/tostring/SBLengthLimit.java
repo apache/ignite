@@ -75,10 +75,25 @@ class SBLengthLimit {
         return new CircularStringBuilder(TAIL_LEN);
     }
 
+    /** */
+    CircularStringBuilder createTail() {
+        return getTail();
+    }
+
+    /** */
+    int getTailLengthLimit() {
+        return TAIL_LEN;
+    }
+
     /**
      * @return {@code True} if reached limit.
      */
     boolean overflowed(SBLimitedLength sb) {
         return sb.impl().length() > HEAD_LEN;
+    }
+
+    /** */
+    int getHeadLengthLimit() {
+        return HEAD_LEN;
     }
 }
