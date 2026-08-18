@@ -436,7 +436,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = createSqlValidator(catalogReader);
+            validator = createSqlValidator();
 
         return validator;
     }
@@ -819,5 +819,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             ctx.parameters(),
             ctx.unwrap(IgniteSqlPaginationPolicy.class)
         );
+    }
+
+    /** */
+    private SqlValidator createSqlValidator() {
+        return createSqlValidator(catalogReader);
     }
 }

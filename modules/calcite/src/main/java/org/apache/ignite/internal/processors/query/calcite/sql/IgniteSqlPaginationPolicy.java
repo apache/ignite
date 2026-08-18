@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 import java.math.RoundingMode;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines a policy for processing values of SQL pagination clauses: LIMIT, FETCH, and OFFSET.
@@ -29,4 +31,10 @@ import org.apache.calcite.tools.Frameworks;
 public interface IgniteSqlPaginationPolicy {
     /** Returns the rounding mode for FETCH, LIMIT and OFFSET values. */
     RoundingMode roundingMode();
+
+    /** Rounds the given value according to the specified policy and converts it to {@code long}. */
+    static long convertToLongExact(Number value, @Nullable IgniteSqlPaginationPolicy policy) {
+        RoundingMode roundingMode = policy == null ? IgniteMath.NUMERIC_ROUNDING_MODE : policy.roundingMode();
+        return IgniteMath.convertToLongExact(value, roundingMode);
+    }
 }

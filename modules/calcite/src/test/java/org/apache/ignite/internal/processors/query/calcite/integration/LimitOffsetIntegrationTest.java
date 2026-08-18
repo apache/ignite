@@ -352,7 +352,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "
                 + "FETCH FIRST (ABS(0.5)) ROWS ONLY")
-            .resultSize(0)
+            .returns(1)
             .check();
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -1096,9 +1095,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 throw new IllegalArgumentException("Negative value for " + op);
 
             IgniteSqlPaginationPolicy pagPlc = ctx.unwrap(IgniteSqlPaginationPolicy.class);
-            RoundingMode roundingMode = pagPlc == null ? IgniteMath.NUMERIC_ROUNDING_MODE : pagPlc.roundingMode();
-
-            return IgniteMath.convertToLongExact(paramAsDecimal, roundingMode);
+            return IgniteSqlPaginationPolicy.convertToLongExact(paramAsDecimal, pagPlc);
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
