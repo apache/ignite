@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  * As a {@link Message}, has to be prepared to send to another node and restored after receiving from another node.
  *
  * @see #prepareToSend()
- * @see #afterReceive()
+ * @see #received()
  */
 public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
@@ -389,6 +389,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         flags = rebalanced ? (byte)(flags | REBALANCED_FLAG_MASK) : (byte)(flags & ~REBALANCED_FLAG_MASK);
     }
 
+    /** Prepares this partitions full map {@link Message} to send to another node. */
+    public void prepareToSend() {
+        if (!F.isEmpty(parts) && locParts == null)
+            locParts = copyPartitionsMap(parts);
+    }
+
     /**
      * @return Topology version.
      */
@@ -403,14 +409,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
     }
 
-    /** Prepares this partitions full map {@link Message} to send to another node. */
-    public void prepareToSend() {
-        if (!F.isEmpty(parts) && locParts == null)
-            locParts = copyPartitionsMap(parts);
-    }
-
     /** Properly unwraps this partitions full map {@link Message} after receiving from another node. */
-    public void afterReceive() {
+    public GridDhtPartitionsFullMessage received() {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 
@@ -442,6 +442,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (parts == null)
             parts = new HashMap<>();
+
+        return this;
     }
 
 

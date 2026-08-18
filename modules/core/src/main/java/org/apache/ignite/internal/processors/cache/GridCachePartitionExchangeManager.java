@@ -423,7 +423,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
-                    msg.afterReceive();
+                    msg.received();
 
                     if (msg.exchangeId() == null) {
                         GridDhtPartitionsExchangeFuture curExchange = lastTopologyFuture();

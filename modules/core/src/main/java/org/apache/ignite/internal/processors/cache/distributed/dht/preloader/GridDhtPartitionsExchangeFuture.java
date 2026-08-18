@@ -4748,7 +4748,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
 
-                        GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
+                        GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage().received();
 
                         IgniteCheckedException err = !F.isEmpty(partsMsg.getErrorsMap()) ?
                             new IgniteCheckedException("Cluster state change failed.") : null;

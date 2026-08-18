@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * receiving from another node.
  *
  * @see #preparedToSend()
- * @see #receivedFragment()
+ * @see #received()
  */
 public class FragmentDescription implements Message {
     /** */
@@ -48,7 +48,7 @@ public class FragmentDescription implements Message {
     @Order(3)
     @Nullable ColocationGroup target;
 
-    /** Transient flag of {@link #receivedFragment()}-once-invoked. */
+    /** Transient flag of {@link #received()}-once-invoked. */
     boolean received;
 
     /** */
@@ -78,7 +78,7 @@ public class FragmentDescription implements Message {
     }
 
     /** Properly unwraps fragment description as {@link Message} after receiving from another node. */
-    public FragmentDescription receivedFragment() {
+    public FragmentDescription received() {
         if (!received) {
             if (target != null)
                 target.afterReceive();
