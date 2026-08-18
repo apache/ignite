@@ -3203,31 +3203,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param fut Affinity future.
-     */
-    private void onAffinityInitialized(IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut) {
-        try {
-            assert fut.isDone();
-
-            Map<Integer, Map<Integer, List<UUID>>> assignmentChange = fut.get();
-
-            GridDhtPartitionsFullMessage m = createPartitionsMessage();
-
-            CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
-
-            if (log.isDebugEnabled())
-                log.debug("Centralized affinity exchange, send affinity change message: " + msg);
-
-            assert false : "Reserach failure";
-
-            cctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
-        }
-    }
-
-    /**
      * @param top Topology.
      */
     private void assignPartitionSizes(GridDhtPartitionTopology top) {
@@ -3838,12 +3813,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
 
-                IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
-
-                if (!fut.isDone())
-                    fut.listen(this::onAffinityInitialized);
-                else
-                    onAffinityInitialized(fut);
+                cctx.affinity().initAffinityOnNodeLeft(this);
             }
             else {
                 Set<ClusterNode> nodes;
