@@ -26,11 +26,16 @@ import org.apache.calcite.rel.SingleRel;
 public class IgniteLogicalRecursiveStaticSpool extends SingleRel {
     /** */
     public IgniteLogicalRecursiveStaticSpool(RelNode input) {
-        super(input.getCluster(), input.getCluster().traitSet(), input);
+        this(input.getCluster().traitSet(), input);
+    }
+
+    /** */
+    private IgniteLogicalRecursiveStaticSpool(RelTraitSet traitSet, RelNode input) {
+        super(input.getCluster(), traitSet, input);
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteLogicalRecursiveStaticSpool(sole(inputs));
+        return new IgniteLogicalRecursiveStaticSpool(traitSet, sole(inputs));
     }
 }
