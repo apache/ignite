@@ -27,13 +27,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** */
 public class IgniteCoreMessagesSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new CoreMessagesProvider(jdk(), jdk());
+        return new CoreMessagesProvider();
     }
 
     /** {@inheritDoc} */

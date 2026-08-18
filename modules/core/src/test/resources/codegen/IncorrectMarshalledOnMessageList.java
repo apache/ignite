@@ -14,25 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import java.util.List;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+/** */
+public class IncorrectMarshalledOnMessageList implements Message {
+    /** */
+    @Marshalled("msgBytes")
+    List<TestMessage> msgColl;
 
-/**
- * In case message CAN contain user provided classes it must be marshalled with the {@link BinaryMarshaller}.
- * {@link BinaryMarshaller} is able to process user classes using schema tansfering protocol through Discovery.
- * Mark {@link Message} class with annotation to serialize it with {@link BinaryMarshaller}.
- */
-@Documented
-@Target(value = TYPE)
-@Retention(RUNTIME)
-public @interface UseBinaryMarshaller {
-    // No-op.
+    /** */
+    @Order(0)
+    byte[] msgBytes;
 }

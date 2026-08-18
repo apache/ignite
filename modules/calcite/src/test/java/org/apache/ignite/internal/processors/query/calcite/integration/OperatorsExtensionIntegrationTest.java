@@ -36,8 +36,11 @@ import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -183,6 +186,41 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
 
     /** */
     @Test
+    public void testRowNumRewrite() {
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 2")
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 3")
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < (1 + NVL(2, 10000))")
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < (COALESCE(4, 10000))")
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT COUNT(*) FROM ("
+            + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 2)")
+            .returns(1L)
+            .check();
+
+        assertQuery("SELECT COUNT(*) FROM ("
+            + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < ?)")
+            .withParams(3)
+            .returns(2L)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testPaginationRoundingPolicy() {
         assertQuery("SELECT x FROM (VALUES (0), (1), (2)) t(x) ORDER BY x LIMIT 1.9")
             .returns(0)
@@ -295,6 +333,27 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         @Override public SqlNode rewrite(SqlValidator validator, SqlNode node) {
             if (node instanceof SqlCall && "LTRIM".equals(((SqlCall)node).getOperator().getName()))
                 node = rewriteLtrim(validator, (SqlCall)node);
+
+            if (node instanceof SqlSelect) {
+                SqlSelect select = (SqlSelect)node;
+                SqlNode condition = select.getWhere();
+
+                if (condition instanceof SqlCall && condition.getKind() == SqlKind.LESS_THAN) {
+                    SqlCall call = (SqlCall)condition;
+                    SqlNode left = call.operand(0);
+
+                    if (left instanceof SqlIdentifier
+                        && ((SqlIdentifier)left).isSimple()
+                        && "ROWNUM".equalsIgnoreCase(((SqlIdentifier)left).getSimple())) {
+                        SqlNode one = SqlLiteral.createExactNumeric("1", call.getParserPosition());
+                        SqlNode fetch = SqlStdOperatorTable.MINUS.createCall(
+                            call.getParserPosition(), call.operand(1), one);
+
+                        select.setWhere(null);
+                        select.setFetch(fetch);
+                    }
+                }
+            }
 
             return node;
         }

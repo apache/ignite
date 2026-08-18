@@ -351,6 +351,14 @@
                                     outputRoot="${project.build.directory}/generated-sources/fmpp"
                                     data="tdd(${project.build.directory}/codegen/config.fmpp), default: tdd(${project.build.directory}/codegen/default_config.fmpp)"
                                 />
+                                <!-- TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+                                     Remove this workaround after upgrading to Calcite 1.43. -->
+                                <replace
+                                    file="${project.build.directory}/generated-sources/fmpp/javacc/Parser.jj"
+                                    token="&lt;FETCH&gt; ( &lt;FIRST&gt; | &lt;NEXT&gt; ) offsetFetch[1] = UnsignedNumericLiteralOrParam()"
+                                    value="&lt;FETCH&gt; ( &lt;FIRST&gt; | &lt;NEXT&gt; ) offsetFetch[1] = FetchCount()"
+                                    failOnNoReplacements="true"
+                                />
                             </target>
                         </configuration>
                     </execution>

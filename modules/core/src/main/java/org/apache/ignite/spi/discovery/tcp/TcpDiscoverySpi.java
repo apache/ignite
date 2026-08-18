@@ -54,6 +54,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
@@ -470,9 +471,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
-
-    /** */
-    private IgniteNodeFeatureSet locNodeFeatures;
 
     /**
      * Gets current SPI state.
@@ -1195,8 +1193,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         // Init local node.
         initAddresses();
 
-        locNodeFeatures = ((IgniteEx)ignite).context().localNodeFeatures();
-
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
             addrs.get1(),
@@ -1204,7 +1200,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             srvPort,
             metricsProvider,
             locNodeVer,
-            consistentId());
+            consistentId(),
+            ignite.context().localNodeFeatures());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1695,11 +1692,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** */
-    IgniteNodeFeatureSet localNodeFeatures() {
-        return locNodeFeatures;
-    }
-
-    /** */
     void validateRemoteFeatures(IgniteNodeFeatureSet rmtFeatures) throws IgniteCheckedException {
         if (rmtFeatures == null) {
             throw new UnsupportedNodeVersionException(
@@ -1708,7 +1700,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         for (IgniteComponentFeatureSet rmtCmpFeatures : rmtFeatures.values()) {
-            IgniteComponentFeatureSet locCmpFeatures = locNodeFeatures.componentFeatures(rmtCmpFeatures.componentName());
+            IgniteComponentFeatureSet locCmpFeatures = locNode.features().componentFeatures(rmtCmpFeatures.componentName());
 
             if (locCmpFeatures == null)
                 continue;
@@ -1723,7 +1715,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             if (!src.isUpgradableTo(target)) {
                 throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
-                    " [locComponents=" + locNodeFeatures +
+                    " [locComponents=" + locNode.features() +
                     ", rmtComponents=" + rmtFeatures + ']');
             }
         }
@@ -1888,6 +1880,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 if (msg != null && sslMsgPattern.matcher(msg).matches())
                     streamCorruptedCause.initCause(new SSLException("Detected SSL alert in StreamCorruptedException"));
             }
+
+            if (X.hasCause(e, ClassNotFoundException.class)) {
+                LT.error(log, e, "Failed to read message due to an unknown class to unmarshal received. Unable to " +
+                    "process the Discovery protocol. Stopping the Discovery SPI and invoking the failure handler. " +
+                    "RmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
+
+                ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                // Prevents following cycling attempts to reconnect and logs flooding.
+                spiStop();
+            }
+
             throw e;
         }
         finally {

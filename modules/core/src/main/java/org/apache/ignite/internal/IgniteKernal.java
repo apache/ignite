@@ -111,7 +111,6 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
-import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -1312,7 +1311,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller()));
+        compMsgs.add(new CoreMessagesProvider());
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
@@ -1333,22 +1332,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
-        for (MessageFactoryProvider msg : msgs)
-            initProvider(msg);
-
         msgFactory = new IgniteMessageFactoryImpl(msgs);
-    }
-
-    /**
-     * Re-init {@link AbstractMessageFactoryProvider} with a proper marshaller.
-     *
-     * @param factoryProvider Message factory provider.
-     */
-    private void initProvider(MessageFactoryProvider factoryProvider) {
-        if (factoryProvider instanceof AbstractMessageFactoryProvider) {
-            ((AbstractMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
-                ctx.marshaller());
-        }
     }
 
     /**
@@ -3358,26 +3342,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         catch (Exception e) {
             U.error(log, "Failed to dump debug info for node: " + e, e);
         }
-    }
-
-    /**
-     * @param node Node.
-     * @param payload Message payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean procFromNioThread) {
-        return ctx.io().sendIoTest(node, payload, procFromNioThread);
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @param payload Message payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
-        return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
     }
 
     /** Registers configuration system view. */

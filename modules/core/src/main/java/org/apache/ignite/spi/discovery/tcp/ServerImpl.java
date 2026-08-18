@@ -1158,6 +1158,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         DiscoveryDataPacket discoveryData = spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId()));
 
+        // Set initial metrics for node validation.
+        // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28965
+        locNode.setMetrics(spi.metricsProvider.metrics());
+
         TcpDiscoveryJoinRequestMessage joinReqMsg = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
         while (true) {
@@ -1503,7 +1507,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 openSock = true;
 
-                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, spi.localNodeFeatures());
+                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, locNode.features());
 
                 // Handshake.
                 spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
@@ -1668,7 +1672,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     * Marshals credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
      * @param cred Credentials for marshall.
@@ -1689,7 +1693,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Unmarshalls credentials with discovery SPI marshaller (will not replace attribute value).
+     * Unmarshals credentials with discovery SPI marshaller (will not replace attribute value).
      *
      * @param node Node to unmarshall credentials for.
      * @return Security credentials.
@@ -3415,7 +3419,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 openSock = true;
 
                                 // Handshake.
-                                TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId, spi.localNodeFeatures());
+                                TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId, locNode.features());
 
                                 if (sndState != null) {
                                     // If want a forced connection, we set the change-topology node flag to current node id.
@@ -5965,8 +5969,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         DiscoverySpiCustomMessage nextMsg = customMsg.ackMessage();
 
                         if (nextMsg != null) {
-                            TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
-                                getLocalNodeId(), nextMsg);
+                            TcpDiscoveryCustomEventMessage ackMsg = nextMsg instanceof DiscoveryServerOnlyCustomMessage
+                                ? new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), nextMsg)
+                                : new TcpDiscoveryCustomEventMessage(getLocalNodeId(), nextMsg);
 
                             ackMsg.topologyVersion(msg.topologyVersion());
                             ackMsg.attachOperationContextSnapshot(msg.opCtxSnp);
@@ -6597,7 +6602,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res = new TcpDiscoveryHandshakeResponse(
                         locNodeId,
                         locNode.internalOrder(),
-                        spi.localNodeFeatures()
+                        locNode.features()
                     );
 
                     if (req.client()) {

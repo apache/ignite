@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -33,6 +32,8 @@ import org.apache.ignite.internal.managers.communication.SessionChannelMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
+import org.apache.ignite.internal.managers.discovery.IoTestDiscoveryAckMessage;
+import org.apache.ignite.internal.managers.discovery.IoTestDiscoveryMessage;
 import org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest;
 import org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
@@ -178,7 +179,9 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
@@ -199,8 +202,13 @@ import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage
 import org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo;
+import org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
+import org.apache.ignite.internal.processors.continuous.ContinuousRoutinesCommonDiscoveryData;
+import org.apache.ignite.internal.processors.continuous.ContinuousRoutinesJoiningNodeDiscoveryData;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.continuous.StartRequestData;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
@@ -256,6 +264,7 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage;
@@ -279,8 +288,6 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -346,20 +353,9 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /**
      * Default plugin-purposes constructor.
      *
-     * @see #init(Marshaller, Marshaller)
      */
     public CoreMessagesProvider() {
         // No-op.
-    }
-
-    /**
-     * Constructor allowing not to call {@link #init(Marshaller, Marshaller)}.
-     *
-     * @param dfltMarsh Schema-less marshaller like {@link JdkMarshaller}.
-     * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
-     */
-    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh) {
-        init(dfltMarsh, schemaAwareMarsh);
     }
 
     /**
@@ -375,6 +371,8 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         // [-44, 0..2, 42, 200..204, 210] - Use in tests.
         // [300 - 500] - CalciteMessageFactory.
         // [-4..-22, -30..-35, -54..-57] - SQL
+
+        // [1000 - 1999]: Reserved for custom user plugins.
 
         // [5000 - 5500]: Utility messages. Most of them originally come from Discovery.
         msgIdx = 5000;
@@ -492,6 +490,8 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(CacheJoinNodeDiscoveryData.class);
         register(CacheReconnectInfo.class);
         register(ClusterCacheGroupRecoveryData.class);
+        register(IoTestDiscoveryMessage.class);
+        register(IoTestDiscoveryAckMessage.class);
 
         // [10000 - 10200]: Transaction and lock related messages. Most of them originally comes from Communication.
         msgIdx = 10000;
@@ -628,6 +628,16 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(QueryProposalsDataBagItem.class);
         register(QueryEntityMessage.class);
         register(QueryEntityExMessage.class);
+        register(ContinuousRoutineInfo.class);
+        register(ContinuousRoutinesJoiningNodeDiscoveryData.class);
+        register(CacheContinuousQueryDeployableObject.class);
+        register(CacheContinuousQueryHandler.class);
+        register(GridEventConsumeHandler.class);
+        register(GridMessageListenHandler.class);
+        register(ContinousRoutineLocalInfo.class);
+        register(ContinousRoutineDiscoveryDataItem.class);
+        register(ContinousRoutineDiscoveryData.class);
+        register(ContinuousRoutinesCommonDiscoveryData.class);
 
         // [11200 - 11300]: Compute, distributed process messages.
         msgIdx = 11200;
@@ -668,7 +678,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         // [11900 - 12000]: Metrics, monitoring messages.
         msgIdx = 11900;
         register(CacheMetricsMessage.class);
-        register(NodeMetricsMessage.class);
+        register(ClusterMetricsSnapshot.class);
         register(NodeFullMetricsMessage.class);
         register(ClusterMetricsUpdateMessage.class);
         register(TcpDiscoveryClientNodesMetricsMessage.class);
@@ -747,6 +757,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(IgniteCoreFeatureSet.class);
         register(IgnitePluginFeatureSet.class);
         register(RollingUpgradeClusterData.class);
+        register(IgniteNodeFeatureSet.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }

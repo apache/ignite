@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-@UseBinaryMarshaller
 public class CacheInvokeDirectResult implements Message {
     /** Cache key. */
     @Order(0)

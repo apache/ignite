@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.distributed;
 
 import java.util.UUID;
+import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
@@ -27,12 +28,16 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Single node result message.
+ * <p>
+ * The process result travels both transports: this message carries it to the coordinator by Communication, and the
+ * coordinator puts the collected results into the {@link FullMessage} it sends by Discovery.
  *
  * @param <R> Result type.
  * @see DistributedProcess
  * @see FullMessage
  * @see InitMessage
  */
+@JdkMarshalled
 public class SingleNodeMessage<R extends Message> implements Message {
     /** Process id. */
     @Order(0)

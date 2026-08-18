@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -269,15 +270,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryInfo info() {
-        GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-        info.key(key());
-        info.value(val);
-        info.ttl(ttl());
-        info.expireTime(expireTime());
-        info.version(version());
-
-        return info;
+        return new GridCacheEntryInfo(0, key(), val, version(), U.currentTimeMillis(), expireTime(), ttl());
     }
 
     /** {@inheritDoc} */

@@ -48,11 +48,13 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -149,8 +151,23 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         if (insert.getTargetColumnList() == null)
             insert.setOperand(3, inferColumnList(insert));
+        else
+            validateInsertTargets(insert);
 
         super.validateInsert(insert);
+    }
+
+    /**
+     * Validates insert target columns to ensure they do not contain the version column.
+     *
+     * @param insert Insert statement.
+     */
+    private void validateInsertTargets(SqlInsert insert) {
+        for (SqlNode node : insert.getTargetColumnList()) {
+            SqlIdentifier id = (SqlIdentifier)node;
+
+            validateVersionColumnDmlTarget(id);
+        }
     }
 
     /** {@inheritDoc} */
@@ -205,10 +222,19 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         SqlIdentifier alias = call.getAlias() != null ? call.getAlias() :
             new SqlIdentifier(deriveAlias(targetTable, 0), SqlParserPos.ZERO);
 
-        table.unwrap(IgniteTable.class).descriptor().selectForUpdateRowType((IgniteTypeFactory)typeFactory)
-            .getFieldNames().stream()
-            .map(name -> alias.plus(name, SqlParserPos.ZERO))
-            .forEach(selectList::add);
+        RelDataType updateRowType = table.unwrap(IgniteTable.class).descriptor()
+            .selectForUpdateRowType(typeFactory());
+
+        for (RelDataTypeField field : updateRowType.getFieldList()) {
+            if (QueryUtils.VER_FIELD_NAME.equals(field.getName())) {
+                selectList.add(SqlValidatorUtil.addAlias(
+                    SqlLiteral.createNull(SqlParserPos.ZERO),
+                    "__IGNITE_DML" + field.getName()
+                ));
+            }
+            else
+                selectList.add(alias.plus(field.getName(), SqlParserPos.ZERO));
+        }
 
         int ordinal = 0;
         // Force unique aliases to avoid a duplicate for Y with SET X=Y
@@ -250,8 +276,56 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
         super.validateSelect(select, targetRowType);
 
-        validateFetchOffset(select.getFetch(), "fetch / limit");
+        validateFetch(select, "fetch / limit");
         validateFetchOffset(select.getOffset(), "offset");
+    }
+
+    /** Validate fetch expression. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    private void validateFetch(SqlSelect select, String clauseName) {
+        SqlNode fetch = select.getFetch();
+
+        if (fetch == null)
+            return;
+
+        if (SqlUtil.isNullLiteral(fetch, true))
+            throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+        validateFetchExpression(fetch, clauseName);
+
+        SqlValidatorScope scope = getEmptyScope();
+
+        inferUnknownTypes(typeFactory().createSqlType(SqlTypeName.DECIMAL), scope, fetch);
+        RelDataType type = deriveType(scope, fetch);
+
+        if (type.getSqlTypeName().getFamily() != SqlTypeFamily.NUMERIC && !(fetch instanceof SqlDynamicParam))
+            throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+        validateFetchOffset(fetch, clauseName);
+    }
+
+    /** Reject column references in a fetch expression. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    private void validateFetchExpression(SqlNode node, String clauseName) {
+        if (node instanceof SqlIdentifier) {
+            if (makeNullaryCall((SqlIdentifier)node) == null)
+                throw newValidationError(node, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+            return;
+        }
+
+        if (node instanceof SqlNodeList) {
+            for (SqlNode child : (SqlNodeList)node)
+                validateFetchExpression(child, clauseName);
+        }
+        else if (node instanceof SqlCall call) {
+            for (SqlNode child : call.getOperandList()) {
+                if (child != null)
+                    validateFetchExpression(child, clauseName);
+            }
+        }
     }
 
     /**
@@ -265,7 +339,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return;
 
         if (n instanceof SqlLiteral) {
-            BigDecimal offsetFetchLimit = ((SqlLiteral)n).bigDecimalValue();
+            SqlLiteral literal = (SqlLiteral)n;
+
+            if (literal.getTypeName().getFamily() != SqlTypeFamily.NUMERIC)
+                throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+            BigDecimal offsetFetchLimit = literal.bigDecimalValue();
 
             checkLimitOffset(offsetFetchLimit, n, clauseName);
         }
@@ -340,7 +419,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (call.getKind() == SqlKind.AS) {
             final String alias = deriveAlias(call, 0);
 
-            if (isSystemFieldName(alias))
+            if (QueryUtils.isSystemFieldNameIgnoreCase(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
         else if (call.getKind() == SqlKind.CAST) {
@@ -392,6 +471,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        if (node instanceof SqlOrderBy) {
+            SqlOrderBy orderBy = (SqlOrderBy)node;
+
+            if (orderBy.fetch != null) {
+                // SqlOrderBy does not implement setOperand(). Rewrite FETCH before Calcite visits its operands,
+                // otherwise rewrites such as COALESCE to CASE fail when Calcite tries to replace the FETCH operand.
+                SqlNode fetch = performUnconditionalRewrites(orderBy.fetch, false);
+
+                if (fetch != orderBy.fetch) {
+                    node = new SqlOrderBy(orderBy.getParserPosition(), orderBy.query, orderBy.orderList,
+                        orderBy.offset, fetch);
+                }
+            }
+        }
+
         // Workaround for https://issues.apache.org/jira/browse/CALCITE-4923
         if (node instanceof SqlSelect) {
             SqlSelect select = (SqlSelect)node;
@@ -465,18 +559,26 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         SelectScope scope,
         boolean includeSysVars
     ) {
-        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER && isSystemFieldName(deriveAlias(exp, 0))) {
-            SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+        if (!includeSysVars && exp.getKind() == SqlKind.IDENTIFIER) {
+            String alias = deriveAlias(exp, 0);
 
-            if (qualified.namespace == null)
+            // The version column is never exposed via SELECT *.
+            if (QueryUtils.VER_FIELD_NAME.equalsIgnoreCase(alias))
                 return;
 
-            if (qualified.namespace.getTable() != null) {
-                // If child is table and has only system fields, expand star to these fields.
-                // Otherwise, expand star to non-system fields only.
-                for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
-                    if (!isSystemField(fld))
-                        return;
+            if (QueryUtils.isSystemFieldNameIgnoreCase(alias)) {
+                SqlQualified qualified = scope.fullyQualify((SqlIdentifier)exp);
+
+                if (qualified.namespace == null)
+                    return;
+
+                if (qualified.namespace.getTable() != null) {
+                    // If child is table and has only system fields, expand star to these fields.
+                    // Otherwise, expand star to non-system fields only.
+                    for (RelDataTypeField fld : qualified.namespace.getRowType().getFieldList()) {
+                        if (!isSystemField(fld))
+                            return;
+                    }
                 }
             }
         }
@@ -486,7 +588,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
-        return isSystemFieldName(field.getName());
+        return QueryUtils.isSystemFieldNameIgnoreCase(field.getName());
     }
 
     /** */
@@ -570,6 +672,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         for (SqlNode node : call.getTargetColumnList()) {
             SqlIdentifier id = (SqlIdentifier)node;
+            validateVersionColumnDmlTarget(id);
 
             RelDataTypeField target = SqlValidatorUtil.getTargetField(
                 baseType, typeFactory(), id, getCatalogReader(), relOptTable);
@@ -612,12 +715,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return (IgniteTypeFactory)typeFactory;
     }
 
-    /** */
-    private boolean isSystemFieldName(String alias) {
-        return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
-            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
-    }
-
     /** {@inheritDoc} */
     @Override public RelDataType deriveType(SqlValidatorScope scope, SqlNode expr) {
         if (expr instanceof SqlDynamicParam) {
@@ -628,6 +725,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return super.deriveType(scope, expr);
+    }
+
+    /** */
+    private void validateVersionColumnDmlTarget(SqlIdentifier id) {
+        String fieldName = id.names.get(id.names.size() - 1);
+
+        if (QueryUtils.VER_FIELD_NAME.equalsIgnoreCase(fieldName))
+            throw newValidationError(id, IgniteResource.INSTANCE.cannotModifySystemColumn(id.toString()));
     }
 
     /** @return A derived type or {@code null} if unable to determine. */
@@ -661,7 +766,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             && deriveDynamicParameterType((SqlDynamicParam)node, unknownType.equals(inferredType) ? nullType : inferredType) != null)
             return;
 
-        if (node instanceof SqlCall) {
+        if (node instanceof SqlCase) {
+            // SqlValidatorImpl assigns context-specific types to WHEN and result operands.
+            super.inferUnknownTypes(inferredType, scope, node);
+        }
+        else if (node instanceof SqlCall) {
             final SqlValidatorScope newScope = scopes.get(node);
 
             if (newScope != null)

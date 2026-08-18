@@ -40,7 +40,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -408,7 +407,7 @@ abstract class TcpDiscoveryImpl {
         for (Map.Entry<UUID, NodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
             UUID srvrId = e.getKey();
             Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();
-            NodeMetricsMessage srvrMetricsMsg = e.getValue().nodeMetricsMessage();
+            ClusterMetricsSnapshot srvrMetricsMsg = e.getValue().nodeMetricsMessage();
 
             assert srvrMetricsMsg != null;
 

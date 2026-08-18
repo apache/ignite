@@ -709,7 +709,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryIoSession ses = createSession(sock);
 
-                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, spi.localNodeFeatures());
+                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, locNode.features());
 
                 req.client(true);
                 req.dcId(locNode.dataCenterId());
@@ -763,6 +763,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         discoveryData = spi.collectExchangeData(dataPacket);
                     }
+
+                    // Set initial metrics for node validation.
+                    // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28965
+                    node.setMetrics(spi.metricsProvider.metrics());
 
                     msg = new TcpDiscoveryJoinRequestMessage(node, discoveryData);
                 }
@@ -860,7 +864,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     * Marshals credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
      * @throws IgniteSpiException If marshalling failed.

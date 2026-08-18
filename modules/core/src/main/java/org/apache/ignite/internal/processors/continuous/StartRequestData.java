@@ -44,11 +44,8 @@ public class StartRequestData implements Message {
     GridDeploymentInfoMessage depInfo;
 
     /** Handler, restored by the processor reading this request. */
-    GridContinuousHandler hnd;
-
-    /** Serialized handler. */
     @Order(3)
-    byte[] hndBytes;
+    GridContinuousHandler hnd;
 
     /** Buffer size. */
     @Order(4)
