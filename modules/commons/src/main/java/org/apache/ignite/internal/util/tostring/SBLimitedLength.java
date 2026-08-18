@@ -92,12 +92,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(Object obj) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(obj);
             return this;
         }
@@ -112,12 +108,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(String str) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(str);
             return this;
         }
@@ -132,12 +124,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(StringBuffer sb) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(sb);
             return this;
         }
@@ -152,12 +140,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(CharSequence s) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(s);
             return this;
         }
@@ -172,12 +156,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(CharSequence s, int start, int end) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(s.subSequence(start, end));
             return this;
         }
@@ -192,12 +172,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] str) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(str);
             return this;
         }
@@ -212,12 +188,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] str, int offset, int len) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(Arrays.copyOfRange(str, offset, len));
             return this;
         }
@@ -232,12 +204,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(boolean b) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(b);
             return this;
         }
@@ -252,12 +220,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char c) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(c);
             return this;
         }
@@ -272,12 +236,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(int i) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(i);
             return this;
         }
@@ -292,12 +252,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(long lng) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(lng);
             return this;
         }
@@ -312,12 +268,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(float f) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(f);
             return this;
         }
@@ -332,12 +284,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(double d) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(d);
             return this;
         }
@@ -352,12 +300,8 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder appendCodePoint(int codePoint) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                // Tail not created yet, force creation via onWrite
-                onWrite(length(), 0);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-            }
+            if (tail == null)
+                tail = lenLimit.createTail();
             tail.append(codePoint);
             return this;
         }
