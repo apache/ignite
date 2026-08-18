@@ -139,6 +139,58 @@ public class CircularStringBuilder {
     }
 
     /**
+     * Appends the specified character array (or a subrange) to this circular buffer.
+     *
+     * @param str  the character array.
+     * @param off  the offset within the array.
+     * @param len  the number of characters to append.
+     * @return  a reference to this object.
+     */
+    public CircularStringBuilder append(char[] str, int off, int len) {
+        if (str == null)
+            return appendNull();
+
+        if (len >= value.length) {
+            // Data bigger or equal to value length
+            System.arraycopy(str, off + len - value.length, value, 0, value.length);
+
+            skipped += len - value.length + finishAt + 1;
+
+            finishAt = value.length - 1;
+
+            full = true;
+        }
+        else {
+            // Data smaller than value length
+            if (value.length - finishAt - 1 < len) {
+                // Data doesn't fit into remaining part of value array
+                int firstPart = value.length - finishAt - 1;
+
+                if (firstPart > 0)
+                    System.arraycopy(str, off, value, finishAt + 1, firstPart);
+
+                System.arraycopy(str, off + firstPart, value, 0, len - firstPart);
+
+                skipped += full ? len : len - firstPart;
+
+                finishAt = finishAt + len - value.length;
+
+                full = true;
+            }
+            else {
+                // Whole data fits into remaining part of value array
+                System.arraycopy(str, off, value, finishAt + 1, len);
+
+                skipped += full ? len : 0;
+
+                finishAt += len;
+            }
+        }
+
+        return this;
+    }
+
+    /**
      * Append StringBuffer
      *
      * @param sb StringBuffer to append.
@@ -290,5 +342,44 @@ public class CircularStringBuilder {
         }
         else
             return new String(value, 0, finishAt + 1);
+    }
+
+    /**
+     * Returns a substring from the logical sequence of characters, accounting for
+     * the circular buffer structure and any skipped characters.
+     *
+     * <p>This method first validates the indices against the total logical length
+     * (skipped + visible characters). If the requested range is empty or fully within
+     * the skipped portion, an empty string is returned for efficiency.
+     *
+     * <p>It then calculates the physical indices in the internal array. If the
+     * substring wraps around the end of the circular buffer, it performs a two-part
+     * copy operation to assemble the result.
+     *
+     * @param beginIdx the beginning index, inclusive.
+     * @param endIdx the ending index, exclusive.
+     * @return a new String containing the specified subsequence.
+     * @throws StringIndexOutOfBoundsException if beginIdx or endIdx are negative,
+     *         or if endIdx is greater than the total logical length.
+     * @throws IllegalArgumentException if beginIdx is greater than endIdx.
+     */
+    public String substring(int beginIdx, int endIdx) {
+        if (beginIdx < 0 || endIdx < 0 || endIdx > skipped + length())
+            throw new StringIndexOutOfBoundsException(
+                    "Index out of bounds: beginIdx=" + beginIdx + ", endIdx=" + endIdx);
+        if (beginIdx > endIdx)
+            throw new IllegalArgumentException(
+                    "Begin index cannot be greater than end index: beginIdx=" + beginIdx + ", endIdx=" + endIdx);
+        if (endIdx <= skipped || beginIdx == endIdx) return "";
+        char resultArr[] = new char[Math.max(skipped, endIdx) - Math.max(skipped, beginIdx)];
+        int effectiveBeginIdx = ((full ? (finishAt + 1) : 0) + Math.max(skipped, beginIdx) - skipped) % value.length;
+        int effectiveEndIdx = ((full ? (finishAt + 1) : 0) + Math.max(skipped, endIdx) - skipped) % value.length;
+        if (effectiveBeginIdx >= effectiveEndIdx) {
+            System.arraycopy(value, effectiveBeginIdx, resultArr, 0, length() - effectiveBeginIdx);
+            System.arraycopy(value, 0, resultArr, length() - effectiveBeginIdx, effectiveEndIdx);
+        }
+        else
+            System.arraycopy(value, effectiveBeginIdx, resultArr, 0, effectiveEndIdx - effectiveBeginIdx);
+        return new String(resultArr);
     }
 }
