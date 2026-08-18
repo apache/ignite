@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import org.apache.calcite.adapter.enumerable.EnumerableLimit;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdMinRowCount;
@@ -39,24 +38,6 @@ public class IgniteMdMinRowCount extends RelMdMinRowCount {
 
     /** {@inheritDoc} */
     @Override public Double getMinRowCount(Sort rel, RelMetadataQuery mq) {
-        Double rowCnt = mq.getMinRowCount(rel.getInput());
-
-        if (rowCnt == null)
-            rowCnt = 0D;
-
-        double offset = literalValueApproximatedByDouble(rel.offset,
-            rel.offset == null ? 0D : rowCnt);
-
-        rowCnt = Math.max(rowCnt - offset, 0D);
-
-        double limit = literalValueApproximatedByDouble(rel.fetch,
-            rel.fetch == null ? rowCnt : 0D);
-
-        return limit < rowCnt ? limit : rowCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double getMinRowCount(EnumerableLimit rel, RelMetadataQuery mq) {
         Double rowCnt = mq.getMinRowCount(rel.getInput());
 
         if (rowCnt == null)
