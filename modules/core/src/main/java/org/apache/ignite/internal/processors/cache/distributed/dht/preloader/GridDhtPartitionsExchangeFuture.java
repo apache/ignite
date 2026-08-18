@@ -2110,9 +2110,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
-            partsToReload,
-            cctx.cache().cacheGroups()
-        );
+            partsToReload);
 
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
             m.setErrorsMap(exchangeGlobalExceptions);
