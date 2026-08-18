@@ -1491,6 +1491,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) {
+            assert false;
+
             exchCtx.events().warnNoAffinityNodes(cctx);
 
             centralizedAff = cctx.affinity().onCentralizedAffinityChange(this, crd);
@@ -3807,6 +3809,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 state = ExchangeLocalState.DONE;
             }
+
+            assert !centralizedAff;
 
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
