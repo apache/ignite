@@ -117,8 +117,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     @LoggerResource
     private IgniteLogger log;
 
-    /** */
-    public static ExecutorService initOrGetSubjobsExecutor(String igniteName) {
+    /** Initializes {@link #EXECUTOR_SERVICE}. */
+    public static ExecutorService initOrGetVerifyExecutor(String igniteName) {
         if (EXECUTOR_SERVICE == null) {
             synchronized (VerifyBackupPartitionsTask.class) {
                 if (EXECUTOR_SERVICE == null) {
@@ -142,9 +142,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         return EXECUTOR_SERVICE;
     }
 
-    /** Only for tests. */
+    /** Only for tests. Overrides {@link #EXECUTOR_SERVICE}. */
     @TestOnly
-    public static void subjobsExecutor(ExecutorService jobsExecutor) {
+    public static void verifyExecutor(ExecutorService jobsExecutor) {
         EXECUTOR_SERVICE = jobsExecutor;
     }
 
@@ -388,7 +388,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                ExecutorService pool = initOrGetSubjobsExecutor(ignite.name());
+                ExecutorService pool = initOrGetVerifyExecutor(ignite.name());
 
                 for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                     partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));
