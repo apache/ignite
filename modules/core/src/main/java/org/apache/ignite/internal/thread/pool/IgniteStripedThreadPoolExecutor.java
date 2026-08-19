@@ -97,7 +97,9 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
                 keepAliveTime,
                 new LinkedBlockingQueue<>(),
                 factory,
-                execTime);
+                execTime,
+                null
+            );
 
             executor.allowCoreThreadTimeOut(allowCoreThreadTimeOut);
 

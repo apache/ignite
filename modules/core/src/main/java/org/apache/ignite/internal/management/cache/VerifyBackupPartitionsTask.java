@@ -28,6 +28,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -130,34 +133,35 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     if (maxPoolSz < 1)
                         throw new IgniteException(new IllegalArgumentException(VERIFY_POOL_SIZE + " must be greater than 0."));
 
+                    LinkedBlockingQueue<Runnable> actualJobQueue = new LinkedBlockingQueue<>();
+
                     EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
-                        "idleVerify-repair",
-                        igniteName,
                         0,
                         maxPoolSz,
                         VERIFY_POOL_KEEP_ALIVE,
-                        new LinkedBlockingQueue<>() {
-                            @Override public boolean offer(Runnable runnable, long timeout, TimeUnit unit) throws InterruptedException {
-                                throw new IgniteException(new UnsupportedOperationException("Offet to queue with timeout isnt supported."));
-                            }
-
-                            /**
-                             * Forces the pool to use threads firts instead of the queue. With the keep-alive time,
-                             * allows to expand the pool if required and drop all its threads if inactive.
-                             */
-                            @Override public boolean offer(@NotNull Runnable runnable) {
-                                var impl = EXECUTOR_SERVICE;
-
-                                assert impl instanceof IgniteThreadPoolExecutor;
-
-                                if (((IgniteThreadPoolExecutor)impl).getActiveCount() < ((IgniteThreadPoolExecutor)impl)
-                                    .getMaximumPoolSize())
-                                    return false;
-
-                                return super.offer(runnable);
+                        // Small, limited capacity forces the pool to use threads instead of its queue.
+                        // But we have to react to the full-pool and full-queue rejected execution.
+                        new LinkedBlockingQueue<>(10),
+                        new IgniteThreadFactory(igniteName, "idle_verify_repair"),
+                        null,
+                        new RejectedExecutionHandler() {
+                            @Override public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                // Forced threads using instead of enqueuing assumes storing of unqueued (normally) tasks.
+                                actualJobQueue.offer(r);
                             }
                         }
-                    );
+                    ) {
+                        @Override protected void afterExecute(Runnable r, Throwable t) {
+                            super.afterExecute(r, t);
+
+                            // Unqueued (normally) task.
+                            r = actualJobQueue.poll();
+
+                            // A task joggling, but keeps the work active.
+                            if (r != null)
+                                EXECUTOR_SERVICE.execute(r);
+                        }
+                    };
                 }
             }
         }

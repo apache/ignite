@@ -169,6 +169,7 @@ public class IgniteThreadPoolExecutor extends OperationContextAwareExecutorServi
             keepAliveTime,
             workQ,
             threadFactory,
+            null,
             null
         );
     }
@@ -187,14 +188,16 @@ public class IgniteThreadPoolExecutor extends OperationContextAwareExecutorServi
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      * @param threadFactory Thread factory.
      * @param execTime Task execution time metric.
+     * @param rejectExecHnd Rejected execution handler.
      */
-    protected IgniteThreadPoolExecutor(
+    public IgniteThreadPoolExecutor(
         int corePoolSize,
         int maxPoolSize,
         long keepAliveTime,
         BlockingQueue<Runnable> workQ,
         ThreadFactory threadFactory,
-        @Nullable HistogramMetricImpl execTime
+        @Nullable HistogramMetricImpl execTime,
+        @Nullable RejectedExecutionHandler rejectExecHnd
     ) {
         delegate = new ThreadPoolExecutor(
             corePoolSize,
@@ -203,7 +206,7 @@ public class IgniteThreadPoolExecutor extends OperationContextAwareExecutorServi
             TimeUnit.MILLISECONDS,
             workQ,
             threadFactory,
-            new ThreadPoolExecutor.AbortPolicy()
+            rejectExecHnd == null ? new ThreadPoolExecutor.AbortPolicy() : rejectExecHnd
         ) {
             @Override protected void beforeExecute(Thread t, Runnable r) {
                 IgniteThreadPoolExecutor.this.beforeExecute(t, r);

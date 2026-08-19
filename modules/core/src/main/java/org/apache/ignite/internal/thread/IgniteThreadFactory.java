@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class provides implementation of {@link ThreadFactory} factory
@@ -43,7 +44,7 @@ public class IgniteThreadFactory implements ThreadFactory {
     private final byte plc;
 
     /** Exception handler. */
-    private final UncaughtExceptionHandler eHnd;
+    private final @Nullable UncaughtExceptionHandler eHnd;
 
     /**
      * Constructs new thread factory for given grid. All threads will belong
@@ -64,7 +65,7 @@ public class IgniteThreadFactory implements ThreadFactory {
      * @param threadName Thread name.
      * @param eHnd Uncaught exception handler.
      */
-    public IgniteThreadFactory(String igniteInstanceName, String threadName, UncaughtExceptionHandler eHnd) {
+    public IgniteThreadFactory(String igniteInstanceName, String threadName, @Nullable UncaughtExceptionHandler eHnd) {
         this(igniteInstanceName, threadName, GridIoPolicy.UNDEFINED, eHnd);
     }
 
@@ -77,7 +78,7 @@ public class IgniteThreadFactory implements ThreadFactory {
      * @param plc {@link GridIoPolicy} for thread pool.
      * @param eHnd Uncaught exception handler.
      */
-    public IgniteThreadFactory(String igniteInstanceName, String threadName, byte plc, UncaughtExceptionHandler eHnd) {
+    public IgniteThreadFactory(String igniteInstanceName, String threadName, byte plc, @Nullable UncaughtExceptionHandler eHnd) {
         this.igniteInstanceName = igniteInstanceName;
         this.threadName = threadName;
         this.plc = plc;
