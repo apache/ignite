@@ -118,25 +118,6 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Assert {@link Runnable#run()} will throw specified exception
-     * @param expectedECls Expected exception class.
-     * @param runnable Runnable.
-     */
-    private void assertThrows(Class<? extends Throwable> expectedECls, Runnable runnable) {
-        boolean eIsSpotted = false;
-        try {
-            runnable.run();
-        }
-        catch (Throwable throwable) {
-            if (expectedECls.isAssignableFrom(throwable.getClass()))
-                eIsSpotted = true;
-        }
-        finally {
-            Assert.assertTrue(eIsSpotted);
-        }
-    }
-
-    /**
      * Get {@link SBLimitedLength} instance with specific head and tail length
      * to simplify test cases
      * @param headLength Head length.
