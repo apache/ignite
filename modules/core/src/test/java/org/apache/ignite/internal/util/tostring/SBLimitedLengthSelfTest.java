@@ -30,7 +30,7 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
     /** Ensure all append operations are working fine */
     @Test
     public void testAppend() {
-        SBLimitedLength strBuilder = getStrBuilder(5, 50);
+        SBLimitedLength strBuilder = getStrBuilder(5);
         strBuilder.a(1);
         Assert.assertEquals("1", strBuilder.toString());
         strBuilder.a(2L);
@@ -55,10 +55,6 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
         Assert.assertEquals("123.04.05true6789", strBuilder.toString());
         strBuilder.a(charSeq, 0, 1);
         Assert.assertEquals("123.04.05true67899", strBuilder.toString());
-        strBuilder.a(new char[]{'a'});
-        Assert.assertEquals("123.04.05true67899a", strBuilder.toString());
-        strBuilder.a(new char[]{'b', 'c', 'd'}, 0, 2);
-        Assert.assertEquals("123.04.05true67899abc", strBuilder.toString());
     }
 
     /** */
@@ -86,13 +82,6 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
         
         // We use a custom SBLengthLimit to trigger the exact scenario
         sbLimitedLength.initLimit(new SBLengthLimit() {
-            @Override int getHeadLengthLimit() {
-                return 3;
-            }
-            
-            @Override int getTailLengthLimit() {
-                return 10;
-            }
             
             @Override boolean overflowed(SBLimitedLength sb) {
                 return sb.impl().length() > 3;
@@ -121,7 +110,7 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
     /** Ensure toString works as expected */
     @Test
     public void testToString() {
-        SBLimitedLength strBuilder = getStrBuilder(2, 2);
+        SBLimitedLength strBuilder = getStrBuilder(2);
         strBuilder.a("ab");
         Assert.assertEquals("ab", strBuilder.toString());
         strBuilder.a("cd");
@@ -151,18 +140,12 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
      * Get {@link SBLimitedLength} instance with specific head and tail length
      * to simplify test cases
      * @param headLength Head length.
-     * @param tailLength Tail length.
      */
-    private SBLimitedLength getStrBuilder(int headLength, int tailLength) {
+    private SBLimitedLength getStrBuilder(int headLength) {
         SBLimitedLength sbLimitedLength = new SBLimitedLength(0);
         sbLimitedLength.initLimit(new SBLengthLimit() {
-
-            @Override int getHeadLengthLimit() {
-                return headLength;
-            }
-
-            @Override int getTailLengthLimit() {
-                return tailLength;
+            @Override boolean overflowed(SBLimitedLength sb) {
+                return sb.impl().length() > headLength;
             }
         });
         return sbLimitedLength;

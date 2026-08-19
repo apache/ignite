@@ -75,11 +75,6 @@ class SBLengthLimit {
         return new CircularStringBuilder(TAIL_LEN);
     }
 
-    /** */
-    CircularStringBuilder createTail() {
-        return getTail();
-    }
-
     /**
      * @return {@code True} if reached limit.
      */

@@ -331,6 +331,6 @@ public class SBLimitedLength extends GridStringBuilder {
      */
     private void initTailIfAbsent() {
         if (tail == null)
-            tail = lenLimit.createTail();
+            tail = lenLimit.getTail();
     }
 }
