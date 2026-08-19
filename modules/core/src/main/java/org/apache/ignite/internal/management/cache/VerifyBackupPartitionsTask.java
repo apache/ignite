@@ -85,7 +85,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
  * <br>
- * Uses own dedicated thread pool for the jobs executions.
+ * Establish own dedicated utility thread pool.
  */
 @GridInternal
 public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResult> {
@@ -110,7 +110,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
 
-    /** Shared for tests. */
+    /** Shared for tests. Overrides the default executor. */
     private static ExecutorService EXECUTOR_SERVICE;
 
     /** Injected logger. */

@@ -539,9 +539,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 .setAffinity(new RendezvousAffinityFunction().setPartitions(3)));
 
             for (int part = 0; part < 3; part++) {
-                for (Integer key : partitionKeys(cache, part, 3, 0)) {
+                for (Integer key : partitionKeys(cache, part, 3, 0))
                     cache.put(key, key);
-                }
             }
         }
 
