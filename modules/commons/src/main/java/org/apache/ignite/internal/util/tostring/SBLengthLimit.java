@@ -80,20 +80,10 @@ class SBLengthLimit {
         return getTail();
     }
 
-    /** */
-    int getTailLengthLimit() {
-        return TAIL_LEN;
-    }
-
     /**
      * @return {@code True} if reached limit.
      */
     boolean overflowed(SBLimitedLength sb) {
         return sb.impl().length() > HEAD_LEN;
-    }
-
-    /** */
-    int getHeadLengthLimit() {
-        return HEAD_LEN;
     }
 }

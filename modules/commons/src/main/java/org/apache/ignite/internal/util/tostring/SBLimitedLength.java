@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.tostring;
 
 import java.util.Arrays;
-
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
@@ -325,14 +324,6 @@ public class SBLimitedLength extends GridStringBuilder {
      */
     public boolean isOverflowed() {
         return lenLimit.overflowed(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int length() {
-        int length = super.length();
-        if (tail != null)
-            length += tail.getSkipped() + tail.length();
-        return length;
     }
 
     /**
