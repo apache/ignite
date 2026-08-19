@@ -110,7 +110,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
 
-    /** Shared for tests. Overrides the default executor. */
+    /** Effective verify executor service. */
     private static ExecutorService EXECUTOR_SERVICE;
 
     /** Injected logger. */
