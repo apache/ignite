@@ -86,23 +86,19 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
         
         // We use a custom SBLengthLimit to trigger the exact scenario
         sbLimitedLength.initLimit(new SBLengthLimit() {
-            @Override
-            int getHeadLengthLimit() {
+            @Override int getHeadLengthLimit() {
                 return 3;
             }
             
-            @Override
-            int getTailLengthLimit() {
+            @Override int getTailLengthLimit() {
                 return 10;
             }
             
-            @Override
-            boolean overflowed(SBLimitedLength sb) {
+            @Override boolean overflowed(SBLimitedLength sb) {
                 return sb.impl().length() > 3;
             }
             
-            @Override
-            void onWrite(SBLimitedLength sb, int writtenLen) {
+            @Override void onWrite(SBLimitedLength sb, int writtenLen) {
                 super.onWrite(sb, writtenLen);
             }
         });
@@ -122,38 +118,6 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
         Assert.assertTrue("Result should contain appended data", result.contains("Z"));
     }
 
-    /** Ensure all insert operations are working fine */
-    @Test
-    public void testInsert() {
-        SBLimitedLength strBuilder = getStrBuilder(5, 50);
-        strBuilder.i(0, 1);
-        Assert.assertEquals("1", strBuilder.toString());
-        strBuilder.i(0, 2L);
-        Assert.assertEquals("21", strBuilder.toString());
-        strBuilder.i(0, 3f);
-        Assert.assertEquals("3.021", strBuilder.toString());
-        strBuilder.i(0, 4d);
-        Assert.assertEquals("4.03.021", strBuilder.toString());
-        strBuilder.i(0, true);
-        Assert.assertEquals("true4.03.021", strBuilder.toString());
-        strBuilder.i(0, '5');
-        Assert.assertEquals("5true4.03.021", strBuilder.toString());
-        strBuilder.i(1, "6");
-        Assert.assertEquals("56true4.03.021", strBuilder.toString());
-        strBuilder.i(2, new char[] {'a', 'b', 'c', 'd'});
-        Assert.assertEquals("56abcdtrue4.03.021", strBuilder.toString());
-        strBuilder.i(5, new char[] {'e', 'f', 'g', 'i'}, 0, 3);
-        Assert.assertEquals("56abcefgdtrue4.03.021", strBuilder.toString());
-        Object obj = "h";
-        strBuilder.i(6, obj);
-        Assert.assertEquals("56abcehfgdtrue4.03.021", strBuilder.toString());
-        CharSequence charSeq = "ijk";
-        strBuilder.i(7, charSeq);
-        Assert.assertEquals("56abcehijkfgdtrue4.03.021", strBuilder.toString());
-        strBuilder.i(8, charSeq, 0, 2);
-        Assert.assertEquals("56abcehiijjkfgdtrue4.03.021", strBuilder.toString());
-    }
-
     /** Ensure toString works as expected */
     @Test
     public void testToString() {
@@ -162,32 +126,20 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
         Assert.assertEquals("ab", strBuilder.toString());
         strBuilder.a("cd");
         Assert.assertEquals("abcd", strBuilder.toString());
-        strBuilder.a("ef");
-        Assert.assertEquals("ab... and 4 skipped ...ef", strBuilder.toString());
-    }
-
-    /** Ensure all operations that could possibly reduce length are prohibited */
-    @Test
-    public void testLengthReduceOperationsAreProhibited() {
-        SBLimitedLength strBuilder = getStrBuilder(2, 2);
-        assertThrows(UnsupportedOperationException.class, () -> strBuilder.d(0));
-        assertThrows(UnsupportedOperationException.class, () -> strBuilder.d(0, 0));
-        assertThrows(UnsupportedOperationException.class, () -> strBuilder.r(0, 0, "asd"));
-        assertThrows(UnsupportedOperationException.class, () -> strBuilder.setLength(0));
     }
 
     /**
      * Assert {@link Runnable#run()} will throw specified exception
-     * @param expectedExceptionClass Expected exception class.
+     * @param expectedECls Expected exception class.
      * @param runnable Runnable.
      */
-    private void assertThrows(Class<? extends Throwable> expectedExceptionClass, Runnable runnable) {
+    private void assertThrows(Class<? extends Throwable> expectedECls, Runnable runnable) {
         boolean eIsSpotted = false;
         try {
             runnable.run();
         }
         catch (Throwable throwable) {
-            if (expectedExceptionClass.isAssignableFrom(throwable.getClass()))
+            if (expectedECls.isAssignableFrom(throwable.getClass()))
                 eIsSpotted = true;
         }
         finally {

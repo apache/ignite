@@ -92,8 +92,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(Object obj) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(obj);
             return this;
         }
@@ -108,8 +107,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(String str) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(str);
             return this;
         }
@@ -124,8 +122,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(StringBuffer sb) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(sb);
             return this;
         }
@@ -140,8 +137,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(CharSequence s) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(s);
             return this;
         }
@@ -156,8 +152,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(CharSequence s, int start, int end) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(s.subSequence(start, end));
             return this;
         }
@@ -172,8 +167,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] str) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(str);
             return this;
         }
@@ -188,8 +182,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char[] str, int offset, int len) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(Arrays.copyOfRange(str, offset, len));
             return this;
         }
@@ -204,8 +197,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(boolean b) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(b);
             return this;
         }
@@ -220,8 +212,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(char c) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(c);
             return this;
         }
@@ -236,8 +227,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(int i) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(i);
             return this;
         }
@@ -252,8 +242,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(long lng) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(lng);
             return this;
         }
@@ -268,8 +257,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(float f) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(f);
             return this;
         }
@@ -284,8 +272,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder a(double d) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(d);
             return this;
         }
@@ -300,8 +287,7 @@ public class SBLimitedLength extends GridStringBuilder {
     /** {@inheritDoc} */
     @Override public GridStringBuilder appendCodePoint(int codePoint) {
         if (lenLimit.overflowed(this)) {
-            if (tail == null)
-                tail = lenLimit.createTail();
+            initTailIfAbsent();
             tail.append(codePoint);
             return this;
         }
@@ -342,102 +328,6 @@ public class SBLimitedLength extends GridStringBuilder {
     }
 
     /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int offset, String str) {
-        int headLengthLimit = lenLimit.getHeadLengthLimit();
-        if (offset < headLengthLimit) {
-            impl().insert(offset, str);
-            if (lenLimit.overflowed(this)) {
-                String tailCandidate = impl().substring(headLengthLimit);
-                if (tail == null)
-                    tail = lenLimit.createTail();
-                tail.insert(0, tailCandidate);
-                impl().setLength(headLengthLimit);
-            }
-            return this;
-        }
-        // INVARIANT: tail is guaranteed to exist when offset >= headLengthLimit,
-        // because overflow would have created tail before head could reach this offset.
-        assert tail != null;
-        tail.insert(offset - headLengthLimit, str);
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int idx, char[] str, int off, int len) {
-        return i(idx, new String(str, off, len));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, Object obj) {
-        return i(off, String.valueOf(obj));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, char[] str) {
-        return i(off, new String(str));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int dstOff, CharSequence s) {
-        return i(dstOff, s.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int dstOff, CharSequence s, int start, int end) {
-        return i(dstOff, s.subSequence(start, end).toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, boolean b) {
-        return i(off, String.valueOf(b));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, char c) {
-        return i(off, String.valueOf(c));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, int i) {
-        return i(off, String.valueOf(i));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, long l) {
-        return i(off, String.valueOf(l));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, float f) {
-        return i(off, String.valueOf(f));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder i(int off, double d) {
-        return i(off, String.valueOf(d));
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder d(int start, int end) {
-        throw new UnsupportedOperationException("Not supported by this implementation");
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder d(int idx) {
-        throw new UnsupportedOperationException("Not supported by this implementation");
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder r(int start, int end, String str) {
-        throw new UnsupportedOperationException("Not supported by this implementation");
-    }
-    
-    /** {@inheritDoc} */
-    @Override public GridStringBuilder nl() {
-        return a(org.apache.ignite.internal.util.CommonUtils.nl());
-    }
-
-    /** {@inheritDoc} */
     @Override public int length() {
         int length = super.length();
         if (tail != null)
@@ -445,8 +335,11 @@ public class SBLimitedLength extends GridStringBuilder {
         return length;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setLength(int len) {
-        throw new UnsupportedOperationException("setLength is not supported by this implementation");
+    /**
+     *
+     */
+    private void initTailIfAbsent() {
+        if (tail == null)
+            tail = lenLimit.createTail();
     }
 }
