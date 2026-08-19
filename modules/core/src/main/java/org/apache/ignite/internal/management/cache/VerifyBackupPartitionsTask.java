@@ -95,10 +95,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** */
     @SystemProperty(value = "Idle verify utility thread pool size.", type = Integer.class,
         defaults = "Total visible CPUs - 2, minimum 4 threads.")
-    public static final String IDLE_VERIFY_POOL_SIZE = "IGNITE_IDLE_VERIFY_POOL_SIZE";
+    public static final String VERIFY_POOL_SIZE = "IGNITE_IDLE_VERIFY_POOL_SIZE";
 
     /** */
-    private static final int DFLT_IDLE_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
+    private static final int DFLT_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
+
+    /** The keep alive time of an unused thread in the utility pool. */
+    private static final int VERIFY_POOL_KEEP_ALIVE = 20;
 
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
@@ -122,18 +125,38 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         if (EXECUTOR_SERVICE == null) {
             synchronized (VerifyBackupPartitionsTask.class) {
                 if (EXECUTOR_SERVICE == null) {
-                    int poolSz = IgniteSystemProperties.getInteger(IDLE_VERIFY_POOL_SIZE, DFLT_IDLE_VERIFY_POOL_SIZE);
+                    int maxPoolSz = IgniteSystemProperties.getInteger(VERIFY_POOL_SIZE, DFLT_VERIFY_POOL_SIZE);
 
-                    if (poolSz < 1)
-                        throw new IgniteException(new IllegalArgumentException(IDLE_VERIFY_POOL_SIZE + " must be greater than 0."));
+                    if (maxPoolSz < 1)
+                        throw new IgniteException(new IllegalArgumentException(VERIFY_POOL_SIZE + " must be greater than 0."));
 
                     EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
                         "idleVerify-repair",
                         igniteName,
-                        poolSz,
-                        poolSz,
-                        20,
-                        new LinkedBlockingQueue<>()
+                        0,
+                        maxPoolSz,
+                        VERIFY_POOL_KEEP_ALIVE,
+                        new LinkedBlockingQueue<>() {
+                            @Override public boolean offer(Runnable runnable, long timeout, TimeUnit unit) throws InterruptedException {
+                                throw new IgniteException(new UnsupportedOperationException("Offet to queue with timeout isnt supported."));
+                            }
+
+                            /**
+                             * Forces the pool to use threads firts instead of the queue. With the keep-alive time,
+                             * allows to expand the pool if required and drop all its threads if inactive.
+                             */
+                            @Override public boolean offer(@NotNull Runnable runnable) {
+                                var impl = EXECUTOR_SERVICE;
+
+                                assert impl instanceof IgniteThreadPoolExecutor;
+
+                                if (((IgniteThreadPoolExecutor)impl).getActiveCount() < ((IgniteThreadPoolExecutor)impl)
+                                    .getMaximumPoolSize())
+                                    return false;
+
+                                return super.offer(runnable);
+                            }
+                        }
                     );
                 }
             }
