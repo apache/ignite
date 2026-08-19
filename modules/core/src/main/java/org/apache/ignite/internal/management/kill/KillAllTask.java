@@ -31,7 +31,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryIterator;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -101,6 +103,9 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
 
                 case SCAN:
                     return cancelScanQueries(arg);
+
+                case INDEX:
+                    return cancelIndexQueries(arg);
 
                 case CONTINUOUS:
                     return cancelContinuousQueries(arg);
@@ -175,6 +180,9 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
 
                 // Kill remote part of distributed scans.
                 for (GridCacheDistributedQueryFuture<?, ?, ?> fut : mgr.distributedQueryFutures()) {
+                    if (fut.query().query().type() != GridCacheQueryType.SCAN)
+                        continue;
+
                     if (ts > 0 && fut.startTime() >= ts)
                         continue;
 
@@ -196,6 +204,45 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
         }
 
         /**
+         * Cancel index queries matching criteria.
+         *
+         * @param arg Command argument.
+         * @return Result.
+         */
+        private KillAllTaskResult cancelIndexQueries(KillAllCommandArg arg) {
+            long ts = arg.minDuration() == null ? 0 : U.currentTimeMillis() - SECONDS.toMillis(arg.minDuration());
+            int killed = 0;
+            int failed = 0;
+
+            // Distributed Index queries are registered in distributedQueryFutures structure (both local and remote part).
+            // But local-only queries are not registered in any structure at all, so local queries are not killable.
+            for (GridCacheContext<?, ?> cctx : ignite.context().cache().context().cacheContexts()) {
+                GridCacheDistributedQueryManager<?, ?> mgr = (GridCacheDistributedQueryManager<?, ?>)cctx.queries();
+
+                for (GridCacheDistributedQueryFuture<?, ?, ?> fut : mgr.distributedQueryFutures()) {
+                    if (fut.query().query().type() != GridCacheQueryType.INDEX)
+                        continue;
+
+                    if (ts > 0 && fut.startTime() >= ts)
+                        continue;
+
+                    try {
+                        fut.cancel();
+
+                        killed++;
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.warning("Failed to cancel distributed query future for index query", e);
+
+                        failed++;
+                    }
+                }
+            }
+
+            return new KillAllTaskResult(killed, failed);
+        }
+
+        /**
          * Cancel continuous queries matching criteria.
          *
          * @param arg Command argument.
@@ -206,7 +253,10 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
 
             List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-            for (Map.Entry<UUID, GridContinuousProcessor.LocalRoutineInfo> e : proc.localRoutineInfos().entrySet()) {
+            for (Map.Entry<UUID, ContinousRoutineLocalInfo> e : proc.localRoutineInfos().entrySet()) {
+                if (!e.getValue().handler().isQuery())
+                    continue;
+
                 if (arg.nodeId == null || arg.nodeId.equals(e.getValue().nodeId()))
                     futs.add(proc.stopRoutine(e.getKey()));
             }

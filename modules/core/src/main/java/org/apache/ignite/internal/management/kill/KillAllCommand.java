@@ -30,7 +30,7 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 public class KillAllCommand implements ComputeCommand<KillAllCommandArg, Map<ClusterNode, KillAllTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill all SQL/scan/continuous queries matching specified criteria";
+        return "Kill all SQL/scan/index/continuous queries matching specified criteria";
     }
 
     /** {@inheritDoc} */

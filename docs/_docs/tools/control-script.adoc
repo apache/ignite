@@ -455,7 +455,7 @@ control.sh --tx --min-duration 100 --kill
 
 == Mass Cancellation of Queries
 
-The control script allows you to mass cancel SQL queries, scan queries, and continuous queries that match specific criteria.
+The control script allows you to mass cancel SQL queries, scan queries, index queries and continuous queries that match specific criteria.
 
 The syntax for the mass cancellation command is as follows:
 
@@ -480,6 +480,7 @@ The following target types are supported:
 |Target | Description
 |`sql`| SQL queries
 |`scan`| Scan queries
+|`index`| Index queries
 |`continuous`| Continuous queries
 |===
 
@@ -501,6 +502,9 @@ control.sh --kill all sql --min-duration 60
 
 # Cancel scan queries that have been running for more than 30 seconds on a specific node
 control.sh --kill all scan --nodeId <uuid> --min-duration 30
+
+# Cancel index queries on a specific node
+control.sh --kill all index --nodeId <uuid>
 
 # Cancel continuous queries
 control.sh --kill all continuous

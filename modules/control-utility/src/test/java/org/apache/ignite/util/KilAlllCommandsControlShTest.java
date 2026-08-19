@@ -19,12 +19,16 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -33,12 +37,14 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.junit.Test;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -52,6 +58,9 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
     public static final int TIMEOUT = 10_000;
 
     /** */
+    private static final int ENTRIES_CNT = 1_000;
+
+    /** */
     private static CountDownLatch latch;
 
     /** {@inheritDoc} */
@@ -63,7 +72,7 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
                 .setIndexedTypes(Integer.class, Integer.class)
                 .setSqlFunctionClasses(SqlTestFunctions.class));
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < ENTRIES_CNT; i++)
             cache.put(i, i);
     }
 
@@ -104,6 +113,21 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
 
     /** */
     @Test
+    public void testKillAllIndex() {
+        checkKillAll("index", () -> new IndexQuery<>(Integer.class).setFilter((k, v) -> {
+            try {
+                latch.await(10, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return true;
+        }).setPageSize(1), KilAlllCommandsControlShTest::indexQueriesCnt);
+    }
+
+    /** */
+    @Test
     public void testKillAllContinuous() {
         assertTrue(SERVER_NODE_CNT >= 2);
 
@@ -131,6 +155,60 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
         assertEquals(0, client.context().continuous().remoteRoutineInfos().size());
         assertEquals(0, grid(0).context().continuous().remoteRoutineInfos().size());
         assertEquals(0, grid(1).context().continuous().remoteRoutineInfos().size());
+    }
+
+    /** */
+    @Test
+    public void testKillUnrelated() {
+        try (
+            QueryCursor<Cache.Entry<Integer, Integer>> cur = client.cache(DEFAULT_CACHE_NAME)
+                .query(new IndexQuery<Integer, Integer>(Integer.class).setPageSize(1))
+        ) {
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "scan"));
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "sql"));
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "continuous"));
+            assertEquals(ENTRIES_CNT, cur.getAll().size());
+        }
+
+        try (
+            QueryCursor<Cache.Entry<Integer, Integer>> cur = client.cache(DEFAULT_CACHE_NAME)
+                .query(new ScanQuery<Integer, Integer>().setPageSize(1))
+        ) {
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "index"));
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "sql"));
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "continuous"));
+            assertEquals(ENTRIES_CNT, cur.getAll().size());
+        }
+
+        try (
+            FieldsQueryCursor<?> cur = client.cache(DEFAULT_CACHE_NAME)
+                .query(new SqlFieldsQuery("SELECT * FROM Integer").setPageSize(1))
+        ) {
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "scan"));
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "index"));
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "continuous"));
+            assertEquals(ENTRIES_CNT, cur.getAll().size());
+        }
+    }
+
+    /** */
+    @Test
+    public void testRemoteListen() {
+        UUID evtLsnrId = client.events().remoteListen((nodeId, evt) -> true, evt -> true, EVT_CACHE_OBJECT_PUT);
+        UUID msgLsnrId = client.message().remoteListen("topic", (nodeId, msg) -> true);
+
+        try {
+            assertEquals(EXIT_CODE_OK, execute("--kill", "all", "continuous"));
+
+            boolean evtLsnrAlive = client.context().continuous().localRoutineInfos().containsKey(evtLsnrId);
+            boolean msgLsnrAlive = client.context().continuous().localRoutineInfos().containsKey(msgLsnrId);
+
+            assertTrue("Listeners were stopped", evtLsnrAlive && msgLsnrAlive);
+        }
+        finally {
+            client.events().stopRemoteListen(evtLsnrId);
+            client.message().stopRemoteListen(msgLsnrId);
+        }
     }
 
     /** */
@@ -227,8 +305,14 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
 
     /** */
     private static int scanQueriesCnt(IgniteEx ignite) {
-        return ((GridCacheDistributedQueryManager<?, ?>)ignite.cachex(DEFAULT_CACHE_NAME).context().queries())
-            .distributedQueryFutures().size();
+        return (int)((GridCacheDistributedQueryManager<?, ?>)ignite.cachex(DEFAULT_CACHE_NAME).context().queries())
+            .distributedQueryFutures().stream().filter(f -> f.query().query().type() == GridCacheQueryType.SCAN).count();
+    }
+
+    /** */
+    private static int indexQueriesCnt(IgniteEx ignite) {
+        return (int)((GridCacheDistributedQueryManager<?, ?>)ignite.cachex(DEFAULT_CACHE_NAME).context().queries())
+            .distributedQueryFutures().stream().filter(f -> f.query().query().type() == GridCacheQueryType.INDEX).count();
     }
 
     /** */

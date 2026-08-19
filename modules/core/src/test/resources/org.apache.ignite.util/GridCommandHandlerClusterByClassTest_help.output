@@ -162,12 +162,13 @@ This utility can do the following commands:
     Parameters:
       new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
-  Kill all SQL/scan/continuous queries matching specified criteria:
-    control.(sh|bat) --kill all SQL|SCAN|CONTINUOUS [--node-id node_id] [--min-duration 60]
+  Kill all SQL/scan/index/continuous queries matching specified criteria:
+    control.(sh|bat) --kill all SQL|SCAN|INDEX|CONTINUOUS [--node-id node_id] [--min-duration 60]
 
     Parameters:
       SQL                - SQL queries.
       SCAN               - SCAN queries.
+      INDEX              - INDEX queries.
       CONTUNUOUS         - CONTUNUOUS queries.
       --node-id node_id  - Originating node ID to filter targets.
       --min-duration 60  - Minimum duration in seconds.

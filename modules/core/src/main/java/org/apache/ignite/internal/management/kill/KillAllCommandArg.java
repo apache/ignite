@@ -40,11 +40,13 @@ public class KillAllCommandArg extends IgniteDataTransferObject {
         names = {
             "SQL",
             "SCAN",
+            "INDEX",
             "CONTUNUOUS"
         },
         descriptions = {
             "SQL queries",
             "SCAN queries",
+            "INDEX queries",
             "CONTUNUOUS queries"
         }
     )
@@ -69,6 +71,9 @@ public class KillAllCommandArg extends IgniteDataTransferObject {
 
         /** */
         SCAN,
+
+        /** */
+        INDEX,
 
         /** */
         CONTINUOUS
