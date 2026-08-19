@@ -132,7 +132,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         igniteName,
                         poolSz,
                         poolSz,
-                        20,
+                        0,
                         new LinkedBlockingQueue<>()
                     );
                 }
