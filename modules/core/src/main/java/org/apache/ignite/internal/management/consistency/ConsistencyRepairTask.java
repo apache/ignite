@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
@@ -102,10 +103,12 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
         @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
+            ExecutorService execSrvc = VerifyBackupPartitionsTask.initOrGetSubjobsExecutor(ignite.name());
+
             // Consisnency Repair and Idle Verify are usually companion tasks. Thay share the same thread pool currently
             // allocated by Idle Verify.
             Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partitions())
-                .mapToObj(p -> F.t(p, VerifyBackupPartitionsTask.initOrGetJobsExecutor(ignite.name()).submit(() -> processPartition(p, arg))))
+                .mapToObj(p -> F.t(p, execSrvc.submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
                         return F.t(t.get1(), t.get2().get());

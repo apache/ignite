@@ -37,6 +37,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -91,7 +93,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final int IDLE_VERIFY_THREAD_POOL_SIZE = Math.max(4,  Runtime.getRuntime().availableProcessors() - 4);
+    @SystemProperty(value = "Idle verify utility thread pool size.", type = Integer.class,
+        defaults = "Total visible CPUs - 2, minimum 4 threads.")
+    public static final String IDLE_VERIFY_POOL_SIZE = "IGNITE_IDLE_VERIFY_POOL_SIZE";
+
+    /** */
+    private static final int DFLT_IDLE_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
 
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
@@ -111,15 +118,20 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     private IgniteLogger log;
 
     /** */
-    public static ExecutorService initOrGetJobsExecutor(String igniteName) {
+    public static ExecutorService initOrGetSubjobsExecutor(String igniteName) {
         if (EXECUTOR_SERVICE == null) {
             synchronized (VerifyBackupPartitionsTask.class) {
                 if (EXECUTOR_SERVICE == null) {
+                    int poolSz = IgniteSystemProperties.getInteger(IDLE_VERIFY_POOL_SIZE, DFLT_IDLE_VERIFY_POOL_SIZE);
+
+                    if (poolSz < 1)
+                        throw new IgniteException(new IllegalArgumentException(IDLE_VERIFY_POOL_SIZE + " must be greater than 0."));
+
                     EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
                         "idleVerify-repair",
                         igniteName,
-                        IDLE_VERIFY_THREAD_POOL_SIZE,
-                        IDLE_VERIFY_THREAD_POOL_SIZE,
+                        poolSz,
+                        poolSz,
                         20,
                         new LinkedBlockingQueue<>()
                     );
@@ -132,7 +144,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
     /** Only for tests. */
     @TestOnly
-    public static void jobsExecutor(ExecutorService jobsExecutor) {
+    public static void subjobsExecutor(ExecutorService jobsExecutor) {
         EXECUTOR_SERVICE = jobsExecutor;
     }
 
@@ -376,7 +388,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                ExecutorService pool = initOrGetJobsExecutor(ignite.name());
+                ExecutorService pool = initOrGetSubjobsExecutor(ignite.name());
 
                 for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                     partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));

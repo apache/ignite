@@ -456,7 +456,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 }
             };
 
-            VerifyBackupPartitionsTask.jobsExecutor(pool);
+            VerifyBackupPartitionsTask.subjobsExecutor(pool);
         }, false);
     }
 
@@ -508,7 +508,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     }
                 };
 
-                VerifyBackupPartitionsTask.jobsExecutor(pool);
+                VerifyBackupPartitionsTask.subjobsExecutor(pool);
             }, checkCrc);
 
             assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
