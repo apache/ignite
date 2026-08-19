@@ -699,7 +699,7 @@ control.sh --cache idle_verify --cancel
 [NOTE]
 ====
 [discrete]
-`idle_verify` command establish own utility thread pool of default size `Total CPUs - 2` with the minimum of `4` threads.
+`idle_verify` command also establish own utility thread pool of default size `Total CPUs - 2` with the minimum of `4` threads.
 The pool size might be adjusted at node start with the system property
 
 `-DIGNITE_IDLE_VERIFY_POOL_SIZE=...`.
@@ -774,6 +774,11 @@ tab:Window[]
 control.bat --enable-experimental --consistency status
 ----
 --
+
+[NOTE]
+====
+Consistency `repair` uses the same thread pool as `idle_verify`.
+====
 
 === Partition update counters finalization
 
