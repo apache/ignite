@@ -27,11 +27,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -57,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -65,6 +65,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -81,9 +82,17 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
+ * <br>
+ * Uses own dedicated thread pool for the jobs executions.
  */
 @GridInternal
 public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResult> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int IDLE_VERIFY_THREAD_POOL_SIZE = Math.max(4,  Runtime.getRuntime().availableProcessors() - 4);
+
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
@@ -95,14 +104,35 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     public static final String CP_REASON = "VerifyBackupPartitions";
 
     /** Shared for tests. */
-    public static Supplier<ExecutorService> poolSupplier = IgniteForkJoinPool::commonPool;
+    private static ExecutorService EXECUTOR_SERVICE;
 
     /** Injected logger. */
     @LoggerResource
     private IgniteLogger log;
 
     /** */
-    private static final long serialVersionUID = 0L;
+    public static ExecutorService initOrGetJobsExecutor(String igniteName) {
+        if (EXECUTOR_SERVICE == null) {
+            synchronized (VerifyBackupPartitionsTask.class) {
+                EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
+                    "idleVerify-repair",
+                    igniteName,
+                    IDLE_VERIFY_THREAD_POOL_SIZE,
+                    IDLE_VERIFY_THREAD_POOL_SIZE,
+                    20,
+                    new LinkedBlockingQueue<>()
+                );
+            }
+        }
+
+        return EXECUTOR_SERVICE;
+    }
+
+    /** Only for tests. */
+    @TestOnly
+    public static void jobsExecutor(ExecutorService jobsExecutor) {
+        EXECUTOR_SERVICE = jobsExecutor;
+    }
 
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
@@ -335,9 +365,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /** */
-        private List<Future<Map<PartitionKey, PartitionHashRecord>>> calcPartitionHashAsync(
-            Set<Integer> grpIds
-        ) {
+        private List<Future<Map<PartitionKey, PartitionHashRecord>>> calcPartitionHashAsync(Set<Integer> grpIds) {
             List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFutures = new ArrayList<>();
 
             for (Integer grpId : grpIds) {
@@ -346,7 +374,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                ExecutorService pool = poolSupplier.get();
+                ExecutorService pool = initOrGetJobsExecutor(ignite.name());
 
                 for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                     partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));

@@ -34,13 +34,13 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -102,8 +102,10 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
         @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
+            // Consisnency Repair and Idle Verify are usually companion tasks. Thay share the same thread pool currently
+            // allocated by Idle Verify.
             Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partitions())
-                .mapToObj(p -> F.t(p, IgniteForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
+                .mapToObj(p -> F.t(p, VerifyBackupPartitionsTask.initOrGetJobsExecutor(ignite.name()).submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
                         return F.t(t.get1(), t.get2().get());
