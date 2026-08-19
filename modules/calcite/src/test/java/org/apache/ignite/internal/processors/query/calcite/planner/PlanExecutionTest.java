@@ -82,8 +82,10 @@ public class PlanExecutionTest extends AbstractPlannerTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
+
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
-        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CalciteMessageFactory()});
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{msgFactory});
     }
 
     /**

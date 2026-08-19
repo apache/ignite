@@ -23,13 +23,11 @@ import java.util.UUID;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.jetbrains.annotations.Nullable;
 
 /** Message sent to remote nodes to start a query fragment execution. */
-@UseBinaryMarshaller
 public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
@@ -105,7 +103,7 @@ public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionCon
         this.schema = schema;
         this.root = root;
         this.ver = ver;
-        this.fragmentDesc = fragmentDesc;
+        this.fragmentDesc = fragmentDesc.preparedToSend();
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
@@ -148,7 +146,7 @@ public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionCon
      * @return Fragment description.
      */
     public FragmentDescription fragmentDescription() {
-        return fragmentDesc;
+        return fragmentDesc.receivedFragment();
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
@@ -53,11 +54,11 @@ public class MessageUnmarshalOnceCheck {
      * @param msg Message about to be finish-unmarshalled.
      * @param cacheMode {@code true} for the cache-aware pass, {@code false} for the cache-free pass; the two passes
      * over one message are legitimate and tracked separately, so only a repeat of the same pass is reported.
-     * @return {@code true} if {@code msg} is not a {@link MarshallableMessage} or is finish-unmarshalled the first
-     * time in this pass.
+     * @return {@code true} if {@code msg} marshals no field of its own, or is finish-unmarshalled the first time in
+     * this pass.
      */
     public static boolean firstUnmarshal(Message msg, boolean cacheMode) {
-        if (!(msg instanceof MarshallableMessage))
+        if (!(msg instanceof MarshallableMessage) && !(msg instanceof SelfMarshallingMessage))
             return true;
 
         // Static set: evict entries whose message was already collected, so it doesn't grow across the suite.

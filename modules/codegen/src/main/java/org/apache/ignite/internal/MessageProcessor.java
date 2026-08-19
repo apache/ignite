@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -39,8 +40,10 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,7 +72,7 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
  * This processor is typically registered using the {@code META-INF/services/javax.annotation.processing.Processor}
  * service file and triggered during the compilation phase.
  */
-@SupportedAnnotationTypes("org.apache.ignite.internal.Order")
+@SupportedAnnotationTypes({"org.apache.ignite.internal.Order", "org.apache.ignite.internal.EmptyMessage"})
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
@@ -80,6 +83,9 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** Externalizable message. */
     static final String MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.internal.MarshallableMessage";
+
+    /** Message that reshapes its own fields before they go on the wire. */
+    static final String SELF_MARSHALLING_MESSAGE_INTERFACE = "org.apache.ignite.internal.SelfMarshallingMessage";
 
     /** Marker of messages with no marshaller. */
     static final String NON_MARSHALLABLE_MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage";
@@ -101,13 +107,6 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
-
-    /** Messages with no fields. A serializer must be generated due to restrictions in our communication process. */
-    static final String[] EMPTY_MESSAGES = {
-        "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
-        ZK_NO_SERVERS_MESSAGE,
-        GRID_H2_NULL,
-    };
 
     /** Messages with no fields. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
@@ -133,11 +132,11 @@ public class MessageProcessor extends AbstractProcessor {
 
         TypeMirror msgType = msgEl.asType();
 
-        List<TypeMirror> emptyMsgs = typesToTypeMirrors(EMPTY_MESSAGES);
         List<TypeMirror> skipMsgs = typesToTypeMirrors(SKIP_MESSAGES);
 
         TypeElement marshallableEl = processingEnv.getElementUtils().getTypeElement(MARSHALLABLE_MESSAGE_INTERFACE);
         TypeElement nonMarshallableEl = processingEnv.getElementUtils().getTypeElement(NON_MARSHALLABLE_MESSAGE_INTERFACE);
+        TypeElement selfMarshallingEl = processingEnv.getElementUtils().getTypeElement(SELF_MARSHALLING_MESSAGE_INTERFACE);
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
@@ -152,9 +151,12 @@ public class MessageProcessor extends AbstractProcessor {
 
             // No marshaller is generated for a NonMarshallableMessage, so declared marshalling logic would silently never run.
             if (nonMarshallableEl != null && isAssignable(nonMarshallableEl.asType(), clazz)
-                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz)) || hasMarshalledFields(clazz))) {
+                && ((marshallableEl != null && isAssignable(marshallableEl.asType(), clazz))
+                    || (selfMarshallingEl != null && isAssignable(selfMarshallingEl.asType(), clazz))
+                    || hasMarshalledFields(clazz))) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "NonMarshallableMessage must not implement MarshallableMessage or declare @Marshalled fields", clazz);
+                    "NonMarshallableMessage must not implement MarshallableMessage or SelfMarshallingMessage, " +
+                        "nor declare @Marshalled fields", clazz);
             }
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
@@ -162,14 +164,15 @@ public class MessageProcessor extends AbstractProcessor {
 
             List<VariableElement> fields = orderedFields(clazz);
 
-            if (fields.isEmpty() && emptyMsgs.stream().noneMatch(t -> isAssignable(t, clazz))) {
+            if (fields.isEmpty() && el.getAnnotation(EmptyMessage.class) == null) {
                 if (skipMsgs.stream().anyMatch(t -> isAssignable(t, clazz)))
                     continue;
 
                 processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
                     "Message class doesn't have any ordered fields. " +
-                        "Annotate fields with @Order or add to known empty classes MessageProcessor#EMPTY_MESSAGES",
+                        "Annotate fields with @Order if you need to serialize them, " +
+                        "or with @EmptyMessage if you need to serialize message without fields.",
                     clazz);
             }
 
@@ -294,34 +297,99 @@ public class MessageProcessor extends AbstractProcessor {
     private void validateEnumFieldMapping(TypeElement type, Element el) {
         CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
 
-        if (enumType(processingEnv, el.asType())) {
-            String enumClsFullName = el.asType().toString();
-            String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
-            String msgClsName = type.toString();
+        Map<Element, String> enumsPerField = new HashMap<>();
 
-            IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
-                enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
-
-            if (otherMsgAndMapperClassesNames != null) {
-                String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
-                String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
-
-                if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
-                    processingEnv.getMessager().printMessage(
-                        Diagnostic.Kind.ERROR,
-                        "Enum " + enumClsFullName + " is declared with different mappers: " +
-                            otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
-                            enumMapperClsName + " in " + msgClsName +
-                            ". Only one mapper is allowed per enum type.",
-                        el);
-                }
-            }
-        }
-        else if (custMappAnn != null) {
+        if (!inspectFieldForEnumTypes(type.toString(), el, el.asType(), custMappAnn, enumsPerField) && custMappAnn != null) {
             processingEnv.getMessager().printMessage(
                 Diagnostic.Kind.ERROR,
-                "Annotation @CustomMapper must only be used for enum fields.",
+                "Annotation @CustomMapper must only be used for enum fields or enum collections and maps, including nested ones.",
                 el);
+        }
+    }
+
+    /**
+     * @param msgClsName Message class name currently being inspected.
+     * @param field Field being inspected.
+     * @param type Type that should be inpected for enum type (direct type or type parameter).
+     * @param custMappAnn Custom mapper annotation declared for the enum type.
+     * @param enumsPerField Map for collecting enum types related to a particular field.
+     */
+    private boolean inspectFieldForEnumTypes(String msgClsName, Element field, TypeMirror type, CustomMapper custMappAnn,
+        Map<Element, String> enumsPerField) {
+        String enumClsFullName = type.toString();
+        String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
+
+        if (enumType(processingEnv, type)) {
+            inspectForDuplicatedMappers(msgClsName, field, enumClsFullName, enumMapperClsName);
+
+            inspectForDuplicatedEnums(msgClsName, field, type, enumsPerField);
+
+            return true;
+        }
+        else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+            assert typeArgs.size() == 1 : type.toString();
+
+            TypeMirror typeArg = typeArgs.get(0);
+
+            return inspectFieldForEnumTypes(msgClsName, field, typeArg, custMappAnn, enumsPerField);
+        }
+        else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+            List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+            assert typeArgs.size() == 2 : type.toString();
+
+            TypeMirror keyType = typeArgs.get(0);
+            TypeMirror valType = typeArgs.get(1);
+
+            return inspectFieldForEnumTypes(msgClsName, field, keyType, custMappAnn, enumsPerField) |
+                inspectFieldForEnumTypes(msgClsName, field, valType, custMappAnn, enumsPerField);
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks, that only single type of mapper is used for the enum type.
+     * Particular enum should be processed with a concrete enum mapper: custom or default one.
+     */
+    private void inspectForDuplicatedMappers(String msgClsName, Element field, String enumClsFullName,
+        String enumMapperClsName) {
+        IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
+            enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
+
+        if (otherMsgAndMapperClassesNames != null) {
+            String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
+            String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
+
+            if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Enum " + enumClsFullName + " is declared with different mappers: " +
+                        otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
+                        enumMapperClsName + " in " + msgClsName +
+                        ". Only one mapper is allowed per enum type.",
+                    field);
+            }
+        }
+    }
+
+    /**
+     * Checks that only single type of enum is introduced for a particular field.
+     * Multiple enum types currently are not supported for custom mapper.
+     */
+    private void inspectForDuplicatedEnums(String msgClsName, Element field, TypeMirror type,
+        Map<Element, String> enumsPerField) {
+        String otherEnum = type.toString();
+        String existingEnum = enumsPerField.put(field, otherEnum);
+
+        if (existingEnum != null && !Objects.equals(existingEnum, otherEnum)) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                String.format("Multiple enums of different types are not supported for a single field " +
+                        "[msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]", msgClsName,
+                    field.getSimpleName(), existingEnum, otherEnum));
         }
     }
 
@@ -344,5 +412,22 @@ public class MessageProcessor extends AbstractProcessor {
         return SystemViewRowAttributeWalkerProcessor.superclasses(processingEnv, clazz)
             .flatMap(c -> ElementFilter.fieldsIn(c.getEnclosedElements()).stream())
             .anyMatch(f -> f.getAnnotation(Marshalled.class) != null);
+    }
+
+    /** */
+    boolean assignableFrom(TypeMirror type, TypeMirror superType) {
+        return superType != null && processingEnv.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    TypeMirror erasedType(TypeMirror type) {
+        return processingEnv.getTypeUtils().erasure(type);
+    }
+
+    /** @return the {@link TypeMirror} for the fully-qualified {@code clazz}, or {@code null} if not on classpath. */
+    TypeMirror type(String clazz) {
+        Elements elementUtils = processingEnv.getElementUtils();
+        TypeElement typeElement = elementUtils.getTypeElement(clazz);
+        return typeElement != null ? typeElement.asType() : null;
     }
 }

@@ -17,23 +17,17 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * User message wrapper.
  */
-@UseBinaryMarshaller
 public class GridIoUserMessage implements Message {
     /** Message body. */
     private Object body;
@@ -42,33 +36,20 @@ public class GridIoUserMessage implements Message {
     @Order(0)
     byte[] bodyBytes;
 
-    /** Class loader ID. */
-    @Order(1)
-    IgniteUuid clsLdrId;
-
     /** Message topic. */
     private Object topic;
 
     /** Serialized message topic. */
-    @Order(2)
+    @Order(1)
     byte[] topicBytes;
 
-    /** Deployment mode. */
-    @Order(3)
-    DeploymentMode depMode;
+    /** Deployment of the message classes. */
+    @Order(2)
+    GridDeploymentInfoMessage depInfo;
 
     /** Deployment class name. */
-    @Order(4)
+    @Order(3)
     String depClsName;
-
-    /** User version. */
-    @Order(5)
-    String userVer;
-
-    /** Node class loader participants. */
-    @Order(6)
-    @GridToStringInclude
-    Map<UUID, IgniteUuid> ldrParties;
 
     /** Message deployment. */
     private GridDeployment dep;
@@ -79,10 +60,7 @@ public class GridIoUserMessage implements Message {
      * @param depClsName Message body class name.
      * @param topic Message topic.
      * @param topicBytes Serialized message topic bytes.
-     * @param clsLdrId Class loader ID.
-     * @param depMode Deployment mode.
-     * @param userVer User version.
-     * @param ldrParties Node loader participant map.
+     * @param depInfo Deployment of the message classes.
      */
     GridIoUserMessage(
         Object body,
@@ -90,19 +68,13 @@ public class GridIoUserMessage implements Message {
         @Nullable String depClsName,
         @Nullable Object topic,
         @Nullable byte[] topicBytes,
-        @Nullable IgniteUuid clsLdrId,
-        @Nullable DeploymentMode depMode,
-        @Nullable String userVer,
-        @Nullable Map<UUID, IgniteUuid> ldrParties) {
+        @Nullable GridDeploymentInfo depInfo) {
         this.body = body;
         this.bodyBytes = bodyBytes;
         this.depClsName = depClsName;
         this.topic = topic;
         this.topicBytes = topicBytes;
-        this.depMode = depMode;
-        this.clsLdrId = clsLdrId;
-        this.userVer = userVer;
-        this.ldrParties = ldrParties;
+        this.depInfo = depInfo != null ? new GridDeploymentInfoMessage(depInfo) : null;
     }
 
     /**
@@ -120,38 +92,10 @@ public class GridIoUserMessage implements Message {
     }
 
     /**
-     * @return the Class loader ID.
-     */
-    @Nullable public IgniteUuid classLoaderId() {
-        return clsLdrId;
-    }
-
-    /**
-     * @return Deployment mode.
-     */
-    @Nullable public DeploymentMode deploymentMode() {
-        return depMode;
-    }
-
-    /**
      * @return Message body class name.
      */
     @Nullable public String deploymentClassName() {
         return depClsName;
-    }
-
-    /**
-     * @return User version.
-     */
-    @Nullable public String userVersion() {
-        return userVer;
-    }
-
-    /**
-     * @return Node class loader participant map.
-     */
-    @Nullable public Map<UUID, IgniteUuid> loaderParticipants() {
-        return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 
     /**
@@ -180,6 +124,11 @@ public class GridIoUserMessage implements Message {
      */
     public void body(Object body) {
         this.body = body;
+    }
+
+    /** @return Deployment of the message classes, or {@code null} when peer class loading is off. */
+    @Nullable public GridDeploymentInfo deploymentInfo() {
+        return depInfo;
     }
 
     /**

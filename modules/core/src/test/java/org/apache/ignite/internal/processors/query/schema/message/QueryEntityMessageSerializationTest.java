@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -34,12 +35,11 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -49,20 +49,29 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /** Test for serialization round-trip of {@link QueryEntityMessage} and {@link QueryEntityExMessage}. */
 public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest {
     /** Error suffix. */
-    public static final String ERROR_SUFFIX = " count is not equal to the expected fields count. " +
+    private static final String ERROR_SUFFIX = " count is not equal to the expected fields count. " +
         "Has the number of fields in the `QueryEntity` or `QueryEntityEx` classes changed?";
 
     /** */
-    private final Marshaller marsh = jdk();
+    private static final LinkedHashMap<String, String> FIELDS = new LinkedHashMap<>(Map.of(
+        "id", Integer.class.getName(),
+        "name", String.class.getName(),
+        "price", BigDecimal.class.getName()
+    ));
 
     /** */
-    private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(
-        new MessageFactoryProvider[] {new CoreMessagesProvider(marsh, marsh)});
+    private static final Map<String, Object> DFLT_FIELD_VALUES = Map.of(
+        "name", "unknown",
+        "price", new BigDecimal("9.99"),
+        "id", 42);
+
+    /** */
+    private final MessageFactory<?> msgFactory = new IgniteMessageFactoryImpl<>(
+        new MessageFactoryProvider[] {new CoreMessagesProvider()});
 
     /** */
     @Test
@@ -87,6 +96,34 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         // Not part of QueryEntityEx.equals(), so assert it explicitly.
         assertEquals(entity.fillAbsentPKsWithDefaults(), ((QueryEntityEx)res).fillAbsentPKsWithDefaults());
+    }
+
+    /**
+     * Tests that {@code defaultFieldValues} survive serialization round-trip through
+     * {@link SchemaAddQueryEntityOperation}, which wraps {@link QueryEntity} in
+     * {@link QueryEntityMessage} and serializes via eager collection traversal.
+     */
+    @Test
+    public void testSchemaAddQueryEntityOperationWithDefaultFieldValues() throws IgniteCheckedException {
+        QueryEntity firstEntity = new QueryEntity()
+            .setFields(FIELDS)
+            .setNotNullFields(Set.of("id"))
+            .setDefaultFieldValues(DFLT_FIELD_VALUES);
+
+        QueryEntity secondEntity = new QueryEntity(firstEntity).setNotNullFields(Set.of("name"));
+
+        List<QueryEntity> restored = (List<QueryEntity>)writeAndReadBack(
+            new SchemaAddQueryEntityOperation(UUID.randomUUID(), "testCache", "PUBLIC",
+                List.of(firstEntity, secondEntity), 1, false), 6).entities();
+
+        assertEquals(2, restored.size());
+
+        for (QueryEntity entity : restored) {
+            Map<String, Object> vals = entity.getDefaultFieldValues();
+
+            assertNotNull("defaultFieldValues must not be null after round-trip", vals);
+            assertEquals(DFLT_FIELD_VALUES, vals);
+        }
     }
 
     /**
@@ -129,7 +166,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         GridTestUtils.setFieldValue(kctx.grid(), "msgFactory", msgFactory);
 
-        MessageMarshalling.marshal(msg, kctx, null);
+        DiscoveryMarshalling.marshal(msg, kctx, null);
 
         ByteBuffer buf = ByteBuffer.allocate(64 * 1024);
 
@@ -151,33 +188,25 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         assertEquals("Reads" + ERROR_SUFFIX,
             expReadsWritesCnt, reader.state());
 
-        MessageMarshalling.unmarshal(res, kctx, null, U.gridClassLoader());
+        DiscoveryMarshalling.unmarshal(res, kctx);
 
         return res;
     }
 
     /** @return Query entity with every field populated, including non-empty default field values. */
     private QueryEntity queryEntity() {
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-        fields.put("id", Integer.class.getName());
-        fields.put("name", String.class.getName());
-        fields.put("price", BigDecimal.class.getName());
-
         return new QueryEntity()
             .setKeyType(Integer.class.getName())
             .setValueType("org.apache.ignite.Person")
             .setKeyFieldName("id")
             .setValueFieldName("name")
             .setTableName("PERSON")
-            .setFields(fields)
+            .setFields(FIELDS)
             .setKeyFields(Set.of("id"))
             .setAliases(Map.of("name", "NAME_ALIAS"))
             .setIndexes(List.of(new QueryIndex("name", QueryIndexType.SORTED).setInlineSize(32)))
             .setNotNullFields(Set.of("id", "name"))
-            .setDefaultFieldValues(Map.of(
-                "name", "unknown",
-                "price", new BigDecimal("9.99"),
-                "id", 42))
+            .setDefaultFieldValues(DFLT_FIELD_VALUES)
             .setFieldsPrecision(Map.of("name", 64))
             .setFieldsScale(Map.of("price", 2));
     }

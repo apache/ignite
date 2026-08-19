@@ -22,12 +22,13 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -49,7 +50,6 @@ import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,9 +69,6 @@ public class DataStreamProcessor extends GridProcessorAdapter {
     /** Data Streamer flusher. */
     private final DataStreamerFlusher flusher = new DataStreamerFlusher();
 
-    /** Marshaller. */
-    private final Marshaller marsh;
-
     /**
      * @param ctx Kernal context.
      */
@@ -87,8 +84,6 @@ public class DataStreamProcessor extends GridProcessorAdapter {
                 }
             });
         }
-
-        marsh = ctx.marshaller();
     }
 
     /** {@inheritDoc} */
@@ -208,19 +203,6 @@ public class DataStreamProcessor extends GridProcessorAdapter {
                 }
             }
 
-            // The generic receive pass skips this request (entries must stay serialized for the update job and its
-            // peer-deployment loader), so the response topic is restored here; it carries only internal classes.
-            try {
-                if (req.resTopicMsg != null)
-                    MessageMarshalling.unmarshal(req.resTopicMsg, ctx);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to unmarshal response topic (no response will be sent) [nodeId=" + nodeId +
-                    ", req=" + req + ']', e);
-
-                return;
-            }
-
             Object topic = req.responseTopic();
 
             ClassLoader clsLdr;
@@ -228,22 +210,16 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             if (req.forceLocalDeployment())
                 clsLdr = U.gridClassLoader();
             else {
-                GridDeployment dep = ctx.deploy().getGlobalDeployment(
-                    req.deploymentMode(),
-                    req.sampleClassName(),
-                    req.sampleClassName(),
-                    req.userVersion(),
-                    nodeId,
-                    req.classLoaderId(),
-                    req.participants(),
-                    null);
+                GridDeployment dep;
 
-                if (dep == null) {
-                    sendResponse(nodeId,
-                        topic,
-                        req.requestId(),
+                try {
+                    dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.sampleClassName(), nodeId);
+                }
+                catch (IgniteDeploymentCheckedException e) {
+                    // The sender waits for an answer, so a missing deployment is reported back, not thrown.
+                    sendResponse(nodeId, topic, req.requestId(),
                         new IgniteCheckedException("Failed to get deployment for request [sndId=" + nodeId +
-                            ", req=" + req + ']'));
+                            ", req=" + req + ']', e));
 
                     return;
                 }
@@ -254,9 +230,11 @@ public class DataStreamProcessor extends GridProcessorAdapter {
             StreamReceiver<?, ?> updater;
 
             try {
-                updater = U.unmarshal(marsh, req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
+                CommunicationMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(clsLdr, ctx.config()));
 
-                if (updater != null)
+                updater = req.updater();
+
+                if (req.customUpdater())
                     ctx.resource().injectGeneric(updater);
             }
             catch (IgniteCheckedException e) {

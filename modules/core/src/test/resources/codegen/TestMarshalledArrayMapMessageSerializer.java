@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.List;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
@@ -37,11 +38,11 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
     /** */
     private static final MessageArrayType fixedMapKeysCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridTopicMessage.class);
     /** */
-    private static final MessageArrayType fixedMapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false), List.class);
+    private static final MessageArrayType fixedMapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), CollectionImplementationType.ARRAY_LIST), List.class);
     /** */
     private static final MessageArrayType mapKeysCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridTopicMessage.class);
     /** */
-    private static final MessageArrayType mapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false), List.class);
+    private static final MessageArrayType mapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), CollectionImplementationType.ARRAY_LIST), List.class);
 
     /** */
     @Override public final boolean writeTo(TestMarshalledArrayMapMessage msg, MessageWriter writer) {

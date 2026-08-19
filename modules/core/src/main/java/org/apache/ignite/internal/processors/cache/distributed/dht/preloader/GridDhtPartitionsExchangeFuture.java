@@ -65,8 +65,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
@@ -106,7 +106,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
-import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -1274,11 +1273,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert req != null : exchActions;
 
         GridKernalContext kctx = cctx.kernalContext();
-
-        DiscoveryDataClusterState state = kctx.state().clusterState();
-
-        if (state.transitionError() != null)
-            exchangeLocE = state.transitionError();
 
         if (req.activeChanged()) {
             if (req.state().active()) {
@@ -3827,7 +3821,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Marshal eagerly: the heavy partition-map copy lands in the "Full message preparing" stage, and the
             // message cached in FinishState is sent to late joiners as is (the send-path marshal-once turns no-op).
-            MessageMarshalling.marshal(msg, cctx.kernalContext(), null);
+            CommunicationMarshalling.marshal(msg, cctx.kernalContext(), null);
 
             timeBag.finishGlobalStage("Full message preparing");
 

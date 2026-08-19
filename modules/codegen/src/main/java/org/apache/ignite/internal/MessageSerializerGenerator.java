@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageProcessor.CACHE_OBJECT_CLS;
@@ -86,6 +88,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     private static final String MESSAGE_COLLECTION_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageCollectionType";
 
     /** */
+    private static final String COLLECTION_IMPL_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.CollectionImplementationType";
+
+    /** */
     private static final String IGNITE_UUID_CLS = "org.apache.ignite.lang.IgniteUuid";
 
     /** */
@@ -109,6 +114,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private final List<String> read = new ArrayList<>();
+
+    /** Static class fields, which should come before ordinary class fields. */
+    private final Set<String> headingClsFields = new TreeSet<>();
 
     /** Class-field declarations (enum mappers/values, collection descriptors) emitted at the top of the generated class. */
     private final Set<String> clsFields = new TreeSet<>();
@@ -261,7 +269,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     /** @return Writer/reader call expression for {@code field}. */
     private String callExpr(VariableElement field, boolean write) throws Exception {
         if (enumType(env, field.asType())) {
-            String prefix = registerEnumMapper(field);
+            String prefix = registerEnumMapper(field, field.asType());
 
             boolean custMapper = field.getAnnotation(CustomMapper.class) != null;
 
@@ -425,8 +433,8 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
      *
      * @return Class-field name prefix derived from the enum type name.
      */
-    private String registerEnumMapper(VariableElement field) {
-        Element enumElem = env.getTypeUtils().asElement(field.asType());
+    private String registerEnumMapper(VariableElement field, TypeMirror fieldType) {
+        Element enumElem = env.getTypeUtils().asElement(fieldType);
 
         imports.add(enumElem.toString());
 
@@ -446,12 +454,12 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             String simpleName = fullMapperName.substring(fullMapperName.lastIndexOf('.') + 1);
 
-            clsFields.add("private final EnumMapper<" + enumName + "> " + prefix + "Mapper = new " + simpleName + "();");
+            headingClsFields.add("private static final EnumMapper<" + enumName + "> " + prefix + "Mapper = new " + simpleName + "();");
         }
         else {
             imports.add(DLFT_ENUM_MAPPER_CLS);
 
-            clsFields.add("private final " + enumName + "[] " + prefix + "Vals = " + enumName + ".values();");
+            headingClsFields.add("private static final " + enumName + "[] " + prefix + "Vals = " + enumName + ".values();");
         }
 
         return prefix;
@@ -488,7 +496,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private String messageCollectionItemTypes(VariableElement field, TypeMirror type) throws Exception {
-        String desc = messageCollectionItemTypeDescriptor(type);
+        String desc = messageCollectionItemTypeDescriptor(type, field);
         String descName = field.getSimpleName() + "CollDesc";
         String typeName = desc.substring(desc.indexOf(' ') + 1, desc.indexOf('('));
 
@@ -498,7 +506,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** */
-    private String messageCollectionItemTypeDescriptor(TypeMirror type) throws Exception {
+    private String messageCollectionItemTypeDescriptor(TypeMirror type, VariableElement field) throws Exception {
         imports.add(MESSAGE_COLLECTION_ITEM_TYPE_CLS);
 
         if (type.getKind() == TypeKind.ARRAY) {
@@ -527,18 +535,18 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             imports.add(MESSAGE_ARRAY_TYPE_CLS);
 
-            return "new MessageArrayType(" + messageCollectionItemTypeDescriptor(componentType) + ", " + clazz + ")";
+            return "new MessageArrayType(" + messageCollectionItemTypeDescriptor(componentType, field) + ", " + clazz + ")";
         }
         else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
             imports.add(MESSAGE_MAP_TYPE_CLS);
 
             List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
-            assert typeArgs.size() == 2;
+            assert typeArgs.size() == 2 : type.toString();
 
             return "new MessageMapType(" +
-                messageCollectionItemTypeDescriptor(typeArgs.get(0)) + ", " +
-                messageCollectionItemTypeDescriptor(typeArgs.get(1)) + ", " +
+                messageCollectionItemTypeDescriptor(typeArgs.get(0), field) + ", " +
+                messageCollectionItemTypeDescriptor(typeArgs.get(1), field) + ", " +
                 assignableFrom(erasedType(type), type(LinkedHashMap.class.getName())) + ")";
         }
         else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
@@ -546,17 +554,52 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
-            assert typeArgs.size() == 1;
+            assert typeArgs.size() == 1 : type.toString();
 
-            return "new MessageCollectionType(" +
-                messageCollectionItemTypeDescriptor(typeArgs.get(0)) + ", " +
-                assignableFrom(erasedType(type), type(Set.class.getName())) + ")";
+            TypeMirror itemType = typeArgs.get(0);
+
+            if (EnumSet.class.getName().equals(qualifiedClassName(erasedType(type))) && !enumType(env, itemType))
+                throw new IllegalArgumentException("Unexpected Enum Set element type [itemType=" + itemType + ", colType=" + type + ']');
+
+            imports.add(COLLECTION_IMPL_TYPE_CLS);
+
+            String implType = resolveCollectionImplementationType(type);
+
+            return "new MessageCollectionType(" + messageCollectionItemTypeDescriptor(itemType, field) +
+                ", CollectionImplementationType." + implType + ")";
+        }
+        else if (enumType(env, type)) {
+            imports.add("org.apache.ignite.plugin.extensions.communication.MessageEnumType");
+
+            String prefix = registerEnumMapper(field, type);
+            boolean custMapper = field.getAnnotation(CustomMapper.class) != null;
+
+            String encoder = (custMapper ? prefix + "Mapper" : "DefaultEnumMapper.INSTANCE") + "::encode";
+            String decoder = custMapper ? prefix + "Mapper::decode" :
+                "b -> DefaultEnumMapper.INSTANCE.decode(" + prefix + "Vals, b)";
+
+            return String.format("new MessageEnumType<>(%s.class, %s, %s)", simpleClassName(type), encoder, decoder);
         }
         else {
             imports.add(MESSAGE_ITEM_TYPE_CLS);
 
             return "new MessageItemType(MessageCollectionItemType." + messageCollectionItemType(type) + ")";
         }
+    }
+
+    /**
+     * @param type Declared collection type.
+     * @return Name of the {@code CollectionImplementationType} that will be used to create collection instance.
+     */
+    private String resolveCollectionImplementationType(TypeMirror type) {
+        TypeMirror declType = erasedType(type);
+
+        if (EnumSet.class.getName().equals(qualifiedClassName(declType)))
+            return "ENUM_SET";
+        else if (assignableFrom(declType, type(Set.class.getName())))
+            return "HASH_SET";
+        else
+            return "ARRAY_LIST";
     }
 
     /**
@@ -656,10 +699,10 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** Write serializer class fields: enum values, custom enum mappers, collection descriptors. */
     private void writeClassFields(Writer writer) throws IOException {
-        if (clsFields.isEmpty())
+        if (headingClsFields.isEmpty() && clsFields.isEmpty())
             return;
 
-        for (String field: clsFields) {
+        for (String field: F.concat(false, headingClsFields, clsFields)) {
             writer.write(indentedLine(METHOD_JAVADOC));
             writer.write(NL);
             writer.write(indentedLine(field));

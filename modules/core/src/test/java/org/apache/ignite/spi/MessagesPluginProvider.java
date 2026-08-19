@@ -24,9 +24,12 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.testframework.GridTestUtils.loadMarshaller;
 import static org.apache.ignite.testframework.GridTestUtils.loadSerializer;
 
 /**
@@ -43,11 +46,26 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
             short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
 
             for (Class<? extends Message> msg : msgs) {
-                f.register(directType, loadSerializer(msg));
+                f.register(directType, loadSerializer(msg), marshaller(msg));
 
                 directType++;
             }
         };
+    }
+
+    /**
+     * A marshaller companion is generated only for a message that has something to marshal, and the loader throws
+     * when there is no such class. Test messages are mostly plain, so a missing companion is the normal case here.
+     *
+     * @return Generated marshaller of the message, or {@code null} when the message has nothing to marshal.
+     */
+    private static <T extends Message> @Nullable MessageMarshaller<T> marshaller(Class<? extends Message> msg) {
+        try {
+            return loadMarshaller(msg);
+        }
+        catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     /** {@inheritDoc} */

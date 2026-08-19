@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import org.apache.ignite.internal.EmptyMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
@@ -24,6 +25,7 @@ import org.h2.value.ValueNull;
 /**
  * Message for {@link Value#NULL}.
  */
+@EmptyMessage
 public class GridH2Null extends GridH2ValueMessage {
     /** */
     public static final GridH2Null INSTANCE = new GridH2Null();

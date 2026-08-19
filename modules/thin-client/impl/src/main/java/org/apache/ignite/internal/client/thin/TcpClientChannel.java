@@ -75,6 +75,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ClientUtils.awaitFutureResult;
+import static org.apache.ignite.internal.client.thin.ClientUtils.createClientConnectionException;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.HEARTBEAT;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
@@ -223,13 +225,16 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             try {
                 handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
             }
-            catch (ClientConnectionException e) {
-                if (!X.hasCause(e, ClientConnectionNodeRecoveryException.class))
+            catch (Exception e) {
+                if (!isCausedByNodeInRecoveryMode(e)) {
+                    close(e);
+
                     throw e;
+                }
 
                 log.info("Can't establish connection with " + addr + ". Node in recovery mode.");
 
-                connectionEx = CommonUtils.addSuppressed(connectionEx, e);
+                connectionEx = CommonUtils.addSuppressed(connectionEx, (ClientConnectionException)e);
 
                 CommonUtils.closeQuiet(sock);
                 sock = null;
@@ -738,7 +743,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             handshakeReq(ver, user, pwd, userAttrs);
 
             try {
-                ByteBuffer buf = handshakeTimeout > 0 ? fut.get(handshakeTimeout) : fut.get();
+                ByteBuffer buf = awaitFutureResult(fut, handshakeTimeout, "Ignite Client handshake");
 
                 BinaryInputStream res = BinaryStreams.inputStream(buf);
 
@@ -824,7 +829,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 if (e instanceof IOException)
                     err = handleIOError((IOException)e);
                 else
-                    err = new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
+                    err = createClientConnectionException(e, sock.remoteAddress());
 
                 eventListener.onHandshakeFail(
                     new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
@@ -894,7 +899,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             lastSendMillis = System.currentTimeMillis();
         }
         catch (IgniteCheckedException e) {
-            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + sock.remoteAddress() + ']', e);
+            throw createClientConnectionException(e, sock.remoteAddress());
         }
     }
 
@@ -958,6 +963,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     ", recommended: " + recommendedHeartbeatInterval + ", server-side IdleTimeout: " + serverIdleTimeoutMs + ")");
 
         return res;
+    }
+
+    /** */
+    private boolean isCausedByNodeInRecoveryMode(Exception e) {
+        return e instanceof ClientConnectionException && X.hasCause(e, ClientConnectionNodeRecoveryException.class);
     }
 
     /** {@inheritDoc} */

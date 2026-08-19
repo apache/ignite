@@ -74,7 +74,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                     Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
                 null,
                 null,
-                null,
                 new LongJVMPauseDetector(cfg.getIgniteInstanceName() == null ? "test-ignite-kernal" : cfg.getIgniteInstanceName(), log)
         );
 
