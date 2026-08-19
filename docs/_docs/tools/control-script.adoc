@@ -696,6 +696,17 @@ To cancel a running `idle_verify` operation, use the `--cancel` argument:
 control.sh --cache idle_verify --cancel
 ----
 
+[NOTE]
+====
+[discrete]
+`idle_verify` command establish own utility thread pool of default size `Total CPUs - 2` with the minimum of `4` threads.
+The pool size might be adjusted at node start with the system property
+
+`-DIGNITE_IDLE_VERIFY_POOL_SIZE=...`.
+[discrete]
+The pool exists since once used.
+====
+
 === Repairing cache consistency
 [WARNING]
 ====

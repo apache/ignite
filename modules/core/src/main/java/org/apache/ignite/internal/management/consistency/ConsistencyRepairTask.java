@@ -131,7 +131,7 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
 
             makeResult(res, false, resStr, CONSISTENCY_VIOLATIONS_FOUND);
 
-            return resStr.length() == 0 ? null : resStr.toString();
+            return resStr.isEmpty() ? null : resStr.toString();
         }
 
         /**
