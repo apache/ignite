@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * Argument for --kill all command.
  */
+@CliConfirmArgument
 public class KillAllCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
@@ -41,13 +43,13 @@ public class KillAllCommandArg extends IgniteDataTransferObject {
             "SQL",
             "SCAN",
             "INDEX",
-            "CONTUNUOUS"
+            "CONTINUOUS"
         },
         descriptions = {
             "SQL queries",
             "SCAN queries",
             "INDEX queries",
-            "CONTUNUOUS queries"
+            "CONTINUOUS queries"
         }
     )
     TargetType target;

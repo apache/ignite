@@ -93,5 +93,4 @@ public class KillAllCommand implements ComputeCommand<KillAllCommandArg, Map<Clu
         printer.accept("\nTotal killed: " + totalKilled + ", failed to kill: " + totalFailed + " "
             + arg.target().toString().toLowerCase() + " queries");
     }
-
 }

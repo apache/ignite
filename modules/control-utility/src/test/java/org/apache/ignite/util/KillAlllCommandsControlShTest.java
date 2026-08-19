@@ -53,7 +53,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Test for mass queries cancellation.
  */
-public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByClassAbstractTest {
+public class KillAlllCommandsControlShTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
@@ -93,7 +93,7 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
     public void testKillAllSql() {
         String sql = "SELECT * FROM Integer WHERE latch()";
 
-        checkKillAll("sql", () -> new SqlFieldsQuery(sql), KilAlllCommandsControlShTest::sqlQueriesCnt);
+        checkKillAll("sql", () -> new SqlFieldsQuery(sql), KillAlllCommandsControlShTest::sqlQueriesCnt);
     }
 
     /** */
@@ -108,7 +108,7 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
             }
 
             return true;
-        }), KilAlllCommandsControlShTest::scanQueriesCnt);
+        }), KillAlllCommandsControlShTest::scanQueriesCnt);
     }
 
     /** */
@@ -123,7 +123,7 @@ public class KilAlllCommandsControlShTest extends GridCommandHandlerClusterByCla
             }
 
             return true;
-        }).setPageSize(1), KilAlllCommandsControlShTest::indexQueriesCnt);
+        }).setPageSize(1), KillAlllCommandsControlShTest::indexQueriesCnt);
     }
 
     /** */
