@@ -38,9 +38,29 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
 
+    <distributionManagement>
+        <repository>
+            <id>${distMgmtReleasesId}</id>
+            <name>${distMgmtReleasesName}</name>
+            <url>${distMgmtReleasesUrl}</url>
+        </repository>
+        <snapshotRepository>
+            <id>${distMgmtSnapshotsId}</id>
+            <name>${distMgmtSnapshotsName}</name>
+            <url>${distMgmtSnapshotsUrl}</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+
+        <distMgmtReleasesId>apache.releases.https</distMgmtReleasesId>
+        <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
+        <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
+        <distMgmtSnapshotsId>apache.snapshots.https</distMgmtSnapshotsId>
+        <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
+        <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
 
         <revision>2.19.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
