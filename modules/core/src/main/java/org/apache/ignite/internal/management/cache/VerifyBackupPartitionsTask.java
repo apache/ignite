@@ -114,14 +114,16 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     public static ExecutorService initOrGetJobsExecutor(String igniteName) {
         if (EXECUTOR_SERVICE == null) {
             synchronized (VerifyBackupPartitionsTask.class) {
-                EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
-                    "idleVerify-repair",
-                    igniteName,
-                    IDLE_VERIFY_THREAD_POOL_SIZE,
-                    IDLE_VERIFY_THREAD_POOL_SIZE,
-                    20,
-                    new LinkedBlockingQueue<>()
-                );
+                if (EXECUTOR_SERVICE == null) {
+                    EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
+                        "idleVerify-repair",
+                        igniteName,
+                        IDLE_VERIFY_THREAD_POOL_SIZE,
+                        IDLE_VERIFY_THREAD_POOL_SIZE,
+                        20,
+                        new LinkedBlockingQueue<>()
+                    );
+                }
             }
         }
 
