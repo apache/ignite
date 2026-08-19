@@ -95,10 +95,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** */
     @SystemProperty(value = "Idle verify utility thread pool size.", type = Integer.class,
         defaults = "Total visible CPUs - 2, minimum 4 threads.")
-    public static final String IDLE_VERIFY_POOL_SIZE = "IGNITE_IDLE_VERIFY_POOL_SIZE";
+    public static final String VERIFY_POOL_SIZE = "IGNITE_IDLE_VERIFY_POOL_SIZE";
 
     /** */
-    private static final int DFLT_IDLE_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
+    private static final int DFLT_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
 
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
@@ -122,10 +122,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         if (EXECUTOR_SERVICE == null) {
             synchronized (VerifyBackupPartitionsTask.class) {
                 if (EXECUTOR_SERVICE == null) {
-                    int poolSz = IgniteSystemProperties.getInteger(IDLE_VERIFY_POOL_SIZE, DFLT_IDLE_VERIFY_POOL_SIZE);
+                    int poolSz = IgniteSystemProperties.getInteger(VERIFY_POOL_SIZE, DFLT_VERIFY_POOL_SIZE);
 
                     if (poolSz < 1)
-                        throw new IgniteException(new IllegalArgumentException(IDLE_VERIFY_POOL_SIZE + " must be greater than 0."));
+                        throw new IgniteException(new IllegalArgumentException(VERIFY_POOL_SIZE + " must be greater than 0."));
 
                     EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
                         "idleVerify-repair",
