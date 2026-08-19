@@ -100,8 +100,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** */
     private static final int DFLT_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
 
-    /** The keep alive time of an unused thread in the utility pool. */
-    private static final int VERIFY_POOL_KEEP_ALIVE = 20;
+    /** The keep alive time (milliseconds) of an unused thread in the utility pool. */
+    private static final int VERIFY_POOL_KEEP_ALIVE = 20 * 1000;
 
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
@@ -113,15 +113,15 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
 
-    /** Shared for tests. Overrides the default executor. */
+    /** Effective verify executor service. */
     private static ExecutorService EXECUTOR_SERVICE;
 
     /** Injected logger. */
     @LoggerResource
     private IgniteLogger log;
 
-    /** */
-    public static ExecutorService initOrGetSubjobsExecutor(String igniteName) {
+    /** Initializes {@link #EXECUTOR_SERVICE}. */
+    public static ExecutorService initOrGetVerifyExecutor(String igniteName) {
         if (EXECUTOR_SERVICE == null) {
             synchronized (VerifyBackupPartitionsTask.class) {
                 if (EXECUTOR_SERVICE == null) {
@@ -165,9 +165,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         return EXECUTOR_SERVICE;
     }
 
-    /** Only for tests. */
+    /** Only for tests. Overrides {@link #EXECUTOR_SERVICE}. */
     @TestOnly
-    public static void subjobsExecutor(ExecutorService jobsExecutor) {
+    public static void verifyExecutor(ExecutorService jobsExecutor) {
         EXECUTOR_SERVICE = jobsExecutor;
     }
 
@@ -411,7 +411,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                ExecutorService pool = initOrGetSubjobsExecutor(ignite.name());
+                ExecutorService pool = initOrGetVerifyExecutor(ignite.name());
 
                 for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                     partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));

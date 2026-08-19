@@ -103,7 +103,7 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
         @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
-            ExecutorService execSrvc = VerifyBackupPartitionsTask.initOrGetSubjobsExecutor(ignite.name());
+            ExecutorService execSrvc = VerifyBackupPartitionsTask.initOrGetVerifyExecutor(ignite.name());
 
             // Consisnency Repair and Idle Verify are usually companion tasks. Thay share the same thread pool currently
             // allocated by Idle Verify.

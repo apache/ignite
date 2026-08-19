@@ -704,7 +704,7 @@ The pool size might be adjusted at node start with the system property
 
 `-DIGNITE_IDLE_VERIFY_POOL_SIZE=...`.
 [discrete]
-The pool exists since once used.
+The pool threads exist idle for some time after a verify task.
 ====
 
 === Repairing cache consistency
