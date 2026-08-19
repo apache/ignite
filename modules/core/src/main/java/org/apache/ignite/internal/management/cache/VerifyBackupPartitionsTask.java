@@ -91,7 +91,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final int IDLE_VERIFY_THREAD_POOL_SIZE = Math.max(4,  Runtime.getRuntime().availableProcessors() - 4);
+    private static final int IDLE_VERIFY_THREAD_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 4);
 
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
