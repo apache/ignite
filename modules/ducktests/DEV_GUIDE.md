@@ -20,7 +20,7 @@ The ignite-ducktests framework is a bilingual integration testing framework:
 
 | Layer                | Language | Purpose                                                           |
 |----------------------|----------|-------------------------------------------------------------------|
-| Test orchestration   | Python   | Manages Docker containers, starts/stops nodes, asserts results    |
+| Test orchestration   | Python   | Manages test nodes (Docker containers in our setup), runs workloads, asserts results |
 | In-cluster workloads | Java     | Runs inside Ignite nodes (cache ops, transactions, queries, etc.) |
 
 Each Ignite node runs in a separate Docker container. The Python layer manages container lifecycle and simulates network failures via iptables.
@@ -83,7 +83,7 @@ public class MyTestApp extends IgniteAwareApplication {
 |------------------|-------------------------------|-------------------------|
 | Full server node | IgniteConfiguration           | this.ignite             |
 | Thin client      | IgniteThinClientConfiguration | this.client             |
-| Thin JDBC        | (same, mode=THIN_JDBC)        | this.thinJdbcDataSource |
+| Thin JDBC        | IgniteThinJdbcConfiguration   | this.thinJdbcDataSource |
 | No connection    | service_type = NONE           | nothing                 |
 
 ---
@@ -139,7 +139,7 @@ class MyTest(IgniteTest):
 ## Decorators Reference
 
 ### @cluster Annotation
-@cluster is a mandatory test method decorator. It tells the ducktape framework how many Docker containers the test will consume and how exactly.
+@cluster is a mandatory test method decorator. It tells the ducktape framework how many containers the test will consume.
 
 #### Basic Usage
 ```python
@@ -174,17 +174,16 @@ def test_with_client(self, ignite_version):
 ```
 3. Global cluster_size parameter. You can override num_nodes at runtime via a global parameter:
    ./docker/run_tests.sh -g cluster_size=5 -t ./ignitetest/tests/my_test.py
-4. Instead of num_nodes, you can specify a ClusterSpec from ducktape for typed node specifications:
-5. One @cluster per method. The decorator must appear once per test method. It sets cluster metadata in ctx.cluster_use_metadata. If the context already has metadata, it is not overwritten.
+4. One @cluster per method. It records how many containers the test will reserve so ducktape can allocate them before the test runs. If a method accidentally stacks more than one @cluster, only the innermost (bottom) count is used — the extra wrapper just adds redundant init/teardown.
 
 #### Errors and Limitations
 
-| Situation                              | Result                                                        |
-|----------------------------------------|---------------------------------------------------------------|
-| num_nodes exceeds available containers | Test will not start (ducktape reports insufficient resources) |
-| num_nodes <= 0                         | Parsing error when reading global cluster_size                |
-| Multiple @cluster on one method        | The inner (bottom) @cluster applies; before()/after() run twice |
-| Missing @cluster                       | before()/after() not executed — context is not initialized    |
+| Situation                              | What happens                                                        |
+|----------------------------------------|---------------------------------------------------------------------|
+| num_nodes exceeds available containers | ducktape reports insufficient resources and the test is not run.   |
+| num_nodes <= 0                         | The test fails at startup — num_nodes must be a positive integer.  |
+| Multiple @cluster on one method        | Only the innermost count is used; the extra wrapper adds redundant setup/teardown. |
+| Missing @cluster                       | The test fails — self.test_context is never initialized, so services like IgniteService cannot be created. |
 
 ---
 ### @ignite_versions Annotation
@@ -225,7 +224,7 @@ def test_cross_version(self, server_version, client_version):
 ```
 4. If a single test needs to spin up nodes with different versions simultaneously, pass a tuple/list of size ≥ 2 as
    one argument: `@ignite_versions(("dev", "2.17.0"))`
-5. @ignite_versions must be placed below @cluster and above @matrix (or the method definition):
+5. Place @ignite_versions below @cluster and above @matrix (or the method definition).
 
 #### Errors and Limitations
 
@@ -321,7 +320,6 @@ def test_config(self, num_backups, cache_mode, enabled, timeout_ms):
 | One parameter list is empty                              | The entire @matrix produces zero test cases — the test is silently skipped                 |
 | Multiple @matrix decorators on one method                | Each @matrix is applied independently, creating nested cartesian products                  |
 | Large number of combinations                             | Exponential test growth — e.g., 3 params × 5 values each = 125 test executions per version |
-| Non-hashable parameter values (e.g., lists, dicts)       | Ducktape may fail to deduplicate test cases — unexpected duplicates or crashes             |
 | Parameter names conflict with @ignite_versions injection | Name collision in ctx.injected_args — last writer wins, unpredictable behavior             |
 | Mutable default values in parameter lists                | Shared mutable state across test executions — potential side effects                       |
 
