@@ -25,7 +25,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorker;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -94,10 +93,8 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
             }
         }, 3, "dms-updater");
 
-        DmsDataWriterWorker worker = GridTestUtils.getFieldValue(ignite.context().distributedMetastorage(),
-            DistributedMetaStorageImpl.class, "worker");
-        LinkedBlockingQueue<RunnableFuture<?>> queue = GridTestUtils.getFieldValue(worker, DmsDataWriterWorker.class,
-            "updateQueue");
+        DmsDataWriter worker = GridTestUtils.getFieldValue(ignite.context().distributedMetastorage(),
+            DistributedMetaStorageImpl.class, "dataWriter");
 
         RunnableFuture<?> testTask = new FutureTask<>(() -> {
             U.await(latch);
@@ -105,9 +102,9 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
             return null;
         });
 
-        queue.offer(testTask);
+        worker.addToQueue(testTask);
 
-        assertTrue(GridTestUtils.waitForCondition(() -> queue.size() > 10, getTestTimeout()));
+        assertTrue(GridTestUtils.waitForCondition(() -> worker.queueSize() > 10, getTestTimeout()));
 
         ignite.context().cache().context().exchange()
             .registerExchangeAwareComponent(new PartitionsExchangeAware() {

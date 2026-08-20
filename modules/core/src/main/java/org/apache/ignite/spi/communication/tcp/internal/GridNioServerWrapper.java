@@ -53,10 +53,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.GridManager;
-import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
@@ -74,7 +75,6 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
-import org.apache.ignite.internal.util.nio.GridNioTracerFilter;
 import org.apache.ignite.internal.util.nio.GridSelectorNioSessionImpl;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
@@ -87,6 +87,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -151,9 +152,6 @@ public class GridNioServerWrapper {
     /** Attribute names. */
     private final AttributeNames attrs;
 
-    /** Tracing. */
-    private final Tracing tracing;
-
     /** Node getter. */
     private final Function<UUID, ClusterNode> nodeGetter;
 
@@ -202,7 +200,7 @@ public class GridNioServerWrapper {
     private final CommunicationListener<Message> lsnr;
 
     /** Recovery and idle clients handler. */
-    private volatile CommunicationWorker commWorker;
+    private volatile CommunicationConnectionStateHandler connStateHnd;
 
     /** Socket channel factory. */
     private volatile ThrowableSupplier<SocketChannel, IOException> socketChannelFactory = SocketChannel::open;
@@ -222,7 +220,7 @@ public class GridNioServerWrapper {
     private volatile boolean stopping = false;
 
     /** Channel connection index provider. */
-    private ConnectionPolicy chConnPlc;
+    private final ConnectionPolicy chConnPlc;
 
     /** Scheduled executor service which closed the socket if handshake timeout is out. **/
     private final ScheduledExecutorService handshakeTimeoutExecutorService;
@@ -237,13 +235,12 @@ public class GridNioServerWrapper {
      * @param log Logger.
      * @param cfg Config.
      * @param attributeNames Attribute names.
-     * @param tracing Tracing.
      * @param nodeGetter Node getter.
      * @param locNodeSupplier Local node supplier.
      * @param connectGate Connect gate.
      * @param stateProvider State provider.
      * @param eRegistrySupplier Exception registry supplier.
-     * @param commWorker Communication worker.
+     * @param connStateHnd Communication connection state handler.
      * @param igniteCfg Ignite config.
      * @param srvLsnr Server listener.
      * @param igniteInstanceName Ignite instance name.
@@ -255,13 +252,12 @@ public class GridNioServerWrapper {
         IgniteLogger log,
         TcpCommunicationConfiguration cfg,
         AttributeNames attributeNames,
-        Tracing tracing,
         Function<UUID, ClusterNode> nodeGetter,
         Supplier<ClusterNode> locNodeSupplier,
         ConnectGateway connectGate,
         ClusterStateProvider stateProvider,
         Supplier<IgniteExceptionRegistry> eRegistrySupplier,
-        CommunicationWorker commWorker,
+        CommunicationConnectionStateHandler connStateHnd,
         IgniteConfiguration igniteCfg,
         GridNioServerListener<Message> srvLsnr,
         String igniteInstanceName,
@@ -274,13 +270,12 @@ public class GridNioServerWrapper {
         this.log = log;
         this.cfg = cfg;
         this.attrs = attributeNames;
-        this.tracing = tracing;
         this.nodeGetter = nodeGetter;
         this.locNodeSupplier = locNodeSupplier;
         this.connectGate = connectGate;
         this.stateProvider = stateProvider;
         this.eRegistrySupplier = eRegistrySupplier;
-        this.commWorker = commWorker;
+        this.connStateHnd = connStateHnd;
         this.igniteCfg = igniteCfg;
         this.srvLsnr = srvLsnr;
         this.igniteInstanceName = igniteInstanceName;
@@ -643,7 +638,7 @@ public class GridNioServerWrapper {
                     connectGate.leave();
                 }
 
-                CommunicationWorker commWorker0 = commWorker;
+                CommunicationConnectionStateHandler commWorker0 = connStateHnd;
 
                 if (commWorker0 != null && commWorker0.runner() == Thread.currentThread())
                     commWorker0.updateHeartbeat();
@@ -811,16 +806,16 @@ public class GridNioServerWrapper {
 
         for (int port = cfg.localPort(); port <= lastPort; port++) {
             try {
-                MessageFactory msgFactory = new MessageFactory() {
-                    private MessageFactory impl;
+                MessageFactory<Message> msgFactory = new IgniteMessageFactory<>() {
+                    private IgniteMessageFactory<Message, GridCacheMessage> impl;
 
-                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
-                        get().register(directType, supplier);
-                    }
-
-                    @Override public void register(short directType, Supplier<Message> supplier,
-                        MessageSerializer serializer) throws IgniteException {
-                        get().register(directType, supplier, serializer);
+                    @Override public void register(
+                        short directType,
+                        MessageSerializer<Message> serializer,
+                        @Nullable MessageMarshaller<Message> marshaller,
+                        @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer
+                    ) throws IgniteException {
+                        get().register(directType, serializer, marshaller, deployer);
                     }
 
                     @Nullable @Override public Message create(short type) {
@@ -835,9 +830,17 @@ public class GridNioServerWrapper {
                         return get().serializer(type);
                     }
 
-                    private MessageFactory get() {
+                    @Nullable @Override public MessageMarshaller<Message> marshaller(short type) {
+                        return get().marshaller(type);
+                    }
+
+                    @Nullable @Override public GridCacheMessageDeployer<GridCacheMessage> deployer(short type) {
+                        return get().deployer(type);
+                    }
+
+                    private IgniteMessageFactory<Message, GridCacheMessage> get() {
                         if (impl == null) {
-                            impl = stateProvider.getSpiContext().messageFactory();
+                            impl = (IgniteMessageFactory<Message, GridCacheMessage>)stateProvider.getSpiContext().messageFactory();
 
                             assert impl != null;
                         }
@@ -847,18 +850,18 @@ public class GridNioServerWrapper {
                 };
 
                 GridNioMessageReaderFactory readerFactory = new GridNioMessageReaderFactory() {
-                    private IgniteSpiContext context;
+                    private IgniteSpiContext spiCtx;
 
                     private MessageFormatter formatter;
 
-                    @Override public MessageReader reader(GridNioSession ses, MessageFactory msgFactory)
+                    @Override public MessageReader reader(GridNioSession ses, MessageFactory<? extends Message> msgFactory)
                         throws IgniteCheckedException {
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 
-                        if (formatter == null || context != ctx) {
-                            context = ctx;
+                        if (formatter == null || spiCtx != ctx) {
+                            spiCtx = ctx;
 
-                            formatter = context.messageFormatter();
+                            formatter = spiCtx.messageFormatter();
                         }
 
                         assert formatter != null;
@@ -906,14 +909,11 @@ public class GridNioServerWrapper {
 
                 List<GridNioFilter> filters = new ArrayList<>();
 
-                if (tracing instanceof GridTracingManager && ((GridManager)tracing).enabled())
-                    filters.add(new GridNioTracerFilter(log, tracing));
-
                 filters.add(new GridNioCodecFilter(parser, log, true));
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
-                    GridNioSslFilter sslFilter = new GridNioSslFilter(
+                    GridNioSslFilter sslFilter = U.sslFilter(
                         igniteCfg.getSslContextFactory().create(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
@@ -927,6 +927,11 @@ public class GridNioServerWrapper {
 
                     filters.add(sslFilter);
                 }
+
+                GridNioFilter[] filtersArr = filters.toArray(new GridNioFilter[filters.size()]);
+
+                MetricRegistryImpl mreg = metricMgr != null ?
+                    metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME) : null;
 
                 GridNioServer.Builder<Message> builder = GridNioServer.<Message>builder()
                     .address(cfg.localHost())
@@ -945,20 +950,23 @@ public class GridNioServerWrapper {
                     .directMode(true)
                     .writeTimeout(cfg.socketWriteTimeout())
                     .selectorSpins(cfg.selectorSpins())
-                    .filters(filters.toArray(new GridNioFilter[filters.size()]))
+                    .filters(filtersArr)
                     .writerFactory(writerFactory)
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)
-                    .tracing(tracing)
                     .readWriteSelectorsAssign(cfg.usePairedConnections())
                     .messageFactory(msgFactory);
 
-                if (metricMgr != null) {
-                    builder.workerListener(workersRegistry)
-                        .metricRegistry(metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
+                if (mreg != null) {
+                    builder.workerListener(workersRegistry);
+
+                    U.setNioServerMetrics(builder, mreg);
                 }
 
                 GridNioServer<Message> srvr = builder.build();
+
+                if (mreg != null)
+                    U.registerNioServerMetrics(srvr, filtersArr, mreg);
 
                 cfg.boundTcpPort(port);
 
@@ -1294,10 +1302,10 @@ public class GridNioServerWrapper {
     }
 
     /**
-     * @param commWorker New recovery and idle clients handler.
+     * @param connStateHnd New recovery and idle clients handler.
      */
-    public void communicationWorker(CommunicationWorker commWorker) {
-        this.commWorker = commWorker;
+    public void communicationConnectionStateHnd(CommunicationConnectionStateHandler connStateHnd) {
+        this.connStateHnd = connStateHnd;
     }
 
     /**

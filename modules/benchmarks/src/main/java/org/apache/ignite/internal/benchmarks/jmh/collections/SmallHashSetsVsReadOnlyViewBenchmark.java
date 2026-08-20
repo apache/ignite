@@ -62,6 +62,7 @@ public class SmallHashSetsVsReadOnlyViewBenchmark extends JmhAbstractBenchmark {
             .threads(1)
             .measurementIterations(20)
             .benchmarks(SmallHashSetsVsReadOnlyViewBenchmark.class.getSimpleName())
+            .warmupIterations(10)
             .run();
     }
 

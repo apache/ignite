@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -36,16 +37,21 @@ import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -924,7 +930,7 @@ public class DirectByteBufferStream {
     public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining())
-                nestedWrite(writer, () -> msgFactory.serializer(msg.directType()).writeTo(msg, writer));
+                nestedWrite(writer, () -> MessageSerialization.writeTo(msgFactory, msg, writer));
             else
                 lastFinished = false;
         }
@@ -1570,7 +1576,7 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeNestedRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+                lastFinished = MessageSerialization.readFrom(msgFactory, msg, reader);
             }
             finally {
                 reader.afterNestedRead(lastFinished);
@@ -1634,11 +1640,11 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * Reads collection eather as a {@link ArrayList} or a {@link HashSet}.
+     * Reads collection either as an {@link ArrayList}, a {@link HashSet} or an {@link EnumSet}.
      *
      * @param type Item type.
      * @param reader Reader.
-     * @return {@link ArrayList} or a {@link HashSet}.
+     * @return {@link ArrayList}, {@link HashSet} or {@link EnumSet}.
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageReader reader) {
         if (readSize == -1) {
@@ -1652,7 +1658,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (col == null)
-                col = type.set() ? U.newHashSet(readSize) : new ArrayList<>(readSize);
+                col = newCollection(type);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(type.valueType(), reader);
@@ -1675,6 +1681,16 @@ public class DirectByteBufferStream {
         col = null;
 
         return col0;
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private Collection<Object> newCollection(MessageCollectionType type) {
+        return switch (type.collectionImplementationType()) {
+            case ENUM_SET -> (Collection<Object>)((MessageEnumType<?>)type.valueType()).newEnumSet();
+            case HASH_SET -> U.newHashSet(readSize);
+            case ARRAY_LIST -> new ArrayList<>(readSize);
+        };
     }
 
     /**
@@ -2090,6 +2106,11 @@ public class DirectByteBufferStream {
 
                 break;
 
+            case GRID_CACHE_VERSION:
+                writeGridCacheVersion((GridCacheVersion)val);
+
+                break;
+
             case AFFINITY_TOPOLOGY_VERSION:
                 writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
@@ -2122,6 +2143,11 @@ public class DirectByteBufferStream {
 
             case ARRAY:
                 nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type));
+
+                break;
+
+            case ENUM:
+                writeByte(((MessageEnumType)type).encode((Enum<?>)val));
 
                 break;
 
@@ -2214,6 +2240,9 @@ public class DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case GRID_CACHE_VERSION:
+                return readGridCacheVersion();
+
             case AFFINITY_TOPOLOGY_VERSION:
                 return readAffinityTopologyVersion();
 
@@ -2234,6 +2263,9 @@ public class DirectByteBufferStream {
 
             case ARRAY:
                 return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type));
+
+            case ENUM:
+                return ((MessageEnumType)type).decode(readByte());
 
             case MSG:
                 return readMessage(reader);
@@ -2300,6 +2332,297 @@ public class DirectByteBufferStream {
                 uuidMost = GridUnsafe.getLong(heapArr, off);
                 uuidLeast = GridUnsafe.getLong(heapArr, off + 8);
             }
+        }
+    }
+
+    /** */
+    public void writeIgniteProductVersion(IgniteProductVersion ver) {
+        if (ver == null) {
+            writeByte((byte)0);
+
+            return;
+        }
+
+        switch (uuidState) {
+            case 0:
+                writeByte((byte)1);
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 1:
+                writeByte(ver.major());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 2:
+                writeByte(ver.minor());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 3:
+                writeByte(ver.maintenance());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 4:
+                writeLong(ver.revisionTimestamp());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 5:
+                writeByteArray(ver.revisionHash());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+
+                return;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
+        }
+    }
+
+    /** */
+    public IgniteProductVersion readIgniteProductVersion() {
+        switch (uuidState) {
+            case 0:
+                byte notNull = readByte();
+
+                if (!lastFinished)
+                    return null;
+
+                if (notNull == 0)
+                    return null;
+
+                cur = new IgniteProductVersionEx();
+
+                uuidState++;
+            case 1:
+                ((IgniteProductVersionEx)cur).major(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 2:
+                ((IgniteProductVersionEx)cur).minor(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 3:
+                ((IgniteProductVersionEx)cur).maintenance(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 4:
+                ((IgniteProductVersionEx)cur).revisionTimestamp(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+
+            case 5:
+                ((IgniteProductVersionEx)cur).revisionHash(readByteArray());
+
+                if (!lastFinished)
+                    return null;
+
+                IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
+
+                cur = NULL;
+                uuidState = 0;
+
+                return res;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
+        }
+    }
+
+    /** */
+    public void writeGridCacheVersion(GridCacheVersion ver) {
+        if (ver == null) {
+            writeByte((byte)0);
+
+            return;
+        }
+
+        switch (uuidState) {
+            case 0:
+                byte type;
+
+                if (ver.conflictVersion() == ver)
+                    type = (byte)1;
+                else if (ver instanceof GridCacheVersionEx)
+                    type = (byte)2;
+                else
+                    throw new IllegalArgumentException("Unknown GridCacheVersion child: " + ver);
+
+                writeByte(type);
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 1:
+                writeInt(ver.topologyVersion());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 2:
+                writeInt(ver.nodeOrderAndDrIdRaw());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 3:
+                writeLong(ver.order());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 4:
+                if (ver.conflictVersion() == ver) {
+                    lastFinished = true;
+
+                    uuidState = 0;
+
+                    return;
+                }
+
+                writeInt(ver.conflictVersion().topologyVersion());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 5:
+                writeInt(ver.conflictVersion().nodeOrderAndDrIdRaw());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 6:
+                writeLong(ver.conflictVersion().order());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+
+                return;
+
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
+        }
+    }
+
+    /** */
+    public GridCacheVersion readGridCacheVersion() {
+        GridCacheVersion ver = cur != NULL ? (GridCacheVersion)cur : null;
+
+        switch (uuidState) {
+            case 0:
+                byte type = readByte();
+
+                if (!lastFinished)
+                    return null;
+
+                // 0 -> NULL
+                // 1 -> GridCacheVersion
+                // 2 -> GridCacheVersionEx
+                if (type == 0)
+                    return null;
+                else if (type == 1)
+                    ver = new GridCacheVersion();
+                else if (type == 2) {
+                    ver = new GridCacheVersionEx();
+
+                    ((GridCacheVersionEx)ver).conflictVersion(new GridCacheVersion());
+                }
+                else
+                    throw new IllegalArgumentException("Unknown GridCacheVersion type: " + type);
+
+                cur = ver;
+
+                uuidState++;
+
+            case 1:
+                ver.topologyVersion(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 2:
+                ver.nodeOrderAndDrIdRaw(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 3:
+                ver.order(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 4:
+                if (ver.conflictVersion() == ver) {
+                    cur = NULL;
+                    uuidState = 0;
+
+                    return ver;
+                }
+
+                ver.conflictVersion().topologyVersion(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 5:
+                ver.conflictVersion().nodeOrderAndDrIdRaw(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 6:
+                ver.conflictVersion().order(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                cur = NULL;
+                uuidState = 0;
+
+                return ver;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
         }
     }
 

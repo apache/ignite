@@ -25,14 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MappingRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,7 +58,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         RelDataType leftRowType,
         RelDataType rightRowType,
         JoinRelType type,
-        IgniteJoinInfo info,
+        JoinInfo info,
         @Nullable BiPredicate<RowT, RowT> nonEqCond
     ) {
         assert !info.pairs().isEmpty();
@@ -120,7 +120,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private final boolean keepRowsWithNull;
 
         /** */
-        private final ImmutableBitSet allowNulls;
+        private final ImmutableList<Boolean> nullExclusions;
 
         /** */
         protected @Nullable RowList rightRows;
@@ -148,13 +148,13 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         protected AbstractStoringHashJoin(
             ExecutionContext<Row> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             boolean keepRowsWithNull,
             @Nullable BiPredicate<Row, Row> nonEqCond
         ) {
             super(ctx, rowType);
 
-            allowNulls = info.allowNulls();
+            nullExclusions = info.nullExclusionFlags;
             this.keepRowsWithNull = keepRowsWithNull;
 
             leftRowHnd = new MappingRowHandler<>(ctx.rowHandler(), info.leftKeys.toIntArray());
@@ -175,7 +175,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         /** */
         protected @Nullable RowList lookup(Row row) {
-            GroupKey<Row> key = GroupKey.of(row, leftRowHnd, allowNulls);
+            GroupKey<Row> key = GroupKey.of(row, leftRowHnd, nullExclusions);
 
             if (key == null)
                 return null;
@@ -190,7 +190,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
             waitingRight--;
 
-            GroupKey<Row> key = keepRowsWithNull ? GroupKey.of(row, rightRowHnd) : GroupKey.of(row, rightRowHnd, allowNulls);
+            GroupKey<Row> key = keepRowsWithNull ? GroupKey.of(row, rightRowHnd) : GroupKey.of(row, rightRowHnd, nullExclusions);
 
             if (key != null) {
                 nodeMemoryTracker.onRowAdded(row);
@@ -293,7 +293,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private AbstractMatchingHashJoin(
             ExecutionContext<Row> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<Row> outRowHnd,
             @Nullable RowHandler.RowFactory<Row> leftRowFactory,
             @Nullable RowHandler.RowFactory<Row> rightRowFactory,
@@ -438,7 +438,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private AbstractNoTouchingHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             @Nullable RowHandler.RowFactory<RowT> leftRowFactory,
             @Nullable RowHandler.RowFactory<RowT> rightRowFactory,
@@ -467,7 +467,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private InnerHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
@@ -490,7 +490,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private LeftHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> rightRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
@@ -516,7 +516,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private AbstractListTouchingHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             @Nullable RowHandler.RowFactory<RowT> leftRowFactory,
             @Nullable RowHandler.RowFactory<RowT> rightRowFactory,
@@ -582,7 +582,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private RightHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> leftRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
@@ -607,7 +607,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private FullOuterHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> leftRowFactory,
             RowHandler.RowFactory<RowT> rightRowFactory,
@@ -634,7 +634,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private AbstractRowTouchingHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             @Nullable RowHandler.RowFactory<RowT> leftRowFactory,
             @Nullable RowHandler.RowFactory<RowT> rightRowFactory,
@@ -678,7 +678,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private RightRowTouchingHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> leftRowFactory,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
@@ -703,7 +703,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private FullOuterRowTouchingHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             RowHandler<RowT> outRowHnd,
             RowHandler.RowFactory<RowT> leftRowFactory,
             RowHandler.RowFactory<RowT> rightRowFactory,
@@ -729,7 +729,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private AbstractFilteringHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
             super(ctx, rowType, info, false, nonEqCond);
@@ -813,7 +813,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private SemiHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
             super(ctx, rowType, info, nonEqCond);
@@ -840,7 +840,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         private AntiHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
-            IgniteJoinInfo info,
+            JoinInfo info,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
             super(ctx, rowType, info, nonEqCond);

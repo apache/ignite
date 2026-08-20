@@ -24,8 +24,11 @@ import java.util.UUID;
 import javax.management.JMException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.management.io.IoTestCommunicationCommand;
+import org.apache.ignite.internal.managers.communication.IoTestResult;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -33,6 +36,7 @@ import org.apache.ignite.mxbean.IgniteMXBean;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 
 /** Implementation of {@link IgniteMXBean}. */
 public class IgniteMXBeanImpl implements IgniteMXBean {
@@ -103,7 +107,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public String getFullVersion() {
-        return kernal.fullVersion();
+        return VER.toString();
     }
 
     /** {@inheritDoc} */
@@ -297,6 +301,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public void runIoTest(
         long warmup,
         long duration,
@@ -306,8 +311,28 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
         int payLoadSize,
         boolean procFromNioThread
     ) {
-        ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize,
-            procFromNioThread, new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
+        IgniteInternalFuture<IoTestResult> fut = ctx.io().ioTest().runIoTest(
+            warmup,
+            duration,
+            threads,
+            payLoadSize,
+            procFromNioThread,
+            new ArrayList<>(ctx.cluster().get().forServers().forRemotes().nodes())
+        );
+
+        fut.listen(f -> {
+            IgniteLogger log = ctx.log(ctx.io().getClass());
+
+            try {
+                IoTestResult res = f.get();
+
+                if (log.isInfoEnabled())
+                    log.info(IoTestCommunicationCommand.formatResult(res));
+            }
+            catch (IgniteCheckedException | RuntimeException e) {
+                U.error(log, "IO test failed.", e);
+            }
+        });
     }
 
     /** {@inheritDoc} */

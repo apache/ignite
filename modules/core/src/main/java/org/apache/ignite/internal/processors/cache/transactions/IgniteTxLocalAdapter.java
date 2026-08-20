@@ -326,7 +326,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         assert ret != null;
 
         if (ret.invokeResult())
-            implicitRes.mergeEntryProcessResults(ret);
+            implicitRes.mergeEntryProcessResults(cctx.cacheContext(ret.cacheId()), ret);
         else
             implicitRes = ret;
     }
@@ -474,6 +474,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
                 }
+
+                msg.finishUpdating();
 
                 if (msg.size() > 0)
                     cntrMsgs.add(msg);
@@ -691,6 +693,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         evt,
                                         metrics,
                                         txEntry.keepBinary(),
+                                        txEntry.keepBinaryInInterceptor(),
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
@@ -723,6 +726,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 false,
                                                 metrics0,
                                                 txEntry.keepBinary(),
+                                                txEntry.keepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -744,6 +748,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         evt,
                                         metrics,
                                         txEntry.keepBinary(),
+                                        txEntry.keepBinaryInInterceptor(),
                                         txEntry.hasOldValue(),
                                         txEntry.oldValue(),
                                         topVer,
@@ -771,6 +776,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 false,
                                                 metrics0,
                                                 txEntry.keepBinary(),
+                                                txEntry.keepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -1084,6 +1090,36 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         CacheEntryPredicate[] filter,
         boolean computeInvoke
     ) throws IgniteCheckedException {
+        postLockWrite(cacheCtx, keys, ret, rmv, retval, read, accessTtl, filter, computeInvoke, false);
+    }
+
+    /**
+     * Post lock processing for put or remove.
+     *
+     * @param cacheCtx Context.
+     * @param keys Keys.
+     * @param ret Return value.
+     * @param rmv {@code True} if remove.
+     * @param retval Flag to return value or not.
+     * @param read {@code True} if read.
+     * @param accessTtl TTL for read operation.
+     * @param filter Filter to check entries.
+     * @param computeInvoke If {@code true} computes return value for invoke operation.
+     * @param skipIfLockLost Return unsuccessful result if a separate lock wait timeout has removed the lock.
+     * @throws IgniteCheckedException If error.
+     */
+    protected final void postLockWrite(
+        GridCacheContext cacheCtx,
+        Iterable<KeyCacheObject> keys,
+        GridCacheReturn ret,
+        boolean rmv,
+        boolean retval,
+        boolean read,
+        long accessTtl,
+        CacheEntryPredicate[] filter,
+        boolean computeInvoke,
+        boolean skipIfLockLost
+    ) throws IgniteCheckedException {
         for (KeyCacheObject k : keys) {
             IgniteTxEntry txEntry = entry(cacheCtx.txKey(k));
 
@@ -1095,7 +1131,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 GridCacheEntryEx cached = txEntry.cached();
 
                 try {
-                    assert cached.detached() || cached.lockedLocally(xidVersion()) || isRollbackOnly() :
+                    boolean ownsLock = cached.detached() || cached.lockedLocally(xidVersion());
+
+                    if (!ownsLock && skipIfLockLost) {
+                        ret.success(false);
+
+                        return;
+                    }
+
+                    assert ownsLock || isRollbackOnly() :
                         "Transaction lock is not acquired [entry=" + cached + ", tx=" + this +
                             ", nodeId=" + cctx.localNodeId() + ", threadId=" + threadId + ']';
 
@@ -1185,7 +1229,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                     else {
                         // Revert operation to previous. (if no - NOOP, so entry will be unlocked).
-                        txEntry.setAndMarkValid(txEntry.previousOperation(), cacheCtx.toCacheObject(ret.value()));
+                        txEntry.setAndMarkValid(txEntry.previousOperation(), cacheCtx.toCacheObject(ret.value(cacheCtx)));
                         txEntry.filters(CU.empty0());
                         txEntry.filtersSet(false);
 
@@ -1336,6 +1380,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Transaction entry.
      */
     public final IgniteTxEntry addEntry(GridCacheOperation op,
@@ -1351,6 +1397,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -1390,9 +1437,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             old.cached(entry);
             old.filters(filter);
 
-            // Keep old skipStore and keepBinary flags.
+            // Keep old flags.
             old.skipStore(skipStore);
             old.skipReadThrough(skipReadThrough);
+            old.keepBinaryInInterceptor(keepBinaryInInterceptor);
             old.keepBinary(keepBinary);
 
             // Update ttl if specified.
@@ -1424,6 +1472,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 drVer,
                 skipStore,
                 skipReadThrough,
+                keepBinaryInInterceptor,
                 keepBinary,
                 addReader);
 
@@ -1591,9 +1640,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         /**
          * @param arg Argument.
          * @param commit Commit flag.
+         * @param rollback Rollback flag.
          */
-        protected PLC1(T arg, boolean commit) {
-            super(arg, commit);
+        protected PLC1(T arg, boolean commit, boolean rollback) {
+            super(arg, commit, rollback);
         }
     }
 
@@ -1624,13 +1674,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         /** Commit flag. */
         private final boolean commit;
 
+        /** Rollback when a lock is not acquired. */
+        private final boolean rollback;
+
         /**
          * Creates a Post-Lock closure that will pass the argument given to the {@code postLock} method.
          *
          * @param arg Argument for {@code postLock}.
          */
         protected PostLockClosure1(T arg) {
-            this(arg, true);
+            this(arg, true, true);
         }
 
         /**
@@ -1638,10 +1691,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
          *
          * @param arg Argument for {@code postLock}.
          * @param commit Flag indicating whether commit should be done after postLock.
+         * @param rollback Flag indicating whether rollback should be done if lock is not acquired.
          */
-        protected PostLockClosure1(T arg, boolean commit) {
+        protected PostLockClosure1(T arg, boolean commit, boolean rollback) {
             this.arg = arg;
             this.commit = commit;
+            this.rollback = rollback;
         }
 
         /** {@inheritDoc} */
@@ -1659,7 +1714,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 throw new GridClosureException(e);
             }
 
-            if (deadlockErr != null || !locked) {
+            if (deadlockErr != null || (!locked && rollback)) {
                 setRollbackOnly();
 
                 final GridClosureException ex = new GridClosureException(

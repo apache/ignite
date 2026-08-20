@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlan
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedSubqueryPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.DataTypesPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.DynamicParametersPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashJoinPlannerTest;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPla
 import org.apache.ignite.internal.processors.query.calcite.planner.UncollectPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UserDefinedViewsPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.WindowPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -91,9 +93,11 @@ import org.junit.runners.Suite;
     RexSimplificationPlannerTest.class,
     SerializationPlannerTest.class,
     UncollectPlannerTest.class,
+    WindowPlannerTest.class,
     AbstractPlannerUtilityTest.class,
 
     HintsTestSuite.class,
+    DynamicParametersPlannerTest.class,
 })
 public class PlannerTestSuite {
 }

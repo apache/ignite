@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -71,7 +72,9 @@ public class JmhMapSerdesBenchmark {
 
     /** */
     public static void main(String[] args) throws Exception {
-        org.openjdk.jmh.Main.main(new String[]{JmhMapSerdesBenchmark.class.getName()});
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhMapSerdesBenchmark.class.getName())
+            .run();
     }
 
     /** */

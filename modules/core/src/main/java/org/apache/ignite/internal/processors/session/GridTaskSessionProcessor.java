@@ -95,7 +95,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
-        Collection<ComputeJobSibling> siblings,
+        @Nullable Collection<ComputeJobSibling> siblings,
         Map<Object, Object> attrs,
         boolean fullSup,
         boolean internal,

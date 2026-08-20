@@ -47,12 +47,6 @@ public interface GridDeploymentInfo {
     public DeploymentMode deployMode();
 
     /**
-     * @return Local deployment ownership flag.
-     */
-    @Deprecated
-    public boolean localDeploymentOwner();
-
-    /**
      * @return Participant map for SHARED mode.
      */
     public Map<UUID, IgniteUuid> participants();

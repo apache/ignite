@@ -69,7 +69,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.PARSER_S
  */
 public class GridTcpRestParser implements GridNioParser {
     /** JDK marshaller. */
-    private final Marshaller marsh;
+    private final Marshaller marsh = Marshallers.jdk();
 
     /** Router client flag. */
     private final boolean routerClient;
@@ -78,16 +78,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @param routerClient Router client flag.
      */
     public GridTcpRestParser(boolean routerClient) {
-        this(routerClient, Marshallers.jdk());
-    }
-
-    /**
-     * @param routerClient Router client flag.
-     * @param marsh Marshaller.
-     */
-    public GridTcpRestParser(boolean routerClient, Marshaller marsh) {
         this.routerClient = routerClient;
-        this.marsh = marsh;
     }
 
     /** {@inheritDoc} */

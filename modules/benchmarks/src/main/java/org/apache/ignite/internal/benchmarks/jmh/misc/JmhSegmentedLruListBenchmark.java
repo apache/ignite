@@ -19,6 +19,7 @@ package org.apache.ignite.internal.benchmarks.jmh.misc;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -36,9 +37,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Benchmarks {@link SegmentedLruPageList} class.
@@ -113,10 +111,8 @@ public class JmhSegmentedLruListBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhSegmentedLruListBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhSegmentedLruListBenchmark.class.getSimpleName())
+            .run();
     }
 }

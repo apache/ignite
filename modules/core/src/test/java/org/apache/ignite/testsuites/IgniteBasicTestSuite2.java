@@ -19,8 +19,9 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.cache.RemoveAllDeadlockTest;
+import org.apache.ignite.configuration.IgniteConfigurationTest;
 import org.apache.ignite.events.ClusterActivationStartedEventTest;
-import org.apache.ignite.failure.ExchangeWorkerWaitingForTaskTest;
+import org.apache.ignite.failure.ExchangeTaskHandlerWaitingForTasksTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
@@ -79,7 +80,7 @@ import org.apache.ignite.internal.processors.failure.FailureProcessorThreadDumpT
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageClassloadingTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
-import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
+import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
@@ -164,7 +165,7 @@ import org.junit.runners.Suite;
     TransactionIntegrityWithSystemWorkerDeathTest.class,
     FailureProcessorLoggingTest.class,
     FailureProcessorThreadDumpThrottlingTest.class,
-    ExchangeWorkerWaitingForTaskTest.class,
+    ExchangeTaskHandlerWaitingForTasksTest.class,
 
     AtomicOperationsInTxTest.class,
     NonTransactionalOperationsInTxTest.class,
@@ -187,7 +188,7 @@ import org.junit.runners.Suite;
     DistributedMetaStorageTest.class,
     DistributedMetaStorageHistoryCacheTest.class,
     DistributedMetaStorageClassloadingTest.class,
-    DmsDataWriterWorkerTest.class,
+    DmsDataWriterTest.class,
     InMemoryCachedDistributedMetaStorageBridgeTest.class,
     DistributedConfigurationInMemoryTest.class,
     BaselineAutoAdjustMXBeanTest.class,
@@ -227,6 +228,8 @@ import org.junit.runners.Suite;
 
     FreeListCutTailDifferentGcTest.class,
     MdcCacheReadRequestsRoutingTest.class,
+
+    IgniteConfigurationTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }

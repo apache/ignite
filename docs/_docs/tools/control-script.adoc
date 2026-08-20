@@ -629,12 +629,12 @@ control.sh|bat --cache scan cache1 --limit 10
 
 == Resetting Lost Partitions
 
-You can use the control script to reset lost partitions for specific caches.
+You can use the control script to reset lost partitions for specific cache groups.
 Refer to link:configuring-caches/partition-loss-policy[Partition Loss Policy] for details.
 
 [source, shell]
 ----
-control.sh --cache reset_lost_partitions cacheName1,cacheName2,...
+control.sh --cache reset_lost_partitions cacheGroupName1,cacheGroupName2,...
 ----
 
 
@@ -688,6 +688,13 @@ Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97595430, up
 === Cluster Should Be Idle During `idle_verify` Check
 All updates should be stopped when `idle_verify` calculates hashes, otherwise it may show false positive error results. It's impossible to compare big datasets in a distributed system if they are being constantly updated​.
 ====
+
+To cancel a running `idle_verify` operation, use the `--cancel` argument:
+
+[source, shell]
+----
+control.sh --cache idle_verify --cancel
+----
 
 === Repairing cache consistency
 [WARNING]
@@ -899,72 +906,6 @@ Index(es):
 [ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
 [8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
 ----
-
-== Tracing Configuration
-
-You can enable or disable sampling of traces for a specific API by using the `--tracing-configuration` command.
-Refer to the link:monitoring-metrics/tracing[Tracing] section for details.
-
-To view the current tracing configuration, execute the following command:
-
-[source, shell]
-----
-control.sh --tracing-configuration
-----
-
-To enable trace sampling for a specific API:
-
-
-[source, shell]
-----
-control.sh --tracing-configuration set --scope <scope> --sampling-rate <rate> --label <label>
-----
-
-Parameters:
-
-[cols="1,3",opts="header"]
-|===
-| Parameter | Description
-| `--scope` a| The API you want to trace:
-
-* `DISCOVERY`: discovery events
-* `EXCHANGE`: exchange events
-* `COMMUNICATION`: communication events
-* `TX`: transactions
-
-| `--sampling-rate` a|  The probabilistic sampling rate, a number between `0.0` and `1.0` inclusive.
- `0` means no sampling (default), `1` means always sampling. Ex. `0.5` means every trace is sampled with the probability of 50%.
-
-| `--label` | Only applicable to the `TX` scope. The parameter defines the sampling rate for the transactions with the given label.
-When the `--label` parameter is specified, Ignite will trace transactions with the given label. You can configure different sampling rates for different labels.
-
-Transaction traces with no label will be sampled at the default sampling rate.
-The default rate for the `TX` scope can be set by using this command without the `--label` parameter.
-|===
-
-
-Examples:
-
-* Trace all discovery events:
-+
-[source, shell]
-----
-control.sh --tracing-configuration set --scope DISCOVER --sampling-rate 1
-----
-* Trace all transactions:
-+
-[source, shell]
-----
-control.sh --tracing-configuration set --scope TX --sampling-rate 1
-----
-* Trace transactions with label "report" at a 50% rate:
-+
-[source, shell]
-----
-control.sh --tracing-configuration set --scope TX --sampling-rate 0.5
-----
-
-
 
 == Cluster ID and Tag
 
@@ -1244,6 +1185,56 @@ TRANSACTIONS                   SYS       Running transactions
 CACHES                         SYS       Caches
 TASKS                          SYS       Running compute tasks
 Command [SYSTEM-VIEW] finished with code: 0
+
+
+== Network I/O Diagnostics
+
+The `--io-test` commands actively measure network latency between cluster nodes.
+
+=== Communication SPI Diagnostic
+
+The `communication` test sends request-response messages from the selected source node to every remote server node through the
+Communication SPI.
+The source node specified by `--node-id` and at least one remote server node must be available.
+The first failed or timed-out request aborts the test.
+
+Optional parameters:
+
+* `--warmup` - warm-up period before samples are recorded, in milliseconds (`0` to `3600000`; default: `5000`).
+* `--duration` - sampling period after warm-up, in milliseconds (`1` to `3600000`; default: `30000`).
+* `--threads` - number of concurrent test threads (`1` to `64`; default: `1`).
+* `--payload-size` - payload in each request and response, in bytes (`0` to `1048576`; default: `0`).
+* `--process-in-nio-thread` - processes requests and responses in network I/O threads instead of the system pool.
+
+[source,shell]
+----
+control.sh --io-test communication --node-id <source-node-id>
+----
+
+=== Discovery SPI Diagnostic
+
+The `discovery` test measures how custom messages traverse the server ring and is executed on the cluster coordinator.
+It requires `TcpDiscoverySpi` on the coordinator and at least two server nodes.
+
+Optional parameters:
+
+* `--samples` - number of full-ring samples (`1` to `100`; default: `10`).
+* `--interval` - delay between samples, in milliseconds (`10` to `60000`; default: `100`).
+* `--payload-size` - discovery message payload, in bytes (`0` to `65536`; default: `100`).
+
+[source,shell]
+----
+control.sh --io-test discovery
+----
+
+WARNING: These tests generate network traffic and consume CPU on participating nodes. High thread counts, long durations, or large
+payloads can affect cluster workloads.
+The `--process-in-nio-thread` communication option handles test messages directly on network I/O threads and should only be used
+during controlled diagnostic runs because it can delay normal network processing.
+
+NOTE: Estimated one-way Communication SPI delivery times and per-hop Discovery SPI delays use the operating system wall clock
+(`System.currentTimeMillis`) on different nodes and therefore require synchronized clocks.
+RTT and full-ring latency use a monotonic clock and do not require clock synchronization.
 
 
 == Working With Persistence Data

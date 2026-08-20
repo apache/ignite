@@ -314,6 +314,8 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
                 lastNode = startGrid(nodeIdx++);
         }
 
+        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+
         return lastNode;
     }
 

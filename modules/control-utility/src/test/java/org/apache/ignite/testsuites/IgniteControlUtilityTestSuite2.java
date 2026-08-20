@@ -32,11 +32,10 @@ import org.apache.ignite.util.GridCommandHandlerIndexListTest;
 import org.apache.ignite.util.GridCommandHandlerIndexRebuildStatusTest;
 import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
 import org.apache.ignite.util.GridCommandHandlerScheduleIndexRebuildTest;
-import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
 import org.apache.ignite.util.IdleVerifyDumpTest;
+import org.apache.ignite.util.IoTestCommandTest;
 import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
-import org.apache.ignite.util.RollingUpgradeCommandTest;
 import org.apache.ignite.util.SystemViewCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -51,8 +50,6 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexRebuildStatusTest.class,
     GridCommandHandlerScheduleIndexRebuildTest.class,
 
-    GridCommandHandlerTracingConfigurationTest.class,
-
     GridCommandHandlerPropertiesTest.class,
 
     GridCommandHandlerDefragmentationTest.class,
@@ -63,9 +60,9 @@ import org.junit.runners.Suite;
 
     GridCommandHandlerEventTest.class,
 
-    RollingUpgradeCommandTest.class,
     SystemViewCommandTest.class,
     MetricCommandTest.class,
+    IoTestCommandTest.class,
     PerformanceStatisticsCommandTest.class,
     CacheMetricsCommandTest.class,
 

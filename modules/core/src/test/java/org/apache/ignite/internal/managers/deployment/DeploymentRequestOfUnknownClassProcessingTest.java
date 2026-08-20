@@ -21,7 +21,6 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -99,7 +98,9 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
 
         remNodeLog.registerListener(remNodeLogLsnr);
 
-        GridTopic.T1 topic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(locNode.localNode().id()));
+        IgniteUuid topicId = IgniteUuid.fromUuid(locNode.localNode().id());
+
+        Object topic = TOPIC_CLASSLOAD.topic(topicId);
 
         locNode.context().io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -125,7 +126,7 @@ public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbs
             }
         });
 
-        GridDeploymentRequest req = new GridDeploymentRequest(topic, locDep.classLoaderId(), UNKNOWN_CLASS_NAME);
+        GridDeploymentRequest req = new GridDeploymentRequest(topicId, locDep.classLoaderId(), UNKNOWN_CLASS_NAME);
 
         locNode.context().io().sendToGridTopic(remNode.localNode(), TOPIC_CLASSLOAD, req, GridIoPolicy.P2P_POOL);
 

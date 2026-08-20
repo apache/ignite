@@ -1,0 +1,122 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Expires" content="-1">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta http-equiv="Author" content="Apache Software Foundation">
+
+    <title>Apache Ignite - REST API</title>
+
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+    <style type="text/css">
+        body {
+            font-family: Helvetica, Verdana, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.5em;
+            color: #333;
+            margin: 20px 10px;
+        }
+        a, a:visited, a:active, a:hover {
+            color: #333;
+            text-decoration: none;
+            border-bottom: 1px dotted;
+        }
+        a.img_link, a.img_link:visited, a.img_link:active, a.img_link:hover {
+            text-decoration: none;
+            border-bottom: 0;
+        }
+        img {
+            border: none;
+            max-width: 100%;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            text-align: justify;
+        }
+
+        .logo {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 30px;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo">
+        <a class="img_link" href="https://ignite.apache.org" title="Apache Ignite">
+            <img src="/logo.svg" alt="Apache Ignite - In-Memory Database and Caching Platform">
+        </a>
+    </div>
+
+    <h2>REST API</h2>
+
+    <p>
+        Ignite REST API supports external connectivity to Ignite via REST over HTTP.
+        It comes in handy whenever Ignite Java API is not available directly, but it
+        is still needed to execute Ignite tasks or retrieve cached data.
+    </p>
+
+    <p>
+        For example, you can conveniently use Ignite REST API over HTTP from other
+        non-JVM languages, such as Ruby, PHP, Python, or any other language,
+        whenever a local instance of Ignite is not available.
+    </p>
+
+    <p>
+        You can find more detailed information about all available REST API commands,
+        parameters, and examples in the official documentation:
+        <a href="https://ignite.apache.org/docs/ignite2/latest/restapi" target="_blank" rel="noopener">
+            Apache Ignite — REST API
+        </a>.
+    </p>
+
+    <p>Note that PHP REST example is included with Ignite distribution.</p>
+
+    <p>
+        All REST HTTP commands have the following format:
+        <code>http://1.2.3.4:8080/ignite?cmd=CMD&amp;...</code>, where
+        <code>cmd</code> is the name of the command followed by other command parameters.
+    </p>
+
+    <p>
+        Every command may have different parameters, some of which may be mandatory
+        and some optional. The command parameters may be passed either via HTTP GET or POST.
+    </p>
+</div>
+</body>
+</html>

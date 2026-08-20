@@ -273,10 +273,10 @@ tab:C++[unsupported]
 == Azure Blob Storage
 
 Ignite supports automatic node discovery by utilizing Azure Blob Storage.
-This mechanism is implemented in `TcpDiscoveryAzureBlobStorageIpFinder`.
+This mechanism is implemented in `TcpDiscoveryAzureBlobStoreIpFinder`.
 On start-up, each node registers its IP address in the storage and discovers other nodes by reading the storage.
 
-IMPORTANT: To use `TcpDiscoveryAzureBlobStorageIpFinder` you must download and link:setup#enabling-modules[enable the 'ignite-azure-ext' extension].
+IMPORTANT: To use `TcpDiscoveryAzureBlobStoreIpFinder` you must download and link:setup#enabling-modules[enable the 'ignite-azure-ext' extension].
 
 Here is an example of how to configure Azure Blob Storage based IP finder:
 

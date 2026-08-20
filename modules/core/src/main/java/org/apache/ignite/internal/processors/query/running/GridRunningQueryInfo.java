@@ -21,8 +21,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -61,11 +59,11 @@ public class GridRunningQueryInfo {
     @GridToStringExclude
     private final QueryRunningFuture fut = new QueryRunningFuture();
 
-    /** Span of the running query. */
-    private final Span span;
-
     /** Originator. */
     private final String qryInitiatorId;
+
+    /** Map query flag. */
+    private final boolean mapQry;
 
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
@@ -89,6 +87,7 @@ public class GridRunningQueryInfo {
      * @param cancel Query cancel.
      * @param loc Local query flag.
      * @param qryInitiatorId Query's initiator identifier.
+     * @param mapQry Map query flag.
      * @param enforceJoinOrder Enforce join order flag.
      * @param distributedJoins Distributed joins flag.
      * @param subjId Subject ID.
@@ -104,6 +103,7 @@ public class GridRunningQueryInfo {
         GridQueryCancel cancel,
         boolean loc,
         String qryInitiatorId,
+        boolean mapQry,
         boolean enforceJoinOrder,
         boolean distributedJoins,
         UUID subjId
@@ -117,8 +117,8 @@ public class GridRunningQueryInfo {
         this.startTimeNanos = startTimeNanos;
         this.cancel = cancel;
         this.loc = loc;
-        this.span = MTC.span();
         this.qryInitiatorId = qryInitiatorId;
+        this.mapQry = mapQry;
         this.enforceJoinOrder = enforceJoinOrder;
         this.distributedJoins = distributedJoins;
         this.subjId = subjId;
@@ -210,18 +210,18 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Span of the running query.
-     */
-    public Span span() {
-        return span;
-    }
-
-    /**
      * @return Query's originator string (client host+port, user name,
      * job name or any user's information about query initiator).
      */
     public String queryInitiatorId() {
         return qryInitiatorId;
+    }
+
+    /**
+     * @return {@code true} if query executes map phase.
+     */
+    public boolean mapQuery() {
+        return mapQry;
     }
 
     /**

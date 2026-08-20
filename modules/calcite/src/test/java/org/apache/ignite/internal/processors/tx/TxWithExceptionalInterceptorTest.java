@@ -305,7 +305,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> commonCache = txNode.cache(COMMON_CACHE_NAME);
 
         Integer primaryKey = primaryKeyCoordAware(PROC_CACHE_NAME);
-        Integer primaryKeyCommon = primaryKeyCoordAware(PROC_CACHE_NAME);
+        Integer primaryKeyCommon = primaryKeyCoordAware(COMMON_CACHE_NAME);
 
         try (Transaction tx = txNode.transactions().txStart()) {
             processedCache.put(primaryKey, 1);
@@ -325,18 +325,22 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
 
         // 2 server nodes + 1 thick client
         if ((txCoord == TxCoordNodeRole.BACKUP || txCoord == TxCoordNodeRole.PRIMARY) ||
-            !writeThrough && txCoord == TxCoordNodeRole.THICK_CLIENT)
+            !writeThrough && txCoord == TxCoordNodeRole.THICK_CLIENT) {
             waitForTopology(3);
+
+            // Topology can change but affinity change is still in progress, thus sql operations can be mapped erroneously.
+            awaitPartitionMapExchange();
+        }
 
         checkExceptionRaised();
 
-        // external storage stored result
+        // External storage stored result.
         Object storeVal = null;
 
         if (writeThrough)
             storeVal = strategy.getFromStore(primaryKey);
 
-        // Processed cache kv result
+        // Processed cache kv result.
         Object kvVal = null;
 
         List<Ignite> grids = new ArrayList<>(G.allGrids());
@@ -347,7 +351,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
             }
         });
 
-        // client first
+        // Client first.
         assertTrue(grids.get(0).name().contains(CLIENT_NAME));
 
         for (Ignite node : grids) {
@@ -363,7 +367,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
                 continue;
             }
 
-            // obtain sql results first, kv api can eventually recover results, thus for more clear test - let`s check sql first
+            // Obtain sql results first, kv api can eventually recover results, thus for more clear test - let`s check sql first.
             Object sqlVal = getSqlResultByKey(node, PROC_CACHE_NAME, primaryKey, false);
 
             if (kvVal == null)

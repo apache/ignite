@@ -43,5 +43,4 @@ public class OperationContextAwareInClosure<E> extends OperationContextAwareWrap
     public static <E> IgniteInClosure<E> wrap(IgniteInClosure<E> delefate) {
         return wrap(delefate, OperationContextAwareInClosure::new);
     }
-
 }

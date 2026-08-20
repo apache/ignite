@@ -191,6 +191,14 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
             .returns(1L, null)
             .check();
 
+        assertQuery("select count(salary) as salary from person group by salary")
+            .returns(0L)
+            .returns(1L)
+            .returns(1L)
+            .returns(1L)
+            .returns(1L)
+            .check();
+
         for (int i = 0; i < 100; i++) {
             sql("INSERT INTO tbl VALUES (null, null, ?)", i % 2 == 0 ? i : null);
             sql("INSERT INTO tbl VALUES (?, ?, ?)", i, i, i % 2 == 0 ? null : i);

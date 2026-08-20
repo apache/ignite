@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -161,11 +162,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      */
     @Override public DeploymentMode deployMode() {
         return depMode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean localDeploymentOwner() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -458,7 +454,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
 
         if (cls == null) {
             try {
-                cls = U.forName(clsName, clsLdr);
+                cls = ClassLoaderUtils.forName(clsName, clsLdr);
 
                 Class<?> cur = clss.putIfAbsent(clsName, cls);
 
@@ -481,7 +477,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
                         return F.t(cls, null);
                     else if (!a.equals(clsName)) {
                         try {
-                            cls = U.forName(a, clsLdr);
+                            cls = ClassLoaderUtils.forName(a, clsLdr);
                         }
                         catch (ClassNotFoundException ignored0) {
                             continue;

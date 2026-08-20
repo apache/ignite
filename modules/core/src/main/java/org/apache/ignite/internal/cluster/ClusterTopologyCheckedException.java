@@ -19,12 +19,13 @@ package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridCompoundFuture.SkipLoggingException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
-public class ClusterTopologyCheckedException extends IgniteCheckedException {
+public class ClusterTopologyCheckedException extends IgniteCheckedException implements SkipLoggingException {
     /** */
     private static final long serialVersionUID = 0L;
 

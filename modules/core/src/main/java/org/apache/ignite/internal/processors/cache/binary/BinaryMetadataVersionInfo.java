@@ -17,26 +17,28 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.JdkMarshalled;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
  * Used internally to track version counters (see javadoc for {@link MetadataUpdateProposedMessage} for more details).
  * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
  * It can be updated dynamically from different nodes and threads on the same node.
+ * <p>
+ * Travels both transports: Discovery in the data bag, Communication in the {@link MetadataResponseMessage}.
  */
+@JdkMarshalled
 public final class BinaryMetadataVersionInfo implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** The actual binary metadata. */
-    private BinaryMetadata metadata;
+    @Marshalled("metadataBytes")
+    BinaryMetadata metadata;
 
     /** Serialized binary metadata. */
     @Order(0)
@@ -128,30 +130,6 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
      */
     boolean removing() {
         return removing;
-    }
-
-    /**
-     * Marshals binary metadata to byte array.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshalMetadata() throws IgniteCheckedException {
-        if (metadataBytes == null)
-            metadataBytes = U.marshal(jdk(), metadata);
-    }
-
-    /**
-     * Unmarshals binary metadata from byte array.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshalMetadata() throws IgniteCheckedException {
-        if (metadata == null && metadataBytes != null) {
-            metadata = U.unmarshal(jdk(), metadataBytes, U.gridClassLoader());
-
-            // It is not required anymore.
-            metadataBytes = null;
-        }
     }
 
     /** {@inheritDoc} */

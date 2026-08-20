@@ -35,13 +35,13 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <avatica.version>1.26.0</avatica.version>
-        <calcite.version>1.40.0</calcite.version>
-        <checker.version>3.10.0</checker.version>
+        <avatica.version>1.28.0</avatica.version>
+        <calcite.version>1.42.0</calcite.version>
         <failureaccess.version>1.0.1</failureaccess.version>
         <immutables.version>2.8.2</immutables.version>
         <janino.version>3.1.12</janino.version>
         <javacc-maven-plugin>2.4</javacc-maven-plugin>
+        <joou.version>0.9.5</joou.version>
         <jsonpath.version>2.9.0</jsonpath.version>
         <reflections.version>0.10.2</reflections.version>
         <commons.math.version>3.6.1</commons.math.version>
@@ -70,6 +70,12 @@
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-core</artifactId>
             <version>${calcite.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-dbcp2</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -92,12 +98,6 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>failureaccess</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker-qual</artifactId>
-            <version>${checker.version}</version>
         </dependency>
 
         <dependency>
@@ -148,6 +148,16 @@
             <version>${reflections.version}</version>
         </dependency>
 
+        <!--
+            Runtime dependency of calcite-core, declared explicitly: only direct dependencies are copied
+            to target/libs, which both the release package and the exploded test classpath are built from.
+        -->
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>joou-java-6</artifactId>
+            <version>${joou.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
@@ -162,7 +172,7 @@
         <dependency>
             <groupId>org.locationtech.jts</groupId>
             <artifactId>jts-core</artifactId>
-            <version>1.19.0</version>
+            <version>1.20.0</version>
         </dependency>
 
         <dependency>
@@ -256,7 +266,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
+                <version>${maven.deploy.plugin.version}</version>
                 <configuration>
                     <skip>false</skip>
                 </configuration>
@@ -340,6 +350,14 @@
                                     sourceRoot="${project.build.directory}/codegen/templates"
                                     outputRoot="${project.build.directory}/generated-sources/fmpp"
                                     data="tdd(${project.build.directory}/codegen/config.fmpp), default: tdd(${project.build.directory}/codegen/default_config.fmpp)"
+                                />
+                                <!-- TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+                                     Remove this workaround after upgrading to Calcite 1.43. -->
+                                <replace
+                                    file="${project.build.directory}/generated-sources/fmpp/javacc/Parser.jj"
+                                    token="&lt;FETCH&gt; ( &lt;FIRST&gt; | &lt;NEXT&gt; ) offsetFetch[1] = UnsignedNumericLiteralOrParam()"
+                                    value="&lt;FETCH&gt; ( &lt;FIRST&gt; | &lt;NEXT&gt; ) offsetFetch[1] = FetchCount()"
+                                    failOnNoReplacements="true"
                                 />
                             </target>
                         </configuration>

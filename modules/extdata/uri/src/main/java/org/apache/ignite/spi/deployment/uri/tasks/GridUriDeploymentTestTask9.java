@@ -23,7 +23,8 @@ import java.util.Map;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -35,7 +36,8 @@ public class GridUriDeploymentTestTask9 extends ComputeTaskSplitAdapter<Object, 
 
     /** */
     public GridUriDeploymentTestTask9() {
-        XmlBeanFactory factory = new XmlBeanFactory(
+        DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+        new XmlBeanDefinitionReader(factory).loadBeanDefinitions(
             new ClassPathResource("org/apache/ignite/spi/deployment/uri/tasks/spring9.xml",
                 getClass().getClassLoader()));
 

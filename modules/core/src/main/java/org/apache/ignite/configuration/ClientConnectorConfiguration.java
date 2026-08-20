@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -29,10 +30,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ClientConnectorConfiguration {
     /** Default port. */
-    public static final int DFLT_PORT = 10800;
+    public static final int DFLT_PORT = CommonUtils.DFLT_PORT;
 
     /** Default port range. */
-    public static final int DFLT_PORT_RANGE = 100;
+    public static final int DFLT_PORT_RANGE = CommonUtils.DFLT_PORT_RANGE;
 
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 0;

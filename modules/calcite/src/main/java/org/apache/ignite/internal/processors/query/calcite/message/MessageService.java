@@ -48,5 +48,5 @@ public interface MessageService extends Service {
      * @param lsnr Listener.
      * @param type Message type.
      */
-    void register(MessageListener lsnr, MessageType type);
+    <T extends Message> void register(MessageListener lsnr, Class<T> type);
 }

@@ -185,7 +185,7 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         Random r = new Random();
 
         int low = r.nextInt(CNT / 2);
-        int high = low + r.nextInt(CNT / 2);
+        int high = low + r.nextInt(CNT / 2 - 1) + 1;
 
         IndexQuery<Integer, BinaryObject> qry = qryBld.apply(low, high);
 

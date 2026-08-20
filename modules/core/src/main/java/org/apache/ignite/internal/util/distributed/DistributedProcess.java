@@ -24,9 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
@@ -38,7 +36,6 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -99,7 +96,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
     public DistributedProcess(
         GridKernalContext ctx,
         DistributedProcessType type,
-        Function<I, IgniteInternalFuture<R>> exec,
+        BiFunction<UUID, I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish
     ) {
         this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req, false));
@@ -115,7 +112,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
     public DistributedProcess(
         GridKernalContext ctx,
         DistributedProcessType type,
-        Function<I, IgniteInternalFuture<R>> exec,
+        BiFunction<UUID, I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
@@ -152,14 +149,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
                 initCoordinator(p, topVer);
 
             try {
-                IgniteInternalFuture<R> fut;
-
-                if (ctx.rollingUpgrade().enabled()) {
-                    fut = new GridFinishedFuture<>(new IgniteException("Failed to start distributed process "
-                        + type + ": rolling upgrade is enabled"));
-                }
-                else
-                    fut = exec.apply((I)msg.request());
+                IgniteInternalFuture<R> fut = exec.apply(msg.processId(), (I)msg.request());
 
                 fut.listen(() -> {
                     if (fut.error() != null)
@@ -508,6 +498,26 @@ public class DistributedProcess<I extends Message, R extends Message> {
         /**
          * Snapshot partitions validation.
          */
-        CHECK_SNAPSHOT_PARTS
+        CHECK_SNAPSHOT_PARTS,
+
+        /**
+         * Cluster version Rolling Upgrade enable process.
+         */
+        RU_ENABLE,
+
+        /**
+         * Cluster version finalization prepare phase.
+         */
+        RU_PREPARE_VERSION_FINALIZATION,
+
+        /**
+         * Cluster version finalization complete phase.
+         */
+        RU_COMPLETE_VERSION_FINALIZATION,
+
+        /**
+         * Cluster version finalization abort process.
+         */
+        RU_ABORT_VERSION_FINALIZATION,
     }
 }

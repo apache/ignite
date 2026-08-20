@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +66,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -113,6 +111,7 @@ import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.queue.IgniteDelayedObjectHandler;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -125,6 +124,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.StripedMessage.NO_STRIPE;
 
 /**
  * Data streamer implementation.
@@ -134,7 +134,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** */
     public static final String WRN_INCONSISTENT_UPDATES = "The Data Streamer loads data with 'allowOverwrite' set " +
         "to false. It doesn't guarantee data consistency until successfully finishes. Streamer cancelation or " +
-        "streamer node failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent " +
+        "topology change can cause data inconsistency. Concurrently created snapshot may contain inconsistent " +
         "data and might not be restored entirely.";
 
     /** Per thread buffer size. */
@@ -146,17 +146,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     private final Map<Long, ThreadBuffer> threadBufMap = new ConcurrentHashMap<>();
 
-    /** Isolated receiver. */
-    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
+    /** Default, Isolated receiver. */
+    static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
-    /** Cache receiver. */
-    private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
-
-    /** */
-    private byte[] updaterBytes;
+    /** Message of the cache receiver; {@code null} until a receiver is set, the Isolated updater being used so far. */
+    private volatile @Nullable DataStreamerReceiverMessage rcvrMsg;
 
     /** IO policy resovler for data load request. */
     private IgniteClosure<ClusterNode, Byte> ioPlcRslvr;
@@ -205,8 +202,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Communication topic for responses. */
     private final Object topic;
 
-    /** */
-    private byte[] topicBytes;
+    /** Topic ID for responses. */
+    private final IgniteUuid topicId;
 
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
@@ -271,7 +268,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
-    private final DelayQueue<DataStreamerImpl<K, V>> flushQ;
+    private final IgniteDelayedObjectHandler<DataStreamerImpl<?, ?>> flusher;
 
     /** */
     private boolean skipStore;
@@ -300,12 +297,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
-     * @param flushQ Flush queue.
+     * @param flusher Data Streamer flusher.
      */
     public DataStreamerImpl(
         final GridKernalContext ctx,
         @Nullable final String cacheName,
-        DelayQueue<DataStreamerImpl<K, V>> flushQ
+        IgniteDelayedObjectHandler<DataStreamerImpl<?, ?>> flusher
     ) {
         assert ctx != null;
 
@@ -325,7 +322,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         this.cacheName = cacheName;
-        this.flushQ = flushQ;
+        this.flusher = flusher;
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -352,8 +349,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
+        topicId = IgniteUuid.fromUuid(ctx.localNodeId());
+
         // Generate unique topic for this loader.
-        topic = TOPIC_DATASTREAM.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        topic = TOPIC_DATASTREAM.topic(topicId);
 
         ctx.io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -487,12 +486,29 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public void receiver(StreamReceiver<K, V> rcvr) {
         A.notNull(rcvr, "rcvr");
 
-        this.rcvr = rcvr;
+        DataStreamerBuiltInUpdater builtIn = DataStreamerBuiltInUpdater.of(rcvr);
+
+        rcvrMsg = builtIn != null ? builtIn.message() : new DataStreamerReceiverMessage(rcvr);
+    }
+
+    /** @return Message of the receiver in use, one of the Isolated updater until a receiver is set. */
+    private DataStreamerReceiverMessage receiverMessage() {
+        DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
+
+        return rcvrMsg0 != null ? rcvrMsg0 : DataStreamerBuiltInUpdater.ISOLATED.message();
+    }
+
+    /** @return Cache receiver, custom or built-in, the Isolated updater until one is set. */
+    @SuppressWarnings("unchecked")
+    private StreamReceiver<K, V> receiver() {
+        DataStreamerReceiverMessage rcvrMsg0 = rcvrMsg;
+
+        return (StreamReceiver<K, V>)(rcvrMsg0 == null ? ISOLATED_UPDATER : rcvrMsg0.receiver());
     }
 
     /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return rcvr != ISOLATED_UPDATER;
+        return receiver() != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -505,7 +521,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvr = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
+        receiver(allow ? DataStreamerCacheUpdaters.individual() : ISOLATED_UPDATER);
     }
 
     /** {@inheritDoc} */
@@ -583,9 +599,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             this.autoFlushFreq = autoFlushFreq;
 
             if (autoFlushFreq != 0 && old == 0)
-                flushQ.add(this);
+                flusher.addToQueue(this);
             else if (autoFlushFreq == 0)
-                flushQ.remove(this);
+                flusher.removeQueuedElement(this);
         }
     }
 
@@ -653,7 +669,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
+        // Without overwrite the Isolated updater is in use, and it is the one the warning is about.
+        if (!allowOverwrite() && inconsistencyWarned.compareAndSet(false, true))
             log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
@@ -884,6 +901,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         assert key != null;
 
                         if (initPda) {
+                            StreamReceiver<K, V> rcvr = receiver();
+
                             if (cacheObjCtx.addDeploymentInfo())
                                 jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
                                     entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
@@ -1848,7 +1867,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 false,
                                 skipStore,
                                 keepBinary,
-                                rcvr),
+                                receiver()),
                             plc);
 
                         locFuts.add(callFut);
@@ -1934,22 +1953,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             else {
                 try {
                     for (DataStreamerEntry e : entries) {
-                        e.getKey().prepareMarshal(cacheObjCtx);
+                        e.getKey().marshal(cacheObjCtx);
 
                         CacheObject val = e.getValue();
 
                         if (val != null)
-                            val.prepareMarshal(cacheObjCtx);
+                            val.marshal(cacheObjCtx);
                     }
-
-                    if (updaterBytes == null) {
-                        assert rcvr != null;
-
-                        updaterBytes = U.marshal(ctx, rcvr);
-                    }
-
-                    if (topicBytes == null)
-                        topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal.", e);
@@ -1992,24 +2002,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 if (topVer == null)
                     topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
+                DataStreamerReceiverMessage rcvrMsg0 = receiverMessage();
+
                 DataStreamerRequest req = new DataStreamerRequest(
                     reqId,
-                    topicBytes,
+                    topicId,
                     cacheName,
-                    updaterBytes,
+                    rcvrMsg0,
                     entries,
                     true,
                     skipStore,
                     keepBinary,
-                    dep != null ? dep.deployMode() : null,
+                    dep,
                     dep != null ? jobPda0.deployClass().getName() : null,
-                    dep != null ? dep.userVersion() : null,
-                    dep != null ? dep.participants() : null,
-                    dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer,
-                    (rcvr == ISOLATED_UPDATER) ?
-                        partId : GridIoMessage.STRIPE_DISABLED_PART);
+                    rcvrMsg0.receiver() == ISOLATED_UPDATER ? partId : NO_STRIPE);
 
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
@@ -2259,7 +2267,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     cctx.shared().database().checkpointReadLock();
 
                     try {
-                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                        e.getKey().unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                         int p = cctx.affinity().partition(e.getKey());
 

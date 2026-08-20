@@ -28,7 +28,6 @@ import org.apache.ignite.internal.GridMbeansMiscTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
 import org.apache.ignite.internal.GridReduceSelfTest;
-import org.apache.ignite.internal.GridReleaseTypeSelfTest;
 import org.apache.ignite.internal.GridSelfTest;
 import org.apache.ignite.internal.GridStartStopSelfTest;
 import org.apache.ignite.internal.GridStopWithCancelSelfTest;
@@ -40,7 +39,7 @@ import org.apache.ignite.internal.codegen.IgniteDataTransferObjectProcessorTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
 import org.apache.ignite.internal.managers.communication.CompressedMessageTest;
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
-import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
+import org.apache.ignite.internal.managers.communication.GridIoManagerOrderedUnmarshalFailureTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExc
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.LogEvictionResultsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionEvictionOrderTest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponseUnmarshalTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
@@ -63,12 +63,19 @@ import org.apache.ignite.internal.processors.odbc.ClientSessionOutboundQueueLimi
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
+import org.apache.ignite.internal.processors.rollingupgrade.CoreVersionRollingUpgradeTest;
+import org.apache.ignite.internal.processors.rollingupgrade.PluginVersionRollingUpgradeTest;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSetTest;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.ManagementApiVersionValidationTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.ErrorMessageSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshalOnceTest;
+import org.apache.ignite.plugin.extensions.communication.MessageUnmarshalOnceCheckTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTestSelfTest;
 import org.apache.ignite.testframework.junits.multijvm.JavaVersionCommandParserTest;
@@ -103,7 +110,9 @@ import org.junit.runners.Suite;
     GridMessagingSelfTest.class,
     GridMessagingNoPeerClassLoadingSelfTest.class,
 
-    GridReleaseTypeSelfTest.class,
+    CoreVersionRollingUpgradeTest.class,
+    PluginVersionRollingUpgradeTest.class,
+    ManagementApiVersionValidationTest.class,
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentV2Test.class,
     GridAffinityAssignmentV2TestNoOptimizations.class,
@@ -149,11 +158,18 @@ import org.junit.runners.Suite;
     ClientSessionOutboundQueueLimitTest.class,
 
     MessageProcessorTest.class,
+    MessageMarshalOnceTest.class,
+    GridIoManagerOrderedUnmarshalFailureTest.class,
+    MessageUnmarshalOnceCheckTest.class,
+    GridCacheQueryResponseUnmarshalTest.class,
     ErrorMessageSelfTest.class,
     DefaultEnumMapperTest.class,
     IgniteDataTransferObjectProcessorTest.class,
     CompressedMessageTest.class,
+
     LogEvictionResultsTest.class,
+
+    IgniteFeatureSetTest.class,
 })
 public class IgniteBasicTestSuite {
 }

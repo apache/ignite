@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -45,9 +46,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Index find benchmark.
@@ -178,11 +176,9 @@ public class IndexFindBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(IndexFindBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(IndexFindBenchmark.class.getSimpleName())
+            .run();
     }
 
     /** */

@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -48,6 +46,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** */
     private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
+
+    /** Handle binary in interceptor operation flag bit mask. */
+    private static final int KEEP_BINARY_INTERCEPTOR_FLAG_MASK = 0x10;
 
     /** Sender node ID. */
     @Order(0)
@@ -127,6 +128,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -144,6 +147,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary
     ) {
         super(lockVer, keyCnt, false);
@@ -169,6 +173,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
+        keepBinaryInInterceptor(keepBinaryInInterceptor);
     }
 
     /**
@@ -234,61 +239,90 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param skipStore Skip store flag.
      */
     private void skipStore(boolean skipStore) {
-        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Skip store flag.
      */
     public boolean skipStore() {
-        return (flags & SKIP_STORE_FLAG_MASK) == 1;
+        return isFlag(SKIP_STORE_FLAG_MASK);
     }
 
     /**
-     * Sets skip store flag value.
+     * Sets skip read-through flag value.
      *
      * @param skipReadThrough Skip read-through cache store flag.
      */
     private void skipReadThrough(boolean skipReadThrough) {
-        flags = skipReadThrough ? (byte)(flags | SKIP_READ_THROUGH_FLAG_MASK) : (byte)(flags & ~SKIP_READ_THROUGH_FLAG_MASK);
+        setFlag(skipReadThrough, SKIP_READ_THROUGH_FLAG_MASK);
     }
 
     /**
-     * @return Skip store flag.
+     * @return Skip read-through flag.
      */
     public boolean skipReadThrough() {
-        return (flags & SKIP_READ_THROUGH_FLAG_MASK) != 0;
+        return isFlag(SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /** Sets flag indicating whether to handle binary in interceptor. */
+    public void keepBinaryInInterceptor(boolean handleBinary) {
+        setFlag(handleBinary, KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
+    }
+
+    /**
+     * @return Flag indicating whether to handle binary in interceptor.
+     */
+    public boolean keepBinaryInInterceptor() {
+        return isFlag(KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
      * @param keepBinary Keep binary flag.
      */
     private void keepBinary(boolean keepBinary) {
-        flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
+        setFlag(keepBinary, KEEP_BINARY_FLAG_MASK);
     }
 
     /**
      * @return Keep binary.
      */
     public boolean keepBinary() {
-        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+        return isFlag(KEEP_BINARY_FLAG_MASK);
     }
 
     /**
      * @return Flag indicating whether transaction use cache store.
      */
     public boolean storeUsed() {
-        return (flags & STORE_USED_FLAG_MASK) != 0;
+        return isFlag(STORE_USED_FLAG_MASK);
     }
 
     /**
      * @param storeUsed Store used value.
      */
     public void storeUsed(boolean storeUsed) {
-        if (storeUsed)
-            flags |= STORE_USED_FLAG_MASK;
-        else
-            flags &= ~STORE_USED_FLAG_MASK;
+        setFlag(storeUsed, STORE_USED_FLAG_MASK);
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reads flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /**
@@ -330,8 +364,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
+    @Override public int stripeIdx() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : ANY_STRIPE;
     }
 
     /**
@@ -345,26 +379,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
     }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.MessagesPluginProvider;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -65,7 +66,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         else if (igniteInstanceName.startsWith("receiver"))
             disco = new DyingThreadDiscoverySpi();
         else
-            disco = new TestTcpDiscoverySpi();
+            disco = new NoRingClosingTcpDiscoverySpi();
 
         disco.setIpFinder(sharedStaticIpFinder);
         cfg.setDiscoverySpi(disco);
@@ -234,10 +235,27 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         disco.sendCustomEvent(new DummyCustomDiscoveryMessage());
     }
 
+    /** {@link TcpDiscoverySpi} which doesn't itsring to current DC. */
+    private class NoRingClosingTcpDiscoverySpi extends TestTcpDiscoverySpi {
+        /** {@inheritDoc} */
+        @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+            return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, 0) {
+                @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
+                    return new ServerImpl.RingMessageWorker(log) {
+                        @Override protected ServerImpl.CrossRingMessageSendState createConnectionRecoveryState(TcpDiscoveryNode n) {
+                            // Do not start remote DC ping.
+                            return new ServerImpl.CrossRingMessageSendState();
+                        }
+                    };
+                }
+            };
+        }
+    }
+
     /**
      * Discovery SPI, that makes a thread to die when {@code blockMsgs} is set to {@code true}.
      */
-    private class DyingThreadDiscoverySpi extends TestTcpDiscoverySpi {
+    private class DyingThreadDiscoverySpi extends NoRingClosingTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (blockMsgs)
@@ -248,7 +266,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      * Discovery SPI, that makes a node stop sending messages when {@code blockMsgs} is set to {@code true}.
      */
-    private class DyingDiscoverySpi extends TestTcpDiscoverySpi {
+    private class DyingDiscoverySpi extends NoRingClosingTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
@@ -282,7 +300,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /**
      *
      */
-    private class ListeningDiscoverySpi extends TestTcpDiscoverySpi {
+    private class ListeningDiscoverySpi extends NoRingClosingTcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (ensured(msg))

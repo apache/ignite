@@ -68,25 +68,32 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
      * @param writer Writer.
      */
     void writePage(BinaryWriterEx writer) {
-        Iterator<T> iter = iterator();
+        try {
+            Iterator<T> iter = iterator();
 
-        int cntPos = writer.reserveInt();
-        int cnt = 0;
+            int cntPos = writer.reserveInt();
+            int cnt = 0;
 
-        while (cnt < pageSize && iter.hasNext()) {
-            T e = iter.next();
+            while (cnt < pageSize && iter.hasNext()) {
+                T e = iter.next();
 
-            writeEntry(writer, e);
+                writeEntry(writer, e);
 
-            cnt++;
+                cnt++;
+            }
+
+            writer.writeInt(cntPos, cnt);
+
+            writer.writeBoolean(iter.hasNext());
+
+            if (!iter.hasNext())
+                ctx.resources().release(id);
         }
-
-        writer.writeInt(cntPos, cnt);
-
-        writer.writeBoolean(iter.hasNext());
-
-        if (!iter.hasNext())
+        catch (RuntimeException | Error e) {
             ctx.resources().release(id);
+
+            throw e;
+        }
     }
 
     /**

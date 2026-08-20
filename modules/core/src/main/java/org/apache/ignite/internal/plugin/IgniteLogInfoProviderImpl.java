@@ -71,11 +71,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
-import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
-import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
@@ -158,7 +155,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
         if (System.getProperty(IGNITE_NO_ASCII) != null)
             return;
 
-        String ver = "ver. " + ACK_VER_STR;
+        String ver = "ver. " + VER;
 
         // Big thanks to: http://patorjk.com/software/taag
         // Font name "Small Slant"
@@ -632,7 +629,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
         }
 
         if (log.isInfoEnabled()) {
-            String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR;
+            String ack = "Ignite ver. " + VER;
 
             String dash = U.dash(ack.length());
 
@@ -943,8 +940,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             return;
 
         if (!err) {
-            String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR +
-                " stopped OK";
+            String ack = "Ignite ver. " + VER + " stopped OK";
 
             String dash = U.dash(ack.length());
 
@@ -958,8 +954,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
                 NL);
         }
         else {
-            String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR +
-                " stopped with ERRORS";
+            String ack = "Ignite ver. " + VER + " stopped with ERRORS";
 
             String dash = U.dash(ack.length());
 

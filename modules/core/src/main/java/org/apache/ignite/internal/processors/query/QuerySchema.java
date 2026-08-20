@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -140,7 +139,7 @@ public class QuerySchema implements Serializable {
                 if (locEntities.containsKey(qryEntity.getTableName())) {
                     QueryEntity locEntity = locEntities.get(qryEntity.getTableName());
 
-                    QueryEntityPatch entityPatch = locEntity.makePatch(qryEntity);
+                    QueryEntityPatch entityPatch = QueryEntityPatch.makePatch(locEntity, qryEntity);
 
                     if (entityPatch.hasConflict()) {
                         if (conflicts.length() > 0)

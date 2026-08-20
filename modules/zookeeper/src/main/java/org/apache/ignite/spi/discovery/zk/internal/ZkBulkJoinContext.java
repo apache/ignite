@@ -17,28 +17,28 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
 class ZkBulkJoinContext {
     /** */
-    List<T2<ZkJoinedNodeEvtData, Map<Integer, Serializable>>> nodes;
+    List<T2<ZkJoinedNodeEvtData, ZkDiscoDataBagWrapper>> nodes;
 
     /**
      * @param nodeEvtData Node event data.
      * @param discoData Discovery data for node.
      */
-    void addJoinedNode(ZkJoinedNodeEvtData nodeEvtData, Map<Integer, Serializable> discoData) {
+    void addJoinedNode(ZkJoinedNodeEvtData nodeEvtData, Map<Integer, Message> discoData) {
         if (nodes == null)
             nodes = new ArrayList<>();
 
-        nodes.add(new T2<>(nodeEvtData, discoData));
+        nodes.add(new T2<>(nodeEvtData, new ZkDiscoDataBagWrapper(discoData)));
     }
 
     /**

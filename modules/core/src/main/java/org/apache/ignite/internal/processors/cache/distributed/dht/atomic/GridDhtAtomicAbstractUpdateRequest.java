@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -57,6 +56,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** Flag indicating recovery on read repair. */
     protected static final int DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK = 0x80;
+
+    /** */
+    protected static final int DHT_ATOMIC_KEEP_BINARY_IN_INTERCEPTOR = 0x100;
 
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
@@ -115,6 +117,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean skipStore,
         boolean readRepairRecovery
     ) {
@@ -133,6 +136,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
         if (readRepairRecovery)
             setFlag(true, DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
+        if (keepBinaryInInterceptor)
+            setFlag(true, DHT_ATOMIC_KEEP_BINARY_IN_INTERCEPTOR);
     }
 
     /** {@inheritDoc} */
@@ -198,6 +203,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return isFlag(DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
     }
 
+    /** @return {@code true} if need to handle binary in interceptor. */
+    public final boolean keepBinaryInInterceptor() {
+        return isFlag(DHT_ATOMIC_KEEP_BINARY_IN_INTERCEPTOR);
+    }
+
     /**
      * @return Recovery on Read Repair flag.
      */
@@ -238,11 +248,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return addDepInfo;
     }
 
-    /**
-     * @return Force transform backups flag.
-     */
-    public abstract boolean forceTransformBackups();
-
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.atomicMessageLogger();
@@ -251,7 +256,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProc Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -262,7 +266,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public abstract void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -274,13 +277,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProc Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
     public abstract void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime);
 
@@ -369,22 +370,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     @Nullable public abstract CacheObject previousValue(int idx);
 
     /**
-     * @param idx Key index.
-     * @return Entry processor.
-     */
-    @Nullable public abstract EntryProcessor<Object, Object, Object> entryProcessor(int idx);
-
-    /**
      * @param idx Near key index.
      * @return Value.
      */
     @Nullable public abstract CacheObject nearValue(int idx);
-
-    /**
-     * @param idx Key index.
-     * @return Transform closure.
-     */
-    @Nullable public abstract EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx);
 
     /**
      * @param idx Index.
@@ -415,11 +404,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @return Expire time for near cache update.
      */
     public abstract long nearExpireTime(int idx);
-
-    /**
-     * @return Optional arguments for entry processor.
-     */
-    @Nullable public abstract Object[] invokeArguments();
 
     /**
      * Sets flag mask.

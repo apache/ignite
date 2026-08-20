@@ -431,9 +431,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Cache group key change is in progress! Node join is rejected.");
         }
 
-        NodeEncryptionKeys nodeEncKeys = (NodeEncryptionKeys)discoData.joiningNodeData();
+        NodeEncryptionKeys nodeEncKeys = discoData.joiningNodeData();
 
-        if (!discoData.hasJoiningNodeData() || nodeEncKeys == null) {
+        if (nodeEncKeys == null) {
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Joining node doesn't have encryption data [node=" + node.id() + "]",
                 "Joining node doesn't have encryption data.");
@@ -522,7 +522,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
-        NodeEncryptionKeys nodeEncryptionKeys = (NodeEncryptionKeys)data.joiningNodeData();
+        NodeEncryptionKeys nodeEncryptionKeys = data.joiningNodeData();
 
         if (nodeEncryptionKeys == null || nodeEncryptionKeys.newKeys == null || ctx.clientNode())
             return;
@@ -563,7 +563,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         }
 
-        dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), knownEncKeys);
+        dataBag.addGridCommonData(ENCRYPTION_MGR.ordinal(), new EncryptionDataBagItem(knownEncKeys));
     }
 
     /** {@inheritDoc} */
@@ -571,20 +571,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode())
             return;
 
-        Map<Integer, Object> encKeysFromCluster = (Map<Integer, Object>)data.commonData();
+        EncryptionDataBagItem encryptionItem = data.commonData();
 
-        if (F.isEmpty(encKeysFromCluster))
+        if (encryptionItem == null || F.isEmpty(encryptionItem.knownKeys))
             return;
 
-        for (Map.Entry<Integer, Object> entry : encKeysFromCluster.entrySet()) {
+        for (Map.Entry<Integer, GroupKeyEncrypted> entry : encryptionItem.knownKeys.entrySet()) {
             int grpId = entry.getKey();
 
-            GroupKeyEncrypted rmtKey;
-
-            if (entry.getValue() instanceof GroupKeyEncrypted)
-                rmtKey = (GroupKeyEncrypted)entry.getValue();
-            else
-                rmtKey = new GroupKeyEncrypted(INITIAL_KEY_ID, (byte[])entry.getValue());
+            GroupKeyEncrypted rmtKey = entry.getValue();
 
             GroupKey locGrpKey = getActiveKey(grpId);
 
@@ -1489,7 +1484,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> prepareMasterKeyChange(MasterKeyChangeRequest req) {
+    private IgniteInternalFuture<Message> prepareMasterKeyChange(UUID ignored, MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "The previous change was not completed."));
@@ -1552,7 +1547,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> performMasterKeyChange(MasterKeyChangeRequest req) {
+    private IgniteInternalFuture<Message> performMasterKeyChange(UUID ignored, MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest == null || !masterKeyChangeRequest.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
 
@@ -1746,45 +1741,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             return U.fromBytes(serKeyName);
         });
-    }
-
-    /** */
-    protected static class NodeEncryptionKeys implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        NodeEncryptionKeys(
-            HashMap<Integer, List<GroupKeyEncrypted>> knownKeysWithIds,
-            Map<Integer, byte[]> newKeys,
-            byte[] masterKeyDigest
-        ) {
-            this.newKeys = newKeys;
-            this.masterKeyDigest = masterKeyDigest;
-
-            if (F.isEmpty(knownKeysWithIds))
-                return;
-
-            // To be able to join the old cluster.
-            knownKeys = U.newHashMap(knownKeysWithIds.size());
-
-            for (Map.Entry<Integer, List<GroupKeyEncrypted>> entry : knownKeysWithIds.entrySet())
-                knownKeys.put(entry.getKey(), entry.getValue().get(0).key());
-
-            this.knownKeysWithIds = knownKeysWithIds;
-        }
-
-        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node (in compatible format). */
-        Map<Integer, byte[]> knownKeys;
-
-        /**  New keys i.e. keys for a local statically configured caches. */
-        Map<Integer, byte[]> newKeys;
-
-        /** Master key digest. */
-        byte[] masterKeyDigest;
-
-        /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node. */
-        Map<Integer, List<GroupKeyEncrypted>> knownKeysWithIds;
     }
 
     /** */

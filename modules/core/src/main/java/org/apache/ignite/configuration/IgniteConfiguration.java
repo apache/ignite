@@ -49,6 +49,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -84,6 +85,7 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -105,7 +107,7 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.USE_FAILU
  * For more information about grid configuration and startup refer to {@link Ignition}
  * documentation.
  */
-public class IgniteConfiguration {
+public class IgniteConfiguration implements IgniteConfigurationDefaults {
     /** Courtesy notice log category. */
     public static final String COURTESY_LOGGER_NAME = "org.apache.ignite.CourtesyConfigNotice";
 
@@ -165,18 +167,6 @@ public class IgniteConfiguration {
 
     /** Default limit of threads used for rebalance. */
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = min(4, max(1, AVAILABLE_PROC_CNT / 4));
-
-    /** Default rebalance message timeout in milliseconds (value is {@code 10000}). */
-    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
-
-    /** Default rebalance batches prefetch count (value is {@code 3}). */
-    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 3;
-
-    /** Time to wait between rebalance messages in milliseconds to avoid overloading CPU (value is {@code 0}). */
-    public static final long DFLT_REBALANCE_THROTTLE = 0;
-
-    /** Default rebalance batch size in bytes (value is {@code 512Kb}). */
-    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
@@ -326,6 +316,7 @@ public class IgniteConfiguration {
     private String igniteWorkDir;
 
     /** MBean server. */
+    @GridToStringExclude
     private MBeanServer mbeanSrv;
 
     /** Local node ID. */
@@ -410,6 +401,7 @@ public class IgniteConfiguration {
     private LoadBalancingSpi[] loadBalancingSpi;
 
     /** Indexing SPI. */
+    @GridToStringExclude
     private IndexingSpi indexingSpi;
 
     /** Address resolver. */
@@ -423,9 +415,6 @@ public class IgniteConfiguration {
 
     /** System view exporter SPI. */
     private SystemViewExporterSpi[] sysViewExporterSpi;
-
-    /** Tracing SPI. */
-    private TracingSpi tracingSpi;
 
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
@@ -625,7 +614,6 @@ public class IgniteConfiguration {
         encryptionSpi = cfg.getEncryptionSpi();
         metricExporterSpi = cfg.getMetricExporterSpi();
         sysViewExporterSpi = cfg.getSystemViewExporterSpi();
-        tracingSpi = cfg.getTracingSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -2438,9 +2426,13 @@ public class IgniteConfiguration {
      *
      * @param tracingSpi Fully configured instance of {@link TracingSpi}.
      * @return {@code this} for chaining.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     public IgniteConfiguration setTracingSpi(TracingSpi tracingSpi) {
-        this.tracingSpi = tracingSpi;
+        U.warn(log, "Configured Tracing SPI is ignored. The Ignite Tracing is deprecated and subject to removal in a " +
+            " future release. Ignite Tracing has been retired in favor of Ignite Performance Statistics and Ignite Metrics.");
 
         return this;
     }
@@ -2449,9 +2441,11 @@ public class IgniteConfiguration {
      * Gets fully configured tracing SPI implementation.
      *
      * @return Tracing SPI implementation.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
     public TracingSpi getTracingSpi() {
-        return tracingSpi;
+        return NoopTracingSpi.INSTANCE;
     }
 
     /**

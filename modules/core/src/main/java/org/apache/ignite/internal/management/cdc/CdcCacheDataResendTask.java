@@ -50,6 +50,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
@@ -71,6 +72,10 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<CdcResendCommandArg> arg) {
+        // Check if cluster is inactive.
+        if (ignite.cluster().state() == INACTIVE)
+            throw new IgniteException("CDC resend command was cancelled because Ignite cluster is inactive.");
+
         // Check there is no rebalance.
         GridDhtPartitionsExchangeFuture fut = ignite.context().cache().context().exchange().lastFinishedFuture();
 

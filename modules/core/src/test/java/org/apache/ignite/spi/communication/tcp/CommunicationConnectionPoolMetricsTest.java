@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,7 +29,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -40,14 +38,8 @@ import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -134,7 +126,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         cfg.setCommunicationSpi(communicationSpi);
 
-        cfg.setPluginProviders(new TestCommunicationMessagePluginProvider());
+        cfg.setPluginProviders(new MessagesPluginProvider(TestDelayMessage.class));
 
         return cfg;
     }
@@ -154,7 +146,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         Ignite ldr = clientLdr ? cli : srvr;
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
-        TestMessage msg = new TestMessage();
+        TestDelayMessage msg = new TestDelayMessage();
 
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, null);
 
@@ -206,7 +198,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         Ignite ldr = clientLdr ? cli : srvr;
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
-        Message msg = new TestMessage();
+        Message msg = new TestDelayMessage();
 
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, null, maxConnIdleTimeout, maxConnIdleTimeout * 4);
 
@@ -257,7 +249,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
-        TestMessage msg = new TestMessage();
+        TestDelayMessage msg = new TestDelayMessage();
 
         long loadMillis0 = System.currentTimeMillis();
 
@@ -368,7 +360,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             }
         });
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestMessage((int)maxConnIdleTimeout * 3), null);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestDelayMessage((int)maxConnIdleTimeout * 3), null);
 
         monFut.get(getTestTimeout());
 
@@ -395,7 +387,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         IgniteInternalFuture<?> loadFut = runLoad(
             ldr,
             runFlag,
-            () -> new TestMessage(writeDelay.get()),
+            () -> new TestDelayMessage(writeDelay.get()),
             loadCnt
         );
 
@@ -518,74 +510,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     }
 
     /** */
-    public static class TestCommunicationMessagePluginProvider extends AbstractTestPluginProvider {
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "TEST_PLUGIN";
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(MessageFactory factory) {
-                    factory.register(TestMessage.DIRECT_TYPE, TestMessage::new);
-                }
-            });
-        }
-    }
-
-    /** */
     public static MetricRegistryImpl metricsForCommunicationConnection(Ignite from, Ignite to) {
         return ((IgniteEx)from).context()
             .metric()
             .registry(metricName(SHARED_METRICS_REGISTRY_NAME, ((IgniteEx)to).context().localNodeId().toString()));
-    }
-
-    /** */
-    private static class TestMessage implements Message {
-        /** */
-        public static final short DIRECT_TYPE = 200;
-
-        /** */
-        private final int writeDelay;
-
-        /** */
-        public TestMessage(int writeDelay) {
-            this.writeDelay = writeDelay;
-        }
-
-        /** */
-        public TestMessage() {
-            this(0);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            if (writeDelay > 0) {
-                try {
-                    U.sleep(writeDelay);
-                }
-                catch (IgniteInterruptedCheckedException ignored) {
-                    // No-op.
-                }
-            }
-
-            writer.setBuffer(buf);
-
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return DIRECT_TYPE;
-        }
     }
 }

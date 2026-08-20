@@ -20,41 +20,26 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.Collection;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<Void>
-    implements CachePartitionExchangeWorkerTask {
+public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<Void> implements CachePartitionExchangeWorkerTask {
     /** */
     @GridToStringInclude
     private final Collection<GridCacheAdapter> stoppedCaches;
 
-    /** Security context. */
-    @Nullable private final SecurityContext secCtx;
-
-    /**
-     * @param secCtx Security context.
-     * @param stoppedCaches Collection of stopped caches.
-     */
-    public StopCachesOnClientReconnectExchangeTask(@Nullable SecurityContext secCtx, Collection<GridCacheAdapter> stoppedCaches) {
-        this.secCtx = secCtx;
+    /** @param stoppedCaches Collection of stopped caches. */
+    public StopCachesOnClientReconnectExchangeTask(Collection<GridCacheAdapter> stoppedCaches) {
         this.stoppedCaches = stoppedCaches;
     }
 
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public SecurityContext securityContext() {
-        return secCtx;
     }
 
     /**

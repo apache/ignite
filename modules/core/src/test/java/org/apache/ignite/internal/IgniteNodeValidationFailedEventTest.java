@@ -38,7 +38,6 @@ public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setIncludeEventTypes(EVT_NODE_VALIDATION_FAILED)
             .setConsistentId(igniteInstanceName);
     }
 
@@ -98,9 +97,9 @@ public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest 
 
     /** */
     @Test
-    public void testEventDisabledByDefault() throws Exception {
+    public void testEventEnabledByDefault() throws Exception {
         IgniteEx ignite = startGrid(super.getConfiguration(getTestIgniteInstanceName(0)));
 
-        assertFalse(ignite.context().event().isRecordable(EVT_NODE_VALIDATION_FAILED));
+        assertTrue(ignite.context().event().isRecordable(EVT_NODE_VALIDATION_FAILED));
     }
 }

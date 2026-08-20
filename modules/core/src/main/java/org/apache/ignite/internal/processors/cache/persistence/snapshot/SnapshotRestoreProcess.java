@@ -629,7 +629,7 @@ public class SnapshotRestoreProcess {
      * @param req Request to prepare cache group restore from the snapshot.
      * @return Result future.
      */
-    private IgniteInternalFuture<SnapshotRestoreOperationResponse> prepare(SnapshotOperationRequest req) {
+    private IgniteInternalFuture<SnapshotRestoreOperationResponse> prepare(UUID ignored, SnapshotOperationRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -912,7 +912,7 @@ public class SnapshotRestoreProcess {
      * @param req Request.
      * @return Future which will be completed when the preload ends.
      */
-    private IgniteInternalFuture<Message> preload(SnapshotRestoreStartRequest req) {
+    private IgniteInternalFuture<Message> preload(UUID ignored, SnapshotRestoreStartRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -1263,7 +1263,7 @@ public class SnapshotRestoreProcess {
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> cacheStart(SnapshotRestoreStartRequest req) {
+    private IgniteInternalFuture<Message> cacheStart(UUID ignored, SnapshotRestoreStartRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
@@ -1333,7 +1333,7 @@ public class SnapshotRestoreProcess {
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> cacheStop(SnapshotRestoreStartRequest req) {
+    private IgniteInternalFuture<Message> cacheStop(UUID ignored, SnapshotRestoreStartRequest req) {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
 
@@ -1384,7 +1384,7 @@ public class SnapshotRestoreProcess {
      * @param req Request ID.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> incrementalSnapshotRestore(Message req) {
+    private IgniteInternalFuture<Message> incrementalSnapshotRestore(UUID ignored, Message req) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (ctx.clientNode() || opCtx0 == null || !opCtx0.nodes().contains(ctx.localNodeId()))
@@ -1652,7 +1652,7 @@ public class SnapshotRestoreProcess {
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<Message> rollback(SnapshotRestoreStartRequest req) {
+    private IgniteInternalFuture<Message> rollback(UUID ignored, SnapshotRestoreStartRequest req) {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 

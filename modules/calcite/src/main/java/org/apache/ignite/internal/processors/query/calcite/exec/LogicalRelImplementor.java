@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -27,27 +29,35 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.IntPair;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartitionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractSetOpNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
@@ -73,6 +83,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UncollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -85,7 +96,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -104,6 +114,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchang
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteWindow;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -120,6 +131,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -282,8 +295,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
-        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(rel);
-
         RexNode nonEquiConditionExpression = RexUtil.composeConjunction(Commons.emptyCluster().getRexBuilder(),
             rel.analyzeCondition().nonEquiConditions, true);
 
@@ -295,7 +306,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             nonEquiCondition = expressionFactory.biPredicate(rel.getCondition(), rowType);
         }
 
-        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo,
+        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, rel.analyzeCondition(),
             nonEquiCondition);
 
         node.register(Arrays.asList(visit(rel.getLeft()), visit(rel.getRight())));
@@ -339,14 +350,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations();
         List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations();
 
-        ImmutableBitSet allowNulls = rel.allowNulls();
-        ImmutableBitSet.Builder collsAllowNullsBuilder = ImmutableBitSet.builder();
+        ImmutableList<Boolean> nullExclusions = rel.analyzeCondition().nullExclusionFlags;
+        ImmutableBitSet.Builder nullCompAsEqual = ImmutableBitSet.builder();
         int lastCollField = -1;
 
         for (int c = 0; c < Math.min(leftCollations.size(), rightCollations.size()); ++c) {
             RelFieldCollation leftColl = leftCollations.get(c);
             RelFieldCollation rightColl = rightCollations.get(c);
-            collsAllowNullsBuilder.set(c);
+            nullCompAsEqual.set(c);
 
             for (int p = 0; p < pairsCnt; ++p) {
                 IntPair pair = joinPairs.get(p);
@@ -354,8 +365,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
                     lastCollField = c;
 
-                    if (!allowNulls.get(p)) {
-                        collsAllowNullsBuilder.clear(c);
+                    if (nullExclusions.get(p)) {
+                        nullCompAsEqual.clear(c);
 
                         break;
                     }
@@ -366,7 +377,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Comparator<Row> comp = expressionFactory.comparator(
             leftCollations.subList(0, lastCollField + 1),
             rightCollations.subList(0, lastCollField + 1),
-            collsAllowNullsBuilder.build()
+            nullCompAsEqual.build()
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
@@ -563,8 +574,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx,
                 rowType,
                 idxBndRel.first() ? cmp : cmp.reversed(),
-                null,
-                () -> 1
+                SortNode.OFFSET_DEFAULT,
+                1
             );
 
             sortNode.register(scanNode);
@@ -626,8 +637,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<Integer> offset = (rel.offset() == null) ? null : expressionFactory.execute(rel.offset());
-        Supplier<Integer> fetch = (rel.fetch() == null) ? null : expressionFactory.execute(rel.fetch());
+        long offset = validateAndGetOffset(rel.offset(), LimitNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch(), LimitNode.FETCH_DEFAULT);
 
         LimitNode<Row> node = new LimitNode<>(ctx, rel.getRowType(), offset, fetch);
 
@@ -642,8 +653,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
 
-        Supplier<Integer> offset = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
-        Supplier<Integer> fetch = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
+        long offset = validateAndGetOffset(rel.offset, SortNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch, SortNode.FETCH_DEFAULT);
+
+        // Zero FETCH is enforced by the outer IgniteLimit, while SortNode accepts only positive FETCH values.
+        if (fetch == 0)
+            fetch = SortNode.FETCH_DEFAULT;
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
@@ -653,6 +668,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         node.register(input);
 
         return node;
+    }
+
+    /** */
+    private long validateAndGetOffset(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "offset");
+    }
+
+    /** */
+    private long validateAndGetFetch(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch / limit");
     }
 
     /** {@inheritDoc} */
@@ -946,6 +971,32 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteWindow rel) {
+        RelDataType outType = rel.getRowType();
+        RelDataType inputType = rel.getInput().getRowType();
+        Window.Group grp = rel.getGroup();
+
+        List<Integer> grpKeys = grp.keys.toList();
+        RelCollation collation = rel.collation();
+
+        assert collation.getFieldCollations().size() >= grpKeys.size();
+        Comparator<Row> partCmp = expressionFactory.comparator(TraitUtils.createCollation(grpKeys));
+
+        List<AggregateCall> calls = grp.getAggregateCalls(rel);
+        Supplier<WindowPartition<Row>> partFactory = new WindowPartitionFactory<>(ctx, grp, calls, inputType);
+
+        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), outType);
+
+        WindowNode<Row> node = new WindowNode<>(ctx, outType, partCmp, partFactory, rowFactory);
+
+        Node<Row> input = visit(rel.getInput());
+
+        node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteUncollect rel) {
         UncollectNode<Row> node = new UncollectNode<>(
             ctx,
@@ -1019,5 +1070,35 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             filterColMapping,
             otherColMapping
         );
+    }
+
+    /** */
+    private long validateAndGetFetchOffsetParams(RexNode node, String op) {
+        Supplier<Object> scalar = expressionFactory.execute(node);
+        Object param = scalar.get();
+
+        if (param == null && !(node instanceof RexDynamicParam)) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
+
+        if (!(param instanceof Number)) {
+            String actual = param == null ? "null" : param.getClass().getSimpleName();
+            throw new IgniteSQLException(IgniteResource.INSTANCE.incorrectDynamicParameterType("BIGINT", actual).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
+
+        try {
+            BigDecimal paramAsDecimal = IgniteMath.convertToBigDecimal((Number)param);
+
+            if (paramAsDecimal.signum() < 0)
+                throw new IllegalArgumentException("Negative value for " + op);
+
+            return IgniteMath.convertToLongExact(paramAsDecimal, RoundingMode.DOWN);
+        }
+        catch (RuntimeException ex) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE, ex);
+        }
     }
 }

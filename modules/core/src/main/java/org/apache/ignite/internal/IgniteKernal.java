@@ -110,8 +110,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
-import org.apache.ignite.internal.managers.tracing.GridTracingManager;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -170,10 +169,12 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -200,10 +201,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
@@ -269,11 +268,11 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
-import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
+import static org.apache.ignite.lang.IgniteProductVersion.BUILD_TIME_FORMAT;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.mxbean.IgniteMXBean.ACTIVE_DESC;
@@ -444,6 +443,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** Core message factory. */
     private MessageFactory msgFactory;
 
+    /** Distributed operation context dispatcher. */
+    private OperationContextDispatcher operationCtxDispatcher;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -575,11 +577,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** @return String representation of the uptime. */
     public String upTimeFormatted() {
         return X.timeSpan2DHMSM(upTime());
-    }
-
-    /** @return String representation of version of current Ignite instance. */
-    String fullVersion() {
-        return VER_STR + '-' + BUILD_TSTAMP_STR;
     }
 
     /** @return String representation of the checkpoint SPI. */
@@ -918,10 +915,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders(cfg, true);
 
-        IgniteMarshallerClassFilter clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
-
-        MarshallerUtils.autoconfigureObjectInputFilter(clsFilter);
-
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -929,11 +922,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 cfg,
                 gw,
                 plugins,
-                clsFilter,
                 workerRegistry,
                 hnd,
                 longJVMPauseDetector
             );
+
+            operationCtxDispatcher = new OperationContextDispatcher();
 
             startProcessor(new DiagnosticProcessor(ctx));
 
@@ -999,12 +993,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            try {
-                startManager(new GridTracingManager(ctx, false));
-            }
-            catch (IgniteCheckedException e) {
-                startManager(new GridTracingManager(ctx, true));
-            }
             startManager(new GridMetricManager(ctx));
             startManager(new GridSystemViewManager(ctx));
 
@@ -1098,7 +1086,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
-                startProcessor(new DataStreamProcessor<>(ctx));
+                startProcessor(new DataStreamProcessor(ctx));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
@@ -1156,6 +1144,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             // All components exept Discovery are started, time to check if maintenance is still needed.
             mntcProc.prepareAndExecuteMaintenance();
+
+            operationCtxDispatcher.finishRegistration();
 
             gw.writeLock();
 
@@ -1258,6 +1248,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             for (PluginProvider<?> provider : ctx.plugins().allProviders())
                 provider.onIgniteStart();
 
+            ctx.plugins().registerSystemView();
+
             if (recon)
                 reconnectState.waitFirstReconnect();
 
@@ -1319,18 +1311,13 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         List<MessageFactoryProvider> compMsgs = new ArrayList<>();
 
-        ClassLoader resolvedClsLdr = U.resolveClassLoader(ctx.config());
-
-        compMsgs.add(new CoreMessagesProvider(ctx.marshallerContext().jdkMarshaller(), ctx.marshaller(), resolvedClsLdr));
+        compMsgs.add(new CoreMessagesProvider());
 
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactoryProvider f = compType.messageFactory();
 
-            if (f != null) {
-                initProvider(f, resolvedClsLdr);
-
+            if (f != null)
                 compMsgs.add(f);
-            }
         }
 
         DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
@@ -1338,30 +1325,14 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (discoSpi instanceof IgniteDiscoverySpi) {
             MessageFactoryProvider discoMsgs = ((IgniteDiscoverySpi)discoSpi).messageFactoryProvider();
 
-            if (discoMsgs != null) {
-                initProvider(discoMsgs, resolvedClsLdr);
-
+            if (discoMsgs != null)
                 compMsgs.add(discoMsgs);
-            }
         }
 
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactoryProvider[compMsgs.size()]));
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
-    }
-
-    /**
-     * Re-init {@link AbstractMarshallableMessageFactoryProvider} with a proper marshaller and classloader.
-     *
-     * @param factoryProvider Message factory provider.
-     * @param clsLdr Class loader.
-     */
-    private void initProvider(MessageFactoryProvider factoryProvider, ClassLoader clsLdr) {
-        if (factoryProvider instanceof AbstractMarshallableMessageFactoryProvider) {
-            ((AbstractMarshallableMessageFactoryProvider)factoryProvider).init(ctx.marshallerContext().jdkMarshaller(),
-                ctx.marshaller(), clsLdr);
-        }
     }
 
     /**
@@ -1563,7 +1534,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Stick in some system level attributes
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
         add(ATTR_BUILD_VER, VER_STR);
-        add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
+        add(ATTR_BUILD_DATE, BUILD_TIME_FORMAT.format(VER.buildTime()));
         add(ATTR_MARSHALLER, ctx.marshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
             getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, Marshallers.USE_DFLT_SUID));
@@ -1652,7 +1623,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         addSpiAttributes(cfg.getCheckpointSpi());
         addSpiAttributes(cfg.getLoadBalancingSpi());
         addSpiAttributes(cfg.getDeploymentSpi());
-        addSpiAttributes(cfg.getTracingSpi());
 
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
@@ -1868,7 +1838,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            U.clearClassCache();
+            ClassLoaderUtils.clearClassCache();
             MarshallerExclusions.clearCache();
             BinaryUtils.clearCache();
 
@@ -2771,15 +2741,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated(forRemoval = true)
     @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        guard();
-
-        try {
-            return ctx.tracing().configuration();
-        }
-        finally {
-            unguard();
-        }
+        return NoopTracingConfigurationManager.INSTANCE;
     }
 
     /** {@inheritDoc} */
@@ -3063,6 +3027,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** @return Core message factory. */
     MessageFactory messageFactory() {
         return msgFactory;
+    }
+
+    /** @return Distributed operation context dispatcher. */
+    OperationContextDispatcher operationContextDispatcher() {
+        return operationCtxDispatcher;
     }
 
     /**
@@ -3375,26 +3344,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
     }
 
-    /**
-     * @param node Node.
-     * @param payload Message payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean procFromNioThread) {
-        return ctx.io().sendIoTest(node, payload, procFromNioThread);
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @param payload Message payload.
-     * @param procFromNioThread If {@code true} message is processed from NIO thread.
-     * @return Response future.
-     */
-    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
-        return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
-    }
-
     /** Registers configuration system view. */
     private void registerConfigurationSystemView() {
         ctx.systemView().registerInnerCollectionView(
@@ -3416,7 +3365,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
 
-        reg.register("fullVersion", this::fullVersion, String.class, FULL_VER_DESC);
+        reg.register("fullVersion", VER::toString, String.class, FULL_VER_DESC);
         reg.register("copyright", () -> COPYRIGHT, String.class, COPYRIGHT_DESC);
 
         reg.register("startTimestampFormatted", this::startTimeFormatted, String.class,

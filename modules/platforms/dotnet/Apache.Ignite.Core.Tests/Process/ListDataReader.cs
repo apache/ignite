@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Process
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -26,6 +27,17 @@ namespace Apache.Ignite.Core.Tests.Process
     /// </summary>
     public class ListDataReader : IIgniteProcessOutputReader
     {
+        /** JVM warnings that can appear before the actual Apache.Ignite.exe output. */
+        private static readonly string[] IgnoredJavaWarnings =
+        {
+            "OpenJDK 64-Bit Server VM warning: Ignoring option --illegal-access=permit; support was removed in 17.0",
+            "WARNING: An illegal reflective access operation has occurred",
+            "WARNING: Illegal reflective access by org.apache.ignite.internal.util.GridUnsafe$2",
+            "WARNING: Please consider reporting this to the maintainers of org.apache.ignite.internal.util.GridUnsafe$2",
+            "WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations",
+            "WARNING: All illegal access operations will be denied in a future release"
+        };
+
         /** Target list. */
         private readonly List<string> _list = new List<string>();
 
@@ -52,6 +64,22 @@ namespace Apache.Ignite.Core.Tests.Process
             {
                 return _list.ToList();
             }
+        }
+
+        /// <summary>
+        /// Gets the output without known JVM warnings.
+        /// </summary>
+        public IList<string> GetOutputWithoutJavaWarnings()
+        {
+            return GetOutput().Where(x => !IsIgnoredJavaWarning(x)).ToList();
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether provided message is a known JVM warning.
+        /// </summary>
+        private static bool IsIgnoredJavaWarning(string message)
+        {
+            return IgnoredJavaWarnings.Any(warning => message.StartsWith(warning, StringComparison.Ordinal));
         }
     }
 }

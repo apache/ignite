@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// </summary>
     internal sealed class ConsoleWriter : MarshalByRefObject
     {
-        /** Environment variable: whether to suppress stderr warnings from Java 11. */
+        /** Environment variable: whether to suppress stderr warnings from Java 17. */
         private const string EnvIgniteNetSuppressJavaIllegalAccessWarnings =
             "IGNITE_NET_SUPPRESS_JAVA_ILLEGAL_ACCESS_WARNINGS";
 
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             "WARNING: All illegal access operations will be denied in a future release"
         };
 
-        /** Flag: whether to suppress stderr warnings from Java 11. */
+        /** Flag: whether to suppress stderr warnings from Java 17. */
         private readonly bool _suppressIllegalAccessWarnings;
 
         public ConsoleWriter()

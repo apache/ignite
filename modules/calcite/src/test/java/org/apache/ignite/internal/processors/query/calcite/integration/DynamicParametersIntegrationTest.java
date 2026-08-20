@@ -27,14 +27,36 @@ import java.time.Period;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 /**
  *  Dynamic parameters types inference test.
  */
 public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** */
+    private static final String ILLEGAL_FETCH_VAL_ERR_MSG = "Illegal value of fetch / limit. " +
+        "The value must be non-negative and less than or equal to 9223372036854775807";
+
+    /** */
+    private static final String INCORRECT_FETCH_TYPE_ERR_MSG = "Incorrect type of a dynamic parameter. Expected <BIGINT> but got";
+
+    /** */
+    private static final String ENCOUNTERED_ERR_MSG = "Encountered";
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setGridLogger(listeningLog);
+    }
+
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
@@ -150,6 +172,12 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT name LIKE '%' || ? || '%' FROM person where name is not null").withParams("go")
             .returns(true).returns(false).returns(false).returns(false).check();
 
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1D).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1F).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1L).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(new BigDecimal(1)).returns(0).check();
+
         assertQuery("SELECT id FROM person WHERE name LIKE ? ORDER BY id LIMIT ?").withParams("I%", 1)
             .returns(0).check();
 
@@ -158,6 +186,232 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
 
         assertQuery("SELECT id FROM person WHERE salary<? and id>?").withParams(15, 1)
             .returns(3).returns(4).check();
+    }
+
+    /** */
+    @Test
+    public void testFractionalLimitOffset() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(0.5).resultSize(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.4).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.6).returns(0).check();
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id LIMIT ?", null, BigDecimal.valueOf(-1.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id LIMIT ?", null, BigDecimal.valueOf(-0.5));
+
+        assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
+            .withParams(BigDecimal.valueOf(0.5))
+            .resultSize(0)
+            .check();
+        assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
+            .withParams(BigDecimal.valueOf(1.3))
+            .returns(0)
+            .check();
+        assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
+            .withParams(BigDecimal.valueOf(1.6))
+            .returns(0)
+            .check();
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", null, BigDecimal.valueOf(-1.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", null, BigDecimal.valueOf(-0.5));
+
+        assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
+            .withParams(BigDecimal.valueOf(0.5))
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
+        assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
+            .withParams(BigDecimal.valueOf(2.3))
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
+        assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
+            .withParams(BigDecimal.valueOf(2.6))
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id OFFSET ? ROWS", null, BigDecimal.valueOf(-0.5));
+        assertThrowsSqlException("SELECT id FROM person ORDER BY id OFFSET ? ROWS", null, BigDecimal.valueOf(-1.5));
+    }
+
+    /** */
+    @Test
+    public void testInvalidFetchExpression() {
+        createAndPopulateTable();
+
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -2);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -1.5);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", INCORRECT_FETCH_TYPE_ERR_MSG, new Object[]{null});
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, moreThanMaxLong());
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (?) ROWS ONLY", INCORRECT_FETCH_TYPE_ERR_MSG, "abc");
+
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (1 + ? - 4) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 1);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (? - (50 - 20)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 2);
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST (NULLIF(?, 1)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, 1);
+
+        assertThrowsSqlException("SELECT * FROM PERSON FETCH FIRST SQRT(?) ROWS ONLY", ENCOUNTERED_ERR_MSG, 4);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpression() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (?) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + ? - 2) ROWS ONLY")
+            .withParams(5)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + (? - 1) + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (1 + (2 - 1) + ?) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (ABS(?)) ROWS ONLY")
+            .withParams(-2)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + ABS(?)) ROWS ONLY")
+            .withParams(-2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (SQRT(?) + 1 + 0) ROWS ONLY")
+            .withParams(4)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithContextTypedNullParameter() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id "
+                + "FETCH FIRST (CASE WHEN ? THEN 1 ELSE 2 END) ROWS ONLY")
+            .withParams((Object)null)
+            .returns(0)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testZeroFetchExpressionWithDynamicParameterDoesNotFailFragments() throws Exception {
+        createAndPopulateTable();
+
+        LogListener sortAssertionError = LogListener.matches(msg ->
+            msg.contains(AssertionError.class.getName()) && msg.contains(SortNode.class.getName())).build();
+
+        listeningLog.registerListener(sortAssertionError);
+
+        try {
+            assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? - 1) ROWS ONLY")
+                .withParams(1)
+                .resultSize(0)
+                .check();
+
+            assertFalse("Unexpected AssertionError in SortNode", sortAssertionError.check(1_000L));
+        }
+        finally {
+            listeningLog.unregisterListener(sortAssertionError);
+        }
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionCachedQuery() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(1)
+            .returns(4)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY")
+            .withParams(2)
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .check();
+
+        // Check negative param.
+        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id FETCH FIRST (? + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -2);
+        assertThrowsSqlException("SELECT id FROM PERSON ORDER BY id DESC FETCH FIRST (? + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG, -2);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionNested() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM (SELECT id from PERSON ORDER BY id FETCH FIRST (? + 3) ROWS ONLY) " +
+            "ORDER BY id FETCH NEXT (1 + ?) ROWS ONLY")
+            .withParams(2, 1)
+            .returns(0)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithNvlAndCoalesce() {
+        createAndPopulateTable();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (1 + NVL(?, 10000)) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM PERSON ORDER BY id FETCH FIRST (COALESCE(?, 10000)) ROWS ONLY")
+            .withParams(2)
+            .returns(0)
+            .returns(1)
+            .check();
     }
 
     /** Tests the same query with different type of parameters to cover case with check right plans cache work. **/
@@ -334,5 +588,10 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     /** */
     private void assertUnexpectedNumberOfParameters(String qry, Object... params) {
         assertThrows(qry, IgniteSQLException.class, "Wrong number of query parameters", params);
+    }
+
+    /** */
+    private static BigDecimal moreThanMaxLong() {
+        return BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
     }
 }

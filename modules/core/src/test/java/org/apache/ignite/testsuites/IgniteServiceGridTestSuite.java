@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFail
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
+import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessageSerializationTest;
 import org.apache.ignite.internal.processors.service.ServiceConcurrentUndeployTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentDiscoveryListenerNotificationOrderTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentNonSerializableStaticConfigurationTest;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessing
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesLeftTest;
 import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentViaDeploymentSpiTest;
 import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceLocalStartOrderTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
 import org.apache.ignite.internal.processors.service.ServiceRedeploymentOnNodeLeftTest;
@@ -125,6 +127,8 @@ import org.junit.runners.Suite;
     GridServiceMetricsTest.class,
     IgniteServiceCallInterceptorTest.class,
     ServiceRedeploymentOnNodeLeftTest.class,
+    ServiceLocalStartOrderTest.class,
+    LazyServiceConfigurationMessageSerializationTest.class
 })
 public class IgniteServiceGridTestSuite {
     /** */

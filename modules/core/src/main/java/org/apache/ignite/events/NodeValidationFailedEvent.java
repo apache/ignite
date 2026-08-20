@@ -31,12 +31,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
  * @see EventType#EVT_NODE_VALIDATION_FAILED
  * @see GridComponent#validateNode
  */
-public class NodeValidationFailedEvent extends EventAdapter {
+public class NodeValidationFailedEvent extends DiscoveryEvent {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** The node that attempted to join cluster. */
-    private final ClusterNode evtNode;
 
     /** Validation result. */
     private final IgniteNodeValidationResult res;
@@ -49,15 +46,9 @@ public class NodeValidationFailedEvent extends EventAdapter {
      * @param res Joining node validation result.
      */
     public NodeValidationFailedEvent(ClusterNode node, ClusterNode evtNode, IgniteNodeValidationResult res) {
-        super(node, res.message(), EVT_NODE_VALIDATION_FAILED);
+        super(node, res.message(), EVT_NODE_VALIDATION_FAILED, evtNode);
 
-        this.evtNode = evtNode;
         this.res = res;
-    }
-
-    /** @return Node that couldn't join the topology due to a validation failure. */
-    public ClusterNode eventNode() {
-        return evtNode;
     }
 
     /** @return Joining node validation result. */

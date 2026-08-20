@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -331,7 +330,6 @@ class GridDeploymentCommunication {
                     "(node does not exist): " + nodeId);
     }
 
-
     /**
      * @param rsrcName Resource to undeploy.
      * @param rmtNodes Nodes to send request to.
@@ -376,9 +374,11 @@ class GridDeploymentCommunication {
                     ", requesters=" + nodeIds + ']');
         }
 
-        GridTopic.T1 resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        IgniteUuid resTopicId = IgniteUuid.fromUuid(ctx.localNodeId());
 
-        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName);
+        Object resTopic = TOPIC_CLASSLOAD.topic(resTopicId);
+
+        GridDeploymentRequest req = new GridDeploymentRequest(resTopicId, clsLdrId, rsrcName);
 
         // Send node IDs chain with request.
         req.nodeIds(nodeIds);

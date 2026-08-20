@@ -17,46 +17,52 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 
 /**
  * Internal message used when transmitting fields annotated with @Compress over the network.
  * <p>
  * WARNING: CompressedMessage is not intended for explicit use in messages.
  */
-public class CompressedMessage implements Message {
+public class CompressedMessage implements NonMarshallableMessage {
     /** Chunk size. */
     static final int CHUNK_SIZE = 10 * 1024;
 
-    /** Reader buffer capacity. */
-    private static final int BUFFER_CAPACITY = 10 * CHUNK_SIZE;
+    /**
+     * Maximum expansion ratio for raw deflate.
+     * Raw deflate cannot expand beyond roughly 1032:1; a larger ratio indicates a corrupted size header.
+     */
+    private static final int MAX_DEFLATE_EXPANSION_RATIO = 1032;
 
-    /** Temporary buffer for compressed data received over the network. */
-    private ByteBuffer tmpBuf;
+    /**
+     * Fixed additive margin for the expansion ratio check.
+     * Accounts for small constant overhead in deflate so the check doesn't falsely reject valid small messages.
+     */
+    private static final int MAX_DEFLATE_BLOCK_OVERHEAD = 64;
+
+    /** Compressed data chunks: filled by {@link #compress(ByteBuffer)} on send, by the serializer on receive. */
+    List<byte[]> chunks;
+
+    /** Index of the next chunk to send. */
+    private int chunkIdx;
 
     /** Raw data size. */
-    private int dataSize;
-
-    /** Chunked byte reader. */
-    private ChunkedByteReader chunkedReader;
+    int dataSize;
 
     /** Chunk. */
-    private byte[] chunk;
+    byte[] chunk;
 
     /** Flag indicating whether this is the last chunk. */
-    private boolean finalChunk;
+    boolean finalChunk;
 
     /** Compression level. */
     private int compressionLvl;
@@ -75,7 +81,7 @@ public class CompressedMessage implements Message {
         this.compressionLvl = compressionLvl;
 
         if (dataSize > 0)
-            chunkedReader = new ChunkedByteReader(compress(buf));
+            compress(buf);
     }
 
     /** @return Raw data size. */
@@ -90,206 +96,108 @@ public class CompressedMessage implements Message {
         return uncompress();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        while (true) {
-            if (chunk == null && chunkedReader != null) {
-                chunk = chunkedReader.nextChunk();
-
-                finalChunk = (chunk == null);
-            }
-
-            switch (writer.state()) {
-                case 0:
-                    if (!writer.writeInt(dataSize))
-                        return false;
-
-                    writer.incrementState();
-
-                    if (dataSize == 0)
-                        return true;
-
-                case 1:
-                    if (!writer.writeBoolean(finalChunk))
-                        return false;
-
-                    writer.incrementState();
-
-                    if (finalChunk)
-                        return true;
-
-                case 2:
-                    if (!writer.writeByteArray(chunk))
-                        return false;
-
-                    chunk = null;
-
-                    writer.decrementState();
-            }
-        }
+    /** @return Next chunk of data or null. */
+    public byte[] nextChunk() {
+        return chunkIdx < chunks.size() ? chunks.get(chunkIdx++) : null;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (tmpBuf == null)
-            tmpBuf = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
-
-        assert chunk == null : chunk;
-
-        while (true) {
-            switch (reader.state()) {
-                case 0:
-                    dataSize = reader.readInt();
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    if (dataSize == 0)
-                        return true;
-
-                    reader.incrementState();
-
-                case 1:
-                    finalChunk = reader.readBoolean();
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    if (finalChunk)
-                        return true;
-
-                    reader.incrementState();
-
-                case 2:
-                    chunk = reader.readByteArray();
-
-                    if (!reader.isLastRead())
-                        return false;
-
-                    if (chunk != null) {
-                        if (tmpBuf.remaining() <= CHUNK_SIZE) {
-                            ByteBuffer newTmpBuf = ByteBuffer.allocateDirect(tmpBuf.capacity() * 2);
-
-                            tmpBuf.flip();
-
-                            newTmpBuf.put(tmpBuf);
-
-                            tmpBuf = newTmpBuf;
-                        }
-
-                        tmpBuf.put(chunk);
-
-                        reader.decrementState();
-
-                        chunk = null;
-                    }
-            }
-        }
-    }
-
-    /**
-     * @param buf Buffer.
-     * @return Compressed data.
-     */
-    private byte[] compress(ByteBuffer buf) {
-        byte[] data = new byte[dataSize];
-
-        buf.get(data);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length);
+    /** @param buf Buffer. */
+    private void compress(ByteBuffer buf) {
         Deflater deflater = new Deflater(compressionLvl, true);
 
-        try (DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater)) {
-            dos.write(data);
-            dos.finish();
-        }
-        catch (IOException ex) {
-            throw new IgniteException(ex);
+        try {
+            deflater.setInput(buf);
+            deflater.finish();
+
+            chunks = new ArrayList<>(dataSize / CHUNK_SIZE + 1);
+
+            // Incompressible data may expand: raw-deflate worst case below CHUNK_SIZE is one stored block (~11 bytes overhead).
+            byte[] chunk0 = new byte[dataSize >= CHUNK_SIZE ? CHUNK_SIZE : dataSize + 16];
+
+            int len = 0;
+
+            while (!deflater.finished()) {
+                len += deflater.deflate(chunk0, len, chunk0.length - len);
+
+                if (len == chunk0.length && !deflater.finished()) {
+                    chunks.add(chunk0);
+
+                    chunk0 = new byte[CHUNK_SIZE];
+                    len = 0;
+                }
+            }
+
+            if (len > 0)
+                chunks.add(len == chunk0.length ? chunk0 : Arrays.copyOf(chunk0, len));
         }
         finally {
             deflater.end();
         }
-
-        return baos.toByteArray();
     }
 
     /** @return Uncompressed data. */
     private byte[] uncompress() {
-        if (tmpBuf == null)
-            return null;
+        if (chunks == null)
+            throw new IgniteException("Compressed stream is truncated [expected=" + dataSize + ", inflated=0]");
 
-        byte[] uncompressedData;
+        long compressedTotal = 0;
+
+        for (int i = 0; i < chunks.size(); i++)
+            compressedTotal += chunks.get(i).length;
+
+        // Maximum expansion ratio check to detect corrupted size headers.
+        if (dataSize > compressedTotal * MAX_DEFLATE_EXPANSION_RATIO + MAX_DEFLATE_BLOCK_OVERHEAD) {
+            throw new IgniteException("Invalid compressed message data size [dataSize=" + dataSize +
+                ", compressedBytes=" + compressedTotal + ']');
+        }
+
+        byte[] data = new byte[dataSize];
 
         Inflater inflater = new Inflater(true);
 
-        byte[] bytes = new byte[tmpBuf.position()];
+        try {
+            int off = 0;
+            int i = 0;
 
-        tmpBuf.flip();
-        tmpBuf.get(bytes);
+            for (; i < chunks.size() && off < dataSize; i++) {
+                inflater.setInput(chunks.get(i));
 
-        try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(bytes), inflater)) {
-            uncompressedData = iis.readAllBytes();
+                int n;
+
+                while (off < dataSize && (n = inflater.inflate(data, off, dataSize - off)) > 0)
+                    off += n;
+            }
+
+            if (off != dataSize)
+                throw new IgniteException("Compressed stream is truncated [expected=" + dataSize + ", inflated=" + off + ']');
+
+            // Any extra inflatable byte means the size header is understated.
+            byte[] probe = new byte[1];
+
+            while (true) {
+                if (inflater.inflate(probe, 0, 1) > 0)
+                    throw new IgniteException("Compressed stream is longer than expected [expected=" + dataSize + ']');
+
+                if (inflater.finished() || i == chunks.size())
+                    break;
+
+                inflater.setInput(chunks.get(i++));
+            }
         }
-        catch (IOException ex) {
-            throw new IgniteException(ex);
+        catch (DataFormatException e) {
+            throw new IgniteException(e);
         }
         finally {
             inflater.end();
         }
 
-        assert uncompressedData != null;
-        assert uncompressedData.length == dataSize : "Expected=" + dataSize + ", actual=" + uncompressedData.length;
+        chunks = null;
 
-        tmpBuf = null;
-
-        return uncompressedData;
+        return data;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CompressedMessage.class, this);
-    }
-
-    /** Byte reader returning data chunks of predefined size. */
-    private static class ChunkedByteReader {
-        /** Input data. */
-        private final byte[] inputData;
-
-        /** Current position. */
-        private int pos;
-
-        /** Constructor. */
-        ChunkedByteReader(byte[] inputData) {
-            this.inputData = inputData;
-        }
-
-        /** @return Next chunk of bytes or null. */
-        byte[] nextChunk() {
-            if (pos >= inputData.length)
-                return null;
-
-            int curChunkSize = Math.min(inputData.length - pos, CHUNK_SIZE);
-
-            byte[] chunk = new byte[curChunkSize];
-
-            System.arraycopy(inputData, pos, chunk, 0, curChunkSize);
-
-            pos += curChunkSize;
-
-            return chunk;
-        }
     }
 }

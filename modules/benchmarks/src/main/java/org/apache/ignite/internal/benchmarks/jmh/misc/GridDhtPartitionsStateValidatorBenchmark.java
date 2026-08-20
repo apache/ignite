@@ -179,12 +179,12 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
      */
     private static void run(int threads) throws Exception {
         JmhIdeBenchmarkRunner.create()
-                .forks(1)
-                .threads(threads)
-                .warmupIterations(5)
-                .measurementIterations(10)
-                .benchmarks(GridDhtPartitionsStateValidatorBenchmark.class.getSimpleName())
-                .jvmArguments("-XX:+UseG1GC", "-Xms4g", "-Xmx4g")
-                .run();
+            .forks(1)
+            .threads(threads)
+            .warmupIterations(5)
+            .measurementIterations(10)
+            .benchmarks(GridDhtPartitionsStateValidatorBenchmark.class.getSimpleName())
+            .jvmArguments("-XX:+UseG1GC", "-Xms4g", "-Xmx4g")
+            .run();
     }
 }

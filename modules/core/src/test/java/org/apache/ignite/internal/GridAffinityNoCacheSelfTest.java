@@ -284,13 +284,13 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
+        @Override public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
             throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        @Override public void marshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
     }

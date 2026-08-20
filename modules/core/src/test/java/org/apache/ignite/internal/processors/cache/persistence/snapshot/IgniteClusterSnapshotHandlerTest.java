@@ -61,6 +61,9 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
     /** Custom snapshot handlers. */
     private final List<SnapshotHandler<?>> handlers = new ArrayList<>();
 
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
+
     /** Extensions plugin provider. */
     private final PluginProvider<PluginConfiguration> pluginProvider = new AbstractTestPluginProvider() {
         @Override public String name() {
@@ -84,7 +87,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
-        return Integer::new;
+        return Integer::valueOf;
     }
 
     /**
@@ -142,11 +145,13 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg);
+        runWithLoggedThreadDump(() ->
+            GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         changeMetadataRequestIdOnDisk(reqIdRef.get());
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
@@ -212,7 +217,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg);
+        runWithLoggedThreadDump(() ->
+            GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         failCreateFlag.set(false);
 
@@ -224,11 +230,13 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteFuture<Void> fut0 = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), IgniteCheckedException.class, expMsg);
+        runWithLoggedThreadDump(() ->
+            GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), IgniteCheckedException.class, expMsg));
 
         failRestoreFlag.set(false);
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
@@ -406,7 +414,8 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             ignite.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
 
-            snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT);
+            runWithLoggedThreadDump(() ->
+                snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT));
         }
         finally {
             U.delete(snpDir);

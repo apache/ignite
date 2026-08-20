@@ -21,8 +21,8 @@ import java.io.File;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -82,7 +82,7 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
 
-        GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
+        GridTestUtils.dumpHeap(HEAP_DUMP_FILE_NAME, true);
 
         File dumpFile = new File(HEAP_DUMP_FILE_NAME);
 
@@ -96,10 +96,10 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
             stopAllGrids();
 
-            GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
+            GridTestUtils.dumpHeap(HEAP_DUMP_FILE_NAME, true);
         }
 
-        GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
+        GridTestUtils.dumpHeap(HEAP_DUMP_FILE_NAME, true);
 
         final float leakSize = (float)(dumpFile.length() - size0) / 1024 / 1024 / NODES / RESTARTS;
 

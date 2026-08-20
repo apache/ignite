@@ -20,10 +20,8 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 import java.util.List;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Benchmark user defined functions in SQL queries.
@@ -72,10 +70,8 @@ public class JmhSqlUdfBenchmark extends JmhSqlAbstractBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhSqlUdfBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhSqlUdfBenchmark.class.getSimpleName())
+            .run();
     }
 }

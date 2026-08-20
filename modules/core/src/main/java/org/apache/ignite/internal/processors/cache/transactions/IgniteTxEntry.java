@@ -25,13 +25,14 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -47,7 +48,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +61,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry implements GridPeerDeployAware, Message {
+public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, CacheIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -92,6 +94,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Skip read-through cache store flag bit mask. */
     private static final int TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK = 1 << 5;
+
+    /** Handle binary in interceptor operation bit mask. */
+    private static final int KEEP_BINARY_INTERCEPTOR_FLAG_MASK = 1 << 6;
 
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
@@ -130,7 +135,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Transform. */
     @GridToStringInclude
-    private Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
+    @Marshalled("transformClosBytes")
+    Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol;
 
     /** Transient field for calculated entry processor value. */
     private T2<GridCacheOperation, CacheObject> entryProcessorCalcVal;
@@ -192,7 +198,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
-    /** Expiry policy transfer flag. */
+    /** Sender-side flag: the entry travels with its expiry policy (near prepare requests only). */
     private boolean transferExpiryPlc;
 
     /** Expiry policy bytes. */
@@ -280,6 +286,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param conflictVer Data center replication version.
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param addReader Add reader flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
@@ -294,6 +301,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         GridCacheVersion conflictVer,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -312,6 +320,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
+        keepBinaryInInterceptor(keepBinaryInInterceptor);
         keepBinary(keepBinary);
         addReader(addReader);
 
@@ -588,7 +597,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return Cache ID.
      */
-    public int cacheId() {
+    @Override public int cacheId() {
         return cacheId;
     }
 
@@ -618,10 +627,24 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @return Skip store flag.
+     * @return Skip read through flag.
      */
     public boolean skipReadThrough() {
         return isFlag(TX_ENTRY_SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /**
+     * @param handleBinary Handle binary in interceptor flag.
+     */
+    public void keepBinaryInInterceptor(boolean handleBinary) {
+        setFlag(handleBinary, KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
+    }
+
+    /**
+     * @return Handle binary in interceptor operation flag.
+     */
+    public boolean keepBinaryInInterceptor() {
+        return isFlag(KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
@@ -1021,52 +1044,35 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.filtersSet = filtersSet;
     }
 
-    /**
-     * @param ctx Context.
-     * @param transferExpiry {@code True} if expire policy should be marshalled.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshal(GridCacheSharedContext<?, ?> ctx, boolean transferExpiry) throws IgniteCheckedException {
-        if (filters != null) {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.prepareMarshal(this.ctx);
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        boolean transfer = transferExpiryPlc && expiryPlc != null && expiryPlc != ctx.expiry();
 
-        // Do not serialize filters if they are null.
-        if (transformClosBytes == null && entryProcessorsCol != null)
-            transformClosBytes = CU.marshal(this.ctx, entryProcessorsCol);
-
-        if (transferExpiry)
-            transferExpiryPlc = expiryPlc != null && expiryPlc != this.ctx.expiry();
-
-        key.prepareMarshal(context().cacheObjectContext());
-
-        val.marshal(context());
-
-        if (transferExpiryPlc) {
+        if (transfer) {
             if (expiryPlcBytes == null)
-                expiryPlcBytes = CU.marshal(this.ctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
+                expiryPlcBytes = U.marshal(marsh, new IgniteExternalizableExpiryPolicy(expiryPlc));
         }
         else
             expiryPlcBytes = null;
+    }
 
-        if (oldVal != null)
-            oldVal.marshal(context());
+    /** {@inheritDoc} */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (filters == null)
+            filters = CU.empty0();
+
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = U.unmarshal(marsh, expiryPlcBytes, clsLdr);
     }
 
     /**
-     * Prepares this entry to unmarshall. In particular, this method initialize a cache context.
-     *
      * @param ctx Cache context.
      * @param topVer Topology version that is used to validate a cache context.
      *               If this parameter is {@code null} then validation will be skipped.
      * @param near Near flag.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void prepareUnmarshal(
-        GridCacheSharedContext<?, ?> ctx,
+    public void initializeContext(GridCacheSharedContext<?, ?> ctx,
         AffinityTopologyVersion topVer,
         boolean near
     ) throws IgniteCheckedException {
@@ -1087,53 +1093,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * Unmarshalls entry.
-     *
-     * @param ctx Cache context.
-     * @param near Near flag.
-     * @param clsLdr Class loader.
-     * @throws IgniteCheckedException If un-marshalling failed.
-     */
-    public void unmarshal(
-        GridCacheSharedContext<?, ?> ctx,
-        boolean near,
-        ClassLoader clsLdr
-    ) throws IgniteCheckedException {
-
-        if (this.ctx == null)
-            prepareUnmarshal(ctx, null, near);
-
-        CacheObjectValueContext coctx = this.ctx.cacheObjectContext();
-
-        if (coctx == null)
-            throw new CacheInvalidStateException(
-                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
-
-        // Unmarshal transform closure anyway if it exists.
-        if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = U.unmarshal(ctx, transformClosBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
-
-        if (filters == null)
-            filters = CU.empty0();
-        else {
-            for (CacheEntryPredicate p : filters) {
-                if (p != null)
-                    p.finishUnmarshal(this.ctx, clsLdr);
-            }
-        }
-
-        key.finishUnmarshal(coctx, clsLdr);
-
-        val.unmarshal(coctx, clsLdr);
-
-        if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
-
-        if (hasOldValue())
-            oldVal.unmarshal(coctx, clsLdr);
-    }
-
-    /**
      * @param expiryPlc Expiry policy.
      */
     public void expiry(@Nullable ExpiryPolicy expiryPlc) {
@@ -1145,6 +1104,13 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     @Nullable public ExpiryPolicy expiry() {
         return expiryPlc;
+    }
+
+    /**
+     * @param transferExpiryPlc {@code True} if this entry travels with its expiry policy.
+     */
+    public void transferExpiryPolicy(boolean transferExpiryPlc) {
+        this.transferExpiryPlc = transferExpiryPlc;
     }
 
     /**

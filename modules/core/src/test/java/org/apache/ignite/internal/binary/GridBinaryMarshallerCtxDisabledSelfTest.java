@@ -29,7 +29,6 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -120,11 +119,6 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public boolean isSystemType(String typeName) {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgnitePredicate<String> classNameFilter() {
-            return null;
         }
 
         /** {@inheritDoc} */

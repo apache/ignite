@@ -25,11 +25,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -38,6 +40,19 @@ import static java.util.Collections.singletonList;
  * Limit / offset tests.
  */
 public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
+    /** Log listener. */
+    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** */
+    private static final String ILLEGAL_FETCH_VAL_ERR_MSG = "Illegal value of fetch / limit. " +
+        "The value must be non-negative and less than or equal to 9223372036854775807";
+
+    /** */
+    private static final String ENCOUNTERED_ERR_MSG = "Encountered";
+
+    /** */
+    private static final String FAIL_PARSE_ERR_MSG = "Failed to parse query";
+
     /** */
     private static IgniteCache<Integer, String> cacheRepl;
 
@@ -78,6 +93,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             .addQueryField("val", String.class.getName(), null);
 
         return super.getConfiguration(igniteInstanceName)
+            .setGridLogger(listeningLog)
             .setCacheConfiguration(
                 cacheConfiguration()
                     .setName(eRepl.getTableName())
@@ -93,46 +109,58 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
     /** */
     @Test
-    public void testNestedLimitOffsetWithUnion() {
-        sql("INSERT into TEST_REPL VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')");
+    public void testNestedLimitOffsetWithUnion() throws Exception {
+        fillCache(cacheRepl, 4);
 
-        assertQuery("(SELECT id FROM TEST_REPL WHERE id = 2) UNION ALL " +
+        assertQuery("(SELECT id FROM TEST_REPL WHERE id = 1) UNION ALL " +
             "SELECT id FROM (select id from (SELECT id FROM TEST_REPL OFFSET 2) order by id OFFSET 1)"
-        ).returns(2).returns(4).check();
+        ).returns(1).returns(3).check();
     }
 
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {
-        String bigInt = BigDecimal.valueOf(10000000000L).toString();
-
-        assertThrows("SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS",
+        assertThrows("SELECT * FROM TEST_REPL OFFSET " + moreThanMaxLong() + " ROWS",
             SqlValidatorException.class, "Illegal value of offset");
 
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit");
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + moreThanMaxLong() + " ROWS ONLY",
+            SqlValidatorException.class, ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrows("SELECT * FROM TEST_REPL LIMIT " + bigInt,
-            SqlValidatorException.class, "Illegal value of fetch / limit");
+        assertThrows("SELECT * FROM TEST_REPL LIMIT " + moreThanMaxLong(),
+            SqlValidatorException.class, ILLEGAL_FETCH_VAL_ERR_MSG);
 
-        assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
-            IgniteSQLException.class, null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY", FAIL_PARSE_ERR_MSG);
 
-        assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS",
-            IgniteSQLException.class, null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1 ROWS", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -1.5 ROWS", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET -0.5 ROWS", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS", null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL OFFSET id ROWS", null);
 
-        assertThrows("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS",
-            IgniteSQLException.class, null);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -1 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -1.5 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST -0.5 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST 2+1 ROWS ONLY", ENCOUNTERED_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST id ROWS ONLY", ENCOUNTERED_ERR_MSG);
+    }
 
-        // Check with parameters
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1, -1);
+    /** */
+    @Test
+    public void testFractionalLimitOffset() throws Exception {
+        fillCache(cacheRepl, 4);
 
-        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS",
-            SqlValidatorException.class, "Illegal value of offset", -1);
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 0.5").check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.2").returns(0).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.5").returns(0).check();
 
-        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
-            SqlValidatorException.class, "Illegal value of fetch / limit", -1);
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 0.5 ROWS ONLY").check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.3 ROWS ONLY").returns(0).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.6 ROWS ONLY").returns(0).check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 0.5 ROWS")
+            .returns(0).returns(1).returns(2).returns(3).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.3 ROWS").returns(2).returns(3).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.6 ROWS").returns(2).returns(3).check();
     }
 
     /**
@@ -184,6 +212,154 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
         fillCache(cachePart, 5);
 
         assertQuery("SELECT (SELECT id FROM TEST_PART ORDER BY id LIMIT 1 OFFSET 10)").returns(NULL_RESULT).check();
+    }
+
+    /** */
+    @Test
+    public void testInvalidFetchExpression() {
+        BigDecimal moreThanMaxLong = moreThanMaxLong();
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (" + moreThanMaxLong + ") ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (" + moreThanMaxLong + " + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (1 + " + moreThanMaxLong + ") ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (-2) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (2 - 3) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (1 + 2 - 4) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (-1.5) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST ('abc') ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (SUBSTRING('abc', 1, 1)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (CAST(NULL AS INTEGER)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (NULLIF(1, 1)) ROWS ONLY",
+            ILLEGAL_FETCH_VAL_ERR_MSG);
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (id + 1) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST (ABS(id)) ROWS ONLY", ILLEGAL_FETCH_VAL_ERR_MSG);
+
+        assertThrowsSqlException("SELECT * FROM TEST_REPL FETCH FIRST SQRT(4) ROWS ONLY", ENCOUNTERED_ERR_MSG);
+    }
+
+    /** */
+    @Test
+    public void testFetchExpression() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1) ROWS ONLY")
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + 5 - 2) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id DESC FETCH FIRST (1 + (2 - 1) + 1) ROWS ONLY")
+            .returns(4)
+            .returns(3)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (ABS(-2)) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + ABS(-2)) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (SQRT(4) + 1 + 0) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (EXTRACT(YEAR FROM CURRENT_DATE)) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testZeroFetchExpressionWithLiteralDoesNotFailFragments() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        LogListener sortAssertionError = LogListener.matches(msg ->
+            msg.contains(AssertionError.class.getName()) && msg.contains(SortNode.class.getName())).build();
+
+        listeningLog.registerListener(sortAssertionError);
+
+        try {
+            assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (ABS(0)) ROWS ONLY")
+                .resultSize(0)
+                .check();
+
+            assertFalse("Unexpected AssertionError in SortNode", sortAssertionError.check(1_000L));
+        }
+        finally {
+            listeningLog.unregisterListener(sortAssertionError);
+        }
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionNested() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM (SELECT id from TEST_REPL ORDER BY id FETCH FIRST (2 + 3) ROWS ONLY) " +
+            "ORDER BY id FETCH NEXT (1 + 1) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithNvlAndCoalesce() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (1 + NVL(1, 10000)) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST (COALESCE(2, 10000)) ROWS ONLY")
+            .returns(0)
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testFetchExpressionWithoutPushDown() throws Exception {
+        fillCache(cacheRepl, 5);
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "
+                + "FETCH FIRST (ABS(0.5)) ROWS ONLY")
+            .resultSize(0)
+            .check();
+
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "
+                + "FETCH FIRST (RAND_INTEGER(1) + 2) ROWS ONLY")
+            .returns(1)
+            .returns(2)
+            .check();
     }
 
     /**
@@ -269,5 +445,10 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
             sb.append("FETCH FIRST ").append(param ? "?" : Integer.toString(lim)).append(" ROWS ONLY ");
 
         return sb.toString();
+    }
+
+    /** */
+    private static BigDecimal moreThanMaxLong() {
+        return BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
     }
 }

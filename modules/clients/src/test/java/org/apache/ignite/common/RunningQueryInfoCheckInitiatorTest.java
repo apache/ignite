@@ -336,7 +336,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
                 fail("Timeout. Cannot find query with: " + sqlMatch);
 
             List<List<?>> res = node.context().query().querySqlFields(
-                new SqlFieldsQuery("SELECT sql, initiator_id FROM SYS.SQL_QUERIES"), false).getAll();
+                new SqlFieldsQuery("SELECT sql, initiator_id FROM SYS.SQL_QUERIES WHERE MAP_QUERY = FALSE"), false).getAll();
 
             for (List<?> row : res) {
                 if (((String)row.get(0)).toUpperCase().contains(sqlMatch.toUpperCase()))
@@ -356,7 +356,7 @@ public class RunningQueryInfoCheckInitiatorTest extends JdbcThinAbstractSelfTest
 
         while (true) {
             List<List<?>> res = node.context().query().querySqlFields(
-                new SqlFieldsQuery("SELECT * FROM SYS.SQL_QUERIES"), false).getAll();
+                new SqlFieldsQuery("SELECT * FROM SYS.SQL_QUERIES WHERE MAP_QUERY = FALSE"), false).getAll();
 
             res.stream().forEach(System.out::println);
 

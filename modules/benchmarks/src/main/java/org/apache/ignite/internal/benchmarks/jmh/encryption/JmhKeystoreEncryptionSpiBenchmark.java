@@ -20,6 +20,7 @@ package org.apache.ignite.internal.benchmarks.jmh.encryption;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -29,9 +30,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
@@ -114,14 +112,12 @@ public class JmhKeystoreEncryptionSpiBenchmark extends JmhAbstractBenchmark {
 
     /** */
     public static void main(String[] args) throws Exception {
-        Options opt = new OptionsBuilder()
-            .include(JmhKeystoreEncryptionSpiBenchmark.class.getSimpleName())
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhKeystoreEncryptionSpiBenchmark.class.getSimpleName())
             .threads(1)
             .forks(1)
             .warmupIterations(10)
             .measurementIterations(20)
-            .build();
-
-        new Runner(opt).run();
+            .run();
     }
 }

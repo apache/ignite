@@ -79,7 +79,10 @@ a| This parameter controls the way the rebalancing process is performed. Possibl
 | `IGNORE`
 
 |`readFromBackup`
-| [[readfrombackup]] Read requested cache entry from the backup partition if it is available on the local node instead of making a request to the primary partition (which can be located on the remote nodes).
+| [[readfrombackup]] Read requested cache entry from the backup partition if it is available on the local node
+instead of making a request to the primary partition (which can be located on the remote nodes).
+In link:clustering/multi-data-center[multi data center deployments], this setting allows Ignite to read from a backup
+located in the same data center when such a backup is available.
 |  `true`
 
 |`queryPrallelism` | The number of threads in a single node to process a SQL query executed on the cache. Refer to the link:SQL/sql-tuning#query-parallelism[Query Parallelism] section in the Performance guide for more information.

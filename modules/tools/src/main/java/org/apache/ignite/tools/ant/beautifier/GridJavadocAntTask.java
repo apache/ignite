@@ -156,20 +156,17 @@ public class GridJavadocAntTask extends MatchingTask {
 
             String javaVer = System.getProperty("java.specification.version");
 
-            boolean jdk11 = "11".equals(javaVer);
             boolean jdk17 = "17".equals(javaVer);
 
-            if (!jdk11 && !jdk17) {
-                throw new IllegalArgumentException("GridJavadocAntTask is only tested for Java 11 and 17. " +
+            if (!jdk17) {
+                throw new IllegalArgumentException("GridJavadocAntTask is only tested for Java 17. " +
                     "Current version: " + javaVer + ". " +
                     "Please check html rendering of documentation package groups works correctly and add support then.");
             }
 
             if ("index.html".equals(file.getName())) {
                 // Try to find Other Packages section.
-                Jerry otherPackages = jdk11
-                    ? doc.find("div.contentContainer table.overviewSummary caption span:contains('Other Packages')")
-                    : doc.find("button.table-tab:contains('Other Packages')");
+                Jerry otherPackages = doc.find("button.table-tab:contains('Other Packages')");
 
                 if (otherPackages.size() > 0) {
                     System.err.println("[ERROR]: 'Other Packages' section should not be present, but found: " +
@@ -180,34 +177,18 @@ public class GridJavadocAntTask extends MatchingTask {
                         "<configuration> / <groups>");
                 }
 
-                int pkgGrps = jdk11
-                    ? doc.find("div.contentContainer table.overviewSummary caption span.tableTab").size()
-                    : doc.find("button.table-tab").size();
+                int pkgGrps = doc.find("button.table-tab").size();
 
                 if (pkgGrps == 0) {
                     throw new IllegalArgumentException("Documentation package groups missed. Please add packages " +
                         "description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / " +
                         "<configuration> / <groups>");
                 }
-
-                if (jdk11) {
-                    // This limit is set for JDK 11. Each group is represented as a tab. Tabs are enumerated with
-                    // a number 2^N where N is a sequential number for a tab. For 32 tabs (+ the "All Packages" tab)
-                    // the number is overflowed and the tabulation becomes broken. See var data in "index.html".
-                    // JDK 17 uses CSS class-based tab switching, so this limit does not apply.
-                    if (pkgGrps > 30) {
-                        throw new IllegalArgumentException("Too many package groups: " + pkgGrps + ". The limit"
-                            + " is 30 due to the javadoc limitations. Please reduce groups in parent/pom.xml"
-                            + " inside <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
-                    }
-                }
             }
             else if (!isViewHtml(file)) {
                 // TODO: fix the description block location IGNITE-22650
                 // Try to find a class description block.
-                Jerry descBlock = jdk11
-                    ? doc.find("div.contentContainer .description")
-                    : doc.find("section.class-description");
+                Jerry descBlock = doc.find("section.class-description");
 
                 if (descBlock.size() == 0)
                     throw new IllegalArgumentException("Class doesn't have description in file: " + file);

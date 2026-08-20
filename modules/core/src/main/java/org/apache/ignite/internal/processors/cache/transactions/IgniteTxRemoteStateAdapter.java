@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  */
 public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState {
     /** Active cache IDs. */
-    private GridIntList activeCacheIds = new GridIntList();
+    private final GridIntList activeCacheIds = new GridIntList();
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {

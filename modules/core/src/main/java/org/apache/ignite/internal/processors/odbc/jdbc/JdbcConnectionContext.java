@@ -267,7 +267,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         protoCtx = new JdbcProtocolContext(ver, features, true);
 
-        initClientDescriptor("jdbc-thin");
+        initClientContext("jdbc-thin");
 
         parser = new JdbcMessageParser(ctx, protoCtx);
 

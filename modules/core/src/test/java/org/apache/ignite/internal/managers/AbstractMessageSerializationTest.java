@@ -29,7 +29,10 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
@@ -44,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.Integer.MAX_VALUE;
+import static org.apache.ignite.plugin.extensions.communication.CollectionImplementationType.HASH_SET;
 import static org.junit.Assert.assertEquals;
 
 /** */
@@ -102,13 +106,13 @@ public abstract class AbstractMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!msgFactory.serializer(msgType).writeTo(msg, writer)) {
+        while (!MessageSerialization.writeTo(msgFactory, msg, writer)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!msgFactory.serializer(msgType).readFrom(msg, reader)) {
+        while (!MessageSerialization.readFrom(msgFactory, msg, reader)) {
             // No-op.
         }
 
@@ -302,12 +306,22 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
-            return writeField(type.set() ? Set.class : Collection.class);
+            return writeField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
         }
 
         /** {@inheritDoc} */
         @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
             return writeField(type.linked() ? LinkedHashMap.class : HashMap.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeIgniteProductVersion(IgniteProductVersion ver) {
+            return writeField(IgniteProductVersion.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeGridCacheVersion(GridCacheVersion ver) {
+            return writeField(GridCacheVersion.class);
         }
 
         /** {@inheritDoc} */
@@ -559,7 +573,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
-            readField(type.set() ? Set.class : Collection.class);
+            readField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
 
             return null;
         }
@@ -567,6 +581,20 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
             readField(type.linked() ? LinkedHashMap.class : HashMap.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteProductVersion readIgniteProductVersion() {
+            readField(IgniteProductVersion.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion readGridCacheVersion() {
+            readField(GridCacheVersion.class);
 
             return null;
         }

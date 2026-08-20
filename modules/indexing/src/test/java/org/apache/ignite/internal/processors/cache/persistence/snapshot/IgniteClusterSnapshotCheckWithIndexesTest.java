@@ -36,6 +36,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
  * Cluster-wide snapshot test check command with indexes.
  */
 public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotSelfTest {
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckEmptyCache() throws Exception {
@@ -87,7 +90,9 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
             cache2.put(i, new Account(i, i));
         }
 
-        createAndCheckSnapshot(grid(0), SNAPSHOT_NAME, null, TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            createAndCheckSnapshot(grid(0), SNAPSHOT_NAME, null, TIMEOUT)
+        );
 
         IdleVerifyResult res = grid(0).context().cache().context().snapshotMgr()
             .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();

@@ -20,13 +20,18 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
-/** */
-public class FragmentDescription implements MarshallableMessage {
+/**
+ * Query fragment description. As a {@link Message}, has to be prepared to send to another node and restored after
+ * receiving from another node.
+ *
+ * @see #preparedToSend()
+ * @see #receivedFragment()
+ */
+public class FragmentDescription implements Message {
     /** */
     @Order(0)
     long fragmentId;
@@ -41,7 +46,10 @@ public class FragmentDescription implements MarshallableMessage {
 
     /** */
     @Order(3)
-    ColocationGroup target;
+    @Nullable ColocationGroup target;
+
+    /** Transient flag of {@link #receivedFragment()}-once-invoked. */
+    boolean received;
 
     /** */
     public FragmentDescription() {
@@ -49,12 +57,38 @@ public class FragmentDescription implements MarshallableMessage {
     }
 
     /** */
-    public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
+    public FragmentDescription(long fragmentId, FragmentMapping mapping, @Nullable ColocationGroup target,
         Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
-        this.target = target;
         this.remoteSources = remoteSources;
+
+        if (target != null)
+            this.target = target.explicitMapping();
+    }
+
+    /** Prepares fragment description as {@link Message} to send to another node. */
+    public FragmentDescription preparedToSend() {
+        if (target != null)
+            target.prepareToSend();
+
+        mapping.colocationGrps.forEach(ColocationGroup::prepareToSend);
+
+        return this;
+    }
+
+    /** Properly unwraps fragment description as {@link Message} after receiving from another node. */
+    public FragmentDescription receivedFragment() {
+        if (!received) {
+            if (target != null)
+                target.afterReceive();
+
+            mapping.colocationGrps.forEach(ColocationGroup::afterReceive);
+
+            received = true;
+        }
+
+        return this;
     }
 
     /** */
@@ -73,7 +107,7 @@ public class FragmentDescription implements MarshallableMessage {
     }
 
     /** */
-    public ColocationGroup target() {
+    public @Nullable ColocationGroup target() {
         return target;
     }
 
@@ -95,16 +129,5 @@ public class FragmentDescription implements MarshallableMessage {
     /** */
     public void mapping(FragmentMapping mapping) {
         this.mapping = mapping;
-    }
-
-    /** */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (target != null)
-            target = target.explicitMapping();
-    }
-
-    /** */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        // No-op.
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -307,33 +308,38 @@ class ServiceDeploymentTask {
         if (!depActions.servicesToDeploy().isEmpty()) {
             final Collection<UUID> evtTopNodes = nodeIds(ctx.discovery().nodes(evtTopVer));
 
-            depActions.servicesToDeploy().forEach((srvcId, desc) -> {
-                try {
-                    ServiceConfiguration cfg = desc.configuration();
+            depActions.servicesToDeploy().entrySet().stream()
+                .sorted(Comparator.comparingInt(e -> e.getValue().configuration().getLocalStartOrder()))
+                .forEach(entry -> {
+                    IgniteUuid srvcId = entry.getKey();
+                    ServiceInfo desc = entry.getValue();
 
-                    TreeMap<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
+                    try {
+                        ServiceConfiguration cfg = desc.configuration();
 
-                    Map<UUID, Integer> top = reassign(srvcId, cfg, evtTopVer, oldTop);
+                        TreeMap<UUID, Integer> oldTop = filterDeadNodes(evtTopNodes, desc.topologySnapshot());
 
-                    expDeps.put(srvcId, top);
+                        Map<UUID, Integer> top = reassign(srvcId, cfg, evtTopVer, oldTop);
 
-                    Integer expCnt = top.getOrDefault(ctx.localNodeId(), 0);
+                        expDeps.put(srvcId, top);
 
-                    if (expCnt > srvcProc.localInstancesCount(srvcId)) {
-                        srvcProc.deployment().deployerBlockingSectionBegin();
+                        Integer expCnt = top.getOrDefault(ctx.localNodeId(), 0);
 
-                        try {
-                            srvcProc.redeploy(srvcId, cfg, top);
-                        }
-                        finally {
-                            srvcProc.deployment().deployerBlockingSectionEnd();
+                        if (expCnt > srvcProc.localInstancesCount(srvcId)) {
+                            srvcProc.deployment().deployerBlockingSectionBegin();
+
+                            try {
+                                srvcProc.redeploy(srvcId, cfg, top);
+                            }
+                            finally {
+                                srvcProc.deployment().deployerBlockingSectionEnd();
+                            }
                         }
                     }
-                }
-                catch (IgniteCheckedException e) {
-                    depErrors.computeIfAbsent(srvcId, c -> new ArrayList<>()).add(e);
-                }
-            });
+                    catch (IgniteCheckedException e) {
+                        depErrors.computeIfAbsent(srvcId, c -> new ArrayList<>()).add(e);
+                    }
+                });
         }
 
         createAndSendSingleDeploymentsMessage(depId, depErrors);
@@ -484,25 +490,28 @@ class ServiceDeploymentTask {
 
                     final Map<IgniteUuid, ServiceInfo> services = srvcProc.deployedServices();
 
-                    fullTops.forEach((srvcId, top) -> {
-                        Integer expCnt = top.snapshot().getOrDefault(ctx.localNodeId(), 0);
+                    fullTops.entrySet().stream()
+                        .sorted(Comparator.comparingInt(e -> services.get(e.getKey()).configuration().getLocalStartOrder()))
+                        .forEach(entry -> {
+                            IgniteUuid srvcId = entry.getKey();
+                            ServiceTopology top = entry.getValue();
 
-                        if (expCnt < srvcProc.localInstancesCount(srvcId)) { // Undeploy exceed instances
-                            ServiceInfo desc = services.get(srvcId);
+                            Integer expCnt = top.snapshot().getOrDefault(ctx.localNodeId(), 0);
 
-                            assert desc != null;
+                            if (expCnt < srvcProc.localInstancesCount(srvcId)) { // Undeploy exceed instances
+                                ServiceInfo desc = services.get(srvcId);
 
-                            ServiceConfiguration cfg = desc.configuration();
+                                ServiceConfiguration cfg = desc.configuration();
 
-                            try {
-                                srvcProc.redeploy(srvcId, cfg, top.snapshot());
+                                try {
+                                    srvcProc.redeploy(srvcId, cfg, top.snapshot());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    log.error("Error occured during cancel exceed service instances: " +
+                                        "[srvcId=" + srvcId + ", name=" + desc.name() + ']', e);
+                                }
                             }
-                            catch (IgniteCheckedException e) {
-                                log.error("Error occured during cancel exceed service instances: " +
-                                    "[srvcId=" + srvcId + ", name=" + desc.name() + ']', e);
-                            }
-                        }
-                    });
+                        });
 
                     completeSuccess();
                 }

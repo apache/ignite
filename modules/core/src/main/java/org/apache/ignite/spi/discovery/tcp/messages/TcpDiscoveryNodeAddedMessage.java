@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** Added node. */
     @Order(0)
     TcpDiscoveryNode node;
@@ -193,15 +193,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableM
     /** Clears discovery data to minimize message size. */
     public void clearDiscoveryData() {
         dataPacket = null;
-    }
-
-    /**
-     * Clears unmarshalled discovery data to minimize message size.
-     * These data are used only on "collect" stage and are not part of persistent state.
-     */
-    public void clearUnmarshalledDiscoveryData() {
-        if (dataPacket != null)
-            dataPacket.clearUnmarshalledJoiningNodeData();
     }
 
     /** @return First grid node start time. */

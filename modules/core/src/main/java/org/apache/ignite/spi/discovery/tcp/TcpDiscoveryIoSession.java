@@ -32,9 +32,14 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -43,8 +48,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
  * Handles I/O operations between discovery nodes in the cluster. This class encapsulates the socket connection used
@@ -145,12 +148,12 @@ public class TcpDiscoveryIoSession {
      * @return Deserialized message instance.
      * @throws IgniteCheckedException If deserialization fails.
      */
-    <T> T readMessage() throws IgniteCheckedException, IOException {
+    <T extends Message> T readMessage() throws IgniteCheckedException, IOException {
         try {
             byte b0 = (byte)in.read();
             byte b1 = (byte)in.read();
 
-            short msgType = makeMessageType(b0, b1);
+            short msgType = CommonUtils.makeMessageType(b0, b1);
 
             Message msg;
 
@@ -167,8 +170,6 @@ public class TcpDiscoveryIoSession {
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
 
-            MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
-
             boolean finished;
 
             do {
@@ -181,7 +182,7 @@ public class TcpDiscoveryIoSession {
 
                 msgBuf.limit(read);
 
-                finished = msgSer.readFrom(msg, msgReader);
+                finished = MessageSerialization.readFrom(spi.messageFactory(), msg, msgReader);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
@@ -197,6 +198,10 @@ public class TcpDiscoveryIoSession {
             }
             while (!finished);
 
+            GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
+
+            DiscoveryMarshalling.unmarshal(msg, kctx);
+
             return (T)msg;
         }
         catch (Exception e) {
@@ -207,7 +212,7 @@ public class TcpDiscoveryIoSession {
             if (e instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e;
 
-            throw new IgniteCheckedException(e);
+            throw new IgniteCheckedException("Failed to read a discovery message.", e);
         }
     }
 
@@ -238,8 +243,10 @@ public class TcpDiscoveryIoSession {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    void serializeMessage(Message m, OutputStream out) throws IOException {
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+    void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
+        GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
+
+        DiscoveryMarshalling.marshal(m, kctx, null);
 
         msgWriter.reset();
         msgWriter.setBuffer(msgBuf);
@@ -250,7 +257,7 @@ public class TcpDiscoveryIoSession {
             // Should be cleared before first operation.
             msgBuf.clear();
 
-            finished = msgSer.writeTo(m, msgWriter);
+            finished = MessageSerialization.writeTo(spi.messageFactory(), m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }

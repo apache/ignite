@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
+package org.apache.ignite.snippets.services;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.services.ServiceCallContext;

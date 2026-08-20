@@ -22,8 +22,8 @@ import org.apache.ignite.internal.IgniteInternalWrapper;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 
-/** */
-public abstract class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
+/** Represents wrapper containing an arbitrary object along with {@link OperationContextSnapshot}. */
+public class OperationContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
     /** */
     protected final T delegate;
 
@@ -31,23 +31,30 @@ public abstract class OperationContextAwareWrapper<T> implements IgniteInternalW
     protected final OperationContextSnapshot snapshot;
 
     /** */
+    public OperationContextAwareWrapper(T delegate, OperationContextSnapshot snapshot) {
+        assert delegate != null;
+
+        this.delegate = delegate;
+        this.snapshot = snapshot;
+    }
+
+    /** {@inheritDoc} */
     @Override public T delegate() {
         return delegate;
     }
 
     /** */
-    protected OperationContextAwareWrapper(T delegate, OperationContextSnapshot snapshot) {
-        this.delegate = delegate;
-        this.snapshot = snapshot;
+    public OperationContextSnapshot contextSnapshot() {
+        return snapshot;
     }
 
     /** */
-    protected static <T> T wrap(T delegate, BiFunction<T, OperationContextSnapshot, T> wrapper) {
+    public static <T> T wrap(T delegate, BiFunction<T, OperationContextSnapshot, T> wrapper) {
         return wrap(delegate, wrapper, false);
     }
 
     /** */
-    protected static <T> T wrap(T delegate, BiFunction<T, OperationContextSnapshot, T> wrapper, boolean ignoreEmptyContext) {
+    public static <T> T wrap(T delegate, BiFunction<T, OperationContextSnapshot, T> wrapper, boolean ignoreEmptyContext) {
         if (delegate == null || delegate instanceof OperationContextAwareWrapper)
             return delegate;
 

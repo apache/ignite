@@ -57,6 +57,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             "的的abcdкириллица",
             new string(new[] {(char) 0xD801, (char) 0xDC37}),
             "Ḽơᶉëᶆ ȋṕšᶙṁ",
+            "kjkl\r\nklk;",
             "A_\ud83e\udd26\ud83c\udffc\u200d\u2642\ufe0f_B" // A_🤦🏼‍♂️_B
         };
 

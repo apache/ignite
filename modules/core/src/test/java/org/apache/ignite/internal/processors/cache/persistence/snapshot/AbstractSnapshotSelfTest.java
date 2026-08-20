@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -900,6 +901,18 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
         catch (IOException | IgniteCheckedException | IllegalArgumentException e) {
             assert false : "Unexpected exception while checking segments: " + e;
+        }
+    }
+
+    /** Print thread dump if {@code IgniteFutureTimeoutException} is raised. */
+    protected void runWithLoggedThreadDump(Runnable action) {
+        try {
+            action.run();
+        }
+        catch (IgniteFutureTimeoutException ex) {
+            U.dumpThreads(log);
+
+            throw ex;
         }
     }
 

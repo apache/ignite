@@ -70,6 +70,7 @@ import org.apache.ignite.internal.management.encryption.EncryptionChangeCacheKey
 import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.event.EventCommand;
+import org.apache.ignite.internal.management.io.IoTestCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.meta.MetaRemoveCommand;
@@ -77,8 +78,6 @@ import org.apache.ignite.internal.management.meta.MetaUpdateCommand;
 import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeEnableCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
@@ -519,8 +518,6 @@ public class CommandHandlerParsingTest {
             cmdText = F.concat(cmdText, "masterKeyName1");
         else if (cmd.getClass() == EncryptionChangeCacheKeyCommand.class)
             cmdText = F.concat(cmdText, "cacheGroup1");
-        else if (cmd.getClass() == RollingUpgradeEnableCommand.class)
-            cmdText = F.concat(cmdText, "2.18.0");
         else if (cmd.getClass() == SnapshotRestoreCommand.class)
             cmdText = F.concat(cmdText, "snp1");
         else if (cmd.getClass() == MetaUpdateCommand.class)
@@ -698,190 +695,6 @@ public class CommandHandlerParsingTest {
 
         assertParseArgsThrows("String representation of \"java.util.UUID\" is exepected", IllegalArgumentException.class,
             "--kill", "continuous", UUID.randomUUID().toString(), "not_a_uuid");
-    }
-
-    /**
-     * Negative argument validation test for tracing-configuration command.
-     *
-     * validate that following tracing-configuration arguments validated as expected:
-     * <ul>
-     *     <li>
-     *         reset_all, get_all
-     *         <ul>
-     *             <li>
-     *                 --scope
-     *                 <ul>
-     *                     <li>
-     *                         if value is missing:
-     *                          IllegalArgumentException
-     *                          (The scope should be specified.
-     *                          The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
-     *                     </li>
-     *                     <li>
-     *                         if unsupported value is used:
-     *                          IllegalArgumentException
-     *                          (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
-     *                     </li>
-     *                 </ul>
-     *             </li>
-     *         </ul>
-     *     </li>
-     *     <li>
-     *         reset, get:
-     *         <ul>
-     *             <li>
-     *                 --scope
-     *                 <ul>
-     *                     <li>
-     *                         if value is missing:
-     *                          IllegalArgumentException
-     *                          (The scope should be specified.
-     *                          The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
-     *                     </li>
-     *                     <li>
-     *                         if unsupported value is used:
-     *                          IllegalArgumentException
-     *                          (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
-     *                     </li>
-     *                 </ul>
-     *             </li>
-     *             <li>
-     *                 --label
-     *                 <ul>
-     *                     <li>
-     *                         if value is missing:
-     *                          IllegalArgumentException (The label should be specified.)
-     *                     </li>
-     *                 </ul>
-     *             </li>
-     *         </ul>
-     *     </li>
-     *     <li>
-     *         set:
-     *         <ul>
-     *             <li>
-     *                 --scope
-     *                 <ul>
-     *                     <li>
-     *                         if value is missing:
-     *                          IllegalArgumentException
-     *                          (The scope should be specified.
-     *                          The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].")
-     *                     </li>
-     *                     <li>
-     *                         if unsupported value is used:
-     *                          IllegalArgumentException
-     *                          (Invalid scope 'aaa'. The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX])
-     *                     </li>
-     *                 </ul>
-     *             </li>
-     *             <li>
-     *                 --label
-     *                 <ul>
-     *                     <li>
-     *                          if value is missing:
-     *                              IllegalArgumentException (The label should be specified.)
-     *                     </li>
-     *                 </ul>
-     *             </li>
-     *             <li>
-     *                 --sampling-rate
-     *                 <ul>
-     *                     <li>
-     *                          if value is missing:
-     *                              IllegalArgumentException
-     *                              (The sampling-rate should be specified. Decimal value between 0 and 1 should be used.)
-     *                     </li>
-     *                     <li>
-     *                          if unsupported value is used:
-     *                              IllegalArgumentException (Invalid samling-rate 'aaa'. Decimal value between 0 and 1 should be used.)
-     *                     </li>
-     *                 </ul>
-     *             </li>
-     *             <li>
-     *                 --included-scopes
-     *                 <ul>
-     *                     <li>
-     *                          if value is missing:
-     *                              IllegalArgumentException (At least one supported scope should be specified.)
-     *                     </li>
-     *                     <li>
-     *                          if unsupported value is used:
-     *                              IllegalArgumentException
-     *                              (Invalid supported scope: aaa.
-     *                              The following values can be used: [DISCOVERY, EXCHANGE, COMMUNICATION, TX].)
-     *                     </li>
-     *                 </ul>
-     *             </li>
-     *         </ul>
-     *     </li>
-     * </ul>
-     */
-    @Test
-    public void testTracingConfigurationArgumentsValidation() {
-        // reset
-        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "reset", "--scope");
-
-        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "reset", "--scope", "aaa");
-
-        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "reset", "--label");
-
-        // reset all
-        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "reset_all", "--scope");
-
-        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "reset_all", "--scope", "aaa");
-
-        // get
-        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "get", "--scope");
-
-        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "get", "--scope", "aaa");
-
-        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "get", "--label");
-
-        // get all
-        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "get_all", "--scope");
-
-        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "get_all", "--scope", "aaa");
-
-        // set
-        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "set", "--scope");
-
-        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "set", "--scope", "aaa");
-
-        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "set", "--label");
-
-        assertParseArgsThrows("Please specify a value for argument: --sampling-rate", "--tracing-configuration", "set", "--sampling-rate");
-
-        assertParseArgsThrows("Failed to parse --sampling-rate command argument",
-            "--tracing-configuration", "set", "--sampling-rate", "aaa");
-
-        assertParseArgsThrows("Invalid sampling-rate '-1.0'. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate", "-1", "--scope", "SQL");
-
-        assertParseArgsThrows("Invalid sampling-rate '2.0'. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate", "2", "--scope", "SQL");
-
-        assertParseArgsThrows("Please specify a value for argument: --included-scopes",
-            "--tracing-configuration", "set", "--included-scopes");
-
-        assertParseArgsThrows("Failed to parse --included-scopes command argument",
-            "--tracing-configuration", "set", "--included-scopes", "TX,aaa");
-    }
-
-    /**
-     * Positive argument validation test for tracing-configuration command.
-     */
-    @Test
-    public void testTracingConfigurationArgumentsValidationMandatoryArgumentSet() {
-        parseArgs(asList("--tracing-configuration"));
-
-        parseArgs(asList("--tracing-configuration", "get_all"));
-
-        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "reset");
-
-        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "get");
-
-        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "set");
     }
 
     /**
@@ -1396,13 +1209,13 @@ public class CommandHandlerParsingTest {
             cmd == MetaCommand.class ||
             cmd == WarmUpCommand.class ||
             cmd == PropertyCommand.class ||
-            cmd == RollingUpgradeCommand.class ||
             cmd == SystemViewCommand.class ||
             cmd == MetricCommand.class ||
             cmd == DefragmentationCommand.class ||
             cmd == PerformanceStatisticsCommand.class ||
             cmd == ConsistencyCommand.class ||
             cmd == CdcCommand.class ||
+            cmd == IoTestCommand.class ||
             cmd == EventCommand.class;
     }
 }

@@ -17,25 +17,42 @@
 
 package org.apache.ignite.internal.processors.cache.verify;
 
+import java.io.Serializable;
+import org.apache.ignite.internal.JdkMarshalled;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Represents committed transactions hash for a pair of nodes. */
-public class TransactionsHashRecord extends IgniteDataTransferObject {
+/**
+ * Represents committed transactions hash for a pair of nodes.
+ * <p>
+ * Travels both transports, Communication and Discovery, inside the result of a snapshot check, and carries a user
+ * consistent id.
+ */
+@JdkMarshalled
+public class TransactionsHashRecord implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Consistent ID of local node that participated in the transaction. This node produces this record. */
-    @Order(0)
     @GridToStringInclude
+    @Marshalled("locConsistentIdBytes")
     Object locConsistentId;
 
+    /** Bytes of {@link #locConsistentId}. */
+    @Order(0)
+    transient byte[] locConsistentIdBytes;
+
     /** Consistent ID of remote node that participated in the transactions. */
-    @Order(1)
     @GridToStringInclude
+    @Marshalled("rmtConsistentIdBytes")
     Object rmtConsistentId;
+
+    /** Bytes of {@link #rmtConsistentId}. */
+    @Order(1)
+    transient byte[] rmtConsistentIdBytes;
 
     /** Committed transactions IDs hash. */
     @Order(2)

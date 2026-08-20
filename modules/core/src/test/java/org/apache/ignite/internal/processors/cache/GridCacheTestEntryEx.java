@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -269,15 +270,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryInfo info() {
-        GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-        info.key(key());
-        info.value(val);
-        info.ttl(ttl());
-        info.expireTime(expireTime());
-        info.version(version());
-
-        return info;
+        return new GridCacheEntryInfo(0, key(), val, version(), U.currentTimeMillis(), expireTime(), ttl());
     }
 
     /** {@inheritDoc} */
@@ -448,6 +441,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean hasOldVal,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
@@ -457,7 +451,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    ) {
         rawPut(val, ttl);
 
         return new GridCacheUpdateTxResult(true);
@@ -475,6 +469,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean readThrough,
         boolean retval,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
@@ -493,8 +488,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
         @Nullable GridDhtAtomicAbstractUpdateFuture fut,
-        boolean transformOp)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        boolean transformOp
+    ) {
         assert false;
 
         return null;
@@ -509,6 +504,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
@@ -517,7 +513,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    ) {
         obsoleteVer = ver;
 
         val = null;

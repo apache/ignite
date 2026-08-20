@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -68,10 +69,10 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest;
@@ -80,15 +81,19 @@ import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -99,6 +104,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -679,6 +686,84 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
             view.forEach(v -> assertTrue(v.duration() >= 0));
         }
+    }
+
+    /** Test SELECT and DML map query flags in running queries system view. */
+    @Test
+    public void testMapQueryRunningQueriesView() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        IgniteCache<Integer, Integer> cache = createMapQueryTestCache(ignite);
+
+        checkMapQueryView(ignite, cache, "SELECT * FROM Integer WHERE sleep(?) >= 0");
+
+        checkMapQueryView(ignite, cache, "DELETE FROM Integer WHERE sleep(?) >= 0");
+    }
+
+    /** Test map query is unregistered from running queries system view on error. */
+    @Test
+    public void testMapQueryRunningQueriesViewOnError() throws Exception {
+        IgniteEx ignite = startGrids(2);
+
+        IgniteCache<Integer, Integer> cache = createMapQueryTestCache(ignite);
+
+        String initiatorId = UUID.randomUUID().toString();
+
+        GridTestUtils.assertThrows(log,
+            () -> cache.query(new SqlFieldsQuery("SELECT * FROM Integer WHERE can_fail(_key = 0) = 0")
+                .setQueryInitiatorId(initiatorId)).getAll(),
+            CacheException.class,
+            "Exception calling user-defined function");
+
+        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId), 5_000));
+    }
+
+    /** */
+    private void checkMapQueryView(IgniteEx ignite, IgniteCache<Integer, Integer> cache, String sql) throws Exception {
+        String initiatorId = UUID.randomUUID().toString();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
+            cache.query(new SqlFieldsQuery(sql).setQueryInitiatorId(initiatorId).setArgs(1_000)).getAll()
+        );
+
+        try {
+            assertTrue(waitForCondition(() -> hasMapQueryView(ignite, initiatorId), 5_000));
+        }
+        finally {
+            fut.get();
+        }
+
+        assertTrue(waitForCondition(() -> !hasMapQueryView(ignite, initiatorId), 5_000));
+    }
+
+    /** */
+    private IgniteCache<Integer, Integer> createMapQueryTestCache(IgniteEx ignite) throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite.createCache(
+            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setIndexedTypes(Integer.class, Integer.class)
+                .setSqlFunctionClasses(GridTestUtils.SqlTestFunctions.class)
+        );
+
+        cache.put(0, 0);
+
+        awaitPartitionMapExchange();
+
+        return cache;
+    }
+
+    /** */
+    private boolean hasMapQueryView(IgniteEx originNode, String initiatorId) {
+        for (Ignite ignite : G.allGrids()) {
+            SystemView<SqlQueryView> view = ((IgniteEx)ignite).context().systemView().view(SQL_QRY_VIEW);
+
+            for (SqlQueryView qry : view) {
+                if (qry.mapQuery() && originNode.localNode().id().equals(qry.originNodeId()) && initiatorId.equals(qry.initiatorId()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1723,9 +1808,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         // Get rid of metrics provider: current logic ignores metrics field if provider != null.
         setField(node, "metricsProvider", null);
 
-        ClusterMetricsImpl original = getField(node, "metrics");
+        ClusterMetricsSnapshot original = getField(node, "clusterMetricsSnapshot");
 
-        setField(node, "metrics", new MockedClusterMetrics(original));
+        setField(node, "clusterMetricsSnapshot", new MockedClusterMetrics(original));
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -1794,10 +1879,81 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
+    @Test
+    public void testPluginView() throws Exception {
+        try (IgniteEx n = startGrid(getConfiguration().setPluginProviders(new TestPluginProvider()))) {
+            String sql = String.format(
+                "SELECT name, info, version, class_name  FROM %s.IGNITE_PLUGINS WHERE NAME = ?",
+                systemSchemaName()
+            );
+
+            assertEquals(
+                List.of(
+                    "FOR_SYS_VIEW_PLUGIN_NAME",
+                    "FOR_SYS_VIEW_PLUGIN_INFO",
+                    "42",
+                    TestPluginProvider.TestPlugin.class.getName()
+                ),
+                execSql(n, sql, "FOR_SYS_VIEW_PLUGIN_NAME").get(0)
+            );
+        }
+    }
+
+    /** */
+    @Test
+    public void testLocksView() throws Exception {
+        try (IgniteEx ignite = startGrid()) {
+            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+            Lock lock1 = cache.lock(1);
+            Lock lock2 = cache.lock(2);
+
+            lock1.lock();
+            lock2.lock();
+            try (Transaction ignored = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(3, 3);
+
+                // Join explicit locks with key locks.
+                List<List<?>> res = execSql("SELECT el.cache_id, el.thread_id, kl.is_owner, kl.is_tx, kl.originating_node_id " +
+                    "FROM SYS.CACHE_EXPLICIT_LOCKS el JOIN SYS.CACHE_LOCKS kl ON el.xid = kl.xid");
+
+                assertEquals(2, res.size());
+
+                for (List<?> lock : res) {
+                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), lock.get(0));
+                    assertEquals(Thread.currentThread().getId(), lock.get(1));
+                    assertEquals(true, lock.get(2));
+                    assertEquals(false, lock.get(3));
+                    assertEquals(ignite.localNode().id(), lock.get(4));
+                }
+
+                // Join transactions with key locks.
+                res = execSql("SELECT kl.cache_id, tx.thread_id, kl.is_owner, kl.is_tx, kl.originating_node_id " +
+                    "FROM SYS.TRANSACTIONS tx JOIN SYS.CACHE_LOCKS kl ON tx.xid = kl.xid");
+
+                assertEquals(1, res.size());
+
+                for (List<?> lock : res) {
+                    assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), lock.get(0));
+                    assertEquals(Thread.currentThread().getId(), lock.get(1));
+                    assertEquals(true, lock.get(2));
+                    assertEquals(true, lock.get(3));
+                    assertEquals(ignite.localNode().id(), lock.get(4));
+                }
+            }
+            finally {
+                lock2.unlock();
+                lock1.unlock();
+            }
+        }
+    }
+
     /**
-     * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.
+     * Mock for {@link ClusterMetricsSnapshot} that always returns big (more than 24h) duration for all duration metrics.
      */
-    public static class MockedClusterMetrics extends ClusterMetricsImpl {
+    public static class MockedClusterMetrics extends ClusterMetricsSnapshot {
         /** Some long (> 24h) duration. */
         public static final long LONG_DURATION_MS = TimeUnit.DAYS.toMillis(365);
 
@@ -1807,10 +1963,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
          * @param original - original cluster metrics object. Required to leave the original behaviour for not overriden
          * methods.
          */
-        public MockedClusterMetrics(ClusterMetricsImpl original) throws Exception {
-            super(
-                getField(original, "ctx"),
-                getField(original, "nodeStartTime"));
+        public MockedClusterMetrics(ClusterMetricsSnapshot original) throws Exception {
+            super(original);
         }
 
         /** {@inheritDoc} */
@@ -2008,6 +2162,33 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 throw new NullPointerException("Oops... incorrect customer realization.");
 
             return "CUSTOM_NODE_FILTER";
+        }
+    }
+
+    /** */
+    private static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "FOR_SYS_VIEW_PLUGIN_NAME";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String version() {
+            return "42";
+        }
+
+        /** {@inheritDoc} */
+        @Override public String info() {
+            return "FOR_SYS_VIEW_PLUGIN_INFO";
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T extends IgnitePlugin> T plugin() {
+            return (T)new TestPlugin();
+        }
+
+        /** */
+        private static class TestPlugin implements IgnitePlugin {
         }
     }
 }

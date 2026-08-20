@@ -37,6 +37,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridAnnotationsCache;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -1206,7 +1207,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             return classLoader().registeredClassLoaderIds();
         }
 
-
         /**
          * @return {@code True} if deployment has any node participants.
          */
@@ -1322,10 +1322,10 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ClassLoader ldr = classLoader();
 
                // Clear static class cache.
-                U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), sampleClassName());
+                ClassLoaderUtils.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), sampleClassName());
 
                 for (String alias : deployedClassMap().keySet())
-                    U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), alias);
+                    ClassLoaderUtils.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), alias);
 
                 // Clear optimized marshaller's cache.
                 ctx.marshaller().onUndeploy(ldr);

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -95,7 +94,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -183,9 +182,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @GridToStringExclude
     private ReadWriteMetastorage metastorage;
 
-    /** */
-    private final JdkMarshaller marsh;
-
     /** Updater of baseline topology. */
     private BaselineTopologyUpdater baselineTopologyUpdater;
 
@@ -220,8 +216,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
-
-        marsh = ctx.marshallerContext().jdkMarshaller();
 
         distributedBaselineConfiguration = new DistributedBaselineConfiguration(
             ctx.internalSubscriptionProcessor(),
@@ -766,7 +760,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     ? msg.baselineTopology()
                     : state.baselineTopology(),
                 msg.requestId(),
-                topVer,
                 nodeIds
             );
 
@@ -925,14 +918,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        try {
-            byte[] marshalledState = marsh.marshal(globalState);
-
-            dataBag.addJoiningNodeData(discoveryDataType().ordinal(), marshalledState);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        dataBag.addJoiningNodeData(discoveryDataType().ordinal(), globalState);
     }
 
     /** {@inheritDoc} */
@@ -953,20 +939,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return;
         }
 
-        DiscoveryDataClusterState joiningNodeState = null;
-
-        try {
-            if (joiningNodeData.joiningNodeData() != null)
-                joiningNodeState = marsh.unmarshal(
-                    (byte[])joiningNodeData.joiningNodeData(),
-                    U.resolveClassLoader(ctx.config())
-                );
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal disco data from joining node: " + joiningNodeData.joiningNodeId());
-
-            return;
-        }
+        DiscoveryDataClusterState joiningNodeState = joiningNodeData.joiningNodeData();
 
         BaselineTopologyHistory historyToSend = null;
 
@@ -977,7 +950,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 historyToSend = bltHist.tailFrom(lastId);
             }
             else
-                historyToSend = bltHist;
+                historyToSend = bltHist.tailFrom(0);
         }
 
         dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
@@ -985,14 +958,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        if (data.commonData() instanceof DiscoveryDataClusterState) {
+        Message commonData = data.commonData();
+
+        if (commonData instanceof DiscoveryDataClusterState) {
             if (globalState != null && globalState.baselineTopology() != null)
                 //node with BaselineTopology is not allowed to join mixed cluster
                 // (where some nodes don't support BaselineTopology)
                 throw new IgniteException("Node with BaselineTopology cannot join" +
                     " mixed cluster running in compatibility mode");
 
-            globalState = (DiscoveryDataClusterState)data.commonData();
+            globalState = (DiscoveryDataClusterState)commonData;
 
             compatibilityMode = true;
 
@@ -1001,7 +976,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return;
         }
 
-        BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)data.commonData();
+        BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)commonData;
 
         if (stateDiscoData != null) {
             DiscoveryDataClusterState state = stateDiscoData.globalState;
@@ -1251,18 +1226,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return null;
         }
 
-        DiscoveryDataClusterState joiningNodeState;
-
-        try {
-            joiningNodeState = marsh.unmarshal((byte[])discoData.joiningNodeData(), U.resolveClassLoader(ctx.config()));
-        }
-        catch (IgniteCheckedException e) {
-            String msg = "Error on unmarshalling discovery data " +
-                "from node " + node.consistentId() + ": " + e.getMessage() +
-                "; node is not allowed to join";
-
-            return new IgniteNodeValidationResult(node.id(), msg);
-        }
+        DiscoveryDataClusterState joiningNodeState = discoData.joiningNodeData();
 
         if (joiningNodeState == null || joiningNodeState.baselineTopology() == null)
             return null;
@@ -2224,9 +2188,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      */
     class TransitionOnJoinWaitFuture extends GridFutureAdapter<Boolean> {
         /** */
-        private DiscoveryDataClusterState transitionState;
-
-        /** */
         private final Set<UUID> transitionNodes;
 
         /**
@@ -2253,24 +2214,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
 
             return false;
-        }
-    }
-
-    /** */
-    private static class BaselineStateAndHistoryData implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final DiscoveryDataClusterState globalState;
-
-        /** */
-        private final BaselineTopologyHistory recentHistory;
-
-        /** */
-        BaselineStateAndHistoryData(DiscoveryDataClusterState globalState, BaselineTopologyHistory recentHistory) {
-            this.globalState = globalState;
-            this.recentHistory = recentHistory;
         }
     }
 }

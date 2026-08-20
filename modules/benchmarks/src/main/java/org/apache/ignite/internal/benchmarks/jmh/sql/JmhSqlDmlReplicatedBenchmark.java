@@ -20,9 +20,7 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 
 /**
  * Benchmark DML queries on replicated cache.
@@ -41,10 +39,8 @@ public class JmhSqlDmlReplicatedBenchmark extends JmhSqlDmlBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhSqlDmlReplicatedBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhSqlDmlReplicatedBenchmark.class.getSimpleName())
+            .run();
     }
 }

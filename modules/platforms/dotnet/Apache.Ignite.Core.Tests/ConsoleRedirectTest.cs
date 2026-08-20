@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Tests
                 MyStringWriter.LastValue = null;
 
                 // Send to Java as UTF-16 to avoid dealing with IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2
-                var bytes = Encoding.Unicode.GetBytes(MyStringWriter.Prefix + val);
+                var bytes = Encoding.Unicode.GetBytes(MyStringWriter.Prefix + val + MyStringWriter.Suffix);
                 ignite.GetCompute().ExecuteJavaTask<string>(ConsoleWriteTask, bytes);
 
                 var expectedStr = GetExpectedStr(val);
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests
 
                 // Test Env.NewString
                 MyStringWriter.LastValue = null;
-                TestUtilsJni.Println(MyStringWriter.Prefix + val);
+                TestUtilsJni.Println(MyStringWriter.Prefix + val + MyStringWriter.Suffix);
 
                 Assert.AreEqual(expectedStr.Length, MyStringWriter.LastValue?.Length, message: val);
                 if (val != BinarySelfTest.SpecialStrings[0])
@@ -288,6 +288,9 @@ namespace Apache.Ignite.Core.Tests
         {
             public const string Prefix = "[MyStringWriter]";
 
+            /** */
+            public const string Suffix = "[/MyStringWriter]";
+
             public static bool Throw { get; set; }
 
             public static string LastValue { get; set; }
@@ -306,9 +309,13 @@ namespace Apache.Ignite.Core.Tests
 
                 base.Write(value);
 
-                if (!string.IsNullOrWhiteSpace(value) && value.StartsWith(Prefix))
+                if (!string.IsNullOrWhiteSpace(value) && value.StartsWith(Prefix, StringComparison.Ordinal))
                 {
-                    LastValue = value.Substring(Prefix.Length);
+                    var suffixIndex = value.LastIndexOf(Suffix, StringComparison.Ordinal);
+
+                    Assert.GreaterOrEqual(suffixIndex, Prefix.Length, "Suffix is missing: " + value);
+
+                    LastValue = value.Substring(Prefix.Length, suffixIndex - Prefix.Length);
                 }
             }
         }

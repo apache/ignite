@@ -142,8 +142,12 @@ public class CancelTest extends GridCommonAbstractTest {
         // Sometimes remote node during stopping can send error to originator node and this error processed before
         // node left event, in this case exception stack will looks like:
         // IgniteSQLException -> RemoteException -> exception on remote node during node stop.
+        // Also, remote node can be stopped during processing of QueryStartRequest, in this case QueryCloseRequest
+        // with an error will be sent to originator node, this causes query cancelation with an IgniteSQLException.
         if (!X.hasCause(ex, "node left", ClusterTopologyCheckedException.class) &&
-            !X.hasCause(ex, RemoteException.class)) {
+            !X.hasCause(ex, RemoteException.class) &&
+            !X.hasCause(ex, "The query was cancelled while executing", IgniteSQLException.class)
+        ) {
             log.error("Unexpected exception", ex);
 
             fail("Unexpected exception: " + ex);

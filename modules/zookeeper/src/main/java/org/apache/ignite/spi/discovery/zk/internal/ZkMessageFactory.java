@@ -17,16 +17,18 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 
 /** */
-public class ZkMessageFactory implements MessageFactoryProvider {
+public class ZkMessageFactory extends AbstractMessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
-        factory.register(400, ZkCommunicationErrorResolveFinishMessage::new, new ZkCommunicationErrorResolveFinishMessageSerializer());
-        factory.register(401, ZkCommunicationErrorResolveStartMessage::new, new ZkCommunicationErrorResolveStartMessageSerializer());
-        factory.register(402, ZkForceNodeFailMessage::new, new ZkForceNodeFailMessageSerializer());
-        factory.register(403, ZkNoServersMessage::new, new ZkNoServersMessageSerializer());
+    @Override public void registerAll(IgniteMessageFactory factory) {
+        register(factory, ZkCommunicationErrorResolveFinishMessage.class, (short)400);
+        register(factory, ZkCommunicationErrorResolveStartMessage.class, (short)401);
+        register(factory, ZkForceNodeFailMessage.class, (short)402);
+        register(factory, ZkNoServersMessage.class, (short)403);
+        register(factory, ZkDiscoDataBagWrapper.class, (short)404);
+        register(factory, ZkOperationContextAwareCustomMessage.class, (short)405);
     }
 }

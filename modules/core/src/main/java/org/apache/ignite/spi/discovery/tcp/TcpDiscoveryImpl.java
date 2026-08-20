@@ -40,9 +40,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
-import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -136,8 +134,8 @@ abstract class TcpDiscoveryImpl {
         }
     };
 
-    /** Tracing. */
-    protected Tracing tracing;
+    /** Distributed operation context dispatcher. */
+    protected final OperationContextDispatcher operationCtxDispatcher;
 
     /**
      * @param spi Adapter.
@@ -147,10 +145,7 @@ abstract class TcpDiscoveryImpl {
 
         log = spi.log;
 
-        if (spi.ignite() instanceof IgniteEx)
-            tracing = ((IgniteEx)spi.ignite()).context().tracing();
-        else
-            tracing = new NoopTracing();
+        operationCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
     }
 
     /**
@@ -412,7 +407,7 @@ abstract class TcpDiscoveryImpl {
         for (Map.Entry<UUID, NodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
             UUID srvrId = e.getKey();
             Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();
-            NodeMetricsMessage srvrMetricsMsg = e.getValue().nodeMetricsMessage();
+            ClusterMetricsSnapshot srvrMetricsMsg = e.getValue().nodeMetricsMessage();
 
             assert srvrMetricsMsg != null;
 

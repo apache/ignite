@@ -17,21 +17,41 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.internal.MarshallableMessage;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message factory.
  */
-public class CalciteMessageFactory extends AbstractMarshallableMessageFactoryProvider {
+public class CalciteMessageFactory extends AbstractMessageFactoryProvider {
+    /** */
+    public static final short MIN_MESSAGE_TYPE = 300;
+
+    /** */
+    public static final short MAX_MESSAGE_TYPE = 311;
+
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
-        for (MessageType type : MessageType.values()) {
-            if (MarshallableMessage.class.isAssignableFrom(type.messageClass()))
-                register(factory, type.messageClass(), type.directType(), schemaAwareMarsh, resolvedClsLdr);
-            else
-                register(factory, type.messageClass(), type.directType(), dfltMarsh, dftlClsLdr);
-        }
+    @Override public void registerAll(IgniteMessageFactory factory) {
+        register(factory, QueryStartRequest.class, (short)300);
+        register(factory, QueryStartResponse.class, (short)301);
+        register(factory, CalciteErrorMessage.class, (short)302);
+        register(factory, QueryBatchMessage.class, (short)303);
+        register(factory, QueryBatchAcknowledgeMessage.class, (short)304);
+        register(factory, QueryInboxCloseMessage.class, (short)305);
+        register(factory, QueryCloseMessage.class, (short)306);
+        register(factory, GenericValueMessage.class, (short)307);
+        register(factory, FragmentMapping.class, (short)308);
+        register(factory, ColocationGroup.class, (short)309);
+        register(factory, FragmentDescription.class, (short)310);
+        register(factory, QueryTxEntry.class, (short)311);
+    }
+
+    /** */
+    public static boolean isCalciteMessage(Message msg) {
+        return msg.directType() >= MIN_MESSAGE_TYPE && msg.directType() <= MAX_MESSAGE_TYPE;
     }
 }

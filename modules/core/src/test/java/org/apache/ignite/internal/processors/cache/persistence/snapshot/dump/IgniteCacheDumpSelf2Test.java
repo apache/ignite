@@ -706,6 +706,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             false,
             false,
             false,
+            false,
             null,
             false,
             false,
@@ -1030,7 +1031,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             KeyCacheObject key = new KeyCacheObjectImpl(i, null, intCache.affinity().partition(i));
             CacheObject val = new CacheObjectImpl(i, null);
 
-            val.prepareMarshal(intCache.context().cacheObjectContext());
+            val.marshal(intCache.context().cacheObjectContext());
 
             drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(topVer, i, nodeOrder, dataCenterId)));
         }

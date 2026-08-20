@@ -65,6 +65,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -105,14 +106,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
-import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -146,7 +142,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
@@ -272,6 +267,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final Map<ClusterNode, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap<>();
 
     /** */
+    @SuppressWarnings("unused")
     @GridToStringInclude
     private volatile IgniteInternalFuture<?> partReleaseFut;
 
@@ -280,9 +276,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Cache change requests. */
     private ExchangeActions exchActions;
-
-    /** Security context. */
-    @Nullable private final SecurityContext secCtx;
 
     /** */
     private final IgniteLogger exchLog;
@@ -398,9 +391,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** This future finished with 'cluster is fully rebalanced' state. */
     private volatile boolean rebalanced;
 
-    /** Tracing span. */
-    private Span span = NoopSpan.INSTANCE;
-
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -432,8 +422,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
 
-        secCtx = remoteSecurityContext(cctx.kernalContext());
-
         timeBag = new TimeBag(log.isInfoEnabled());
 
         initFut = new GridFutureAdapter<Boolean>() {
@@ -444,24 +432,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() + ", fut=" + this + ']');
-    }
-
-    /**
-     * Set span.
-     *
-     * @param span Span.
-     */
-    public void span(Span span) {
-        this.span = span;
-    }
-
-    /**
-     * Gets span instance.
-     *
-     * @return Span.
-     */
-    public Span span() {
-        return span;
     }
 
     /**
@@ -481,11 +451,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public boolean skipForExchangeMerge() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public SecurityContext securityContext() {
-        return secCtx;
     }
 
     /**
@@ -946,8 +911,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", exchangeFreeSwitch=" + exchCtx.exchangeFreeSwitch() + ']');
             }
 
-            span.addLog(() -> "Exchange parameters initialization");
-
             timeBag.finishGlobalStage("Exchange parameters initialization");
 
             ExchangeType exchange;
@@ -1311,11 +1274,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         GridKernalContext kctx = cctx.kernalContext();
 
-        DiscoveryDataClusterState state = kctx.state().clusterState();
-
-        if (state.transitionError() != null)
-            exchangeLocE = state.transitionError();
-
         if (req.activeChanged()) {
             if (req.state().active()) {
                 if (log.isInfoEnabled()) {
@@ -1628,8 +1586,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         timeBag.finishGlobalStage("Preloading notification");
 
         // Skipping wait on local join is available when all cluster nodes have the same protocol.
-        boolean skipWaitOnLocJoin = localJoinExchange()
-            && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
+        boolean skipWaitOnLocJoin = localJoinExchange();
 
         if (context().exchangeFreeSwitch() && isBaselineNodeFailed())
             waitPartitionRelease(null, false, false);
@@ -1980,10 +1937,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         releaseLatch.countDown();
-
-        // For compatibility with old version where joining nodes are not waiting for latch.
-        if (localJoinExchange() && !cctx.exchange().latch().canSkipJoiningNodes(initialVersion()))
-            return;
 
         try {
             String troubleshootingHint;
@@ -2358,19 +2311,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ", wasRebalanced=" + wasRebalanced() + ']');
         }
 
-        if (res != null) {
-            span.addTag(SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR),
-                () -> String.valueOf(res.topologyVersion()));
-            span.addTag(SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR),
-                () -> String.valueOf(res.minorTopologyVersion()));
-        }
-
-        if (err != null) {
-            Throwable errf = err;
-
-            span.addTag(SpanTags.ERROR, errf::toString);
-        }
-
         boolean cleanIdxRebuildFutures = true;
 
         try {
@@ -2509,10 +2449,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         if (super.onDone(res, err)) {
             afterLsnrCompleteFut.onDone();
-
-            span.addLog(() -> "Completed partition exchange");
-
-            span.end();
 
             if (err == null) {
                 updateDurationHistogram(System.currentTimeMillis() - initTime);
@@ -3663,10 +3599,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param sndResNodes Additional nodes to send finish message to.
      */
     private void onAllReceived(@Nullable Collection<ClusterNode> sndResNodes) {
+        if (!enterBusy())
+            return;
+
         try {
             initFut.get();
-
-            span.addLog(() -> "Waiting for all single messages");
 
             timeBag.finishGlobalStage("Waiting for all single messages");
 
@@ -3715,6 +3652,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
+        }
+        finally {
+            leaveBusy();
         }
     }
 
@@ -3769,13 +3709,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.kernalContext().pools().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
-                        partitionTopology(desc.groupId()).beforeExchange(this, true, true);
+                        if (!enterBusy())
+                            return null;
+
+                        try {
+                            partitionTopology(desc.groupId()).beforeExchange(this, true, true);
+                        }
+                        finally {
+                            leaveBusy();
+                        }
 
                         return null;
                     });
             }
-
-            span.addLog(() -> "Affinity recalculation (crd)");
 
             timeBag.finishGlobalStage("Affinity recalculation (crd)");
 
@@ -3786,7 +3732,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 msgs.values(),
                 msg -> {
-                    processSingleMessageOnCrdFinish(msg, joinedNodeAff);
+                    if (!enterBusy())
+                        return null;
+
+                    try {
+                        processSingleMessageOnCrdFinish(msg, joinedNodeAff);
+                    }
+                    finally {
+                        leaveBusy();
+                    }
 
                     return null;
                 }
@@ -3865,7 +3819,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else if (forceAffReassignment)
                 msg.idealAffinityDiff(idealAffDiff);
 
-            msg.prepareMarshal(cctx);
+            // Marshal eagerly: the heavy partition-map copy lands in the "Full message preparing" stage, and the
+            // message cached in FinishState is sent to late joiners as is (the send-path marshal-once turns no-op).
+            CommunicationMarshalling.marshal(msg, cctx.kernalContext(), null);
 
             timeBag.finishGlobalStage("Full message preparing");
 

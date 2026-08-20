@@ -19,6 +19,7 @@ package org.apache.ignite.snippets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
@@ -34,8 +35,12 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 public class WorkingWithBinaryObjects {
 
@@ -145,38 +150,56 @@ public class WorkingWithBinaryObjects {
     //tag::keepBinaryWithCacheInterceptor[]
     public static void cacheWithInterceptorExample() {
         try (Ignite ignite = Ignition.start()) {
-            CacheConfiguration specConfig = new CacheConfiguration("personSpecCache");
-            ccfg.setInterceptor(new CustomInterceptor(false));
-            IgniteCache<Integer, Person> cache = ignite.createCache(ccfg);
+            CacheConfiguration<Integer, Person> specConfig = new CacheConfiguration<>("personSpecCache");
+            specConfig.setInterceptor(new CustomInterceptor<>(false));
+            IgniteCache<Integer, Person> cache = ignite.createCache(specConfig);
             cache.put(1, new Person(1, "FirstPerson"));
 
-            CacheConfiguration boConfig = new CacheConfiguration("boSpecCache");
-            ccfg.setInterceptor(new CustomInterceptor(true));
-            IgniteCache<Integer, Person> cache = ignite.createCache(ccfg);
-            cache = cache.withKeepBinary();
-            cache.put(1, new Person(1, "FirstPerson"));
+            CacheConfiguration<Integer, Person> boConfig = new CacheConfiguration<>("boSpecCache");
+            boConfig.setInterceptor(new CustomInterceptor<>(true));
+            IgniteCache<Integer, BinaryObject> binaryCache = ignite.<Integer, Person>createCache(boConfig).withKeepBinary();
+            binaryCache.put(1, ignite.binary().toBinary(new Person(1, "FirstPerson")));
         }
     }
 
-    private static class CustomInterceptor implements CacheInterceptor<Object, Object> {
+    private static class CustomInterceptor<K, V> implements CacheInterceptor<K, V> {
         boolean keepBinary;
 
         CustomInterceptor(boolean keepBinary) {
             this.keepBinary = keepBinary;
         }
 
-        @Nullable @Override public Object onBeforePut(Cache.Entry<Object, Object> entry, Object newVal) {
-            assert keepBinary == newVal instanceof BinaryObject;
-            // do smth.
+        /** */
+        @Nullable @Override public V onGet(K key, @Nullable V val) {
+            return val;
         }
 
-        @Nullable @Override public IgniteBiTuple<Boolean, Object> onBeforeRemove(Cache.Entry<Object, Object> entry) {
-            Object val = entry.getValue();
+        /** */
+        @Nullable @Override public V onBeforePut(Cache.Entry<K, V> entry, V newVal) {
+            assert keepBinary == newVal instanceof BinaryObject;
+            // do smth.
+            return newVal;
+        }
+
+        /** */
+        @Override public void onAfterPut(Cache.Entry<K, V> entry) {
+            // No-op.
+        }
+
+        /** */
+        @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
+            V val = entry.getValue();
 
             if (val != null) {
                 assert keepBinary == entry.getValue() instanceof BinaryObject;
             }
             // do smth.
+            return new IgniteBiTuple<>(false, val);
+        }
+
+        /** */
+        @Override public void onAfterRemove(Cache.Entry<K, V> entry) {
+            // No-op.
         }
     }
     //end::keepBinaryWithCacheInterceptor[]

@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-# Start from Java 11 based on Ubuntu Focal Linux image (there is no Alpine Linux image with Java 11 on ARM64)
-ARG JDK_VERSION=11
+# Start from Java 17 based on Ubuntu Focal Linux image (there is no Alpine Linux image with Java 17 on ARM64)
+ARG JDK_VERSION=17
 FROM eclipse-temurin:${JDK_VERSION}-jre-focal
 
 # Settings

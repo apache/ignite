@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -174,7 +175,6 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             checkNodes(1, 1);
 
             Ignite srvNode = G.ignite("server-0");
-            final TcpDiscoverySpi srvSpi = (TcpDiscoverySpi)srvNode.configuration().getDiscoverySpi();
 
             Ignite clientNode = G.ignite("client-0");
             final TcpDiscoverySpi clientSpi = (TcpDiscoverySpi)clientNode.configuration().getDiscoverySpi();
@@ -228,13 +228,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             checkNodes(3, 0);
 
             Ignite srv0 = G.ignite("server-0");
-            final TestTcpDiscoverySpi2 spi0 = (TestTcpDiscoverySpi2)srv0.configuration().getDiscoverySpi();
 
             final Ignite srv1 = G.ignite("server-1");
             final TestTcpDiscoverySpi2 spi1 = (TestTcpDiscoverySpi2)srv1.configuration().getDiscoverySpi();
 
             Ignite srv2 = G.ignite("server-2");
-            final TestTcpDiscoverySpi2 spi2 = (TestTcpDiscoverySpi2)srv2.configuration().getDiscoverySpi();
 
             long failureTime = U.currentTimeMillis();
 
@@ -299,7 +297,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             Thread.sleep(failureDetectionTimeout());
 
-            assertTrue(X.hasCause(firstSpi.err, SocketTimeoutException.class));
+            assertNotNull(X.cause(firstSpi.err, IOException.class));
 
             firstSpi.reset();
             secondSpi.reset();
@@ -519,7 +517,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout)
+        @Override protected <T extends Message> T readMessage(TcpDiscoveryIoSession ses, long timeout)
             throws IOException, IgniteCheckedException {
             long currTimeout = getLocalNode().isClient() ?
                 clientFailureDetectionTimeout() : failureDetectionTimeout();

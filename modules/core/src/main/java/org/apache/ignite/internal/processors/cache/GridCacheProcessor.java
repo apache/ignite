@@ -217,10 +217,10 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
+import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.isAffinityConfigurationMdcSafe;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -393,18 +393,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             SchemaAbstractDiscoveryMessage msg0 = (SchemaAbstractDiscoveryMessage)msg;
 
             if (msg0.exchange())
-                return new SchemaExchangeWorkerTask(remoteSecurityContext(ctx), msg0);
+                return new SchemaExchangeWorkerTask(msg0);
         }
         else if (msg instanceof ClientCacheChangeDummyDiscoveryMessage) {
             ClientCacheChangeDummyDiscoveryMessage msg0 = (ClientCacheChangeDummyDiscoveryMessage)msg;
 
-            return new ClientCacheChangeDummyDiscoveryTask(remoteSecurityContext(ctx), msg0);
+            return new ClientCacheChangeDummyDiscoveryTask(msg0);
         }
         else if (msg instanceof CacheStatisticsModeChangeMessage) {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
 
             if (msg0.initial())
-                return new CacheStatisticsModeChangeTask(remoteSecurityContext(ctx), msg0);
+                return new CacheStatisticsModeChangeTask(msg0);
         }
 
         return null;
@@ -596,7 +596,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
-        transactions = new IgniteTransactionsImpl(sharedCtx, null, false, null);
+        transactions = new IgniteTransactionsImpl(sharedCtx, null, null);
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
@@ -1137,12 +1137,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.onKernalStart();
 
+        registerMdcMetricsIfNeeded(cache);
+
         if (ctx.events().isRecordable(EventType.EVT_CACHE_STARTED))
             ctx.events().addEvent(EventType.EVT_CACHE_STARTED);
 
         if (log.isDebugEnabled())
             log.debug("Executed onKernalStart() callback for cache [name=" + cache.name() + ", mode=" +
                 cache.configuration().getCacheMode() + ']');
+    }
+
+    /** */
+    private void registerMdcMetricsIfNeeded(GridCacheAdapter<?, ?> cache) {
+        if (ctx.clientNode())
+            return;
+
+        if (ctx.discovery().localNode() == null || ctx.discovery().localNode().dataCenterId() == null)
+            return;
+
+        cache.metrics0().registerAffinityConfigurationSafeMetric(isAffinityConfigurationMdcSafe(cache.configuration()));
+
+        cache.metrics0().registerPartitionDistributionSafeMetric();
     }
 
     /**

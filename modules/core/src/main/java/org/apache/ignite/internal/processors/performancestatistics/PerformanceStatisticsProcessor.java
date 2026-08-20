@@ -124,7 +124,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
             });
 
         rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
-            req -> ctx.closure().callLocalSafe(() -> {
+            (id, req) -> ctx.closure().callLocalSafe(() -> {
                 rotateWriter();
 
                 return null;
