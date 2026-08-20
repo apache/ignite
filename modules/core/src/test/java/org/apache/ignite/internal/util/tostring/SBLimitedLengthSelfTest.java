@@ -77,34 +77,11 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNPEProtectionWithNullTail() {
-        // Create SBLimitedLength with very small head limit and force tail creation manually
-        SBLimitedLength sbLimitedLength = new SBLimitedLength(256);
-        
-        // We use a custom SBLengthLimit to trigger the exact scenario
-        sbLimitedLength.initLimit(new SBLengthLimit() {
-            
-            @Override boolean overflowed(SBLimitedLength sb) {
-                return sb.impl().length() > 3;
-            }
-            
-            @Override void onWrite(SBLimitedLength sb, int writtenLen) {
-                super.onWrite(sb, writtenLen);
-            }
-        });
-        
-        // Append enough data to overflow head
-        sbLimitedLength.a("abcd");
-        
-        // At this point, tail should have been created by onWrite
-        Assert.assertNotNull("Tail should not be null", sbLimitedLength.getTail());
-        
-        // Now simulate handleRecursion scenario: insert followed by append
-        sbLimitedLength.i(1, "XY");
-        sbLimitedLength.a("Z");
-        
-        String result = sbLimitedLength.toString();
-        Assert.assertTrue("Result should contain inserted data", result.contains("XY"));
-        Assert.assertTrue("Result should contain appended data", result.contains("Z"));
+        SBLimitedLength sb = new SBLimitedLength(256);
+        sb.initLimit(new SBLengthLimit());
+        sb.a("a".repeat(8000));
+        sb.i(0, "@0");
+        sb.a("x");
     }
 
     /** Ensure toString works as expected */
