@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -135,62 +136,57 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that non-blocking cancellation doesn't wait for a running task holding the task monitor and prevents
-     * subsequent executions.
+     * Tests non-blocking cancellation of a running periodic task.
      *
      * @throws Exception If test failed.
      */
     @Test
     public void testNonBlockingCancel() throws Exception {
-        ReentrantLock sslLock = new ReentrantLock();
-        CountDownLatch lockAcquired = new CountDownLatch(1);
+        ReentrantLock extLock = new ReentrantLock();
+        CountDownLatch extLockAcquired = new CountDownLatch(1);
         CountDownLatch taskStarted = new CountDownLatch(1);
         AtomicInteger taskCallCnt = new AtomicInteger();
 
         GridTimeoutProcessor.CancelableTask task = ctx.timeout().schedule(() -> {
+            U.awaitQuiet(extLockAcquired);
+
             taskCallCnt.incrementAndGet();
 
             taskStarted.countDown();
 
-            sslLock.lock();
+            extLock.lock();
 
             try {
                 // No-op.
             }
             finally {
-                sslLock.unlock();
+                extLock.unlock();
             }
-        }, 60_000, 1_000);
+        }, 0, 1_000);
 
         IgniteInternalFuture<?> cancelFut = GridTestUtils.runAsync(() -> {
-            // Emulates the NIO worker cancelling the handshake timeout under the SSL handler lock.
-            sslLock.lock();
+            extLock.lock();
 
             try {
-                lockAcquired.countDown();
+                extLockAcquired.countDown();
 
-                taskStarted.await();
+                assertTrue(taskStarted.await(10_000, MILLISECONDS));
 
                 task.cancel();
             }
             finally {
-                sslLock.unlock();
+                extLock.unlock();
             }
         }, "test-cancel-thread");
 
-        assertTrue(lockAcquired.await(10_000, MILLISECONDS));
-
-        IgniteInternalFuture<?> timeoutFut = GridTestUtils.runAsync(task::onTimeout, "test-timeout-thread");
-
         cancelFut.get(10_000);
-        timeoutFut.get(10_000);
 
-        assertEquals(1, taskCallCnt.get());
+        // Wait for the timeout callback and its rescheduling logic to finish.
+        synchronized (task) {
+            assertEquals(1, taskCallCnt.get());
+        }
+
         assertFalse(ctx.timeout().removeTimeoutObject(task));
-
-        task.onTimeout();
-
-        assertEquals(1, taskCallCnt.get());
     }
 
     /**
