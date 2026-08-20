@@ -52,7 +52,6 @@ import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MARSHALLABLE_MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.NON_MARSHALLABLE_MESSAGE_INTERFACE;
-import static org.apache.ignite.internal.MessageProcessor.SELF_MARSHALLING_MESSAGE_INTERFACE;
 
 /**
  * Generates {@code *Marshaller} classes for {@code Message} types that are not {@code NonMarshallableMessage}.
@@ -98,9 +97,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     private final TypeMirror nonMarshallableType;
 
     /** */
-    private final TypeMirror selfMarshallingMsgType;
-
-    /** */
     private final TypeMirror cacheGrpIdMsgType;
 
     /** */
@@ -111,9 +107,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
     /** */
     private boolean marshallable;
-
-    /** Whether the message marshals fields of its own, so the generated methods call its step. */
-    private boolean selfMarshalling;
 
     /** Whether the message pins the JDK marshaller, see {@link JdkMarshalled}. */
     private boolean jdkMarshalled;
@@ -144,7 +137,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         msgType = type(MESSAGE_INTERFACE);
         cacheObjType = type(CACHE_OBJECT_CLS);
         nonMarshallableType = type(NON_MARSHALLABLE_MESSAGE_INTERFACE);
-        selfMarshallingMsgType = type(SELF_MARSHALLING_MESSAGE_INTERFACE);
         cacheGrpIdMsgType = type(GRID_CACHE_GROUP_ID_MESSAGE_CLS);
         mapType = type(Map.class.getName());
         colType = type(Collection.class.getName());
@@ -172,7 +164,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
         }
 
         marshallable = marshallableMsgType != null && assignableFrom(type.asType(), marshallableMsgType);
-        selfMarshalling = selfMarshallingMsgType != null && assignableFrom(type.asType(), selfMarshallingMsgType);
         jdkMarshalled = pinsJdkMarshaller(type);
         marshVar = jdkMarshalled ? "jdkMarsh" : "marsh";
 
@@ -218,9 +209,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             if (needsCtx(orderedFields))
                 appendBlock(body, List.of(ctxResolutionLine()));
-
-            if (selfMarshalling)
-                appendBlock(body, List.of(indentedLine("msg.selfMarshal();")));
 
             appendMarshalledFieldsPrepare(body);
             appendMarshalledPrepare(body);
@@ -295,8 +283,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendMarshalledMapFinish(body);
             appendMarshalledElementBlobsFinish(body);
 
-            if (selfMarshalling)
-                appendBlock(body, List.of(indentedLine("msg.selfUnmarshal();")));
 
             prependMsgFactoryResolution(body);
             prependPinnedMarshaller(body);
@@ -487,7 +473,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
 
             code.add(indentedLine("%s = U.newHashSet(%s.length);", colField, arrField));
             code.add(EMPTY);
-            code.addAll(collectionFinishForBlock(wireField, colField, arrField, field.getSimpleName().toString()));
+            code.addAll(collectionFinishForBlock(wireField, colField, arrField));
             code.add(EMPTY);
             code.add(indentedLine("%s = null;", arrField));
 
@@ -562,7 +548,7 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
     }
 
     /** Generates the {@code for} loop body: per-element unmarshal + try/catch add into the collection. */
-    private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField, String fieldName) {
+    private List<String> collectionFinishForBlock(VariableElement wireField, String colField, String arrField) {
         String compName = arrayComponentName(wireField);
         TypeMirror compType = ((ArrayType)wireField.asType()).getComponentType();
 
