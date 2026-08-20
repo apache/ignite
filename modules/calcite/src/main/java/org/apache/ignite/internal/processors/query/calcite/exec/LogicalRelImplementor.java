@@ -41,6 +41,7 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -655,6 +656,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         long offset = validateAndGetOffset(rel.offset, SortNode.OFFSET_DEFAULT);
         long fetch = validateAndGetFetch(rel.fetch, SortNode.FETCH_DEFAULT);
 
+        // Zero FETCH is enforced by the outer IgniteLimit, while SortNode accepts only positive FETCH values.
+        if (fetch == 0)
+            fetch = SortNode.FETCH_DEFAULT;
+
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
 
@@ -672,7 +677,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** */
     private long validateAndGetFetch(RexNode node, long defaultVal) {
-        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch");
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch / limit");
     }
 
     /** {@inheritDoc} */
@@ -1071,6 +1076,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     private long validateAndGetFetchOffsetParams(RexNode node, String op) {
         Supplier<Object> scalar = expressionFactory.execute(node);
         Object param = scalar.get();
+
+        if (param == null && !(node instanceof RexDynamicParam)) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
 
         if (!(param instanceof Number)) {
             String actual = param == null ? "null" : param.getClass().getSimpleName();

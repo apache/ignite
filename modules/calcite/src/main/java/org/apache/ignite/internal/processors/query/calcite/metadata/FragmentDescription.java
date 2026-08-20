@@ -67,7 +67,7 @@ public class FragmentDescription implements Message {
             this.target = target.explicitMapping();
     }
 
-    /** Prepares fragment description as {@link Message} to send to another node. */
+    /** Prepares this fragment description to send to another node. */
     public FragmentDescription preparedToSend() {
         if (target != null)
             target.prepareToSend();
