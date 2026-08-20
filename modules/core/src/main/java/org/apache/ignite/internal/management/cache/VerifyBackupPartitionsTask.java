@@ -111,7 +111,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     public static final String CP_REASON = "VerifyBackupPartitions";
 
     /** Effective verify executor service. */
-    private static ExecutorService EXECUTOR_SERVICE;
+    private static volatile ExecutorService EXECUTOR_SERVICE;
 
     /** Injected logger. */
     @LoggerResource
