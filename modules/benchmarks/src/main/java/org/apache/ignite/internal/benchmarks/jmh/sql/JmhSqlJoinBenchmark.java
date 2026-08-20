@@ -19,7 +19,6 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
@@ -33,9 +32,6 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
 
     /** Count of entries in EMP table. */
     protected static final int EMP_CNT = 10_000;
-
-    /** Counter for forcing query replanning in cold benchmark. */
-    private final AtomicInteger planRnd = new AtomicInteger();
 
     /**
      * Initiate new tables.
@@ -102,26 +98,6 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
                 "Department 5"
         );
 
-        bh.consume(res);
-    }
-
-    /**
-     * LEFT JOIN with DISTINCT where query text is changed every run to bypass plan cache.
-     * This tests the cold path where query optimization and planning happens every time.
-     */
-    @Benchmark
-    public void leftJoinDistinctRegressionCold(Blackhole bh) {
-        int rnd = planRnd.incrementAndGet();
-
-        List<List<?>> res = executeSql(
-                "/*rnd=" + rnd + "*/ " +
-                        "SELECT d.deptid, d.name, e.empid " +
-                        "FROM (SELECT DISTINCT * FROM dept) d " +
-                        "LEFT JOIN emp e ON d.deptid = e.deptid " +
-                        "WHERE e.name = ?",
-                "Employee 5"
-        );
-        
         bh.consume(res);
     }
 
