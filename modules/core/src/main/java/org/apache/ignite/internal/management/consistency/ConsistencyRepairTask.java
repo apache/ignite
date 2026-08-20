@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
-import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -103,7 +102,7 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
         @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
-            ExecutorService execSrvc = VerifyBackupPartitionsTask.initOrGetVerifyExecutor(ignite.name());
+            ExecutorService execSrvc = ignite.context().pools().getIdleVerifyExecutorService();
 
             // Consisnency Repair and Idle Verify are usually companion tasks. Thay share the same thread pool currently
             // allocated by Idle Verify.
