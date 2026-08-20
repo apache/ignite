@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.sql;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.RoundingMode;
 import org.apache.calcite.plan.Context;
@@ -34,7 +34,6 @@ public interface IgniteSqlPaginationPolicy {
 
     /** Rounds the given value according to the specified policy and converts it to {@code long}. */
     static long convertToLongExact(Number value, @Nullable IgniteSqlPaginationPolicy policy) {
-        RoundingMode roundingMode = policy == null ? IgniteMath.NUMERIC_ROUNDING_MODE : policy.roundingMode();
-        return IgniteMath.convertToLongExact(value, roundingMode);
+        return policy == null ? IgniteMath.convertToLongExact(value) : IgniteMath.convertToLongExact(value, policy.roundingMode());
     }
 }

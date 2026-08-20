@@ -67,8 +67,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlNodeRewriter;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlPaginationPolicy;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
-import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlPaginationPolicy;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
