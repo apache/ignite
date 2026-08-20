@@ -32,7 +32,7 @@ SAFEPOINT_LOGS_ENABLED = "safepoint_log_enabled"
 
 class IgniteTestContext(TestContext):
     def __init__(self, test_context):
-        super().__init__()
+        super().__init__(**test_context.__dict__)
         self.__dict__.update(**test_context.__dict__)
 
     @property
