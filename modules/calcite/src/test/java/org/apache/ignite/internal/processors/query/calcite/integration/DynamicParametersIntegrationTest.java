@@ -193,15 +193,15 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
     public void testFractionalLimitOffset() {
         createAndPopulateTable();
 
-        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(0.5).resultSize(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(0.5).returns(0).check();
         assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.4).returns(0).check();
-        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.6).returns(0).check();
+        assertQuery("SELECT id FROM person ORDER BY id LIMIT ?").withParams(1.6).returns(0).returns(1).check();
         assertThrowsSqlException("SELECT id FROM person ORDER BY id LIMIT ?", null, BigDecimal.valueOf(-1.5));
         assertThrowsSqlException("SELECT id FROM person ORDER BY id LIMIT ?", null, BigDecimal.valueOf(-0.5));
 
         assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
             .withParams(BigDecimal.valueOf(0.5))
-            .resultSize(0)
+            .returns(0)
             .check();
         assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
             .withParams(BigDecimal.valueOf(1.3))
@@ -210,13 +210,13 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
         assertQuery("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY")
             .withParams(BigDecimal.valueOf(1.6))
             .returns(0)
+            .returns(1)
             .check();
         assertThrowsSqlException("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", null, BigDecimal.valueOf(-1.5));
         assertThrowsSqlException("SELECT id FROM person ORDER BY id FETCH FIRST ? ROWS ONLY", null, BigDecimal.valueOf(-0.5));
 
         assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
             .withParams(BigDecimal.valueOf(0.5))
-            .returns(0)
             .returns(1)
             .returns(2)
             .returns(3)
@@ -230,7 +230,6 @@ public class DynamicParametersIntegrationTest extends AbstractBasicIntegrationTe
             .check();
         assertQuery("SELECT id FROM person ORDER BY id OFFSET ? ROWS")
             .withParams(BigDecimal.valueOf(2.6))
-            .returns(2)
             .returns(3)
             .returns(4)
             .check();

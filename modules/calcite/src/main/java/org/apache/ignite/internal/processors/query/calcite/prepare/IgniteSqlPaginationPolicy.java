@@ -14,29 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.math.RoundingMode;
 import org.apache.calcite.plan.Context;
+import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Abstract query context.
+ * Defines a policy for processing values of SQL pagination clauses: LIMIT, FETCH, and OFFSET.
+ *
+ * <p>Custom instance can be supplied through {@link Frameworks.ConfigBuilder#context(Context)}.</p>
  */
-public class AbstractQueryContext implements Context {
-    /** */
-    private final Context parentCtx;
+@FunctionalInterface
+public interface IgniteSqlPaginationPolicy {
+    /** Returns the rounding mode for FETCH, LIMIT and OFFSET values. */
+    RoundingMode roundingMode();
 
-    /** */
-    public AbstractQueryContext(Context parentCtx) {
-        this.parentCtx = parentCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <C> @Nullable C unwrap(Class<C> aCls) {
-        if (aCls == getClass())
-            return aCls.cast(this);
-
-        return parentCtx.unwrap(aCls);
+    /** Rounds the given value according to the specified policy and converts it to {@code long}. */
+    static long convertToLongExact(Number value, @Nullable IgniteSqlPaginationPolicy policy) {
+        return policy == null ? IgniteMath.convertToLongExact(value) : IgniteMath.convertToLongExact(value, policy.roundingMode());
     }
 }

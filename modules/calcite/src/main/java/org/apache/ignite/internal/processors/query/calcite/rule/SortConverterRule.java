@@ -35,6 +35,7 @@ import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlPaginationPolicy;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
@@ -139,8 +140,19 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
 
         BigDecimal fetchVal = ((RexLiteral)reducedFetch.get(0)).getValueAs(BigDecimal.class);
 
+        if (fetchVal == null)
+            return false;
+
         // SortNode does not accept zero FETCH; the outer IgniteLimit handles it.
-        return fetchVal != null && fetchVal.compareTo(BigDecimal.ONE) >= 0;
+        IgniteSqlPaginationPolicy pagPlc = sort.getCluster().getPlanner().getContext().unwrap(IgniteSqlPaginationPolicy.class);
+
+        try {
+            return IgniteSqlPaginationPolicy.convertToLongExact(fetchVal, pagPlc) > 0;
+        }
+        catch (ArithmeticException ignored) {
+            // The outer IgniteLimit will report invalid FETCH during execution.
+            return false;
+        }
     }
 
     /** Returns {@code true} if the expression contains a dynamic parameter. */
