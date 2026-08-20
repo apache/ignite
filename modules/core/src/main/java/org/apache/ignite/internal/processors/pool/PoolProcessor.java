@@ -148,10 +148,10 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** */
     @SystemProperty(value = "Idle verify utility thread pool size.", type = Integer.class,
         defaults = "Total visible CPUs - 2, minimum 4 threads.")
-    public static final String VERIFY_POOL_SIZE = "IGNITE_IDLE_VERIFY_POOL_SIZE";
+    public static final String IDLE_VERIFY_POOL_SIZE_PROPERTY = "IGNITE_IDLE_VERIFY_POOL_SIZE";
 
     /** */
-    private static final int DFLT_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
+    private static final int DFLT_IDLE_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
 
     /** Executor service. */
     @GridToStringExclude
@@ -390,7 +390,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         mgmtExecSvc.allowCoreThreadTimeOut(true);
 
-        int idleVerifyPoolSz = IgniteSystemProperties.getInteger(VERIFY_POOL_SIZE, DFLT_VERIFY_POOL_SIZE);
+        int idleVerifyPoolSz = IgniteSystemProperties.getInteger(IDLE_VERIFY_POOL_SIZE_PROPERTY, DFLT_IDLE_VERIFY_POOL_SIZE);
 
         validateThreadPoolSize(idleVerifyPoolSz, "idle verify");
 

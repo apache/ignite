@@ -80,8 +80,6 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * <br>
  * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
  * concurrently updated.
- * <br>
- * Establishes own dedicated utility thread pool.
  */
 @GridInternal
 public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResult> {
