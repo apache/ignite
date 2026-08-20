@@ -163,7 +163,7 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
 
                 // Kill local-only scans and local part of distributed scans.
                 for (ScanQueryIterator<?, ?, ?> locIter : mgr.localQueryIterators()) {
-                    if (ts > 0 && locIter.startTime() >= ts)
+                    if (arg.minDuration() != null && locIter.startTime() >= ts)
                         continue;
 
                     try {
@@ -183,7 +183,7 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
                     if (fut.query().query().type() != GridCacheQueryType.SCAN)
                         continue;
 
-                    if (ts > 0 && fut.startTime() >= ts)
+                    if (arg.minDuration() != null && fut.startTime() >= ts)
                         continue;
 
                     try {
@@ -223,7 +223,7 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
                     if (fut.query().query().type() != GridCacheQueryType.INDEX)
                         continue;
 
-                    if (ts > 0 && fut.startTime() >= ts)
+                    if (arg.minDuration() != null && fut.startTime() >= ts)
                         continue;
 
                     try {
