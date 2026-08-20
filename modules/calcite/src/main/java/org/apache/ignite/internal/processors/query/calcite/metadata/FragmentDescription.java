@@ -25,11 +25,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Query fragment description. Has to be prepared to send to another node and to restore after receiving from another
- * node.
+ * Query fragment description. <br>
+ * Has to be prepared to send to another node and restored after receiving from another node.
  *
  * @see #preparedToSend()
- * @see #receivedFragment()
+ * @see #received()
  */
 public class FragmentDescription implements Message {
     /** */
@@ -48,7 +48,7 @@ public class FragmentDescription implements Message {
     @Order(3)
     @Nullable ColocationGroup target;
 
-    /** Transient flag of {@link #receivedFragment()}-once-invoked. */
+    /** Transient flag of {@link #received()}-once-invoked. */
     boolean received;
 
     /** */
@@ -77,8 +77,8 @@ public class FragmentDescription implements Message {
         return this;
     }
 
-    /** Properly unwraps this fragment description after receiving from another node. */
-    public FragmentDescription receivedFragment() {
+    /** Properly unwraps fragment description after receiving from another node. */
+    public FragmentDescription received() {
         if (!received) {
             if (target != null)
                 target.afterReceive();

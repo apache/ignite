@@ -146,7 +146,7 @@ public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionCon
      * @return Fragment description.
      */
     public FragmentDescription fragmentDescription() {
-        return fragmentDesc.receivedFragment();
+        return fragmentDesc.received();
     }
 
     /**

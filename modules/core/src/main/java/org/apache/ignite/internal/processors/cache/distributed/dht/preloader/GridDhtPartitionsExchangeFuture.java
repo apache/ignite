@@ -286,6 +286,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
      * partitions maps to nodes using discovery (ring) instead of communication.
+     * TODO : seems is always false, https://issues.apache.org/jira/browse/IGNITE-28997
      */
     private boolean centralizedAff;
 
@@ -2110,7 +2111,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
-            partsToReload);
+            partsToReload,
+            cctx.cache().cacheGroups()
+        );
 
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
             m.setErrorsMap(exchangeGlobalExceptions);
@@ -3202,6 +3205,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param fut Affinity future.
+     * TODO : Seems isn't used https://issues.apache.org/jira/browse/IGNITE-28997
      */
     private void onAffinityInitialized(IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut) {
         try {
@@ -3831,6 +3835,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 state = ExchangeLocalState.DONE;
             }
 
+            // TODO : seems is always false, https://issues.apache.org/jira/browse/IGNITE-28997
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
 
@@ -4746,7 +4751,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
 
-                        GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
+                        GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage().received();
 
                         IgniteCheckedException err = !F.isEmpty(partsMsg.getErrorsMap()) ?
                             new IgniteCheckedException("Cluster state change failed.") : null;
