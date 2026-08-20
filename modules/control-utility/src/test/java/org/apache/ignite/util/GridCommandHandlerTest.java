@@ -37,10 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -250,8 +247,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         super.afterTest();
 
         listeningLog = null;
-
-        VerifyBackupPartitionsTask.EXECUTOR_SERVICE = null;
     }
 
     /** {@inheritDoc} */
@@ -439,44 +434,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     @Test
     public void testIdleVerifyCancelWhileCalcPartitionHashRunning() throws Exception {
-        for (boolean checkCrc : new boolean[] {false}) {
-            AtomicBoolean eCancel = new AtomicBoolean();
+        listeningLog = new ListeningTestLogger(log);
 
-            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
-                ForkJoinPool pool = new ForkJoinPool() {
-                    @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
-                        return super.submit(new Callable<>() {
-                            @Override public T call() throws Exception {
-                                beforeCancelLatch.countDown();
+        for (boolean checkCrc : new boolean[] {false, true}) {
+            LogListener lsnr = LogListener.matches(checkCrc
+                ? "Checking of partitions page CRC sum has been cancelled"
+                : "Partition hash calculation has been cancelled"
+            ).build();
 
-                                assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+            listeningLog.registerListener(lsnr);
 
-                                try {
-                                    return task.call();
-                                }
-                                catch (Throwable e) {
-                                    // Call is supposed to fail.
-                                    // Check both execption types because it is easy to change one onto another.
-                                    if (X.hasCause(e, "Partition hash calculation has been cancelled",
-                                        IgniteCheckedException.class, IgniteException.class))
-                                        eCancel.set(true);
-                                    else if (X.hasCause(e, "Checking of partitions page CRC sum has been cancelled",
-                                        IgniteCheckedException.class, IgniteException.class))
-                                        eCancel.set(true);
+            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> beforeCancelLatch.countDown(), checkCrc);
 
-                                    throw e;
-                                }
-                            }
-                        });
-                    }
-                };
+            lsnr.check();
 
-                VerifyBackupPartitionsTask.EXECUTOR_SERVICE = pool;
-            }, checkCrc);
-
-            assertTrue("Task must fail with expected exception", eCancel.get());
-
-            eCancel.set(false);
+            listeningLog.clearListeners();
         }
     }
 
@@ -490,7 +462,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         final int gridsCnt = 4;
 
         if (G.allGrids().isEmpty()) {
-            listeningLog = new ListeningTestLogger(log);
+            if (listeningLog == null)
+                listeningLog = new ListeningTestLogger(log);
 
             IgniteEx srv = startGrids(gridsCnt);
 
