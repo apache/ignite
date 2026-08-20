@@ -251,6 +251,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         super.afterTest();
 
         listeningLog = null;
+
+        VerifyBackupPartitionsTask.verifyExecutor(null);
     }
 
     /** {@inheritDoc} */

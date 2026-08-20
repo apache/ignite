@@ -144,7 +144,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
     /** Only for tests. Overrides {@link #EXECUTOR_SERVICE}. */
     @TestOnly
-    public static void verifyExecutor(ExecutorService jobsExecutor) {
+    public static void verifyExecutor(@Nullable ExecutorService jobsExecutor) {
         EXECUTOR_SERVICE = jobsExecutor;
     }
 
