@@ -1491,6 +1491,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) {
+            assert false;
+
             exchCtx.events().warnNoAffinityNodes(cctx);
 
             centralizedAff = cctx.affinity().onCentralizedAffinityChange(this, crd);
@@ -3201,29 +3203,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param fut Affinity future.
-     */
-    private void onAffinityInitialized(IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut) {
-        try {
-            assert fut.isDone();
-
-            Map<Integer, Map<Integer, List<UUID>>> assignmentChange = fut.get();
-
-            GridDhtPartitionsFullMessage m = createPartitionsMessage();
-
-            CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
-
-            if (log.isDebugEnabled())
-                log.debug("Centralized affinity exchange, send affinity change message: " + msg);
-
-            cctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
-        }
-    }
-
-    /**
      * @param top Topology.
      */
     private void assignPartitionSizes(GridDhtPartitionTopology top) {
@@ -3831,15 +3810,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 state = ExchangeLocalState.DONE;
             }
 
+            assert !centralizedAff;
+
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
 
-                IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
-
-                if (!fut.isDone())
-                    fut.listen(this::onAffinityInitialized);
-                else
-                    onAffinityInitialized(fut);
+                cctx.affinity().initAffinityOnNodeLeft(this);
             }
             else {
                 Set<ClusterNode> nodes;
