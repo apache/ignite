@@ -128,7 +128,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         throw new IgniteException(new IllegalArgumentException(VERIFY_POOL_SIZE + " must be greater than 0."));
 
                     EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
-                        "idleVerify-repair",
+                        "idleVerify",
                         igniteName,
                         poolSz,
                         poolSz,
