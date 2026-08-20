@@ -91,7 +91,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
@@ -115,6 +114,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
 
 /**
  * Dummy context for offline utilities. All grid components registered in the standalone context
@@ -178,9 +179,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** Operation context dispacther. */
     private final OperationContextDispatcher opCtxDispatcher = new OperationContextDispatcher();
-
-    /** */
-    private final IgniteNodeFeatureSet locNodeFeatures = new IgniteNodeFeatureSet(IgniteCoreFeatureSet.local());
 
     /**
      * @param log Logger.
@@ -324,7 +322,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteNodeFeatureSet localNodeFeatures() {
-        return locNodeFeatures;
+        return LOCAL_CORE_FEATURES;
     }
 
     /** {@inheritDoc} */

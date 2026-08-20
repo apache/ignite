@@ -51,8 +51,8 @@ import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -1091,7 +1091,7 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
                     }
                 }
 
-                MessageMarshalling.unmarshal(e, ctx, cctx.cacheObjectContext(), ldr);
+                CommunicationMarshalling.unmarshal(e, ctx, cctx.cacheObjectContext(), ldr);
 
                 Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, e);
 

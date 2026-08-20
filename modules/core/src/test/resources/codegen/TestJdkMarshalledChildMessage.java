@@ -14,25 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+public class TestJdkMarshalledChildMessage extends TestJdkMarshalledMessage {
+    @Marshalled("ownBytes")
+    Object own;
 
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+    @Order(0)
+    byte[] ownBytes;
 
-/**
- * In case message CAN contain user provided classes it must be marshalled with the {@link BinaryMarshaller}.
- * {@link BinaryMarshaller} is able to process user classes using schema tansfering protocol through Discovery.
- * Mark {@link Message} class with annotation to serialize it with {@link BinaryMarshaller}.
- */
-@Documented
-@Target(value = TYPE)
-@Retention(RUNTIME)
-public @interface UseBinaryMarshaller {
-    // No-op.
+    public short directType() {
+        return 1;
+    }
 }

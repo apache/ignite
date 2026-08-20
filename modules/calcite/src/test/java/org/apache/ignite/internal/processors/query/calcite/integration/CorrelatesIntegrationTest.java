@@ -201,4 +201,21 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
             .returns(1).returns(2)
             .check();
     }
+
+    /** */
+    @Test
+    public void testCorrelatedSubqueryWithFetchExpressionInView() {
+        sql("CREATE TABLE dept(deptid INTEGER PRIMARY KEY, name VARCHAR) WITH " + atomicity());
+        sql("CREATE TABLE emp(empid INTEGER PRIMARY KEY, deptid INTEGER) WITH " + atomicity());
+        sql("INSERT INTO dept VALUES (0, 'd0'), (1, 'd1')");
+        sql("INSERT INTO emp VALUES (11, 0), (10, 0), (20, 1)");
+        sql("CREATE VIEW dept_view AS SELECT "
+            + "(SELECT empid FROM emp WHERE emp.deptid = dept.deptid ORDER BY empid "
+            + "FETCH FIRST (1 + 0) ROWS ONLY) empid FROM dept");
+
+        assertQuery("SELECT empid FROM dept_view ORDER BY empid")
+            .returns(10)
+            .returns(20)
+            .check();
+    }
 }

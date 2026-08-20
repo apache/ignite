@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -39,7 +38,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
 
     /** */
     @Order(2)
-    IgniteComponentFeatureSet[] nodeFeatures;
+    IgniteNodeFeatureSet nodeFeatures;
 
     /**
      * Default constructor for {@link MessageFactory}.
@@ -57,7 +56,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     public TcpDiscoveryHandshakeRequest(UUID creatorNodeId, IgniteNodeFeatureSet locNodeFeatures) {
         super(creatorNodeId);
 
-        this.nodeFeatures = locNodeFeatures.values();
+        this.nodeFeatures = locNodeFeatures;
     }
 
     /**
@@ -90,7 +89,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
 
     /** @return Features supported by the sender node. */
     public IgniteNodeFeatureSet nodeFeatures() {
-        return nodeFeatures == null ? null : new IgniteNodeFeatureSet(nodeFeatures);
+        return nodeFeatures;
     }
 
     /** {@inheritDoc} */

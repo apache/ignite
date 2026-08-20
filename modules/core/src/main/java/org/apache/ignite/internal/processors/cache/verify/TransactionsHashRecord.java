@@ -18,13 +18,20 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Represents committed transactions hash for a pair of nodes. */
+/**
+ * Represents committed transactions hash for a pair of nodes.
+ * <p>
+ * Travels both transports, Communication and Discovery, inside the result of a snapshot check, and carries a user
+ * consistent id.
+ */
+@JdkMarshalled
 public class TransactionsHashRecord implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;

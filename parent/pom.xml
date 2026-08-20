@@ -38,9 +38,29 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
 
+    <distributionManagement>
+        <repository>
+            <id>${distMgmtReleasesId}</id>
+            <name>${distMgmtReleasesName}</name>
+            <url>${distMgmtReleasesUrl}</url>
+        </repository>
+        <snapshotRepository>
+            <id>${distMgmtSnapshotsId}</id>
+            <name>${distMgmtSnapshotsName}</name>
+            <url>${distMgmtSnapshotsUrl}</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+
+        <distMgmtReleasesId>apache.releases.https</distMgmtReleasesId>
+        <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
+        <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
+        <distMgmtSnapshotsId>apache.snapshots.https</distMgmtSnapshotsId>
+        <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
+        <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
 
         <revision>2.19.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -85,7 +105,7 @@
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
-        <log4j2.version>2.25.4</log4j2.version>
+        <log4j2.version>2.26.1</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.4</lucene.version>
         <lz4.version>1.11.1</lz4.version>

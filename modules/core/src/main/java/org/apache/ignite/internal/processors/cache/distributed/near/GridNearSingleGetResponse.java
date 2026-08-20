@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
@@ -35,7 +34,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-@UseBinaryMarshaller
 public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
     public static final int INVALID_PART_FLAG_MASK = 0x1;

@@ -709,7 +709,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryIoSession ses = createSession(sock);
 
-                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, spi.localNodeFeatures());
+                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, locNode.features());
 
                 req.client(true);
                 req.dcId(locNode.dataCenterId());
