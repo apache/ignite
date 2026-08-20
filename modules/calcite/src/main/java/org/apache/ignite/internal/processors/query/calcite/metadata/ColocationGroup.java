@@ -40,8 +40,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Query/fragment colocation group. As a {@link Message}, has to be prepared to send to another node and restored after
- * receiving from another node.
+ * Query/fragment colocation group. Has to be prepared to send to another node and to restore after receiving from another
+ * node.
  *
  * @see #prepareToSend()
  * @see #afterReceive()
@@ -321,7 +321,7 @@ public class ColocationGroup implements Message {
         return parts.arrayCopy();
     }
 
-    /** Prepares colocation group as {@link Message} to send to another node. */
+    /** Prepares the assigments to send to another node. */
     public void prepareToSend() {
         if (!F.isEmpty(marshalledAssignments) || assignments == null || primaryAssignment)
             return;
@@ -350,7 +350,7 @@ public class ColocationGroup implements Message {
         marshalledAssignments = builder.build().buffer();
     }
 
-    /** Properly unwraps colocation group as {@link Message} after receiving from another node. */
+    /** Properly unwraps the assigments after receiving from another node. */
     public void afterReceive() {
         /** {@link #assignments} are set in constructors or are updated when {@link #marshalledAssignments} is {@code null}. */
         if (marshalledAssignments == null || assignments != null)

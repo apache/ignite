@@ -25,8 +25,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Query fragment description. As a {@link Message}, has to be prepared to send to another node and restored after
- * receiving from another node.
+ * Query fragment description. Has to be prepared to send to another node and to restore after receiving from another
+ * node.
  *
  * @see #preparedToSend()
  * @see #receivedFragment()
@@ -67,7 +67,7 @@ public class FragmentDescription implements Message {
             this.target = target.explicitMapping();
     }
 
-    /** Prepares fragment description as {@link Message} to send to another node. */
+    /** Prepares this fragment description to send to another node. */
     public FragmentDescription preparedToSend() {
         if (target != null)
             target.prepareToSend();
@@ -77,7 +77,7 @@ public class FragmentDescription implements Message {
         return this;
     }
 
-    /** Properly unwraps fragment description as {@link Message} after receiving from another node. */
+    /** Properly unwraps this fragment description after receiving from another node. */
     public FragmentDescription receivedFragment() {
         if (!received) {
             if (target != null)
