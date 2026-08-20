@@ -45,7 +45,7 @@ default_num_nodes=4
 default_jdk="openjdk:17"
 
 # The default Python version.
-default_python="3.13"
+default_python="3.11"
 
 # The default ducker-ignite image name.
 default_image_name="ducker-ignite"

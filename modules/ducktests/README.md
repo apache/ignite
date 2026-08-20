@@ -46,6 +46,7 @@ Run the following commands from your host system's shell inside `${IGNITE_HOME}/
 # Create and activate an isolated development virtual environment
 python3 -m venv ~/.virtualenvs/ignite-ducktests-dev
 source ~/.virtualenvs/ignite-ducktests-dev/bin/activate
+python3 -m pip install --upgrade pip setuptools
 
 # Install core framework testing requirements and editable dependencies
 pip install -r docker/requirements-dev.txt
