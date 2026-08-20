@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQue
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryIterator;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
@@ -255,6 +256,9 @@ public class KillAllTask extends VisorMultiNodeTask<KillAllCommandArg, Map<Clust
 
             for (Map.Entry<UUID, ContinousRoutineLocalInfo> e : proc.localRoutineInfos().entrySet()) {
                 if (!e.getValue().handler().isQuery())
+                    continue;
+
+                if (e.getValue().handler() instanceof CacheContinuousQueryHandler<?, ?> h && h.internal())
                     continue;
 
                 if (arg.nodeId == null || arg.nodeId.equals(e.getValue().nodeId()))
