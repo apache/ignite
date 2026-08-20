@@ -26,67 +26,6 @@ The ignite-ducktests framework is a bilingual integration testing framework:
 Each Ignite node runs in a separate Docker container. The Python layer manages container lifecycle and simulates network failures via iptables.
 
 ---
-## Write a Java Application (if needed)
-
-All Java applications extend IgniteAwareApplication. Create a new file under:
-modules/ducktests/src/main/java/org/apache/ignite/internal/ducktest/tests/<your_package>/<YourApp>.java
-
-### Example:
-```java
-package org.apache.ignite.internal.ducktest.tests.mytest;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
-public class MyTestApp extends IgniteAwareApplication {
-    @Override
-    protected void run(JsonNode params) throws Exception {
-        // 1. Signal initialization — Python side waits for this
-        markInitialized();
-        // 2. Parse parameters passed from Python
-        String cacheName = params.get("cacheName").asText();
-        int range = params.get("range").asInt(1000);
-
-        // 3. Use the cluster (depends on service type)
-        //    NODE mode       → this.ignite        (full Ignite node)
-        //    THIN_CLIENT     → this.client         (IgniteClient)
-        //    THIN_JDBC       → this.thinJdbcDataSource
-        IgniteCache<Integer, String> cache = ignite.cache(cacheName);
-        for (int i = 0; i < range; i++)
-            cache.put(i, "val-" + i);
-        // 4. Record a result back to Python (readable via extract_result())
-        recordResult("putCount", String.valueOf(range));
-
-        // 5. For long-running apps, loop until SIGTERM:
-        //    while (!terminated()) { U.sleep(100); }
-
-        // 6. Signal completion — Python side waits for this on stop()
-        markFinished();
-    }
-}
-```
----
-## Application Lifecycle Methods
-
-| Method                      | What it does                        | Python effect                             |
-|-----------------------------|-------------------------------------|-------------------------------------------|
-| markInitialized()           | Prints IGNITE_APPLICATION_INITIALIZED | Required before start() returns           |
-| markFinished()              | Prints IGNITE_APPLICATION_FINISHED    | Required before stop() returns            |
-| markBroken(Throwable)       | Prints IGNITE_APPLICATION_BROKEN      | Raises IgniteExecutionException in Python |
-| recordResult(name, value)   | Prints name->value<-                | Read via app.extract_result(name)         |
-| markSyncExecutionComplete() | Run-to-completion shortcut          | Use instead of init + finish pair         |
-
----
-## Service Types (what connection the app gets)
-
-| Service Type     | Python config class           | Java field              |
-|------------------|-------------------------------|-------------------------|
-| Full server node | IgniteConfiguration           | this.ignite             |
-| Thin client      | IgniteThinClientConfiguration | this.client             |
-| Thin JDBC        | IgniteThinJdbcConfiguration   | this.thinJdbcDataSource |
-| No connection    | service_type = NONE           | nothing                 |
-
----
 ## Write a Python Test
 
 Create a new file under:
@@ -495,6 +434,67 @@ All IgniteAwareService subclasses (including IgniteService and IgniteApplication
 | node_id(node)                               | Get UUID of a node from logs            |
 | alive(node)                                 | Check if a node process is alive        |
 | thread_dump(node)                           | Dump JVM threads                        |
+
+---
+## Write a Java Application (if needed)
+
+All Java applications extend IgniteAwareApplication. Create a new file under:
+modules/ducktests/src/main/java/org/apache/ignite/internal/ducktest/tests/<your_package>/<YourApp>.java
+
+### Example:
+```java
+package org.apache.ignite.internal.ducktest.tests.mytest;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+
+public class MyTestApp extends IgniteAwareApplication {
+    @Override
+    protected void run(JsonNode params) throws Exception {
+        // 1. Signal initialization — Python side waits for this
+        markInitialized();
+        // 2. Parse parameters passed from Python
+        String cacheName = params.get("cacheName").asText();
+        int range = params.get("range").asInt(1000);
+
+        // 3. Use the cluster (depends on service type)
+        //    NODE mode       → this.ignite        (full Ignite node)
+        //    THIN_CLIENT     → this.client         (IgniteClient)
+        //    THIN_JDBC       → this.thinJdbcDataSource
+        IgniteCache<Integer, String> cache = ignite.cache(cacheName);
+        for (int i = 0; i < range; i++)
+            cache.put(i, "val-" + i);
+        // 4. Record a result back to Python (readable via extract_result())
+        recordResult("putCount", String.valueOf(range));
+
+        // 5. For long-running apps, loop until SIGTERM:
+        //    while (!terminated()) { U.sleep(100); }
+
+        // 6. Signal completion — Python side waits for this on stop()
+        markFinished();
+    }
+}
+```
+---
+## Application Lifecycle Methods
+
+| Method                      | What it does                        | Python effect                             |
+|-----------------------------|-------------------------------------|-------------------------------------------|
+| markInitialized()           | Prints IGNITE_APPLICATION_INITIALIZED | Required before start() returns           |
+| markFinished()              | Prints IGNITE_APPLICATION_FINISHED    | Required before stop() returns            |
+| markBroken(Throwable)       | Prints IGNITE_APPLICATION_BROKEN      | Raises IgniteExecutionException in Python |
+| recordResult(name, value)   | Prints name->value<-                | Read via app.extract_result(name)         |
+| markSyncExecutionComplete() | Run-to-completion shortcut          | Use instead of init + finish pair         |
+
+---
+## Service Types (what connection the app gets)
+
+| Service Type     | Python config class           | Java field              |
+|------------------|-------------------------------|-------------------------|
+| Full server node | IgniteConfiguration           | this.ignite             |
+| Thin client      | IgniteThinClientConfiguration | this.client             |
+| Thin JDBC        | IgniteThinJdbcConfiguration   | this.thinJdbcDataSource |
+| No connection    | service_type = NONE           | nothing                 |
 
 ---
 ## Key Files to Reference
