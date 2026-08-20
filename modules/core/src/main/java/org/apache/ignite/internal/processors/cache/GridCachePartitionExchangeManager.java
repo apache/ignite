@@ -1048,11 +1048,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     *
      * @param topVer Topology version.
-     * @return Last topology version before the provided one when affinity was modified.
+     * @return Last topology version before the provided one when affinity was modified or {@link AffinityTopologyVersion#NONE}
+     * if {@code topVer} is null.
      */
     public AffinityTopologyVersion lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
+        if (topVer == null)
+            return NONE;
+
         if (topVer.topologyVersion() <= 0)
             return topVer;
 
