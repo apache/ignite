@@ -704,7 +704,7 @@ The pool size might be adjusted at node start with the system property
 
 `-DIGNITE_IDLE_VERIFY_POOL_SIZE=...`.
 [discrete]
-These pool threads expires after some time being unused.
+These pool threads expire after some time being unused.
 ====
 
 === Repairing cache consistency

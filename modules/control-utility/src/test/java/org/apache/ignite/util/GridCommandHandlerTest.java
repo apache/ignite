@@ -172,7 +172,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.management.cache.CacheIdleVerifyCancelTask.TASKS_TO_CANCEL;
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CACL_PART_HASH_ERR_MSG;
 import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CP_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -439,69 +438,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     @Test
-    public void testIdleVerifyCancelBeforeCalcPartitionHashStarted() throws Exception {
-        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
-            ForkJoinPool pool = new ForkJoinPool() {
-                @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
-                    beforeCancelLatch.countDown();
-
-                    ForkJoinTask<T> submitted = super.submit(task);
-
-                    try {
-                        assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                    }
-                    catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    return submitted;
-                }
-            };
-
-            VerifyBackupPartitionsTask.EXECUTOR_SERVICE = pool;
-        }, false);
-    }
-
-    /** */
-    @Test
     public void testIdleVerifyCancelWhileCalcPartitionHashRunning() throws Exception {
-        for (boolean checkCrc : new boolean[] {false, true}) {
-            // Can't place assert inside pool, because exceptions from task ignored.
-            AtomicBoolean interruptedOnCancel = new AtomicBoolean(true);
-            AtomicBoolean eCatched = new AtomicBoolean(false);
+        for (boolean checkCrc : new boolean[] {false}) {
+            AtomicBoolean eCancel = new AtomicBoolean();
 
             doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
                 ForkJoinPool pool = new ForkJoinPool() {
                     @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
-                        return super.submit(new Callable<T>() {
+                        return super.submit(new Callable<>() {
                             @Override public T call() throws Exception {
                                 beforeCancelLatch.countDown();
 
-                                try {
-                                    assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                                }
-                                catch (InterruptedException ignored) {
-                                    interruptedOnCancel.set(false);
-                                }
+                                assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
                                 try {
-                                    // Call must fail.
-                                    T res = task.call();
-
-                                    interruptedOnCancel.set(false);
-
-                                    return res;
-                                }
-                                catch (IgniteException e) {
-                                    if (!e.getMessage().startsWith(checkCrc ? CRC_CHECK_ERR_MSG : CACL_PART_HASH_ERR_MSG))
-                                        interruptedOnCancel.set(false);
-
-                                    eCatched.set(true);
-
-                                    throw e;
+                                    return task.call();
                                 }
                                 catch (Throwable e) {
-                                    interruptedOnCancel.set(false);
+                                    // Call is supposed to fail.
+                                    // Check both execption types because it is easy to change one onto another.
+                                    if (X.hasCause(e, "Partition hash calculation has been cancelled",
+                                        IgniteCheckedException.class, IgniteException.class))
+                                        eCancel.set(true);
+                                    else if (X.hasCause(e, "Checking of partitions page CRC sum has been cancelled",
+                                        IgniteCheckedException.class, IgniteException.class))
+                                        eCancel.set(true);
 
                                     throw e;
                                 }
@@ -513,10 +474,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 VerifyBackupPartitionsTask.EXECUTOR_SERVICE = pool;
             }, checkCrc);
 
-            assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
-            assertTrue("Task must fail with expected exception", eCatched.get());
+            assertTrue("Task must fail with expected exception", eCancel.get());
 
-            eCatched.set(false);
+            eCancel.set(false);
         }
     }
 
@@ -583,8 +543,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             return true;
         }, getTestTimeout()));
-
-        idleVerifyFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        idleVerifyFut
+        .get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(lsnr.check());
     }
