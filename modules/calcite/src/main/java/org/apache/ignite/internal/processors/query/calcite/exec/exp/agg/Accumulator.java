@@ -41,4 +41,9 @@ public interface Accumulator<Row> extends Serializable {
 
     /** */
     RelDataType returnType(IgniteTypeFactory typeFactory);
+
+    /** Returns {@code true} if the accumulator handles DISTINCT. */
+    default boolean handlesDistinct() {
+        return false;
+    }
 }

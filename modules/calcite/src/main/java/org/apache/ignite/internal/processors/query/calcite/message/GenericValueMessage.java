@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public final class GenericValueMessage implements MarshallableMessage {
+public final class GenericValueMessage implements Message {
     /** */
-    private Object val;
+    @Marshalled("serialized")
+    Object val;
 
     /** */
     @Order(0)
@@ -47,17 +46,4 @@ public final class GenericValueMessage implements MarshallableMessage {
         return val;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (val != null && serialized == null)
-            serialized = U.marshal(marsh, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (serialized != null && val == null)
-            val = U.unmarshal(marsh, serialized, clsLdr);
-
-        serialized = null;
-    }
 }

@@ -102,7 +102,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -129,8 +128,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
@@ -148,7 +147,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -2704,28 +2702,28 @@ public final class GridTestUtils {
     }
 
     /** */
-    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls,
-        @Nullable Marshaller dfltMarsh, @Nullable ClassLoader dfltClsLdr) {
+    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls) {
         try {
-            boolean isMarshallable = MarshallableMessage.class.isAssignableFrom(msgCls);
-
-            String clsPref = msgCls.getSimpleName() + (isMarshallable ? "Marshallable" : "");
-
             Class<?> serCls = U.gridClassLoader()
-                .loadClass(msgCls.getPackage().getName() + "." + clsPref + "Serializer");
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Serializer");
 
-            Marshaller marsh = dfltMarsh != null ? dfltMarsh : jdk();
-            ClassLoader cldLdr = dfltClsLdr != null ? dfltClsLdr : U.gridClassLoader();
-
-            Object msgSer = isMarshallable ?
-                serCls.getConstructor(Marshaller.class, ClassLoader.class)
-                     .newInstance(marsh, cldLdr) :
-                U.newInstance(serCls);
-
-            return (MessageSerializer<T>)msgSer;
+            return (MessageSerializer<T>)U.newInstance(serCls);
         }
         catch (Exception e) {
             throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
+        }
+    }
+
+    /** Loads the generated {@code *Marshaller} class for {@code msgCls}; the marshaller is passed per call, not held. */
+    public static <T extends Message> MessageMarshaller<T> loadMarshaller(Class<? extends Message> msgCls) {
+        try {
+            Class<?> marshallerCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Marshaller");
+
+            return (MessageMarshaller<T>)U.newInstance(marshallerCls);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find marshaller for message: " + msgCls, e);
         }
     }
 

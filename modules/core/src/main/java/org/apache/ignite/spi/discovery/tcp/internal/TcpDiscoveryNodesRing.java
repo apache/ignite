@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpDiscoveryNodesRing {
     /** */
-    private static final boolean MDC_AWARE_RING = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
+    private final boolean mdcAwareRing = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
 
     /** Visible nodes filter. */
     public static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
@@ -481,7 +481,7 @@ public class TcpDiscoveryNodesRing {
 
             Collection<TcpDiscoveryNode> sorted;
 
-            if (MDC_AWARE_RING) {
+            if (mdcAwareRing) {
                 sorted = new TreeSet<>(new MdcAwareNodesComparator());
                 sorted.addAll(filtered);
             }
@@ -525,7 +525,7 @@ public class TcpDiscoveryNodesRing {
 
             Collection<TcpDiscoveryNode> sorted;
 
-            if (MDC_AWARE_RING) {
+            if (mdcAwareRing) {
                 sorted = new TreeSet<>(new MdcAwareNodesComparator());
                 sorted.addAll(filtered);
             }
@@ -562,7 +562,7 @@ public class TcpDiscoveryNodesRing {
 
             Collection<TcpDiscoveryNode> sorted;
 
-            if (MDC_AWARE_RING) {
+            if (mdcAwareRing) {
                 sorted = new TreeSet<>(new MdcAwareNodesComparator());
                 sorted.addAll(nodes);
             }

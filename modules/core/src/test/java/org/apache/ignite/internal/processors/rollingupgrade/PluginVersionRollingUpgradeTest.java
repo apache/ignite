@@ -38,7 +38,8 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
 
         checkJoinFailed(1, "2.19.0 | 2.0.0", VER_NOT_EQUAL_ERR);
 
-        checkJoinSuccess(1, "2.19.0", true);
+        checkJoinSuccess(1, "2.19.0 | 1.0.0", false);
+        checkJoinSuccess(2, "2.19.0", true);
     }
 
     /** */
@@ -68,6 +69,9 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
 
         finalizeClusterVersion(1, "2.19.0 | 2.0.0");
 
+        restartNode(1);
+        checkPreviousClusterFeatures("2.19.0 | 1.0.0");
+
         ru(1).enableVersionUpgrade();
 
         checkVersionUpgradeInProgress("2.19.0 | 2.0.0", "null | null");
@@ -75,6 +79,9 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.0 | 2.0.0", "2.19.0 | 3.0.0"));
 
         finalizeClusterVersion(1, "2.19.0 | 3.0.0");
+
+        restartNode(2);
+        checkPreviousClusterFeatures("2.19.0 | 2.0.0");
     }
 
     /** */
@@ -95,6 +102,8 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
         startGrid(0, "2.19.0 | 1.0.0");
         startGrid(1, "2.19.0 | 1.0.0");
         startClientGrid(2, "2.19.0");
+
+        checkVersionUpgradeInactive("2.19.0 | 1.0.0");
 
         ru(1).enableVersionUpgrade();
 
@@ -122,11 +131,11 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
         checkJoinFailed(3, "2.20.0", false, "Some components active in the cluster are not configured on the joining server node");
         checkJoinSuccess(3, "2.20.0", true);
 
-        checkJoinFailed(4, "2.20.0 | 3.0.0", RU_UNAVAILABLE_BETWEEN_VER_ERR);
+        checkJoinFailed(4, "2.20.0 | 3.0.0", NOT_SUPPORTED_VER_ERR);
 
         checkJoinSuccess(4, "2.20.0 | 2.0.0", true);
 
-        checkJoinFailed(5, "2.20.0 | 3.0.0", VER_INCOMPATIBLE_ERR);
+        checkJoinFailed(5, "2.20.0 | 2.1.0", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(0, "2.19.0 | 1.0.0", "2.20.0 | 2.0.0");
         upgradeNodeVersion(1, "2.19.0 | 1.0.0", "2.20.0 | 2.0.0");

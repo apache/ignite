@@ -282,12 +282,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         lockEntry();
 
         try {
-            key.prepareMarshal(cctx.cacheObjectContext());
+            key.marshal(cctx.cacheObjectContext());
 
             kb = key.valueBytes(cctx.cacheObjectContext());
 
             if (val != null) {
-                val.prepareMarshal(cctx.cacheObjectContext());
+                val.marshal(cctx.cacheObjectContext());
 
                 vb = val.valueBytes(cctx.cacheObjectContext());
             }
@@ -396,23 +396,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             if (!obsolete()) {
-                info = new GridCacheEntryInfo();
-
-                info.key(key);
-                info.cacheId(cctx.cacheId());
-
+                long curTime = U.currentTimeMillis();
                 long expireTime = expireTimeExtras();
 
-                boolean expired = expireTime != 0 && expireTime <= U.currentTimeMillis();
+                CacheObject val0 = expireTime == 0 || expireTime > curTime ? val : null;
 
-                info.ttl(ttlExtras());
-                info.expireTime(expireTime);
-                info.version(ver);
+                info = new GridCacheEntryInfo(cctx.cacheId(), key, val0, ver, curTime, expireTime, ttlExtras());
+
                 info.setNew(isStartVersion());
                 info.setDeleted(deletedUnlocked());
-
-                if (!expired)
-                    info.value(val);
             }
         }
         finally {

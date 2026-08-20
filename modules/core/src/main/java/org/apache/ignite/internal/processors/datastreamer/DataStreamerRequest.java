@@ -18,39 +18,41 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.internal.GridTopicMessage;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.StripedMessage;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
+import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
-public class DataStreamerRequest implements Message {
+import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+
+/** Batch of streamed entries. */
+public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
     long reqId;
 
     /** */
     @Order(1)
-    GridTopicMessage resTopicMsg;
+    IgniteUuid resTopicId;
 
     /** Cache name. */
     @Order(2)
     String cacheName;
 
-    /** */
-    // TODO: Refactor bytes serialization - IGNITE-27977
+    /** Cache updater. */
+    @GridToStringExclude
     @Order(3)
-    byte[] updaterBytes;
+    DataStreamerReceiverMessage updaterMsg;
 
     /** Entries to update. */
     @Order(4)
@@ -68,9 +70,9 @@ public class DataStreamerRequest implements Message {
     @Order(7)
     boolean keepBinary;
 
-    /** */
+    /** Deployment of the streamed classes. */
     @Order(8)
-    DeploymentMode depMode;
+    GridDeploymentInfoMessage depInfo;
 
     /** */
     @Order(9)
@@ -78,68 +80,47 @@ public class DataStreamerRequest implements Message {
 
     /** */
     @Order(10)
-    String userVer;
-
-    /** Node class loader participants. */
-    @GridToStringInclude
-    @Order(11)
-    Map<UUID, IgniteUuid> ldrParticipants;
-
-    /** */
-    @Order(12)
-    IgniteUuid clsLdrId;
-
-    /** */
-    @Order(13)
     boolean forceLocDep;
 
     /** Topology version. */
-    @Order(14)
+    @Order(11)
     AffinityTopologyVersion topVer;
 
     /** */
-    @Order(15)
+    @Order(12)
     int partId;
 
-    /**
-     * Empty constructor.
-     */
+    /** Empty constructor. */
     public DataStreamerRequest() {
         // No-op.
     }
 
     /**
      * @param reqId Request ID.
-     * @param resTopic Response topic.
+     * @param resTopicId Response topic ID.
      * @param cacheName Cache name.
-     * @param updaterBytes Cache receiver.
+     * @param updaterMsg Cache updater.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
-     * @param depMode Deployment mode.
+     * @param depInfo Deployment of the streamed classes.
      * @param sampleClsName Sample class name.
-     * @param userVer User version.
-     * @param ldrParticipants Loader participants.
-     * @param clsLdrId Class loader ID.
      * @param forceLocDep Force local deployment.
      * @param topVer Topology version.
      * @param partId Partition ID.
      */
     public DataStreamerRequest(
         long reqId,
-        Object resTopic,
+        IgniteUuid resTopicId,
         @Nullable String cacheName,
-        byte[] updaterBytes,
+        DataStreamerReceiverMessage updaterMsg,
         Collection<DataStreamerEntry> entries,
         boolean ignoreDepOwnership,
         boolean skipStore,
         boolean keepBinary,
-        DeploymentMode depMode,
+        GridDeploymentInfo depInfo,
         String sampleClsName,
-        String userVer,
-        Map<UUID, IgniteUuid> ldrParticipants,
-        IgniteUuid clsLdrId,
         boolean forceLocDep,
         @NotNull AffinityTopologyVersion topVer,
         int partId
@@ -147,137 +128,97 @@ public class DataStreamerRequest implements Message {
         assert topVer != null;
 
         this.reqId = reqId;
-        resTopicMsg = new GridTopicMessage(resTopic);
+        this.resTopicId = resTopicId;
         this.cacheName = cacheName;
-        this.updaterBytes = updaterBytes;
+        this.updaterMsg = updaterMsg;
         this.entries = entries;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
-        this.depMode = depMode;
+        this.depInfo = depInfo != null ? new GridDeploymentInfoMessage(depInfo) : null;
         this.sampleClsName = sampleClsName;
-        this.userVer = userVer;
-        this.ldrParticipants = ldrParticipants;
-        this.clsLdrId = clsLdrId;
         this.forceLocDep = forceLocDep;
         this.topVer = topVer;
         this.partId = partId;
     }
 
-    /**
-     * @return Request ID.
-     */
+    /** @return Request ID. */
     long requestId() {
         return reqId;
     }
 
-    /**
-     * @return Response topic.
-     */
+    /** @return Response topic. */
     Object responseTopic() {
-        return GridTopicMessage.topic(resTopicMsg);
+        return TOPIC_DATASTREAM.topic(resTopicId);
     }
 
-    /**
-     * @return Cache name.
-     */
+    /** @return Cache name. */
     String cacheName() {
         return cacheName;
     }
 
-    /**
-     * @return Updater.
-     */
-    byte[] updaterBytes() {
-        return updaterBytes;
+    /** @return {@code True} if the request sends a custom updater rather than naming a built-in one. */
+    boolean customUpdater() {
+        return updaterMsg.customUpdater();
     }
 
-    /**
-     * @return Entries to update.
-     */
+    /** @return Updater. */
+    StreamReceiver<?, ?> updater() {
+        return updaterMsg.receiver();
+    }
+
+    /** @return Entries to update. */
     Collection<DataStreamerEntry> entries() {
         return entries;
     }
 
-    /**
-     * @return {@code True} to ignore ownership.
-     */
+    /** @return {@code True} to ignore ownership. */
     boolean ignoreDeploymentOwnership() {
         return ignoreDepOwnership;
     }
 
-    /**
-     * @return Skip store flag.
-     */
+    /** @return Skip store flag. */
     boolean skipStore() {
         return skipStore;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
+    /** @return Keep binary flag. */
     boolean keepBinary() {
         return keepBinary;
     }
 
-    /**
-     * @return Deployment mode.
-     */
-    DeploymentMode deploymentMode() {
-        return depMode;
+    /** @return Deployment of the streamed classes. */
+    GridDeploymentInfo deploymentInfo() {
+        return depInfo;
     }
 
-    /**
-     * @return Sample class name.
-     */
+    /** @return Sample class name. */
     String sampleClassName() {
         return sampleClsName;
     }
 
-    /**
-     * @return User version.
-     */
-    String userVersion() {
-        return userVer;
-    }
-
-    /**
-     * @return Participants.
-     */
-    Map<UUID, IgniteUuid> participants() {
-        return ldrParticipants;
-    }
-
-    /**
-     * @return Class loader ID.
-     */
-    IgniteUuid classLoaderId() {
-        return clsLdrId;
-    }
-
-    /**
-     * @return {@code True} to force local deployment.
-     */
+    /** @return {@code True} to force local deployment. */
     boolean forceLocalDeployment() {
         return forceLocDep;
     }
 
-    /**
-     * @return Topology version.
-     */
+    /** @return Topology version. */
     AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
-    /**
-     * @return Partition ID.
-     */
-    public int partition() {
+    /** {@inheritDoc} */
+    @Override public int stripeIdx() {
         return partId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataStreamerRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return GridCacheUtils.cacheId(cacheName);
     }
 }

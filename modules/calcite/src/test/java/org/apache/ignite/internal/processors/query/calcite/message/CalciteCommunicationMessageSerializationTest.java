@@ -24,6 +24,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 public class CalciteCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new CalciteMessageFactory();
+        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
+
+        return msgFactory;
     }
 }

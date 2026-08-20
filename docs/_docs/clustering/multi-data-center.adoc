@@ -249,6 +249,10 @@ This behavior applies to both full and historical rebalance.
 
 == Monitoring
 
-The data center ID is exposed in the `NODES` system view as part of node information.
-For client nodes, the `io.discovery.ClientRouterNodeId` metric exposes the ID of the server node used as
-the discovery router.
+Use the `NODES` system view to check the data center IDs of cluster nodes, and the `CLIENT_CONNECTIONS` view to check
+the data center IDs of thin-client connections. This makes it easy to spot clients with a wrong or missing ID.
+
+For Java thin clients, the `IGNITE_DATA_CENTER_ID` system property takes precedence over the user attribute of the same
+name.
+
+For a client node, the `io.discovery.ClientRouterNodeId` metric identifies the server node used as the discovery router.

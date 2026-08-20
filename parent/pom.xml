@@ -23,13 +23,6 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>23</version>
-        <relativePath/>
-    </parent>
-
     <!--
         NOTE:
         The ignite-parent module is used as a shared pom between the Ignite internal submodules and the Ignite Extensions.
@@ -68,16 +61,16 @@
         <!-- Dependency versions -->
         <commons.codec.version>1.20.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
-        <commons.io.version>2.21.0</commons.io.version>
+        <commons.io.version>2.22.0</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.9.0</curator.version>
         <guava.version>33.5.0-jre</guava.version>
-        <failureaccess.version>1.0.1</failureaccess.version>
+        <failureaccess.version>1.0.3</failureaccess.version>
         <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.21.3</jackson.version>
+        <jackson.version>2.21.5</jackson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
@@ -92,10 +85,10 @@
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
-        <log4j2.version>2.25.4</log4j2.version>
+        <log4j2.version>2.26.1</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.4</lucene.version>
-        <lz4.version>1.10.1</lz4.version>
+        <lz4.version>1.11.1</lz4.version>
         <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
@@ -110,9 +103,10 @@
         <spring.version>6.2.19</spring.version>
         <surefire.version>3.5.6</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
-        <zstd.version>1.5.7-8</zstd.version>
+        <zstd.version>1.5.7-11</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.20.0</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
@@ -125,13 +119,13 @@
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
         <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
-        <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
+        <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
         <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
-        <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
+        <maven.site.plugin.version>3.22.0</maven.site.plugin.version>
         <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
         <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
         <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
@@ -223,7 +217,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
 

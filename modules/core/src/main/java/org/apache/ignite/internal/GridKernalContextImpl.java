@@ -53,7 +53,6 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
-import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -91,6 +90,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -99,7 +99,6 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
@@ -111,7 +110,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -191,10 +189,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private IgniteDefragmentation defragMgr;
-
-    /** */
-    @GridToStringExclude
-    private GridTracingManager tracingMgr;
 
     /*
      * Processors.
@@ -433,7 +427,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         IgniteConfiguration cfg,
         GridKernalGateway gw,
         List<PluginProvider> plugins,
-        IgnitePredicate<String> clsFilter,
         WorkersRegistry workerRegistry,
         Thread.UncaughtExceptionHandler hnd,
         LongJVMPauseDetector pauseDetector
@@ -449,7 +442,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.hnd = hnd;
         this.pauseDetector = pauseDetector;
 
-        marshCtx = new MarshallerContextImpl(plugins, clsFilter);
+        marshCtx = new MarshallerContextImpl(plugins);
 
         defragMgr = new IgniteDefragmentationImpl(this);
 
@@ -512,9 +505,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             indexingMgr = (GridIndexingManager)comp;
         else if (comp instanceof GridEncryptionManager)
             encryptionMgr = (GridEncryptionManager)comp;
-        else if (comp instanceof GridTracingManager)
-            tracingMgr = (GridTracingManager)comp;
-
         /*
          * Processors.
          * ==========
@@ -644,6 +634,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet localNodeFeatures() {
+        return rollUpProc.features().localVersionFeatures();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         return grid;
     }
@@ -726,11 +721,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return distributedConfigurationProcessor;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Tracing tracing() {
-        return tracingMgr;
     }
 
     /** {@inheritDoc} */

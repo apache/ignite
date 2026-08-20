@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class RollingUpgradeClusterData implements Message {
@@ -35,7 +35,11 @@ public class RollingUpgradeClusterData implements Message {
 
     /** */
     @Order(2)
-    Collection<IgniteComponentFeatureSet> activeFeatures;
+    IgniteNodeFeatureSet activeFeatures;
+
+    /** */
+    @Order(3)
+    @Nullable IgniteNodeFeatureSet prevActiveFeatures;
 
     /** */
     public RollingUpgradeClusterData() {
@@ -46,10 +50,22 @@ public class RollingUpgradeClusterData implements Message {
     public RollingUpgradeClusterData(
         boolean isVersionUpgradeEnabled,
         UUID curFinalizeProcId,
-        Collection<IgniteComponentFeatureSet> activeFeatures
+        IgniteNodeFeatureSet activeFeatures,
+        @Nullable IgniteNodeFeatureSet prevActiveFeatures
     ) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
         this.curFinalizeProcId = curFinalizeProcId;
         this.activeFeatures = activeFeatures;
+        this.prevActiveFeatures = prevActiveFeatures;
+    }
+
+    /** */
+    public IgniteNodeFeatureSet activeFeatures() {
+        return activeFeatures;
+    }
+
+    /** */
+    @Nullable public IgniteNodeFeatureSet previousActiveFeatures() {
+        return prevActiveFeatures;
     }
 }

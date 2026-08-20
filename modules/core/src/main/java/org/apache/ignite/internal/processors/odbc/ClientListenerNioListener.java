@@ -358,7 +358,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private void onHandshake(GridNioSession ses, ClientMessage msg) {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null, null));
+        marsh.setContext(new MarshallerContextImpl(null));
 
         BinaryReaderEx reader = BinaryUtils.reader(U.binaryContext(marsh), BinaryStreams.inputStream(msg.payload()), null, true);
 

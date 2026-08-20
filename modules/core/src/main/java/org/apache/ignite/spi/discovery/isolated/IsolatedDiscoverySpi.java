@@ -54,6 +54,7 @@ import static java.util.Collections.singleton;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
 
@@ -125,7 +126,12 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-        locNode = new IsolatedNode(ignite.configuration().getNodeId(), attrs, ver);
+        locNode = new IsolatedNode(
+            ignite.configuration().getNodeId(),
+            attrs,
+            ver,
+            ignite instanceof IgniteKernal ? ignite.context().localNodeFeatures() : LOCAL_CORE_FEATURES
+        );
     }
 
     /** {@inheritDoc} */
@@ -167,8 +173,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
                 locNode,
                 singleton(locNode),
                 null,
-                msg,
-                null));
+                msg));
 
             // Acknowledge message must be send after initial message processed.
             fut.listen((f) -> {
@@ -181,8 +186,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
                         locNode,
                         singleton(locNode),
                         null,
-                        ack,
-                        null))
+                        ack))
                     );
                 }
             });

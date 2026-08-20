@@ -85,6 +85,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
@@ -159,6 +160,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELET
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TEST_ENV;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
@@ -291,6 +293,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         System.setProperty(IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, "1000");
         System.setProperty(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, "false");
         System.setProperty(IGNITE_TEST_ENV, "true");
+        System.setProperty(IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK, "true");
 
         S.setIncludeSensitiveSupplier(() -> getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true));
 
@@ -2234,7 +2237,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         // Remove resources cached in static, if any.
         GridClassLoaderCache.clear();
-        U.clearClassCache();
+        ClassLoaderUtils.clearClassCache();
         MarshallerExclusions.clearCache();
         BinaryUtils.clearCache();
         serializedObj.clear();

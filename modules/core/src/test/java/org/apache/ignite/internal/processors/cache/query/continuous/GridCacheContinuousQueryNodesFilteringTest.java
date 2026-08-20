@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.TestFailureHandler;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -74,9 +75,17 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
             IgniteConfiguration node2Cfg = getConfiguration("node2", true, null)
                 .setFailureHandler(failHnd);
 
-            try (Ignite node2 = startGrid(node2Cfg)) {
-                assertTrue("Failure handler hasn't been invoked on the joined node.",
-                    latch.await(5, TimeUnit.SECONDS));
+            try {
+                startGrid(node2Cfg);
+            }
+            catch (Throwable t) {
+                // Node start failure with unknow class of continous query filter is ok.
+                if (!X.hasCause(t, "Class not found for continuous query remote filter [name=" + ENTRY_FILTER_CLS_NAME,
+                    IgniteException.class))
+                    throw t;
+            }
+            finally {
+                assertTrue("Failure handler hasn't been invoked on the joined node.", latch.await(5, TimeUnit.SECONDS));
             }
         }
     }

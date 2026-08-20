@@ -29,16 +29,16 @@ import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalWrapper;
@@ -74,16 +74,6 @@ public class SecurityUtils {
     /** Ignite internal package. */
     public static final String IGNITE_INTERNAL_PACKAGE = "org.apache.ignite.internal";
 
-    /** Default serialization version. */
-    private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
-
-    /** Current serialization version. */
-    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>() {
-        @Override protected Integer initialValue() {
-            return DFLT_SERIALIZE_VERSION;
-        }
-    };
-
     /** Permissions that contain {@code AllPermission}. */
     public static final Permissions ALL_PERMISSIONS;
 
@@ -100,46 +90,27 @@ public class SecurityUtils {
     private SecurityUtils() {
     }
 
-    /**
-     * @return Security compatibility mode flag.
-     */
-    public static boolean isSecurityCompatibilityMode() {
-        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE, false);
+    /** */
+    public static Map<String, EnumSet<SecurityPermission>> normalizeResourcePermissions(
+        Map<String, ? extends Collection<SecurityPermission>> rsrcPerms
+    ) {
+        if (rsrcPerms == null)
+            return new HashMap<>();
+
+        return rsrcPerms.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> toEnumSet(e.getValue())));
     }
 
-    /**
-     * @param ver Serialize version.
-     */
-    public static void serializeVersion(int ver) {
-        SERIALIZE_VERSION.set(ver);
-    }
+    /** */
+    public static EnumSet<SecurityPermission> toEnumSet(Collection<SecurityPermission> col) {
+        if (col instanceof EnumSet<SecurityPermission> enumSet)
+            return enumSet;
 
-    /**
-     * @return Serialize version.
-     */
-    public static int serializeVersion() {
-        return SERIALIZE_VERSION.get();
-    }
+        // Enum set does not allow to copy empty collections, so we check it explicitly.
+        if (F.isEmpty(col))
+            return EnumSet.noneOf(SecurityPermission.class);
 
-    /**
-     * Sets default serialize version {@link #DFLT_SERIALIZE_VERSION}.
-     */
-    public static void restoreDefaultSerializeVersion() {
-        serializeVersion(DFLT_SERIALIZE_VERSION);
-    }
-
-    /**
-     * @return Allow all service permissions.
-     */
-    public static Map<String, Collection<SecurityPermission>> compatibleServicePermissions() {
-        Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
-
-        srvcPerms.put("*", Arrays.asList(
-            SecurityPermission.SERVICE_CANCEL,
-            SecurityPermission.SERVICE_DEPLOY,
-            SecurityPermission.SERVICE_INVOKE));
-
-        return srvcPerms;
+        return EnumSet.copyOf(col);
     }
 
     /**
@@ -366,7 +337,7 @@ public class SecurityUtils {
     }
 
     /** */
-    private static void authorizeAll(IgniteSecurity security, Map<String, Collection<SecurityPermission>> permissions) {
+    private static void authorizeAll(IgniteSecurity security, Map<String, EnumSet<SecurityPermission>> permissions) {
         if (F.isEmpty(permissions))
             return;
 

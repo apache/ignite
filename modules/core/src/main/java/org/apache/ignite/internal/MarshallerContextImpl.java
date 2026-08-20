@@ -47,6 +47,7 @@ import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.compute.ComputeTaskContinuousMapper;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.executor.GridExecutorService;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -59,7 +60,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerExclusions;
@@ -101,11 +101,8 @@ public class MarshallerContextImpl implements MarshallerContext {
     /** */
     private boolean clientNode;
 
-    /** Class name filter. */
-    private final IgnitePredicate<String> clsFilter;
-
     /** JDK marshaller. */
-    private final JdkMarshaller jdkMarsh;
+    private final JdkMarshaller jdkMarsh = Marshallers.jdk();
 
     /**
      * Marshaller mapping file store directory. {@code null} used for standard folder, in this case folder is calculated
@@ -118,17 +115,12 @@ public class MarshallerContextImpl implements MarshallerContext {
      *
      * @param plugins Plugins.
      */
-    public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins, IgnitePredicate<String> clsFilter) {
-        this.clsFilter = clsFilter;
-        this.jdkMarsh = Marshallers.jdk(clsFilter);
-
+    public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins) {
         initializeCaches();
         initializeMarshallerExclusions();
 
         try {
-            ClassLoader ldr = U.gridClassLoader();
-
-            processSystemClasses(ldr, plugins, clsName -> {
+            processSystemClasses(plugins, clsName -> {
                 int typeId = clsName.hashCode();
 
                 MappedName oldClsName;
@@ -147,8 +139,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                 sysTypesSet.add(clsName);
             });
 
-            checkHasClassName(GridDhtPartitionFullMap.class.getName(), ldr, CLS_NAMES_FILE);
-            checkHasClassName(HashMap.class.getName(), ldr, JDK_CLS_NAMES_FILE);
+            checkHasClassName(GridDhtPartitionFullMap.class.getName(), U.gridClassLoader(), CLS_NAMES_FILE);
+            checkHasClassName(HashMap.class.getName(), U.gridClassLoader(), JDK_CLS_NAMES_FILE);
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -436,7 +428,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-        return U.forName(clsName, ldr, clsFilter);
+        return ClassLoaderUtils.forName(clsName, ldr);
     }
 
     /** {@inheritDoc} */
@@ -529,11 +521,6 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return clsName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePredicate<String> classNameFilter() {
-        return clsFilter;
     }
 
     /** {@inheritDoc} */
@@ -715,18 +702,16 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * Finds all system class names (JDK, Ignite and plugin classes) and processes them with the given consumer.
      *
-     * @param ldr Class loader.
      * @param plugins Plugins (may be {@code null}).
      * @param proc Class processor (class name consumer).
      * @throws IOException In case of error.
      */
-    private static void processSystemClasses(ClassLoader ldr, @Nullable Collection<PluginProvider> plugins,
-                                             Consumer<String> proc) throws IOException {
-        MarshallerUtils.processSystemClasses(ldr, proc);
+    private static void processSystemClasses(@Nullable Collection<PluginProvider> plugins, Consumer<String> proc) throws IOException {
+        MarshallerUtils.processSystemClasses(proc);
 
         if (plugins != null && !plugins.isEmpty()) {
             for (PluginProvider plugin : plugins) {
-                Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
+                Enumeration<URL> pluginUrls = U.gridClassLoader().getResources("META-INF/" + plugin.name().toLowerCase()
                     + ".classnames.properties");
 
                 while (pluginUrls.hasMoreElements())
