@@ -127,7 +127,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     if (poolSz < 1)
                         throw new IgniteException(new IllegalArgumentException(VERIFY_POOL_SIZE + " must be greater than 0."));
 
-                    EXECUTOR_SERVICE = new IgniteThreadPoolExecutor(
+                    var impl = new IgniteThreadPoolExecutor(
                         "idleVerify",
                         igniteName,
                         poolSz,
@@ -135,6 +135,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         0,
                         new LinkedBlockingQueue<>()
                     );
+
+                    impl.allowCoreThreadTimeOut(true);
+
+                    EXECUTOR_SERVICE = impl;
                 }
             }
         }
