@@ -6287,6 +6287,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             v = new Value(127);
         }
     }
+
     /** */
     private record TestRecord(String value, long timestamp) implements Serializable {
         // No-op.
