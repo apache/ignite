@@ -324,12 +324,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** */
-    Map<UUID, RemoteRoutineInfo> remoteRoutineInfos() {
+    public Map<UUID, RemoteRoutineInfo> remoteRoutineInfos() {
         return Collections.unmodifiableMap(rmtInfos);
     }
 
     /** */
-    Map<UUID, ContinousRoutineLocalInfo> localRoutineInfos() {
+    public Map<UUID, ContinousRoutineLocalInfo> localRoutineInfos() {
         return Collections.unmodifiableMap(locInfos);
     }
 
