@@ -26,4 +26,7 @@ interface WindowFunctionWrapper<Row> {
 
     /** Performs window function computation for the specified row inside the buffered frame. */
     @Nullable Object callBuffering(Row row, int rowIdx, int peerIdx, WindowPartitionFrame<Row> frame);
+
+    /** Returns true if the window function has an accumulator stores incomig row. */
+    boolean isAggAccumulator();
 }
