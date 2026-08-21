@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRu
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanScalarSubQueryRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyDistributedConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifySingleNodeConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UncollectConverterRule;
@@ -94,7 +95,8 @@ public enum PlannerPhase {
                 RuleSets.ofList(
                     CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                     CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
+                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
+                    TableFunctionScanScalarSubQueryRule.INSTANCE
                 )
             );
         }

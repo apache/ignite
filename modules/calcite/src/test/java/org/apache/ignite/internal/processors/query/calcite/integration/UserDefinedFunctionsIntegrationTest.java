@@ -346,6 +346,51 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testScalarSubqueriesInTableFunctionArguments() throws Exception {
+        IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TableFunctionsLibrary.class)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+        );
+
+        emp.put(1, new Employer("Igor1", 1d));
+        emp.put(2, new Employer("Roman1", 2d));
+
+        awaitPartitionMapExchange();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments((SELECT 10), 20))")
+            .returns(10, 20)
+            .check();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments((SELECT 10), (SELECT 20)))")
+            .returns(10, 20)
+            .check();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments((SELECT 4) + (SELECT 6), 20))")
+            .returns(10, 20)
+            .check();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments(" +
+            "(SELECT _KEY FROM emp WHERE _KEY < 0), 20))")
+            .returns(null, 20)
+            .check();
+
+        assertQuery("SELECT e._KEY, (SELECT f.SCALAR_VALUE FROM TABLE(" +
+            "scalarQueryArguments((SELECT e._KEY + 1), e._KEY)) f) " +
+            "FROM emp e ORDER BY e._KEY")
+            .returns(1, 2)
+            .returns(2, 3)
+            .check();
+
+        assertThrows(
+            "SELECT * FROM TABLE(scalarQueryArguments((SELECT _KEY FROM emp), 20))",
+            IllegalArgumentException.class,
+            "Subquery returned more than 1 value."
+        );
+    }
+
+    /** */
+    @Test
     public void testIncorrectTableFunctions() throws Exception {
         LogListener logChecker0 = LogListener.matches("One or more column names is not unique")
             .andMatches("must match the number of column types")
@@ -428,6 +473,13 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 Arrays.asList(x + 4, x + 5, x + 6),
                 Arrays.asList(x + 7, x + 8, x + 9)
             );
+        }
+
+        /** Returns a single row containing the function arguments. */
+        @QuerySqlTableFunction(columnTypes = {Integer.class, Integer.class},
+            columnNames = {"SCALAR_VALUE", "LITERAL_VALUE"})
+        public static Iterable<Collection<?>> scalarQueryArguments(Integer scalarVal, int literalVal) {
+            return List.of(Arrays.asList(scalarVal, literalVal));
         }
 
         /** Overrides. */
