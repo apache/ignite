@@ -168,6 +168,13 @@ def _fmt_duration(seconds):
     return f"{seconds // 60:02d}:{seconds % 60:02d}"
 
 
+def _node_host(node):
+    """
+    :return: Hostname of the node, None when it carries no account to read one from.
+    """
+    return getattr(getattr(node, "account", None), "hostname", None)
+
+
 def _node_addr(node):
     """
     :return: The node's routable address when it adds anything to the name the banner already
@@ -196,6 +203,25 @@ def _node_state(service, node):
         return "UP" if alive(node) else "DOWN"
     except Exception:  # pylint: disable=broad-except
         return "?"
+
+
+def _node_line(service, node):
+    """
+    :return: The node's line of the SERVICES section, degraded to the name that can be read
+             without asking the service when the service itself cannot answer for the node -
+             ``who_am_i`` goes through ``idx()``, which raises for a node the service no
+             longer owns.
+
+    Like :func:`_node_state`, this lets no reading failure out: a breakpoint must never fail
+    the scenario it is only observing, least of all while rendering the banner it was added
+    for.
+    """
+    try:
+        return f"  {service.who_am_i(node):<58} {_node_addr(node):<17} {_node_state(service, node)}".rstrip()
+    except Exception as ex:  # pylint: disable=broad-except
+        name = f"{type(service).__name__}-{_node_host(node) or '?'}"
+
+        return f"  {name:<58} ({type(ex).__name__})"
 
 
 class DemoPause:
@@ -367,10 +393,7 @@ class DemoPause:
 
         for service in services:
             for node in service.nodes:
-                who = service.who_am_i(node)
-                addr = _node_addr(node)
-
-                lines.append(f"  {who:<58} {addr:<17} {_node_state(service, node)}".rstrip())
+                lines.append(_node_line(service, node))
 
         if len(lines) == 1:
             lines.append("  (none)")
@@ -383,7 +406,10 @@ class DemoPause:
         Node logs live only on the nodes while the test runs - ducktape copies them into the
         results directory at teardown - so every hint goes through the node container.
         """
-        hosts = sorted({node.account.hostname for service in services for node in service.nodes})
+        # A node the banner could not name is left out rather than allowed to fail the hints:
+        # the commands are offered for the nodes that can be entered, and one unreadable node
+        # must not cost the demo the rest of them.
+        hosts = sorted({_node_host(node) for service in services for node in service.nodes} - {None})
 
         log_dir = "/mnt/service/logs"
         config_file = "/mnt/service/config/ignite-config.xml"

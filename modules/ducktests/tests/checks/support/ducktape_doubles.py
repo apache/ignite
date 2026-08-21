@@ -90,6 +90,20 @@ class FakeIgniteService(IgnitePathAware):
         return {}
 
 
+class FakeBrokenService:
+    """
+    Stands in for a service that can no longer answer for the nodes it still holds, the way a
+    ducktape one does once a node has been freed from it: ``who_am_i`` goes through ``idx()``,
+    which raises for a node the service does not own.
+    """
+    def __init__(self, *hostnames):
+        self.nodes = fake_nodes(*hostnames)
+
+    def who_am_i(self, node):
+        """Fails the way a ducktape service does for a node it does not own."""
+        raise RuntimeError(f"Could not find node {node}")
+
+
 class FakeRegistry:
     """
     Stands in for ducktape's ServiceRegistry, which is what a test hands to the framework: it

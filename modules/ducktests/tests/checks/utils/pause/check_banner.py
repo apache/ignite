@@ -23,7 +23,7 @@ import time
 from ignitetest.utils.pause import ALL, DemoPause
 
 from checks.support.demo_pause_control import new_demo_pause, published_status
-from checks.support.ducktape_doubles import FakeIgniteService, FakeRegistry, FakeService
+from checks.support.ducktape_doubles import FakeBrokenService, FakeIgniteService, FakeRegistry, FakeService
 
 
 def check_elapsed_is_counted_from_test_start(tmp_path):
@@ -57,6 +57,26 @@ def check_banner_is_rendered_from_the_service_registry(tmp_path):
     assert "FakeIgniteService-ducker03" in banner
     assert "/mnt/service/logs/ignite*.log" in banner, "the hints must still follow the Ignite service"
     assert "ducker02 ducker03" in banner
+
+
+def check_a_service_that_cannot_answer_is_degraded_not_raised(tmp_path):
+    """
+    Check that a service which cannot answer for its nodes costs the banner those lines and
+    nothing more. A breakpoint only observes the cluster, so one that throws while rendering
+    would fail the scenario at exactly the point the demo was added to show.
+    """
+    demo = new_demo_pause(tmp_path, demo_pause=ALL, demo_pause_timeout_sec=.3)
+
+    with published_status(tmp_path) as published:
+        demo.pause("split-brain",
+                   services=FakeRegistry(FakeBrokenService("ducker02"), FakeIgniteService("ducker03")))
+
+    banner = "\n".join(published["banner"])
+
+    assert "FakeBrokenService-ducker02" in banner, "the node must still be named, without asking its service"
+    assert "RuntimeError" in banner, "and what could not be read must say so"
+    assert "FakeIgniteService-ducker03" in banner, "a service after the broken one must still be listed"
+    assert "ducker02 ducker03" in banner, "and every node must still be offered by the hints"
 
 
 def check_hints_follow_the_ignite_services():
