@@ -146,9 +146,9 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
 
         for (InlineIndexKeyType keyType : inlinedKeys) {
             // Variable length types can be not fully inlined, so it's probably better to directly read full cache row
-            // instead of trying to read inlined value and than falllback to cache row reading.
+            // instead of trying to read inlined value and then fallback to cache row reading.
             // Inlined JAVA_OBJECT can't be compared with fill cache row in case of hash collision, this can lead to
-            // issues when processing the next index page in cursor if current page was concurrently splitted.
+            // issues when processing the next index page in cursor if current page was concurrently splited.
             if (keyType.keySize() < 0 || keyType.type() == IndexKeyType.JAVA_OBJECT)
                 return null;
         }
@@ -204,7 +204,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     }
 
     /** From Row to IndexRow convertor. */
-    protected IndexRow row2indexRow(Row bound) {
+    protected @Nullable IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
 

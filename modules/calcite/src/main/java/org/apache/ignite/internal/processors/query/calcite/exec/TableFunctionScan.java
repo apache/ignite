@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -37,14 +38,23 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     private final RowFactory<Row> rowFactory;
 
     /** */
+    Function<Object, Object> binaryMarshaller;
+
+    /** */
+    private static final String ERR_SIZE_TEMPLATE = "Unable to process table function data: row length [%d]" +
+        " doesn't match defined columns number [%d].";
+
+    /** */
     public TableFunctionScan(
         RelDataType rowType,
         Supplier<Iterable<?>> dataSupplier,
-        RowFactory<Row> rowFactory
+        RowFactory<Row> rowFactory,
+        Function<Object, Object> marshaller
     ) {
         this.rowType = rowType;
         this.dataSupplier = dataSupplier;
         this.rowFactory = rowFactory;
+        binaryMarshaller = marshaller;
     }
 
     /** {@inheritDoc} */
@@ -53,17 +63,31 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     }
 
     /** */
+    private static void rowSizeChecker(int rowSize, int fldCount) {
+        if (rowSize != fldCount)
+            throw new IgniteSQLException(ERR_SIZE_TEMPLATE.formatted(rowSize, fldCount));
+    }
+
+    /** */
     private Row convertToRow(Object rowContainer) {
         if (rowContainer.getClass() != Object[].class && !Collection.class.isAssignableFrom(rowContainer.getClass()))
             throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 
-        Object[] rowArr = rowContainer.getClass() == Object[].class
-            ? (Object[])rowContainer
-            : ((Collection<?>)rowContainer).toArray();
+        if (rowContainer instanceof Object[])
+            rowSizeChecker(((Object[])rowContainer).length, rowType.getFieldCount());
+        else
+            rowSizeChecker(((Collection<?>)rowContainer).size(), rowType.getFieldCount());
 
-        if (rowArr.length != rowType.getFieldCount()) {
-            throw new IgniteSQLException("Unable to process table function data: row length [" + rowArr.length
-                + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
+        Object[] rowArr;
+
+        if (rowContainer.getClass().isArray()) {
+            rowArr = (Object[])rowContainer;
+            for (int pos = 0; pos < rowArr.length; ++pos)
+                rowArr[pos] = binaryMarshaller.apply(rowArr[pos]);
+        }
+        else {
+            Collection<?> coll = (Collection<?>)rowContainer;
+            rowArr = coll.stream().map(e -> binaryMarshaller.apply(e)).toArray();
         }
 
         return rowFactory.create(rowArr);
