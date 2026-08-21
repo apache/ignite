@@ -45,21 +45,6 @@ public class SBLimitedLength extends GridStringBuilder {
      */
     void initLimit(SBLengthLimit lenLimit) {
         this.lenLimit = lenLimit;
-
-        if (tail != null)
-            tail.reset();
-    }
-
-    /**
-     * Resets buffer.
-     */
-    public void reset() {
-        super.setLength(0);
-
-        lenLimit.reset();
-
-        if (tail != null)
-            tail.reset();
     }
 
     /**
@@ -271,6 +256,37 @@ public class SBLimitedLength extends GridStringBuilder {
     }
 
     /** {@inheritDoc} */
+    @Override public GridStringBuilder i(int offset, String str) {
+        if (offset < SBLengthLimit.HEAD_LEN) {
+            super.i(offset, str);
+            if (lenLimit.overflowed(this)) {
+                String tailCandidate = impl().substring(SBLengthLimit.HEAD_LEN);
+                if (tail == null)
+                    tail = lenLimit.createTail();
+                tail.insert(0, tailCandidate);
+                tail.skip(str.length() - tailCandidate.length());
+                impl().setLength(SBLengthLimit.HEAD_LEN);
+            }
+            return this;
+        }
+        tail.insert(offset - SBLengthLimit.HEAD_LEN, str);
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int length() {
+        int length = super.length();
+        if (tail != null)
+            length += tail.getSkipped() + tail.length();
+        return length;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setLength(int len) {
+        throw new UnsupportedOperationException("setLength is not supported by this imlementation");
+    }
+
+    /** {@inheritDoc} */
     @Override public GridStringBuilder appendCodePoint(int codePoint) {
         if (lenLimit.overflowed(this)) {
             tail.append(codePoint);
@@ -303,12 +319,5 @@ public class SBLimitedLength extends GridStringBuilder {
 
             return res.toString();
         }
-    }
-
-    /**
-     * @return {@code True} - if buffer limit is reached.
-     */
-    public boolean isOverflowed() {
-        return lenLimit.overflowed(this);
     }
 }

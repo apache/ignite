@@ -68,6 +68,7 @@ public class GridStringBuilder implements Serializable {
     /**
      *
      * @param len Length to set.
+     * @throws UnsupportedOperationException if length limit is not supported by this GridStringBuilder
      */
     public void setLength(int len) {
         impl.setLength(len);

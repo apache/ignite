@@ -1,0 +1,156 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.util.tostring;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringNode.CATCHED_NODES;
+
+/**
+ * A factory class responsible for creating appropriate GridToStringNode instances
+ * based on the type and value of the object being processed.
+ */
+public class GridToStringNodeFactory {
+    /**
+     * Creates a list of nodes from arrays of property names and values.
+     * Handles sensitive data exclusion and node reuse from a thread-local cache.
+     * @param addNames Array of property names.
+     * @param addVals Array of property values.
+     * @param addSens Array of flags indicating if a property is sensitive.
+     * @param addLen The number of elements to process.
+     * @return A list of constructed GridToStringNode objects.
+     */
+    public static List<GridToStringNode> getNodes(Object[] addNames,
+                                                  Object[] addVals,
+                                                  boolean[] addSens,
+                                                  int addLen) {
+        List<GridToStringNode> result = new LinkedList<>();
+        boolean includeSensitive = GridToStringBuilder.includeSensitive();
+        for (int i = 0; i < addLen; i++) {
+            GridToStringNode node = CATCHED_NODES.get().remove(addVals[i]);
+            if (!includeSensitive && shouldBeExcluded(addVals, addSens, i))
+                continue;
+            String propName = String.valueOf(addNames[i]);
+            final int idx = i;
+            if (node == null)
+                node = getGridToStringNode(propName, () -> addVals[idx], () -> addVals[idx].getClass());
+            else
+                node.propName = propName;
+            result.add(node);
+        }
+        return result;
+    }
+
+    /**
+     * Creates a node for a field based on its descriptor and the parent object.
+     * This method acts as a dispatcher, routing the creation logic based on the field's type.
+     * @param obj The parent object containing the field.
+     * @param fd The descriptor of the field to be processed.
+     * @return A new GridToStringNode for the field's value.
+     */
+    static GridToStringNode getGridToStringNode(Object obj, GridToStringFieldDescriptor fd) {
+        String childPropName = fd.getName();
+        if (obj == null)
+            return new GridToStringNullNode(childPropName);
+        switch (fd.type()) {
+            case GridToStringFieldDescriptor.FIELD_TYPE_OBJECT:
+                Supplier<Class<?>> fieldClsSupplier = () -> Optional.of(fd)
+                        .map(GridToStringFieldDescriptor::fieldClass)
+                        .map(Class.class::cast)
+                        .orElseGet(obj::getClass);
+                return getGridToStringNode(childPropName, () -> fd.objectValue(obj), fieldClsSupplier);
+            case GridToStringFieldDescriptor.FIELD_TYPE_BYTE:
+                return getGridToStringNode(childPropName, () -> fd.byteValue(obj), () -> byte.class);
+            case GridToStringFieldDescriptor.FIELD_TYPE_BOOLEAN:
+                return getGridToStringNode(childPropName, () -> fd.booleanValue(obj), () -> boolean.class);
+            case GridToStringFieldDescriptor.FIELD_TYPE_CHAR:
+                return getGridToStringNode(childPropName, () -> fd.charValue(obj), () -> char.class);
+            case GridToStringFieldDescriptor.FIELD_TYPE_SHORT:
+                return getGridToStringNode(childPropName, () -> fd.shortValue(obj), () -> short.class);
+            case GridToStringFieldDescriptor.FIELD_TYPE_INT:
+                return getGridToStringNode(childPropName, () -> fd.intField(obj), () -> int.class);
+            case GridToStringFieldDescriptor.FIELD_TYPE_FLOAT:
+                return getGridToStringNode(childPropName, () -> fd.floatField(obj), () -> float.class);
+            case GridToStringFieldDescriptor.FIELD_TYPE_LONG:
+                return getGridToStringNode(childPropName, () -> fd.longField(obj), () -> long.class);
+            case GridToStringFieldDescriptor.FIELD_TYPE_DOUBLE:
+                return getGridToStringNode(childPropName, () -> fd.doubleField(obj), () -> double.class);
+        }
+        return new GridToStringValueNode(childPropName, "toString is not implemented yet");
+    }
+
+    /**
+     * The core factory method that creates a node for a given value and its class.
+     * It is the central point for determining the correct node type for any object.
+     * Handles nulls, recursion, primitives, arrays, collections, maps, and standard objects.
+     * @param childPropName The property name for the new node.
+     * @param valSupplier A supplier to lazily retrieve the value.
+     * @param childFieldClsSupplier A supplier to lazily retrieve the class of the value.
+     * @return A new GridToStringNode appropriate for the value.
+     */
+    static GridToStringNode getGridToStringNode(String childPropName,
+                                                Supplier<Object> valSupplier,
+                                                Supplier<Class<?>> childFieldClsSupplier) {
+        Object val = valSupplier.get();
+        if (val == null)
+            return new GridToStringNullNode(childPropName);
+        Optional<GridToStringNode> recursionTermination = NodeRecursionMonitor.findRecursionMonitor(val)
+                .map(monitor -> GridToStringRecursionTerminationNode.of(monitor, val));
+        if (recursionTermination.isPresent())
+            return recursionTermination.get();
+        Class<?> childFieldCls = childFieldClsSupplier.get();
+        if (childFieldCls.isPrimitive())
+            return new GridToStringValueNode(childPropName, val);
+        else if (childFieldCls.isArray())
+            return new GridToStringArrayNode(childPropName, (Object[]) val, childFieldCls);
+        else if (val instanceof Collection)
+            return new GridToStringCollectionNode(childPropName, (Collection<?>) val);
+        else if (val instanceof Map)
+            return new GridToStringMapNode(childPropName, (Map<?, ?>) val);
+
+        String toStrResult = val.toString();
+        GridToStringNode catchedNode = CATCHED_NODES.get().remove(toStrResult);
+        if (catchedNode == null)
+            return new GridToStringValueNode(childPropName, toStrResult);
+        catchedNode.propName = childPropName;
+        return catchedNode;
+    }
+
+    /**
+     * Determines if a property should be excluded from the output based on its sensitivity.
+     * Checks if the property is marked as sensitive and if sensitive data inclusion is disabled.
+     * @param addVals The array of property values.
+     * @param addSens The array of sensitivity flags.
+     * @param idx The index of the property to check.
+     * @return True if the property should be excluded; false otherwise.
+     */
+    private static boolean shouldBeExcluded(Object[] addVals, boolean[] addSens, int idx) {
+        return addSens != null &&
+                addSens[idx] &&
+                Optional.ofNullable(addVals[idx])
+                        .map(Object::getClass)
+                        .map(cls -> cls.getAnnotation(GridToStringInclude.class))
+                        .filter(GridToStringInclude::sensitive)
+                        .isPresent();
+    }
+}
