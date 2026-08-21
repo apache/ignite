@@ -20,16 +20,17 @@ A held breakpoint blocks the thread that reached it, so everything the host does
 published banner, dropping a resume file - has to happen from another one while the check
 itself sits inside :meth:`ignitetest.utils.pause.DemoPause.pause`.
 
-See :mod:`ignitetest.utils.pause` for the protocol these helpers speak.
+The protocol itself is spoken through :class:`ignitetest.utils.pause_control.ControlDir`, the
+same class the test and ``docker/demo_console.py`` use - a check that hand rolled the file
+names would stop checking the protocol and start checking its own copy of it.
 """
 
-import json
-import os
 import threading
 import time
 from contextlib import contextmanager
 
-from ignitetest.utils.pause import DEMO_PAUSE_TIMEOUT_SEC, DemoPause, STATUS_JSON
+from ignitetest.utils.pause import DEMO_PAUSE_TIMEOUT_SEC, DemoPause
+from ignitetest.utils.pause_control import ControlDir
 
 from checks.support.ducktape_doubles import FakeLogger
 
@@ -57,7 +58,9 @@ def resume_with(control_dir, name, delay_sec=.05):
     """
     Creates a resume file from another thread, the way the host does while the test blocks.
     """
-    timer = threading.Timer(delay_sec, lambda: open(os.path.join(str(control_dir), name), "w").close())
+    control = ControlDir(control_dir)
+
+    timer = threading.Timer(delay_sec, lambda: control.resume(name))
     timer.daemon = True
     timer.start()
 
@@ -77,22 +80,24 @@ def published_status(control_dir, resume=None, timeout_sec=30):
     :return: A dict, empty on entry and filled with the published breakpoint by the time the
              block is left.
     """
+    control = ControlDir(control_dir)
     published = {}
 
     def read():
         deadline = time.monotonic() + timeout_sec
 
         while time.monotonic() < deadline:
-            try:
-                with open(os.path.join(str(control_dir), STATUS_JSON), encoding="utf-8") as file:
-                    published.update(json.load(file))
+            status = control.read_status()
+
+            if status is not None:
+                published.update(status)
 
                 break
-            except (OSError, ValueError):
-                time.sleep(.01)
+
+            time.sleep(.01)
 
         if resume:
-            open(os.path.join(str(control_dir), resume), "w").close()
+            control.resume(resume)
 
     reader = threading.Thread(target=read, daemon=True)
     reader.start()

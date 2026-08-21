@@ -22,7 +22,8 @@ import os
 
 import pytest
 
-from ignitetest.utils.pause import ABORT, ALL, CONTINUE_ALL, STATUS_JSON, STATUS_TXT, continue_file
+from ignitetest.utils.pause import ALL
+from ignitetest.utils.pause_control import ABORT, CONTINUE_ALL, STATUS_JSON, STATUS_TXT, continue_file
 
 from checks.support.demo_pause_control import TEST_NAME, new_demo_pause, published_status, resume_with
 

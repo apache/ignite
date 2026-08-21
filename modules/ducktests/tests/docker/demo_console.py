@@ -31,18 +31,22 @@ Standard library only: it runs on the host, outside the ducktests virtualenv.
 
 import argparse
 import importlib.util
-import json
 import os
 import sys
 import time
 
-# Reach into the framework for the protocol constants rather than restating them. The host
-# has no ducktape and no installed ignitetest, so the module is loaded by path: importing
-# ignitetest.utils.pause would pull in the package __init__ chain and its ducktape imports.
+# Speak the protocol through the framework's own ControlDir rather than restating it here:
+# the two sides of a shared directory have to agree file for file, and a second copy of it
+# is a second thing to keep in step.
+#
+# The host has no ducktape and no installed ignitetest, so the module is loaded by path -
+# importing ignitetest.utils.pause_control would pull in the package __init__ chain and its
+# ducktape imports. pause_control itself is standard library only, which is what makes it
+# loadable like this; ignitetest.utils.pause, which holds what the files mean, is not.
 _TESTS_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
-_PAUSE_PY = os.path.join(_TESTS_DIR, "ignitetest", "utils", "pause.py")
+_PAUSE_CONTROL_PY = os.path.join(_TESTS_DIR, "ignitetest", "utils", "pause_control.py")
 
-_SPEC = importlib.util.spec_from_file_location("ignitetest_pause", _PAUSE_PY)
+_SPEC = importlib.util.spec_from_file_location("ignitetest_pause_control", _PAUSE_CONTROL_PY)
 pause = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(pause)
 
@@ -54,20 +58,6 @@ KEYS = """
 """
 
 
-def read_status(control_dir):
-    """
-    :return: The published breakpoint, or None when the scenario is not paused. A missing or
-             half written file simply reads as "not paused" and is retried.
-    """
-    path = os.path.join(control_dir, pause.STATUS_JSON)
-
-    try:
-        with open(path, encoding="utf-8") as file:
-            return json.load(file)
-    except (OSError, ValueError):
-        return None
-
-
 def breakpoint_key(status):
     """
     :return: What identifies the published breakpoint. Not the sequence number on its own:
@@ -77,7 +67,7 @@ def breakpoint_key(status):
     return status.get("run"), status.get("seq")
 
 
-def clear_stale(control_dir):
+def clear_stale(control):
     """
     Removes resume files left behind by an earlier run, which would otherwise skip the first
     breakpoint of this one. The test clears them too, on its side, at its first breakpoint.
@@ -90,31 +80,15 @@ def clear_stale(control_dir):
 
     :return: Whether the sweep was performed.
     """
-    if not os.path.isdir(control_dir):
-        return True
-
-    if read_status(control_dir) is not None:
+    if control.read_status() is not None:
         return False
 
-    for name in os.listdir(control_dir):
-        if name.startswith(pause.CONTINUE_PREFIX) or name == pause.ABORT:
-            try:
-                os.remove(os.path.join(control_dir, name))
-            except OSError:
-                pass
+    control.sweep()
 
     return True
 
 
-def resume(control_dir, name):
-    """
-    Writes a resume file. The test consumes and removes it.
-    """
-    with open(os.path.join(control_dir, name), "w", encoding="utf-8") as file:
-        file.write("")
-
-
-def prompt(control_dir, seq):
+def prompt(control, seq):
     """
     Asks what to do with the breakpoint that is currently published.
 
@@ -127,19 +101,19 @@ def prompt(control_dir, seq):
             return False
 
         if answer in ("", "n", "next"):
-            resume(control_dir, pause.continue_file(seq))
+            control.resume(pause.continue_file(seq))
 
             return True
 
         if answer in ("c", "continue", "all"):
-            resume(control_dir, pause.CONTINUE_ALL)
+            control.resume(pause.CONTINUE_ALL)
 
             print("  continuing, remaining breakpoints skipped")
 
             return False
 
         if answer in ("a", "abort"):
-            resume(control_dir, pause.ABORT)
+            control.resume(pause.ABORT)
 
             print("  aborting the test")
 
@@ -147,7 +121,7 @@ def prompt(control_dir, seq):
 
         if answer in ("q", "quit", "exit"):
             print(f"  leaving the test paused, resume it with:\n"
-                  f"    touch {os.path.join(control_dir, pause.continue_file(seq))}")
+                  f"    touch {control.file(pause.continue_file(seq))}")
 
             return False
 
@@ -164,11 +138,11 @@ def main():
                              f"<repository root>/{pause.CONTROL_DIR_NAME}")
 
     args = parser.parse_args()
-    control_dir = args.control_dir
+    control = pause.ControlDir(args.control_dir)
 
-    swept = clear_stale(control_dir)
+    swept = clear_stale(control)
 
-    print(f"Demo console, watching {control_dir}")
+    print(f"Demo console, watching {control.path}")
 
     if swept:
         print("Waiting for the first breakpoint... (Ctrl-C to leave)")
@@ -178,7 +152,7 @@ def main():
     last_key, resumed_at = None, None
 
     while True:
-        status = read_status(control_dir)
+        status = control.read_status()
 
         if status is None:
             # The test removes its status files as it resumes, so this is also what tells the
@@ -205,7 +179,7 @@ def main():
         print("\n".join(status.get("banner", [])))
         print(KEYS)
 
-        if not prompt(control_dir, status.get("seq")):
+        if not prompt(control, status.get("seq")):
             return
 
         resumed_at = time.monotonic()

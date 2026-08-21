@@ -20,7 +20,8 @@ ducktape's --test-runner-timeout budget that only ever shortens it.
 
 import os
 
-from ignitetest.utils.pause import ALL, RUNNER_TIMEOUT_MARGIN_SEC, STATUS_JSON
+from ignitetest.utils.pause import ALL, RUNNER_TIMEOUT_MARGIN_SEC
+from ignitetest.utils.pause_control import STATUS_JSON
 
 from checks.support.demo_pause_control import new_demo_pause, published_status
 

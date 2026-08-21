@@ -22,19 +22,15 @@ cannot read a keypress. What it can do is share files with the host: ``ducker-ig
 mounts the whole Ignite repository into every container, so a control directory below the
 repository root is visible to the test and to the host at the same time.
 
-The protocol over that directory is one sided while a breakpoint is held - the host only
-ever creates files, the test is the only party that deletes them, so no step of a held
-breakpoint can race with the host:
-
-    - the test publishes ``paused.txt`` (a rendered banner) and ``paused.json`` (the same
-      content as data) and then blocks;
-    - the host creates ``continue-<seq>``, ``continue-all`` or ``abort``;
-    - the test consumes that file, removes it along with its own status files, and proceeds.
+The directory itself, and the file protocol over it, are
+:class:`ignitetest.utils.pause_control.ControlDir`. This module holds only what those files
+*mean*: which breakpoint stops the scenario, what the banner says, and that ``abort`` ends
+the test.
 
 Between breakpoints both sides sweep the directory for files an earlier run left behind,
-which would otherwise skip the next breakpoint: the test at its first one
-(see :meth:`DemoPause._prepare`), the console at startup - and only while nothing is
-published, so a resume file meant for a breakpoint that is currently held is never swept.
+which would otherwise skip the next breakpoint: the test at its first one (see
+:meth:`DemoPause._prepare`), the console at startup - and only while nothing is published, so
+a resume file meant for a breakpoint that is currently held is never swept.
 
 ``docker/demo_console.py`` is the host side of it, but nothing depends on it: reading
 ``paused.txt`` and touching ``continue-<seq>`` by hand works just as well.
@@ -52,9 +48,10 @@ Globals:
     demo_pause_dir - control directory, ``<repository root>/.ducktests-demo`` by default.
 """
 
-import json
 import os
 import time
+
+from ignitetest.utils.pause_control import ABORT, CONTINUE_ALL, ControlDir, continue_file, default_control_dir
 
 # globals:
 DEMO_PAUSE = "demo_pause"
@@ -69,18 +66,6 @@ DEFAULT_TIMEOUT_SEC = 600
 # still leaves the scenario time to reach its next event.
 RUNNER_TIMEOUT_MARGIN_SEC = 60
 
-CONTROL_DIR_NAME = ".ducktests-demo"
-
-STATUS_TXT = "paused.txt"
-STATUS_JSON = "paused.json"
-CONTINUE_PREFIX = "continue-"
-CONTINUE_ALL = "continue-all"
-ABORT = "abort"
-
-# The control directory is polled rather than watched: it is a bind mount shared with the
-# host, where inotify is not dependable.
-POLL_SEC = .5
-
 # Timestamps the demo in the test log, so that a run can be read back afterwards and it is
 # visible that the scenario is held rather than stuck. Deliberately NOT a keepalive towards
 # ducktape: the test logger writes to files and to stdout only, while the runner listens for
@@ -92,29 +77,6 @@ HEARTBEAT_SEC = 15
 ALL = "*"
 
 _WIDTH = 100
-
-
-def repo_root():
-    """
-    :return: Path of the Ignite repository root, derived from this module's own location
-             (``<root>/modules/ducktests/tests/ignitetest/utils/pause.py``), so that a fork
-             checked out elsewhere resolves its own root.
-    """
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), *[os.pardir] * 5))
-
-
-def default_control_dir():
-    """
-    :return: Path of the control directory shared between the test and the host.
-    """
-    return os.path.join(repo_root(), CONTROL_DIR_NAME)
-
-
-def continue_file(seq):
-    """
-    :return: Name of the file that resumes the breakpoint with the given sequence number.
-    """
-    return f"{CONTINUE_PREFIX}{seq}"
 
 
 def parse_selector(value):
@@ -247,7 +209,7 @@ class DemoPause:
         self.timeout_sec = float(test_globals.get(DEMO_PAUSE_TIMEOUT_SEC, DEFAULT_TIMEOUT_SEC))
         self.runner_timeout_sec = runner_timeout_sec
 
-        self.control_dir = control_dir or test_globals.get(DEMO_PAUSE_DIR) or default_control_dir()
+        self.control = ControlDir(control_dir or test_globals.get(DEMO_PAUSE_DIR) or default_control_dir())
 
         self.seq = 0
 
@@ -289,7 +251,7 @@ class DemoPause:
 
         self._publish(name, banner, timeout_sec)
 
-        self.logger.info(f"Demo breakpoint reached [seq={self.seq}, name={name}, dir={self.control_dir}]")
+        self.logger.info(f"Demo breakpoint reached [seq={self.seq}, name={name}, dir={self.control.path}]")
 
         self._await_resume(name, timeout_sec)
 
@@ -335,18 +297,13 @@ class DemoPause:
 
     def _prepare(self):
         """
-        Creates the control directory and clears anything a previous run left behind: a
-        stale resume file would skip the very first breakpoint of this one.
+        Readies the control directory, once per test: a resume file left by a previous run
+        would skip the very first breakpoint of this one.
         """
         if self._prepared:
             return
 
-        os.makedirs(self.control_dir, exist_ok=True)
-
-        for name in os.listdir(self.control_dir):
-            if name.startswith(CONTINUE_PREFIX) or name.startswith(STATUS_TXT) \
-                    or name.startswith(STATUS_JSON) or name == ABORT:
-                self._remove(name)
+        self.control.prepare()
 
         self._prepared = True
 
@@ -374,7 +331,7 @@ class DemoPause:
 
         lines.append("-" * _WIDTH)
         lines.append(" continue: [Enter] in the demo console")
-        lines.append(f"           or  touch {os.path.join(self.control_dir, continue_file(self.seq))}")
+        lines.append(f"           or  touch {self.control.file(continue_file(self.seq))}")
         lines.append("=" * _WIDTH)
 
         return lines
@@ -450,14 +407,10 @@ class DemoPause:
 
     def _publish(self, name, banner, timeout_sec):
         """
-        Publishes the breakpoint for the host, banner first as text and then as data: both
-        files are replaced atomically so the console never reads a half written one.
+        Publishes the breakpoint for the host: the banner to print, plus what a reader needs
+        to tell this pause from any other.
         """
-        text = "\n".join(banner) + "\n"
-
-        self._write(STATUS_TXT, text)
-
-        self._write(STATUS_JSON, json.dumps({
+        self.control.publish(banner, {
             "run": self.run,
             "seq": self.seq,
             "name": name,
@@ -465,71 +418,36 @@ class DemoPause:
             "elapsed_sec": round(self.elapsed_sec, 1),
             "timeout_sec": timeout_sec,
             "banner": banner
-        }, indent=2))
+        })
 
     def _await_resume(self, name, timeout_sec):
-        deadline = time.monotonic() + timeout_sec
-        heartbeat = time.monotonic() + HEARTBEAT_SEC
-
-        while True:
-            if self._exists(ABORT):
-                self._consume(ABORT)
-
-                raise AssertionError(f"Demo aborted at breakpoint [seq={self.seq}, name={name}]")
-
-            if self._exists(CONTINUE_ALL):
-                self._continue_all = True
-
-                self._consume(CONTINUE_ALL)
-                self.logger.info(f"Demo resumed, remaining breakpoints skipped [seq={self.seq}, name={name}]")
-
-                return
-
-            if self._exists(continue_file(self.seq)):
-                self._consume(continue_file(self.seq))
-                self.logger.info(f"Demo resumed [seq={self.seq}, name={name}]")
-
-                return
-
-            now = time.monotonic()
-
-            if now >= deadline:
-                self._consume()
-                self.logger.warn(f"Demo breakpoint timed out after {timeout_sec}s, resuming "
-                                 f"[seq={self.seq}, name={name}]")
-
-                return
-
-            if now >= heartbeat:
-                heartbeat = now + HEARTBEAT_SEC
-
-                self.logger.info(f"Still paused at demo breakpoint [seq={self.seq}, name={name}, "
-                                 f"held={_fmt_duration(timeout_sec - (deadline - now))}, "
-                                 f"left={_fmt_duration(deadline - now)}]")
-
-            time.sleep(POLL_SEC)
-
-    def _consume(self, *names):
         """
-        Clears the published breakpoint along with the resume files that ended it.
+        Holds the scenario until the host resumes the breakpoint, or until it gives up on its
+        own.
+
+        What each resume file means lives here rather than in the control directory: it is the
+        only part of the protocol that knows there is a scenario to end.
         """
-        for name in names + (STATUS_TXT, STATUS_JSON):
-            self._remove(name)
+        def still_waiting(left_sec):
+            self.logger.info(f"Still paused at demo breakpoint [seq={self.seq}, name={name}, "
+                             f"held={_fmt_duration(timeout_sec - left_sec)}, "
+                             f"left={_fmt_duration(left_sec)}]")
 
-    def _exists(self, name):
-        return os.path.exists(os.path.join(self.control_dir, name))
+        taken = self.control.await_any([ABORT, CONTINUE_ALL, continue_file(self.seq)], timeout_sec,
+                                       tick=still_waiting, tick_sec=HEARTBEAT_SEC)
 
-    def _remove(self, name):
-        try:
-            os.remove(os.path.join(self.control_dir, name))
-        except OSError:
-            pass
+        # Whatever ended the wait, the banner describes a breakpoint that is over.
+        self.control.clear_status()
 
-    def _write(self, name, content):
-        path = os.path.join(self.control_dir, name)
-        tmp = path + ".tmp"
+        if taken == ABORT:
+            raise AssertionError(f"Demo aborted at breakpoint [seq={self.seq}, name={name}]")
 
-        with open(tmp, "w", encoding="utf-8") as file:
-            file.write(content)
+        if taken == CONTINUE_ALL:
+            self._continue_all = True
 
-        os.replace(tmp, path)
+            self.logger.info(f"Demo resumed, remaining breakpoints skipped [seq={self.seq}, name={name}]")
+        elif taken is None:
+            self.logger.warn(f"Demo breakpoint timed out after {timeout_sec}s, resuming "
+                             f"[seq={self.seq}, name={name}]")
+        else:
+            self.logger.info(f"Demo resumed [seq={self.seq}, name={name}]")

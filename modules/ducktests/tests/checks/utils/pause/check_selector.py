@@ -20,7 +20,8 @@ which of the breakpoints in the test it then selects.
 
 import os
 
-from ignitetest.utils.pause import ALL, continue_file, parse_selector
+from ignitetest.utils.pause import ALL, parse_selector
+from ignitetest.utils.pause_control import continue_file
 
 from checks.support.demo_pause_control import new_demo_pause, resume_with
 
