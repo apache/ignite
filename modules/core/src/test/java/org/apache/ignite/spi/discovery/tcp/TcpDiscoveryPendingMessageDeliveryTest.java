@@ -270,12 +270,11 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
-            TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(sock, msg, data, timeout);
+                super.writeToSocket(sock, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -287,13 +286,12 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
             Socket sock,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(msg, sock, res, timeout);
+                super.writeToSocket(sock, res, timeout);
         }
     }
 

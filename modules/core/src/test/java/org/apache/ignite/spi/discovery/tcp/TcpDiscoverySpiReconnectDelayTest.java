@@ -31,6 +31,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -398,6 +399,9 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
         /** */
         private final AtomicInteger failReconReq = new AtomicInteger();
 
+        /** */
+        private final ReceivedMessagesTracker msgTracker = new ReceivedMessagesTracker();
+
         /** {@inheritDoc} */
         @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
@@ -409,17 +413,23 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override protected <T extends Message> T readMessage(
+            TcpDiscoveryIoSession ses,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            return msgTracker.track(ses, super.readMessage(ses, timeout));
+        }
+
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
             Socket sock,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-
-            if (msg instanceof TcpDiscoveryJoinRequestMessage && failJoinReqRes.getAndDecrement() > 0)
+            if (msgTracker.lastFor(sock) instanceof TcpDiscoveryJoinRequestMessage && failJoinReqRes.getAndDecrement() > 0)
                 res = RES_WAIT;
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeToSocket(sock, res, timeout);
         }
 
         /**
