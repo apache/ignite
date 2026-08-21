@@ -16,7 +16,7 @@
 # =====================================================================
 # GLOBAL ARGS (Must be declared at the very top, before any FROM)
 # =====================================================================
-ARG python_version="3.13"
+ARG python_version="3.11"
 ARG jdk_version="eclipse-temurin:17"
 
 # ---------------------------------------------------------------------
@@ -105,6 +105,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Print the active python version and verify ssl is importable
 RUN python3 --version && python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
 
+# Upgrade pip to the latest version
+RUN pip install --no-cache-dir --upgrade pip
+
 COPY ./requirements.txt /root/requirements.txt
 
 # Install requirements
@@ -127,7 +130,7 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install Ignite
-RUN for v in "2.7.6" "2.17.0"; \
+RUN for v in "2.7.6" "2.18.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v; \
