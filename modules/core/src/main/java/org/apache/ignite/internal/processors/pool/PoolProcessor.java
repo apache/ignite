@@ -147,7 +147,7 @@ public class PoolProcessor extends GridProcessorAdapter {
 
     /** */
     @SystemProperty(value = "Idle verify utility thread pool size.", type = Integer.class,
-        defaults = "Total visible CPUs - 2, minimum 4 threads.")
+        defaults = "Total available CPUs minus 2, but at least 4 threads.")
     public static final String IDLE_VERIFY_POOL_SIZE_PROPERTY = "IGNITE_IDLE_VERIFY_POOL_SIZE";
 
     /** */
