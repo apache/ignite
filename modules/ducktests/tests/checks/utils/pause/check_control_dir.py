@@ -78,6 +78,34 @@ def check_sweeping_a_directory_that_is_not_there(tmp_path):
     assert not os.path.exists(control.path), "sweeping must not create what it was asked to clean"
 
 
+def check_sweep_clears_what_an_interrupted_write_left(tmp_path):
+    """
+    Check that the temporary name a write goes through is swept too, whichever file it
+    belonged to. Every control file is matched by prefix for this reason: one matched exactly
+    would leave its ".tmp" in a directory that nothing else ever visits.
+    """
+    control = ControlDir(tmp_path)
+
+    for interrupted in (continue_file(1), CONTINUE_ALL, ABORT, STATUS_TXT, STATUS_JSON):
+        control.write(interrupted + ".tmp", "")
+
+    control.sweep(status=True)
+
+    assert os.listdir(control.path) == []
+
+
+def check_a_resume_file_lands_without_a_temporary(tmp_path):
+    """
+    Check that resuming creates the file and nothing besides: a resume file is empty, so an
+    atomic replace would buy nothing and leave a transient behind for the sweep to know about.
+    """
+    control = ControlDir(tmp_path)
+
+    control.resume(ABORT)
+
+    assert os.listdir(control.path) == [ABORT]
+
+
 def check_publishing_round_trips(tmp_path):
     """
     Check that what is published is what a reader gets back, and that withdrawing it leaves
@@ -148,6 +176,20 @@ def check_awaiting_gives_up(tmp_path):
 
     assert control.await_any([ABORT], .3) is None
     assert time.monotonic() - started_at >= .3, "it must have waited for what it was given"
+
+
+def check_awaiting_ticks_without_being_told_how_often(tmp_path):
+    """
+    Check that a caller who wants to hear that the wait is still running need not also pick an
+    interval - asking for one and getting a TypeError out of a held breakpoint would be a poor
+    way to find out that the two arguments go together.
+    """
+    control = ControlDir(tmp_path)
+
+    ticks = []
+
+    assert control.await_any([ABORT], .6, tick=ticks.append) is None
+    assert ticks, "a wait longer than one poll must report itself"
 
 
 def check_awaiting_reports_that_it_is_still_waiting(tmp_path):

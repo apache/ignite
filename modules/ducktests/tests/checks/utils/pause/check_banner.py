@@ -18,9 +18,11 @@ Checks the banner a held demo breakpoint renders: how long the scenario has been
 nodes it is made of, and the commands offered for looking into them.
 """
 
+import os
 import time
 
-from ignitetest.utils.pause import ALL, DemoPause
+from ignitetest.utils.pause import ALL, DemoPause, _resume_command
+from ignitetest.utils.pause_control import ControlDir, repo_root
 
 from checks.support.demo_pause_control import new_demo_pause, published_status
 from checks.support.ducktape_doubles import FakeBrokenService, FakeIgniteService, FakeRegistry, FakeService
@@ -77,6 +79,34 @@ def check_a_service_that_cannot_answer_is_degraded_not_raised(tmp_path):
     assert "RuntimeError" in banner, "and what could not be read must say so"
     assert "FakeIgniteService-ducker03" in banner, "a service after the broken one must still be listed"
     assert "ducker02 ducker03" in banner, "and every node must still be offered by the hints"
+
+
+def check_the_resume_command_is_named_where_it_will_be_typed():
+    """
+    Check that the command a breakpoint offers is one its reader can actually run. The banner
+    is rendered inside ducker01, where the repository is mounted at /opt/ignite-dev, and the
+    console prints it verbatim on the host, where that path does not exist - so the shared
+    repository root is the only anchor the two sides have in common.
+    """
+    inside = ControlDir(os.path.join(repo_root(), ".ducktests-demo"))
+
+    command = _resume_command(inside, 3)
+
+    assert command == "touch .ducktests-demo/continue-3   (from the repository root)"
+    assert repo_root() not in command, "an absolute path here names a directory the reader may not have"
+
+
+def check_the_resume_command_falls_back_to_the_whole_path():
+    """
+    Check that a control directory outside the repository is still named in full: there is no
+    shared anchor left to make it relative to, so a whole path is the honest answer.
+    """
+    outside = ControlDir(os.path.join(os.path.dirname(repo_root()), "elsewhere", "demo"))
+
+    command = _resume_command(outside, 3)
+
+    assert command.endswith(os.path.join("elsewhere", "demo", "continue-3"))
+    assert "from the repository root" not in command
 
 
 def check_hints_follow_the_ignite_services():

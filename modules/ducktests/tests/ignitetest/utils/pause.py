@@ -51,7 +51,9 @@ Globals:
 import os
 import time
 
-from ignitetest.utils.pause_control import ABORT, CONTINUE_ALL, ControlDir, continue_file, default_control_dir
+from ignitetest.services.utils.path import IgnitePathAware
+from ignitetest.utils.pause_control import ABORT, CONTINUE_ALL, ControlDir, continue_file, default_control_dir, \
+    repo_root
 
 # globals:
 DEMO_PAUSE = "demo_pause"
@@ -128,6 +130,32 @@ def _fmt_duration(seconds):
         return f"{seconds // 3600}:{seconds // 60 % 60:02d}:{seconds % 60:02d}"
 
     return f"{seconds // 60:02d}:{seconds % 60:02d}"
+
+
+def _resume_command(control, seq):
+    """
+    :return: The command that resumes a breakpoint by hand, named where it will be typed.
+
+    Relative to the repository root rather than absolute: the banner is rendered inside
+    ``ducker01``, where the repository is mounted at ``/opt/ignite-dev``, and read on the host,
+    where that path does not exist - so an absolute one would be a command that cannot work
+    for the person it is offered to. Both sides see the same repository through the bind
+    mount, which makes the relative form the one string that holds for both, and it is the
+    form README documents.
+    """
+    path = control.file(continue_file(seq))
+
+    try:
+        relative = os.path.relpath(path, repo_root())
+    except ValueError:
+        # A control directory on another Windows drive than the repository: nothing shared to
+        # be relative to, so the full path is all there is to offer.
+        relative = path
+
+    if relative.startswith(os.pardir) or relative == path:
+        return f"touch {path}"
+
+    return f"touch {relative.replace(os.sep, '/')}   (from the repository root)"
 
 
 def _node_host(node):
@@ -331,7 +359,7 @@ class DemoPause:
 
         lines.append("-" * _WIDTH)
         lines.append(" continue: [Enter] in the demo console")
-        lines.append(f"           or  touch {self.control.file(continue_file(self.seq))}")
+        lines.append(f"           or  {_resume_command(self.control, self.seq)}")
         lines.append("=" * _WIDTH)
 
         return lines
@@ -375,11 +403,6 @@ class DemoPause:
         # they follow the Ignite services: a ZookeeperService or a KafkaService registered
         # ahead of them - which the discovery and CDC scenarios do - carries paths of its own
         # and would have the banner name a zookeeper.properties for nodes that never had one.
-        #
-        # Imported here rather than at module level: docker/demo_console.py loads this module
-        # by path, on a host that has neither ducktape nor ignitetest installed.
-        from ignitetest.services.utils.path import IgnitePathAware  # pylint: disable=import-outside-toplevel
-
         for service in [s for s in services if isinstance(s, IgnitePathAware)] or list(services):
             try:
                 svc_log_dir = getattr(service, "log_dir", None)

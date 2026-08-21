@@ -160,8 +160,11 @@ class ControlDir:
         if not os.path.isdir(self._path):
             return
 
+        # Matched by prefix rather than by name: an interrupted write leaves the temporary
+        # ``<name>.tmp`` it goes through behind, and a sweep is the only thing that ever
+        # visits this directory without knowing what it expects to find.
         for name in os.listdir(self._path):
-            stale = name.startswith(CONTINUE_PREFIX) or name == ABORT
+            stale = name.startswith(CONTINUE_PREFIX) or name.startswith(ABORT)
 
             if status:
                 stale = stale or name.startswith(STATUS_TXT) or name.startswith(STATUS_JSON)
@@ -199,10 +202,15 @@ class ControlDir:
     def resume(self, name):
         """
         Writes a resume file. The test consumes and removes it.
-        """
-        self.write(name, "")
 
-    def await_any(self, names, timeout_sec, tick=None, tick_sec=None):
+        Created outright rather than through :meth:`write`: a resume file is empty, so there
+        is no half written state for an atomic replace to hide, and the temporary name that
+        replace goes through would be one more transient to leave lying about.
+        """
+        with open(self.file(name), "w", encoding="utf-8"):
+            pass
+
+    def await_any(self, names, timeout_sec, tick=None, tick_sec=POLL_SEC):
         """
         Polls until one of the named files appears, and takes it.
 
@@ -211,6 +219,8 @@ class ControlDir:
         :param tick: Called with the seconds left, every ``tick_sec`` that passes without a
                file. This is how a caller reports that it is still waiting without this class
                having to know what it would report to.
+        :param tick_sec: How often to do that, by default as often as the directory is looked
+               at - which is as often as there is anything new to say.
         :return: The name that ended the wait, None when the timeout ran out first.
         """
         deadline = time.monotonic() + timeout_sec
