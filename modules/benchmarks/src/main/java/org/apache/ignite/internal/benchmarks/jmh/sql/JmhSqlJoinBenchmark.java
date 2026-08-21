@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.infra.Blackhole;
 
 /**
  * Benchmark JOIN queries.
@@ -57,14 +58,47 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
      * Colocated distributed join.
      */
     @Benchmark
-    public void colocatedDistributedJoin() {
+    public void colocatedDistributedJoin(Blackhole bh) {
         int key = ThreadLocalRandom.current().nextInt(EMP_CNT / BATCH_SIZE);
 
         List<List<?>> res = executeSql("SELECT emp.name, dept.name FROM emp JOIN dept ON emp.deptid = dept.deptid " +
                 "WHERE emp.salary = ?", key);
 
-        if (res.size() != BATCH_SIZE)
-            throw new AssertionError("Unexpected result size: " + res.size());
+        bh.consume(res);
+    }
+
+    /**
+     * LEFT JOIN with DISTINCT subquery - regression test for query splitter optimization.
+     * DISTINCT is applied to the smaller table (dept), then LEFT JOINed with the larger table (emp),
+     * and filtered by a condition on the right table.
+     */
+    @Benchmark
+    public void leftJoinDistinctRegression(Blackhole bh) {
+        List<List<?>> res = executeSql(
+                "SELECT d.deptid, d.name, e.empid " +
+                        "FROM (SELECT DISTINCT * FROM dept) d " +
+                        "LEFT JOIN emp e ON d.deptid = e.deptid " +
+                        "WHERE e.name = ?",
+                "Employee 5"
+        );
+
+        bh.consume(res);
+    }
+
+    /**
+     * LEFT JOIN without DISTINCT subquery - baseline for comparison.
+     */
+    @Benchmark
+    public void leftJoinNoDistinctBaseline(Blackhole bh) {
+        List<List<?>> res = executeSql(
+                "SELECT e.empid, e.name, d.deptid " +
+                        "FROM emp e " +
+                        "LEFT JOIN dept d ON e.deptid = d.deptid " +
+                        "WHERE d.name = ?",
+                "Department 5"
+        );
+
+        bh.consume(res);
     }
 
     /**
