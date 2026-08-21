@@ -14,17 +14,32 @@
 # limitations under the License.
 
 """
-Deliberately empty - pytest imports this file for its side effect alone.
+Deliberately empty - pytest imports this file for its side effect alone, which is to put the
+directory it sits in on ``sys.path``.
 
-The framework checks live in ``checks/``, whose helper modules sit apart from the check files
-themselves (``checks/support/``), and pytest on its own puts only each check file's own
-directory on ``sys.path`` - never this one, which is what ``checks.support`` has to be reached
-through.
+That is the whole of it: importing a conftest adds *its own* directory, and pytest on its own
+adds only each check file's. Two things depend on this one being the directory that gets
+added, so moving this file down into ``checks/`` - which is where it looks like it belongs -
+breaks both:
 
-Importing a conftest is what adds its directory, so this file is what makes
-``from checks.support... import ...`` resolve, as a namespace package. Nothing below ``checks/``
-carries an ``__init__.py`` on purpose: ``setup.py`` collects the distribution with
-``find_packages()``, which only finds directories that have one, so the checks and their
-helpers stay out of the installed ``ignitetest`` package without ``setup.py`` having to name
-them.
+    - ``from checks.support... import ...``. The checks live in ``checks/``, their helper
+      modules apart from them in ``checks/support/``, and the name ``checks`` resolves only
+      while its parent is on the path. A conftest in ``checks/`` would add ``checks/`` and the
+      import would have to become a bare ``support...`` instead.
+
+    - ``import ignitetest``, under tox. ``[tox] skipsdist = True`` reads to tox 4 as
+      ``no_package``, which silently drops the ``usedevelop`` install, so the tox environment
+      has no installed ignitetest at all and reaches the checkout through this path entry
+      alone. Take this file away and every check file fails at collection, not just the ones
+      importing ``checks.support``. Outside tox the editable install covers it, which is why
+      the breakage only shows in one of the two ways the checks are run.
+
+The second reason is a workaround, not a design: once the packaging is fixed - a
+``pyproject.toml`` and a PEP 517 editable build, so ``usedevelop`` works again - only the
+first remains, and this file could then reasonably move into ``checks/``.
+
+Nothing below ``checks/`` carries an ``__init__.py`` on purpose: ``setup.py`` collects the
+distribution with ``find_packages()``, which only finds directories that have one, so the
+checks and their helpers stay out of the installed ``ignitetest`` package without ``setup.py``
+having to name them, and ``checks.support`` resolves as a namespace package instead.
 """
