@@ -151,7 +151,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     public static final String IDLE_VERIFY_POOL_SIZE_PROPERTY = "IGNITE_IDLE_VERIFY_POOL_SIZE";
 
     /** */
-    private static final int DFLT_IDLE_VERIFY_POOL_SIZE = Math.max(4, Runtime.getRuntime().availableProcessors() - 2);
+    private static final int DFLT_IDLE_VERIFY_POOL_SIZE = Math.max(4, IgniteConfiguration.AVAILABLE_PROC_CNT - 2);
 
     /** Executor service. */
     @GridToStringExclude
