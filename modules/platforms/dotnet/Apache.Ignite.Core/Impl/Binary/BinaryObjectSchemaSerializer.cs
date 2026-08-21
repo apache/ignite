@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (ignite != null)
             {
                 fieldIds = GetCachedSchema(hdr, ignite) ??
-                           ignite.Marshaller.GetBinaryType(hdr.TypeId).Schema.Get(hdr.SchemaId);
+                           ignite.Marshaller.GetBinaryType(hdr.TypeId)?.Schema?.Get(hdr.SchemaId);
             }
 
             if (fieldIds == null)
