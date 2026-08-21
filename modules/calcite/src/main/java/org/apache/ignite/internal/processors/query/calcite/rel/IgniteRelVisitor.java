@@ -92,6 +92,11 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
+    T visit(IgniteRecursiveTableScan rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteReceiver rel);
 
     /**
@@ -147,12 +152,22 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
+    T visit(IgniteRepeatUnion rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteSort rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
     T visit(IgniteTableSpool rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteRecursiveTableSpool rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
