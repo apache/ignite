@@ -268,6 +268,13 @@ touch .ducktests-demo/continue-all  # resume and skip the remaining breakpoints
 touch .ducktests-demo/abort         # fail the test and tear down
 ```
 
+Both sides find that directory on their own, so by default nothing has to be configured. `demo_pause_dir` overrides it - but the two sides name the same directory differently, since the test runs inside `ducker01`, where the repository is mounted at `/opt/ignite-dev`, while the console runs on the host. Override it and the console has to be pointed at the host side of it:
+```bash
+./docker/run_tests.sh -gj '{"demo_pause": "*", "demo_pause_dir": "/opt/ignite-dev/.demo"}' -t ./ignitetest/tests/<some_test.py>
+
+python docker/demo_console.py -d .demo
+```
+
 Breakpoints are added to a test with `self.pause("name", mdc, net)` and cost nothing when the global is absent, which is how they stay in the tests without affecting CI. Run one test at a time in demo mode (no `--max-parallel`): a single control directory holds one breakpoint at a time.
 
 A held test reports nothing back to ducktape, which kills a session it has heard nothing from for `--test-runner-timeout` (30 minutes by default) - and that budget is spent by the whole test, setup included, not by the breakpoint alone. Breakpoints therefore auto-continue while the runner is still waiting, shortening themselves below `demo_pause_timeout_sec` when there is not enough of the budget left and saying so in the test log. For a demo that needs longer, raise the runner timeout too (milliseconds):
@@ -281,7 +288,7 @@ A held test reports nothing back to ducktape, which kills a session it has heard
 |---------------------|------------|----------------------|
 | **demo_pause** | Which breakpoints stop the scenario. Absent or `false` disables them all (the default); `true` or `"*"` stops at every one; a list or comma separated string stops only at the named ones, matched case insensitively. | ```{"demo_pause": "split-brain,healed"}``` |
 | **demo_pause_timeout_sec** | How long one breakpoint may hold the scenario before it resumes on its own. Default is 600, and it is capped by what is left of `--test-runner-timeout`. | ```{"demo_pause_timeout_sec": 1800}``` |
-| **demo_pause_dir** | Control directory shared with the host. Default is `<repository root>/.ducktests-demo`. | ```{"demo_pause_dir": "/opt/ignite-dev/.demo"}``` |
+| **demo_pause_dir** | Control directory shared with the host, named as the test sees it - inside the containers the repository is `/opt/ignite-dev`. Default is `<repository root>/.ducktests-demo`; anything else has to be passed to the console as well, with `-d` and the host path. | ```{"demo_pause_dir": "/opt/ignite-dev/.demo"}``` |
 
 ### Security Settings
 ```bash
