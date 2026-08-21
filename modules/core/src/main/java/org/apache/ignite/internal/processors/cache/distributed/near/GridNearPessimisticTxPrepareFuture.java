@@ -205,29 +205,24 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      * @param writes Writes.
      * @return Request.
      */
-    private GridNearTxPrepareRequest createRequest(Map<UUID, Collection<UUID>> txNodes,
+    private GridNearTxPrepareRequest createRequest(
+        Map<UUID, Collection<UUID>> txNodes,
         GridDistributedTxMapping m,
         long timeout,
         Collection<IgniteTxEntry> reads,
-        Collection<IgniteTxEntry> writes) {
-        GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
-            futId,
-            tx.topologyVersion(),
-            tx,
-            timeout,
+        Collection<IgniteTxEntry> writes
+    ) {
+        GridNearTxPrepareRequest req = createPrepareRequest(
+            txNodes,
+            m,
             reads,
             writes,
-            m.hasNearCacheEntries(),
-            txNodes,
+            timeout,
             true,
             tx.onePhaseCommit(),
-            tx.needReturnValue() && tx.implicit(),
-            tx.implicitSingle(),
-            m.explicitLock(),
-            tx.taskNameHash(),
             false,
-            true,
-            tx.txState().recovery());
+            true
+        );
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)
@@ -258,7 +253,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             cctx.tm().txHandler().prepareNearTxLocal(tx, req) :
             cctx.tm().txHandler().prepareColocatedTx(tx, req);
 
-        prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+        prepFut.listen(new CI1<>() {
             @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
                 try {
                     fut.onResult(prepFut.get(), nearEntries);
