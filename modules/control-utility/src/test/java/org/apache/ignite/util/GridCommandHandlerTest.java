@@ -516,8 +516,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             return true;
         }, getTestTimeout()));
-        idleVerifyFut
-        .get(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        idleVerifyFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         assertTrue(lsnr.check());
     }
