@@ -89,7 +89,7 @@
         <failureaccess.version>1.0.3</failureaccess.version>
         <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
-        <hamcrest.version>2.2</hamcrest.version>
+        <hamcrest.version>3.0</hamcrest.version>
         <jackson.version>2.21.5</jackson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
