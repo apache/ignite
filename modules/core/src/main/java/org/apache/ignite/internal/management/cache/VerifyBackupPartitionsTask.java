@@ -98,7 +98,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
     /**
      * Only for tests. Overrides the default pool.
-     * TODO : remove in https://issues.apache.org/jira/browse/IGNITE-29002
+     * TODO: remove in https://issues.apache.org/jira/browse/IGNITE-29002
      */
     @TestOnly
     public static volatile ExecutorService EXECUTOR_SERVICE;

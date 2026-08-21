@@ -437,7 +437,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }, false);
     }
 
-    /** TODO : revise in https://issues.apache.org/jira/browse/IGNITE-29002 */
+    /** TODO: revise in https://issues.apache.org/jira/browse/IGNITE-29002 */
     @Test
     public void testIdleVerifyCancelBeforeCalcPartitionHashStarted() throws Exception {
         doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
@@ -462,7 +462,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }, false);
     }
 
-    /** TODO : revise in https://issues.apache.org/jira/browse/IGNITE-29002 */
+    /** TODO: revise in https://issues.apache.org/jira/browse/IGNITE-29002 */
     @Test
     public void testIdleVerifyCancelWhileCalcPartitionHashRunning() throws Exception {
         for (boolean checkCrc : new boolean[] {false, true}) {
