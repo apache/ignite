@@ -34,6 +34,10 @@ SERVICE=$2
 # Name of PID file.
 PIDFILE=${IGNITE_PID_DIR}/${SERVICE}.pid
 
+if [ "${IGNITE_HOME}" = "" ];
+    then IGNITE_HOME="$(cd $(dirname $0); cd ../../; pwd)";
+fi
+
 case "$1" in
     start)
         #
