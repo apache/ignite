@@ -249,17 +249,21 @@ class DemoPause:
         self._started_at = time.monotonic() if started_at is None else started_at
         self._prepared = False
         self._continue_all = False
+        self._unusable = False
 
     @property
     def enabled(self):
         """
         :return: Whether any breakpoint of this test can stop the scenario.
         """
-        return self.names is not None and not self._continue_all
+        return self.names is not None and not self._continue_all and not self._unusable
 
     def pause(self, name, describers=(), services=()):
         """
         Blocks the scenario at the named breakpoint until the host resumes it.
+
+        A control directory that cannot be used costs the demo and nothing else - see
+        :meth:`_give_up`.
 
         :param name: Breakpoint name, matched against the ``demo_pause`` global.
         :param describers: Objects exposing ``describe() -> list of str``, each contributing
@@ -269,19 +273,45 @@ class DemoPause:
         if not self._stops_at(name):
             return
 
-        self._prepare()
+        try:
+            self._prepare()
 
-        self.seq += 1
+            self.seq += 1
 
-        timeout_sec = self._budgeted_timeout()
+            timeout_sec = self._budgeted_timeout()
 
-        banner = self._render(name, describers, services, timeout_sec)
+            banner = self._render(name, describers, services, timeout_sec)
 
-        self._publish(name, banner, timeout_sec)
+            self._publish(name, banner, timeout_sec)
+        except OSError as ex:
+            self._give_up(name, ex)
+
+            return
 
         self.logger.info(f"Demo breakpoint reached [seq={self.seq}, name={name}, dir={self.control.path}]")
 
         self._await_resume(name, timeout_sec)
+
+    def _give_up(self, name, error):
+        """
+        Turns the remaining breakpoints off, after the control directory turned out to be
+        unusable.
+
+        A breakpoint observes a scenario; it must not be what ends one. The directory is a
+        bind mount of the host repository, so it can be read only, be owned by another user or
+        be full - none of which says anything about the cluster under test, and all of which
+        would otherwise fail a run that was about to pass. Blocking would be no better than
+        raising: a breakpoint whose banner never reached the host would hold the scenario for
+        its whole timeout with nothing on screen to resume it.
+
+        Every later breakpoint would fail the same way, so they are dropped here rather than
+        reported again at each one.
+        """
+        self._unusable = True
+
+        self.logger.warn(f"Demo breakpoints disabled, the control directory cannot be used "
+                         f"[dir={self.control.path}, error={error}, seq={self.seq}, name={name}, "
+                         f"test={self.test_name}]")
 
     def _stops_at(self, name):
         if not self.enabled:
