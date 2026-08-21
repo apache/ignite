@@ -29,12 +29,17 @@ import threading
 import time
 from contextlib import contextmanager
 
-from ignitetest.utils.pause import DemoPause, STATUS_JSON
+from ignitetest.utils.pause import DEMO_PAUSE_TIMEOUT_SEC, DemoPause, STATUS_JSON
 
 from checks.support.ducktape_doubles import FakeLogger
 
 # Stands for the test a breakpoint was reached in; breakpoints report it to the host.
 TEST_NAME = "check.CheckPause.check_something"
+
+# Far longer than the fraction of a second a check actually holds a breakpoint for, and far
+# shorter than the framework's own default: a resume that never arrives has to fail the check
+# that expected it rather than hold the suite for ten minutes.
+RESUME_TIMEOUT_SEC = 30
 
 
 def new_demo_pause(control_dir, started_at=None, runner_timeout_sec=None, **test_globals):
@@ -42,6 +47,8 @@ def new_demo_pause(control_dir, started_at=None, runner_timeout_sec=None, **test
     :return: A DemoPause over the given control directory, logging into a FakeLogger its
              ``logger`` attribute hands back to the check.
     """
+    test_globals.setdefault(DEMO_PAUSE_TIMEOUT_SEC, RESUME_TIMEOUT_SEC)
+
     return DemoPause(FakeLogger(), test_globals, TEST_NAME, control_dir=str(control_dir),
                      started_at=started_at, runner_timeout_sec=runner_timeout_sec)
 
