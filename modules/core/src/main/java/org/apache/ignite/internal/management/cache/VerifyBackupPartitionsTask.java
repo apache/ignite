@@ -63,6 +63,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -94,6 +95,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
+
+    /** Only for tests. Overrides the default pool. */
+    @TestOnly
+    public static volatile ExecutorService EXECUTOR_SERVICE;
 
     /** Injected logger. */
     @LoggerResource
@@ -339,7 +344,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                ExecutorService execSrvs = ignite.context().pools().getIdleVerifyExecutorService();
+                ExecutorService execSrvs = EXECUTOR_SERVICE;
+
+                if (execSrvs == null)
+                    execSrvs = ignite.context().pools().getIdleVerifyExecutorService();
 
                 for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                     partHashCalcFutures.add(calculatePartitionHashAsync(execSrvs, grpCtx, part, this::isCancelled));

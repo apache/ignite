@@ -37,7 +37,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -169,6 +172,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.management.cache.CacheIdleVerifyCancelTask.TASKS_TO_CANCEL;
+import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CACL_PART_HASH_ERR_MSG;
 import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CP_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -247,6 +251,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         super.afterTest();
 
         listeningLog = null;
+
+        VerifyBackupPartitionsTask.EXECUTOR_SERVICE = null;
     }
 
     /** {@inheritDoc} */
@@ -433,22 +439,84 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     @Test
+    public void testIdleVerifyCancelBeforeCalcPartitionHashStarted() throws Exception {
+        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+            ForkJoinPool pool = new ForkJoinPool() {
+                @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
+                    beforeCancelLatch.countDown();
+
+                    ForkJoinTask<T> submitted = super.submit(task);
+
+                    try {
+                        assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return submitted;
+                }
+            };
+
+            VerifyBackupPartitionsTask.EXECUTOR_SERVICE = pool;
+        }, false);
+    }
+
+    /** */
+    @Test
     public void testIdleVerifyCancelWhileCalcPartitionHashRunning() throws Exception {
-        listeningLog = new ListeningTestLogger(log);
-
         for (boolean checkCrc : new boolean[] {false, true}) {
-            LogListener lsnr = LogListener.matches(checkCrc
-                ? "Checking of partitions page CRC sum has been cancelled"
-                : "Partition hash calculation has been cancelled"
-            ).build();
+            // Can't place assert inside pool, because exceptions from task ignored.
+            AtomicBoolean interruptedOnCancel = new AtomicBoolean(true);
+            AtomicBoolean eCatched = new AtomicBoolean(false);
 
-            listeningLog.registerListener(lsnr);
+            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
+                ForkJoinPool pool = new ForkJoinPool() {
+                    @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
+                        return super.submit(new Callable<T>() {
+                            @Override public T call() throws Exception {
+                                beforeCancelLatch.countDown();
 
-            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> beforeCancelLatch.countDown(), checkCrc);
+                                try {
+                                    assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                                }
+                                catch (InterruptedException ignored) {
+                                    interruptedOnCancel.set(false);
+                                }
 
-            lsnr.check();
+                                try {
+                                    // Call must fail.
+                                    T res = task.call();
 
-            listeningLog.clearListeners();
+                                    interruptedOnCancel.set(false);
+
+                                    return res;
+                                }
+                                catch (IgniteException e) {
+                                    if (!e.getMessage().startsWith(checkCrc ? CRC_CHECK_ERR_MSG : CACL_PART_HASH_ERR_MSG))
+                                        interruptedOnCancel.set(false);
+
+                                    eCatched.set(true);
+
+                                    throw e;
+                                }
+                                catch (Throwable e) {
+                                    interruptedOnCancel.set(false);
+
+                                    throw e;
+                                }
+                            }
+                        });
+                    }
+                };
+
+                VerifyBackupPartitionsTask.EXECUTOR_SERVICE = pool;
+            }, checkCrc);
+
+            assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
+            assertTrue("Task must fail with expected exception", eCatched.get());
+
+            eCatched.set(false);
         }
     }
 
@@ -462,8 +530,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         final int gridsCnt = 4;
 
         if (G.allGrids().isEmpty()) {
-            if (listeningLog == null)
-                listeningLog = new ListeningTestLogger(log);
+            listeningLog = new ListeningTestLogger(log);
 
             IgniteEx srv = startGrids(gridsCnt);
 
@@ -474,8 +541,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 .setAffinity(new RendezvousAffinityFunction().setPartitions(3)));
 
             for (int part = 0; part < 3; part++) {
-                for (Integer key : partitionKeys(cache, part, 3, 0))
+                for (Integer key : partitionKeys(cache, part, 3, 0)) {
                     cache.put(key, key);
+                }
             }
         }
 
