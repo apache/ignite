@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -51,8 +52,10 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
-import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,8 +64,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.ColumnOrigin> {
     /** */
-    public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.COLUMN_ORIGIN.method, new IgniteMdColumnOrigins());
+    public static final RelMetadataProvider SOURCE =
+        ReflectiveRelMetadataProvider.reflectiveSource(
+            new IgniteMdColumnOrigins(), BuiltInMetadata.ColumnOrigin.Handler.class);
 
     /** {@inheritDoc} */
     @Override public MetadataDef<BuiltInMetadata.ColumnOrigin> getDef() {
@@ -261,27 +265,45 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         int iOutputColumn
     ) {
         if (rel.projects() != null) {
-            RexNode proj = rel.projects().get(iOutputColumn);
-            Set<RexSlot> sources = new HashSet<>();
-
-            getOperands(proj, RexSlot.class, sources);
-
-            boolean derived = sources.size() > 1;
-            Set<RelColumnOrigin> res = new HashSet<>();
-
-            for (RexSlot slot : sources) {
-                if (slot instanceof RexLocalRef) {
-                    RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
-
-                    res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
-                        derived));
-                }
+            RexNode node = rel.projects().get(iOutputColumn);
+            if (node instanceof RexInputRef) {
+                RexInputRef inputRef = (RexInputRef)node;
+                iOutputColumn = inputRef.getIndex();
             }
+            else {
+                Set<RexSlot> sources = new HashSet<>();
 
-            return res;
+                getOperands(node, RexSlot.class, sources);
+
+                boolean derived = sources.size() > 1;
+                Set<RelColumnOrigin> res = new HashSet<>();
+
+                for (RexSlot slot : sources) {
+                    if (slot instanceof RexLocalRef) {
+                        RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
+
+                        res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
+                            derived));
+                    }
+                }
+
+                return res;
+            }
         }
 
-        return Collections.singleton(rel.columnOriginsByRelLocalRef(iOutputColumn));
+        ImmutableBitSet requiredColumns = rel.requiredColumns();
+        RelOptTable table = rel.getTable();
+
+        if (requiredColumns != null) {
+            Mappings.TargetMapping trimming = Commons.projectedMapping(requiredColumns, table.getRowType().getFieldCount());
+
+            iOutputColumn = trimming.getSourceOpt(iOutputColumn);
+
+            if (iOutputColumn == -1)
+                return null;
+        }
+
+        return Set.of(new RelColumnOrigin(table, iOutputColumn, false));
     }
 
     /**
@@ -301,6 +323,12 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
             for (RexNode op : operands)
                 getOperands(op, cls, res);
         }
+    }
+
+    /** Provides column origin for Subset relation. */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(RelSubset rel,
+        RelMetadataQuery mq, int outputColumn) {
+        return mq.getColumnOrigins(rel.stripped(), outputColumn);
     }
 
     /**
@@ -369,15 +397,15 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         final Set<RelColumnOrigin> set = new HashSet<>();
 
         final RexVisitor<Void> visitor = new RexVisitorImpl<Void>(true) {
-                @Override public Void visitInputRef(RexInputRef inputRef) {
-                    Set<RelColumnOrigin> inputSet = mq.getColumnOrigins(input, inputRef.getIndex());
+            @Override public Void visitInputRef(RexInputRef inputRef) {
+                Set<RelColumnOrigin> inputSet = mq.getColumnOrigins(input, inputRef.getIndex());
 
-                    if (inputSet != null)
-                        set.addAll(inputSet);
+                if (inputSet != null)
+                    set.addAll(inputSet);
 
-                    return null;
-                }
-            };
+                return null;
+            }
+        };
 
         rexNode.accept(visitor);
 

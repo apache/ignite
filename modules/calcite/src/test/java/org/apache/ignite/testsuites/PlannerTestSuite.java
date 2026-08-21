@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.IndexSearchBo
 import org.apache.ignite.internal.processors.query.calcite.planner.InlineIndexScanPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinColocationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinCommutePlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.JoinRowCountEstimationTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinWithUsingPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.LimitOffsetPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.MergeJoinPlannerTest;
@@ -98,6 +99,7 @@ import org.junit.runners.Suite;
 
     HintsTestSuite.class,
     DynamicParametersPlannerTest.class,
+    JoinRowCountEstimationTest.class,
 })
 public class PlannerTestSuite {
 }
