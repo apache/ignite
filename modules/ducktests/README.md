@@ -129,9 +129,8 @@ To locally simulate validation matrices across distinct target runtimes (e.g., P
    pyenv install 3.9
    pyenv shell 3.8 3.9
    ```
-3. Install `tox` and run the validation suite:
+3. Run the validation suite:
    ```bash
-   pip install tox
    tox
    tox -r -e codestyle,py3
    ```
