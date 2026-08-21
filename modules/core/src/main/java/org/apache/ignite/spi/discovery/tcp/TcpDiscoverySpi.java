@@ -59,7 +59,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
@@ -119,7 +118,6 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -2139,21 +2137,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        try {
-            if (dataPacket.joiningNodeId().equals(locNode.id()))
-                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
-            else
-                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
-        }
-        catch (IgniteCheckedException e) {
-            if (ignite() instanceof IgniteEx) {
-                FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                failure.process(new FailureContext(CRITICAL_ERROR, e));
-            }
-
-            throw new IgniteException(e);
-        }
+        if (dataPacket.joiningNodeId().equals(locNode.id()))
+            dataBag = dataPacket.bagWithNodeData();
+        else
+            dataBag = dataPacket.bagWithJoiningNodeData();
 
         exchange.onExchange(dataBag);
     }
