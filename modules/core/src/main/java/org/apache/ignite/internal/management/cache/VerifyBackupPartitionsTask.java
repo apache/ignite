@@ -63,7 +63,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;

@@ -428,7 +428,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     }
                 });
             });
-        }, false);
+        }, false, false);
     }
 
     /** */
@@ -444,7 +444,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             listeningLog.registerListener(lsnr);
 
-            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> beforeCancelLatch.countDown(), checkCrc);
+            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> beforeCancelLatch.countDown(), checkCrc, true);
 
             lsnr.check();
 
@@ -457,9 +457,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @param prepare Prepares the test using beforeCancelLatch and afterCancelLatch.
      * @param checkCrc If {@code true} then run idle verify with --check-crc argument.
+     * @param waitAtStart If {@code true} then forces nodes to wait after the procedure start and to proceed only after
+     *                    the {@code prepare}'s before-latch switched.
     */
-    private void doTestCancelIdleVerify(BiConsumer<CountDownLatch, CountDownLatch> prepare, boolean checkCrc) throws Exception {
-        final int gridsCnt = 4;
+    private void doTestCancelIdleVerify(
+        BiConsumer<CountDownLatch, CountDownLatch> prepare,
+        boolean checkCrc,
+        boolean waitAtStart
+    ) throws Exception {
+        int gridsCnt = 4;
 
         if (G.allGrids().isEmpty()) {
             if (listeningLog == null)
@@ -484,9 +490,43 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         prepare.accept(beforeCancelLatch, afterCancelLatch);
 
-        LogListener lsnr = LogListener.matches("Idle verify was cancelled.").build();
+        LogListener cancelLsnr = LogListener.matches("Idle verify was cancelled.").build();
 
-        listeningLog.registerListener(lsnr);
+        CountDownLatch startProceedlatch = new CountDownLatch(1);;
+        LogListener startLsnr = null;
+
+        if(waitAtStart) {
+            startLsnr = new LogListener() {
+                private final AtomicInteger startedLatch = new AtomicInteger(gridsCnt);
+
+                @Override public boolean check() {
+                    return startedLatch.get() < 1;
+                }
+
+                @Override public void reset() {
+                    assert startProceedlatch.getCount() > 0;
+
+                    startedLatch.set(gridsCnt);
+                }
+
+                @Override public void accept(String s) {
+                    if (s.contains("Idle verify procedure has started")) {
+                        startedLatch.decrementAndGet();
+
+                        try {
+                            startProceedlatch.await();
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            };
+
+            listeningLog.registerListener(startLsnr);
+        }
+
+        listeningLog.registerListener(cancelLsnr);
 
         IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> {
             if (checkCrc)
@@ -495,9 +535,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 execute("--cache", "idle_verify");
         });
 
+        if (waitAtStart)
+            assertTrue(startLsnr.check(getTestTimeout()));
+
         assertTrue(beforeCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        if (waitAtStart)
+            startProceedlatch.countDown();
 
         afterCancelLatch.countDown();
 
@@ -519,7 +565,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         idleVerifyFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        assertTrue(lsnr.check());
+        assertTrue(cancelLsnr.check());
     }
 
     /**
