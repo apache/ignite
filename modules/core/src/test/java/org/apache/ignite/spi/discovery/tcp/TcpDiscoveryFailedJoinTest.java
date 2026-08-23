@@ -167,26 +167,15 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
      */
     private static class FailTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
         ) throws IOException, IgniteCheckedException {
             if (sockAddr.getPort() == FAIL_PORT)
                 throw new SocketException("Connection refused");
 
-            return super.openSocket(sockAddr, timeoutHelper);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Socket openSocket(
-            Socket sock,
-            InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteCheckedException {
-            if (remAddr.getPort() == FAIL_PORT)
-                throw new SocketException("Connection refused");
-
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            return super.openSession(sock, sockAddr, timeoutHelper);
         }
     }
 
@@ -195,13 +184,13 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
      */
     private static class DropTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(sock, data, timeout);
+            if (ses.socket().getPort() != FAIL_PORT)
+                super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -212,13 +201,13 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(sock, res, timeout);
+            if (ses.socket().getPort() != FAIL_PORT)
+                super.writeReceipt(ses, res, timeout);
         }
     }
 

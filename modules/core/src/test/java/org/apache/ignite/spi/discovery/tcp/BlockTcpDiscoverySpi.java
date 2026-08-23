@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -65,8 +64,8 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeToSocket(
-        Socket sock,
+    @Override protected void write(
+        TcpDiscoveryIoSession ses,
         byte[] data,
         long timeout
     ) throws IOException, IgniteCheckedException {
@@ -77,7 +76,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
                 apply(spiCtx.localNode(), msg);
         }
 
-        super.writeToSocket(sock, data, timeout);
+        super.write(ses, data, timeout);
     }
 
     /** {@inheritDoc} */
