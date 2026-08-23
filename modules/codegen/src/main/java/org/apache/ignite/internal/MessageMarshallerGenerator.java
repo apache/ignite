@@ -283,7 +283,6 @@ public class MessageMarshallerGenerator extends MessageCompanionGenerator {
             appendMarshalledMapFinish(body);
             appendMarshalledElementBlobsFinish(body);
 
-
             prependMsgFactoryResolution(body);
             prependPinnedMarshaller(body);
         });
