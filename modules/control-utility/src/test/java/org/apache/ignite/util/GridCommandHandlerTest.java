@@ -493,10 +493,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         LogListener cancelLsnr = LogListener.matches("Idle verify was cancelled.").build();
 
         CountDownLatch startProceedlatch = new CountDownLatch(1);;
-        LogListener startLsnr = null;
+        LogListener startLsnrAndWaiter = null;
 
-        if(waitAtStart) {
-            startLsnr = new LogListener() {
+        if (waitAtStart) {
+            startLsnrAndWaiter = new LogListener() {
                 private final AtomicInteger startedLatch = new AtomicInteger(gridsCnt);
 
                 @Override public boolean check() {
@@ -523,7 +523,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 }
             };
 
-            listeningLog.registerListener(startLsnr);
+            listeningLog.registerListener(startLsnrAndWaiter);
         }
 
         listeningLog.registerListener(cancelLsnr);
@@ -536,7 +536,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         });
 
         if (waitAtStart)
-            assertTrue(startLsnr.check(getTestTimeout()));
+            assertTrue(startLsnrAndWaiter.check(getTestTimeout()));
 
         assertTrue(beforeCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
