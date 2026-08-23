@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -48,11 +47,13 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
+import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -113,25 +114,31 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private final RelDataType nullType;
 
+    /** */
+    private final @Nullable IgniteSqlPaginationPolicy pagPlc;
+
     /**
      * Creates a validator.
      *
-     * @param opTab         Operator table
-     * @param catalogReader Catalog reader
-     * @param typeFactory   Type factory
-     * @param cfg           Config
-     * @param parameters    Dynamic parameters
+     * @param opTab Operator table.
+     * @param catalogReader Catalog reader.
+     * @param typeFactory Type factory.
+     * @param cfg Config.
+     * @param parameters Dynamic parameters.
+     * @param pagPlc Pagination policy.
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
         CalciteCatalogReader catalogReader,
         IgniteTypeFactory typeFactory,
         SqlValidator.Config cfg,
-        @Nullable Object[] parameters
+        @Nullable Object[] parameters,
+        @Nullable IgniteSqlPaginationPolicy pagPlc
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
+        this.pagPlc = pagPlc;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
@@ -267,8 +274,56 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
         super.validateSelect(select, targetRowType);
 
-        validateFetchOffset(select.getFetch(), "fetch / limit");
+        validateFetch(select, "fetch / limit");
         validateFetchOffset(select.getOffset(), "offset");
+    }
+
+    /** Validate fetch expression. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    private void validateFetch(SqlSelect select, String clauseName) {
+        SqlNode fetch = select.getFetch();
+
+        if (fetch == null)
+            return;
+
+        if (SqlUtil.isNullLiteral(fetch, true))
+            throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+        validateFetchExpression(fetch, clauseName);
+
+        SqlValidatorScope scope = getEmptyScope();
+
+        inferUnknownTypes(typeFactory().createSqlType(SqlTypeName.DECIMAL), scope, fetch);
+        RelDataType type = deriveType(scope, fetch);
+
+        if (type.getSqlTypeName().getFamily() != SqlTypeFamily.NUMERIC && !(fetch instanceof SqlDynamicParam))
+            throw newValidationError(fetch, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+        validateFetchOffset(fetch, clauseName);
+    }
+
+    /** Reject column references in a fetch expression. */
+    // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
+    //  Remove this method after upgrading to Calcite 1.43.
+    private void validateFetchExpression(SqlNode node, String clauseName) {
+        if (node instanceof SqlIdentifier) {
+            if (makeNullaryCall((SqlIdentifier)node) == null)
+                throw newValidationError(node, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+            return;
+        }
+
+        if (node instanceof SqlNodeList) {
+            for (SqlNode child : (SqlNodeList)node)
+                validateFetchExpression(child, clauseName);
+        }
+        else if (node instanceof SqlCall call) {
+            for (SqlNode child : call.getOperandList()) {
+                if (child != null)
+                    validateFetchExpression(child, clauseName);
+            }
+        }
     }
 
     /**
@@ -282,7 +337,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             return;
 
         if (n instanceof SqlLiteral) {
-            BigDecimal offsetFetchLimit = ((SqlLiteral)n).bigDecimalValue();
+            SqlLiteral literal = (SqlLiteral)n;
+
+            if (literal.getTypeName().getFamily() != SqlTypeFamily.NUMERIC)
+                throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(clauseName));
+
+            BigDecimal offsetFetchLimit = literal.bigDecimalValue();
 
             checkLimitOffset(offsetFetchLimit, n, clauseName);
         }
@@ -330,7 +390,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (val.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + nodeName);
 
-            IgniteMath.convertToLongExact(val, RoundingMode.DOWN);
+            IgniteSqlPaginationPolicy.convertToLongExact(val, pagPlc);
         }
         catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
@@ -408,6 +468,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        if (node instanceof SqlOrderBy) {
+            SqlOrderBy orderBy = (SqlOrderBy)node;
+
+            if (orderBy.fetch != null) {
+                // SqlOrderBy does not implement setOperand(). Rewrite FETCH before Calcite visits its operands,
+                // otherwise rewrites such as COALESCE to CASE fail when Calcite tries to replace the FETCH operand.
+                SqlNode fetch = performUnconditionalRewrites(orderBy.fetch, false);
+
+                if (fetch != orderBy.fetch) {
+                    node = new SqlOrderBy(orderBy.getParserPosition(), orderBy.query, orderBy.orderList,
+                        orderBy.offset, fetch);
+                }
+            }
+        }
+
         // Workaround for https://issues.apache.org/jira/browse/CALCITE-4923
         if (node instanceof SqlSelect) {
             SqlSelect select = (SqlSelect)node;
@@ -688,7 +763,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             && deriveDynamicParameterType((SqlDynamicParam)node, unknownType.equals(inferredType) ? nullType : inferredType) != null)
             return;
 
-        if (node instanceof SqlCall) {
+        if (node instanceof SqlCase) {
+            // SqlValidatorImpl assigns context-specific types to WHEN and result operands.
+            super.inferUnknownTypes(inferredType, scope, node);
+        }
+        else if (node instanceof SqlCall) {
             final SqlValidatorScope newScope = scopes.get(node);
 
             if (newScope != null)

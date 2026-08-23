@@ -453,6 +453,65 @@ For example, to cancel the transactions that have been running for more than 100
 control.sh --tx --min-duration 100 --kill
 ----
 
+== Mass Cancellation of Queries
+
+The control script allows you to mass cancel SQL queries, scan queries, index queries and continuous queries that match specific criteria.
+
+The syntax for the mass cancellation command is as follows:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --kill all <target> [--node-id <nodeId>] [--min-duration <seconds>]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --kill all <target> [--node-id <nodeId>] [--min-duration <seconds>]
+----
+--
+
+The following target types are supported:
+
+[cols="1,3",opts="header"]
+|===
+|Target | Description
+|`sql`| SQL queries
+|`scan`| Scan queries
+|`index`| Index queries
+|`continuous`| Continuous queries
+|===
+
+Parameters:
+
+[cols="2,5",opts="header"]
+|===
+|Parameter | Description
+|--nodeId <nodeId>| Optional. UUID of the originator node to filter targets.
+|--min-duration <seconds>| Optional. Minimum duration in seconds. Only objects that have been running longer than the specified value will be cancelled.
+|===
+
+Example commands:
+
+[source, shell]
+----
+# Cancel all SQL queries that have been running for more than 60 seconds
+control.sh --kill all sql --min-duration 60
+
+# Cancel scan queries that have been running for more than 30 seconds on a specific node
+control.sh --kill all scan --nodeId <uuid> --min-duration 30
+
+# Cancel index queries on a specific node
+control.sh --kill all index --nodeId <uuid>
+
+# Cancel continuous queries
+control.sh --kill all continuous
+----
+
+To cancel specific individual objects (without mass filtering) see link:sql-reference/operational-commands[Operational Commands] section.
+
 == Contention Detection in Transactions
 
 The `contention` command detects when multiple transactions are in contention to create a lock for the same key. The command is useful if you have long-running or hanging transactions.
@@ -699,8 +758,8 @@ control.sh --cache idle_verify --cancel
 [NOTE]
 ====
 [discrete]
-`idle_verify` command uses also own utility thread pool of default size `Total CPUs - 2` with the minimum of `4` threads.
-The pool size might be adjusted at node start with the system property
+`idle_verify` command uses its own utility thread pool of default size `Total CPUs - 2` with the minimum of `4` threads.
+The pool size might be adjusted at node startup with the system property
 
 `-DIGNITE_IDLE_VERIFY_POOL_SIZE=...`.
 [discrete]

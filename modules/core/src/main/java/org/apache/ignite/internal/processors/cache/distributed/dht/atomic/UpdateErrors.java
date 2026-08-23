@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -33,7 +32,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-@UseBinaryMarshaller
 public class UpdateErrors implements Message {
     /** Failed keys. */
     @GridToStringInclude

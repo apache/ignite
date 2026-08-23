@@ -386,6 +386,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
+                    msg.afterReceive();
+
                     GridDhtPartitionExchangeId exchangeId = msg.exchangeId();
 
                     if (exchangeId != null) {
@@ -423,6 +425,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
+                    msg.received();
+
                     if (msg.exchangeId() == null) {
                         GridDhtPartitionsExchangeFuture curExchange = lastTopologyFuture();
 
@@ -1309,27 +1313,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Creates partitions full message for all cache groups.
-     *
-     * @param exchId Non-null exchange ID if message is created for exchange.
-     * @param lastVer Last version.
-     * @param partHistSuppliers Partition history suppliers map.
-     * @param partsToReload Partitions to reload map.
-     * @return Message.
-     */
-    public GridDhtPartitionsFullMessage createPartitionsFullMessage(
-        @Nullable final GridDhtPartitionExchangeId exchId,
-        @Nullable GridCacheVersion lastVer,
-        Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
-        @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload
-    ) {
-        Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
-
-        return createPartitionsFullMessage(exchId, lastVer, partHistSuppliers, partsToReload, grps);
-    }
-
-    /**
-     * Creates partitions full message for selected cache groups.
+     * Creates partitions full message for selected cache groups and prepares it to send to another node.
      *
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
@@ -1403,6 +1387,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (!partsSizes.isEmpty())
             m.partitionSizes(partsSizes);
+
+        m.prepareToSend();
 
         return m;
     }

@@ -472,9 +472,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
 
-    /** */
-    private IgniteNodeFeatureSet locNodeFeatures;
-
     /**
      * Gets current SPI state.
      *
@@ -1196,8 +1193,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         // Init local node.
         initAddresses();
 
-        locNodeFeatures = ((IgniteEx)ignite).context().localNodeFeatures();
-
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
             addrs.get1(),
@@ -1205,7 +1200,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             srvPort,
             metricsProvider,
             locNodeVer,
-            consistentId());
+            consistentId(),
+            ignite.context().localNodeFeatures());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1696,11 +1692,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** */
-    IgniteNodeFeatureSet localNodeFeatures() {
-        return locNodeFeatures;
-    }
-
-    /** */
     void validateRemoteFeatures(IgniteNodeFeatureSet rmtFeatures) throws IgniteCheckedException {
         if (rmtFeatures == null) {
             throw new UnsupportedNodeVersionException(
@@ -1709,7 +1700,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         for (IgniteComponentFeatureSet rmtCmpFeatures : rmtFeatures.values()) {
-            IgniteComponentFeatureSet locCmpFeatures = locNodeFeatures.componentFeatures(rmtCmpFeatures.componentName());
+            IgniteComponentFeatureSet locCmpFeatures = locNode.features().componentFeatures(rmtCmpFeatures.componentName());
 
             if (locCmpFeatures == null)
                 continue;
@@ -1724,7 +1715,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             if (!src.isUpgradableTo(target)) {
                 throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
-                    " [locComponents=" + locNodeFeatures +
+                    " [locComponents=" + locNode.features() +
                     ", rmtComponents=" + rmtFeatures + ']');
             }
         }

@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.GlobalMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
@@ -89,6 +90,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
@@ -132,6 +134,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryC
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -629,23 +632,37 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             ? U.currentTimeMillis() + waitMs
             : waitMs < 0 ? U.currentTimeMillis() : 0L;
 
-        RootQuery<Row> selectQry = qry;
+        MemoryTracker forUpdateMemoryTracker = QueryMemoryTracker.create(memoryTracker, cfg.getQueryMemoryQuota());
 
-        while (true) {
-            FieldsQueryCursor<List<?>> cursor = tryExecuteForUpdate(selectQry, plan, userTx, waitMs, lockAcquisitionEndTime);
+        try {
+            RootQuery<Row> selectQry = qry;
 
-            if (cursor != null)
-                return cursor;
+            while (true) {
+                FieldsQueryCursor<List<?>> cursor = tryExecuteForUpdate(
+                    selectQry,
+                    plan,
+                    userTx,
+                    waitMs,
+                    lockAcquisitionEndTime,
+                    forUpdateMemoryTracker
+                );
 
-            if (lockAcquisitionEndTime != 0 && U.currentTimeMillis() >= lockAcquisitionEndTime) {
-                throw new IgniteSQLException(
-                    IgniteResource.INSTANCE.selectForUpdateLockFailed().str(),
-                    IgniteQueryErrorCode.CONCURRENT_UPDATE);
+                if (cursor != null)
+                    return cursor;
+
+                if (lockAcquisitionEndTime != 0 && U.currentTimeMillis() >= lockAcquisitionEndTime) {
+                    throw new IgniteSQLException(
+                        IgniteResource.INSTANCE.selectForUpdateLockFailed().str(),
+                        IgniteQueryErrorCode.CONCURRENT_UPDATE);
+                }
+
+                // The previous query has already been closed after execution, so retry with a fresh root query.
+                selectQry = qry.retryQuery();
+                qryReg.register(selectQry);
             }
-
-            // The previous query has already been closed after execution, so retry with a fresh root query.
-            selectQry = qry.retryQuery();
-            qryReg.register(selectQry);
+        }
+        finally {
+            forUpdateMemoryTracker.reset();
         }
     }
 
@@ -678,6 +695,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
      * @param userTx Transaction that acquires the locks.
      * @param waitMs Lock wait time in the internal representation.
      * @param lockAcquisitionEndTime Absolute lock acquisition deadline in milliseconds.
+     * @param forUpdateMemoryTracker Memory tracker shared by the inner SELECT and materialized rows.
      * @return Result cursor if all required locks were acquired, or {@code null} if at least one lock was not acquired.
      */
     @Nullable private FieldsQueryCursor<List<?>> tryExecuteForUpdate(
@@ -685,26 +703,51 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         SelectForUpdatePlan plan,
         GridNearTxLocal userTx,
         long waitMs,
-        long lockAcquisitionEndTime
+        long lockAcquisitionEndTime,
+        MemoryTracker forUpdateMemoryTracker
     ) {
+        // Use one quota for both execution-node buffers and the rows retained by SELECT FOR UPDATE.
+        qry.createMemoryTracker(forUpdateMemoryTracker, 0);
+
         // Run the inner SELECT (with _KEY, _VAL, _VER appended) and collect all rows.
         ListFieldsQueryCursor<?> innerCursor = mapAndExecutePlan(qry, plan.innerPlan());
+        List<List<?>> rows = new ArrayList<>();
+        RowTracker<List<?>> rowTracker = ExecutionNodeMemoryTracker.create(
+            forUpdateMemoryTracker,
+            GridUnsafe.OBJ_REF_SIZE
+        );
 
-        // TODO: IGNITE-28957 SELECT FOR UPDATE may cause OOM by materializing the entire result set.
-        List<List<?>> rows = innerCursor.getAll();
+        try {
+            innerCursor.getAll(row -> {
+                rowTracker.onRowAdded(row);
+                rows.add(row);
+            });
 
-        int userColCnt = plan.userColumnCount();
+            int userColCnt = plan.userColumnCount();
 
-        if (rows.isEmpty())
+            if (rows.isEmpty())
+                return createResultCursor(qry, plan, rows, userColCnt);
+
+            List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
+                collectLockBatches(plan, rows);
+
+            if (!tryAcquireLocks(userTx, lockBatches, waitMs, lockAcquisitionEndTime))
+                return null;
+
             return createResultCursor(qry, plan, rows, userColCnt);
-
-        List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
-            collectLockBatches(plan, rows);
-
-        if (!tryAcquireLocks(userTx, lockBatches, waitMs, lockAcquisitionEndTime))
-            return null;
-
-        return createResultCursor(qry, plan, rows, userColCnt);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), U.convertException(e));
+        }
+        catch (IgniteSQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+        finally {
+            rowTracker.reset();
+        }
     }
 
     /**

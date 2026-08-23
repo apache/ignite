@@ -1507,7 +1507,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 openSock = true;
 
-                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, spi.localNodeFeatures());
+                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, locNode.features());
 
                 // Handshake.
                 spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
@@ -3419,7 +3419,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 openSock = true;
 
                                 // Handshake.
-                                TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId, spi.localNodeFeatures());
+                                TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId, locNode.features());
 
                                 if (sndState != null) {
                                     // If want a forced connection, we set the change-topology node flag to current node id.
@@ -6602,7 +6602,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res = new TcpDiscoveryHandshakeResponse(
                         locNodeId,
                         locNode.internalOrder(),
-                        spi.localNodeFeatures()
+                        locNode.features()
                     );
 
                     if (req.client()) {
