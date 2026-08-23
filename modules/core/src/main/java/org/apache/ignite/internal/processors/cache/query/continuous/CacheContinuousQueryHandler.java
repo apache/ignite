@@ -409,6 +409,13 @@ public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHa
     }
 
     /**
+     * @return {@code True} if query is internal.
+     */
+    public boolean internal() {
+        return internal;
+    }
+
+    /**
      * @param notifyExisting Notify existing.
      */
     public void notifyExisting(boolean notifyExisting) {

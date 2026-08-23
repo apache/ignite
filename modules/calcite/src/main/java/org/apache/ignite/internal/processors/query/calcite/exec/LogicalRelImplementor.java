@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -86,6 +85,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlPaginationPolicy;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -1094,7 +1094,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             if (paramAsDecimal.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + op);
 
-            return IgniteMath.convertToLongExact(paramAsDecimal, RoundingMode.DOWN);
+            IgniteSqlPaginationPolicy pagPlc = ctx.unwrap(IgniteSqlPaginationPolicy.class);
+            return IgniteSqlPaginationPolicy.convertToLongExact(paramAsDecimal, pagPlc);
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),

@@ -3,6 +3,7 @@
 The `ignitetest` framework provides basic functionality and services to write integration tests for Apache Ignite. This framework is built on top of the **ducktape** test framework.
 * For core concepts, see the [ducktape source code](https://github.com/confluentinc/ducktape).
 * For framework details, see the [ducktape documentation](https://ducktape.readthedocs.io/en/latest/index.html).
+* To write a new ducktest, see [DEV_GUIDE.md](DEV_GUIDE.md).
 
 ### Repository Structure
 All paths below are relative to `${IGNITE_HOME}/modules/ducktests/tests`:
@@ -101,6 +102,8 @@ Always clean up and tear down active background nodes after your test runs finis
 ---
 
 ## Local Development & Code Checks
+
+See [DEV_GUIDE.md](DEV_GUIDE.md) for writing new ducktests.
 
 To modify framework logic or contribute features locally without depending on Docker container environments, isolate your development runtime dependencies.
 

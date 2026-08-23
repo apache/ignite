@@ -59,6 +59,8 @@ public class GridTestClockTimer implements Runnable {
      */
     public static void timeSupplier(LongSupplier timeSupplier) {
         GridTestClockTimer.timeSupplier = timeSupplier;
+
+        update();
     }
 
     /**

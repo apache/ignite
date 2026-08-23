@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -115,25 +114,31 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private final RelDataType nullType;
 
+    /** */
+    private final @Nullable IgniteSqlPaginationPolicy pagPlc;
+
     /**
      * Creates a validator.
      *
-     * @param opTab         Operator table
-     * @param catalogReader Catalog reader
-     * @param typeFactory   Type factory
-     * @param cfg           Config
-     * @param parameters    Dynamic parameters
+     * @param opTab Operator table.
+     * @param catalogReader Catalog reader.
+     * @param typeFactory Type factory.
+     * @param cfg Config.
+     * @param parameters Dynamic parameters.
+     * @param pagPlc Pagination policy.
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
         CalciteCatalogReader catalogReader,
         IgniteTypeFactory typeFactory,
         SqlValidator.Config cfg,
-        @Nullable Object[] parameters
+        @Nullable Object[] parameters,
+        @Nullable IgniteSqlPaginationPolicy pagPlc
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
+        this.pagPlc = pagPlc;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
@@ -385,7 +390,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (val.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + nodeName);
 
-            IgniteMath.convertToLongExact(val, RoundingMode.DOWN);
+            IgniteSqlPaginationPolicy.convertToLongExact(val, pagPlc);
         }
         catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
