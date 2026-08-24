@@ -153,7 +153,7 @@ public class IgniteMock implements IgniteEx {
         this.staticCfg = staticCfg;
 
         msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(marshaller, marshaller)});
+            new CoreMessagesProvider()});
 
         try {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {

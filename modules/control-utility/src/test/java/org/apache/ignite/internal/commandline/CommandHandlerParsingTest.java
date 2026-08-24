@@ -70,6 +70,9 @@ import org.apache.ignite.internal.management.encryption.EncryptionChangeCacheKey
 import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.event.EventCommand;
+import org.apache.ignite.internal.management.io.IoTestCommand;
+import org.apache.ignite.internal.management.kill.KillAllCommand;
+import org.apache.ignite.internal.management.kill.KillAllCommandArg;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.meta.MetaRemoveCommand;
@@ -478,6 +481,13 @@ public class CommandHandlerParsingTest {
 
                 arg = (A)a;
             }
+            else if (cmd.getClass() == KillAllCommand.class) {
+                KillAllCommandArg a = new KillAllCommandArg();
+
+                a.target(KillAllCommandArg.TargetType.SQL);
+
+                arg = (A)a;
+            }
             else
                 arg = cmd.argClass().newInstance();
 
@@ -523,6 +533,8 @@ public class CommandHandlerParsingTest {
             return;
         else if (cmd.getClass() == MetaRemoveCommand.class)
             cmdText = F.concat(cmdText, "--typeId", "1");
+        else if (cmd.getClass() == KillAllCommand.class)
+            cmdText = F.concat(cmdText, "SQL");
 
         args = parseArgs(asList(cmdText));
 
@@ -694,6 +706,14 @@ public class CommandHandlerParsingTest {
 
         assertParseArgsThrows("String representation of \"java.util.UUID\" is exepected", IllegalArgumentException.class,
             "--kill", "continuous", UUID.randomUUID().toString(), "not_a_uuid");
+
+        // Kill all command format errors.
+        assertParseArgsThrows("Argument target required.", "--kill", "all");
+        assertParseArgsThrows("Can't parse value 'unknown'", "--kill", "all", "unknown");
+        assertParseArgsThrows("Argument is invalid: --min-duration", "--kill", "all", "sql", "--min-duration", "-1");
+        assertParseArgsThrows("Argument is invalid: --min-duration", "--kill", "all", "sql", "--min-duration", "0");
+        assertParseArgsThrows("Argument is invalid: --minDuration is not supported for CONTINUOUS queries",
+            "--kill", "all", "continuous", "--min-duration", "60");
     }
 
     /**
@@ -1214,6 +1234,7 @@ public class CommandHandlerParsingTest {
             cmd == PerformanceStatisticsCommand.class ||
             cmd == ConsistencyCommand.class ||
             cmd == CdcCommand.class ||
+            cmd == IoTestCommand.class ||
             cmd == EventCommand.class;
     }
 }

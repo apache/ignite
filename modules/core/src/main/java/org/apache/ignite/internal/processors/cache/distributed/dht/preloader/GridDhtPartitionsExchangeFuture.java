@@ -65,8 +65,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
@@ -106,7 +106,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
-import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -287,6 +286,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Centralized affinity assignment required. Activated for node left of failed. For this mode crd will send full
      * partitions maps to nodes using discovery (ring) instead of communication.
+     * TODO : seems is always false, https://issues.apache.org/jira/browse/IGNITE-28997
      */
     private boolean centralizedAff;
 
@@ -1275,11 +1275,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         GridKernalContext kctx = cctx.kernalContext();
 
-        DiscoveryDataClusterState state = kctx.state().clusterState();
-
-        if (state.transitionError() != null)
-            exchangeLocE = state.transitionError();
-
         if (req.activeChanged()) {
             if (req.state().active()) {
                 if (log.isInfoEnabled()) {
@@ -2116,7 +2111,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
-            partsToReload);
+            partsToReload,
+            cctx.cache().cacheGroups()
+        );
 
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
             m.setErrorsMap(exchangeGlobalExceptions);
@@ -3208,6 +3205,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param fut Affinity future.
+     * TODO : Seems isn't used https://issues.apache.org/jira/browse/IGNITE-28997
      */
     private void onAffinityInitialized(IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut) {
         try {
@@ -3827,7 +3825,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Marshal eagerly: the heavy partition-map copy lands in the "Full message preparing" stage, and the
             // message cached in FinishState is sent to late joiners as is (the send-path marshal-once turns no-op).
-            MessageMarshalling.marshal(msg, cctx.kernalContext(), null);
+            CommunicationMarshalling.marshal(msg, cctx.kernalContext(), null);
 
             timeBag.finishGlobalStage("Full message preparing");
 
@@ -3837,6 +3835,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 state = ExchangeLocalState.DONE;
             }
 
+            // TODO : seems is always false, https://issues.apache.org/jira/browse/IGNITE-28997
             if (centralizedAff) {
                 assert !exchCtx.mergeExchanges();
 
@@ -4752,7 +4751,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
 
-                        GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
+                        GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage().received();
 
                         IgniteCheckedException err = !F.isEmpty(partsMsg.getErrorsMap()) ?
                             new IgniteCheckedException("Cluster state change failed.") : null;

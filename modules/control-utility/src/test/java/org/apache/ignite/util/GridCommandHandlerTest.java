@@ -251,6 +251,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         super.afterTest();
 
         listeningLog = null;
+
+        VerifyBackupPartitionsTask.EXECUTOR_SERVICE = null;
     }
 
     /** {@inheritDoc} */
@@ -435,7 +437,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }, false);
     }
 
-    /** */
+    /** TODO: revise in https://issues.apache.org/jira/browse/IGNITE-29002 */
     @Test
     public void testIdleVerifyCancelBeforeCalcPartitionHashStarted() throws Exception {
         doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
@@ -456,11 +458,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 }
             };
 
-            VerifyBackupPartitionsTask.poolSupplier = () -> pool;
+            VerifyBackupPartitionsTask.EXECUTOR_SERVICE = pool;
         }, false);
     }
 
-    /** */
+    /** TODO: revise in https://issues.apache.org/jira/browse/IGNITE-29002 */
     @Test
     public void testIdleVerifyCancelWhileCalcPartitionHashRunning() throws Exception {
         for (boolean checkCrc : new boolean[] {false, true}) {
@@ -508,7 +510,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     }
                 };
 
-                VerifyBackupPartitionsTask.poolSupplier = () -> pool;
+                VerifyBackupPartitionsTask.EXECUTOR_SERVICE = pool;
             }, checkCrc);
 
             assertTrue("All tasks must be cancelled", interruptedOnCancel.get());

@@ -22,12 +22,17 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
 public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
@@ -44,16 +49,19 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-            new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()
-                .setGlobalMemoryQuota(GLOBAL_MEM_QUOTA).setQueryMemoryQuota(QRY_MEMORY_QUOTA)));
+        return super.getConfiguration(igniteInstanceName)
+            .setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(
+                new CalciteQueryEngineConfiguration()
+                    .setGlobalMemoryQuota(GLOBAL_MEM_QUOTA)
+                    .setQueryMemoryQuota(QRY_MEMORY_QUOTA)))
+            .setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true));
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        sql("CREATE TABLE tbl (id INT, b VARBINARY) WITH TEMPLATE=REPLICATED");
+        sql("CREATE TABLE tbl (id INT, b VARBINARY) WITH TEMPLATE=REPLICATED, ATOMICITY=TRANSACTIONAL");
 
         for (int i = 0; i < 1000; i++)
             sql("INSERT INTO tbl VALUES (?, ?)", i, new byte[1000]);
@@ -458,6 +466,19 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .withRowsIterator(false)
             .resultSize(800)
             .check();
+    }
+
+    /** SELECT FOR UPDATE fails when materialized rows exceed the per-query memory quota. */
+    @Test
+    public void testSelectForUpdateExceedsMemoryQuota() {
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertThrows(grid(0), "SELECT id, b FROM tbl FOR UPDATE",
+                IgniteSQLException.class, "Query quota exceeded");
+        }
+
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            assertEquals(10, sql(grid(0), "SELECT id, b FROM tbl WHERE id < 10 FOR UPDATE").size());
+        }
     }
 
     /** {@inheritDoc} */

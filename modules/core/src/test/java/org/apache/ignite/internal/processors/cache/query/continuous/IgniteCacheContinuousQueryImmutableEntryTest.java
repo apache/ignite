@@ -45,7 +45,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  *
@@ -194,7 +193,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     /** @return Entry read back from the bytes {@code e} is written to. */
     private CacheContinuousQueryEntry roundTrip(CacheContinuousQueryEntry e) throws Exception {
         IgniteMessageFactoryImpl msgFactory =
-            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk())});
+            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider()});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
