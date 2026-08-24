@@ -620,6 +620,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case LAST_VALUE:
             case NTILE:
             case NTH_VALUE:
+            case OTHER_FUNCTION:
                 return;
             default:
                 throw newValidationError(call,
