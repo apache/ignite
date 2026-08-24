@@ -207,6 +207,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT EMP2_SCHEMA.add(1, 2, 3, 4)").returns(10).check();
         assertQuery("SELECT sq(4)").returns(16d).check();
         assertQuery("SELECT echo('test')").returns("test").check();
+        assertQuery("SELECT stringIsNull(''), emptyString()")
+            .returns(true, null)
+            .check();
         assertQuery("SELECT sq(salary) FROM emp3").returns(10_000d).returns(40_000d).check();
         assertQuery("SELECT echo(name) FROM emp3").returns("Igor3").returns("Roman3").check();
         assertQuery("SELECT sq(salary) FROM EMP2_SCHEMA.emp2").returns(100d).returns(400d).check();
@@ -310,6 +313,10 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         assertQuery("SELECT * from boxingUnboxing(?, ?, ?, ?)").withParams(1, 1, 2.0d, 2.0d)
             .returns(1, 1, 2.0d, 2.0d)
+            .check();
+
+        assertQuery("SELECT * FROM stringNulls('')")
+            .returns(true, null)
             .check();
 
         assertQuery("SELECT * from emp WHERE SALARY >= (SELECT COL_1 from collectionRow(1) WHERE COL_2=3)")
@@ -465,6 +472,13 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             columnNames = {"COL_1", "COL_2", "COL_3", "COL_4"})
         public static Collection<List<?>> boxingUnboxing(int i1, Integer i2, double d1, Double d2) {
             return List.of(Arrays.asList(i1, i2, d1, d2));
+        }
+
+        /** Checks empty-string input and output normalization. */
+        @QuerySqlTableFunction(columnTypes = {boolean.class, String.class},
+            columnNames = {"INPUT_IS_NULL", "EMPTY_RESULT"})
+        public static Collection<List<?>> stringNulls(String val) {
+            return List.of(Arrays.asList(val == null, ""));
         }
 
         /** Alias test. */
@@ -671,6 +685,18 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static String echo(String s) {
             return s;
+        }
+
+        /** Checks that an empty SQL string is passed as {@code null}. */
+        @QuerySqlFunction
+        public static boolean stringIsNull(String s) {
+            return s == null;
+        }
+
+        /** Returns an empty string to check result normalization. */
+        @QuerySqlFunction
+        public static String emptyString() {
+            return "";
         }
 
         /** The signature interferes with aliased {@link OtherFunctionsLibrary2#sameSign2(int)}. */

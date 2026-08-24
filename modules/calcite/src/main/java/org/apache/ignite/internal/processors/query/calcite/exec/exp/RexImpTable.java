@@ -266,6 +266,7 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.fun.Ignite
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_IF_EMPTY;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.QUERY_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
@@ -324,6 +325,7 @@ public class RexImpTable {
         defineMethod(SOUNDEX, BuiltInMethod.SOUNDEX.method, NullPolicy.STRICT);
         defineMethod(DIFFERENCE, BuiltInMethod.DIFFERENCE.method, NullPolicy.STRICT);
         defineMethod(REVERSE, BuiltInMethod.REVERSE.method, NullPolicy.STRICT);
+        defineMethod(NULL_IF_EMPTY, IgniteMethod.NULL_IF_EMPTY.method(), NullPolicy.NONE);
 
         map.put(TRIM, new TrimImplementor());
 
@@ -455,16 +457,12 @@ public class RexImpTable {
             BuiltInMethod.SIMILAR_ESCAPE.method);
 
         // POSIX REGEX
-        ReflectiveImplementor insensitiveImplementor =
-            defineReflective(POSIX_REGEX_CASE_INSENSITIVE,
-                BuiltInMethod.POSIX_REGEX_INSENSITIVE.method);
-        ReflectiveImplementor sensitiveImplementor =
-            defineReflective(POSIX_REGEX_CASE_SENSITIVE,
-                BuiltInMethod.POSIX_REGEX_SENSITIVE.method);
-        map.put(NEGATED_POSIX_REGEX_CASE_INSENSITIVE,
-            NotImplementor.of(insensitiveImplementor));
-        map.put(NEGATED_POSIX_REGEX_CASE_SENSITIVE,
-            NotImplementor.of(sensitiveImplementor));
+        defineMethod(POSIX_REGEX_CASE_INSENSITIVE, IgniteMethod.POSIX_REGEX_CASE_INSENSITIVE.method(), NullPolicy.NONE);
+        defineMethod(POSIX_REGEX_CASE_SENSITIVE, IgniteMethod.POSIX_REGEX_CASE_SENSITIVE.method(), NullPolicy.NONE);
+        defineMethod(NEGATED_POSIX_REGEX_CASE_INSENSITIVE,
+            IgniteMethod.NEGATED_POSIX_REGEX_CASE_INSENSITIVE.method(), NullPolicy.NONE);
+        defineMethod(NEGATED_POSIX_REGEX_CASE_SENSITIVE,
+            IgniteMethod.NEGATED_POSIX_REGEX_CASE_SENSITIVE.method(), NullPolicy.NONE);
         defineReflective(REGEXP_REPLACE_3,
             BuiltInMethod.REGEXP_REPLACE3.method,
             BuiltInMethod.REGEXP_REPLACE4.method,

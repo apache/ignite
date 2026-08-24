@@ -429,6 +429,8 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT 'abcd' !~* null").returns(NULL_RESULT).check();
         assertQuery("SELECT null !~* null").returns(NULL_RESULT).check();
         assertThrows("SELECT 'abcd' ~ '[a-z'", IgniteSQLException.class, null);
+        assertThrows("SELECT '' ~ '[a-z'", IgniteSQLException.class, null);
+        assertThrows("SELECT CAST(NULL AS VARCHAR) ~ '[a-z'", IgniteSQLException.class, null);
     }
 
     /** */

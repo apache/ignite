@@ -21,7 +21,7 @@ SELECT initcap('🦆')
 query T
 SELECT initcap('')
 ----
-(empty)
+NULL
 
 query T
 SELECT initcap(null)

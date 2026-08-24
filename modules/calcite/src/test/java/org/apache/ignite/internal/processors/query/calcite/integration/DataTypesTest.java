@@ -470,6 +470,14 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .returns(null, null, null, null)
             .check();
 
+        assertQuery("SELECT LTRIM('     '), RTRIM('     '), TRIM('     '), REPEAT('value', -1)")
+            .returns(null, null, null, null)
+            .check();
+
+        assertQuery("SELECT LTRIM('     ') IS NULL, LTRIM(' value')")
+            .returns(true, "value")
+            .check();
+
         executeSql("INSERT INTO empty_string_test VALUES (1, '')");
         executeSql("INSERT INTO empty_string_test VALUES (2, 'value')");
 
