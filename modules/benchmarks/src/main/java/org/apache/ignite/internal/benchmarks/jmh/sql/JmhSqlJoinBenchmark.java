@@ -58,7 +58,7 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
      * Colocated distributed join.
      */
     @Benchmark
-    public void colocatedDistributedJoin(Blackhole bh) {
+    public void colocatedDistributedJoin() {
         int key = ThreadLocalRandom.current().nextInt(EMP_CNT / BATCH_SIZE);
 
         List<List<?>> res = executeSql("SELECT emp.name, dept.name FROM emp JOIN dept ON emp.deptid = dept.deptid " +
