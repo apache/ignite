@@ -64,7 +64,8 @@ public class JmhSqlJoinBenchmark extends JmhSqlAbstractBenchmark {
         List<List<?>> res = executeSql("SELECT emp.name, dept.name FROM emp JOIN dept ON emp.deptid = dept.deptid " +
                 "WHERE emp.salary = ?", key);
 
-        bh.consume(res);
+        if (res.size() != BATCH_SIZE)
+            throw new AssertionError("Unexpected result size: " + res.size());
     }
 
     /**
