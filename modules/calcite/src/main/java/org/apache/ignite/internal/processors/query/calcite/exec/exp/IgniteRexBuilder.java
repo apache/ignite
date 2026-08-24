@@ -23,8 +23,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.util.NlsString;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.Nullable;
@@ -34,6 +36,15 @@ public class IgniteRexBuilder extends RexBuilder {
     /** */
     public IgniteRexBuilder(RelDataTypeFactory typeFactory) {
         super(typeFactory);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RexLiteral makeCharLiteral(NlsString str) {
+        // VALUES conversion can retain the original character literal after validation.
+        if (str.getValue().isEmpty())
+            return makeNullLiteral(SqlUtil.createNlsStringType(getTypeFactory(), str));
+
+        return super.makeCharLiteral(str);
     }
 
     /** {@inheritDoc} */

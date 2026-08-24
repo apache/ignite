@@ -453,6 +453,48 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             "'TIMESTAMP WITH LOCAL TIME ZONE' is not supported.");
     }
 
+    /** */
+    @Test
+    public void testEmptyStringLiteralIsNull() {
+        executeSql("CREATE TABLE empty_string_test(id INT PRIMARY KEY, val VARCHAR) WITH " + atomicity());
+
+        assertQuery("SELECT '', '' IS NULL, COALESCE('', 'fallback')")
+            .returns(null, true, "fallback")
+            .check();
+
+        assertQuery("SELECT '' = ''")
+            .returns((Object)null)
+            .check();
+
+        assertQuery("SELECT 'value' = '', 'value' <> '', '' = 'value', '' <> 'value'")
+            .returns(null, null, null, null)
+            .check();
+
+        executeSql("INSERT INTO empty_string_test VALUES (1, '')");
+        executeSql("INSERT INTO empty_string_test VALUES (2, 'value')");
+
+        assertQuery("SELECT id, val, val IS NULL FROM empty_string_test ORDER BY id")
+            .returns(1, null, true)
+            .returns(2, "value", false)
+            .check();
+
+        assertQuery("SELECT id FROM empty_string_test WHERE '' = ''")
+            .resultSize(0)
+            .check();
+
+        assertQuery("SELECT id FROM empty_string_test WHERE val = ''")
+            .resultSize(0)
+            .check();
+
+        assertQuery("SELECT id FROM empty_string_test WHERE val <> ''")
+            .resultSize(0)
+            .check();
+
+        assertQuery("SELECT id FROM empty_string_test WHERE val IS NOT NULL")
+            .returns(2)
+            .check();
+    }
+
     /** Cache API - SQL API cross check. */
     @Test
     public void testBinaryCache() {

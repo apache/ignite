@@ -258,7 +258,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT REPLACE(NULL, '1', '5')").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('1', NULL, '5')").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('11', '1', NULL)").returns(NULL_RESULT).check();
-        assertQuery("SELECT REPLACE('11', '1', '')").returns("").check();
+        assertQuery("SELECT REPLACE('11', '1', '')").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('aA', 'a', 'b')").returns("bA").check();
         assertQuery("SELECT REPLACE('aA', 'A', 'b')").returns("ab").check();
     }

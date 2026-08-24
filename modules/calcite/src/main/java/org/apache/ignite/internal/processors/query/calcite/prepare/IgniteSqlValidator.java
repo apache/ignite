@@ -813,6 +813,10 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public SqlLiteral resolveLiteral(SqlLiteral literal) {
+        // Replace before type inference so an empty character literal has a nullable SQL type.
+        if (literal.getTypeName() == SqlTypeName.CHAR && literal.getValueAs(String.class).isEmpty())
+            return SqlLiteral.createNull(literal.getParserPosition());
+
         if (literal instanceof SqlNumericLiteral && literal.createSqlType(typeFactory).getSqlTypeName() == SqlTypeName.BIGINT) {
             BigDecimal bd = literal.getValueAs(BigDecimal.class);
 
