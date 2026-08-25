@@ -365,6 +365,6 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             obj -> {
                 throw new UnsupportedOperationException("Unexpected method call.");
             }
-            );
+        );
     }
 }

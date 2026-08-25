@@ -75,26 +75,18 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
         if (rowContainer.getClass() != Object[].class && !Collection.class.isAssignableFrom(rowContainer.getClass()))
             throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 
-        if (rowContainer instanceof Object[])
-            rowSizeChecker(((Object[])rowContainer).length, rowType.getFieldCount());
-        else
-            rowSizeChecker(((Collection<?>)rowContainer).size(), rowType.getFieldCount());
+        Object[] rowArr = rowContainer.getClass() == Object[].class
+            ? (Object[])rowContainer
+            : ((Collection<?>)rowContainer).toArray();
 
-        Object[] rowArr;
-
-        if (rowContainer.getClass().isArray()) {
-            rowArr = (Object[])rowContainer;
-            for (int pos = 0; pos < rowArr.length; ++pos)
-                rowArr[pos] = binaryMarshaller.apply(rowArr[pos]);
+        if (rowArr.length != rowType.getFieldCount()) {
+            throw new IgniteSQLException("Unable to process table function data: row length [" + rowArr.length
+                + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
-        else {
-            Collection<?> coll = (Collection<?>)rowContainer;
-            rowArr = new Object[coll.size()];
 
-            int pos = 0;
-            for (Object el : coll)
-                rowArr[pos++] = binaryMarshaller.apply(el);
-        }
+        int pos = 0;
+        for (Object el : rowArr)
+            rowArr[pos++] = binaryMarshaller.apply(el);
 
         return rowFactory.create(rowArr);
     }

@@ -1135,7 +1135,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 qryParams,
                 userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()),
                 binaryMarshaller
-                );
+            );
 
             Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
                 exchangeService(), failureProcessor()).go(fragment.root());
