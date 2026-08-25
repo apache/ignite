@@ -21,9 +21,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
-/**
- * Test suite to ensure SBLimitedLength works by design
- */
+/** Test suite to ensure SBLimitedLength works by design */
 @GridCommonTest(group = "Utils")
 public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
     /** Ensure all append operations are working fine */
@@ -100,11 +98,13 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
      */
     private SBLimitedLength stringBuilder(int headLength) {
         SBLimitedLength sbLimitedLength = new SBLimitedLength(0);
+
         sbLimitedLength.initLimit(new SBLengthLimit() {
             @Override boolean overflowed(SBLimitedLength sb) {
                 return sb.impl().length() > headLength;
             }
         });
+
         return sbLimitedLength;
     }
 }
