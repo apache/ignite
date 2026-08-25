@@ -492,7 +492,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         LogListener cancelLsnr = LogListener.matches("Idle verify was cancelled.").build();
 
-        CountDownLatch startProceedlatch = new CountDownLatch(1);;
+        CountDownLatch startProceedLatch = new CountDownLatch(1);;
         LogListener startLsnrAndWaiter = null;
 
         if (waitAtStart) {
@@ -504,7 +504,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 }
 
                 @Override public void reset() {
-                    assert startProceedlatch.getCount() > 0;
+                    assert startProceedLatch.getCount() > 0;
 
                     startedLatch.set(gridsCnt);
                 }
@@ -514,7 +514,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                         startedLatch.decrementAndGet();
 
                         try {
-                            startProceedlatch.await();
+                            startProceedLatch.await();
                         }
                         catch (InterruptedException e) {
                             throw new RuntimeException(e);
@@ -543,7 +543,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
 
         if (waitAtStart)
-            startProceedlatch.countDown();
+            startProceedLatch.countDown();
 
         afterCancelLatch.countDown();
 
