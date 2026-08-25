@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJ
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
@@ -209,11 +208,6 @@ public class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableSpool rel) {
-        return rel.clone(cluster, F.asList(visit((IgniteRel)rel.getInput())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteRecursiveTableSpool rel) {
         return rel.clone(cluster, F.asList(visit((IgniteRel)rel.getInput())));
     }
 

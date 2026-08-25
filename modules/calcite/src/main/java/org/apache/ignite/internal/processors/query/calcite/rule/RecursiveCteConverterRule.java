@@ -57,20 +57,20 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
 
         String stateId = RecursiveCteUtils.stateId(planner, table);
 
-        if (RecursiveCteUtils.referenceCount(rel.getIterativeRel(), table) > 1)
-            throw unsupported("the recursive term must contain no more than one self-reference");
+        RelNode seed = unwrapSpool(rel.getSeedRel(), table, "seed");
+        RelNode iterative = unwrapSpool(rel.getIterativeRel(), table, "recursive term");
 
-        validateSpool(rel.getSeedRel(), table, "seed");
-        validateSpool(rel.getIterativeRel(), table, "recursive term");
+        if (RecursiveCteUtils.referenceCount(iterative, table) > 1)
+            throw unsupported("the recursive term must contain no more than one self-reference");
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(single());
-        RelNode iterative = RecursiveCteUtils.materializeStaticInputs(rel.getIterativeRel(), table);
+        iterative = RecursiveCteUtils.materializeStaticInputs(iterative, table);
 
         return new IgniteRepeatUnion(
             cluster,
             traits,
-            convert(rel.getSeedRel(), traits),
+            convert(seed, traits),
             convert(iterative, traits),
             stateId,
             rel.iterationLimit
@@ -78,7 +78,7 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
     }
 
     /** */
-    private static void validateSpool(RelNode rel, RelOptTable table, String term) {
+    private static RelNode unwrapSpool(RelNode rel, RelOptTable table, String term) {
         rel = RecursiveCteUtils.original(rel);
 
         if (!(rel instanceof LogicalTableSpool))
@@ -92,6 +92,8 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
 
         if (spool.readType != Spool.Type.LAZY || spool.writeType != Spool.Type.LAZY)
             throw unsupported("only lazy transient table spools are supported");
+
+        return spool.getInput();
     }
 
     /** */

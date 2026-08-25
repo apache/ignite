@@ -86,7 +86,8 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
         String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
 
         assertTrue(plan, plan.contains("IgniteRepeatUnion"));
-        assertTrue(plan, plan.contains("IgniteRecursiveTableSpool"));
+        assertTrue(plan, plan.contains("IgniteRecursiveTableScan"));
+        assertFalse(plan, plan.contains("IgniteRecursiveTableSpool"));
     }
 
     /** */

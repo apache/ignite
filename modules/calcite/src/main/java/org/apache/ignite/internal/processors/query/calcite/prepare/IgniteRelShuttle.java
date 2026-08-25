@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJ
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
@@ -197,11 +196,6 @@ public class IgniteRelShuttle implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableSpool rel) {
-        return processNode(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteRecursiveTableSpool rel) {
         return processNode(rel);
     }
 

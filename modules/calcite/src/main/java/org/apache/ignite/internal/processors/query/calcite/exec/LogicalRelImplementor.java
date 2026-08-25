@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveCteState;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveTableSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RepeatUnionNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageNode;
@@ -106,7 +105,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJ
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
@@ -709,16 +707,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Node<Row> input = visit(rel.getInput());
 
         node.register(input);
-
-        return node;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteRecursiveTableSpool rel) {
-        RecursiveTableSpoolNode<Row> node =
-            new RecursiveTableSpoolNode<>(ctx, rel.getRowType(), recursiveState(rel.stateId()));
-
-        node.register(visit(rel.getInput()));
 
         return node;
     }

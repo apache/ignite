@@ -22,7 +22,6 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
@@ -60,7 +59,9 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
         );
 
         assertRecursivePlan(plan);
-        assertEquals(2, findNodes(plan, byClass(IgniteRecursiveTableSpool.class)).size());
+        IgniteRepeatUnion repeatUnion = findFirstNode(plan, byClass(IgniteRepeatUnion.class));
+
+        assertTrue(planDescription(plan), repeatUnion.getLeft() instanceof IgniteValues);
         assertEquals(1, findNodes(plan, byClass(IgniteRecursiveTableScan.class)).size());
 
         checkSplitAndSerialization(plan, schema);

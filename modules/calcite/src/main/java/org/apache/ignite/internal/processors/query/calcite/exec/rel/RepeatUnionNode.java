@@ -47,6 +47,9 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** Number of completed recursive iterations. */
     private int iteration;
 
+    /** Whether the active input is being collected into the next delta. */
+    private boolean writing;
+
     /** */
     public RepeatUnionNode(
         ExecutionContext<Row> ctx,
@@ -68,17 +71,19 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         checkState();
 
         waiting = rowsCnt;
-        source().request(rowsCnt);
+        requestSource();
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
         assert waiting > 0;
+        assert writing;
 
         checkState();
 
         waiting--;
+        state.add(row);
 
         if (curSrc == RECURSIVE_SOURCE)
             produced++;
@@ -90,8 +95,12 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
+        assert writing;
 
         checkState();
+
+        state.commit();
+        writing = false;
 
         if (curSrc == SEED_SOURCE) {
             if (iterationLimit == 0) {
@@ -102,7 +111,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
 
             curSrc = RECURSIVE_SOURCE;
             produced = 0;
-            source().request(waiting);
+            requestSource();
 
             return;
         }
@@ -123,7 +132,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
 
         produced = 0;
         source().rewind();
-        source().request(waiting);
+        requestSource();
     }
 
     /** {@inheritDoc} */
@@ -139,6 +148,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         waiting = 0;
         produced = 0;
         iteration = 0;
+        writing = false;
         state.clear();
     }
 
@@ -152,6 +162,16 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** */
     private Node<Row> source() {
         return sources().get(curSrc);
+    }
+
+    /** Starts collecting and requests rows from the active input. */
+    private void requestSource() throws Exception {
+        if (!writing) {
+            state.beginWrite();
+            writing = true;
+        }
+
+        source().request(waiting);
     }
 
     /** */

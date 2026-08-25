@@ -167,11 +167,6 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteRecursiveTableSpool rel);
-
-    /**
-     * See {@link IgniteRelVisitor#visit(IgniteRel)}
-     */
     T visit(IgniteSortedIndexSpool rel);
 
     /**

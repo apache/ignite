@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter
 import org.apache.ignite.internal.processors.query.calcite.rule.RecursiveCteConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.RecursiveStaticSpoolConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.RecursiveTableScanConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.RecursiveTableSpoolConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
@@ -312,7 +311,6 @@ public enum PlannerPhase {
                     ValuesConverterRule.INSTANCE,
                     RecursiveCteConverterRule.INSTANCE,
                     RecursiveTableScanConverterRule.INSTANCE,
-                    RecursiveTableSpoolConverterRule.INSTANCE,
                     RecursiveStaticSpoolConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
