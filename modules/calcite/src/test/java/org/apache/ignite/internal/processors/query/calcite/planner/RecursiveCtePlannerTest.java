@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -42,6 +44,12 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
             "JOIN employee_hierarchy h ON e.manager_id = h.id" +
         ") " +
         "SELECT id, manager_id, depth FROM employee_hierarchy";
+
+    /** Employee hierarchy query that requests indexed correlated lookups in the recursive term. */
+    private static final String INDEXED_EMPLOYEE_HIERARCHY_QUERY =
+        EMPLOYEE_HIERARCHY_QUERY
+            .replace("SELECT e.id", "SELECT /*+ CNL_JOIN */ e.id")
+            .replace("FROM employee e", "FROM employee /*+ FORCE_INDEX(EMPLOYEE_MANAGER_IDX) */ e");
 
     /** Checks the physical operators used to maintain the recursive delta. */
     @Test
@@ -91,21 +99,29 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
         assertRecursivePlan(plan);
         assertFalse(planDescription(plan), findNodes(plan, byClass(Exchange.class)).isEmpty());
 
+        IgniteRepeatUnion repeatUnion = findFirstNode(plan, byClass(IgniteRepeatUnion.class));
+        Spool spool = findFirstNode(repeatUnion.getRight(), byClass(Spool.class));
+
+        assertNotNull(planDescription(plan), spool);
+        assertFalse(planDescription(plan), findNodes(spool.getInput(), byClass(Exchange.class)).isEmpty());
+
         checkSplitAndSerialization(plan, schema);
     }
 
-    /** Checks that a declared index remains available when planning the seed input. */
+    /** A replicated indexed input can be rewound without materialization. */
     @Test
     public void testRecursiveCteWithReplicatedIndexedTable() throws Exception {
         IgniteSchema schema = hierarchySchema(IgniteDistributions.broadcast(), true);
 
-        IgniteRel plan = physicalPlan(EMPLOYEE_HIERARCHY_QUERY, schema);
+        IgniteRel plan = physicalPlan(INDEXED_EMPLOYEE_HIERARCHY_QUERY, schema);
 
         assertRecursivePlan(plan);
 
         IgniteRepeatUnion repeatUnion = findFirstNode(plan, byClass(IgniteRepeatUnion.class));
+        RelNode iterative = repeatUnion.getRight();
 
-        assertFalse(planDescription(plan), findNodes(repeatUnion.getLeft(), byClass(IgniteIndexScan.class)).isEmpty());
+        assertFalse(planDescription(plan), findNodes(iterative, byClass(IgniteIndexScan.class)).isEmpty());
+        assertTrue(planDescription(plan), findNodes(iterative, byClass(Spool.class)).isEmpty());
 
         checkSplitAndSerialization(plan, schema);
     }

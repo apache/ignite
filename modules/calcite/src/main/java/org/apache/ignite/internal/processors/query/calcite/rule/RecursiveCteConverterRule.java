@@ -65,7 +65,7 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(single());
-        iterative = RecursiveCteUtils.materializeStaticInputs(iterative, table);
+        iterative = RecursiveCteUtils.markStaticInputs(iterative, table);
 
         return new IgniteRepeatUnion(
             cluster,

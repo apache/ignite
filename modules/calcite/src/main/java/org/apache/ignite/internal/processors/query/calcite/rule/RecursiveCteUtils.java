@@ -22,8 +22,10 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.TableScan;
@@ -35,7 +37,6 @@ import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalRecursiveStaticSpool;
 
 /** Utilities shared by recursive CTE converter rules. */
 final class RecursiveCteUtils {
@@ -70,8 +71,8 @@ final class RecursiveCteUtils {
         return cnt;
     }
 
-    /** Materializes maximal iteration subtrees that do not depend on the current delta. */
-    static RelNode materializeStaticInputs(RelNode rel, RelOptTable table) {
+    /** Marks maximal inputs that do not depend on the current delta for coordinator-local rewindable conversion. */
+    static RelNode markStaticInputs(RelNode rel, RelOptTable table) {
         rel = original(rel);
 
         if (isRecursiveScan(rel, table))
@@ -86,9 +87,9 @@ final class RecursiveCteUtils {
 
         for (RelNode input : inputs) {
             if (referenceCount(input, table) == 0 && isInvariant(input))
-                newInputs.add(new IgniteLogicalRecursiveStaticSpool(input));
+                newInputs.add(new StaticInput(input));
             else
-                newInputs.add(materializeStaticInputs(input, table));
+                newInputs.add(markStaticInputs(input, table));
         }
 
         return rel.copy(rel.getTraitSet(), newInputs);
@@ -152,6 +153,24 @@ final class RecursiveCteUtils {
     private static boolean isRecursiveScan(RelNode rel, RelOptTable table) {
         return rel instanceof TableScan
             && sameTransientTable(((TableScan)rel).getTable(), table);
+    }
+
+    /** Logical boundary for applying traits to an iteration-independent input. */
+    static class StaticInput extends SingleRel {
+        /** */
+        StaticInput(RelNode input) {
+            this(input.getCluster().traitSet(), input);
+        }
+
+        /** */
+        private StaticInput(RelTraitSet traitSet, RelNode input) {
+            super(input.getCluster(), traitSet, input);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+            return new StaticInput(traitSet, sole(inputs));
+        }
     }
 
     /** Finds non-deterministic expressions in one relational node. */

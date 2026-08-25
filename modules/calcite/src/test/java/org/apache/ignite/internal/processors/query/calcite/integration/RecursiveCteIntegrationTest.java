@@ -217,37 +217,28 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testNonDeterministicExpressionsInIndexSpoolsAreDetected() {
+    public void testNonDeterministicIndexScanIsNotMaterialized() {
         registerRecursiveFunctions();
 
         sql("CREATE TABLE recursive_markers (id INT PRIMARY KEY, marker INT) WITH TEMPLATE=REPLICATED");
         sql("INSERT INTO recursive_markers VALUES (1, 10), (2, 20), (3, 30)");
 
-        String[][] spoolRules = {
-            {"FilterSpoolMergeToSortedIndexSpoolRule", "IgniteHashIndexSpool"},
-            {"FilterSpoolMergeToHashIndexSpoolRule", "IgniteSortedIndexSpool"}
-        };
+        String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
+            "SELECT 1, 0 " +
+            "UNION ALL " +
+            "SELECT n + 1, " +
+                "(SELECT marker FROM recursive_markers /*+ FORCE_INDEX */ " +
+                    "WHERE id = numbers.n AND nextRecursiveValue() > 0) " +
+            "FROM numbers " +
+            "WHERE n < 4" +
+            ") " +
+            "SELECT n, marker FROM numbers ORDER BY n";
 
-        for (String[] spoolRule : spoolRules) {
-            String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
-                "SELECT 1, 0 " +
-                "UNION ALL " +
-                "SELECT n + 1, " +
-                    "(SELECT marker FROM recursive_markers " +
-                        "WHERE id = numbers.n AND nextRecursiveValue() > 0) " +
-                "FROM numbers " +
-                "WHERE n < 4" +
-                ") " +
-                "SELECT /*+ DISABLE_RULE('FilterTableScanMergeRule', " +
-                    "'FilterTableScanMergeSkipCorrelatedRule', '" + spoolRule[0] + "') */ " +
-                    "n, marker FROM numbers ORDER BY n";
+        String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
 
-            String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
-
-            assertTrue(plan, plan.contains(spoolRule[1]));
-            assertTrue(plan, plan.contains("NEXTRECURSIVEVALUE"));
-            assertFalse(plan, plan.contains("IgniteTableSpool"));
-        }
+        assertTrue(plan, plan.contains("IgniteIndexScan"));
+        assertTrue(plan, plan.contains("NEXTRECURSIVEVALUE"));
+        assertFalse(plan, plan.contains("Spool"));
     }
 
     /** SQL functions used by recursive CTE tests. */
