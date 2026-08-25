@@ -43,6 +43,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientAddressFinder;
+import org.apache.ignite.client.ClientAffinityConfiguration;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
@@ -166,6 +167,7 @@ public class JavaThinClient {
         // tag::getOrCreateCache[]
         ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration().setName("References")
                 .setCacheMode(CacheMode.REPLICATED)
+                .setAffinityConfiguration(new ClientAffinityConfiguration().setPartitions(64))
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         ClientCache<Integer, String> cache = client.getOrCreateCache(cacheCfg);
