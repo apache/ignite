@@ -334,8 +334,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // (plus 1 second of margin).
         GridTestUtils.waitForCondition(() ->
             (System.currentTimeMillis() - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 -
-                (prevGridStart - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 >= 4,
-            getTestTimeout());
+                (prevGridStart - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 >= 4, getTestTimeout());
 
         IgniteEx ig0 = startGrids(2);
 
@@ -354,16 +353,6 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid(2);
 
         awaitPartitionMapExchange();
-
-        // With ASYNC rebalance mode the rebalance (and the WAL demand message recorded by
-        // WalRebalanceCheckingCommunicationSpi) starts only after the partition exchange
-        // completes, so wait for it to be done before asserting on the recorded versions.
-        for (Ignite ig : G.allGrids()) {
-            GridCachePreloader pld = ((IgniteEx)ig).cachex(CACHE_NAME).context().group().preloader();
-
-            if (pld.rebalanceFuture() != null)
-                pld.rebalanceFuture().get();
-        }
 
         Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
@@ -440,7 +429,13 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
+        long prevGridStart = crd.context().discovery().gridStartTime();
+
         stopAllGrids();
+
+        GridTestUtils.waitForCondition(() ->
+            (System.currentTimeMillis() - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 -
+                (prevGridStart - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 >= 4, getTestTimeout());
 
         // Rewrite data with globally disabled WAL.
         crd = startGrids(2);
