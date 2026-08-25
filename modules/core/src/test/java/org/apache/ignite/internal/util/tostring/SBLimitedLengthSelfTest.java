@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.tostring;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -30,31 +29,31 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
     /** Ensure all append operations are working fine */
     @Test
     public void testAppend() {
-        SBLimitedLength strBuilder = getStrBuilder(5);
+        SBLimitedLength strBuilder = stringBuilder(5);
         strBuilder.a(1);
-        Assert.assertEquals("1", strBuilder.toString());
+        assertEquals("1", strBuilder.toString());
         strBuilder.a(2L);
-        Assert.assertEquals("12", strBuilder.toString());
+        assertEquals("12", strBuilder.toString());
         strBuilder.a(3f);
-        Assert.assertEquals("123.0", strBuilder.toString());
+        assertEquals("123.0", strBuilder.toString());
         strBuilder.a(4d);
-        Assert.assertEquals("123.04.0", strBuilder.toString());
+        assertEquals("123.04.0", strBuilder.toString());
         strBuilder.a('5');
-        Assert.assertEquals("123.04.05", strBuilder.toString());
+        assertEquals("123.04.05", strBuilder.toString());
         strBuilder.a(true);
-        Assert.assertEquals("123.04.05true", strBuilder.toString());
+        assertEquals("123.04.05true", strBuilder.toString());
         Object obj = "6";
         strBuilder.a(obj);
-        Assert.assertEquals("123.04.05true6", strBuilder.toString());
+        assertEquals("123.04.05true6", strBuilder.toString());
         strBuilder.a("7");
-        Assert.assertEquals("123.04.05true67", strBuilder.toString());
+        assertEquals("123.04.05true67", strBuilder.toString());
         strBuilder.a(new StringBuilder().append("8"));
-        Assert.assertEquals("123.04.05true678", strBuilder.toString());
+        assertEquals("123.04.05true678", strBuilder.toString());
         CharSequence charSeq = "9";
         strBuilder.a(charSeq);
-        Assert.assertEquals("123.04.05true6789", strBuilder.toString());
+        assertEquals("123.04.05true6789", strBuilder.toString());
         strBuilder.a(charSeq, 0, 1);
-        Assert.assertEquals("123.04.05true67899", strBuilder.toString());
+        assertEquals("123.04.05true67899", strBuilder.toString());
     }
 
     /** */
@@ -66,9 +65,9 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
         sbLimitedLength.i(7000, "asd");
         sbLimitedLength.a("a".repeat(10));
         String result = sbLimitedLength.toString();
-        Assert.assertNotNull(result);
-        Assert.assertFalse(result.isEmpty());
-        Assert.assertTrue(result.contains("asd"));
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("asd"));
     }
 
     /**
@@ -87,11 +86,11 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
     /** Ensure toString works as expected */
     @Test
     public void testToString() {
-        SBLimitedLength strBuilder = getStrBuilder(2);
+        SBLimitedLength strBuilder = stringBuilder(2);
         strBuilder.a("ab");
-        Assert.assertEquals("ab", strBuilder.toString());
+        assertEquals("ab", strBuilder.toString());
         strBuilder.a("cd");
-        Assert.assertEquals("abcd", strBuilder.toString());
+        assertEquals("abcd", strBuilder.toString());
     }
 
     /**
@@ -99,7 +98,7 @@ public class SBLimitedLengthSelfTest extends GridCommonAbstractTest {
      * to simplify test cases
      * @param headLength Head length.
      */
-    private SBLimitedLength getStrBuilder(int headLength) {
+    private SBLimitedLength stringBuilder(int headLength) {
         SBLimitedLength sbLimitedLength = new SBLimitedLength(0);
         sbLimitedLength.initLimit(new SBLengthLimit() {
             @Override boolean overflowed(SBLimitedLength sb) {
