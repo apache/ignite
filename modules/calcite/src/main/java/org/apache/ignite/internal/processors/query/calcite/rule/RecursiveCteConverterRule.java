@@ -52,6 +52,7 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
         if (table == null || !RecursiveCteUtils.isTransient(table))
             throw unsupported("a transient table is required");
 
+        // TODO: IGNITE-29012 Support recursive CTE with UNION DISTINCT.
         if (!rel.all)
             throw unsupported("only UNION ALL is supported");
 

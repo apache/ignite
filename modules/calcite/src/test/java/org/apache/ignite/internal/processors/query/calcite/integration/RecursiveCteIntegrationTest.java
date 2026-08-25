@@ -123,6 +123,25 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testRecursiveCteWithMultipleRecursiveBranchesIsRejected() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "(" +
+                    "SELECT n + 1 FROM numbers WHERE n < 3 " +
+                    "UNION ALL " +
+                    "SELECT n + 10 FROM numbers WHERE n < 3" +
+                ")" +
+            ") " +
+            "SELECT n FROM numbers",
+            IgniteSQLException.class,
+            "the recursive term must contain no more than one self-reference"
+        );
+    }
+
+    /** */
+    @Test
     public void testRecursiveCteWithDistinctUnionIsRejected() {
         assertThrows(
             "WITH RECURSIVE numbers(n) AS (" +
