@@ -45,23 +45,13 @@ public class TxSavepointNearCacheVisibilityTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setNearConfiguration(new NearCacheConfiguration<>())
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(1))
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGridsMultiThreaded(2);
-
-        awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -69,17 +59,12 @@ public class TxSavepointNearCacheVisibilityTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRolledBackEntryVisibleWithoutRemoteUnlock() throws Exception {
-        Ignite ignite0 = grid(0);
+        Ignite ignite0 = startGridsMultiThreaded(2);
         Ignite ignite1 = grid(1);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setNearConfiguration(new NearCacheConfiguration<>())
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setBackups(1);
+        awaitPartitionMapExchange();
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.createCache(ccfg);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         int node0Key = primaryKey(cache0);
