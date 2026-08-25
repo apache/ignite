@@ -3151,43 +3151,42 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Waits for completion of a given thread. If thread is {@code null} then
-     * this method returns immediately returning {@code true}
+     * Waits for completion of a given thread with a timeout.
      *
      * @param t Thread to join.
+     * @param timeout Join timeout. If < 1, ignored.
      * @param log Logger for logging errors.
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
-    public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log) {
-        return join(t, log, 0);
+    public static boolean join(@Nullable Thread t, long timeout, IgniteLogger log) {
+        assert log != null;
+
+        if (t == null)
+            return true;
+
+        try {
+            t.join(timeout > 0 ? timeout : 0L);
+
+            return !t.isAlive();
+        }
+        catch (InterruptedException ignore) {
+            warn(log, "Got interrupted while waiting for completion of a thread: " + t);
+
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
     }
 
     /**
-     * Waits for completion of a given thread. If thread is {@code null} then
-     * this method returns immediately returning {@code true}
+     * Waits for completion of a given thread with unlimited waiting.
      *
      * @param t Thread to join.
      * @param log Logger for logging errors.
-     * @param timeout Join timeout.
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
-    public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log, long timeout) {
-        if (t != null) {
-            try {
-                t.join(timeout);
-
-                return !t.isAlive();
-            }
-            catch (InterruptedException ignore) {
-                warn(log, "Got interrupted while waiting for completion of a thread: " + t);
-
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-        }
-
-        return true;
+    public static boolean join(@Nullable Thread t, IgniteLogger log) {
+        return join(t, 0L, log);
     }
 
     /**
@@ -4969,20 +4968,51 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Joins worker.
+     * Joins worker with a timeout.
      *
-     * @param w Worker.
-     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @param worker Worker.
+     * @param timeout Operation timeout. If 0, Ignored.
+     * @throws IgniteCheckedException in case of {@link InterruptedException} or {@link TimeoutException}.
      */
-    public static void join(GridWorker w) throws IgniteInterruptedCheckedException {
+    public static void join(@Nullable GridWorker worker, long timeout) throws IgniteInterruptedCheckedException, IgniteCheckedException {
+        assert timeout >= 0L;
+
+        if (worker == null)
+            return;
+
         try {
-            if (w != null)
-                w.join();
+            worker.join(timeout);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedCheckedException(e);
+            throw new IgniteInterruptedCheckedException("Interrupted while waiting for worker " + worker, e);
+        }
+        catch (TimeoutException te) {
+            throw new IgniteCheckedException("Timeout occured while waiting for worker " + worker, te);
+        }
+    }
+
+    /**
+     * Joins worker with unlimited waiting.
+     *
+     * @param worker Worker.
+     * @throws IgniteCheckedException in case of {@link InterruptedException} or {@link TimeoutException}.
+     */
+    public static void join(@Nullable GridWorker worker) throws IgniteInterruptedCheckedException {
+        if (worker == null)
+            return;
+
+        try {
+            worker.join(0L);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException("Interrupted while waiting for worker " + worker, e);
+        }
+        catch (TimeoutException te) {
+            assert false : "TimeoutException is not expected if not actual timeout is set.";
         }
     }
 

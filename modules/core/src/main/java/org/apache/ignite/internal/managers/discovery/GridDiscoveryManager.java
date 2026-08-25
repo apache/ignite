@@ -1683,7 +1683,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         // Stop segment checker.
         if (segChecker != null) {
-            segChecker.cancel();
+            if (cancel)
+                segChecker.cancel();
 
             U.join(segChecker, log);
         }
@@ -1700,11 +1701,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         getSpi().setListener(null);
 
         U.cancel(discoEvtHnd);
-
-        U.join(discoEvtHnd, log);
-
         U.cancel(discoMsgNotifier);
 
+        U.join(discoEvtHnd, log);
         U.join(discoMsgNotifier, log);
 
         // Stop SPI itself.

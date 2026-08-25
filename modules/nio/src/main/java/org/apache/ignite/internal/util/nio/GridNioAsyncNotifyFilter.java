@@ -58,7 +58,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        workerPool.join(false);
+        workerPool.join(true, 30_000L);
     }
 
     /** {@inheritDoc} */

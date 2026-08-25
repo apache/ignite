@@ -353,7 +353,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.join(sockWriter, log);
 
         // SocketReader may loose interruption, this hack is made to overcome that case.
-        while (!U.join(sockReader, log, 200))
+        while (!U.join(sockReader, 200, log))
             U.interrupt(sockReader);
 
         executorSrvc.shutdownNow();

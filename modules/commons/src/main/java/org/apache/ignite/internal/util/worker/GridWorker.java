@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.worker;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteInterruptedException;
@@ -227,20 +228,60 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     }
 
     /**
-     * Joins this runnable.
+     * Joins this runnable with a timeout.
      *
-     * @throws InterruptedException Thrown in case of interruption.
+     * @param timeout Operation timeout in milliseconds. If 0, ignored.
+     * @throws InterruptedException In case of interruption.
+     * @throws TimeoutException In case of expired {@code timeout} to join.
      */
-    public void join() throws InterruptedException {
-        if (log.isDebugEnabled())
-            log.debug("Joining grid runnable: " + this);
+    public void join(long timeout) throws InterruptedException, TimeoutException {
+        assert timeout >= 0L;
+
+        long timeThresholdNs = timeout == 0L ? System.nanoTime() + CommonUtils.millisToNanos(timeout) : 0L;
+
+        if (log.isDebugEnabled()) {
+            if (timeout > 0)
+                log.debug("Joining grid runnable: " + this + " with timeout: " + timeout + "ms.");
+            else
+                log.debug("Joining grid runnable: " + this + '.');
+        }
 
         if ((runner == null && isCancelled.get()) || finished)
             return;
 
-        synchronized (mux) {
-            while (!finished)
-                mux.wait();
+        while (!finished) {
+            if (timeout > 0) {
+                long leftMs = timeout > 0 ? CommonUtils.nanosToMillis(timeThresholdNs - System.nanoTime()) : 0L;
+
+                if (leftMs < 1)
+                    throw new TimeoutException("The timeout has expired while waiting to join.");
+
+                synchronized (mux) {
+                    if (!finished)
+                        mux.wait(leftMs);
+                }
+            }
+            else {
+                synchronized (mux) {
+                    if (!finished)
+                        mux.wait();
+                }
+            }
+        }
+    }
+
+    /**
+     * Joins this runnable with unlimited waiting.
+     *
+     * @throws InterruptedException In case of interruption.
+     * @see #join(long)
+     */
+    public void join() throws InterruptedException {
+        try {
+            join(0L);
+        }
+        catch (TimeoutException ignored) {
+            assert false : "Timeout must not occure without an actual timeout.";
         }
     }
 

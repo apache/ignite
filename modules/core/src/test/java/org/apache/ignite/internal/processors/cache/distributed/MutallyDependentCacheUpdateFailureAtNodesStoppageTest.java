@@ -15,29 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
-import javax.cache.Cache;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.CountDownLatch;
 
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
 
 /** */
-public class NodeStopForeverBlockedByAtomicCacheOperationsTest extends GridCommonAbstractTest {
+public class MutallyDependentCacheUpdateFailureAtNodesStoppageTest extends GridCommonAbstractTest {
     /** */
     public static final int NODE_1_FIRST_KEY = 1;
 
@@ -84,11 +81,15 @@ public class NodeStopForeverBlockedByAtomicCacheOperationsTest extends GridCommo
         grid(0).createCache(createTestCacheConfiguration());
 
         try (
-                IgniteClient cli1 = Ignition.startClient(new ClientConfiguration().setClusterDiscoveryEnabled(false).setAddresses("127.0.0.1:10801"));
-                IgniteClient cli2 = Ignition.startClient(new ClientConfiguration().setClusterDiscoveryEnabled(false).setAddresses("127.0.0.1:10802"))
+                IgniteClient cli1 = Ignition.startClient(new ClientConfiguration().setClusterDiscoveryEnabled(false)
+                    .setAddresses("127.0.0.1:10801"));
+                IgniteClient cli2 = Ignition.startClient(new ClientConfiguration().setClusterDiscoveryEnabled(false)
+                    .setAddresses("127.0.0.1:10802"))
         ) {
-            IgniteInternalFuture<Object> putFut1 = GridTestUtils.runAsync(() -> cli1.cache(DEFAULT_CACHE_NAME).putAll(createKeysForNode(2)));
-            IgniteInternalFuture<Object> putFut2 = GridTestUtils.runAsync(() -> cli2.cache(DEFAULT_CACHE_NAME).putAll(createKeysForNode(1)));
+            IgniteInternalFuture<Object> putFut1 = GridTestUtils.runAsync(() -> cli1.cache(DEFAULT_CACHE_NAME)
+                .putAll(createKeysForNode(2)));
+            IgniteInternalFuture<Object> putFut2 = GridTestUtils.runAsync(() -> cli2.cache(DEFAULT_CACHE_NAME)
+                .putAll(createKeysForNode(1)));
 
             assertTrue(TestInterceptor.putStartedLatch.await(getTestTimeout(), MILLISECONDS));
 
@@ -104,8 +105,8 @@ public class NodeStopForeverBlockedByAtomicCacheOperationsTest extends GridCommo
                 putFut1.get(getTestTimeout());
                 putFut2.get(getTestTimeout());
             }
-            catch (CachePartialUpdateException e) {
-                assertTrue(e.getMessage().contains("Failed to update keys (retry update if possible)"));
+            catch (Throwable e) {
+                assertTrue(e.getMessage().contains("Connection refused"));
             }
         }
     }
@@ -134,17 +135,16 @@ public class NodeStopForeverBlockedByAtomicCacheOperationsTest extends GridCommo
             data.put(NODE_1_SECOND_KEY, 4);
         }
 
-
         return data;
     }
 
     /** */
-    public static final class TestInterceptor implements CacheInterceptor<Integer, Integer> {
+    private static final class TestInterceptor implements CacheInterceptor<Integer, Integer> {
         /** */
-        public static CountDownLatch putStartedLatch;
+        private static CountDownLatch putStartedLatch;
 
         /** */
-        public static CountDownLatch putUnblockedLatch;
+        private static CountDownLatch putUnblockedLatch;
 
         /** {@inheritDoc} */
         @Override public @Nullable Integer onGet(Integer key, @Nullable Integer val) {

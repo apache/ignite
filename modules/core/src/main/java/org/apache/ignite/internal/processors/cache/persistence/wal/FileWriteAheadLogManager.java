@@ -2291,8 +2291,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 for (FileCompressorWorker worker: workers)
                     U.cancel(worker);
 
-                for (FileCompressorWorker worker: workers)
-                    U.join(worker);
+                U.join(workers, log);
 
                 workers.clear();
 

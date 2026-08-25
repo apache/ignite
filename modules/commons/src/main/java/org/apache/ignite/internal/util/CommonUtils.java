@@ -68,6 +68,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
@@ -2468,30 +2469,54 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Joins runnable.
+     * Joins GridWorker with a timeout. Logs exceptable failures.
      *
-     * @param w Worker to join.
-     * @param log The logger to possible exception.
-     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
+     * @param worker Worker to join.
+     * @param timeout Timeout to join in milliseconds. If < 1, ignored.
+     * @param log The logger for exceptable failures.
+     * @return {@code True} if {@code worker} has been successfully stopped, wasn't interrupted or timeouted. {@code False}
+     *         if {@code worker} was interrupted or timeouted.
      */
-    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
-        if (w != null)
-            try {
-                w.join();
-            }
-            catch (InterruptedException ignore) {
-                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
+    public static boolean join(@Nullable GridWorker worker, long timeout, IgniteLogger log) {
+        assert log != null;
 
-                Thread.currentThread().interrupt();
+        if (worker == null)
+            return true;
 
-                return false;
-            }
+        try {
+            worker.join(timeout);
+        }
+        catch (InterruptedException ignore) {
+            warn(log, "Got interrupted while waiting for completion of GridWorker: " + worker);
+
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
+        catch (TimeoutException te) {
+            warn(log, "The timeout expired while waiting for completion of GridWorker: " + worker);
+
+            return false;
+        }
 
         return true;
     }
 
     /**
-     * Joins given collection of runnables.
+     * Joins GridWorker with unlimited waiting. Logs exceptable failures.
+     *
+     * @param worker Worker to join.
+     * @param log The logger for exceptable failures.
+     * @return {@code True} if {@code worker} has been successfully stopped, wasn't interrupted or timeouted. {@code False}
+     *         if {@code worker} was interrupted or timeouted.
+     * @see #join(GridWorker, long, IgniteLogger)
+     */
+    public static boolean join(@Nullable GridWorker worker, IgniteLogger log) {
+        return join(worker, 0L, log);
+    }
+
+    /**
+     * Joins given collection of runnables with unlimited waiting.
      *
      * @param ws Collection of workers to join.
      * @param log The logger to possible exceptions.
