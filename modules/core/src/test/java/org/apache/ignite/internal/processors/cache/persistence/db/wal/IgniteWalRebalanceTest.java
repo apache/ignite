@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -106,6 +105,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
 
 /**
  * Historical WAL rebalance base test.
@@ -333,8 +333,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // at topVer 2, so its offset must exceed the previous one by at least 3 seconds
         // (plus 1 second of margin).
         GridTestUtils.waitForCondition(() ->
-            (System.currentTimeMillis() - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 -
-                (prevGridStart - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 >= 4, getTestTimeout());
+            (System.currentTimeMillis() - TOP_VER_BASE_TIME) / 1000 - (prevGridStart - TOP_VER_BASE_TIME) / 1000 >= 4,
+            getTestTimeout());
 
         IgniteEx ig0 = startGrids(2);
 
@@ -434,8 +434,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         GridTestUtils.waitForCondition(() ->
-            (System.currentTimeMillis() - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 -
-                (prevGridStart - GridCacheVersionManager.TOP_VER_BASE_TIME) / 1000 >= 4, getTestTimeout());
+            (System.currentTimeMillis() - TOP_VER_BASE_TIME) / 1000 - (prevGridStart - TOP_VER_BASE_TIME) / 1000 >= 4,
+            getTestTimeout());
 
         // Rewrite data with globally disabled WAL.
         crd = startGrids(2);
