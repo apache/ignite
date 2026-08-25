@@ -22,6 +22,8 @@ import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -39,9 +41,19 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
     /** Table size. */
     private static final int TABLE_SIZE = 10;
 
+    /** */
+    private static boolean keepBinary;
+
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected QueryContext queryContext() {
+        QueryProperties qryProps = new QueryProperties(null, keepBinary, false);
+
+        return QueryContext.of(qryProps);
     }
 
     /** */
@@ -145,6 +157,8 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         boolean useBinaryObject,
         Runnable executeBeforeChecks
     ) {
+        keepBinary = useBinaryObject;
+
         if (setKeyTypeToCreateTblDdl) {
             // Order of the primary key columns has been deliberately changed.
             sql(String.format(
@@ -159,7 +173,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         fillTable();
 
         List<List<?>> sqlRs = sql("select _key, id, name from PUBLIC.PERSON order by id");
-        BinaryObject _key = (BinaryObject)sqlRs.get(6).get(0);
+        Object _key = sqlRs.get(6).get(0);
         int id = (Integer)sqlRs.get(6).get(1);
         String name = (String)sqlRs.get(6).get(2);
 
@@ -169,17 +183,19 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
         executeBeforeChecks.run();
 
         assertQuery("select id, name, age, _key from PUBLIC.PERSON where _key = ?")
-            .withParams(useBinaryObject ? _key : _key.deserialize())
+            .withParams(_key)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX + "_proxy"))
             .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
+            .withKeepBinary(useBinaryObject)
             .returns(id, name, 24, _key)
             .check();
 
         // Let's check with a smaller number of columns.
         assertQuery("select id, age, _key from PUBLIC.PERSON where _key = ?")
-            .withParams(useBinaryObject ? _key : _key.deserialize())
+            .withParams(_key)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX + "_proxy"))
             .columnNames("ID", "AGE", KEY_FIELD_NAME)
+            .withKeepBinary(useBinaryObject)
             .returns(id, 24, _key)
             .check();
 
@@ -188,6 +204,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
             .withParams(id, name)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX))
             .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME)
+            .withKeepBinary(useBinaryObject)
             .returns(id, name, 24, _key)
             .check();
     }
@@ -212,6 +229,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
      * @param tableScan {@code true} to test with table scan, {@code false} to test with index scan.
      */
     public void compositePkEqualitySearchByPartOfKey(boolean tableScan) {
+        keepBinary = true;
         sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
 
         fillTable();
@@ -264,6 +282,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
      * when comparing binary objects using {@link #binaryObjectCmpForDml}.
      */
     public void compositePkWithOrderByKey(boolean tableScan) {
+        keepBinary = true;
         sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
 
         fillTable();
@@ -320,6 +339,8 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
      * @param tableScan {@code true} to test with table scan, {@code false} to test with index scan.
      */
     private void checkCompositePkWithDifferentCmpOperations(boolean useBinaryObject, boolean tableScan) {
+        keepBinary = true;
+
         sql(String.format(
             "create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name)) with \"key_type=%s\"",
             PersonCompositeKey.class.getName()
@@ -333,21 +354,25 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         for (CmpOp cmpOp : CmpOp.values()) {
             List<List<?>> expRows = sqlRs.stream()
-                .filter(objects -> cmpOp.expRowByKeyPred.test((BinaryObjectImpl)objects.get(3), key8))
+                .filter(objects -> !useBinaryObject || cmpOp.expRowByKeyPred.test((BinaryObjectImpl)objects.get(3), key8))
                 .toList();
 
             QueryChecker qryChecker = assertQuery(String.format(
                 "select /*+ DISABLE_RULE('" + (tableScan ? "LogicalIndexScanConverterRule" : "LogicalTableScanConverterRule") +
                     "') */ id, name, age, _key from PUBLIC.PERSON where _key %s ?", cmpOp.comp
             ))
-                .withParams(useBinaryObject ? key8 : ((BinaryObject)key8).deserialize())
+                .withParams(key8)
                 .matches(tableScan ?
                     QueryChecker.containsTableScan("PUBLIC", "PERSON") :
                     QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX)
                 )
                 .columnNames("ID", "NAME", "AGE", KEY_FIELD_NAME);
 
-            expRows.forEach(objects -> qryChecker.returns(objects.toArray(Object[]::new)));
+            // check predicates only for BO types.
+            if (useBinaryObject)
+                expRows.forEach(objects -> qryChecker.returns(objects.toArray(Object[]::new)));
+
+            qryChecker.withKeepBinary(true);
 
             qryChecker.check();
         }
@@ -384,6 +409,8 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** Check results with search for _key different from defined in schema. */
     private void checkResultsWithUnexpectedKey(Object arg) {
+        keepBinary = true;
+
         String qryTemplate = "select /*+ DISABLE_RULE('%s') */ _key from PUBLIC.PERSON where _key %s ? ORDER BY _key";
 
         fillTable();
@@ -408,6 +435,7 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
                 assertQuery(qry)
                     .withParams(arg)
+                    .withKeepBinary(keepBinary)
                     .matches(tableScan ?
                         QueryChecker.containsTableScan("PUBLIC", "PERSON") :
                         QueryChecker.containsIndexScan("PUBLIC", "PERSON", PRIMARY_KEY_INDEX)
