@@ -520,6 +520,6 @@ Register name: `sql.queries.user`
 |success| long | The number of succesfully executed SQL queries.
 |failed| long | The number of failed SQL queries (including canceled).
 |canceled| long | The number of canceled SQL queries.
-|resultSetSizeHistogram| histogram | Histogram of result set sizes for SQL queries.
-|maxResultSetSize| max value | Maximum result set size for SQL queries.
+|resultSetSizeHistogram| histogram | Histogram of fetched result set sizes for SQL queries.
+|maxResultSetSize| max value | Maximum fetched result set size for SQL queries.
 |===
