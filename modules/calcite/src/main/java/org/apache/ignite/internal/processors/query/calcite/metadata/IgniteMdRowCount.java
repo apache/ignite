@@ -186,9 +186,10 @@ public class IgniteMdRowCount extends RelMdRowCount {
         double baseRowCnt = 0.0;
         Double percentageAdjustment = null;
         if (joinCtx.joinType() == JoiningRelationType.PK_ON_PK) {
-            postFiltrationAdjustment = EQUI_COEFF;
+            postFiltrationAdjustment = 1.0;
 
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
+                postFiltrationAdjustment = EQUI_COEFF;
                 // Assume we have two fact tables SALES and RETURNS sharing the same primary key. Every item
                 // can be sold, but only items which were sold can be returned back, therefore
                 // size(SALES) > size(RETURNS). When joining SALES on RETURNS by primary key, the estimated
@@ -249,7 +250,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
         }
         else { // PK_ON_FK
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
-                baseRowCnt = rightRowCnt;
+                Double selectivity = mq.getSelectivity(rel, rel.getCondition());
+                baseRowCnt = rightRowCnt * selectivity;;
                 percentageAdjustment = mq.getPercentageOriginalRows(rel.getLeft());
             }
             else if (rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.LEFT) {
@@ -313,7 +315,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private record KeyColumnOrigin(RelColumnOrigin origin, int positionInKey) { }
 
     /** This part of estimation is applicable for distributions different from hash, i.e. broadcast, single. */
-    private static double crudeEstimation(RelMetadataQuery mq, JoinInfo joinInfo, Join rel, Double leftRowCnt, Double rightRowCnt) {
+    private static Double crudeEstimation(RelMetadataQuery mq, JoinInfo joinInfo, Join rel, Double leftRowCnt, Double rightRowCnt) {
         ImmutableIntList leftKeys = joinInfo.leftKeys;
         ImmutableIntList rightKeys = joinInfo.rightKeys;
 
@@ -321,7 +323,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         if (selectivity == null) {
             // Fall-back to calcite's implementation.
-            RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
+            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
         }
 
         if (F.isEmpty(leftKeys) || F.isEmpty(rightKeys))

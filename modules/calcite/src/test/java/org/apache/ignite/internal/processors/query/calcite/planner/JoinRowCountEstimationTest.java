@@ -212,7 +212,6 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
             publicSchema,
             nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * EQUALS_SELECTIVITY)));
 
-        // It needs to return like: CATALOG_RETURNS_SIZE * COMPARISON_SELECTIVITY, but it will be done at future
         // Need to adopt: IGNITE-23969
         assertPlan(SELECT
                 + "  FROM date_dim"
@@ -220,7 +219,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  WHERE cr_returned_date_sk = d_date_sk"
                 + "    AND d_moy > 6",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * EQUALS_SELECTIVITY)));
     }
 
     /** */
