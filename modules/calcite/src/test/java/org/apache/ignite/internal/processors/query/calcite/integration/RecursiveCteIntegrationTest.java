@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.junit.Test;
@@ -33,21 +30,6 @@ import org.junit.Test;
 public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
     /** Number of invocations of a non-deterministic function. */
     private static final AtomicInteger nonDeterministicCallCnt = new AtomicInteger();
-
-    /** Global memory quota for SQL queries. */
-    private static final long GLOBAL_MEMORY_QUOTA = 10_000_000L;
-
-    /** Query memory quota deliberately smaller than the largest recursive delta in the test below. */
-    private static final long QUERY_MEMORY_QUOTA = 1_000_000L;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSqlConfiguration(
-            new SqlConfiguration().setQueryEnginesConfiguration(
-                new CalciteQueryEngineConfiguration()
-                    .setGlobalMemoryQuota(GLOBAL_MEMORY_QUOTA)
-                    .setQueryMemoryQuota(QUERY_MEMORY_QUOTA)));
-    }
 
     /** */
     @Test
@@ -105,24 +87,6 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertTrue(plan, plan.contains("IgniteRepeatUnion"));
         assertTrue(plan, plan.contains("IgniteRecursiveTableSpool"));
-    }
-
-    /** */
-    @Test
-    public void testRecursiveDeltaIsAccountedForMemoryQuota() {
-        assertThrows(
-            "WITH RECURSIVE numbers(n) AS (" +
-                "SELECT 1 " +
-                "UNION ALL " +
-                "SELECT n + 1 " +
-                "FROM numbers " +
-                "CROSS JOIN (VALUES (1), (2)) AS fanout(x) " +
-                "WHERE n < 19" +
-                ") " +
-                "SELECT COUNT(*) FROM numbers",
-            IgniteSQLException.class,
-            "Query quota exceeded"
-        );
     }
 
     /** */
@@ -201,9 +165,7 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testIndependentNonDeterministicSubtreeIsEvaluatedForEveryIteration() {
-        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("recursive_functions")
-            .setSqlSchema("PUBLIC")
-            .setSqlFunctionClasses(RecursiveFunctions.class));
+        registerRecursiveFunctions();
 
         nonDeterministicCallCnt.set(0);
 
@@ -225,6 +187,68 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
+    /** */
+    @Test
+    public void testNonDeterministicTableScanIsNotMaterialized() {
+        registerRecursiveFunctions();
+
+        sql("CREATE TABLE recursive_markers (id INT) WITH TEMPLATE=REPLICATED");
+        sql("INSERT INTO recursive_markers VALUES (1)");
+
+        String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
+            "SELECT 1, 0 " +
+            "UNION ALL " +
+            "SELECT n + 1, v.marker " +
+            "FROM numbers " +
+            "CROSS JOIN (" +
+                "SELECT nextRecursiveValue() AS marker FROM recursive_markers" +
+            ") v " +
+            "WHERE n < 4" +
+            ") " +
+            "SELECT n, marker FROM numbers ORDER BY n";
+
+        String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
+
+        assertTrue(plan, plan.contains("IgniteTableScan"));
+        assertTrue(plan, plan.contains("NEXTRECURSIVEVALUE"));
+        assertFalse(plan, plan.contains("IgniteTableSpool"));
+    }
+
+    /** */
+    @Test
+    public void testNonDeterministicExpressionsInIndexSpoolsAreDetected() {
+        registerRecursiveFunctions();
+
+        sql("CREATE TABLE recursive_markers (id INT PRIMARY KEY, marker INT) WITH TEMPLATE=REPLICATED");
+        sql("INSERT INTO recursive_markers VALUES (1, 10), (2, 20), (3, 30)");
+
+        String[][] spoolRules = {
+            {"FilterSpoolMergeToSortedIndexSpoolRule", "IgniteHashIndexSpool"},
+            {"FilterSpoolMergeToHashIndexSpoolRule", "IgniteSortedIndexSpool"}
+        };
+
+        for (String[] spoolRule : spoolRules) {
+            String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
+                "SELECT 1, 0 " +
+                "UNION ALL " +
+                "SELECT n + 1, " +
+                    "(SELECT marker FROM recursive_markers " +
+                        "WHERE id = numbers.n AND nextRecursiveValue() > 0) " +
+                "FROM numbers " +
+                "WHERE n < 4" +
+                ") " +
+                "SELECT /*+ DISABLE_RULE('FilterTableScanMergeRule', " +
+                    "'FilterTableScanMergeSkipCorrelatedRule', '" + spoolRule[0] + "') */ " +
+                    "n, marker FROM numbers ORDER BY n";
+
+            String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
+
+            assertTrue(plan, plan.contains(spoolRule[1]));
+            assertTrue(plan, plan.contains("NEXTRECURSIVEVALUE"));
+            assertFalse(plan, plan.contains("IgniteTableSpool"));
+        }
+    }
+
     /** SQL functions used by recursive CTE tests. */
     public static class RecursiveFunctions {
         /** Returns a different value on every invocation. */
@@ -243,5 +267,12 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             "(2, 1, 'Manager'), " +
             "(3, 2, 'Developer'), " +
             "(4, 1, 'Accountant')");
+    }
+
+    /** Registers SQL functions used by recursive CTE tests. */
+    private void registerRecursiveFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("recursive_functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(RecursiveFunctions.class));
     }
 }

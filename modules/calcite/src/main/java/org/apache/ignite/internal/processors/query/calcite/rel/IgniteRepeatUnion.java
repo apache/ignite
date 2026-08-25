@@ -20,20 +20,17 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
+import org.apache.calcite.rel.core.RepeatUnion;
 
 import static java.util.Objects.requireNonNull;
 
 /** Coordinator-side iterative UNION ALL for a recursive CTE. */
-public class IgniteRepeatUnion extends BiRel implements IgniteRel {
+public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
     /** Query-local recursive state identifier. */
     private final String stateId;
-
-    /** Maximum number of recursive iterations, or a negative value for no limit. */
-    private final int iterationLimit;
 
     /** */
     public IgniteRepeatUnion(
@@ -44,11 +41,9 @@ public class IgniteRepeatUnion extends BiRel implements IgniteRel {
         String stateId,
         int iterationLimit
     ) {
-        super(cluster, traits, seed, iterative);
-        rowType = seed.getRowType();
+        super(cluster, traits, seed, iterative, true, iterationLimit, null);
 
         this.stateId = stateId;
-        this.iterationLimit = iterationLimit;
     }
 
     /** Constructor used for deserialization. */
@@ -59,7 +54,7 @@ public class IgniteRepeatUnion extends BiRel implements IgniteRel {
             input.getInputs().get(0),
             input.getInputs().get(1),
             requireNonNull(input.getString("stateId"), "stateId"),
-            ((Number)requireNonNull(input.get("iterationLimit"), "iterationLimit")).intValue()
+            iterationLimit(input)
         );
     }
 
@@ -95,8 +90,13 @@ public class IgniteRepeatUnion extends BiRel implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .item("stateId", stateId)
-            .item("iterationLimit", iterationLimit)
-            .item("all", true);
+            .item("stateId", stateId);
+    }
+
+    /** Reads the optional iteration limit emitted by {@link RepeatUnion#explainTerms(RelWriter)}. */
+    private static int iterationLimit(RelInput input) {
+        Number iterationLimit = (Number)input.get("iterationLimit");
+
+        return iterationLimit == null ? -1 : iterationLimit.intValue();
     }
 }

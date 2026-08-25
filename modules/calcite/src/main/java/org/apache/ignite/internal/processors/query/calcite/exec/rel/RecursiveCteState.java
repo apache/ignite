@@ -27,20 +27,20 @@ import org.apache.ignite.internal.util.GridUnsafe;
 /** Query-local current and next deltas of a recursive CTE. */
 public class RecursiveCteState<Row> {
     /** Rows visible to the recursive table scan. */
-    private List<Row> current = Collections.emptyList();
+    private List<Row> cur = Collections.emptyList();
 
     /** Rows produced by the active seed or recursive term. */
     private List<Row> next;
 
     /** Memory tracker for rows in the current delta. */
-    private RowTracker<Row> currentMemoryTracker;
+    private RowTracker<Row> curMemoryTracker;
 
     /** Memory tracker for rows in the next delta. */
     private RowTracker<Row> nextMemoryTracker;
 
     /** */
     public RecursiveCteState(ExecutionContext<Row> ctx) {
-        currentMemoryTracker = ctx.createNodeMemoryTracker(GridUnsafe.OBJ_REF_SIZE);
+        curMemoryTracker = ctx.createNodeMemoryTracker(GridUnsafe.OBJ_REF_SIZE);
         nextMemoryTracker = ctx.createNodeMemoryTracker(GridUnsafe.OBJ_REF_SIZE);
     }
 
@@ -63,27 +63,27 @@ public class RecursiveCteState<Row> {
     public void commit() {
         assert next != null;
 
-        currentMemoryTracker.reset();
-        current = next;
+        curMemoryTracker.reset();
+        cur = next;
         next = null;
 
-        RowTracker<Row> tracker = currentMemoryTracker;
+        RowTracker<Row> tracker = curMemoryTracker;
 
-        currentMemoryTracker = nextMemoryTracker;
+        curMemoryTracker = nextMemoryTracker;
         nextMemoryTracker = tracker;
     }
 
     /** Current delta. */
     public Iterable<Row> current() {
-        return () -> current.iterator();
+        return () -> cur.iterator();
     }
 
     /** Clears all query-local rows. */
     public void clear() {
-        current = Collections.emptyList();
+        cur = Collections.emptyList();
         next = null;
 
-        currentMemoryTracker.reset();
+        curMemoryTracker.reset();
         nextMemoryTracker.reset();
     }
 }

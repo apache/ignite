@@ -237,6 +237,24 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testRecursiveDeltaIsAccountedForMemoryQuota() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 " +
+                "FROM numbers " +
+                "CROSS JOIN (VALUES (1), (2)) AS fanout(x) " +
+                "WHERE n < 19" +
+                ") " +
+                "SELECT COUNT(*) FROM numbers",
+            IgniteSQLException.class,
+            "Query quota exceeded"
+        );
+    }
+
+    /** */
+    @Test
     public void testRightMeterializedJoins() {
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");
 
