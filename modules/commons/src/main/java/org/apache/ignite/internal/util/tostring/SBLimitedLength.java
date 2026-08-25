@@ -326,9 +326,7 @@ public class SBLimitedLength extends GridStringBuilder {
         return lenLimit.overflowed(this);
     }
 
-    /**
-     *
-     */
+    /** */
     private void initTailIfAbsent() {
         if (tail == null)
             tail = lenLimit.getTail();
