@@ -19,13 +19,17 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.junit.Test;
@@ -352,10 +356,15 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         Object key8 = sqlRs.get(8).get(3);
 
+        CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
+        IgniteCacheTable tbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("PERSON");
+
         for (CmpOp cmpOp : CmpOp.values()) {
             List<List<?>> expRows = sqlRs.stream()
                 .filter(objects -> !useBinaryObject || cmpOp.expRowByKeyPred.test((BinaryObjectImpl)objects.get(3), key8))
                 .toList();
+
+            tbl.markIndexRebuildInProgress(tableScan);
 
             QueryChecker qryChecker = assertQuery(String.format(
                 "select /*+ DISABLE_RULE('" + (tableScan ? "LogicalIndexScanConverterRule" : "LogicalTableScanConverterRule") +
@@ -415,12 +424,17 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
         fillTable();
 
+        CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
+        IgniteCacheTable tbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("PERSON");
+
         for (CmpOp cmpOp : CmpOp.values()) {
             List<List<?>> res = null;
 
             for (boolean tableScan : List.of(true, false)) {
                 String qry = qryTemplate.formatted(tableScan ?
                     "LogicalIndexScanConverterRule" : "LogicalTableScanConverterRule", cmpOp.comp);
+
+                tbl.markIndexRebuildInProgress(tableScan);
 
                 if (res == null)
                     res = sql(qry, arg);
