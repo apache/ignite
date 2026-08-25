@@ -54,6 +54,13 @@ public class TxSavepointNearCacheVisibilityTest extends GridCommonAbstractTest {
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
