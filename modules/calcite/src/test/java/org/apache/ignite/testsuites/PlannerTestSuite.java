@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.planner.PlanExecution
 import org.apache.ignite.internal.processors.query.calcite.planner.PlanSplitterTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTimeoutTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.ProjectFilterScanMergePlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.RexSimplificationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.RecursiveCtePlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.RexSimplificationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SerializationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SetOpPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
