@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
@@ -87,7 +89,11 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
         }
         else {
             Collection<?> coll = (Collection<?>)rowContainer;
-            rowArr = coll.stream().map(e -> binaryMarshaller.apply(e)).toArray();
+            rowArr = new Object[coll.size()];
+
+            int pos = 0;
+            for (Object el : coll)
+                rowArr[pos++] = binaryMarshaller.apply(el);
         }
 
         return rowFactory.create(rowArr);

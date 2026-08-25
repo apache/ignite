@@ -356,6 +356,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * from withObjectType(1) ORDER BY ID")
             .returns(1, empObj1)
             .returns(10, empObj10)
+            .withKeepBinary(false)
             .check();
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT EMP from withObjectType(1) where EMP=?").setArgs(empObj10);
@@ -365,6 +366,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * from withObjectType(1) where EMP=?")
             .withParams(empObj10)
             .returns(10, empObj10)
+            .withKeepBinary(false)
             .check();
     }
 
