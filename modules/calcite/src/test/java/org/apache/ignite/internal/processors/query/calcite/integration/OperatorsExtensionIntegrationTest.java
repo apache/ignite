@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlNodeRewriter;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlPaginationPolicy;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -98,7 +98,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                                     .withSqlNodeRewriter(new SqlRewriter()))
                             .context(Contexts.chain(
                                 CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
-                                Contexts.of((IgniteSqlPaginationPolicy)() -> RoundingMode.DOWN),
+                                Contexts.of(IgniteSqlSemantics.builder()
+                                    .paginationRoundingMode(RoundingMode.DOWN)
+                                    .build()),
                                 Contexts.of(new AccumulatorFactoryProviderImpl())))
                             .build();
 

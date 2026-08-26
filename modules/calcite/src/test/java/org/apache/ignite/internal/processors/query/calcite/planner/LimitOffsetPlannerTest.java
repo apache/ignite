@@ -27,7 +27,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlPaginationPolicy;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -102,7 +102,9 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                 .query("SELECT * FROM TEST ORDER BY ID OFFSET 1 ROWS "
                     + "FETCH FIRST (ABS(0.6)) ROWS ONLY")
                 .schema(publicSchema)
-                .additionalCtx(Contexts.of((IgniteSqlPaginationPolicy)() -> RoundingMode.DOWN)),
+                .additionalCtx(Contexts.of(IgniteSqlSemantics.builder()
+                    .paginationRoundingMode(RoundingMode.DOWN)
+                    .build())),
             isInstanceOf(IgniteLimit.class)
                 .and(limit -> limit.offset() != null && limit.fetch() != null)
                 .and(input(isInstanceOf(IgniteExchange.class)

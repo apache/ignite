@@ -816,7 +816,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             typeFactory,
             validatorCfg,
             ctx.parameters(),
-            ctx.unwrap(IgniteSqlPaginationPolicy.class)
+            ctx.unwrap(IgniteSqlSemantics.class)
         );
     }
 
