@@ -1617,7 +1617,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-            writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
+            writeToSocket(sock, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             return sock;
         }
@@ -1722,10 +1722,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Writes message to the socket.
+     * Writes raw data to the socket.
      *
      * @param sock Socket.
-     * @param msg Message.
      * @param data Raw data to write.
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
@@ -1733,7 +1732,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      */
     protected void writeToSocket(
         Socket sock,
-        @Nullable TcpDiscoveryAbstractMessage msg,
         byte[] data,
         long timeout
     ) throws IOException, IgniteCheckedException {
@@ -1808,7 +1806,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Writes response to the socket.
      *
-     * @param msg Received message.
      * @param sock Socket.
      * @param res Integer response.
      * @param timeout Socket timeout.
@@ -1816,7 +1813,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
     protected void writeToSocket(
-        TcpDiscoveryAbstractMessage msg,
         Socket sock,
         int res,
         long timeout
