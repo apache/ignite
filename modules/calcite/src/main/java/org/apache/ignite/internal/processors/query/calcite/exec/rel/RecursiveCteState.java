@@ -78,6 +78,11 @@ public class RecursiveCteState<Row> {
         return () -> cur.iterator();
     }
 
+    /** Returns whether the current delta is empty. */
+    public boolean isEmpty() {
+        return cur.isEmpty();
+    }
+
     /** Clears all query-local rows. */
     public void clear() {
         cur = Collections.emptyList();

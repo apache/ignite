@@ -41,9 +41,6 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** Number of rows still requested by downstream. */
     private int waiting;
 
-    /** Rows produced by the current recursive iteration. */
-    private int produced;
-
     /** Number of completed recursive iterations. */
     private int iteration;
 
@@ -85,9 +82,6 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         waiting--;
         state.add(row);
 
-        if (curSrc == RECURSIVE_SOURCE)
-            produced++;
-
         downstream().push(row);
     }
 
@@ -102,6 +96,12 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         state.commit();
         writing = false;
 
+        if (state.isEmpty()) {
+            finish();
+
+            return;
+        }
+
         if (curSrc == SEED_SOURCE) {
             if (iterationLimit == 0) {
                 finish();
@@ -110,14 +110,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
             }
 
             curSrc = RECURSIVE_SOURCE;
-            produced = 0;
             requestSource();
-
-            return;
-        }
-
-        if (produced == 0) {
-            finish();
 
             return;
         }
@@ -130,7 +123,6 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
             return;
         }
 
-        produced = 0;
         source().rewind();
         requestSource();
     }
@@ -146,7 +138,6 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     @Override protected void rewindInternal() {
         curSrc = SEED_SOURCE;
         waiting = 0;
-        produced = 0;
         iteration = 0;
         writing = false;
         state.clear();

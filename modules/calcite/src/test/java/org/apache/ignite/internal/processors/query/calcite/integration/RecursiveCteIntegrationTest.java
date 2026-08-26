@@ -71,6 +71,21 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testRecursiveTermIsNotExecutedWhenSeedIsEmpty() {
+        sql("CREATE TABLE empty_seed (n INT PRIMARY KEY)");
+
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+            "SELECT n FROM empty_seed " +
+            "UNION ALL " +
+            "SELECT v.n FROM numbers RIGHT JOIN (VALUES (42)) v(n) ON TRUE" +
+            ") " +
+            "SELECT n FROM numbers FETCH FIRST 1 ROW ONLY")
+            .resultSize(0)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testExplainRecursiveCte() {
         createEmployeeTable();
 
