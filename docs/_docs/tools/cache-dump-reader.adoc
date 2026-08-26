@@ -96,7 +96,7 @@ The full `DumpReaderConfiguration` constructor allows you to control dump readin
 | Maximum time to wait for partition-processing tasks to finish. The default is 7 days.
 
 | `failFast`
-| Stops submitting further partition work after the first consumer error when set to `true`.
+| Skips partition-processing tasks that have not started after the first consumer error when set to `true`.
 
 | `keepBinary`
 | Keeps entry keys and values as `BinaryObject` instances when `keepRaw` is `false`.
