@@ -180,6 +180,8 @@ include::{sourceCodeFile}[tag=getOrCreateCache,indent=0]
 === Basic Cache Operations
 
 The following code snippet demonstrates how to execute basic cache operations from the thin client.
+Use `ClientCache.sizeLong(...)` to get the cache size as a `long`.
+The older `ClientCache.size(...)` method returns `int` and is deprecated.
 
 [source, java]
 -------------------------------------------------------------------------------
@@ -446,6 +448,7 @@ include::{sourceCodeFile}[tag=client-authentication,indent=0]
 == Async APIs
 
 Most network-bound thin client APIs have an async counterpart, for example, `ClientCache.get` and `ClientCache.getAsync`.
+For cache size operations, prefer `ClientCache.sizeLongAsync(...)`; the older `ClientCache.sizeAsync(...)` method returns `IgniteClientFuture<Integer>` and is deprecated.
 
 [source, java]
 -------------------------------------------------------------------------------
