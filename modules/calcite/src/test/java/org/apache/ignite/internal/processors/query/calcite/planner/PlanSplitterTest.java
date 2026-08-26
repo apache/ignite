@@ -139,7 +139,7 @@ public class PlanSplitterTest extends AbstractPlannerTest {
                 .and(hasChildThat(isInstanceOf(IgniteSort.class))
                     .and(hasChildThat(isTableScan("DEVELOPER")))
                 .and(hasChildThat(isInstanceOf(IgniteExchange.class))
-                        .and(hasChildThat(isTableScan("PROJECT"))))))));
+                    .and(hasChildThat(isTableScan("PROJECT"))))))));
     }
 
     /** */
