@@ -105,7 +105,7 @@ public class SqlAPI {
         IgniteCache<Long, Person> cache = ignite.cache("Person");
 
         SqlFieldsQuery sql = new SqlFieldsQuery(
-                "select concat(firstName, ' ', lastName) from Person")
+                "select name from Person")
                 .setQueryInitiatorId("person-report-job");
 
         cache.query(sql).getAll();
