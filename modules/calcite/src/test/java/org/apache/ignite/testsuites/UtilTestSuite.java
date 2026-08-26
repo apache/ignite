@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.KeyFilteringCursorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToLixTranslatorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryTasksQueueTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
@@ -39,6 +40,7 @@ import org.junit.runners.Suite;
     KeyFilteringCursorTest.class,
     QueryBlockingTaskExecutorTest.class,
     QueryTasksQueueTest.class,
+    RexToLixTranslatorTest.class,
 })
 public class UtilTestSuite {
 }
