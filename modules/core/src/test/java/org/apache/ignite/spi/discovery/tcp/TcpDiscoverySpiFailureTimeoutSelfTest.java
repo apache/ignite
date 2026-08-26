@@ -23,6 +23,7 @@ import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.AbstractDiscoverySelfTest;
@@ -261,7 +262,6 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         /** */
         private volatile IgniteSpiOperationTimeoutException err;
 
-
         /** {@inheritDoc} */
         @Override protected Socket openSocket(
             Socket sock,
@@ -334,16 +334,16 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
-            int res,
+        @Override protected <T extends Message> T readMessage(
+            TcpDiscoveryIoSession ses,
             long timeout
         ) throws IOException, IgniteCheckedException {
+            T msg = super.readMessage(ses, timeout);
+
             if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                 connCheckStatusMsgCntReceived++;
 
-            super.writeToSocket(msg, sock, res, timeout);
+            return msg;
         }
 
         /**
