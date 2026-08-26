@@ -170,6 +170,8 @@ The `ClientCache` interface provides the key-value API. You can use the followin
 
 Use `IgniteClient.cacheNames()` to list all existing caches.
 
+When creating a cache with `ClientCacheConfiguration`, use `ClientAffinityConfiguration` to configure the default rendezvous affinity settings, such as the number of cache partitions.
+
 [source, java]
 -------------------------------------------------------------------------------
 include::{sourceCodeFile}[tag=getOrCreateCache,indent=0]
@@ -211,7 +213,7 @@ The query condition is specified by an `IgniteBiPredicate<K, V>` object that is 
 
 NOTE: The classes of the predicates must be available on the server nodes of the cluster.
 
-The results of the query are transferred to the client page by page. Each page contains a specific number of entries and is fetched to the client only when the entries from that page are requested. To change the number of entries in a page, use the `ScanQuery.setPageSize(int pageSize)` method (default value is 1024).
+The results of the query are transferred to the client page by page. Each page contains a specific number of entries and is fetched to the client only when the entries from a page are requested. To change the number of entries in a page, use the `ScanQuery.setPageSize(int pageSize)` method (default value is 1024).
 
 [source, java]
 -------------------------------------------------------------------------------
