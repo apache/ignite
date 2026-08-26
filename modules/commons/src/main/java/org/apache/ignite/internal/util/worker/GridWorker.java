@@ -230,18 +230,16 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     /**
      * Joins this runnable with a timeout.
      *
-     * @param timeout Operation timeout in milliseconds. If 0, ignored.
-     * @throws InterruptedException In case of interruption.
+     * @param timeout Operation timeout in milliseconds. If negative, ignored.
+     * @throws InterruptedException In case of the interruption.
      * @throws TimeoutException In case of expired {@code timeout} to join.
      */
     public void join(long timeout) throws InterruptedException, TimeoutException {
-        assert timeout >= 0L;
-
-        long timeThresholdNs = timeout == 0L ? System.nanoTime() + CommonUtils.millisToNanos(timeout) : 0L;
+        long timeThresholdNs = timeout < 0L ? -1L : System.nanoTime() + CommonUtils.millisToNanos(timeout);
 
         if (log.isDebugEnabled()) {
-            if (timeout > 0)
-                log.debug("Joining grid runnable: " + this + " with timeout: " + timeout + "ms.");
+            if (timeout >= 0L)
+                log.debug("Joining grid runnable: " + this + " with the Wtimeout: " + timeout + "ms.");
             else
                 log.debug("Joining grid runnable: " + this + '.');
         }
@@ -250,10 +248,10 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
             return;
 
         while (!finished) {
-            if (timeout > 0) {
-                long leftMs = timeout > 0 ? CommonUtils.nanosToMillis(timeThresholdNs - System.nanoTime()) : 0L;
+            if (timeout >= 0L) {
+                long leftMs = CommonUtils.nanosToMillis(timeThresholdNs - System.nanoTime());
 
-                if (leftMs < 1)
+                if (leftMs < 1L)
                     throw new TimeoutException("The timeout has expired while waiting to join.");
 
                 synchronized (mux) {
@@ -267,21 +265,6 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
                         mux.wait();
                 }
             }
-        }
-    }
-
-    /**
-     * Joins this runnable with unlimited waiting.
-     *
-     * @throws InterruptedException In case of interruption.
-     * @see #join(long)
-     */
-    public void join() throws InterruptedException {
-        try {
-            join(0L);
-        }
-        catch (TimeoutException ignored) {
-            assert false : "Timeout must not occure without an actual timeout.";
         }
     }
 

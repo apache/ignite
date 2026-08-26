@@ -96,21 +96,29 @@ public class GridWorkerPool {
      * Waits for all workers to finish with a timeout. Logs failures if {@link #log} is not {@code null}.
      *
      * @param cancel Flag to indicate whether workers should be cancelled before waiting for them to finish.
-     * @param timeout Timeout to join in milliseconds. If 0, ignored.
+     * @param timeout Timeout to join in milliseconds. If negative, ignored.
      */
     public void join(boolean cancel, long timeout) {
-        assert timeout >= 0L;
+        long timeThresholdNs = timeout < 0L ? -1L : System.nanoTime() + CommonUtils.millisToNanos(timeout);
 
-        long sharedThresholdNs = timeout == 0L ? System.nanoTime() + CommonUtils.millisToNanos(timeout) : 0L;
+        if (cancel) {
+            for (GridWorker worker : workers) {
+                try {
+                    if (cancel)
+                        CommonUtils.cancel(worker);
+                }
+                catch (Throwable e) {
+                    if (log != null)
+                        log.warning("Failed to cancel grid worker [" + worker.name() + ']', e);
+                }
+            }
+        }
 
         for (GridWorker worker : workers) {
             try {
-                if (cancel)
-                    CommonUtils.cancel(worker);
-
                 CommonUtils.join(
                     worker,
-                    timeout > 0 ? CommonUtils.nanosToMillis(sharedThresholdNs - System.nanoTime()) : 0L,
+                    timeout < 0L ? -1L : CommonUtils.nanosToMillis(timeThresholdNs - System.nanoTime()),
                     log
                 );
             }
@@ -119,15 +127,5 @@ public class GridWorkerPool {
                     log.warning("Failed to stop grid worker [" + worker.name() + ']', e);
             }
         }
-    }
-
-    /**
-     * Waits for all workers to finish with unlimited waiting. Logs failures if {@link #log} is not {@code null}.
-     *
-     * @param cancel Flag to indicate whether workers should be cancelled before waiting for them to finish.
-     * @see #join(boolean, long)
-     */
-    public void join(boolean cancel) {
-        join(cancel, 0L);
     }
 }

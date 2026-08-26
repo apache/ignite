@@ -66,6 +66,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -452,10 +453,10 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.interrupt(sockReader);
 
         if (msgWorker != null)
-            U.join(msgWorker.runner(), log);
+            U.join(msgWorker.runner(), CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
 
-        U.join(sockWriter, log);
-        U.join(sockReader, log);
+        U.join(sockWriter, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
+        U.join(sockReader, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
 
         leaveLatch.countDown();
         joinLatch.countDown();

@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
@@ -529,7 +530,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             execSvc = null;
 
-            mgmtPool.join(cancel);
+            mgmtPool.join(cancel, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT);
 
             mgmtPool = null;
 

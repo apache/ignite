@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -619,14 +620,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             tmp = U.arrayList(readers);
         }
 
-        U.interrupt(tmp);
-        U.joinThreads(tmp, log);
-
-        U.interrupt(ipFinderCleaner);
-        U.join(ipFinderCleaner, log);
-
         U.cancel(msgWorker);
-        U.join(msgWorker, log);
+        U.interrupt(ipFinderCleaner);
+        U.interrupt(tmp);
+
+        U.joinThreads(tmp, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
+        U.join(ipFinderCleaner, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
+        U.join(msgWorker, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
 
         for (ClientMessageWorker clientWorker : clientMsgWorkers.values()) {
             if (clientWorker != null) {
@@ -1975,7 +1975,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         U.interrupt(tmp);
-        U.joinThreads(tmp, log);
+        U.joinThreads(tmp, 0L, log);
 
         U.cancel(msgWorker);
         U.join(msgWorker, log);
@@ -6446,7 +6446,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             U.close(srvrSock, log);
 
-            U.join(TcpServer.this, log);
+            U.join(this, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
         }
     }
 

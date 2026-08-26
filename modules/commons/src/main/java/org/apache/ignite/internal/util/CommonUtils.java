@@ -233,6 +233,12 @@ public abstract class CommonUtils {
     public static final int DFLT_PORT_RANGE = 100;
 
     /**
+     * Default timeout in milliseconds to wait for a sub-routines, runnables to finish on {@link IgniteKernal#stop(boolean)}
+     * or other stop or cancelation requests.
+     */
+    public static int DFLT_WAIT_TO_STOP_TIMOEUT = 60_000;
+
+    /**
      * Short date format pattern for log messages in "quiet" mode.
      * Only time is included since we don't expect "quiet" mode to be used
      * for longer runs.
@@ -2469,10 +2475,10 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Joins GridWorker with a timeout. Logs exceptable failures.
+     * Joins grid worker with a timeout. Logs exceptable failures.
      *
      * @param worker Worker to join.
-     * @param timeout Timeout to join in milliseconds. If < 1, ignored.
+     * @param timeout Timeout to join in milliseconds. If negative, ignored.
      * @param log The logger for exceptable failures.
      * @return {@code True} if {@code worker} has been successfully stopped, wasn't interrupted or timeouted. {@code False}
      *         if {@code worker} was interrupted or timeouted.
@@ -2487,14 +2493,14 @@ public abstract class CommonUtils {
             worker.join(timeout);
         }
         catch (InterruptedException ignore) {
-            warn(log, "Got interrupted while waiting for completion of GridWorker: " + worker);
+            warn(log, "Got interrupted while waiting for completion of grid worker: " + worker);
 
             Thread.currentThread().interrupt();
 
             return false;
         }
         catch (TimeoutException te) {
-            warn(log, "The timeout expired while waiting for completion of GridWorker: " + worker);
+            warn(log, "The timeout expired while waiting for completion of grid worker: " + worker);
 
             return false;
         }
@@ -2503,33 +2509,48 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Joins GridWorker with unlimited waiting. Logs exceptable failures.
+     * Joins grid worker with unlimited waiting. Logs exceptable failures.
      *
      * @param worker Worker to join.
      * @param log The logger for exceptable failures.
      * @return {@code True} if {@code worker} has been successfully stopped, wasn't interrupted or timeouted. {@code False}
      *         if {@code worker} was interrupted or timeouted.
-     * @see #join(GridWorker, long, IgniteLogger)
      */
     public static boolean join(@Nullable GridWorker worker, IgniteLogger log) {
-        return join(worker, 0L, log);
+        return join(worker, -1L, log);
     }
 
     /**
-     * Joins given collection of runnables with unlimited waiting.
+     * Joins given collection of runnables with a timoeut. Logs exceptable failures.
      *
      * @param ws Collection of workers to join.
+     * @param timeout Timeout to join in milliseconds. If negative, ignored.
      * @param log The logger to possible exceptions.
      * @return {@code true} if none of the worker have been interrupted,
      *      {@code false} if at least one was interrupted.
      */
-    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
+    public static boolean join(@Nullable Iterable<? extends GridWorker> ws, long timeout, IgniteLogger log) {
+        if (ws == null)
+            return true;
+
         boolean retval = true;
 
-        if (ws != null)
-            for (GridWorker w : ws)
-                if (!join(w, log))
+        if (timeout < 0) {
+            for (GridWorker w : ws) {
+                if (!join(w, -1L, log))
                     retval = false;
+            }
+        }
+        else {
+            long timeThresholdNs = System.nanoTime() + millisToNanos(timeout);
+
+            for (GridWorker w : ws) {
+                long timeout0 = Math.max(0L, nanosToMillis(timeThresholdNs - System.nanoTime()));
+
+                if (!join(w, timeout0, log))
+                    retval = false;
+            }
+        }
 
         return retval;
     }

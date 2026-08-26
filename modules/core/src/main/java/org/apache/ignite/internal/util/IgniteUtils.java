@@ -3154,9 +3154,9 @@ public abstract class IgniteUtils extends CommonUtils {
      * Waits for completion of a given thread with a timeout.
      *
      * @param t Thread to join.
-     * @param timeout Join timeout. If < 1, ignored.
+     * @param timeout Join timeout.
      * @param log Logger for logging errors.
-     * @return {@code true} if thread has finished, {@code false} otherwise.
+     * @return {@code True} if thread has finished ot if {@code t} is {@code null}. {@code False} otherwise.
      */
     public static boolean join(@Nullable Thread t, long timeout, IgniteLogger log) {
         assert log != null;
@@ -3165,7 +3165,7 @@ public abstract class IgniteUtils extends CommonUtils {
             return true;
 
         try {
-            t.join(timeout > 0 ? timeout : 0L);
+            t.join(timeout);
 
             return !t.isAlive();
         }
@@ -3183,27 +3183,43 @@ public abstract class IgniteUtils extends CommonUtils {
      *
      * @param t Thread to join.
      * @param log Logger for logging errors.
-     * @return {@code true} if thread has finished, {@code false} otherwise.
+     * @return {@code True} if thread has finished ot if {@code t} is {@code null}. {@code False} otherwise.
      */
     public static boolean join(@Nullable Thread t, IgniteLogger log) {
         return join(t, 0L, log);
     }
 
     /**
-     * Waits for completion of a given threads. If thread is {@code null} then
+     * Waits for completion of a given threads with a timoeut. If thread is {@code null} then
      * this method returns immediately returning {@code true}
      *
-     * @param workers Thread to join.
+     * @param threads Threads to join.
+     * @param timeout Operation timeout in milliseconds.
      * @param log Logger for logging errors.
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
-    public static boolean joinThreads(Iterable<? extends Thread> workers, @Nullable IgniteLogger log) {
+    public static boolean joinThreads(Iterable<? extends Thread> threads, long timeout, @Nullable IgniteLogger log) {
+        if (threads == null)
+            return true;
+
         boolean retval = true;
 
-        if (workers != null)
-            for (Thread worker : workers)
+        if (timeout < 0L) {
+            for (Thread worker : threads) {
                 if (!join(worker, log))
                     retval = false;
+            }
+        }
+        else {
+            long timeThresholsNs = System.nanoTime();
+
+            for (Thread worker : threads) {
+                long timeout0 = Math.max(0, nanosToMillis(timeThresholsNs - System.nanoTime()));
+
+                if (!join(worker, timeout0, log))
+                    retval = false;
+            }
+        }
 
         return retval;
     }
@@ -4968,48 +4984,22 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Joins worker with a timeout.
+     * Joins grid worker with unlimited waiting.
      *
-     * @param worker Worker.
-     * @param timeout Operation timeout. If 0, Ignored.
-     * @throws IgniteCheckedException in case of {@link InterruptedException} or {@link TimeoutException}.
-     */
-    public static void join(@Nullable GridWorker worker, long timeout) throws IgniteInterruptedCheckedException, IgniteCheckedException {
-        assert timeout >= 0L;
-
-        if (worker == null)
-            return;
-
-        try {
-            worker.join(timeout);
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException("Interrupted while waiting for worker " + worker, e);
-        }
-        catch (TimeoutException te) {
-            throw new IgniteCheckedException("Timeout occured while waiting for worker " + worker, te);
-        }
-    }
-
-    /**
-     * Joins worker with unlimited waiting.
-     *
-     * @param worker Worker.
-     * @throws IgniteCheckedException in case of {@link InterruptedException} or {@link TimeoutException}.
+     * @param worker Grid worker.
+     * @throws IgniteInterruptedCheckedException in case of {@link InterruptedException} or {@link TimeoutException}.
      */
     public static void join(@Nullable GridWorker worker) throws IgniteInterruptedCheckedException {
         if (worker == null)
             return;
 
         try {
-            worker.join(0L);
+            worker.join(-1L);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedCheckedException("Interrupted while waiting for worker " + worker, e);
+            throw new IgniteInterruptedCheckedException("Interrupted while waiting for grid worker " + worker, e);
         }
         catch (TimeoutException te) {
             assert false : "TimeoutException is not expected if not actual timeout is set.";
@@ -7248,21 +7238,27 @@ public abstract class IgniteUtils extends CommonUtils {
      * @param cancel Wheter should cancel workers.
      * @param log Logger.
      */
-    public static void awaitForWorkersStop(
-        Collection<GridWorker> workers,
-        boolean cancel,
-        @Nullable IgniteLogger log
-    ) {
+    public static void awaitForWorkersStop(Collection<GridWorker> workers, boolean cancel, @Nullable IgniteLogger log) {
+        if (cancel) {
+            for (GridWorker worker : workers) {
+                try {
+                    if (cancel)
+                        worker.cancel();
+                }
+                catch (Throwable e) {
+                    if (log != null)
+                        log.warning("Failed to cancel grid worker, worker=[" + worker + "], error: " + e.getMessage());
+                }
+            }
+        }
+
         for (GridWorker worker : workers) {
             try {
-                if (cancel)
-                    worker.cancel();
-
-                worker.join();
+                worker.join(-1L);
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 if (log != null)
-                    log.warning("Failed to cancel grid runnable [" + worker.toString() + "]: " + e.getMessage());
+                    log.warning("Failed to wait for grid worker to finish, worker=[" + worker + "], error: " + e.getMessage());
             }
         }
     }
