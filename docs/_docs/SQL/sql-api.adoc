@@ -129,8 +129,11 @@ include::{javaSourceFile}[tag=query-initiator-id,indent=0]
 Ignite exposes this value in the `INITIATOR_ID` column of the
 link:monitoring-metrics/system-views#sql_queries[SQL_QUERIES] and
 link:monitoring-metrics/system-views#sql_queries_history[SQL_QUERIES_HISTORY]
-system views. Server-side SQL diagnostics, such as long query warning messages,
-also include the `initiatorId` value.
+system views. Query history aggregates executions of the same query, so the
+`INITIATOR_ID` column in `SQL_QUERIES_HISTORY` contains the value from the latest
+execution and does not preserve initiator IDs from earlier executions.
+Server-side SQL diagnostics, such as long query warning messages, also include
+the `initiatorId` value.
 
 === Local Execution
 
