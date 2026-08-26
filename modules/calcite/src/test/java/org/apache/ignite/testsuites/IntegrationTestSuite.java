@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.DataTypes
 import org.apache.ignite.internal.processors.query.calcite.integration.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DistributedJoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DynamicParametersIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.EmptyStringIsNullIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ExpiredEntriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.FunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.HashSpoolIntegrationTest;
@@ -197,6 +198,7 @@ import org.junit.runners.Suite;
     SystemColumnsScanTest.class,
     BulkOperationDeadlockIntegrationTest.class,
     SelectForUpdateIntegrationTest.class,
+    EmptyStringIsNullIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

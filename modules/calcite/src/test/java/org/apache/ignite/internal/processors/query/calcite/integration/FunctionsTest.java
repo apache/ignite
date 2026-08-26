@@ -265,6 +265,12 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testEmptyStringIsNotNullByDefault() {
+        assertQuery("SELECT '', '' IS NULL, LTRIM('     ')").returns("", false, "").check();
+    }
+
+    /** */
+    @Test
     public void testRange() {
         assertQuery("SELECT * FROM table(system_range(1, 4))")
             .returns(1L)
@@ -429,6 +435,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT 'abcd' !~* null").returns(NULL_RESULT).check();
         assertQuery("SELECT null !~* null").returns(NULL_RESULT).check();
         assertThrows("SELECT 'abcd' ~ '[a-z'", IgniteSQLException.class, null);
+        assertQuery("SELECT CAST(NULL AS VARCHAR) ~ '[a-z'").returns(NULL_RESULT).check();
     }
 
     /** */

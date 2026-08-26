@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CASE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SEARCH;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_IF_EMPTY;
 
 /**
  * Translates {@link RexNode REX expressions} to {@link Expression linq4j expressions}.
@@ -104,6 +105,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
 
     /** */
     private final Function1<String, InputGetter> correlates;
+
+    /** */
+    private final boolean emptyStrIsNull;
 
     /**
      * Map from RexLiteral's variable name to its literal, which is often a ({@link ConstantExpression})) It is used in
@@ -142,7 +146,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         BlockBuilder list,
         RexBuilder builder,
         SqlConformance conformance,
-        Function1<String, InputGetter> correlates) {
+        Function1<String, InputGetter> correlates,
+        boolean emptyStrIsNull
+    ) {
         this.program = program; // may be null
         this.typeFactory = Objects.requireNonNull(typeFactory);
         this.conformance = Objects.requireNonNull(conformance);
@@ -151,6 +157,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         this.list = Objects.requireNonNull(list);
         this.builder = Objects.requireNonNull(builder);
         this.correlates = correlates; // may be null
+        this.emptyStrIsNull = emptyStrIsNull;
     }
 
     /**
@@ -164,12 +171,14 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
      * @param root Root expression
      * @param inputGetter Generates expressions for inputs
      * @param correlates Provider of references to the values of correlated variables
+     * @param emptyStringIsNull Whether empty string is represented as {@code null}
      * @return Sequence of expressions, optional condition
      */
     public static List<Expression> translateProjects(RexProgram program,
         JavaTypeFactory typeFactory, SqlConformance conformance,
         BlockBuilder list, PhysType outputPhysType, Expression root,
-        InputGetter inputGetter, Function1<String, InputGetter> correlates) {
+        InputGetter inputGetter, Function1<String, InputGetter> correlates,
+        boolean emptyStringIsNull) {
         List<Type> storageTypes = null;
         if (outputPhysType != null) {
             final RelDataType rowType = outputPhysType.getRowType();
@@ -178,7 +187,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 storageTypes.add(outputPhysType.getJavaFieldType(i));
         }
         return new RexToLixTranslator(program, typeFactory, root, inputGetter,
-            list, new IgniteRexBuilder(typeFactory), conformance, null)
+            list, new IgniteRexBuilder(typeFactory, emptyStringIsNull), conformance, null, emptyStringIsNull)
             .setCorrelates(correlates)
             .translateList(program.getProjectList(), storageTypes);
     }
@@ -206,7 +215,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     Expression translate(RexNode expr, RexImpTable.NullAs nullAs,
         Type storageType) {
         currentStorageType = storageType;
-        final Result result = expr.accept(this);
+        final Result result = normalizeStringResult(expr, expr.accept(this));
         final Expression translated =
             ConverterUtils.toInternal(result.valueVariable, storageType);
         assert translated != null;
@@ -831,7 +840,39 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
      * @return Whether expression is nullable
      */
     public boolean isNullable(RexNode e) {
-        return e.getType().isNullable();
+        return (emptyStrIsNull && SqlTypeUtil.isCharacter(e.getType())) || e.getType().isNullable();
+    }
+
+    /** Returns whether empty string is represented as {@code null}. */
+    boolean emptyStringIsNull() {
+        return emptyStrIsNull;
+    }
+
+    /** Converts an empty result of a string expression to {@code null}. */
+    private Result normalizeStringResult(RexNode node, Result result) {
+        if (!emptyStrIsNull || isNullIfEmpty(node) || !SqlTypeUtil.isCharacter(node.getType())
+            || result.valueVariable.getType() != String.class) {
+            return result;
+        }
+
+        ParameterExpression valVariable = Expressions.parameter(
+            String.class, list.newName(result.valueVariable.name + "_null_if_empty"));
+        list.add(Expressions.declare(Modifier.FINAL, valVariable,
+            Expressions.call(IgniteMethod.NULL_IF_EMPTY.method(), result.valueVariable)));
+
+        ParameterExpression isNullVariable = Expressions.parameter(
+            Boolean.TYPE, list.newName(result.isNullVariable.name + "_null_if_empty"));
+        list.add(Expressions.declare(Modifier.FINAL, isNullVariable, checkNull(valVariable)));
+
+        return new Result(isNullVariable, valVariable);
+    }
+
+    /** Returns whether the node explicitly converts an empty string to {@code null}. */
+    private boolean isNullIfEmpty(RexNode node) {
+        while (node instanceof RexLocalRef)
+            node = deref(node);
+
+        return node instanceof RexCall && ((RexCall)node).getOperator() == NULL_IF_EMPTY;
     }
 
     /** */
@@ -840,7 +881,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             return this;
 
         return new RexToLixTranslator(program, typeFactory, root, inputGetter,
-            block, builder, conformance, correlates);
+            block, builder, conformance, correlates, emptyStrIsNull);
     }
 
     /** */
@@ -850,7 +891,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
             return this;
 
         return new RexToLixTranslator(program, typeFactory, root, inputGetter, list,
-            builder, conformance, correlates);
+            builder, conformance, correlates, emptyStrIsNull);
     }
 
     /** */
@@ -1050,7 +1091,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final List<Result> operandResults = new ArrayList<>();
         for (int i = 0; i < operandList.size(); i++) {
             final Result operandResult =
-                implementCallOperand(operandList.get(i), storageTypes.get(i), this);
+                implementCallOperand(operandList.get(i), storageTypes.get(i), this, operator != NULL_IF_EMPTY);
             operandResults.add(operandResult);
         }
         callOperandResultMap.put(call, operandResults);
@@ -1062,9 +1103,19 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     /** */
     private static Result implementCallOperand(final RexNode operand,
         final Type storageType, final RexToLixTranslator translator) {
+        return implementCallOperand(operand, storageType, translator, true);
+    }
+
+    /** */
+    private static Result implementCallOperand(final RexNode operand, final Type storageType,
+        final RexToLixTranslator translator, boolean normalizeStringResult) {
         final Type originalStorageType = translator.currentStorageType;
         translator.currentStorageType = storageType;
         Result operandResult = operand.accept(translator);
+
+        if (normalizeStringResult)
+            operandResult = translator.normalizeStringResult(operand, operandResult);
+
         if (storageType != null)
             operandResult = translator.toInnerStorageType(operandResult, storageType);
         translator.currentStorageType = originalStorageType;

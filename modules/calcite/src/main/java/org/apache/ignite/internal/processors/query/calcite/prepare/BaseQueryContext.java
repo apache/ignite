@@ -80,6 +80,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
     private static final RexBuilder REX_BUILDER;
 
     /** */
+    private static final RexBuilder EMPTY_STR_IS_NULL_REX_BUILDER;
+
+    /** */
     public static final RelOptCluster CLUSTER;
 
     /** */
@@ -117,6 +120,7 @@ public final class BaseQueryContext extends AbstractQueryContext {
         TYPE_FACTORY = new IgniteTypeFactory(typeSys);
 
         REX_BUILDER = new IgniteRexBuilder(TYPE_FACTORY);
+        EMPTY_STR_IS_NULL_REX_BUILDER = new IgniteRexBuilder(TYPE_FACTORY, true);
 
         CLUSTER = RelOptCluster.create(EMPTY_PLANNER, REX_BUILDER);
 
@@ -204,7 +208,9 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         typeFactory = TYPE_FACTORY;
 
-        rexBuilder = REX_BUILDER;
+        IgniteSqlSemantics sqlSem = unwrap(IgniteSqlSemantics.class);
+
+        rexBuilder = IgniteSqlSemantics.emptyStringIsNull(sqlSem) ? EMPTY_STR_IS_NULL_REX_BUILDER : REX_BUILDER;
     }
 
     /**

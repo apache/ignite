@@ -51,6 +51,9 @@ public class IgniteSqlFunctions {
     /** */
     private static final int DFLT_NUM_PRECISION = IgniteTypeSystem.INSTANCE.getDefaultPrecision(SqlTypeName.DECIMAL);
 
+    /** */
+    private static final SqlFunctions.PosixRegexFunction POSIX_REGEX = new SqlFunctions.PosixRegexFunction();
+
     /**
      * Default constructor.
      */
@@ -341,5 +344,47 @@ public class IgniteSqlFunctions {
             return Commons.compareBinary(a, b) != 0;
 
         return SqlFunctions.neAny(a, b);
+    }
+
+    /** Converts an empty string value to {@code null}. */
+    public static @Nullable String nullIfEmpty(@Nullable String s) {
+        return s == null || s.isEmpty() ? null : s;
+    }
+
+    /** Case-sensitive POSIX regular expression match. */
+    public static @Nullable Boolean posixRegexCaseSensitive(@Nullable String s, @Nullable String regex) {
+        return posixRegex(s, regex, true, false);
+    }
+
+    /** Case-insensitive POSIX regular expression match. */
+    public static @Nullable Boolean posixRegexCaseInsensitive(@Nullable String s, @Nullable String regex) {
+        return posixRegex(s, regex, false, false);
+    }
+
+    /** Negated case-sensitive POSIX regular expression match. */
+    public static @Nullable Boolean negatedPosixRegexCaseSensitive(@Nullable String s, @Nullable String regex) {
+        return posixRegex(s, regex, true, true);
+    }
+
+    /** Negated case-insensitive POSIX regular expression match. */
+    public static @Nullable Boolean negatedPosixRegexCaseInsensitive(@Nullable String s, @Nullable String regex) {
+        return posixRegex(s, regex, false, true);
+    }
+
+    /**
+     * POSIX regular expression match.
+     *
+     * <p>The pattern is evaluated even when the source is {@code null}. This preserves an invalid-pattern error while
+     * the result of a valid match with a null operand remains {@code null}.</p>
+     */
+    private static @Nullable Boolean posixRegex(@Nullable String s, @Nullable String regex, boolean caseSensitive, boolean negate) {
+        if (regex == null)
+            return null;
+
+        boolean matches = caseSensitive
+            ? POSIX_REGEX.posixRegexSensitive(s == null ? "" : s, regex)
+            : POSIX_REGEX.posixRegexInsensitive(s == null ? "" : s, regex);
+
+        return s == null ? null : matches != negate;
     }
 }

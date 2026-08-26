@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class TableFunctionScan<Row> implements Iterable<Row> {
@@ -37,14 +40,29 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     private final RowFactory<Row> rowFactory;
 
     /** */
+    private final @Nullable BitSet strCols;
+
+    /** */
     public TableFunctionScan(
         RelDataType rowType,
         Supplier<Iterable<?>> dataSupplier,
-        RowFactory<Row> rowFactory
+        RowFactory<Row> rowFactory,
+        boolean emptyStringIsNull
     ) {
         this.rowType = rowType;
         this.dataSupplier = dataSupplier;
         this.rowFactory = rowFactory;
+
+        if (emptyStringIsNull) {
+            strCols = new BitSet(rowType.getFieldCount());
+
+            for (int i = 0; i < rowType.getFieldCount(); i++) {
+                if (SqlTypeUtil.isCharacter(rowType.getFieldList().get(i).getType()))
+                    strCols.set(i);
+            }
+        }
+        else
+            strCols = null;
     }
 
     /** {@inheritDoc} */
@@ -66,6 +84,27 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
 
-        return rowFactory.create(rowArr);
+        return rowFactory.create(nullIfEmpty(rowArr));
+    }
+
+    /** Converts empty strings returned for string columns to {@code null}. */
+    private Object[] nullIfEmpty(Object[] row) {
+        if (strCols == null)
+            return row;
+
+        Object[] res = row;
+
+        for (int i = strCols.nextSetBit(0); i >= 0; i = strCols.nextSetBit(i + 1)) {
+            Object val = row[i];
+
+            if (val instanceof String && ((String)val).isEmpty()) {
+                if (res == row)
+                    res = row.clone();
+
+                res[i] = null;
+            }
+        }
+
+        return res;
     }
 }

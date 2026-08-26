@@ -103,7 +103,7 @@ public class RexExecutorImpl implements RexExecutor {
         final RexProgram program = programBuilder.getProgram();
         final List<Expression> expressions =
             RexToLixTranslator.translateProjects(program, javaTypeFactory,
-                conformance, blockBuilder, null, root_, getter, null);
+                conformance, blockBuilder, null, root_, getter, null, false);
         blockBuilder.add(
             Expressions.return_(null,
                 Expressions.newArrayInit(Object[].class, expressions)));

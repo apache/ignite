@@ -19,21 +19,40 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.util.NlsString;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_IF_EMPTY;
+
 /** */
 public class IgniteRexBuilder extends RexBuilder {
     /** */
+    private final boolean emptyStrIsNull;
+
+    /** */
     public IgniteRexBuilder(RelDataTypeFactory typeFactory) {
+        this(typeFactory, false);
+    }
+
+    /** */
+    public IgniteRexBuilder(RelDataTypeFactory typeFactory, boolean emptyStrIsNull) {
         super(typeFactory);
+
+        this.emptyStrIsNull = emptyStrIsNull;
     }
 
     /** {@inheritDoc} */
@@ -55,5 +74,38 @@ public class IgniteRexBuilder extends RexBuilder {
         }
 
         return super.makeLiteral(o, type, typeName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RexNode makeCall(SqlParserPos pos, RelDataType type, SqlOperator op, List<RexNode> exprs) {
+        return nullIfEmptyResult(pos, super.makeCall(pos, type, op, exprs), op);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RexNode makeCall(SqlParserPos pos, SqlOperator op, List<? extends RexNode> exprs) {
+        return nullIfEmptyResult(pos, super.makeCall(pos, op, exprs), op);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RexLiteral makeCharLiteral(NlsString str) {
+        // VALUES conversion can retain the original character literal after validation.
+        if (emptyStrIsNull && str.getValue().isEmpty())
+            return makeNullLiteral(SqlUtil.createNlsStringType(getTypeFactory(), str));
+
+        return super.makeCharLiteral(str);
+    }
+
+    /** Wraps a string expression so an empty result is represented as {@code null}. */
+    private RexNode nullIfEmptyResult(SqlParserPos pos, RexNode call, SqlOperator op) {
+        if (!emptyStrIsNull || op == NULL_IF_EMPTY || op.getKind() == SqlKind.AS || op.getKind() == SqlKind.CAST
+            || op.getKind() == SqlKind.DESCENDING || op.getKind() == SqlKind.NULLS_FIRST
+            || op.getKind() == SqlKind.NULLS_LAST
+            || !SqlTypeUtil.isCharacter(call.getType())) {
+            return call;
+        }
+
+        RelDataType type = getTypeFactory().createTypeWithNullability(call.getType(), true);
+
+        return super.makeCall(pos, type, NULL_IF_EMPTY, List.of(call));
     }
 }

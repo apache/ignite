@@ -266,6 +266,7 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.fun.Ignite
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_IF_EMPTY;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.QUERY_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
@@ -324,6 +325,7 @@ public class RexImpTable {
         defineMethod(SOUNDEX, BuiltInMethod.SOUNDEX.method, NullPolicy.STRICT);
         defineMethod(DIFFERENCE, BuiltInMethod.DIFFERENCE.method, NullPolicy.STRICT);
         defineMethod(REVERSE, BuiltInMethod.REVERSE.method, NullPolicy.STRICT);
+        defineMethod(NULL_IF_EMPTY, IgniteMethod.NULL_IF_EMPTY.method(), NullPolicy.NONE);
 
         map.put(TRIM, new TrimImplementor());
 
@@ -455,16 +457,21 @@ public class RexImpTable {
             BuiltInMethod.SIMILAR_ESCAPE.method);
 
         // POSIX REGEX
-        ReflectiveImplementor insensitiveImplementor =
-            defineReflective(POSIX_REGEX_CASE_INSENSITIVE,
-                BuiltInMethod.POSIX_REGEX_INSENSITIVE.method);
-        ReflectiveImplementor sensitiveImplementor =
-            defineReflective(POSIX_REGEX_CASE_SENSITIVE,
-                BuiltInMethod.POSIX_REGEX_SENSITIVE.method);
+        AbstractRexCallImplementor insensitiveImplementor =
+            new ReflectiveImplementor(ImmutableList.of(BuiltInMethod.POSIX_REGEX_INSENSITIVE.method));
+        AbstractRexCallImplementor sensitiveImplementor =
+            new ReflectiveImplementor(ImmutableList.of(BuiltInMethod.POSIX_REGEX_SENSITIVE.method));
+
+        map.put(POSIX_REGEX_CASE_INSENSITIVE, new EmptyStringSemanticsImplementor(insensitiveImplementor,
+            new MethodImplementor(IgniteMethod.POSIX_REGEX_CASE_INSENSITIVE.method(), NullPolicy.NONE, false)));
+        map.put(POSIX_REGEX_CASE_SENSITIVE, new EmptyStringSemanticsImplementor(sensitiveImplementor,
+            new MethodImplementor(IgniteMethod.POSIX_REGEX_CASE_SENSITIVE.method(), NullPolicy.NONE, false)));
         map.put(NEGATED_POSIX_REGEX_CASE_INSENSITIVE,
-            NotImplementor.of(insensitiveImplementor));
+            new EmptyStringSemanticsImplementor(NotImplementor.of(insensitiveImplementor),
+                new MethodImplementor(IgniteMethod.NEGATED_POSIX_REGEX_CASE_INSENSITIVE.method(), NullPolicy.NONE, false)));
         map.put(NEGATED_POSIX_REGEX_CASE_SENSITIVE,
-            NotImplementor.of(sensitiveImplementor));
+            new EmptyStringSemanticsImplementor(NotImplementor.of(sensitiveImplementor),
+                new MethodImplementor(IgniteMethod.NEGATED_POSIX_REGEX_CASE_SENSITIVE.method(), NullPolicy.NONE, false)));
         defineReflective(REGEXP_REPLACE_3,
             BuiltInMethod.REGEXP_REPLACE3.method,
             BuiltInMethod.REGEXP_REPLACE4.method,
@@ -2588,4 +2595,31 @@ public class RexImpTable {
             }
         };
     }
+
+    /** Selects an expression implementation according to the empty string SQL semantics. */
+    private static class EmptyStringSemanticsImplementor implements RexCallImplementor {
+        /**  */
+        private final RexCallImplementor dfltImplementor;
+
+        /** */
+        private final RexCallImplementor emptyStrIsNullImplementor;
+
+        /** */
+        private EmptyStringSemanticsImplementor(RexCallImplementor dfltImplementor, RexCallImplementor emptyStrIsNullImplementor) {
+            this.dfltImplementor = dfltImplementor;
+            this.emptyStrIsNullImplementor = emptyStrIsNullImplementor;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RexToLixTranslator.Result implement(
+            RexToLixTranslator translator,
+            RexCall call,
+            List<RexToLixTranslator.Result> arguments
+        ) {
+            RexCallImplementor implementor = translator.emptyStringIsNull() ? emptyStrIsNullImplementor : dfltImplementor;
+
+            return implementor.implement(translator, call, arguments);
+        }
+    }
+
 }
