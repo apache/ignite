@@ -190,11 +190,12 @@ public class JavaThinClient {
         cache.put(101, "101");
 
         cache.removeAll(data.keySet());
-        assert cache.size() == 1;
+        long cacheSize = cache.sizeLong();
+        assert cacheSize == 1;
         assert "101".equals(cache.get(101));
 
         cache.removeAll();
-        assert 0 == cache.size();
+        assert cache.sizeLong() == 0;
         // end::key-value-operations[]
         System.out.println("done");
     }
@@ -495,6 +496,9 @@ public class JavaThinClient {
 
         IgniteClientFuture<String> getFut = cache.getAsync(1);
         getFut.thenAccept(val -> System.out.println(val)); // Non-blocking continuation.
+
+        IgniteClientFuture<Long> sizeFut = cache.sizeLongAsync();
+        sizeFut.thenAccept(size -> System.out.println("Cache size: " + size));
         //end::async-api[]
     }
 
