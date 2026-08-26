@@ -37,3 +37,13 @@ tab:Java[]
 include::{javaCodeDir}/Snapshots.java[tags=config, indent=0]
 ----
 --
+
+If persistence data is distributed across several storage directories with
+`DataStorageConfiguration.extraStoragePaths`, you can also configure
+`DataStorageConfiguration.extraSnapshotPaths`. Each extra snapshot path is used
+for snapshot files that correspond to the matching extra storage path.
+
+The `extraSnapshotPaths` array must have the same number of entries as
+`extraStoragePaths`, and all extra snapshot paths must be unique. If an absolute
+`IgniteConfiguration.snapshotPath` is configured without `extraSnapshotPaths`,
+Ignite stores snapshot files only under the configured snapshot path.
