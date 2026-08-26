@@ -116,6 +116,22 @@ include::code-snippets/cpp/src/sql.cpp[tag=sql-fields-query,indent=0]
 
 `SqlFieldsQuery` returns a cursor that iterates through the results that match the SQL query.
 
+=== Query Initiator ID
+
+To correlate SQL queries with server-side diagnostics, set a query initiator ID
+with `SqlFieldsQuery.setQueryInitiatorId(...)` before executing the query.
+
+[source,java]
+----
+include::{javaSourceFile}[tag=query-initiator-id,indent=0]
+----
+
+Ignite exposes this value in the `INITIATOR_ID` column of the
+link:monitoring-metrics/system-views#sql_queries[SQL_QUERIES] and
+link:monitoring-metrics/system-views#sql_queries_history[SQL_QUERIES_HISTORY]
+system views. Server-side SQL diagnostics, such as long query warning messages,
+also include the `initiatorId` value.
+
 === Local Execution
 
 To force local execution of a query, use `SqlFieldsQuery.setLocal(true)`. In this case, the query is executed against the data stored on the node where the query is run. It means that the results of the query are almost always incomplete. Use the local mode only if you are confident you understand this limitation.
