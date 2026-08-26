@@ -105,7 +105,6 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
-import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.TOP_VER_BASE_TIME;
 
 /**
  * Historical WAL rebalance base test.
@@ -116,6 +115,16 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
+
+    /**
+     * Minimal delay in seconds to wait before starting a new cluster incarnation so that its
+     * cache version offset (derived from the grid start time with 1-second precision, see
+     * GridCacheVersionManager#onLocalJoin) exceeds the offset of the previous incarnation,
+     * keeping cache versions monotonic across incarnations. The new incarnation writes at a
+     * lower topology version (2) than the previous one reached (4 or 3), so the offset must
+     * exceed the previous one by at least 3 seconds; 5 is a safe margin.
+     */
+    private static final int TOP_VER_OFFSET_WAIT_SECS = 5;
 
     /** Block message predicate to set to Communication SPI in node configuration. */
     private IgniteBiPredicate<ClusterNode, Message> blockMsgPred;
@@ -323,17 +332,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        // GridCacheVersionManager adds an offset derived from the cluster grid start time with
-        // 1-second precision to the topology version of every generated cache version
-        // (see GridCacheVersionManager#onLocalJoin). If the new cluster incarnation starts too
-        // soon after the previous one, versions it generates at its early topologies can be lower
-        // than versions of entries restored from the previous incarnation's persistent storage,
-        // and the first write to such entries fails with "Invalid version for inner update".
-        // The previous incarnation reached topVer 4 (4 nodes joined) and the new one will write
-        // at topVer 2, so its offset must exceed the previous one by at least 3 seconds
-        // (plus 1 second of margin).
-        GridTestUtils.waitForCondition(() ->
-            (System.currentTimeMillis() - TOP_VER_BASE_TIME) / 1000 - (prevGridStart - TOP_VER_BASE_TIME) / 1000 >= 4,
+        // Wait for the new incarnation to satisfy the delay required for cache version
+        // monotonicity across incarnations (see TOP_VER_OFFSET_WAIT_SECS).
+        GridTestUtils.waitForCondition(() -> (System.currentTimeMillis() - prevGridStart) / 1000 >= TOP_VER_OFFSET_WAIT_SECS,
             getTestTimeout());
 
         IgniteEx ig0 = startGrids(2);
@@ -433,8 +434,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        GridTestUtils.waitForCondition(() ->
-            (System.currentTimeMillis() - TOP_VER_BASE_TIME) / 1000 - (prevGridStart - TOP_VER_BASE_TIME) / 1000 >= 4,
+        // Wait for the new incarnation to satisfy the delay required for cache version
+        // monotonicity across incarnations (see TOP_VER_OFFSET_WAIT_SECS).
+        GridTestUtils.waitForCondition(() -> (System.currentTimeMillis() - prevGridStart) / 1000 >= TOP_VER_OFFSET_WAIT_SECS,
             getTestTimeout());
 
         // Rewrite data with globally disabled WAL.
