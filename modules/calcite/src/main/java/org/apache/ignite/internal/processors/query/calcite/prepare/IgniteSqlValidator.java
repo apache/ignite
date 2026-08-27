@@ -115,7 +115,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     private final RelDataType nullType;
 
     /** */
-    private final @Nullable IgniteSqlPaginationPolicy pagPlc;
+    private final @Nullable IgniteSqlSemantics sqlSem;
 
     /**
      * Creates a validator.
@@ -125,7 +125,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param typeFactory Type factory.
      * @param cfg Config.
      * @param parameters Dynamic parameters.
-     * @param pagPlc Pagination policy.
+     * @param sqlSem SQL semantics.
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
@@ -133,12 +133,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         IgniteTypeFactory typeFactory,
         SqlValidator.Config cfg,
         @Nullable Object[] parameters,
-        @Nullable IgniteSqlPaginationPolicy pagPlc
+        @Nullable IgniteSqlSemantics sqlSem
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
-        this.pagPlc = pagPlc;
+        this.sqlSem = sqlSem;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
@@ -390,7 +390,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (val.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + nodeName);
 
-            IgniteSqlPaginationPolicy.convertToLongExact(val, pagPlc);
+            IgniteSqlSemantics.convertPaginationValueToLong(val, sqlSem);
         }
         catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
@@ -620,6 +620,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case LAST_VALUE:
             case NTILE:
             case NTH_VALUE:
+            case OTHER_FUNCTION:
                 return;
             default:
                 throw newValidationError(call,

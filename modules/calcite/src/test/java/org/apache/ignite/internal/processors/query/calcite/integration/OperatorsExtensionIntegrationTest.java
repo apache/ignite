@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlNodeRewriter;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlPaginationPolicy;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -98,7 +98,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                                     .withSqlNodeRewriter(new SqlRewriter()))
                             .context(Contexts.chain(
                                 CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
-                                Contexts.of((IgniteSqlPaginationPolicy)() -> RoundingMode.DOWN),
+                                Contexts.of(IgniteSqlSemantics.builder()
+                                    .paginationRoundingMode(RoundingMode.DOWN)
+                                    .build()),
                                 Contexts.of(new AccumulatorFactoryProviderImpl())))
                             .build();
 
@@ -380,7 +382,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             super(
                 "TEST_SUM",
                 null,
-                SqlKind.SUM,
+                SqlKind.OTHER_FUNCTION,
                 ReturnTypes.AGG_SUM,
                 null,
                 OperandTypes.NUMERIC,
@@ -399,7 +401,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             super(
                 "TEST_COUNT_PAIRS",
                 null,
-                SqlKind.SUM,
+                SqlKind.OTHER_FUNCTION,
                 opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.BIGINT),
                 null,
                 OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),

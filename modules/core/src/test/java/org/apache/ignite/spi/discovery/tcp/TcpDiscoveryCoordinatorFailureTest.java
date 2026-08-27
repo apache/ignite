@@ -286,22 +286,6 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            byte[] data,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
         @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
@@ -314,22 +298,6 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             }
 
             super.writeMessage(ses, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
-            int res,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(msg, sock, res, timeout);
         }
 
         /**
