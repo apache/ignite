@@ -210,7 +210,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         Map<UUID, Collection<UUID>> txNodes,
         GridDistributedTxMapping mapping,
         @Nullable Collection<IgniteTxEntry> reads,
-        @Nullable Collection<IgniteTxEntry> writes,
+        Collection<IgniteTxEntry> writes,
         long timeout,
         boolean last,
         boolean firstClientReq,
