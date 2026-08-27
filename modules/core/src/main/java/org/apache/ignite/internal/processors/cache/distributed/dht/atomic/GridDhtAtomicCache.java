@@ -1860,9 +1860,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 deleted = updDhtRes.deleted();
                                 expiry = updDhtRes.expiryPolicy();
                             }
-                            else
-                                // Should remap all keys.
-                                res.remapTopologyVersion(top.lastTopologyChangeVersion());
+                            else {
+                                // Should remap all keys. If current node is stopping, suppose.
+                                res.remapTopologyVersion(ctx.kernalContext().isStopping() ? AffinityTopologyVersion.NONE
+                                    : top.lastTopologyChangeVersion());
+                            }
                         }
                         finally {
                             top.readUnlock();
@@ -1932,7 +1934,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Caught invalid partition exception for cache entry (will remap update request): " + req);
 
-            res.remapTopologyVersion(ctx.topology().lastTopologyChangeVersion());
+            // If current node is stopping, send 'unknown', unawared topology.
+            res.remapTopologyVersion(ctx.kernalContext().isStopping() ? AffinityTopologyVersion.NONE
+                : ctx.topology().lastTopologyChangeVersion());
         }
         catch (Throwable e) {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is

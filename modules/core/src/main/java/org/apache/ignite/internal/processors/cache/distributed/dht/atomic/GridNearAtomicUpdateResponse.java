@@ -62,7 +62,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
     /** */
     @Order(3)
-    AffinityTopologyVersion remapTopVer;
+    @Nullable AffinityTopologyVersion remapTopVer;
 
     /** Data for near cache update. */
     @Order(4)
@@ -206,7 +206,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
     /**
      * @return Topology version if update should be remapped.
      */
-    @Nullable public AffinityTopologyVersion remapTopologyVersion() {
+    public @Nullable AffinityTopologyVersion remapTopologyVersion() {
         return remapTopVer;
     }
 
