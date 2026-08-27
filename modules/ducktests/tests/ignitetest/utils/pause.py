@@ -228,6 +228,9 @@ class DemoPause:
         :param started_at: Monotonic timestamp the test itself started at, which is both what
                the banner counts from and what the runner budget is spent from. Defaults to
                now, which is only right when the first breakpoint is the start of the test.
+               Anchored at construction (setup included), which is deliberately conservative:
+               ducktape's kill timer is actually reset by the last client event before the
+               pause, which fires after setup, so the real window is longer.
         :param runner_timeout_sec: Ducktape's ``--test-runner-timeout`` in seconds, None when
                unknown, in which case no breakpoint is cut short by it.
         """
@@ -328,8 +331,12 @@ class DemoPause:
         allowed. Ducktape's runner kills a test client it has received no event from for
         ``--test-runner-timeout`` and takes the whole session down with it, and a paused test
         sends no events - so a breakpoint has to give up while the runner is still waiting.
-        The budget is spent from the start of the test rather than from the breakpoint, hence
-        a long setup, or a long earlier pause, leaves less of it for this one.
+        The budget is spent from the construction of the test (setup included) rather than
+        from the breakpoint, hence a long setup, or a long earlier pause, leaves less of it
+        for this one. This is deliberately conservative: ducktape resets its kill timer on
+        every client event, the last one before a pause being ``"Running..."`` (after setup),
+        so the real window is longer by however long setup took - but measuring from
+        construction needs no hook into the runner client and never overestimates the budget.
         """
         if self.runner_timeout_sec is None:
             return self.timeout_sec

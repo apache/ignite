@@ -71,7 +71,11 @@ class IgniteTest(Test):
 
         # Stamped here rather than at the first breakpoint: it is what demo breakpoints count
         # their elapsed time from, and what they measure the runner budget against, and both
-        # of those mean the start of the test - setup included.
+        # of those mean the start of the test - setup included. This is deliberately
+        # conservative: ducktape's kill timer is actually reset by the last client event
+        # before a pause, which fires after setup, so the real window is longer - but
+        # anchoring at construction needs no hook into the runner client and never
+        # overestimates the budget.
         self.__started_at = monotonic()
 
     def pause(self, name, *describers):
