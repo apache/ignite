@@ -81,8 +81,8 @@ def check_sweeping_a_directory_that_is_not_there(tmp_path):
 def check_sweep_clears_what_an_interrupted_write_left(tmp_path):
     """
     Check that the temporary name a write goes through is swept too, whichever file it
-    belonged to. Every control file is matched by prefix for this reason: one matched exactly
-    would leave its ".tmp" in a directory that nothing else ever visits.
+    belonged to: a sweep is the only thing that ever visits the directory without knowing
+    what it expects to find, so it must also be the thing that cleans such a leftover.
     """
     control = ControlDir(tmp_path)
 
@@ -92,6 +92,23 @@ def check_sweep_clears_what_an_interrupted_write_left(tmp_path):
     control.sweep(status=True)
 
     assert os.listdir(control.path) == []
+
+
+def check_sweep_spares_what_the_protocol_cannot_create(tmp_path):
+    """
+    Check that a sweep removes only names the protocol itself can leave: matching a fixed
+    name by prefix would take a foreign file that merely starts like one of its own.
+    """
+    control = ControlDir(tmp_path)
+
+    foreign = ["abort-note.txt", "paused.txt.bak", "resumed.json", "stray.tmp"]
+
+    for name in foreign:
+        control.write(name, "")
+
+    control.sweep(status=True)
+
+    assert sorted(os.listdir(control.path)) == sorted(foreign)
 
 
 def check_a_resume_file_lands_without_a_temporary(tmp_path):

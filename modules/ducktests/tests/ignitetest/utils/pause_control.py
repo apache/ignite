@@ -162,14 +162,18 @@ class ControlDir:
         if not os.path.isdir(self._path):
             return
 
-        # Matched by prefix rather than by name: an interrupted write leaves the temporary
-        # ``<name>.tmp`` it goes through behind, and a sweep is the only thing that ever
-        # visits this directory without knowing what it expects to find.
+        # A write lands through the temporary ``<name>.tmp``: an interrupted one leaves it
+        # behind, and this sweep is the only thing that ever visits the directory without
+        # knowing what it expects to find, so it strips the suffix before the match. Only
+        # ``continue-`` stays a prefix, for its open ended sequence number; every other name
+        # matches exactly, so a file the protocol could never create is left alone.
         for name in os.listdir(self._path):
-            stale = name.startswith(CONTINUE_PREFIX) or name.startswith(ABORT)
+            base = name[:-len(".tmp")] if name.endswith(".tmp") else name
+
+            stale = base.startswith(CONTINUE_PREFIX) or base == ABORT
 
             if status:
-                stale = stale or name.startswith(STATUS_TXT) or name.startswith(STATUS_JSON)
+                stale = stale or base == STATUS_TXT or base == STATUS_JSON
 
             if stale:
                 self.remove(name)
@@ -214,7 +218,7 @@ class ControlDir:
 
     def await_any(self, names, timeout_sec, tick=None, tick_sec=POLL_SEC):
         """
-        Polls until one of the named files appears, and takes it.
+        Polls until one of the named files appears, and consumes it.
 
         :param names: Names to watch, in priority order - the first one present wins when
                several land between two polls.
