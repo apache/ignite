@@ -337,7 +337,7 @@ class NetworkGroupManager:
             constraints = self._parse_qdisc_constraints(qdisc_lines)
 
             targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
-            node_ip = socket.gethostbyname(node.account.externally_routable_ip)
+            node_ip = node.account.externally_routable_ip
 
             partition_str = self._format_partition_drops(
                 self._parse_partition_drops(iptables_lines))

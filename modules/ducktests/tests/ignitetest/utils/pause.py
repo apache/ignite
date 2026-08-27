@@ -177,8 +177,7 @@ def _node_addr(node):
              carries - under ducker the two are the same string.
 
     Deliberately not resolved to an IP: a name that does not resolve costs a DNS round trip
-    per node, and a breakpoint that takes seconds to print its banner defeats the point. The
-    NETWORK section resolves addresses where they actually matter.
+    per node, and a breakpoint that takes seconds to print its banner defeats the point.
     """
     addr = node.account.externally_routable_ip
 
