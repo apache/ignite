@@ -25,6 +25,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -285,6 +286,16 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
             publicSchema,
             nodeRowCount("IgniteHashJoin", approximatelyEqual((int)((DATE_DIM_SIZE + CATALOG_RETURNS_SIZE)
                 * (1.0 - (EQUALS_SELECTIVITY * COMPARISON_SELECTIVITY))))));
+    }
+
+    @Test
+    public void correlatedNestedLoopJoinRowCount() throws Exception {
+        assertPlan(
+                "SELECT /*+ CNL_JOIN */ * FROM CATALOG_SALES t1 " +
+                "WHERE EXISTS (SELECT 1 FROM CATALOG_RETURNS t2 WHERE t2.CR_ITEM_SK = t1.CS_ITEM_SK)",
+            publicSchema,
+            nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+                .and(nodeRowCount("IgniteCorrelatedNestedLoopJoin", approximatelyEqual(CATALOG_SALES_SIZE)))));
     }
 
     /**
