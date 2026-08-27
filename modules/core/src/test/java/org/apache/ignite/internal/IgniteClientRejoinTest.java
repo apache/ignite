@@ -355,14 +355,13 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
-            TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.writeToSocket(sock, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -379,7 +378,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
             Socket sock,
             int res,
             long timeout
@@ -387,7 +385,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
             if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeToSocket(sock, res, timeout);
         }
 
         /** {@inheritDoc} */

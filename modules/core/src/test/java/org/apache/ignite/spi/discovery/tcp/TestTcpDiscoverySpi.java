@@ -17,12 +17,19 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -144,5 +151,28 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         return msgFactory != null ? msgFactory : super.messageFactory();
+    }
+
+    /** */
+    public static @Nullable TcpDiscoveryAbstractMessage decodeMessage(TcpDiscoverySpi spi, byte[] data) {
+        if (Arrays.equals(U.IGNITE_HEADER, data))
+            return null;
+
+        Socket dataSock = new Socket() {
+            @Override public InputStream getInputStream() {
+                return new ByteArrayInputStream(data);
+            }
+
+            @Override public OutputStream getOutputStream() {
+                return new ByteArrayOutputStream();
+            }
+        };
+
+        try (dataSock) {
+            return new TcpDiscoveryIoSession(dataSock, spi).readMessage();
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to decode a message", e);
+        }
     }
 }
