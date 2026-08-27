@@ -104,12 +104,14 @@ class ControlDir:
         """
         return os.path.exists(self.file(name))
 
-    def take(self, name):
+    def consume(self, name):
         """
-        Consumes a control file: the test is the only party that removes what the host wrote,
-        so taking it is what acknowledges it.
+        Removes a control file if it is present, returning whether it was there.
 
-        :return: Whether the file was there to take.
+        The test is the only party that deletes what the host writes, so consuming
+        a file is what acknowledges the host's command.
+
+        :return: True if the file existed and was removed, False otherwise.
         """
         if not self.exists(name):
             return False
@@ -228,7 +230,7 @@ class ControlDir:
 
         while True:
             for name in names:
-                if self.take(name):
+                if self.consume(name):
                     return name
 
             now = time.monotonic()

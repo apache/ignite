@@ -24,21 +24,21 @@ import time
 from ignitetest.utils.pause_control import ABORT, CONTINUE_ALL, ControlDir, STATUS_JSON, STATUS_TXT, continue_file
 
 
-def check_taking_a_file_consumes_it(tmp_path):
+def check_consuming_a_file_removes_it(tmp_path):
     """
-    Check that taking a control file reports it and removes it: the test is the only party
-    that deletes what the host wrote, so taking one is what acknowledges it.
+    Check that consuming a control file reports it and removes it: the test is the only party
+    that deletes what the host wrote, so consuming one is what acknowledges it.
     """
     control = ControlDir(tmp_path)
 
-    assert not control.take(ABORT), "nothing was written yet"
+    assert not control.consume(ABORT), "nothing was written yet"
 
     control.resume(ABORT)
 
     assert control.exists(ABORT)
-    assert control.take(ABORT)
-    assert not control.exists(ABORT), "a taken file must not be left for the next breakpoint"
-    assert not control.take(ABORT)
+    assert control.consume(ABORT)
+    assert not control.exists(ABORT), "a consumed file must not be left for the next breakpoint"
+    assert not control.consume(ABORT)
 
 
 def check_sweep_spares_a_held_breakpoint(tmp_path):
