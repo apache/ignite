@@ -41,6 +41,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
@@ -89,7 +90,7 @@ public class AtomicCacheOperationRemappingOnNodeStopTest extends GridCommonAbstr
 
     /** */
     private void doTest(boolean putAll) throws Exception {
-        IgniteEx node0 = startGrids(3);
+        IgniteEx node0 = startGrids(4);
 
         node0.createCache(DEFAULT_CACHE_NAME);
 
@@ -172,6 +173,12 @@ public class AtomicCacheOperationRemappingOnNodeStopTest extends GridCommonAbstr
         node1StopFut.get(getTestTimeout(), MILLISECONDS);
 
         assertEquals(1, node0.cache(DEFAULT_CACHE_NAME).size());
+        assertTrue(waitForCondition(() -> 1 == grid(3).cache(DEFAULT_CACHE_NAME).size(), getTestTimeout()));
+
+        var vervifyRes = idleVerify(node0);
+
+        assertFalse(vervifyRes.hasConflicts());
+        assertTrue(F.isEmpty(vervifyRes.exceptions()));
     }
 
     /** {@inheritDoc} */

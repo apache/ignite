@@ -240,18 +240,14 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             boolean remapKey = res.remapTopologyVersion() != null;
 
             if (remapKey) {
-                assert !req.topologyVersion().equals(res.remapTopologyVersion())
-                    : "Update response holds the same remap-to topology version";
+                // Remote topology might be the same even if the remapping responded with. A remote node may respond
+                // when stopping. But if is stopping, might not accept and update topology version and would use some last
+                // kept version.
+                assert req.topologyVersion().compareTo(res.remapTopologyVersion()) <= 0
+                    : "Update response holds the same or lesser remap-to topology version";
                 assert remapTopVer == null : "Current remap-to version is not null: " + remapTopVer;
 
-                // Remote node is stopping and doesn't care of topology anymore.
-                if (res.topologyVersion().equals(AffinityTopologyVersion.NONE)) {
-                    // Suppose topology would change on the `+1` version. if not, we'll remap again.
-                    remapTopVer = new AffinityTopologyVersion(req.topologyVersion().topologyVersion() + 1,
-                        req.topVer.minorTopologyVersion());
-                }
-                else
-                    remapTopVer = res.remapTopologyVersion();
+                remapTopVer = res.remapTopologyVersion();
             }
             else if (res.error() != null)
                 onPrimaryError(req, res);
