@@ -288,14 +288,16 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 * (1.0 - (EQUALS_SELECTIVITY * COMPARISON_SELECTIVITY))))));
     }
 
+    /** */
     @Test
     public void correlatedNestedLoopJoinRowCount() throws Exception {
         assertPlan(
-                "SELECT /*+ CNL_JOIN */ * FROM CATALOG_SALES t1 " +
-                "WHERE EXISTS (SELECT 1 FROM CATALOG_RETURNS t2 WHERE t2.CR_ITEM_SK = t1.CS_ITEM_SK)",
+               "SELECT /*+ CNL_JOIN */ * FROM catalog_returns"
+                + "      ,date_dim"
+                + "  WHERE cr_returned_date_sk = d_date_sk",
             publicSchema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                .and(nodeRowCount("IgniteCorrelatedNestedLoopJoin", approximatelyEqual(CATALOG_SALES_SIZE)))));
+                .and(nodeRowCount("IgniteCorrelatedNestedLoopJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)))));
     }
 
     /**

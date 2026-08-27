@@ -67,9 +67,14 @@ public class IgniteMdRowCount extends RelMdRowCount {
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdRowCount(), BuiltInMetadata.RowCount.Handler.class);
 
-    /** {@inheritDoc} */
+    /** */
     public Double getRowCount(IgniteCorrelatedNestedLoopJoin rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
+        return joinRowCount(mq, rel);
     }
 
     /** {@inheritDoc} */
