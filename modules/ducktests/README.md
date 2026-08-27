@@ -259,10 +259,19 @@ docker exec ducker03 bash -c "tail -n 50 /mnt/service/logs/ignite*.log"
 docker exec ducker03 cat /mnt/service/config/ignite-config.xml
 ```
 
-The console is optional - the test communicates through files under `<repository root>/.ducktests-demo`, which is shared with the host by the same bind mount that carries the repository into the containers:
+The console is optional - the test communicates through files under `<repository root>/.ducktests-demo`, which is shared with the host by the same bind mount that carries the repository into the containers. Each file is a simple signal - its presence is the command, its content (where any) is the data:
+
+| File | Meaning |
+|------|---------|
+| `paused.txt` | The banner of the breakpoint currently held, human readable. |
+| `paused.json` | The same banner plus run metadata, for the console to read. |
+| `continue-<N>` | Resume breakpoint `N`, where `N` is the number shown in the banner's `PAUSED N` line. The banner itself prints the exact `touch` command to paste. |
+| `continue-all` | Resume and skip every remaining breakpoint. |
+| `abort` | Fail the test and tear down the cluster. |
+
 ```bash
-cat .ducktests-demo/paused.txt      # the banner of the breakpoint currently held
-touch .ducktests-demo/continue-3    # resume breakpoint 3
+cat .ducktests-demo/paused.txt      # read the banner of the breakpoint currently held
+touch .ducktests-demo/continue-3    # resume breakpoint 3 (the number matches PAUSED 3 in the banner)
 touch .ducktests-demo/continue-all  # resume and skip the remaining breakpoints
 touch .ducktests-demo/abort         # fail the test and tear down
 ```

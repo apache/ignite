@@ -24,7 +24,8 @@ Host side of the demo breakpoints - run it in a second terminal, next to the one
 Ducktape runs the test with stdin on /dev/null inside the ``ducker01`` container, so this is
 where the keyboard lives. The console itself is deliberately dumb: the test renders the
 banner and this only prints it and writes back a resume file. Everything it does can be done
-by hand instead - ``cat .ducktests-demo/paused.txt``, then ``touch .ducktests-demo/continue-3``.
+by hand instead - ``cat .ducktests-demo/paused.txt``, then ``touch .ducktests-demo/continue-<N>``
+where ``<N>`` is the number shown in the banner's ``PAUSED N`` line.
 
 Standard library only: it runs on the host, outside the ducktests virtualenv.
 """

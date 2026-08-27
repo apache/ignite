@@ -33,7 +33,8 @@ which would otherwise skip the next breakpoint: the test at its first one (see
 a resume file meant for a breakpoint that is currently held is never swept.
 
 ``docker/demo_console.py`` is the host side of it, but nothing depends on it: reading
-``paused.txt`` and touching ``continue-<seq>`` by hand works just as well.
+``paused.txt`` and touching ``continue-<seq>`` by hand works just as well, where ``<seq>`` is
+the breakpoint number shown in the banner's ``PAUSED <seq>`` line.
 
 Globals:
 
