@@ -129,6 +129,15 @@ public class IgniteCommonsSystemProperties {
         "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
 
     /**
+     * When set to {@code false}, disables zero-copy UTF-8 serialization of {@link String} values by BinaryMarshaller,
+     * reverting to serialization through a temporary byte array produced by {@link String#getBytes}.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(value = "Enables zero-copy UTF-8 serialization of String values by BinaryMarshaller. " +
+        "When set to false, strings are serialized through a temporary byte array", defaults = "true")
+    public static final String IGNITE_BINARY_STRING_ZERO_COPY = "IGNITE_BINARY_STRING_ZERO_COPY";
+
+    /**
      * Enables storage of typed arrays.
      * The default value is {@code BinaryUtils#DFLT_IGNITE_USE_BINARY_ARRAYS}.
      */

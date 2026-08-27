@@ -33,6 +33,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.StringWriter;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -733,8 +734,12 @@ public class DirectByteBufferStream {
      */
     public void writeString(String val) {
         if (val != null) {
-            if (curStrBackingArr == null)
-                curStrBackingArr = val.getBytes();
+            if (curStrBackingArr == null) {
+                curStrBackingArr = StringWriter.latin1Value(val);
+
+                if (curStrBackingArr == null)
+                    val.getBytes();
+            }
 
             writeByteArray(curStrBackingArr);
 
