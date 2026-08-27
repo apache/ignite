@@ -308,8 +308,6 @@ The `query(SqlFieldsQuery)` method returns an instance of `FieldsQueryCursor`, w
 NOTE: The `getAll()` method retrieves the results from the cursor and closes it.
 
 Read more about using `SqlFieldsQuery` and SQL API in the link:SQL/sql-api[Using SQL API] section.
-This section also describes how to use `SqlFieldsQuery.setQueryInitiatorId(...)`
-to correlate Java thin client SQL requests with SQL system views and server logs.
 
 == Using Cluster APIs
 
