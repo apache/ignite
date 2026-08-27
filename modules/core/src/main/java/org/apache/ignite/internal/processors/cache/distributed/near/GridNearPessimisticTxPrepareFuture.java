@@ -212,7 +212,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes
     ) {
-        GridNearTxPrepareRequest req = createPrepareRequest(
+        GridNearTxPrepareRequest req = createNearPrepareRequest(
             txNodes,
             m,
             reads,

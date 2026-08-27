@@ -507,7 +507,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             long timeout = tx.remainingTime();
 
             if (timeout != -1) {
-                GridNearTxPrepareRequest req = createPrepareRequest(
+                GridNearTxPrepareRequest req = createNearPrepareRequest(
                     txMapping.transactionNodes(),
                     m,
                     null,

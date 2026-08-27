@@ -514,7 +514,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     ) {
         GridDistributedTxMapping m = fut.mapping();
 
-        GridNearTxPrepareRequest req = createPrepareRequest(
+        GridNearTxPrepareRequest req = createNearPrepareRequest(
             txNodes,
             m,
             reads,

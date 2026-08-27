@@ -206,7 +206,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
      * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
      */
-    protected GridNearTxPrepareRequest createPrepareRequest(
+    protected GridNearTxPrepareRequest createNearPrepareRequest(
         Map<UUID, Collection<UUID>> txNodes,
         GridDistributedTxMapping mapping,
         @Nullable Collection<IgniteTxEntry> reads,
