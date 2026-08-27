@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridTopic;
@@ -30,14 +33,43 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /** */
+@RunWith(Parameterized.class)
 public class AtomicCacheOperationRemappingOnNodeStopTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameter
+    public CacheAtomicityMode atomicityMode;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public CacheWriteSynchronizationMode writeSyncMode;
+
+    /** */
+    @Parameterized.Parameters(name = "cacheAtomicity={0}, writeSync={1}")
+    public static Collection<?> params() {
+        return GridTestUtils.cartesianProduct(
+            F.asList(CacheAtomicityMode.ATOMIC, CacheAtomicityMode.TRANSACTIONAL),
+            F.asList(CacheWriteSynchronizationMode.PRIMARY_SYNC, CacheWriteSynchronizationMode.FULL_SYNC,
+                CacheWriteSynchronizationMode.FULL_ASYNC)
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         return super.getConfiguration().setFailureHandler(new StopNodeOrHaltFailureHandler());
@@ -60,6 +92,8 @@ public class AtomicCacheOperationRemappingOnNodeStopTest extends GridCommonAbstr
         IgniteEx node0 = startGrids(3);
 
         node0.createCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
 
         IgniteEx node1 = grid(1);
 

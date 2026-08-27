@@ -1861,7 +1861,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 expiry = updDhtRes.expiryPolicy();
                             }
                             else {
-                                // Should remap all keys. If current node is stopping, suppose.
+                                // Should remap all keys. // If current node is stopping, send 'unknown', unawared topology.
                                 res.remapTopologyVersion(ctx.kernalContext().isStopping() ? AffinityTopologyVersion.NONE
                                     : top.lastTopologyChangeVersion());
                             }
