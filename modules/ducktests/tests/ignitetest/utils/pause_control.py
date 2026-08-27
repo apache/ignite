@@ -113,10 +113,10 @@ class ControlDir:
 
         :return: True if the file existed and was removed, False otherwise.
         """
-        if not self.exists(name):
+        try:
+            os.remove(self.file(name))
+        except OSError:
             return False
-
-        self.remove(name)
 
         return True
 
