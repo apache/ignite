@@ -203,7 +203,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param writes Write entries.
      * @param timeout Transaction timeout.
      * @param last {@code True} if this last prepare request for node.
-     * @param onePhaseCommit One phase commit flag.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
      * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
      */
@@ -214,7 +213,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         @Nullable Collection<IgniteTxEntry> writes,
         long timeout,
         boolean last,
-        boolean onePhaseCommit,
         boolean firstClientReq,
         boolean allowWaitTopFut
     ) {
@@ -239,7 +237,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
             mapping.hasNearCacheEntries(),
             txNodes,
             last,
-            onePhaseCommit,
+            tx.onePhaseCommit(),
             tx.needReturnValue() && tx.implicit(),
             tx.implicitSingle(),
             mapping.explicitLock(),

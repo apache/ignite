@@ -219,7 +219,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             writes,
             timeout,
             true,
-            tx.onePhaseCommit(),
             false,
             true
         );

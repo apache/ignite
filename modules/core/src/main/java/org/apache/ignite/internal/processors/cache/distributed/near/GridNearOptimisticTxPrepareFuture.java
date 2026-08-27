@@ -514,7 +514,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     m.writes(),
                     timeout,
                     m.last(),
-                    tx.onePhaseCommit(),
                     m.clientFirst(),
                     txMapping.transactionNodes().size() == 1
                 );

@@ -521,7 +521,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             writes,
             timeout,
             m.last(),
-            tx.onePhaseCommit(),
             m.clientFirst(),
             txNodes.size() == 1
         );
