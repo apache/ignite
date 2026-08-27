@@ -114,7 +114,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         GridNearTxLocal tx,
         long timeout,
         @Nullable Collection<IgniteTxEntry> reads,
-        @Nullable Collection<IgniteTxEntry> writes,
+        Collection<IgniteTxEntry> writes,
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
