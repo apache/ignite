@@ -50,7 +50,7 @@ Arguments: --cache help --yes
     control.(sh|bat) --cache list regexPattern [nodeId] [--config] [--output-format multi-line] [--groups|--seq]
 
     Parameters:
-      regexPattern                - Java regular expression for filtering cache, group, or sequence names. Examples: '.' matches all names, 'account-.*' matches names starting with 'account-'.
+      regexPattern                - Java regular expression for filtering cache, group, or sequence names. Examples: '.' matches all names, '^account-.*' matches names starting with 'account-'.
       --config                    - print all configuration parameters for each cache.
       --output-format multi-line  - print configuration parameters per line. This option has effect only when used with --config and without [--groups|--seq].
       --groups                    - print information about groups.

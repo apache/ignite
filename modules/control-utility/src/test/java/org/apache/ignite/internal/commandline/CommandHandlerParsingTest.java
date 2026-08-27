@@ -139,7 +139,8 @@ public class CommandHandlerParsingTest {
     public void testCacheListHelpDescribesRegexPattern() {
         ListeningTestLogger testLog = new ListeningTestLogger();
         LogListener regexDescription = LogListener.matches(Pattern.compile(
-            "regexPattern\\s+- Java regular expression for filtering cache, group, or sequence names"
+            "regexPattern\\s+- Java regular expression for filtering cache, group, or sequence names.*" +
+                "'\\^account-\\.\\*' matches names starting with 'account-'"
         )).build();
 
         testLog.registerListener(regexDescription);
