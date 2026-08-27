@@ -51,6 +51,7 @@ Globals:
 
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.pause_control import ABORT, CONTINUE_ALL, ControlDir, continue_file, default_control_dir, \
@@ -68,6 +69,10 @@ DEFAULT_TIMEOUT_SEC = 600
 # Kept free of the runner budget, so that resuming a breakpoint at the very last moment
 # still leaves the scenario time to reach its next event.
 RUNNER_TIMEOUT_MARGIN_SEC = 60
+
+# Same limit as the network group manager: a breakpoint renders its banner while the cluster
+# is held, so the SSH probes that report liveness are parallelised to keep that render fast.
+_MAX_PARALLEL_SSH = 16
 
 # Timestamps the demo in the test log, so that a run can be read back afterwards and it is
 # visible that the scenario is held rather than stuck. Deliberately NOT a keepalive towards
@@ -196,23 +201,44 @@ def _node_state(service, node):
         return "?"
 
 
-def _node_line(service, node):
+def _node_line(service, node, state):
     """
     :return: The node's line of the SERVICES section, degraded to the name that can be read
              without asking the service when the service itself cannot answer for the node -
              ``who_am_i`` goes through ``idx()``, which raises for a node the service no
              longer owns.
 
+    The liveness state is probed in parallel by :func:`_probe_liveness` and passed in, so
+    that rendering the banner does not wait on one SSH round-trip per node in sequence.
+
     Like :func:`_node_state`, this lets no reading failure out: a breakpoint must never fail
     the scenario it is only observing, least of all while rendering the banner it was added
     for.
     """
     try:
-        return f"  {service.who_am_i(node):<58} {_node_addr(node):<17} {_node_state(service, node)}".rstrip()
+        return f"  {service.who_am_i(node):<58} {_node_addr(node):<17} {state}".rstrip()
     except Exception as ex:  # pylint: disable=broad-except
         name = f"{type(service).__name__}-{_node_host(node) or '?'}"
 
         return f"  {name:<58} ({type(ex).__name__})"
+
+
+def _probe_liveness(services):
+    """
+    Probes the liveness of every node across all services concurrently, returning a list of
+    state strings in the same order as the ``(service, node)`` pairs the caller iterates.
+
+    Each ``alive(node)`` call is an SSH round-trip; on a multi-DC cluster there are enough of
+    them that probing in sequence would delay the banner by several seconds. The network
+    group manager already parallelises its probes the same way.
+    """
+    pairs = [(service, node) for service in services for node in service.nodes]
+
+    if not pairs:
+        return []
+
+    with ThreadPoolExecutor(max_workers=min(_MAX_PARALLEL_SSH, len(pairs))) as pool:
+        return list(pool.map(lambda sn: _node_state(sn[0], sn[1]), pairs))
 
 
 class DemoPause:
@@ -414,9 +440,11 @@ class DemoPause:
     def _services_section(services):
         lines = ["SERVICES"]
 
-        for service in services:
-            for node in service.nodes:
-                lines.append(_node_line(service, node))
+        pairs = [(service, node) for service in services for node in service.nodes]
+        states = _probe_liveness(services)
+
+        for (service, node), state in zip(pairs, states):
+            lines.append(_node_line(service, node, state))
 
         if len(lines) == 1:
             lines.append("  (none)")
