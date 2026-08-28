@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -126,7 +127,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
         writer.setBuffer(buf);
 
-        assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer));
+        assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer, IGNORED));
         assertEquals("Writes" + ERROR_SUFFIX, expReadsWritesCnt, writer.state());
 
         buf.flip();
@@ -136,7 +137,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
 
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
-        assertTrue(MessageSerialization.readFrom(msgFactory, res, reader));
+        assertTrue(MessageSerialization.readFrom(msgFactory, res, reader, IGNORED));
         assertEquals("Reads" + ERROR_SUFFIX, expReadsWritesCnt, reader.state());
 
         DiscoveryMarshalling.unmarshal(res, kctx);

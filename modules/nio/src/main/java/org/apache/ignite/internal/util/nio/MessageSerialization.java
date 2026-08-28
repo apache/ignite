@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -40,11 +41,17 @@ public final class MessageSerialization {
      * @param factory Message factory.
      * @param msg Message instance.
      * @param writer Writer.
+     * @param ctx Serialization context.
      * @param <M> Message type.
      * @return Whether message was fully written.
      */
-    public static <M extends Message> boolean writeTo(MessageFactory factory, M msg, MessageWriter writer) {
-        return resolve(factory, msg).writeTo(msg, writer);
+    public static <M extends Message> boolean writeTo(
+        MessageFactory factory,
+        M msg,
+        MessageWriter writer,
+        MessageSerializationContext ctx
+    ) {
+        return resolveMessageserializer(factory, msg).writeTo(msg, writer, ctx);
     }
 
     /**
@@ -53,16 +60,31 @@ public final class MessageSerialization {
      * @param factory Message factory.
      * @param msg Message instance.
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @param <M> Message type.
      * @return Whether message was fully read.
      */
-    public static <M extends Message> boolean readFrom(MessageFactory factory, M msg, MessageReader reader) {
-        return resolve(factory, msg).readFrom(msg, reader);
+    public static <M extends Message> boolean readFrom(
+        MessageFactory factory,
+        M msg,
+        MessageReader reader,
+        MessageSerializationContext ctx
+    ) {
+        return resolveMessageserializer(factory, msg).readFrom(msg, reader, ctx);
+    }
+
+    /** */
+    public static MessageSerializationContext resolveSerializationContext(GridNioSession ses) {
+        MessageSerializationContext ctx = ses.meta(GridNioSessionMetaKey.MSG_SER_CTX.ordinal());
+
+        assert ctx != null : "Session has no serialization context: " + ses;
+
+        return ctx;
     }
 
     /** @return the serializer registered for {@code msg}'s direct type. */
     @SuppressWarnings("unchecked")
-    private static <M extends Message> MessageSerializer<M> resolve(MessageFactory factory, M msg) {
+    private static <M extends Message> MessageSerializer<M> resolveMessageserializer(MessageFactory factory, M msg) {
         return (MessageSerializer<M>)factory.serializer(msg.directType());
     }
 }
