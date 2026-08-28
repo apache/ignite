@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
@@ -453,6 +454,16 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testBigDecimalFunctionArgument() {
+        client.getOrCreateCache(new CacheConfiguration<>("decimal-functions")
+            .setSqlSchema("UDF")
+            .setSqlFunctionClasses(OtherFunctionsLibrary2.class));
+
+        assertQuery("SELECT udf.decimalToInt(5)").returns(5).check();
+    }
+
+    /** */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
@@ -738,6 +749,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction(alias = "sameSign")
         public static int sameSign2(int v) {
             return v;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static int decimalToInt(BigDecimal val) {
+            return val.intValue();
         }
     }
 
