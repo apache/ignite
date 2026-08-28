@@ -100,6 +100,18 @@ public class SqlAPI {
         // end::simple-query[]
     }
 
+    void queryInitiatorId(Ignite ignite) {
+        // tag::query-initiator-id[]
+        IgniteCache<Long, Person> cache = ignite.cache("Person");
+
+        SqlFieldsQuery sql = new SqlFieldsQuery(
+                "select name from Person")
+                .setQueryInitiatorId("person-report-job");
+
+        cache.query(sql).getAll();
+        // end::query-initiator-id[]
+    }
+
     void insert(Ignite ignite) {
         // tag::insert[]
         IgniteCache<Long, Person> cache = ignite.cache("personCache");
