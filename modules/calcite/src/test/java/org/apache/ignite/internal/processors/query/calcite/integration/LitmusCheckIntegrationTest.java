@@ -28,6 +28,7 @@ public class LitmusCheckIntegrationTest extends AbstractBasicIntegrationTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        // Some calcite litmus related checks are enabled only with DEBUG severity logging.
         setCalciteLoggerDebugLevel();
     }
 
