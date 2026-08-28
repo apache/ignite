@@ -45,7 +45,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
-public class AtomicCacheOperationRemappingOnNodeStopTest extends GridCommonAbstractTest {
+public class CacheUpdateRemappingOnNodeStopTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter
     public CacheAtomicityMode atomicityMode;

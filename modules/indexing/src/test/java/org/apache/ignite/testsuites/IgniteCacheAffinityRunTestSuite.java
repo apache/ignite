@@ -17,7 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.AtomicCacheOperationRemappingOnNodeStopTest;
+import org.apache.ignite.internal.processors.cache.CacheUpdateRemappingOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest;
@@ -39,7 +39,7 @@ import org.junit.runners.Suite;
     IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest.class,
     IgniteBaselineLockPartitionOnAffinityRunTxCacheTest.class,
     IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class,
-    AtomicCacheOperationRemappingOnNodeStopTest.class
+    CacheUpdateRemappingOnNodeStopTest.class
 })
 public class IgniteCacheAffinityRunTestSuite {
 }
