@@ -24,11 +24,5 @@
        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <import resource="common-test-config.xml"/>
 
-    <bean id="grid.cfg" parent="grid.cfg.base">
-        <property name="pluginProviders">
-            <bean class="org.apache.ignite.compatibility.testframework.plugins.TestCompatibilityPluginProvider">
-                <constructor-arg value="true"/>
-            </bean>
-        </property>
-    </bean>
+    <bean id="grid.cfg" parent="grid.cfg.base"/>
 </beans>
