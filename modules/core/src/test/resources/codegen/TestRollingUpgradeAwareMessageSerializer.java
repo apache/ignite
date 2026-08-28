@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestFeatureRegistry;
 import org.apache.ignite.internal.TestRollingUpgradeAwareMessage;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -47,7 +46,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 writer.incrementState();
 
             case 1:
-                if (ctx.includeFieldDeprecatedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+                if (ctx.includeFieldDeprecatedBy(TestFeatureRegistry.FIRST_FEATURE)) {
                     if (!writer.writeString(msg.oldFld))
                         return false;
                 }
@@ -55,7 +54,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 writer.incrementState();
 
             case 2:
-                if (ctx.includeFieldIntroducedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE)) {
                     if (!writer.writeString(msg.newFld))
                         return false;
                 }
@@ -63,7 +62,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 writer.incrementState();
 
             case 3:
-                if (ctx.includeFieldIntroducedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE) && ctx.includeFieldDeprecatedBy(TestFeatureRegistry.SECOND_FEATURE)) {
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE) && ctx.includeFieldDeprecatedBy(TestFeatureRegistry.SECOND_FEATURE)) {
                     if (!writer.writeLong(msg.windowed))
                         return false;
                 }
@@ -87,7 +86,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 1:
-                if (ctx.includeFieldDeprecatedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+                if (ctx.includeFieldDeprecatedBy(TestFeatureRegistry.FIRST_FEATURE)) {
                     msg.oldFld = reader.readString();
 
                     if (!reader.isLastRead())
@@ -97,7 +96,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 2:
-                if (ctx.includeFieldIntroducedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE)) {
                     msg.newFld = reader.readString();
 
                     if (!reader.isLastRead())
@@ -107,7 +106,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 3:
-                if (ctx.includeFieldIntroducedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE) && ctx.includeFieldDeprecatedBy(TestFeatureRegistry.SECOND_FEATURE)) {
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE) && ctx.includeFieldDeprecatedBy(TestFeatureRegistry.SECOND_FEATURE)) {
                     msg.windowed = reader.readLong();
 
                     if (!reader.isLastRead())

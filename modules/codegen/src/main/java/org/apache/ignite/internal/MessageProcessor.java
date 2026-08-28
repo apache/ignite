@@ -281,12 +281,6 @@ public class MessageProcessor extends AbstractProcessor {
                 validateEnumFieldMapping(type, el);
                 validateRollingUpgradeAnnotations(el);
             }
-            else if (el.getAnnotation(IntroducedBy.class) != null || el.getAnnotation(DeprecatedBy.class) != null) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Fields marked with @IntroducedBy or @DeprecatedBy must also be annotated with @Order",
-                    el);
-            }
         }
 
         hierList.add(elList);
@@ -296,19 +290,20 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     private void validateRollingUpgradeAnnotations(Element el) {
-        IntroducedBy introducedAnn = el.getAnnotation(IntroducedBy.class);
-        DeprecatedBy deprecatedAnn = el.getAnnotation(DeprecatedBy.class);
+        Order ann = el.getAnnotation(Order.class);
 
-        if (introducedAnn == null && deprecatedAnn == null)
+        if (ann.introducedBy().isEmpty() && ann.deprecatedBy().isEmpty())
             return;
 
-        String introducedFeature = introducedAnn == null
-            ? null
-            : resolveFeatureClassName(el, introducedAnn.value(), resolveFeatureRegistry(introducedAnn::registry));
+        String regCls = resolveFeatureRegistry(el.getEnclosingElement());
 
-        String deprecatedFeature = deprecatedAnn == null
+        String introducedFeature = ann.introducedBy().isEmpty()
             ? null
-            : resolveFeatureClassName(el, deprecatedAnn.value(), resolveFeatureRegistry(deprecatedAnn::registry));
+            : resolveFeatureClassName(el, ann.introducedBy(), regCls);
+
+        String deprecatedFeature = ann.deprecatedBy().isEmpty()
+            ? null
+            : resolveFeatureClassName(el, ann.deprecatedBy(), regCls);
 
         if (introducedFeature == null || deprecatedFeature == null)
             return;
@@ -316,7 +311,7 @@ public class MessageProcessor extends AbstractProcessor {
         if (introducedFeature.equals(deprecatedFeature)) {
             processingEnv.getMessager().printMessage(
                 Diagnostic.Kind.ERROR,
-                "@IntroducedBy and @DeprecatedBy must not reference the same feature when used on the same element.",
+                "Elements introducedBy and deprecatedBy of the @Order annotation must not reference the same feature.",
                 el);
         }
     }

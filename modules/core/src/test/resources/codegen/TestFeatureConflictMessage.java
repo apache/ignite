@@ -22,8 +22,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** */
 public class TestFeatureConflictMessage implements Message {
     /** */
-    @Order(0)
-    @IntroducedBy("ROLLING_UPGRADE_FEATURE")
-    @DeprecatedBy("ROLLING_UPGRADE_FEATURE")
+    @Order(value = 0, introducedBy = "ROLLING_UPGRADE_FEATURE", deprecatedBy = "ROLLING_UPGRADE_FEATURE")
     int fld;
 }

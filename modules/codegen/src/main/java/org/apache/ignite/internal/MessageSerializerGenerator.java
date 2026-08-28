@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.function.Supplier;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -302,28 +301,20 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     @Nullable private String buildRollingUpgradeFeatureGuard(VariableElement field) {
+        Order ann = field.getAnnotation(Order.class);
+
+        if (ann.introducedBy().isEmpty() && ann.deprecatedBy().isEmpty())
+            return null;
+
+        String regCls = resolveFeatureRegistry(field.getEnclosingElement());
+
         List<String> conditions = new ArrayList<>();
 
-        IntroducedBy introducedAnn = field.getAnnotation(IntroducedBy.class);
+        if (!ann.introducedBy().isEmpty())
+            conditions.add("ctx.includeFieldIntroducedBy(" + buildFeatureArgument(ann.introducedBy(), regCls) + ")");
 
-        if (introducedAnn != null) {
-            conditions.add("ctx.includeFieldIntroducedBy(" + buildFeatureArgument(
-                introducedAnn.value(),
-                resolveFeatureRegistry(introducedAnn::registry)
-            ) + ")");
-        }
-
-        DeprecatedBy deprecatedAnn = field.getAnnotation(DeprecatedBy.class);
-
-        if (deprecatedAnn != null) {
-            conditions.add("ctx.includeFieldDeprecatedBy(" + buildFeatureArgument(
-                deprecatedAnn.value(),
-                resolveFeatureRegistry(deprecatedAnn::registry)
-            ) + ")");
-        }
-
-        if (conditions.isEmpty())
-            return null;
+        if (!ann.deprecatedBy().isEmpty())
+            conditions.add("ctx.includeFieldDeprecatedBy(" + buildFeatureArgument(ann.deprecatedBy(), regCls) + ")");
 
         return String.join(" && ", conditions);
     }
@@ -336,17 +327,18 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** */
-    static String resolveFeatureRegistry(Supplier<Class<?>> registryClsAccessor) {
-        String name;
+    static String resolveFeatureRegistry(Element declaringCls) {
+        FeatureRegistry ann = declaringCls.getAnnotation(FeatureRegistry.class);
+
+        if (ann == null)
+            return DFLT_FEATURE_REG_CLS;
 
         try {
-            name = registryClsAccessor.get().getName();
+            return ann.value().getName();
         }
         catch (MirroredTypeException e) {
-            name = qualifiedClassName(e.getTypeMirror());
+            return qualifiedClassName(e.getTypeMirror());
         }
-
-        return Void.class.getName().equals(name) ? DFLT_FEATURE_REG_CLS : name;
     }
 
     /**

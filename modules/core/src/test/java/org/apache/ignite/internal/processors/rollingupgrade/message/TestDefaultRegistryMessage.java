@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
-import org.apache.ignite.internal.DeprecatedBy;
-import org.apache.ignite.internal.IntroducedBy;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -29,8 +27,7 @@ public class TestDefaultRegistryMessage implements Message, TestMessage {
     String fldA;
 
     /** */
-    @Order(1)
-    @DeprecatedBy("ROLLING_UPGRADE_FEATURE")
+    @Order(value = 1, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
     String fldB;
 
     /** */
@@ -38,8 +35,7 @@ public class TestDefaultRegistryMessage implements Message, TestMessage {
     String fldC;
 
     /** */
-    @Order(3)
-    @IntroducedBy("ROLLING_UPGRADE_FEATURE")
+    @Order(value = 3, introducedBy = "ROLLING_UPGRADE_FEATURE")
     String fldD;
 
     /** */

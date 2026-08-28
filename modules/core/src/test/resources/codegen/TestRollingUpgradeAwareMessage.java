@@ -20,25 +20,22 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
+@FeatureRegistry(TestFeatureRegistry.class)
 public class TestRollingUpgradeAwareMessage implements Message {
     /** Unconditional field. */
     @Order(0)
     int plain;
 
     /** Written only while the feature is not agreed. */
-    @Order(1)
-    @DeprecatedBy("ROLLING_UPGRADE_FEATURE")
+    @Order(value = 1, deprecatedBy = "FIRST_FEATURE")
     String oldFld;
 
     /** Written only once the feature is agreed. */
-    @Order(2)
-    @IntroducedBy("ROLLING_UPGRADE_FEATURE")
+    @Order(value = 2, introducedBy = "FIRST_FEATURE")
     String newFld;
 
     /** Lived for one release window only. */
-    @Order(3)
-    @IntroducedBy("ROLLING_UPGRADE_FEATURE")
-    @DeprecatedBy(value = "SECOND_FEATURE", registry = TestFeatureRegistry.class)
+    @Order(value = 3, introducedBy = "FIRST_FEATURE", deprecatedBy = "SECOND_FEATURE")
     long windowed;
 
     /** {@inheritDoc} */

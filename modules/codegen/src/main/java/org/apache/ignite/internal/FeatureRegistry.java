@@ -24,23 +24,17 @@ import java.lang.annotation.Target;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /**
- * Marks a newly introduced message field. Introducing a new field requires introducing a new
- * {@link IgniteFeature} to which this annotation must be linked.
+ * Links the annotated class to the specified {@link IgniteFeature} registry. The registry
+ * is used to resolve fully qualified names of features that introduced or deprecated fields
+ * declared by this class (see {@link Order#introducedBy()} and {@link Order#deprecatedBy()}).
  *
- * <p>A field annotated with this annotation is included in message serialization only when doing so does not break
- * backward compatibility during a Rolling Upgrade.</p>
+ * <p>If this annotation is absent, the Ignite Core feature registry is used.</p>
  *
  * @see IgniteFeature
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.FIELD)
-public @interface IntroducedBy {
-    /** @return Name of the Ignite feature that introduced this field. */
-    String value();
-
-    /**
-     * @return Class of the registry containing the Ignite feature with the specified name.
-     * By default, the Ignite Core feature registry is used.
-     */
-    Class<?> registry() default Void.class;
+@Target(ElementType.TYPE)
+public @interface FeatureRegistry {
+    /** @return Class of the associated feature registry. */
+    Class<?> value();
 }

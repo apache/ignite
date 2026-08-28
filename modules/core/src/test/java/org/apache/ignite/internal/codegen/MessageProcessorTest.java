@@ -116,20 +116,11 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testGuardWithoutOrderRejected() {
-        Compilation compilation = compile("TestOrderlessFeatureMessage.java");
-
-        assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("must also be annotated with @Order");
-    }
-
-    /** */
-    @Test
-    public void testSameFeatureInBothAnnotationsRejected() {
+    public void testSameFeatureInBothGuardsRejected() {
         Compilation compilation = compile("TestFeatureConflictMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("must not reference the same feature when used on the same element");
+        assertThat(compilation).hadErrorContaining("must not reference the same feature");
     }
 
     /** */

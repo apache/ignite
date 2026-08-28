@@ -20,9 +20,9 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
+@FeatureRegistry(TestInvalidFeatureRegistry.class)
 public class TestInvalidFeatureMessage implements Message {
     /** */
-    @Order(0)
-    @IntroducedBy(value = "NOT_A_FEATURE", registry = TestInvalidFeatureRegistry.class)
+    @Order(value = 0, introducedBy = "NOT_A_FEATURE")
     int fld;
 }

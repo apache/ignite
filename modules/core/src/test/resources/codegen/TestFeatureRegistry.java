@@ -20,8 +20,11 @@ package org.apache.ignite.internal;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
-/** Second feature holder, used only to exercise a non-default {@code className()}. */
+/** Feature holder, used only to exercise a non-default {@link FeatureRegistry}. */
 public class TestFeatureRegistry {
+    /** */
+    public static final IgniteFeature FIRST_FEATURE = new IgniteCoreFeature(0);
+
     /** */
     public static final IgniteFeature SECOND_FEATURE = new IgniteCoreFeature(1);
 }

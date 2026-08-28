@@ -22,7 +22,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** */
 public class TestUnknownFeatureMessage implements Message {
     /** */
-    @Order(0)
-    @IntroducedBy("NO_SUCH_FEATURE")
+    @Order(value = 0, introducedBy = "NO_SUCH_FEATURE")
     int fld;
 }

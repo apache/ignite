@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
-import org.apache.ignite.internal.DeprecatedBy;
-import org.apache.ignite.internal.IntroducedBy;
+import org.apache.ignite.internal.FeatureRegistry;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_1_0_0;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_0_0;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_1_0;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -33,14 +30,14 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * so this message and the core-only {@link TestCoreMessage} are kept apart rather than
  * folded into one that every test would have to declare the plugin for.
  */
+@FeatureRegistry(TestPluginReleaseFeatures_2_1_0.class)
 public class TestPluginMessage implements Message, TestMessage {
     /** */
     @Order(0)
     String fldA;
 
     /** */
-    @Order(1)
-    @DeprecatedBy(value = "VER_2_0_0_ID_1_FEATURE", registry = TestPluginReleaseFeatures_2_0_0.class)
+    @Order(value = 1, deprecatedBy = "VER_2_0_0_ID_1_FEATURE")
     String fldB;
 
     /** */
@@ -48,19 +45,15 @@ public class TestPluginMessage implements Message, TestMessage {
     String fldC;
 
     /** */
-    @Order(3)
-    @IntroducedBy(value = "VER_1_0_0_ID_0_FEATURE", registry = TestPluginReleaseFeatures_1_0_0.class)
-    @DeprecatedBy(value = "VER_2_0_0_ID_1_FEATURE", registry = TestPluginReleaseFeatures_2_0_0.class)
+    @Order(value = 3, introducedBy = "VER_1_0_0_ID_0_FEATURE", deprecatedBy = "VER_2_0_0_ID_1_FEATURE")
     String fldD;
 
     /** */
-    @Order(4)
-    @IntroducedBy(value = "VER_2_0_0_ID_1_FEATURE", registry = TestPluginReleaseFeatures_2_0_0.class)
+    @Order(value = 4, introducedBy = "VER_2_0_0_ID_1_FEATURE")
     String fldE;
 
     /** */
-    @Order(5)
-    @IntroducedBy(value = "VER_2_1_0_ID_2_FEATURE", registry = TestPluginReleaseFeatures_2_1_0.class)
+    @Order(value = 5, introducedBy = "VER_2_1_0_ID_2_FEATURE")
     String fldF;
 
     /** */

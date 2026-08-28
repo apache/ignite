@@ -17,25 +17,22 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
-import org.apache.ignite.internal.DeprecatedBy;
-import org.apache.ignite.internal.IntroducedBy;
+import org.apache.ignite.internal.FeatureRegistry;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_1;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
+@FeatureRegistry(TestIgniteReleaseFeatures_2_20_1.class)
 public class TestCoreMessage extends DiscoveryCustomMessage implements TestMessage {
     /** */
     @Order(0)
     String fldA;
 
     /** */
-    @Order(1)
-    @DeprecatedBy(value = "VER_2_20_0_ID_3_FEATURE", registry = TestIgniteReleaseFeatures_2_20_0.class)
+    @Order(value = 1, deprecatedBy = "VER_2_20_0_ID_3_FEATURE")
     String fldB;
 
     /** */
@@ -43,19 +40,15 @@ public class TestCoreMessage extends DiscoveryCustomMessage implements TestMessa
     String fldC;
 
     /** */
-    @Order(3)
-    @IntroducedBy(value = "VER_2_19_2_ID_1_FEATURE", registry = TestIgniteReleaseFeatures_2_19_2.class)
-    @DeprecatedBy(value = "VER_2_20_0_ID_3_FEATURE", registry = TestIgniteReleaseFeatures_2_20_0.class)
+    @Order(value = 3, introducedBy = "VER_2_19_2_ID_1_FEATURE", deprecatedBy = "VER_2_20_0_ID_3_FEATURE")
     String fldD;
 
     /** */
-    @Order(4)
-    @IntroducedBy(value = "VER_2_20_0_ID_3_FEATURE", registry = TestIgniteReleaseFeatures_2_20_0.class)
+    @Order(value = 4, introducedBy = "VER_2_20_0_ID_3_FEATURE")
     String fldE;
 
     /** */
-    @Order(5)
-    @IntroducedBy(value = "VER_2_20_1_ID_6_FEATURE", registry = TestIgniteReleaseFeatures_2_20_1.class)
+    @Order(value = 5, introducedBy = "VER_2_20_1_ID_6_FEATURE")
     String fldF;
 
     /** */
