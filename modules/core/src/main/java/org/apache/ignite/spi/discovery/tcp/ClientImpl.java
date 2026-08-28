@@ -666,8 +666,10 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param addr Address.
      * @return Socket, connect response and client acknowledge support flag.
      */
-    @Nullable private T2<TcpDiscoveryIoSession, Integer> sendJoinRequest(boolean recon,
-        InetSocketAddress addr) throws InterruptedException {
+    @Nullable private T2<TcpDiscoveryIoSession, Integer> sendJoinRequest(
+        boolean recon,
+        InetSocketAddress addr
+    ) throws InterruptedException {
         assert addr != null;
 
         if (log.isDebugEnabled())
@@ -711,7 +713,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, ackTimeout0);
 
-                spi.validateRemoteFeatures(res.nodeFeatures());
+                ses.applyMessageSerializationContext(res.nodeFeatures());
 
                 // Convert the addresses once.
                 Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();
