@@ -413,24 +413,6 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshaller.java"));
     }
 
-    /** The self-marshalling step is called from the generated marshaller, statically. */
-    @Test
-    public void testSelfMarshallingMessage() {
-        Compilation compilation = compile("TestSelfMarshallingMessage.java");
-
-        assertThat(compilation).succeeded();
-
-        assertEquals(2, compilation.generatedSourceFiles().size());
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageMarshaller.java"));
-    }
-
     /**
      * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
      */
@@ -670,19 +652,8 @@ public class MessageProcessorTest {
 
         assertThat(compilation).failed();
 
-        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
-            "or SelfMarshallingMessage, nor declare @Marshalled fields");
-    }
-
-    /** A self-marshalling step of a {@code NonMarshallableMessage} would never run: it gets no marshaller to call it. */
-    @Test
-    public void testNonMarshallableSelfMarshallingFailed() {
-        Compilation compilation = compile("WrongSelfMarshallingMessage.java");
-
-        assertThat(compilation).failed();
-
-        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
-            "or SelfMarshallingMessage, nor declare @Marshalled fields");
+        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage, " +
+            "nor declare @Marshalled fields");
     }
 
     /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
