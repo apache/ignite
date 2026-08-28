@@ -29,10 +29,12 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatur
  * The {@code value} indicates the index of the field in the serialization order.
  * Fields annotated with {@code @Order} are processed in ascending order of their index.
  * <p> By default, it is assumed that getters and setters are named as the annotated fields,
- * e.g. field 'val' should have getters and satters with name 'val' (according Ignite's to code-style).
+ * e.g. field 'val' should have getters and setters with name 'val' (according Ignite's to code-style).
  * <p> This annotation must be used on non-static fields, and access to those fields
  * should be performed strictly through corresponding getter and setter methods
  * following the naming convention: {@code fieldName()} for getter and {@code fieldName(Type)} for setter.
+ *
+ * @see FeatureRegistry
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
@@ -42,10 +44,9 @@ public @interface Order {
 
     /**
      * Marks a newly introduced message field. Introducing a new field requires introducing a new
-     * {@link IgniteFeature} to which this element must be linked. The feature is resolved in the registry named
-     * by {@link FeatureRegistry} on the declaring class.
+     * {@link IgniteFeature} to which this element must be linked.
      *
-     * <p>A field with this element set is included in message serialization only when doing so does not break
+     * <p>An annotated field is included in message serialization only when doing so does not break
      * backward compatibility during a Rolling Upgrade.</p>
      *
      * @return Name of the Ignite feature that introduced this field, or an empty string if the field is not guarded.
@@ -54,10 +55,9 @@ public @interface Order {
 
     /**
      * Marks a message field that is planned for removal in a future release. Removing the field requires introducing
-     * a new {@link IgniteFeature} to which this element must be linked. The feature is resolved in the registry
-     * named by {@link FeatureRegistry} on the declaring class.
+     * a new {@link IgniteFeature} to which this element must be linked.
      *
-     * <p>A field with this element set is excluded from message serialization when doing so does not break
+     * <p>An annotated field is excluded from message serialization when doing so does not break
      * backward compatibility during a Rolling Upgrade.</p>
      *
      * @return Name of the Ignite feature that deprecated this field, or an empty string if the field is not guarded.

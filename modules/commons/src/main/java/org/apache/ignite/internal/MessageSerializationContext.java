@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatur
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
- * Represents a provider of data required to determine how data transmitted between nodes is serialized and deserialized.
+ * Represents context that determines how data transmitted between nodes is serialized and deserialized.
  */
 public interface MessageSerializationContext {
     /**

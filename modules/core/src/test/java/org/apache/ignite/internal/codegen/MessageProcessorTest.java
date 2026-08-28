@@ -111,7 +111,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("TestUnknownFeatureMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("No such feature constant in the registry [feature=NO_SUCH_FEATURE");
+        assertThat(compilation).hadErrorContaining("Failed to resolve feature in the registry by its name [featureName=NO_SUCH_FEATURE");
     }
 
     /** */

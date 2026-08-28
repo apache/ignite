@@ -26,10 +26,11 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatur
 /**
  * Links the annotated class to the specified {@link IgniteFeature} registry. The registry
  * is used to resolve fully qualified names of features that introduced or deprecated fields
- * declared by this class (see {@link Order#introducedBy()} and {@link Order#deprecatedBy()}).
+ * declared by the annotated class (see {@link Order#introducedBy()} and {@link Order#deprecatedBy()}).
  *
  * <p>If this annotation is absent, the Ignite Core feature registry is used.</p>
  *
+ * @see Order
  * @see IgniteFeature
  */
 @Retention(RetentionPolicy.SOURCE)

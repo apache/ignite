@@ -299,11 +299,11 @@ public class MessageProcessor extends AbstractProcessor {
 
         String introducedFeature = ann.introducedBy().isEmpty()
             ? null
-            : resolveFeatureClassName(el, ann.introducedBy(), regCls);
+            : resolveFeatureFullName(el, ann.introducedBy(), regCls);
 
         String deprecatedFeature = ann.deprecatedBy().isEmpty()
             ? null
-            : resolveFeatureClassName(el, ann.deprecatedBy(), regCls);
+            : resolveFeatureFullName(el, ann.deprecatedBy(), regCls);
 
         if (introducedFeature == null || deprecatedFeature == null)
             return;
@@ -317,7 +317,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    @Nullable private String resolveFeatureClassName(Element el, String featureName, String regCls) {
+    @Nullable private String resolveFeatureFullName(Element el, String featureName, String regCls) {
         TypeElement registryType = processingEnv.getElementUtils().getTypeElement(regCls);
 
         if (registryType == null) {
@@ -355,7 +355,7 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         processingEnv.getMessager().printMessage(
-            Diagnostic.Kind.ERROR, "No such feature constant in the registry [feature=" + featureName +
+            Diagnostic.Kind.ERROR, "Failed to resolve feature in the registry by its name [featureName=" + featureName +
                 ", registry=" + regCls + ']', el);
 
         return null;
