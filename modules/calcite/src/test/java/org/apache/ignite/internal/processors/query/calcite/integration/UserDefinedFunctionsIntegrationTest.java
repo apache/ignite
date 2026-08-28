@@ -461,6 +461,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .setSqlFunctionClasses(OtherFunctionsLibrary2.class));
 
         assertQuery("SELECT udf.decimalToInt(5)").returns(5).check();
+        assertQuery("SELECT udf.decimalToInt(5.3)").returns(5).check();
     }
 
     /** */
