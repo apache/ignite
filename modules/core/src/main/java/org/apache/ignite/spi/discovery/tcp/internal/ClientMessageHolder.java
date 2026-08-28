@@ -17,7 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +30,7 @@ public class ClientMessageHolder {
     private final TcpDiscoveryAbstractMessage msg;
 
     /** */
-    private byte[] msgBytes;
+    private final Map<MessageSerializationContext, byte[]> bytesByCtx = new HashMap<>(1);
 
     /** */
     public ClientMessageHolder(TcpDiscoveryAbstractMessage msg) {
@@ -42,14 +45,14 @@ public class ClientMessageHolder {
     }
 
     /** */
-    public synchronized byte @Nullable [] messageBytes() {
-        return msgBytes;
+    public synchronized byte @Nullable [] messageBytes(MessageSerializationContext ctx) {
+        return bytesByCtx.get(ctx);
     }
 
     /** */
-    public synchronized void serialize(TcpDiscoveryMessageSerializer ser) throws IgniteCheckedException {
-        if (msgBytes == null)
-            msgBytes = ser.serialize(msg);
+    public synchronized void serialize(TcpDiscoveryMessageSerializer ser, MessageSerializationContext ctx) throws IgniteCheckedException {
+        if (!bytesByCtx.containsKey(ctx))
+            bytesByCtx.put(ctx, ser.serialize(msg, ctx));
     }
 
     /** {@inheritDoc} */

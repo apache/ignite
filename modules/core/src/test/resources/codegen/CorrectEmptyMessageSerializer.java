@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.CorrectEmptyMessage;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -29,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public final class CorrectEmptyMessageSerializer implements MessageSerializer<CorrectEmptyMessage> {
     /** */
-    @Override public final boolean writeTo(CorrectEmptyMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(CorrectEmptyMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -44,7 +45,7 @@ public final class CorrectEmptyMessageSerializer implements MessageSerializer<Co
     }
 
     /** */
-    @Override public final boolean readFrom(CorrectEmptyMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(CorrectEmptyMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
         }
 

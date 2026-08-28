@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -47,6 +48,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.Integer.MAX_VALUE;
+import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
 import static org.apache.ignite.plugin.extensions.communication.CollectionImplementationType.HASH_SET;
 import static org.junit.Assert.assertEquals;
 
@@ -106,13 +108,13 @@ public abstract class AbstractMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!MessageSerialization.writeTo(msgFactory, msg, writer)) {
+        while (!MessageSerialization.writeTo(msgFactory, msg, writer, IGNORED)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!MessageSerialization.readFrom(msgFactory, msg, reader)) {
+        while (!MessageSerialization.readFrom(msgFactory, msg, reader, IGNORED)) {
             // No-op.
         }
 
@@ -295,22 +297,22 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeMessage(Message val, boolean compress) {
+        @Override public boolean writeMessage(Message val, boolean compress, MessageSerializationContext ctx) {
             return writeField(Message.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type) {
+        @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, MessageSerializationContext ctx) {
             return writeField(Object[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
+        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, MessageSerializationContext ctx) {
             return writeField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
+        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress, MessageSerializationContext ctx) {
             return writeField(type.linked() ? LinkedHashMap.class : HashMap.class);
         }
 
@@ -537,7 +539,7 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(boolean compress) {
+        @Override public <T extends Message> T readMessage(boolean compress, MessageSerializationContext ctx) {
             readField(Message.class);
 
             return null;
@@ -565,21 +567,21 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T[] readObjectArray(MessageArrayType type) {
+        @Override public <T> T[] readObjectArray(MessageArrayType type, MessageSerializationContext ctx) {
             readField(Object[].class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
+        @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageSerializationContext ctx) {
             readField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
 
             return null;
         }
         
         /** {@inheritDoc} */
-        @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
+        @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress, MessageSerializationContext ctx) {
             readField(type.linked() ? LinkedHashMap.class : HashMap.class);
 
             return null;

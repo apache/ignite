@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.util.ArrayList;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -28,7 +29,7 @@ import static org.apache.ignite.internal.managers.communication.CompressedMessag
 /** Message serializer for compressed message. */
 public class CompressedMessageSerializer implements MessageSerializer<CompressedMessage> {
     /** {@inheritDoc} */
-    @Override public boolean writeTo(CompressedMessage msg, MessageWriter writer) {
+    @Override public boolean writeTo(CompressedMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -74,7 +75,7 @@ public class CompressedMessageSerializer implements MessageSerializer<Compressed
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(CompressedMessage msg, MessageReader reader) {
+    @Override public boolean readFrom(CompressedMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         assert msg.chunk == null : msg.chunk;
 
         while (true) {

@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -239,7 +240,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     /** */
     private static class PayloadSerializer implements MessageSerializer<PayloadMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(PayloadMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(PayloadMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
                     return false;
@@ -255,7 +256,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
                     writer.incrementState();
 
                 case 1:
-                    if (!writer.writeMessage(msg.err))
+                    if (!writer.writeMessage(msg.err, ctx))
                         return false;
 
                     writer.incrementState();
@@ -265,7 +266,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(PayloadMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(PayloadMessage msg, MessageReader reader, MessageSerializationContext ctx) {
             switch (reader.state()) {
                 case 0:
                     msg.valBytes = reader.readByteArray();
@@ -276,7 +277,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
                     reader.incrementState();
 
                 case 1:
-                    msg.err = reader.readMessage();
+                    msg.err = reader.readMessage(ctx);
 
                     if (!reader.isLastRead())
                         return false;

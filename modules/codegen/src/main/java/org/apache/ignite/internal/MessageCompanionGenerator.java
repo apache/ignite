@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -179,6 +180,11 @@ public abstract class MessageCompanionGenerator {
         writer.write(CLS_JAVADOC);
         writer.write(NL);
         writer.write("public final class " + clsName + " implements " + interfaceName + "<" + simpleNameWithGeneric(type) + ">");
+    }
+
+    /** */
+    protected void printError(Element el, String msg) {
+        env.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, el);
     }
 
     /** @return {@code format} formatted with {@code args}, prefixed with {@link #indent} tabs. */

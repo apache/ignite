@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
@@ -54,10 +55,15 @@ public class TcpDiscoveryMessageSerializer {
      *
      * @param msg Discovery message to serialize.
      * @param out Output stream to write serialized message.
+     * @param serCtx Serialization context the recipient agreed on.
      * @throws IgniteCheckedException If serialization fails.
      * @throws IOException If serialization fails.
      */
-    public void writeTo(TcpDiscoveryAbstractMessage msg, OutputStream out) throws IgniteCheckedException, IOException {
+    public void writeTo(
+        TcpDiscoveryAbstractMessage msg,
+        OutputStream out,
+        MessageSerializationContext serCtx
+    ) throws IgniteCheckedException, IOException {
         DiscoveryMarshalling.marshal(msg, ctx, null);
 
         writer.reset();
@@ -69,7 +75,7 @@ public class TcpDiscoveryMessageSerializer {
             // Should be cleared before first operation.
             buf.clear();
 
-            finished = MessageSerialization.writeTo(ctx.messageFactory(), msg, writer);
+            finished = MessageSerialization.writeTo(ctx.messageFactory(), msg, writer, serCtx);
 
             out.write(buf.array(), 0, buf.position());
         }
@@ -80,12 +86,16 @@ public class TcpDiscoveryMessageSerializer {
      * Serializes a discovery message into a byte array.
      *
      * @param msg Discovery message to serialize.
+     * @param serCtx Serialization context the recipient agreed on.
      * @return Serialized byte array containing the message data.
      * @throws IgniteCheckedException If serialization fails.
      */
-    public byte[] serialize(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException {
+    public byte[] serialize(
+        TcpDiscoveryAbstractMessage msg,
+        MessageSerializationContext serCtx
+    ) throws IgniteCheckedException {
         try (GridByteArrayOutputStream out = new GridByteArrayOutputStream()) {
-            writeTo(msg, out);
+            writeTo(msg, out, serCtx);
 
             return out.toByteArray();
         }

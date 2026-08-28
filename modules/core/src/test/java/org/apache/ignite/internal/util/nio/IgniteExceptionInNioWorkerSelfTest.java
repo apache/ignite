@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -92,7 +93,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         private boolean fail = true;
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(BrokenMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(BrokenMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
                     return false;
@@ -110,7 +111,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(BrokenMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(BrokenMessage msg, MessageReader reader, MessageSerializationContext ctx) {
             return true;
         }
 

@@ -44,6 +44,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
 import static org.openjdk.jmh.annotations.Mode.Throughput;
 
 /** Benchmarks the {@link DirectMessageReader} compressed-field hot path. */
@@ -96,7 +97,7 @@ public class JmhDirectMessageReaderBenchmark {
 
         writer.setBuffer(buf);
 
-        boolean finished = writer.writeMessage(msg, true);
+        boolean finished = writer.writeMessage(msg, true, IGNORED);
 
         if (!finished)
             throw new IllegalStateException("Message does not fit into the buffer.");
@@ -111,7 +112,7 @@ public class JmhDirectMessageReaderBenchmark {
 
         reader.setBuffer(buf);
 
-        Message msg = reader.readMessage(true);
+        Message msg = reader.readMessage(true, IGNORED);
 
         reader.reset();
 
