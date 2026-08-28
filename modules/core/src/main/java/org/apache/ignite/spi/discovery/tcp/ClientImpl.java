@@ -715,7 +715,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, ackTimeout0);
 
-                spi.validateRemoteFeatures(res.nodeFeatures());
+                ses.rebuildMessageSerializationContext(res.nodeFeatures());
 
                 // Convert the addresses once.
                 Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();

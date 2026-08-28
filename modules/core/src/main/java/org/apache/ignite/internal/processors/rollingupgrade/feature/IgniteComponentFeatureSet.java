@@ -63,6 +63,11 @@ public abstract class IgniteComponentFeatureSet implements Message, Externalizab
     }
 
     /** */
+    public IgniteFeatureSet features() {
+        return features;
+    }
+
+    /** */
     public boolean contains(int featureId) {
         return features.contains(featureId);
     }

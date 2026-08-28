@@ -40,6 +40,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMes
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
+
 /**
  * This test checks metrics cacheSize.
  * <ul>
@@ -122,7 +124,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         // 2kb should be enough for an empty message even if it is a relatively large metrics message.
         msgWritter.setBuffer(ByteBuffer.allocate(2048));
 
-        assertTrue(MessageSerialization.writeTo(msgFactory, msg, msgWritter));
+        assertTrue(MessageSerialization.writeTo(msgFactory, msg, msgWritter, IGNORED));
 
         assertTrue(msgWritter.getBuffer().hasRemaining());
 
@@ -134,7 +136,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         TcpDiscoveryMetricsUpdateMessage msg2 = new TcpDiscoveryMetricsUpdateMessage();
 
-        assertTrue(MessageSerialization.readFrom(msgFactory, msg2, msgReader));
+        assertTrue(MessageSerialization.readFrom(msgFactory, msg2, msgReader, IGNORED));
 
         Map<Integer, CacheMetricsMessage> cacheMetrics2 = msg2.serversFullMetricsMessages().values().iterator().next()
             .cachesMetricsMessages();

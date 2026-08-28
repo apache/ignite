@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.Supplier;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -38,6 +39,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -67,6 +69,13 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private static final String MESSAGE_READER_CLS = "org.apache.ignite.plugin.extensions.communication.MessageReader";
+
+    /** */
+    private static final String MESSAGE_SER_CTX_CLS = "org.apache.ignite.internal.MessageSerializationContext";
+
+    /** */
+    private static final String DFLT_FEATURE_REG_CLS =
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry";
 
     /** */
     private static final String ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper";
@@ -145,6 +154,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             imports.add(MESSAGE_SERIALIZER_CLS);
             imports.add(MESSAGE_WRITER_CLS);
             imports.add(MESSAGE_READER_CLS);
+            imports.add(MESSAGE_SER_CTX_CLS);
 
             writeClassHeader(writer, "MessageSerializer", serClsName);
 
@@ -195,8 +205,10 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     private void generateMethod(List<String> code, List<VariableElement> fields, boolean write) throws Exception {
         code.add(indentedLine(METHOD_JAVADOC));
 
-        code.add(indentedLine("@Override public final boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
-            write ? "writeTo" : "readFrom", write ? "MessageWriter writer" : "MessageReader reader"));
+        code.add(indentedLine(
+            "@Override public final boolean %s(" + simpleNameWithGeneric(type) + " msg, %s, MessageSerializationContext ctx) {",
+            write ? "writeTo" : "readFrom",
+            write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
@@ -261,7 +273,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
 
         if (write)
-            writeField(opt, callExpr(field, true));
+            writeField(field, opt, callExpr(field, true));
         else
             readField(field, opt, callExpr(field, false));
     }
@@ -288,6 +300,55 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         return write ? call.expr("writer.write", fieldRef(field)) : call.expr("reader.read", null);
     }
 
+    /** */
+    @Nullable private String buildRollingUpgradeFeatureGuard(VariableElement field) {
+        List<String> conditions = new ArrayList<>();
+
+        IntroducedBy introducedAnn = field.getAnnotation(IntroducedBy.class);
+
+        if (introducedAnn != null) {
+            conditions.add("ctx.includeFieldIntroducedBy(" + buildFeatureArgument(
+                introducedAnn.value(),
+                resolveFeatureRegistry(introducedAnn::registry)
+            ) + ")");
+        }
+
+        DeprecatedBy deprecatedAnn = field.getAnnotation(DeprecatedBy.class);
+
+        if (deprecatedAnn != null) {
+            conditions.add("ctx.includeFieldDeprecatedBy(" + buildFeatureArgument(
+                deprecatedAnn.value(),
+                resolveFeatureRegistry(deprecatedAnn::registry)
+            ) + ")");
+        }
+
+        if (conditions.isEmpty())
+            return null;
+
+        return String.join(" && ", conditions);
+    }
+
+    /** */
+    private String buildFeatureArgument(String featureName, String registryCls) {
+        imports.add(registryCls);
+
+        return registryCls.substring(registryCls.lastIndexOf('.') + 1) + "." + featureName;
+    }
+
+    /** */
+    static String resolveFeatureRegistry(Supplier<Class<?>> registryClsAccessor) {
+        String name;
+
+        try {
+            name = registryClsAccessor.get().getName();
+        }
+        catch (MirroredTypeException e) {
+            name = qualifiedClassName(e.getTypeMirror());
+        }
+
+        return Void.class.getName().equals(name) ? DFLT_FEATURE_REG_CLS : name;
+    }
+
     /**
      * Generate code for processing write of single field:
      * <pre>
@@ -301,12 +362,26 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
      * @param opt Case option.
      * @param writeExpr Writer call expression.
      */
-    private void writeField(int opt, String writeExpr) {
+    private void writeField(VariableElement field, int opt, String writeExpr) {
         write.add(indentedLine("case %d:", opt));
 
         indent++;
 
+        String guard = buildRollingUpgradeFeatureGuard(field);
+
+        if (guard != null) {
+            write.add(indentedLine("if (%s) {", guard));
+
+            indent++;
+        }
+
         returnFalseIf(write, "!" + writeExpr);
+
+        if (guard != null) {
+            indent--;
+
+            write.add(indentedLine("}"));
+        }
 
         write.add(EMPTY);
         write.add(indentedLine("writer.incrementState();"));
@@ -335,10 +410,24 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
+        String guard = buildRollingUpgradeFeatureGuard(field);
+
+        if (guard != null) {
+            read.add(indentedLine("if (%s) {", guard));
+
+            indent++;
+        }
+
         read.add(indentedLine("%s = %s;", fieldRef(field), readExpr));
         read.add(EMPTY);
 
         returnFalseIf(read, "!reader.isLastRead()");
+
+        if (guard != null) {
+            indent--;
+
+            read.add(indentedLine("}"));
+        }
 
         read.add(EMPTY);
         read.add(indentedLine("reader.incrementState();"));
@@ -360,13 +449,13 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             checkTypeForCompress(type);
 
         if (type.getKind().isPrimitive())
-            return new FieldCall(capitalizeOnlyFirst(type.getKind().name()), null, false);
+            return FieldCall.scalar(capitalizeOnlyFirst(type.getKind().name()));
 
         if (type.getKind() == TypeKind.ARRAY) {
             TypeMirror compType = ((ArrayType)type).getComponentType();
 
             if (compType.getKind().isPrimitive())
-                return new FieldCall(capitalizeOnlyFirst(compType.getKind().name()) + "Array", null, false);
+                return FieldCall.scalar(capitalizeOnlyFirst(compType.getKind().name()) + "Array");
 
             if (compType.getKind() == TypeKind.DECLARED) {
                 Element compElem = ((DeclaredType)compType).asElement();
@@ -375,52 +464,52 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
                     imports.add(((QualifiedNameable)compElem).getQualifiedName().toString());
             }
 
-            return new FieldCall("ObjectArray", messageCollectionItemTypes(field, type), false);
+            return FieldCall.collection("ObjectArray", messageCollectionItemTypes(field, type), false);
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (sameType(type, String.class))
-                return new FieldCall("String", null, false);
+                return FieldCall.scalar("String");
 
             if (sameType(type, BitSet.class))
-                return new FieldCall("BitSet", null, false);
+                return FieldCall.scalar("BitSet");
 
             if (sameType(type, UUID.class))
-                return new FieldCall("Uuid", null, false);
+                return FieldCall.scalar("Uuid");
 
             if (sameType(type, IGNITE_UUID_CLS))
-                return new FieldCall("IgniteUuid", null, false);
+                return FieldCall.scalar("IgniteUuid");
 
             if (sameType(type, AFFINITY_TOPOLOGY_VERSION_CLS))
-                return new FieldCall("AffinityTopologyVersion", null, false);
+                return FieldCall.scalar("AffinityTopologyVersion");
 
             if (assignableFrom(erasedType(type), type(Map.class.getName())))
-                return new FieldCall("Map", messageCollectionItemTypes(field, type), compress);
+                return FieldCall.collection("Map", messageCollectionItemTypes(field, type), compress);
 
             if (assignableFrom(type, type(KEY_CACHE_OBJECT_CLS)))
-                return new FieldCall("KeyCacheObject", null, false);
+                return FieldCall.scalar("KeyCacheObject");
 
             if (assignableFrom(type, type(CACHE_OBJECT_CLS)))
-                return new FieldCall("CacheObject", null, false);
+                return FieldCall.scalar("CacheObject");
 
             if (assignableFrom(type, type(GRID_LONG_LIST_CLS)))
-                return new FieldCall("GridLongList", null, false);
+                return FieldCall.scalar("GridLongList");
 
             if (assignableFrom(type, type(IGNITE_PRODUCT_VERSION_CLS)))
-                return new FieldCall("IgniteProductVersion", null, false);
+                return FieldCall.scalar("IgniteProductVersion");
 
             if (assignableFrom(type, type(GRID_CACHE_VERSION_CLS)))
-                return new FieldCall("GridCacheVersion", null, false);
+                return FieldCall.scalar("GridCacheVersion");
 
             if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
-                return new FieldCall("Message", null, compress);
+                return FieldCall.message(compress);
             }
 
             if (assignableFrom(erasedType(type), type(Collection.class.getName())))
-                return new FieldCall("Collection", messageCollectionItemTypes(field, type), false);
+                return FieldCall.collection("Collection", messageCollectionItemTypes(field, type), false);
 
             throw new IllegalArgumentException("Unsupported declared type: " + type);
         }
@@ -756,10 +845,14 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         private final boolean compress;
 
         /** */
-        private FieldCall(String mtd, @Nullable String collDesc, boolean compress) {
+        private final boolean requiresCtx;
+
+        /** */
+        private FieldCall(String mtd, @Nullable String collDesc, boolean compress, boolean requiresCtx) {
             this.mtd = mtd;
             this.collDesc = collDesc;
             this.compress = compress;
+            this.requiresCtx = requiresCtx;
         }
 
         /** @return Full call expression; {@code valArg}, when given, is passed as the first argument (write side). */
@@ -775,7 +868,25 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             if (compress)
                 args.add("true");
 
+            if (requiresCtx)
+                args.add("ctx");
+
             return mtdPrefix + mtd + "(" + String.join(", ", args) + ")";
+        }
+
+        /** */
+        private static FieldCall scalar(String mtd) {
+            return new FieldCall(mtd, null, false, false);
+        }
+
+        /** */
+        private static FieldCall collection(String mtd, String collDesc, boolean compress) {
+            return new FieldCall(mtd, collDesc, compress, true);
+        }
+
+        /** */
+        private static FieldCall message(boolean compress) {
+            return new FieldCall("Message", null, compress, true);
         }
     }
 

@@ -1512,7 +1512,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                spi.validateRemoteFeatures(res.nodeFeatures());
+                ses.rebuildMessageSerializationContext(res.nodeFeatures());
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -3255,7 +3255,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     : new ClientMessageHolder(rebuiltMsg);
 
                 try {
-                    msgToSend.serialize(cliMsgSer);
+                    msgToSend.serialize(cliMsgSer, worker.session().serializationContext());
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to serialize message: " + msgToSend, e);
@@ -3437,7 +3437,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                spi.validateRemoteFeatures(res.nodeFeatures());
+                                ses.rebuildMessageSerializationContext(res.nodeFeatures());
 
                                 // We should take previousNodeAlive flag into account
                                 // only if we received the response from the correct node.
@@ -6664,7 +6664,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spi.writeMessage(ses, res, spi.getEffectiveSocketTimeout(srvSock));
 
-                    spi.validateRemoteFeatures(req.nodeFeatures());
+                    ses.rebuildMessageSerializationContext(req.nodeFeatures());
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
@@ -7526,6 +7526,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             lastMetricsUpdateMsgTimeNanos = System.nanoTime();
         }
 
+        /** */
+        TcpDiscoveryIoSession session() {
+            return ses;
+        }
+
         /**
          * @param clientVer Client version.
          */
@@ -7646,7 +7651,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param timeout Timeout.
          */
         private void writeMessage(ClientMessageHolder msgHolder, long timeout) throws IgniteCheckedException, IOException {
-            byte[] msgBytes = msgHolder.messageBytes();
+            byte[] msgBytes = msgHolder.messageBytes(ses.serializationContext());
 
             if (msgBytes != null)
                 spi.write(ses, msgBytes, timeout);
