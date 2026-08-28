@@ -50,9 +50,7 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
         this(false);
     }
 
-    /**
-     * @param autoEnableRollingUpgrade Auto-enable rolling upgrade flag.
-     */
+    /** @param autoEnableRollingUpgrade Auto-enable rolling upgrade flag. */
     public TestCompatibilityPluginProvider(boolean autoEnableRollingUpgrade) {
         this.autoEnableRollingUpgrade = autoEnableRollingUpgrade;
     }
