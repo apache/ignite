@@ -136,8 +136,8 @@
                                         <artifactId>ignite-tools</artifactId>
                                         <version>${project.version}</version>
                                     </tagletArtifact>
-                                    <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
-                                    <destDir>core</destDir>
+                                    <!-- Javadoc is generated into ${outputDirectory}/apidocs. -->
+                                    <outputDirectory>${basedir}/target/javadoc</outputDirectory>
 
                                     <excludePackageNames>
                                     <!-- External packages, usage of -subpackages flag leads to incorrect handling of excludePackageNames. -->
@@ -152,8 +152,6 @@
                                         :org.mindrot.*
 
                                     <!-- For each package use 2 patterns - direct and with .* suffix. -->
-                                        :org.apache.ignite.codegen
-                                        :org.apache.ignite.codegen.*
                                         :org.apache.ignite.examples
                                         :org.apache.ignite.examples.*
                                         :org.apache.ignite.internal
@@ -207,7 +205,7 @@
                                 <phase>initialize</phase>
                                 <configuration>
                                     <target>
-                                        <copy todir="${basedir}/target/javadoc/core">
+                                        <copy todir="${basedir}/target/javadoc/apidocs">
                                             <fileset dir="assembly/docfiles">
                                                 <include name="img/**" />
                                                 <include name="*.js" />
@@ -216,7 +214,7 @@
 
                                             <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
-                                            <doctask dir="target/javadoc/core">
+                                            <doctask dir="target/javadoc/apidocs">
                                                 <include name="**/*.html" />
                                                 <exclude name="overview-frame.html" />
                                                 <exclude name="allclasses-frame.html" />

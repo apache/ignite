@@ -532,6 +532,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         return fut;
     }
 
+    /** */
+    public Collection<GridCacheDistributedQueryFuture<?, ?, ?>> distributedQueryFutures() {
+        return futs.values();
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public GridCloseableIterator scanQueryDistributed(final CacheQuery qry,

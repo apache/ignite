@@ -30,16 +30,23 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
-/** */
-public class ColocationGroup implements SelfMarshallingMessage {
+/**
+ * Query/fragment colocation group. Has to be prepared to send to another node and to restore after receiving from another
+ * node.
+ *
+ * @see #prepareToSend()
+ * @see #afterReceive()
+ */
+public class ColocationGroup implements Message {
     /** */
     @Order(0)
     long[] srcIds;
@@ -49,7 +56,7 @@ public class ColocationGroup implements SelfMarshallingMessage {
     List<UUID> nodeIds;
 
     /** */
-    private List<List<UUID>> assignments;
+    private @Nullable List<List<UUID>> assignments;
 
     /**
      * Flag, indacating that assignment is formed by original cache assignment for given topology.
@@ -59,7 +66,7 @@ public class ColocationGroup implements SelfMarshallingMessage {
 
     /** Marshalled assignments serialization call holder. */
     @Order(2)
-    int[] marshalledAssignments;
+    @Nullable int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
@@ -233,6 +240,9 @@ public class ColocationGroup implements SelfMarshallingMessage {
         if (assignments == null)
             return this;
 
+        /** Protects {@link #afterReceive()}: assignments must not be marshaled yet. */
+        assert marshalledAssignments == null : "Marshalled assignments are already set.";
+
         List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
         Set<UUID> nodes = new HashSet<>();
 
@@ -294,7 +304,7 @@ public class ColocationGroup implements SelfMarshallingMessage {
      * Returns List of partitions to scan on the given node.
      *
      * @param nodeId Cluster node ID.
-     * @return List of partitions to scan on the given node.
+     * @return Partitions to scan on the given node.
      */
     public int[] partitions(UUID nodeId) {
         if (F.isEmpty(assignments))
@@ -311,8 +321,8 @@ public class ColocationGroup implements SelfMarshallingMessage {
         return parts.arrayCopy();
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
+    /** Prepares the assigments to send to another node. */
+    public void prepareToSend() {
         if (!F.isEmpty(marshalledAssignments) || assignments == null || primaryAssignment)
             return;
 
@@ -340,9 +350,10 @@ public class ColocationGroup implements SelfMarshallingMessage {
         marshalledAssignments = builder.build().buffer();
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
-        if (F.isEmpty(marshalledAssignments))
+    /** Properly unwraps the assigments after receiving from another node. */
+    public void afterReceive() {
+        /** {@link #assignments} are set in constructors or are updated when {@link #marshalledAssignments} is {@code null}. */
+        if (marshalledAssignments == null || assignments != null)
             return;
 
         int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
@@ -357,6 +368,8 @@ public class ColocationGroup implements SelfMarshallingMessage {
             assignments.add(nodeIdx >= nodeIds.size() ? Collections.emptyList() :
                 Collections.singletonList(nodeIds.get(nodeIdx)));
         }
+
+        marshalledAssignments = null;
     }
 
     /** */

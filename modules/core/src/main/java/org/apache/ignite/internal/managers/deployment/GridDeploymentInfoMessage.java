@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Deployment of classes, as it travels inside the messages carrying them.
  */
-public class GridDeploymentInfoMessage implements Message, GridDeploymentInfo, Serializable {
+public final class GridDeploymentInfoMessage implements Message, GridDeploymentInfo, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -41,6 +40,7 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -655,6 +656,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         long offset = validateAndGetOffset(rel.offset, SortNode.OFFSET_DEFAULT);
         long fetch = validateAndGetFetch(rel.fetch, SortNode.FETCH_DEFAULT);
 
+        // Zero FETCH is enforced by the outer IgniteLimit, while SortNode accepts only positive FETCH values.
+        if (fetch == 0)
+            fetch = SortNode.FETCH_DEFAULT;
+
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
 
@@ -672,7 +677,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** */
     private long validateAndGetFetch(RexNode node, long defaultVal) {
-        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch");
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch / limit");
     }
 
     /** {@inheritDoc} */
@@ -1072,6 +1077,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Supplier<Object> scalar = expressionFactory.execute(node);
         Object param = scalar.get();
 
+        if (param == null && !(node instanceof RexDynamicParam)) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
+
         if (!(param instanceof Number)) {
             String actual = param == null ? "null" : param.getClass().getSimpleName();
             throw new IgniteSQLException(IgniteResource.INSTANCE.incorrectDynamicParameterType("BIGINT", actual).str(),
@@ -1084,7 +1094,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             if (paramAsDecimal.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + op);
 
-            return IgniteMath.convertToLongExact(paramAsDecimal, RoundingMode.DOWN);
+            IgniteSqlSemantics sem = ctx.unwrap(IgniteSqlSemantics.class);
+            return IgniteSqlSemantics.convertPaginationValueToLong(paramAsDecimal, sem);
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),

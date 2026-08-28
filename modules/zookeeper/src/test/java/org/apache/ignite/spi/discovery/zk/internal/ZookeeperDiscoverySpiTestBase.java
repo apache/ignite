@@ -67,11 +67,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
@@ -934,13 +934,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
     /** */
     private static class TestAuthZookeeperDiscoverySpi extends TestZookeeperDiscoverySpi {
-        /** */
-        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-            ((IgniteEx)ignite).context().addNodeAttribute(
-                ATTR_SECURITY_CREDENTIALS,
-                new SecurityCredentials(null, null, igniteInstanceName));
+        /** {@inheritDoc} */
+        @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+            Map<String, Object> attrsWithCreds = new HashMap<>(attrs);
 
-            super.spiStart(igniteInstanceName);
+            attrsWithCreds.put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
+
+            super.setNodeAttributes(attrsWithCreds, ver);
         }
     }
 }

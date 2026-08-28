@@ -162,6 +162,17 @@ This utility can do the following commands:
     Parameters:
       new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
+  Kill all SQL/scan/index/continuous queries matching specified criteria:
+    control.(sh|bat) --kill all SQL|SCAN|INDEX|CONTINUOUS [--node-id node_id] [--min-duration 60] [--yes]
+
+    Parameters:
+      SQL                - SQL queries.
+      SCAN               - SCAN queries.
+      INDEX              - INDEX queries.
+      CONTINUOUS         - CONTINUOUS queries.
+      --node-id node_id  - Originating node ID to filter targets.
+      --min-duration 60  - Minimum duration in seconds.
+
   Kill compute task by session id:
     control.(sh|bat) --kill compute session_id
 
@@ -439,6 +450,25 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
     Parameters:
       --enabled  - Filter only enabled events.
+
+  Tests Communication SPI latency to all remote server nodes:
+    control.(sh|bat) --io-test communication --node-id node_id [--warmup warmup] [--duration duration] [--threads threads] [--payload-size payload_size] [--process-in-nio-thread]
+
+    Parameters:
+      --node-id node_id            - Source node ID.
+      --warmup warmup              - Warmup duration (millis, max 1 hour, 5000 by default).
+      --duration duration          - Test duration (millis, max 1 hour, 30000 by default).
+      --threads threads            - Number of test threads (max 64, 1 by default).
+      --payload-size payload_size  - Payload size in each direction (bytes, max 1 MiB, 0 by default).
+      --process-in-nio-thread      - Process requests and responses in NIO threads.
+
+  Tests how custom messages traverse the TcpDiscoverySpi ring:
+    control.(sh|bat) --io-test discovery [--samples samples] [--interval interval] [--payload-size payload_size]
+
+    Parameters:
+      --samples samples            - Number of samples (max 100, 10 by default).
+      --interval interval          - Interval between samples (millis, 10 to 60000, 100 by default).
+      --payload-size payload_size  - Payload size (bytes, max 64 KiB, 100 by default).
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

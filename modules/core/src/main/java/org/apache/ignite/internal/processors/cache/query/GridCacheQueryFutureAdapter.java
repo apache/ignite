@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
@@ -77,6 +78,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private final IgniteUuid timeoutId = IgniteUuid.randomUuid();
 
     /** */
+    private long startTime;
+
+    /** */
     private long endTime;
 
     /** */
@@ -103,7 +107,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
 
-        long startTime = U.currentTimeMillis();
+        startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
         capacity = query().query().limit();
@@ -188,10 +192,15 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @throws IgniteCheckedException If future is done with an error.
      */
     private void checkError() throws IgniteCheckedException {
-        if (error() != null) {
+        Throwable err = error();
+
+        if (err == null && isCancelled())
+            err = new QueryCancelledException("Query was cancelled");
+
+        if (err != null) {
             clear();
 
-            throw U.cast(error());
+            throw U.cast(err);
         }
     }
 
@@ -384,6 +393,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public IgniteUuid timeoutId() {
         return timeoutId;
+    }
+
+    /** Query start time. */
+    public long startTime() {
+        return startTime;
     }
 
     /** {@inheritDoc} */
