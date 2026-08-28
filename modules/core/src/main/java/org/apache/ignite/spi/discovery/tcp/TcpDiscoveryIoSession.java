@@ -35,9 +35,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
+import org.apache.ignite.internal.direct.IgniteMessageSerializationContext;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.X;
@@ -47,6 +50,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,6 +100,9 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     /** Buffered socket input stream. */
     private final CompositeInputStream in;
 
+    /** */
+    private volatile MessageSerializationContext serCtx = MessageSerializationContext.UNNEGOTIATED;
+
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
@@ -126,6 +133,16 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
         }
     }
 
+    /** */
+    void applyMessageSerializationContext(@Nullable IgniteNodeFeatureSet rmtFeatures) throws UnsupportedNodeVersionException {
+        serCtx = IgniteMessageSerializationContext.buildForPeers(ctx.localNodeFeatures(), rmtFeatures);
+    }
+
+    /** @return Serialization context the two nodes of this session agreed on. */
+    public MessageSerializationContext serializationContext() {
+        return serCtx;
+    }
+
     /**
      * Writes a discovery message to the underlying socket output stream.
      *
@@ -134,7 +151,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
      */
     synchronized void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         try {
-            msgSer.writeTo(msg, out);
+            msgSer.writeTo(msg, out, serCtx);
 
             out.flush();
         }
@@ -206,7 +223,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
                 readBuf.limit(read);
 
-                finished = MessageSerialization.readFrom(msgFactory, msg, msgReader);
+                finished = MessageSerialization.readFrom(msgFactory, msg, msgReader, serCtx);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
