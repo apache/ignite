@@ -284,8 +284,7 @@ public class MessageProcessor extends AbstractProcessor {
             else if (el.getAnnotation(IntroducedBy.class) != null || el.getAnnotation(DeprecatedBy.class) != null) {
                 processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Annotations @IntroducedBy and @DeprecatedBy guard a serialized field, so the field they are " +
-                        "applied to must also be annotated with @Order.",
+                    "Fields marked with @IntroducedBy or @DeprecatedBy must also be annotated with @Order",
                     el);
             }
         }
