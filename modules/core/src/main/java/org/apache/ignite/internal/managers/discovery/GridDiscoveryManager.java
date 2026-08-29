@@ -151,7 +151,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -172,13 +171,11 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
@@ -302,6 +299,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Local node compatibility consistent ID. */
     private Serializable consistentId;
+
+    /** */
+    private IoTestDiscoveryHandler ioTestHnd;
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -508,9 +508,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         spi.setMetricsProvider(createMetricsProvider());
 
         if (ctx.security().enabled()) {
-            if (isSecurityCompatibilityMode())
-                ctx.addNodeAttribute(ATTR_SECURITY_COMPATIBILITY_MODE, true);
-
             spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
                 @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
                     try {
@@ -529,6 +526,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (ctx.config().getCommunicationFailureResolver() != null)
             ctx.resource().injectGeneric(ctx.config().getCommunicationFailureResolver());
+
+        ioTestHnd = new IoTestDiscoveryHandler(ctx);
 
         // Shared reference between DiscoverySpiListener and DiscoverySpiDataExchange.
         AtomicReference<IgniteFuture<?>> lastStateChangeEvtLsnrFutRef = new AtomicReference<>();
@@ -1246,8 +1245,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
-        Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
-
         WALMode locWalMode = nodeWalMode(locNode);
 
         for (ClusterNode n : nodes) {
@@ -1337,22 +1334,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPlc +
                     ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPlc +
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
-            }
-
-            if (ctx.security().enabled()) {
-                Boolean rmtSecurityCompatibilityEnabled = n.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
-
-                if (!Objects.equals(locSecurityCompatibilityEnabled, rmtSecurityCompatibilityEnabled)) {
-                    throw new IgniteCheckedException("Local node's " + IGNITE_SECURITY_COMPATIBILITY_MODE +
-                        " property value differs from remote node's value " +
-                        "(to make sure all nodes in topology have identical Ignite security compatibility mode enabled, " +
-                        "configure system property explicitly) " +
-                        "[locSecurityCompatibilityEnabled=" + locSecurityCompatibilityEnabled +
-                        ", rmtSecurityCompatibilityEnabled=" + rmtSecurityCompatibilityEnabled +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                        ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
-                }
             }
 
             WALMode rmtWalMode = nodeWalMode(n);
@@ -2697,6 +2678,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         return null;
+    }
+
+    /** @return IO test handler. */
+    public IoTestDiscoveryHandler ioTest() {
+        return ioTestHnd;
     }
 
     /** Network segments checker. */

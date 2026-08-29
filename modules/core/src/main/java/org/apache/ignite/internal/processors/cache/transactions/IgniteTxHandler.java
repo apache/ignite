@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -340,7 +341,7 @@ public class IgniteTxHandler {
                     U.error(log, "Failed to prepare DHT transaction: " + locTx, e);
 
                 return new GridNearTxPrepareResponse(
-                    req.partition(),
+                    req.stripeIdx(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
@@ -360,14 +361,15 @@ public class IgniteTxHandler {
      * @return First entry.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteTxEntry unmarshal(@Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
+    private IgniteTxEntry initialize(@Nullable Collection<IgniteTxEntry> entries, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
         if (entries == null)
             return null;
 
         IgniteTxEntry firstEntry = null;
 
         for (IgniteTxEntry e : entries) {
-            e.unmarshal(ctx, false, ctx.deploy().globalLoader());
+            e.initializeContext(ctx, topVer, false);
 
             if (firstEntry == null)
                 firstEntry = e;
@@ -416,12 +418,24 @@ public class IgniteTxHandler {
         IgniteTxEntry firstEntry;
 
         try {
-            IgniteTxEntry firstWrite = unmarshal(req.writes());
-            IgniteTxEntry firstRead = unmarshal(req.reads());
+            IgniteTxEntry firstWrite = initialize(req.writes(), req.topologyVersion());
+            IgniteTxEntry firstRead = initialize(req.reads(), req.topologyVersion());
 
             firstEntry = firstWrite != null ? firstWrite : firstRead;
         }
         catch (IgniteCheckedException e) {
+            // The failed-message response must be sent from here: the entry context binding moved from the
+            // message-level unmarshal into this handler, so errors like "cache recreated" surface past
+            // GridCacheIoManager's catch, and the near node would hang without a response (IgniteCacheRecreateTest).
+            try {
+                req.onClassError(e);
+
+                ctx.io().processFailedMessage(nearNode.id(), req, null, req.policy());
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+
             return new GridFinishedFuture<>(e);
         }
 
@@ -498,7 +512,7 @@ public class IgniteTxHandler {
 
                     if (retry) {
                         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-                            req.partition(),
+                            req.stripeIdx(),
                             req.version(),
                             req.futureId(),
                             req.miniId(),
@@ -706,7 +720,7 @@ public class IgniteTxHandler {
                 ", req=" + req + ']');
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-            req.partition(),
+            req.stripeIdx(),
             req.version(),
             req.futureId(),
             req.miniId(),
@@ -991,7 +1005,7 @@ public class IgniteTxHandler {
 
             // Always send finish response.
             GridCacheMessage res = new GridNearTxFinishResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.threadId(),
                 req.futureId(),
@@ -1170,7 +1184,7 @@ public class IgniteTxHandler {
 
         try {
             res = new GridDhtTxPrepareResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -1184,9 +1198,28 @@ public class IgniteTxHandler {
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
 
-            List<IgniteTxKey> writesCacheMissed = req.nearWritesCacheMissed();
+            List<IgniteTxKey> writesCacheMissed = new ArrayList<>();
 
-            if (writesCacheMissed != null) {
+            Collection<IgniteTxEntry> writes = req.nearWrites();
+
+            for (Iterator<IgniteTxEntry> it = writes.iterator(); it.hasNext();) {
+                IgniteTxEntry e = it.next();
+
+                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
+
+                // A missing cache or one recreated after the request was sent: report the key back as evicted,
+                // so the near node drops its stale entry.
+                if (cacheCtx == null
+                    || (req.topologyVersion() != null && req.topologyVersion().before(cacheCtx.startTopologyVersion()))) {
+                    it.remove();
+
+                    writesCacheMissed.add(e.txKey());
+                }
+                else
+                    e.context(cacheCtx);
+            }
+
+            if (!writesCacheMissed.isEmpty()) {
                 Collection<IgniteTxKey> evicted0 = res.nearEvicted();
 
                 if (evicted0 != null)
@@ -1240,7 +1273,7 @@ public class IgniteTxHandler {
                 }
 
             res = new GridDhtTxPrepareResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -1557,7 +1590,7 @@ public class IgniteTxHandler {
     private void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed, GridCacheVersion nearTxId) {
         if (req.replyRequired() || req.checkCommitted()) {
             GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId());
@@ -1721,6 +1754,8 @@ public class IgniteTxHandler {
                     int idx = 0;
 
                     for (IgniteTxEntry entry : req.writes()) {
+                        entry.initializeContext(ctx, req.topologyVersion(), false);
+
                         GridCacheContext cacheCtx = entry.context();
 
                         int part = cacheCtx.affinity().partition(entry.key());

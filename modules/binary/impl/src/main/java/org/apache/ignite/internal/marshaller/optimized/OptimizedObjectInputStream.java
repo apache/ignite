@@ -48,6 +48,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
@@ -118,9 +119,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private MarshallerContext ctx;
 
     /** */
-    private OptimizedMarshallerIdMapper mapper;
-
-    /** */
     private ClassLoader clsLdr;
 
     /** */
@@ -136,7 +134,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> curCls;
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+    private ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap;
 
     /** The flag shown, the reader uses class loader cache used or not. */
     private boolean useCache;
@@ -153,22 +151,17 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /**
      * @param clsMap Class descriptors by class map.
      * @param ctx Context.
-     * @param mapper ID mapper.
      * @param clsLdr Class loader.
-     * @param useCache True if class loader cache will be used, false otherwise.
      */
     void context(
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
-        ClassLoader clsLdr,
-        boolean useCache
+        ClassLoader clsLdr
     ) {
         this.clsMap = clsMap;
         this.ctx = ctx;
-        this.mapper = mapper;
         this.clsLdr = clsLdr;
-        this.useCache = useCache;
+        this.useCache = Marshallers.USE_CACHE.get();
     }
 
     /**
@@ -361,11 +354,10 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 OptimizedClassDescriptor desc = typeId == 0
                     ? classDescriptor(
                         clsMap,
-                        CommonUtils.forName(readUTF(), clsLdr, ctx.classNameFilter(), useCache),
+                        ClassLoaderUtils.forName(readUTF(), clsLdr, useCache),
                         useCache,
-                        ctx,
-                        mapper)
-                    : classDescriptor(clsMap, typeId, clsLdr, useCache, ctx, mapper);
+                        ctx)
+                    : classDescriptor(clsMap, typeId, clsLdr, useCache, ctx);
 
                 curCls = desc.describedClass();
 
@@ -400,8 +392,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> readClass() throws ClassNotFoundException, IOException {
         int compTypeId = readInt();
 
-        return compTypeId == 0 ? CommonUtils.forName(readUTF(), clsLdr, null, useCache) :
-            classDescriptor(clsMap, compTypeId, clsLdr, useCache, ctx, mapper).describedClass();
+        return compTypeId == 0 ? ClassLoaderUtils.forName(readUTF(), clsLdr, useCache) :
+            classDescriptor(clsMap, compTypeId, clsLdr, useCache, ctx).describedClass();
     }
 
     /**
@@ -559,7 +551,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return CommonUtils.forName(desc.getName(), clsLdr, ctx.classNameFilter(), Marshallers.USE_CACHE.get());
+        return ClassLoaderUtils.forName(desc.getName(), clsLdr);
     }
 
     /**

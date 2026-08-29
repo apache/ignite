@@ -79,22 +79,24 @@ class MongoDBHelper {
             ) {
                 $clientUri .= rawurlencode($_SESSION['mpg']['mongodb_user']) . ':';
                 $clientUri .= rawurlencode($_SESSION['mpg']['mongodb_password']) . '@';
-                
-                
+
             }
-    
+
             $clientUri .= $_SESSION['mpg']['mongodb_host'];
-    
+
             if ( isset($_SESSION['mpg']['mongodb_port']) ) {
-                $clientUri .= ':' . $_SESSION['mpg']['mongodb_port'];
+              $clientUri .= ':' . $_SESSION['mpg']['mongodb_port'].'/';
+            }
+            else {
+              $clientUri .= ':27017/';
             }
             // When it's not defined: port defaults to 27017.
-    
+
             if ( isset($_SESSION['mpg']['mongodb_database']) ) {
-                $clientUri .= '/' . $_SESSION['mpg']['mongodb_database'];
+                $clientUri .= $_SESSION['mpg']['mongodb_database'];
             }
-            
-            $clientUri .= '/?ssl=false&maxPoolSize=5&retryReads=false';
+
+            $clientUri .= '?ssl=false&maxPoolSize=5&retryReads=false';
             
             if(isset($_SESSION['mpg']['mongodb_user'])){
             	$clientUri .= '&authMechanism=PLAIN'; // &authMechanism=PLAIN

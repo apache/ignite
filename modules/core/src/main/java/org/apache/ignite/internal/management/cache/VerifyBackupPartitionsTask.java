@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -84,6 +82,9 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 @GridInternal
 public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, IdleVerifyResult> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
@@ -94,15 +95,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
 
-    /** Shared for tests. */
-    public static Supplier<ExecutorService> poolSupplier = IgniteForkJoinPool::commonPool;
-
     /** Injected logger. */
     @LoggerResource
     private IgniteLogger log;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
@@ -335,9 +330,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /** */
-        private List<Future<Map<PartitionKey, PartitionHashRecord>>> calcPartitionHashAsync(
-            Set<Integer> grpIds
-        ) {
+        private List<Future<Map<PartitionKey, PartitionHashRecord>>> calcPartitionHashAsync(Set<Integer> grpIds) {
             List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFutures = new ArrayList<>();
 
             for (Integer grpId : grpIds) {
@@ -346,10 +339,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                ExecutorService pool = poolSupplier.get();
+                ExecutorService execSrvs = ignite.context().pools().getIdleVerifyExecutorService();
 
                 for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
-                    partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));
+                    partHashCalcFutures.add(calculatePartitionHashAsync(execSrvs, grpCtx, part, this::isCancelled));
             }
 
             return partHashCalcFutures;

@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -49,7 +50,12 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientAffinityConfiguration;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -146,7 +152,7 @@ public final class ClientUtils {
     }
 
     /**
-     * @return Deserialized map
+     * @return Deserialized map preserving entry order.
      */
     private static <K, V> Map<K, V> map(
         BinaryInputStream in,
@@ -155,12 +161,28 @@ public final class ClientUtils {
     ) {
         int cnt = in.readInt();
 
-        Map<K, V> map = new HashMap<>(cnt);
+        Map<K, V> map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++)
             map.put(keyReader.apply(in), valReader.apply(in));
 
         return map;
+    }
+
+    /** */
+    public static <T> T awaitFutureResult(IgniteInternalFuture<T> fut, long timeout, String desc) throws IgniteCheckedException {
+        try {
+            return timeout > 0 ? fut.get(timeout) : fut.get();
+        }
+        catch (IgniteFutureTimeoutCheckedException | IgniteFutureCancelledCheckedException |
+               IgniteInterruptedCheckedException e) {
+            throw new IgniteCheckedException("Failed to wait for " + desc + " completion [timeout=" + timeout + ']', e);
+        }
+    }
+
+    /** */
+    public static ClientConnectionException createClientConnectionException(Exception e, InetSocketAddress addr) {
+        return new ClientConnectionException(e.getMessage() + " [remoteAddress=" + addr + ']', e);
     }
 
     /** Deserialize binary type metadata from stream. */

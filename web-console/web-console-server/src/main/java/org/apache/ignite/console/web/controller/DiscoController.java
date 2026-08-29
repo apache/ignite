@@ -121,10 +121,25 @@ public class DiscoController {
      */
     @Operation(summary = "Delete node address.")
     @DeleteMapping(path = "/{group}/{nodeId}")
-    public ResponseEntity<Void> deleteActivity(@AuthenticationPrincipal Account acc,
+    public ResponseEntity<Integer> deleteActivity(@AuthenticationPrincipal Account acc,
     		@PathVariable("group") String group, @PathVariable("nodeId") UUID nodeId) {
-        activitiesSrv.delete(acc.getId(), nodeId);
-        return ResponseEntity.ok().build();
+        Activity r = activitiesSrv.delete(acc.getId(), nodeId);
+        return ResponseEntity.ok(r.getAmount());
+    }
+
+    @Operation(summary = "Clear all node address by group.")
+    @DeleteMapping(path = "/{group}/{action}/clear")
+    public ResponseEntity<Integer> deleteAllActivity(@AuthenticationPrincipal Account acc, @PathVariable("group") String group, @PathVariable("action") String action) {
+        Collection<Activity> list = activitiesSrv.list(acc.getId(), group, action);
+        int n = 0;
+        for(Activity act: list) {
+            if(act.json()==null || act.json().isBlank()) {
+                continue;
+            }
+            activitiesSrv.delete(acc.getId(), act.getId());
+            n++;
+        }
+        return ResponseEntity.ok(n);
     }
 
     @Operation(summary = "UnRegister Activity status ByAddress")

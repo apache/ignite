@@ -75,6 +75,7 @@ import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.RebuildIndexWorkflowCallback;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -1487,7 +1488,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
             CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl)cacheObjProc;
 
-            Class<?> cls = U.box(U.classForName(clsName, null, true));
+            Class<?> cls = U.box(ClassLoaderUtils.classForNameWithPrimitives(clsName));
 
             if (cls != null) {
                 if (!platformOnly)

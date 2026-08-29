@@ -80,8 +80,8 @@ class IndexRebuildTest(IgniteTest):
 
         control_utility.disable_baseline_auto_adjust()
 
-        _, version, _ = control_utility.cluster_state()
-        control_utility.set_baseline(version)
+        cluster_state = control_utility.cluster_state()
+        control_utility.set_baseline(cluster_state.topology_version)
 
         preload_time = preload_data(
             self.test_context,

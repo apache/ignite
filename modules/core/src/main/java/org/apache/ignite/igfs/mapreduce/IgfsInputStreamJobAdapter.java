@@ -21,14 +21,14 @@ import java.io.IOException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsInputStream;
-import org.apache.ignite.internal.util.GridFixedSizeInputStream;
+
 
 /**
  * Convenient {@link IgfsJob} adapter. It limits data returned from {@link IgfsInputStream} to bytes within
  * the {@link IgfsFileRange} assigned to the job.
  * <p>
  * Under the covers it simply puts job's {@code IgfsInputStream} position to range start and wraps in into
- * {@link GridFixedSizeInputStream} limited to range length.
+ * {GridFixedSizeInputStream} limited to range length.
  */
 public abstract class IgfsInputStreamJobAdapter extends IgfsJobAdapter {
     /** {@inheritDoc} */

@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1452,7 +1451,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             if (cls == null)
                 cls = cls0;
 
-            return BinaryUtils.doReadEnum(in, cls, Marshallers.USE_CACHE.get());
+            return BinaryUtils.doReadEnum(in, cls);
         }
         else
             return null;
@@ -2026,8 +2025,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case ENUM:
-                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr),
-                    Marshallers.USE_CACHE.get());
+                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 

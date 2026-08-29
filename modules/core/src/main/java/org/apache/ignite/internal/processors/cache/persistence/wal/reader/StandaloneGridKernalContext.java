@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
@@ -109,13 +110,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
 
 /**
  * Dummy context for offline utilities. All grid components registered in the standalone context
@@ -205,7 +207,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         this.ft = ft;
         this.marsh = new BinaryMarshaller();
 
-        marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
+        marshallerCtx = new MarshallerContextImpl(null);
         cfg = prepareIgniteConfiguration();
 
         try {
@@ -318,6 +320,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public GridKernalGateway gateway() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet localNodeFeatures() {
+        return LOCAL_CORE_FEATURES;
     }
 
     /** {@inheritDoc} */

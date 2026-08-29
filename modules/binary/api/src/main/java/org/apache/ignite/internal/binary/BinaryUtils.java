@@ -69,6 +69,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.IgniteUuidCache;
@@ -1623,17 +1624,16 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
-            boolean useCache = Marshallers.USE_CACHE.get();
 
             try {
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
             // forces registering of class by type id, at least locally
-            if (useCache)
+            if (Marshallers.USE_CACHE.get())
                 ctx.registerType(cls, false, false);
         }
 
@@ -1657,7 +1657,7 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
         else {
             try {
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1710,10 +1710,9 @@ public class BinaryUtils {
      * Having target class in place we simply read ordinal and create final representation.
      *
      * @param cls Enum class.
-     * @param useCache True if class loader cache will be used, false otherwise.
      * @return Value.
      */
-    static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls, boolean useCache) throws BinaryObjectException {
+    static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
         if (!cls.isEnum())
@@ -1721,7 +1720,7 @@ public class BinaryUtils {
 
         int ord = in.readInt();
 
-        if (useCache)
+        if (Marshallers.USE_CACHE.get())
             return BinaryEnumCache.get(cls, ord);
         else
             return uncachedEnumValue(cls, ord);
@@ -1764,7 +1763,7 @@ public class BinaryUtils {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr), Marshallers.USE_CACHE.get());
+                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr));
         }
 
         return arr;

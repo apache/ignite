@@ -80,9 +80,6 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
     private MarshallerContext ctx;
 
     /** */
-    private OptimizedMarshallerIdMapper mapper;
-
-    /** */
     private boolean requireSer;
 
     /** */
@@ -95,7 +92,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
     private PutFieldImpl curPut;
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+    private ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap;
 
     /**
      * @param out Output.
@@ -108,16 +105,11 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
     /**
      * @param clsMap Class descriptors by class map.
      * @param ctx Context.
-     * @param mapper ID mapper.
      * @param requireSer Require {@link Serializable} flag.
      */
-    void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
-        boolean requireSer) {
+    void context(ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap, MarshallerContext ctx, boolean requireSer) {
         this.clsMap = clsMap;
         this.ctx = ctx;
-        this.mapper = mapper;
         this.requireSer = requireSer;
     }
 
@@ -208,8 +200,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
                     Marshallers.USE_CACHE.get(),
-                    ctx,
-                    mapper);
+                    ctx);
 
                 if (desc.excluded()) {
                     writeByte(NULL);
@@ -236,8 +227,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
                         Marshallers.USE_CACHE.get(),
-                        ctx,
-                        mapper);
+                        ctx);
                 }
 
                 try {

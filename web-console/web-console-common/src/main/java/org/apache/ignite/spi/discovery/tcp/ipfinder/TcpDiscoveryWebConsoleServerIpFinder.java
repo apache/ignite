@@ -61,7 +61,7 @@ import org.apache.ignite.spi.IgniteSpiException;
  * Shared Web Console Server IP finder. <h1 class="header">Configuration</h1> <h2 class="header">Mandatory</h2> There are
  * no mandatory configuration parameters. <h2 class="header">Optional</h2> <ul> <li>Path (see {@link
  * #setMasterUrl(String)})</li> <li>Shared flag (see {@link #setShared(boolean)})</li> </ul> <p> If {@link #getPath()} is not
- * provided, then {@link #DFLT_PATH} will be used and only local nodes will discover each other. To enable discovery
+ * provided, then will be used and only local nodes will discover each other. To enable discovery
  * over network you must provide a path to a shared directory explicitly. <p> The directory will contain empty files
  * named like the following 192.168.1.136#1001. <p> Note that this finder is shared by default (see {@link
  * org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
@@ -173,8 +173,9 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 		return root;
 	}
 	
-	@Override public void onSpiContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        super.onSpiContextInitialized(spiCtx);
+	@Override public void onSpiContextDestroyed() {
+        clearAllAddresses();
+        super.onSpiContextDestroyed();
     }
 	
 	/**
@@ -185,6 +186,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
+            this.setShared(true);
         	String root = getFolderRoot();
         	String instanceName = this.ignite.name();
         	if (instanceName == null || instanceName.isEmpty())
@@ -327,14 +329,58 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
     @Override
     public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        // no-op
+        U.warn(log,"Call registerAddresses: "+ addrs);
+    }
+
+    public void clearAllAddresses() throws IgniteSpiException {
+        init();
+        try {
+            if(this.httpClient!=null) {
+                // 清除历史注册数据
+                String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/clear";
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Authorization", "token " + accountToken)
+                        .DELETE()
+                        .build();
+                httpClient.send(request,BodyHandlers.discarding());
+            }
+            else{
+                for (String fileName : folder.list()) {
+                    try {
+                        Path filePath = Path.of(folder.getCanonicalPath(),fileName);
+                        String content = Files.readString(filePath);
+                        JsonObject st = new JsonObject(content);
+
+                        if (st.isEmpty())
+                            continue;
+
+                        JsonArray addrsList = st.getJsonArray("discoveryAddress");
+                        addrsList.clear();
+
+                        st.put("discoveryAddress",addrsList);
+                        Files.writeString(filePath, st.toString());
+
+                    }
+                    catch (IllegalArgumentException | IOException e) {
+                        U.error(log, "Failed to parse file entry: " + fileName, e);
+                    }
+                }
+            }
+        }
+        catch (SecurityException e) {
+            throw new IgniteSpiException("Failed to delete file.", e);
+        } catch (IOException e) {
+            throw new IgniteSpiException("Failed to unregister address.", e);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
         init();
-        nodeCounter.incrementAndGet();
         try {
 
             JsonObject st = new JsonObject();
@@ -353,14 +399,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             st.put("discoveryAddress",hosts);
 
             if(this.httpClient!=null) {
-                UUID nodeId;
-                Object cid = ignite.cluster().localNode().consistentId();
-                if(cid instanceof  UUID){
-                    nodeId = (UUID)cid;
-                }
-                else{
-                    nodeId = StringToUUID.uuidFromString(cid.toString());
-                }
+                UUID nodeId = ignite.cluster().localNode().id();
             	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId+"/"+NODE_JOINED;
             	
             	HttpRequest request = HttpRequest.newBuilder()

@@ -20,13 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.marshaller.Marshaller;
-
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-
-import java.nio.ByteBuffer;
 
 /**
  * Base class for all IGFS communication messages sent between nodes.
@@ -39,7 +33,8 @@ public abstract class IgfsCommunicationMessage implements MarshallableMessage {
      * @param marsh Marshaller.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+    @Override
+    public void marshal(Marshaller marsh) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -48,8 +43,23 @@ public abstract class IgfsCommunicationMessage implements MarshallableMessage {
      * @param ldr Class loader.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    @Override
+    public void unmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
+    }
+
+
+    final void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        marshal(marsh);
+    }
+
+    /**
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException In case of error.
+     */
+    final void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        unmarshal(marsh,ldr);
     }
 
 }

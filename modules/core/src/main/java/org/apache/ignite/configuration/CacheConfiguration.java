@@ -614,15 +614,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     }
 
     /**
-     * @return Name of the memory policy.
-     * @deprecated Use {@link #getDataRegionName()} (String)} instead.
-     */
-    @Deprecated
-    public String getMemoryPolicyName() {
-        return memPlcName;
-    }
-
-    /**
      * Sets a name of {@link DataRegionConfiguration} for this cache.
      *
      * @param dataRegionName DataRegionConfiguration name. Can be null (default DataRegionConfiguration will be used)
@@ -635,16 +626,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
         this.memPlcName = dataRegionName;
 
         return this;
-    }
-
-    /**
-     * @param memPlcName Memory policy name.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setDataRegionName(String)} instead.
-     */
-    @Deprecated
-    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        return setDataRegionName(memPlcName);
     }
 
     /**

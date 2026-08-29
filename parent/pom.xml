@@ -23,13 +23,6 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>23</version>
-        <relativePath/>
-    </parent>
-
     <!--
         NOTE:
         The ignite-parent module is used as a shared pom between the Ignite internal submodules and the Ignite Extensions.
@@ -45,9 +38,29 @@
     <version>2.16.999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <distributionManagement>
+        <repository>
+            <id>${distMgmtReleasesId}</id>
+            <name>${distMgmtReleasesName}</name>
+            <url>${distMgmtReleasesUrl}</url>
+        </repository>
+        <snapshotRepository>
+            <id>${distMgmtSnapshotsId}</id>
+            <name>${distMgmtSnapshotsName}</name>
+            <url>${distMgmtSnapshotsUrl}</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+
+        <distMgmtReleasesId>apache.releases.https</distMgmtReleasesId>
+        <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
+        <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
+        <distMgmtSnapshotsId>apache.snapshots.https</distMgmtSnapshotsId>
+        <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
+        <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
 
         <revision>2.16.999-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -76,8 +89,8 @@
         <failureaccess.version>1.0.3</failureaccess.version>
         <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
-        <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.21.3</jackson.version>
+        <hamcrest.version>3.0</hamcrest.version>
+        <jackson.version>2.22.2</jackson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
@@ -125,7 +138,7 @@
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
         <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
-        <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
+        <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>

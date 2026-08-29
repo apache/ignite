@@ -16,7 +16,7 @@ import org.apache.ignite.console.tx.TransactionManager;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repository to work with node activities. uuid is consistentId not node ID
+ * Repository to work with node activities. uuid is node ID, 一个NodeId一条activitie数据，存储Node的实时数据
  */
 @Repository
 public class NodeRepository {
@@ -118,7 +118,7 @@ public class NodeRepository {
                 activity.setAction(act);
             }
 
-            if(json!=null)
+            if(json!=null && !json.isBlank())
                 activity.json(json);
 
             activitiesTbl.save(activity);

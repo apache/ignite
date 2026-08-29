@@ -18,29 +18,22 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.plugin.AbstractMarshallableMessageFactoryProvider;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
+import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.processors.igfs.client.*;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
 import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.*;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
-import java.io.ObjectInputStream;
-import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Binary context.
  */
-public class IgfsMessageFactoryProvider extends AbstractMarshallableMessageFactoryProvider {
+public class IgfsMessageFactoryProvider extends AbstractMessageFactoryProvider {
 
     /** Set of system classes that should be marshalled with BinaryMarshaller. */
     static Set<String> sysClss = new HashSet<>();
@@ -50,6 +43,7 @@ public class IgfsMessageFactoryProvider extends AbstractMarshallableMessageFacto
 
         // IGFS classes.
         sysClss.add(IgfsPath.class.getName());
+        sysClss.add(IgfsFileImpl.class.getName());
 
         sysClss.add(IgfsBlockKey.class.getName());
         sysClss.add(IgfsDirectoryInfo.class.getName());
@@ -96,29 +90,15 @@ public class IgfsMessageFactoryProvider extends AbstractMarshallableMessageFacto
     }
 
 	@Override
-	public void registerAll(MessageFactory factory) {
-
-        try {
-            BinaryMarshaller binaryMarshaller = (BinaryMarshaller)schemaAwareMarsh;
-            MarshallerContextImpl context = (MarshallerContextImpl)binaryMarshaller.getContext();
-            Field sysTypeSetField =  MarshallerContextImpl.class.getDeclaredField("sysTypesSet");
-            sysTypeSetField.setAccessible(true);
-            Collection<String> sysTypeSet = (Collection<String>) sysTypeSetField.get(context);
-            sysTypeSet.addAll(sysClss);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-
-        register(factory,IgfsAckMessage.class,(short)64, schemaAwareMarsh, resolvedClsLdr);
-        register(factory,IgfsBlockKey.class,(short)65, schemaAwareMarsh, resolvedClsLdr);
-        register(factory,IgfsBlocksMessage.class,(short)66, schemaAwareMarsh, resolvedClsLdr);
-        register(factory,IgfsDeleteMessage.class,(short)67, schemaAwareMarsh, resolvedClsLdr);
-        register(factory,IgfsFileAffinityRange.class,(short)68, schemaAwareMarsh, resolvedClsLdr);
-        register(factory,IgfsFragmentizerRequest.class,(short)69, schemaAwareMarsh, resolvedClsLdr);
-        register(factory,IgfsFragmentizerResponse.class,(short)70, schemaAwareMarsh, resolvedClsLdr);
-        register(factory,IgfsSyncMessage.class,(short)71, schemaAwareMarsh, resolvedClsLdr);
+	public void registerAll(IgniteMessageFactory factory) {
+        register(factory,IgfsAckMessage.class,(short)64);
+        register(factory,IgfsBlockKey.class,(short)65);
+        register(factory,IgfsBlocksMessage.class,(short)66);
+        register(factory,IgfsDeleteMessage.class,(short)67);
+        register(factory,IgfsFileAffinityRange.class,(short)68);
+        register(factory,IgfsFragmentizerRequest.class,(short)69);
+        register(factory,IgfsFragmentizerResponse.class,(short)70);
+        register(factory,IgfsSyncMessage.class,(short)71);
 	}
   
 }

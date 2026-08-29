@@ -17,18 +17,19 @@
 
 package org.apache.ignite.spi;
 
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.testframework.GridTestUtils.loadMarshaller;
 import static org.apache.ignite.testframework.GridTestUtils.loadSerializer;
 
 /**
@@ -45,20 +46,26 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
             short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
 
             for (Class<? extends Message> msg : msgs) {
-                Supplier<Message> msgSupp = () -> {
-                    try {
-                        return U.newInstance(msg);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new RuntimeException(e);
-                    }
-                };
-
-                f.register(directType, msgSupp, loadSerializer(msg, null, null));
+                f.register(directType, loadSerializer(msg), marshaller(msg));
 
                 directType++;
             }
         };
+    }
+
+    /**
+     * A marshaller companion is generated only for a message that has something to marshal, and the loader throws
+     * when there is no such class. Test messages are mostly plain, so a missing companion is the normal case here.
+     *
+     * @return Generated marshaller of the message, or {@code null} when the message has nothing to marshal.
+     */
+    private static <T extends Message> @Nullable MessageMarshaller<T> marshaller(Class<? extends Message> msg) {
+        try {
+            return loadMarshaller(msg);
+        }
+        catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -78,7 +85,7 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
 
         if (discoSpi instanceof TestTcpDiscoverySpi testDiscoSpi) {
             // Register messages into the discovery protocol.
-            testDiscoSpi.messageFactory(msgFactoryProvider, ctx.igniteConfiguration());
+            testDiscoSpi.messageFactory(msgFactoryProvider);
         }
     }
 }

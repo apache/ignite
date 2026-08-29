@@ -39,8 +39,7 @@ import java.util.Objects;
 /**
  * File's binary data block key.
  */
-public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externalizable, Binarylizable,
-    Comparable<IgfsBlockKey> {
+public final class IgfsBlockKey implements IgfsBaseBlockKey, Message, Externalizable, Binarylizable, Comparable<IgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
 

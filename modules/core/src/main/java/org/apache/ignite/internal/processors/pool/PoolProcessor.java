@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -144,6 +145,14 @@ public class PoolProcessor extends GridProcessorAdapter {
      */
     public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 30 * 1000L;
 
+    /** */
+    @SystemProperty(value = "Idle verify utility thread pool size.", type = Integer.class,
+        defaults = "Total available CPUs minus 2, but at least 4 threads.")
+    public static final String IDLE_VERIFY_POOL_SIZE_PROPERTY = "IGNITE_IDLE_VERIFY_POOL_SIZE";
+
+    /** */
+    private static final int DFLT_IDLE_VERIFY_POOL_SIZE = Math.max(4, IgniteConfiguration.AVAILABLE_PROC_CNT - 2);
+
     /** Executor service. */
     @GridToStringExclude
     private IgniteThreadPoolExecutor execSvc;
@@ -163,6 +172,10 @@ public class PoolProcessor extends GridProcessorAdapter {
     /** Management executor service. */
     @GridToStringExclude
     private IgniteThreadPoolExecutor mgmtExecSvc;
+
+    /** Idle verify executor service. */
+    @GridToStringExclude
+    private IgniteThreadPoolExecutor idleVerifyExecSvc;
 
     /** P2P executor service. */
     @GridToStringExclude
@@ -273,7 +286,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Failed to register IO executor pool because its ID as " +
                             "already used: " + id);
 
-                    extPools[id] = ctx.security().enabled() ? OperationContextAwareIoPool.wrap(ex) : ex;
+                    extPools[id] = OperationContextAwareIoPool.wrap(ex);
                 }
             }
         }
@@ -376,6 +389,22 @@ public class PoolProcessor extends GridProcessorAdapter {
             oomeHnd);
 
         mgmtExecSvc.allowCoreThreadTimeOut(true);
+
+        int idleVerifyPoolSz = IgniteSystemProperties.getInteger(IDLE_VERIFY_POOL_SIZE_PROPERTY, DFLT_IDLE_VERIFY_POOL_SIZE);
+
+        validateThreadPoolSize(idleVerifyPoolSz, "idle verify");
+
+        idleVerifyExecSvc = new IgniteThreadPoolExecutor(
+            "idleVerify",
+            cfg.getIgniteInstanceName(),
+            idleVerifyPoolSz,
+            idleVerifyPoolSz,
+            DFLT_THREAD_KEEP_ALIVE_TIME,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.UNDEFINED,
+            oomeHnd);
+
+        idleVerifyExecSvc.allowCoreThreadTimeOut(true);
 
         // Note that since we use 'LinkedBlockingQueue', number of
         // maximum threads has no effect.
@@ -622,6 +651,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         monitorExecutor("GridSystemExecutor", sysExecSvc);
         monitorExecutor("GridClassLoadingExecutor", p2pExecSvc);
         monitorExecutor("GridManagementExecutor", mgmtExecSvc);
+        monitorExecutor("GridIdleVerifyExecutor", idleVerifyExecSvc);
         monitorExecutor("GridAffinityExecutor", affExecSvc);
         monitorExecutor("GridCallbackExecutor", callbackExecSvc);
         monitorExecutor("GridQueryExecutor", qryExecSvc);
@@ -900,6 +930,15 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Executor service that is in charge to run idle verify routines.
+     *
+     * @return Thread pool implementation to be used idle verify routines.
+     */
+    public IgniteThreadPoolExecutor getIdleVerifyExecutorService() {
+        return idleVerifyExecSvc;
+    }
+
+    /**
      * @return Thread pool implementation to be used for peer class loading
      *      requests handling.
      */
@@ -1110,6 +1149,10 @@ public class PoolProcessor extends GridProcessorAdapter {
         U.shutdownNow(getClass(), mgmtExecSvc, log);
 
         mgmtExecSvc = null;
+
+        U.shutdownNow(getClass(), idleVerifyExecSvc, log);
+
+        idleVerifyExecSvc = null;
 
         U.shutdownNow(getClass(), p2pExecSvc, log);
 

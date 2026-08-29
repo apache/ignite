@@ -25,17 +25,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,6 +45,10 @@ import org.jetbrains.annotations.Nullable;
  * Information about partitions of all nodes in topology. <br> Is sent by topology coordinator: when all {@link
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
+ * Has to be prepared to send to another node and restored after receiving from another node.
+ *
+ * @see #prepareToSend()
+ * @see #received()
  */
 public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
@@ -91,17 +93,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(6)
     AffinityTopologyVersion topVer;
 
-    /** Exceptions. */
-    @GridToStringInclude
-    private Map<UUID, Throwable> errs;
-
     /**
-     * Used as a stub for serialization of {@link #errs}.
-     * All logic resides within getter and setter.
+     * Exceptions in wire form. The logical {@code Map<UUID, Throwable>} is exposed via
+     * {@link #getErrorsMap()} / {@link #setErrorsMap(Map)}.
      */
     @Order(7)
     @Compress
-    @SuppressWarnings("unused")
+    @GridToStringInclude
     Map<UUID, ErrorMessage> errMsgs;
 
     /** */
@@ -168,7 +166,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.partsToReload = partsToReload;
         cp.partsSizes = partsSizes;
         cp.topVer = topVer;
-        cp.errs = errs;
+        cp.errMsgs = errMsgs;
         cp.resTopVer = resTopVer;
         cp.joinedNodeAff = joinedNodeAff;
         cp.idealAffDiff = idealAffDiff;
@@ -363,14 +361,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Errors map.
      */
     @Nullable Map<UUID, Throwable> getErrorsMap() {
-        return errs;
+        return errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
     }
 
     /**
      * @param errs Errors map.
      */
     void setErrorsMap(Map<UUID, Throwable> errs) {
-        this.errs = new HashMap<>(errs);
+        errMsgs = new HashMap<>();
+
+        for (Map.Entry<UUID, Throwable> e : errs.entrySet())
+            errMsgs.put(e.getKey(), new ErrorMessage(e.getValue()));
     }
 
     /**
@@ -387,14 +388,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         flags = rebalanced ? (byte)(flags | REBALANCED_FLAG_MASK) : (byte)(flags & ~REBALANCED_FLAG_MASK);
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
+    /** Prepares this partitions map to send to another node. */
+    public void prepareToSend() {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
-
-        errMsgs = errs == null ? null : F.viewReadOnly(errs, ErrorMessage::new);
     }
 
     /**
@@ -411,10 +408,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
+    /** Properly unwraps the partitions map after receiving from another node. */
+    public GridDhtPartitionsFullMessage received() {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 
@@ -447,7 +442,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (parts == null)
             parts = new HashMap<>();
 
-        errs = errMsgs == null ? null : F.viewReadOnly(errMsgs, e -> e.error());
+        return this;
     }
 
 
@@ -494,6 +489,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public void cleanUp() {
         locParts = null;
         partCntrs = null;
+        partsSizes = null;
     }
 
     /** */

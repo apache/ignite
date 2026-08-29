@@ -96,16 +96,16 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        super.prepareMarshal(marsh);
+    @Override public void marshal(Marshaller marsh) throws IgniteCheckedException {
+        super.marshal(marsh);
 
         if (err != null)
             errBytes = U.marshal(marsh, err);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(marsh, ldr);
+    @Override public void unmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        super.unmarshal(marsh, ldr);
 
         if (errBytes != null)
             err = U.unmarshal(marsh, errBytes, ldr);

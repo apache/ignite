@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -343,7 +344,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         GridClientTaskRequest taskReq = (GridClientTaskRequest)msg;
 
         try {
-            return U.hasAnnotation(U.forName(taskReq.taskName(), null), InterruptibleVisorTask.class);
+            return U.hasAnnotation(ClassLoaderUtils.forName(taskReq.taskName()), InterruptibleVisorTask.class);
         }
         catch (ClassNotFoundException e) {
             log.warning("Task closure can't be found: [task=" + taskReq.taskName() + ']', e);

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor.CancelableTask;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -318,7 +318,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private void scheduleHandshakeTimeout(GridNioSession ses, long handshakeTimeout) {
         assert handshakeTimeout > 0;
 
-        Closeable timeoutTask = ctx.timeout().schedule(new Runnable() {
+        CancelableTask timeoutTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
                 ses.close();
 
@@ -337,15 +337,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param ses Connection session.
      */
     private void cancelHandshakeTimeout(GridNioSession ses) {
-        Closeable timeoutTask = ses.removeMeta(CONN_CTX_HANDSHAKE_TIMEOUT_TASK);
+        CancelableTask timeoutTask = ses.removeMeta(CONN_CTX_HANDSHAKE_TIMEOUT_TASK);
 
-        try {
-            if (timeoutTask != null)
-                timeoutTask.close();
-        }
-        catch (Exception e) {
-            U.warn(log, "Failed to cancel handshake timeout task " +
-                "[remoteAddr=" + ses.remoteAddress() + ", err=" + e + ']');
+        if (timeoutTask != null) {
+            // This method may be called under the SSL handler lock, so it must not wait for the timeout callback.
+            timeoutTask.cancel();
         }
     }
 
@@ -358,7 +354,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     private void onHandshake(GridNioSession ses, ClientMessage msg) {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null, null));
+        marsh.setContext(new MarshallerContextImpl(null));
 
         BinaryReaderEx reader = BinaryUtils.reader(U.binaryContext(marsh), BinaryStreams.inputStream(msg.payload()), null, true);
 

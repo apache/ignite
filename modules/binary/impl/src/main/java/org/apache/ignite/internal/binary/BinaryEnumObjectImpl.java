@@ -367,12 +367,12 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         this.ctx = ctx.binaryContext();
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
+    @Override public void marshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         // No-op.
     }
 

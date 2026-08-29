@@ -1394,7 +1394,6 @@ public class ClusterCachesInfo {
                 grpDesc.startTopologyVersion(),
                 grpDesc.deploymentId(),
                 grpDesc.caches(),
-                0,
                 grpDesc.persistenceEnabled(),
                 grpDesc.walEnabled(),
                 grpDesc.walChangeRequests(),
@@ -1410,7 +1409,6 @@ public class ClusterCachesInfo {
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = cfgSplitter.split(desc);
 
             CacheData cacheData = new CacheData(splitCfg.get1(),
-                desc.cacheId(),
                 desc.groupId(),
                 desc.cacheType(),
                 desc.deploymentId(),
@@ -1419,7 +1417,6 @@ public class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 desc.sql(),
                 false,
-                0,
                 splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
@@ -1434,7 +1431,6 @@ public class ClusterCachesInfo {
             CacheData cacheData = new CacheData(
                 splitCfg.get1(),
                 0,
-                0,
                 desc.cacheType(),
                 desc.deploymentId(),
                 desc.schema(),
@@ -1442,20 +1438,16 @@ public class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 false,
                 true,
-                0,
                 splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
             templates.put(desc.cacheName(), cacheData);
         }
 
-        Collection<String> restarting = new HashSet<>(restartingCaches.keySet());
-
         return new CacheNodeCommonDiscoveryData(caches,
             templates,
             cacheGrps,
             ctx.discovery().clientNodesMap(),
-            restarting,
             clusterCacheGrpRecoveryData
         );
     }
@@ -1552,6 +1544,14 @@ public class ClusterCachesInfo {
             assert grpDesc != null : cacheData.cacheConfiguration().getName();
 
             CacheConfiguration<?, ?> cfg = cacheData.cacheConfiguration();
+
+            // CacheGroupData and CacheData are marshalled as separate byte[] blobs, so on receipt the cache
+            // config's AffinityFunction is a different instance from the group config's. With JDK serialization
+            // this was transparent — the shared object graph kept reference identity across the wire.
+            // Restore it here so GridCacheProcessor.lifecycleAwares() does not start/stop the affinity twice
+            // (it compares group and cache affinity by != and adds per-cache affinity to the lifecycle
+            // list only when they differ).
+            cfg.setAffinity(grpDesc.config().getAffinity());
 
             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
                 ctx,
