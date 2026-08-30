@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.CacheStoreTxPutAllMultiNodeTe
 import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutKeyAttachedBinaryObjectTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWithWriteThroughCheckTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFutureCleanUpTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalanceOrderTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingAsyncSelfTest;
@@ -76,6 +77,7 @@ public class IgniteCacheTestSuite19 {
         GridTestUtils.addTestIfNeeded(suite, ClientCreateCacheGroupOnJoinNodeMapsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePutKeyAttachedBinaryObjectTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteTxCacheWithWriteThroughCheckTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridDhtPartitionsExchangeFutureCleanUpTest.class, ignoredTests);
 
         return suite;
     }

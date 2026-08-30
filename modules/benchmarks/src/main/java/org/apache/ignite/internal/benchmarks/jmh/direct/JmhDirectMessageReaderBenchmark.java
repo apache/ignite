@@ -30,7 +30,6 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -45,7 +44,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.openjdk.jmh.annotations.Mode.Throughput;
 
 /** Benchmarks the {@link DirectMessageReader} compressed-field hot path. */
@@ -123,6 +121,6 @@ public class JmhDirectMessageReaderBenchmark {
     /** */
     private static MessageFactory msgFactory() {
         return new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new CoreMessagesProvider(jdk(), jdk(), U.gridClassLoader())});
+            new CoreMessagesProvider()});
     }
 }

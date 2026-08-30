@@ -42,6 +42,8 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.openjdk.jol.info.GraphLayout;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
+
 /**
  *
  */
@@ -333,7 +335,8 @@ public class GridAffinityAssignmentJolBenchmark {
             0,
             metrics,
             ver,
-            "Node_" + idx
+            "Node_" + idx,
+            LOCAL_CORE_FEATURES
         );
         node.setAttributes(Collections.emptyMap());
 

@@ -19,10 +19,19 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.Arrays;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
+/**
+ * Distributed Metastorage history items holder. Is a persistent {@link IgniteDataTransferObject} stored by {@link MetaStorage}
+ * using the dedicated code-generated DTO-serializer. Then, has a transfer wrap {@link DistributedMetaStorageHistoryItemMessage}.
+ *
+ * @see DistributedMetaStorageHistoryItemMessage
+ * @see DmsDataWriter#write(String, byte[])
+ * @see MetaStorage#write(String, Serializable)
+ */
 final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
@@ -60,6 +69,16 @@ final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
 
         this.keys = keys;
         this.valBytesArr = valBytesArr;
+    }
+
+    /** @return Array of {@link DistributedMetaStorageHistoryItem} created of the related {@link Message} transfer wraps. */
+    static DistributedMetaStorageHistoryItem[] fromMessages(DistributedMetaStorageHistoryItemMessage[] histMsgs) {
+        DistributedMetaStorageHistoryItem[] res = new DistributedMetaStorageHistoryItem[histMsgs.length];
+
+        for (int i = 0; i < histMsgs.length; ++i)
+            res[i] = new DistributedMetaStorageHistoryItem(histMsgs[i].keys, histMsgs[i].valBytes);
+
+        return res;
     }
 
     /** */

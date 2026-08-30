@@ -105,6 +105,30 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
             .check();
     }
 
+    /** */
+    @Test
+    public void testMergeJoinUnderCorrelateSurvivesRewind() {
+        sql("CREATE TABLE t0 (a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("CREATE TABLE t1 (a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("CREATE TABLE t2 (a INTEGER, b INTEGER) WITH " + atomicity());
+
+        sql("INSERT INTO t0 VALUES (1, 1), (2, 2), (3, 3)");
+        sql("INSERT INTO t1 VALUES (1, 1), (2, 2), (3, 3)");
+        sql("INSERT INTO t2 VALUES (1, 1)");
+
+        String qry = "SELECT t0.a, (SELECT /*+ MERGE_JOIN */ count(*) FROM t1 LEFT JOIN t2 ON t1.a = t2.a " +
+            "WHERE t1.a = (SELECT t0.a)) FROM t0";
+
+        // The defect is only reachable while the plan keeps a merge join under the correlate.
+        assertQuery(qry)
+            .matches(QueryChecker.containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
+            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
+            .returns(1, 1L)
+            .returns(2, 1L)
+            .returns(3, 1L)
+            .check();
+    }
+
     /**
      * Tests colocated join possible with the help of correlated distribution.
      */
@@ -175,6 +199,23 @@ public class CorrelatesIntegrationTest extends AbstractBasicIntegrationTransacti
         assertQuery("SELECT ID1 FROM T1 WHERE REF1 IN " +
             "(SELECT REF2 FROM T2 WHERE NOT EXISTS (SELECT REF3 FROM T3 WHERE REF3 = T1.REF1))")
             .returns(1).returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testCorrelatedSubqueryWithFetchExpressionInView() {
+        sql("CREATE TABLE dept(deptid INTEGER PRIMARY KEY, name VARCHAR) WITH " + atomicity());
+        sql("CREATE TABLE emp(empid INTEGER PRIMARY KEY, deptid INTEGER) WITH " + atomicity());
+        sql("INSERT INTO dept VALUES (0, 'd0'), (1, 'd1')");
+        sql("INSERT INTO emp VALUES (11, 0), (10, 0), (20, 1)");
+        sql("CREATE VIEW dept_view AS SELECT "
+            + "(SELECT empid FROM emp WHERE emp.deptid = dept.deptid ORDER BY empid "
+            + "FETCH FIRST (1 + 0) ROWS ONLY) empid FROM dept");
+
+        assertQuery("SELECT empid FROM dept_view ORDER BY empid")
+            .returns(10)
+            .returns(20)
             .check();
     }
 }

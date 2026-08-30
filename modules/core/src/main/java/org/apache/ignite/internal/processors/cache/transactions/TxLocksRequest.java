@@ -19,15 +19,11 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Transactions lock list request.
@@ -37,14 +33,13 @@ public class TxLocksRequest extends GridCacheMessage {
     @Order(0)
     long futId;
 
-    /** Tx keys. */
-    @GridToStringInclude
-    private Set<IgniteTxKey> txKeys;
-
-    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
+    /**
+     * Tx keys, deduplicated by the sender. Not a {@code Set}: the reader would fill one while reading, and
+     * {@link IgniteTxKey#hashCode()} throws until the key's cache object is resolved, which happens later.
+     */
     @Order(1)
-    IgniteTxKey[] txKeysArr;
+    @GridToStringInclude
+    Collection<IgniteTxKey> txKeys;
 
     /**
      * Default constructor.
@@ -71,9 +66,7 @@ public class TxLocksRequest extends GridCacheMessage {
         return futId;
     }
 
-    /**
-     * @return Tx keys.
-     */
+    /** */
     public Collection<IgniteTxKey> txKeys() {
         return txKeys;
     }
@@ -87,35 +80,4 @@ public class TxLocksRequest extends GridCacheMessage {
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        txKeysArr = new IgniteTxKey[txKeys.size()];
-
-        int i = 0;
-
-        for (IgniteTxKey key : txKeys) {
-            key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
-            txKeysArr[i++] = key;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        txKeys = U.newHashSet(txKeysArr.length);
-
-        for (IgniteTxKey key : txKeysArr) {
-            key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-            txKeys.add(key);
-        }
-
-        txKeysArr = null;
-    }
-
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.job;
 import java.util.AbstractCollection;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -35,6 +36,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDeploymentException;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.GridJobContextImpl;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.GridJobSessionImpl;
+import org.apache.ignite.internal.GridJobSiblingImpl;
 import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridKernalContext;
@@ -63,6 +66,7 @@ import org.apache.ignite.internal.PlatformSecurityAwareJob;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdapter;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -734,9 +738,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 // Error is set?
                 if (t.get1() != null)
                     throw new IgniteCheckedException(t.get1());
-                else
-                    // Return result
-                    return t.get2().jobSiblings();
+                else {
+                    IgniteUuid[] siblingJobsIds = t.get2().siblingJobsIds;
+
+                    return F.isEmpty(siblingJobsIds)
+                        ? Collections.emptyList()
+                        : Stream.of(siblingJobsIds).map(sibJobId -> new GridJobSiblingImpl(ses.getId(), sibJobId, taskNodeId, ctx))
+                            .collect(Collectors.toList());
+                }
             }
             catch (InterruptedException e) {
                 throw new IgniteCheckedException("Interrupted while waiting for job siblings response: " + ses, e);
@@ -1175,11 +1184,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      * @param node Node.
      * @param req Request.
+     * @param siblingJobs Siblings jobs. TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28964
      */
     @SuppressWarnings("TooBroadScope")
-    public void processJobExecuteRequest(ClusterNode node, final GridJobExecuteRequest req) {
+    public void processJobExecuteRequest(
+        ClusterNode node, GridJobExecuteRequest req,
+        @Nullable Collection<ComputeJobSibling> siblingJobs
+    ) {
         if (log.isDebugEnabled())
-            log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
+            log.debug("Processing job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
         PartitionsReservation partsReservation = null;
 
@@ -1194,7 +1207,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (!rwLock.tryReadLock()) {
             if (log.isDebugEnabled())
-                log.debug("Received job execution request while stopping this node (will ignore): " + req);
+                log.debug("Processing job execution request while stopping this node (will ignore): " + req);
 
             return;
         }
@@ -1208,15 +1221,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             GridDeployment tmpDep = req.forceLocalDeployment() ?
                 ctx.deploy().getLocalDeployment(req.taskClassName()) :
-                ctx.deploy().getGlobalDeployment(
-                    req.deploymentMode(),
-                    req.taskName(),
-                    req.taskClassName(),
-                    req.userVersion(),
-                    node.id(),
-                    req.classLoaderId(),
-                    req.loaderParticipants(),
-                    null);
+                ctx.deploy().globalDeployment(req.deploymentInfo(), req.taskName(), req.taskClassName(), node.id());
 
             if (tmpDep == null) {
                 if (log.isDebugEnabled())
@@ -1224,7 +1229,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Check local tasks.
                 for (Map.Entry<String, GridDeployment> d : ctx.task().getUsedDeploymentMap().entrySet()) {
-                    if (d.getValue().classLoaderId().equals(req.classLoaderId())) {
+                    if (d.getValue().classLoaderId().equals(req.deploymentInfo().classLoaderId())) {
                         assert d.getValue().local();
 
                         tmpDep = d.getValue();
@@ -1249,10 +1254,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     boolean loc = ctx.localNodeId().equals(node.id()) && !ctx.config().isMarshalLocalJobs();
 
                     try {
-                        if (!loc)
-                            req.finishUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        // The job payload waits for this point: only now is there a deployment to unmarshal it with.
+                        if (!loc) {
+                            CommunicationMarshalling.unmarshal(req, ctx, null,
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        }
 
-                        // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.sessionId(),
                             node.id(),
@@ -1263,7 +1270,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.getTopologyPredicate(),
                             req.startTaskTime(),
                             endTime,
-                            req.getSiblings(),
+                            siblingJobs,
                             req.getSessionAttributes(),
                             req.sessionFullSupport(),
                             req.internal(),
@@ -1281,7 +1288,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     catch (IgniteCheckedException e) {
                         IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
                             "[taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
-                            ", codeVer=" + req.userVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
+                            ", codeVer=" + req.deploymentInfo().userVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
 
                         U.error(log, ex.getMessage(), e);
 
@@ -1373,9 +1380,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     // Deployment is null.
                     IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
-                        ", codeVer=" + req.userVersion() + ", clsLdrId=" + req.classLoaderId() +
-                        ", seqNum=" + req.classLoaderId().localId() + ", depMode=" + req.deploymentMode() +
-                        ", dep=" + dep + ']');
+                        ", dep=" + req.deploymentInfo() + ", resolved=" + dep + ']');
 
                     U.error(log, ex.getMessage(), ex);
 
@@ -1614,8 +1619,22 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 false,
                 null);
 
-            if (!loc)
-                jobRes.marshallUserData(marsh, log);
+            if (!loc) {
+                try {
+                    CommunicationMarshalling.marshal(jobRes, ctx, null);
+                }
+                catch (IgniteCheckedException e) {
+                    // The exception is the only payload of this response, so it is what could not be written.
+                    String errMsg = "Failed to serialize job exception [nodeId=" + sndNode.id() +
+                        ", ses=" + req.sessionId() + ", jobId=" + req.jobId() + ']';
+
+                    U.error(log, errMsg, e);
+
+                    jobRes = jobRes.withError(new IgniteException(errMsg));
+
+                    CommunicationMarshalling.marshal(jobRes, ctx, null);
+                }
+            }
 
             if (req.sessionFullSupport()) {
                 // Send response to designated job topic.
@@ -2191,7 +2210,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             assert node != null;
 
-            processJobExecuteRequest(node, (GridJobExecuteRequest)msg);
+            GridJobExecuteRequest req = (GridJobExecuteRequest)msg;
+
+            Collection<ComputeJobSibling> siblingJobs = F.isEmpty(req.siblingJobsIds())
+                ? null
+                : Stream.of(req.siblingJobsIds()).map(sibJobId -> new GridJobSiblingImpl(req.sessionId(), sibJobId, nodeId, ctx))
+                    .collect(Collectors.toList());
+
+            processJobExecuteRequest(node, (GridJobExecuteRequest)msg, siblingJobs);
         }
     }
 

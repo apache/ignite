@@ -220,13 +220,12 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
-            TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
             checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.writeToSocket(sock, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -240,14 +239,13 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
             Socket sock,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
             checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeToSocket(sock, res, timeout);
         }
     }
 

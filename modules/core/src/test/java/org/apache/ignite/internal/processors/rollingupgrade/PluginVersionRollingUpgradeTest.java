@@ -131,11 +131,11 @@ public class PluginVersionRollingUpgradeTest extends AbstractRollingUpgradeTest 
         checkJoinFailed(3, "2.20.0", false, "Some components active in the cluster are not configured on the joining server node");
         checkJoinSuccess(3, "2.20.0", true);
 
-        checkJoinFailed(4, "2.20.0 | 3.0.0", RU_UNAVAILABLE_BETWEEN_VER_ERR);
+        checkJoinFailed(4, "2.20.0 | 3.0.0", NOT_SUPPORTED_VER_ERR);
 
         checkJoinSuccess(4, "2.20.0 | 2.0.0", true);
 
-        checkJoinFailed(5, "2.20.0 | 3.0.0", VER_INCOMPATIBLE_ERR);
+        checkJoinFailed(5, "2.20.0 | 2.1.0", VER_INCOMPATIBLE_ERR);
 
         upgradeNodeVersion(0, "2.19.0 | 1.0.0", "2.20.0 | 2.0.0");
         upgradeNodeVersion(1, "2.19.0 | 1.0.0", "2.20.0 | 2.0.0");

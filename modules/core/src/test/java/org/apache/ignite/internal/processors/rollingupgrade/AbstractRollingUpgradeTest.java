@@ -71,6 +71,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jspecify.annotations.Nullable;
@@ -148,8 +149,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         "One or more component versions on the joining node differ from the corresponding versions active in the cluster";
 
     /** */
-    protected static final String RU_UNAVAILABLE_BETWEEN_VER_ERR = "Ignite component Rolling Upgrade is not supported" +
-        " between the component version active in the cluster and the version running on the joining node";
+    protected static final String NOT_SUPPORTED_VER_ERR = "Remote node component versions are not supported";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -346,10 +346,14 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected void checkJoinFailed(int nodeIdx, String ver, boolean checkClientNode, String msg) {
         int expClusterSize = clusterNode().cluster().nodes().size();
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver), IgniteSpiException.class, msg);
+        Class<? extends Throwable> errCls = Objects.equals(msg, NOT_SUPPORTED_VER_ERR)
+            ? UnsupportedNodeVersionException.class
+            : IgniteSpiException.class;
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver), errCls, msg);
 
         if (checkClientNode)
-            GridTestUtils.assertThrowsAnyCause(log, () -> startClientGrid(nodeIdx, ver), IgniteSpiException.class, msg);
+            GridTestUtils.assertThrowsAnyCause(log, () -> startClientGrid(nodeIdx, ver), errCls, msg);
 
         assertEquals(expClusterSize, clusterNode().cluster().nodes().size());
     }
@@ -389,11 +393,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected void checkPreviousClusterFeatures(@Nullable String expVer) throws Exception {
         TestVersions expVersions = expVer == null ? null : TestVersions.parse(expVer);
 
-        IgniteCoreFeatureSet expPrevCoreFeatures = expVersions != null
-            ? new IgniteCoreFeatureSet(
-                IgniteProductVersion.fromString(expVersions.coreVersion()),
-                IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(expVersions.coreVersion())))
-            : null;
+        IgniteCoreFeatureSet expPrevCoreFeatures = expVersions != null ? createCoreFeatureSet(expVersions.coreVersion()) : null;
 
         IgnitePluginFeatureSet expPrevPluginFeatures = expVersions != null && expVersions.containsPlugin()
             ? new IgnitePluginFeatureSet(
@@ -415,6 +415,13 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
                     assertEquals(expPrevPluginFeatures, prevFeatures.componentFeatures(TestPluginFeature.COMPONENT_NAME));
             }
         }
+    }
+
+    /** */
+    public static IgniteCoreFeatureSet createCoreFeatureSet(String ver) throws Exception {
+        return new IgniteCoreFeatureSet(
+            IgniteProductVersion.fromString(ver),
+            IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(ver)));
     }
 
     /** */

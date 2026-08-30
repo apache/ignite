@@ -98,8 +98,10 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
         nodesCnt = remoteFragmentsCnt + 1;
         super.setup();
 
+        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
+
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
-        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CalciteMessageFactory()});
+        new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{msgFactory});
     }
 
     /** */

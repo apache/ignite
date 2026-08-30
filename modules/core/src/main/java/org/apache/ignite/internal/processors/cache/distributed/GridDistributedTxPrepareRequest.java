@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -37,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -93,42 +89,35 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** Transaction read set. */
     @Order(5)
     @GridToStringInclude
-    public Collection<IgniteTxEntry> reads;
+    public @Nullable Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
     @Order(6)
     @GridToStringInclude
-    public Collection<IgniteTxEntry> writes;
+    public @Nullable Collection<IgniteTxEntry> writes;
 
-    /** DHT versions to verify. */
-    @GridToStringInclude
-    private Map<IgniteTxKey, GridCacheVersion> dhtVers;
-
-    /** */
+    /** Keys whose DHT version has to be verified on the remote node. */
     @Order(7)
+    @GridToStringInclude
     public Collection<IgniteTxKey> dhtVerKeys;
 
-    /** */
-    @Order(8)
-    public Collection<GridCacheVersion> dhtVerVals;
-
     /** Expected transaction size. */
-    @Order(9)
+    @Order(8)
     public int txSize;
 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
-    @Order(10)
+    @Order(9)
     public Map<UUID, Collection<UUID>> txNodes;
 
     /** IO policy. */
-    @Order(11)
+    @Order(10)
     public byte plc;
 
     /** Transient TX state. */
     private IgniteTxState txState;
 
     /** */
-    @Order(12)
+    @Order(11)
     @GridToStringExclude
     public byte flags;
 
@@ -157,7 +146,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         IgniteInternalTx tx,
         long timeout,
         @Nullable Collection<IgniteTxEntry> reads,
-        Collection<IgniteTxEntry> writes,
+        @Nullable Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
         boolean retVal,
         boolean last,
@@ -237,23 +226,20 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /**
-     * Adds version to be verified on remote node.
-     *
-     * @param key Key for which version is verified.
-     * @param dhtVer DHT version to check.
+     * @param key Key whose DHT version is verified on the remote node.
      */
-    public void addDhtVersion(IgniteTxKey key, @Nullable GridCacheVersion dhtVer) {
-        if (dhtVers == null)
-            dhtVers = new HashMap<>();
+    public void addDhtVersionKey(IgniteTxKey key) {
+        if (dhtVerKeys == null)
+            dhtVerKeys = new ArrayList<>();
 
-        dhtVers.put(key, dhtVer);
+        dhtVerKeys.add(key);
     }
 
     /**
-     * @return Map of versions to be verified.
+     * @return Keys whose DHT version is verified.
      */
-    public Map<IgniteTxKey, GridCacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.emptyMap() : dhtVers;
+    public Collection<IgniteTxKey> dhtVersionKeys() {
+        return F.emptyIfNull(dhtVerKeys);
     }
 
     /**
@@ -301,14 +287,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return Read set.
      */
-    public Collection<IgniteTxEntry> reads() {
+    public @Nullable Collection<IgniteTxEntry> reads() {
         return reads;
     }
 
     /**
      * @return Write entries.
      */
-    public Collection<IgniteTxEntry> writes() {
+    public @Nullable Collection<IgniteTxEntry> writes() {
         return writes;
     }
 
@@ -372,57 +358,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (writes != null)
-            marshalTx(writes, ctx);
-
-        if (reads != null)
-            marshalTx(reads, ctx);
-
-        if (dhtVers != null && dhtVerKeys == null) {
-            for (IgniteTxKey key : dhtVers.keySet()) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.prepareMarshal(cctx);
-            }
-
-            dhtVerKeys = dhtVers.keySet();
-            dhtVerVals = dhtVers.values();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (writes != null)
-            unmarshalTx(writes, ctx, ldr);
-
-        if (reads != null)
-            unmarshalTx(reads, ctx, ldr);
-
-        if (dhtVerKeys != null && dhtVers == null) {
-            assert dhtVerVals != null;
-            assert dhtVerKeys.size() == dhtVerVals.size();
-
-            Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
-            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
-
-            dhtVers = U.newHashMap(dhtVerKeys.size());
-
-            while (keyIt.hasNext()) {
-                IgniteTxKey key = keyIt.next();
-
-                key.finishUnmarshal(ctx.cacheContext(key.cacheId()), ldr);
-
-                dhtVers.put(key, verIt.next());
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo || forceAddDepInfo;
     }
@@ -451,7 +386,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private boolean isFlag(int mask) {
         return (flags & mask) != 0;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

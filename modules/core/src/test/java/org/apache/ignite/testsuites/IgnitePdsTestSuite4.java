@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStart
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteDisableWalOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRebalanceRestartTest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -71,7 +70,6 @@ public class IgnitePdsTestSuite4 {
 
         addRealPageStoreTestsNotForDirectIo(suite, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, FileDownloaderTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsTaskCancelingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsPartitionPreloadTest.class, ignoredTests);

@@ -20,20 +20,19 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
 /**
  * Message related to particular cache.
  */
-public abstract class GridCacheIdMessage extends GridCacheMessage {
+public abstract class GridCacheIdMessage extends GridCacheMessage implements CacheIdAware {
     /** Cache ID. */
     @GridToStringInclude
     @Order(0)
     public int cacheId;
 
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
         return cacheId;
     }
 
