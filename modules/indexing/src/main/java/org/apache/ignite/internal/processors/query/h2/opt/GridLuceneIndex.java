@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.FullTextLucene;
 import org.apache.ignite.cache.LuceneIndexAccess;
+import org.apache.ignite.cache.query.HybridStrategy;
+import org.apache.ignite.cache.query.HybridTextQuery;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -36,15 +39,16 @@ import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
-import org.apache.lucene.queryparser.classic.QueryParser.Operator;
+import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
+import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 
@@ -229,7 +233,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry, IndexingQueryFilter filters,int limit) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(TextQuery<K, V> qry, IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
         try {
         	indexAccess.flush();
         }
@@ -238,81 +242,174 @@ public class GridLuceneIndex implements AutoCloseable {
         }
 
         IndexSearcher searcher;
-
         TopDocs docs;
 
         try {
             searcher = indexAccess.searcher;
+            List<ScoreDoc> textScoreDocs = Collections.emptyList();
+            if(qry.getText()!=null && !qry.getText().isBlank()) {
+                StandardQueryParser parser = new StandardQueryParser(indexAccess.analyzerWrapper);
+                parser.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
+                //-parser.setAllowLeadingWildcard(true);
+                // qty: hello type:blog author:xiaoming orderBy:create
+                if (limit <= 0) {
+                    limit = DEAULT_LIMIT;
+                }
 
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, indexAccess.analyzerWrapper);
-            parser.setDefaultOperator(Operator.AND);
-            //-parser.setAllowLeadingWildcard(true);
-            String [] items = qry.split("\\s");
-            // qty: hello type:blog author:xiaoming orderBy:create
-            
-            if(limit<=0) {
-            	limit = DEAULT_LIMIT;
+                // Filter expired items.
+                Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), Long.MAX_VALUE);
+
+                BooleanQuery.Builder query = new BooleanQuery.Builder()
+                        .add(parser.parse(qry.getText(), "_all"), BooleanClause.Occur.MUST)
+                        .add(filter, BooleanClause.Occur.FILTER);
+
+                if (qry.getSorted() != null) {
+                    int j = 0;
+                    SortField[] sf = new SortField[qry.getSorted().size()];
+                    for (Map.Entry<String,Boolean> sort: qry.getSorted().entrySet()) {
+                        sf[j] = new SortField(sort.getKey(), SortField.Type.DOUBLE, sort.getValue());
+                    }
+                    Sort sortObj = new Sort(sf);
+                    docs = searcher.search(query.build(), limit, sortObj);
+                } else {
+                    docs = searcher.search(query.build(), limit);
+                }
+                textScoreDocs = Arrays.asList(docs.scoreDocs);
             }
-            String author = null;
-            String orderBy = null;
-            String tag = null;
-            StringBuilder sb = new StringBuilder();
-            for(String item : items){
-            	if(item.startsWith("tag:")){
-            		tag = item.substring("tag:".length());
-            	}
-            	else if(item.startsWith("orderBy:")){
-            		orderBy = item.substring("orderBy:".length());
-            	}
-            	else if(item.startsWith("author:")){
-            		author = item.substring("author:".length());
-            	}
-            	else{
-            		sb.append(item);
-            		sb.append(' ');
-            	}
+            List<ScoreDoc> mergedResults = textScoreDocs;
+            if(qry instanceof HybridTextQuery){
+                HybridTextQuery<K, V> hqry = (HybridTextQuery)qry;
+                Query vectorQuery = new KnnFloatVectorQuery(hqry.getVectorFieldName(), hqry.getVector(), hqry.getK());
+                TopDocs vectorResults = searcher.search(vectorQuery, hqry.getK());
+                List<ScoreDoc> vectorScoreDocs = Arrays.asList(vectorResults.scoreDocs);
+                // Merge results based on strategy
+                mergedResults = mergeResults(
+                        searcher,
+                        textScoreDocs,
+                        vectorScoreDocs,
+                        hqry
+                );
+
+                // Limit results
+                if (mergedResults.size() > limit) {
+                    mergedResults = mergedResults.subList(0, limit);
+                }
             }
 
-            // Filter expired items.
-            Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), Long.MAX_VALUE);
+            IndexingQueryCacheFilter fltr = null;
 
-            BooleanQuery.Builder query = new BooleanQuery.Builder()
-                .add(parser.parse(sb.toString()), BooleanClause.Occur.MUST)
-                .add(filter, BooleanClause.Occur.FILTER);
-            
-            if(author!=null){
-            	query.add(new TermQuery(new Term("author",author)),BooleanClause.Occur.MUST);
-            }
-            
-            if(tag!=null){
-            	query.add(new TermQuery(new Term("tag",tag)),BooleanClause.Occur.MUST);
-            }
+            if (filters != null)
+                fltr = filters.forCache(cacheName);
 
-            if(orderBy!=null){
-            	String[] sorts = orderBy.split(",");
-
-            	SortField[] sf = new SortField[sorts.length];
-            	for(int j=0;j<sorts.length;j++){            		
-            		sf[j] = new SortField(sorts[j],SortField.Type.DOUBLE,true);
-            	}
-                Sort sortObj = new Sort(sf);
-            	docs = searcher.search(query.build(), limit, sortObj);
-            }
-            else{
-            	docs = searcher.search(query.build(), limit);
-            }
+            return new It<K,V>(searcher, mergedResults, fltr);
         }
         catch (Exception e) {
             //U.closeQuiet(indexAccess.reader);
             throw new IgniteCheckedException(e);
         }
+    }
 
-        IndexingQueryCacheFilter fltr = null;
 
-        if (filters != null)
-            fltr = filters.forCache(cacheName);
+    /**
+     * Merges text and vector results using the specified strategy.
+     */
+    private <K, V> List<ScoreDoc> mergeResults(
+            IndexSearcher searcher,
+            List<ScoreDoc> textResults,
+            List<ScoreDoc> vectorResults,
+            HybridTextQuery<K, V> qry
+    ) throws IOException {
+        if (!qry.isHybridQuery() || vectorResults.isEmpty()) {
+            return textResults;
+        }
 
-        return new It<K,V>(searcher, docs.scoreDocs, fltr);
+        Map<Integer, Float> combinedScores = new HashMap<>();
+        HybridStrategy strategy = qry.getHybridStrategy();
+
+        switch (strategy) {
+            case RRF:
+                combineWithRRF(combinedScores, textResults, vectorResults);
+                break;
+            case WEIGHTED_SUM:
+                combineWithWeightedSum(combinedScores, textResults, vectorResults, qry);
+                break;
+        }
+
+        // Sort by combined score and return as ScoreDoc list
+        return combinedScores.entrySet().stream()
+                .sorted((e1, e2) -> Float.compare(e2.getValue(), e1.getValue()))
+                .map(e -> new ScoreDoc(e.getKey(), e.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Combines scores using Reciprocal Rank Fusion.
+     */
+    private void combineWithRRF(Map<Integer, Float> scores,
+            List<ScoreDoc> textResults,
+            List<ScoreDoc> vectorResults) {
+        int k = 60; // RRF constant
+
+        for (int i = 0; i < textResults.size(); i++) {
+            int docId = textResults.get(i).doc;
+            float rrfScore = 1.0f / (k + i + 1);
+            scores.merge(docId, rrfScore, Float::sum);
+        }
+
+        for (int i = 0; i < vectorResults.size(); i++) {
+            int docId = vectorResults.get(i).doc;
+            float rrfScore = 1.0f / (k + i + 1);
+            scores.merge(docId, rrfScore, Float::sum);
+        }
+    }
+
+    /**
+     * Combines scores using weighted sum.
+     */
+    private <K,V> void combineWithWeightedSum(
+            Map<Integer, Float> scores,
+            List<ScoreDoc> textResults,
+            List<ScoreDoc> vectorResults,
+            HybridTextQuery<K, V> qry
+    ) throws IOException {
+        float vectorWeight = qry.getVectorWeight();
+        float textWeight = 1.0f - vectorWeight;
+
+        // Get min/max for normalization
+        float minTextScore = textResults.stream().map(sd -> sd.score).min(Float::compare).orElse(0f);
+        float maxTextScore = textResults.stream().map(sd -> sd.score).max(Float::compare).orElse(1f);
+        float minVecScore = vectorResults.stream().map(sd -> sd.score).min(Float::compare).orElse(0f);
+        float maxVecScore = vectorResults.stream().map(sd -> sd.score).max(Float::compare).orElse(1f);
+
+        // Map scores to map
+        Map<Integer, Float> textScoreMap = new HashMap<>();
+        for (ScoreDoc sd : textResults) {
+            textScoreMap.put(sd.doc, sd.score);
+        }
+
+        Map<Integer, Float> vecScoreMap = new HashMap<>();
+        for (ScoreDoc sd : vectorResults) {
+            vecScoreMap.put(sd.doc, sd.score);
+        }
+
+        // Combine all unique documents
+        Set<Integer> allDocs = new HashSet<>();
+        allDocs.addAll(textScoreMap.keySet());
+        allDocs.addAll(vecScoreMap.keySet());
+
+        for (int docId : allDocs) {
+            float textScore = textScoreMap.getOrDefault(docId, 0f);
+            float vecScore = vecScoreMap.getOrDefault(docId, 0f);
+
+            // Normalize scores
+            float normTextScore = maxTextScore > minTextScore ?
+                    (textScore - minTextScore) / (maxTextScore - minTextScore) : 0f;
+            float normVecScore = maxVecScore > minVecScore ?
+                    (vecScore - minVecScore) / (maxVecScore - minVecScore) : 0f;
+
+            float combined = textWeight * normTextScore + vectorWeight * normVecScore;
+            scores.put(docId, combined);
+        }
     }
 
     /** {@inheritDoc} */
@@ -333,7 +430,7 @@ public class GridLuceneIndex implements AutoCloseable {
         private final IndexSearcher searcher;
 
         /** */
-        private final ScoreDoc[] docs;
+        private final List<ScoreDoc> docs;
 
         /** */
         private final IndexingQueryCacheFilter filters;        
@@ -355,7 +452,7 @@ public class GridLuceneIndex implements AutoCloseable {
          * @param filters Filters over result.
          * @throws IgniteCheckedException if failed.
          */
-        private It(IndexSearcher searcher, ScoreDoc[] docs, IndexingQueryCacheFilter filters)
+        private It(IndexSearcher searcher, List<ScoreDoc> docs, IndexingQueryCacheFilter filters)
                 throws IgniteCheckedException {
               
                 this.searcher = searcher;
@@ -396,13 +493,13 @@ public class GridLuceneIndex implements AutoCloseable {
             if (ctx != null && ctx.deploy().enabled())
                 ldr = cache.context().deploy().globalLoader();
             
-            while (idx < docs.length) {
+            while (idx < docs.size()) {
                 Document doc;
                 float score;
 
                 try {
-                    doc = searcher.storedFields().document(docs[idx].doc);
-                    score = docs[idx].score;
+                    doc = searcher.storedFields().document(docs.get(idx).doc);
+                    score = docs.get(idx).score;
                     idx++;
                 }
                 catch (IOException e) {

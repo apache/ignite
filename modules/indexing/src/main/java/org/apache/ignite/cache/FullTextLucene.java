@@ -1291,7 +1291,13 @@ public class FullTextLucene {
         	}
     		else if(fieldVal instanceof byte[]){  //not convert to BytesRef
     			byte[] bytes = (byte[])fieldVal;
-    			doc.add(new Field(idxdField, bytes, idxdType));
+                if(idxdType.vectorDimension()>0) {
+                    row = new KnnByteVectorField(idxdField, bytes, idxdType.vectorSimilarityFunction());
+                    doc.add(row);
+                }
+                else{
+                    doc.add(new Field(idxdField, bytes, idxdType));
+                }
         	}
     		else if(fieldVal instanceof char[]){  //convert to text field
     			String keyByteRef = new String((char[])fieldVal);
@@ -1311,7 +1317,7 @@ public class FullTextLucene {
 			} 
 			else if (obj instanceof float[]) {
                 if(idxdType.vectorDimension()>0) {
-                    row = new KnnFloatVectorField(idxdField, (float[]) obj, VectorSimilarityFunction.COSINE);
+                    row = new KnnFloatVectorField(idxdField, (float[]) obj, idxdType.vectorSimilarityFunction());
                     doc.add(row);
                 }
                 else{
@@ -1321,7 +1327,7 @@ public class FullTextLucene {
 			}
 			else if (obj instanceof double[]) {
                 if(idxdType.vectorDimension()>0) {
-                    row = new KnnFloatVectorField(idxdField, doubleToFloat((double[]) obj), VectorSimilarityFunction.COSINE);
+                    row = new KnnFloatVectorField(idxdField, doubleToFloat((double[]) obj), idxdType.vectorSimilarityFunction());
                     doc.add(row);
                 }
                 else{
@@ -1354,6 +1360,14 @@ public class FullTextLucene {
         float[] floatVector = new float[doubleVector.length];
         for (int i = 0; i < doubleVector.length; i++) {
             floatVector[i] = (float) doubleVector[i];
+        }
+        return floatVector;
+    }
+
+    public static float[] byteToFloat(byte[] byteVector) {
+        float[] floatVector = new float[byteVector.length];
+        for (int i = 0; i < byteVector.length; i++) {
+            floatVector[i] = (float) byteVector[i]/127;
         }
         return floatVector;
     }

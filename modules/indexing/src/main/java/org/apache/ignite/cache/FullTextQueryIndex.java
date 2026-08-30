@@ -34,7 +34,7 @@ public class FullTextQueryIndex extends QueryIndex {
      * ascending order.
      *
      * @param fields Collection of fields to create an index.
-     * @param type Index type.
+     * @param analyzer analyzer type.
      */
     public FullTextQueryIndex(Collection<String> fields, String analyzer) {
     	super(fields, QueryIndexType.FULLTEXT);
@@ -50,8 +50,7 @@ public class FullTextQueryIndex extends QueryIndex {
 	/**
 	 * Creates single-field sorted ascending index.
 	 *
-	 * @param field
-	 *            Field name.
+	 * @param fieldList Field name list.
 	 */
 	public FullTextQueryIndex(String fieldList, String analyzer) {
 		this(fieldList,analyzer,analyzer);
@@ -60,8 +59,7 @@ public class FullTextQueryIndex extends QueryIndex {
 	/**
 	 * Creates single-field sorted ascending index.
 	 *
-	 * @param field
-	 *            Field name.
+	 * @param fieldList Field name list.
 	 */
 	public FullTextQueryIndex(String fieldList, String analyzer,String queryAnalyzer) {
 		String [] fields = fieldList.split("[,\\s]");

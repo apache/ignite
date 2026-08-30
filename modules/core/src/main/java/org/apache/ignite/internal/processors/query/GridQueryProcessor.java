@@ -55,10 +55,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
@@ -3707,7 +3704,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final TextQuery<K, V> qty,
         final String resType, final IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
         checkIndexingEnabled();
 
@@ -3717,13 +3714,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             final GridCacheContext<?, ?> cctx = ctx.cache().internalCache(cacheName).context();
 
-            return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
+            return executeQuery(GridCacheQueryType.TEXT, qty.getText(), cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
                         String typeName = typeName(cacheName, resType);
                         String schemaName = schemaMgr.schemaName(cacheName);
 
-                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters, limit);
+                        return idx.queryLocalText(schemaName, cacheName, qty, typeName, filters, limit);
                     }
                 }, true);
         }

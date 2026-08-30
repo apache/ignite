@@ -9,6 +9,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.h2.util.Utils;
 
 /**
@@ -35,7 +36,12 @@ public class LuceneConfiguration implements PluginConfiguration {
 	private Analyzer indexAnalyzer;
 
 	// default query analyzer
-	private Analyzer queryAnalyzer;	
+	private Analyzer queryAnalyzer;
+
+	// default Vector Similarity Function
+	private VectorSimilarityFunction similarityFunction = VectorSimilarityFunction.COSINE;
+
+	private int dimensions = 1024;
 		
 	private String cacheName = null;
 	
@@ -122,5 +128,21 @@ public class LuceneConfiguration implements PluginConfiguration {
 
 	public void setFieldAnalyzerMap(Map<String, Analyzer> fieldAnalyzerMap) {
 		this.fieldAnalyzerMap = fieldAnalyzerMap;
+	}
+
+	public VectorSimilarityFunction getSimilarityFunction() {
+		return similarityFunction;
+	}
+
+	public void setSimilarityFunction(VectorSimilarityFunction similarityFunction) {
+		this.similarityFunction = similarityFunction;
+	}
+
+	public int getDimensions() {
+		return dimensions;
+	}
+
+	public void setDimensions(int dimensions) {
+		this.dimensions = dimensions;
 	}
 }

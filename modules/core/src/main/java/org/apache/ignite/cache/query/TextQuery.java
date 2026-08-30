@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
+
 /**
  * <h1 class="header">Full Text Queries</h1>
  * Ignite supports full text queries based on Apache Lucene engine.
@@ -60,7 +62,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see IgniteCache#query(Query)
  */
-public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
+public class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -69,6 +71,8 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** SQL clause. */
     private String txt;
+
+    private LinkedHashMap<String, Boolean> sorted; // true 为降序，false 为升序
     
     /** add@byron */
     private IgniteBiPredicate<K, V> filter;
@@ -233,7 +237,7 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Sets text search filter cloure.
      *
-     * @param txt Text search string.
+     * @param filter filter cloure.
      * @return {@code this} For chaining.
      */
     public TextQuery<K, V> setFitler(IgniteBiPredicate<K, V> filter) {
@@ -244,5 +248,13 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TextQuery.class, this);
+    }
+
+    public LinkedHashMap<String, Boolean> getSorted() {
+        return sorted;
+    }
+
+    public void setSorted(LinkedHashMap<String, Boolean> sorted) {
+        this.sorted = sorted;
     }
 }

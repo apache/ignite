@@ -4,15 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.query.annotations.QueryVectorField;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -29,9 +27,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -132,7 +128,7 @@ public class LuceneIndexAccess {
 	public Map<String,FieldType> fields(String type) {
 		Map<String,FieldType> fields = typeFields.get(type);
 		if(fields==null){
-			fields = new HashMap<String,FieldType>();
+			fields = new HashMap<>();
 			typeFields.put(type,fields);
 		}
 		return fields;
@@ -153,35 +149,67 @@ public class LuceneIndexAccess {
 	
 	
 	public Map<String,FieldType> init(GridQueryTypeDescriptor type) {
-		
 		Map<String,FieldType> fields = fields(type.name());
-		
 		try{        		
-			QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();  
-			
+			QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();
+			Collection<String> vectorFields = Collections.emptyList();
+			VectorSimilarityFunction vectorSimilarityFunction = VectorSimilarityFunction.COSINE;
             if(qtextIdx instanceof FullTextQueryIndex){
-            	FullTextQueryIndex textIdx = (FullTextQueryIndex)qtextIdx;
-           	 	
-           	   if(textIdx!=null && textIdx.getAnalyzer()!=null)
-     			   this.config.setIndexAnalyzer(springCtx.getBean(textIdx.getAnalyzer(),Analyzer.class));
-           	   if(textIdx!=null && textIdx.getQueryAnalyzer()!=null)
-     			   this.config.setQueryAnalyzer(springCtx.getBean(textIdx.getQueryAnalyzer(),Analyzer.class));
+				FullTextQueryIndex textIdx = (FullTextQueryIndex)qtextIdx;
+				if(textIdx.getAnalyzer()!=null)
+				   this.config.setIndexAnalyzer(springCtx.getBean(textIdx.getAnalyzer(),Analyzer.class));
+				if(textIdx.getQueryAnalyzer()!=null)
+				   this.config.setQueryAnalyzer(springCtx.getBean(textIdx.getQueryAnalyzer(),Analyzer.class));
      		
             }
+			else if(qtextIdx instanceof VectorQueryIndex){
+				VectorQueryIndex textIdx = (VectorQueryIndex)qtextIdx;
+				String similarity = textIdx.getSimilarity();
+				if(similarity!=null) {
+					if(similarity.equals("euclidean ")) {
+						vectorSimilarityFunction = VectorSimilarityFunction.EUCLIDEAN;
+					}
+					else if(similarity.equals("cosine")) {
+						vectorSimilarityFunction = VectorSimilarityFunction.COSINE;
+					}
+					else if(similarity.equals("dotProduct")) {
+						vectorSimilarityFunction = VectorSimilarityFunction.DOT_PRODUCT;
+					}
+					else if(similarity.equals("innerProduct")) {
+						vectorSimilarityFunction = VectorSimilarityFunction.MAXIMUM_INNER_PRODUCT;
+					}
+					this.config.setSimilarityFunction(vectorSimilarityFunction);
+				}
+				if(textIdx.getDimensions()!=0)
+					this.config.setDimensions(textIdx.getDimensions());
+
+				vectorFields = textIdx.getFieldNames();
+
+			}
     		  
             Field.Store storeText = config.isStoreTextFieldValue()?  Field.Store.YES : Field.Store.NO;     
         	if(qtextIdx!=null){
         		//-fields.clear();
         		for(String field: type.textIndex().fields()) {
-        			Class fieldType = type.fields().get(field);
-        			if(config.isStoreTextFieldValue()) {
-        				fields.put(field,TextField.TYPE_STORED);
-        			}
-        			else {
-        				fields.put(field,TextField.TYPE_NOT_STORED);
-        			}    			
+					if(vectorFields.contains(field)){
+						FieldType fieldType = new FieldType();
+						fieldType.setVectorAttributes(this.config.getDimensions(), VectorEncoding.FLOAT32, vectorSimilarityFunction);
+						fieldType.freeze();
+						fields.put(field,fieldType);
+					}
+					else {
+						if (config.isStoreTextFieldValue()) {
+							fields.put(field, TextField.TYPE_STORED);
+						} else {
+							fields.put(field, TextField.TYPE_NOT_STORED);
+						}
+					}
         		}
-            }        	
+            }
+			// find vector index from @QueryVectorField
+			if(type.valueClass()!=null && !BinaryObject.class.isAssignableFrom(type.valueClass())) {
+				discoverVectorFields(type.valueClass(), fields);
+			}
         	
     	}
     	catch(BeansException e){
@@ -190,6 +218,22 @@ public class LuceneIndexAccess {
     	}
 		
 		return fields;
+	}
+
+	/**
+	 * Discovers vector fields from the value class annotations.
+	 */
+	private void discoverVectorFields(Class<?> valueCls,Map<String,FieldType> fields) {
+		for (java.lang.reflect.Field field : valueCls.getDeclaredFields()) {
+			QueryVectorField vecAnn = field.getAnnotation(QueryVectorField.class);
+			if (vecAnn != null && vecAnn.indexed()) {
+				String fieldName = vecAnn.name().isEmpty() ? field.getName() : vecAnn.name();
+				FieldType fieldType = new FieldType();
+				fieldType.setVectorAttributes(vecAnn.dimension(), vecAnn.dataType(), vecAnn.similarity());
+				fieldType.freeze();
+				fields.put(fieldName,fieldType);
+			}
+		}
 	}
 
     /**

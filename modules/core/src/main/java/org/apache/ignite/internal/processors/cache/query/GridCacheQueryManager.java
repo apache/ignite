@@ -576,8 +576,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     tq.setLocal(qry.forceLocal());
                     tq.setFitler(qry.scanFilter());
 					tq.setLimit(qry.limit());
-                    // iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry));
-                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qry.limit());
+                    iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry), qry.limit());
 					//end@
                     break;
 
