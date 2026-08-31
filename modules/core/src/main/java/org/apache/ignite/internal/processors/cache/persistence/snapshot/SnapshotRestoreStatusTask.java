@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
  */
 @GridInternal
 @Deprecated
-class SnapshotRestoreStatusTask extends ComputeTaskAdapter<String, Boolean> {
+public class SnapshotRestoreStatusTask extends ComputeTaskAdapter<String, Boolean> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

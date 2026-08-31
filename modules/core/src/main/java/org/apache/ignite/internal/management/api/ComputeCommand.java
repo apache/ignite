@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  * Command that executed with some compute task.
  */
 public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
-    /** @return Task class. */
+    /** @return Default task class. */
     public Class<? extends VisorMultiNodeTask<A, R, ?>> taskClass();
 
     /**

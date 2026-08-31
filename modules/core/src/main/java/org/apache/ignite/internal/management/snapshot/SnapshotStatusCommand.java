@@ -52,7 +52,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     }
 
     /** {@inheritDoc} */
-    @Override public Class<SnapshotStatusTask> taskClass() {
+    @Override public Class<? extends SnapshotStatusTask> taskClass() {
         return SnapshotStatusTask.class;
     }
 
@@ -64,15 +64,18 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             return;
         }
 
-        boolean isCreating = status.operation() == SnapshotStatusTask.SnapshotOperation.CREATE;
+        boolean isCreating = SnapshotStatusTask.SnapshotOperation.CREATE == status.operation();
+        boolean isRestoring = SnapshotStatusTask.SnapshotOperation.RESTORE == status.operation();
         boolean isIncremental = status.incrementIndex() > 0;
 
         GridStringBuilder s = new GridStringBuilder();
 
         if (isCreating)
             s.a("Create snapshot operation is in progress.").nl();
-        else
+        else if(isRestoring)
             s.a("Restore snapshot operation is in progress.").nl();
+        else
+            s.a("Check snapshot operation is in progress.").nl();
 
         s.a("Snapshot name: ").a(status.name()).nl();
         s.a("Incremental: ").a(isIncremental).nl();
@@ -94,10 +97,12 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             desc = new CreateIncrementalSnapshotTaskProgressDesc();
         else if (isCreating)
             desc = new CreateFullSnapshotTaskProgressDesc();
-        else if (isIncremental)
+        else if (isRestoring && isIncremental)
             desc = new RestoreIncrementalSnapshotTaskProgressDesc();
-        else
+        else if (isRestoring)
             desc = new RestoreFullSnapshotTaskProgressDesc();
+        else
+            desc = new CheckSnapshotTaskProgressDesc(isIncremental);
 
         List<List<?>> rows = status.progress().entrySet().stream().sorted(Map.Entry.comparingByKey())
             .map(e -> desc.buildRow(e.getKey(), e.getValue()))
@@ -244,6 +249,27 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
                 result.add(processedWalEntries);
 
             return result;
+        }
+    }
+
+    /** */
+    private static class CheckSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
+        /** */
+        CheckSnapshotTaskProgressDesc(boolean incremental) {
+            super(F.asList("Node ID", "Processed, bytes", "Total, bytes", "Percent"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress) {
+            long processed = progress.get1();
+            long total = progress.get2();
+
+            if (total <= 0)
+                return F.asList(nodeId, "unknown", "unknown", "unknown");
+
+            String percent = (int)(processed * 100 / total) + "%";
+
+            return F.asList(nodeId, U.humanReadableByteCount(processed), U.humanReadableByteCount(total), percent);
         }
     }
 }

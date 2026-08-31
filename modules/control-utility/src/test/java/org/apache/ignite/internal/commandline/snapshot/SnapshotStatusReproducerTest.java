@@ -24,11 +24,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
-/**
- *
- */
+/** */
 public class SnapshotStatusReproducerTest extends GridCommandHandlerAbstractTest {
     /** Snapshot check latch. */
     private static CountDownLatch snapshotCheckLatch;
@@ -68,9 +65,7 @@ public class SnapshotStatusReproducerTest extends GridCommandHandlerAbstractTest
         cleanPersistenceDir();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() throws Exception {
         injectTestSystemOut();
@@ -154,7 +149,7 @@ public class SnapshotStatusReproducerTest extends GridCommandHandlerAbstractTest
                 .chain(fut -> {
                     try {
                         if(check)
-                           ;// snapshotCheckLatch.await(5, MINUTES);
+                           snapshotCheckLatch.await(5, MINUTES);
                     }
                     catch (Throwable e) {
                         log.error(X.getFullStackTrace(e));

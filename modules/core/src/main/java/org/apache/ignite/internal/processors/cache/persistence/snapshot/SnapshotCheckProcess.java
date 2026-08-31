@@ -732,6 +732,13 @@ public class SnapshotCheckProcess {
         mreg.register("startTime", U::currentTimeMillis,
             "The system time of the start of the cluster snapshot check operation on current node.");
 
+        mreg.register(
+            "requestId",
+            () -> ctx.req.requestId().toString(),
+            String.class,
+            "The request ID of the last running cluster snapshot restore operation on this node."
+        );
+
         if (ctx.req.incrementalIndex() > 0) {
             mreg.register("incrementIndex", ctx.req::incrementalIndex,
                 "The index of incremental snapshot of the snapshot check operation.");
