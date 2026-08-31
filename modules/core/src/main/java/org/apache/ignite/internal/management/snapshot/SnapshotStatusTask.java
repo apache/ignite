@@ -84,14 +84,14 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         SnapshotStatus s0 = F.first(res);
 
         // Filter out differing requests due to concurrent updates on nodes.
-        res = F.view(res, s -> s.requestId.equals(s0.requestId));
+        res = F.view(res, s -> s.reqId.equals(s0.reqId));
 
         // Merge nodes progress.
         Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
 
         res.forEach(s -> progress.putAll(s.progress));
 
-        return new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress);
+        return new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.reqId, s0.startTime, progress);
     }
 
     /** */
@@ -164,6 +164,30 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                 );
             }
 
+            mreg = ignite.context().metric().registry(SNAPSHOT_);
+
+            long startTime = mreg.<LongMetric>findMetric("startTime").value();
+
+            if (startTime > mreg.<LongMetric>findMetric("endTime").value()) {
+                return new SnapshotStatus(
+                    SnapshotOperation.RESTORE,
+                    mreg.findMetric("snapshotName").getAsString(),
+                    mreg.<IntMetric>findMetric("incrementIndex").value(),
+                    mreg.findMetric("requestId").getAsString(),
+                    mreg.<LongMetric>findMetric("startTime").value(),
+                    F.asMap(
+                        ignite.localNode().id(),
+                        new T5<>(
+                            (long)mreg.<IntMetric>findMetric("processedPartitions").value(),
+                            (long)mreg.<IntMetric>findMetric("totalPartitions").value(),
+                            (long)mreg.<IntMetric>findMetric("processedWalSegments").value(),
+                            (long)mreg.<IntMetric>findMetric("totalWalSegments").value(),
+                            mreg.<LongMetric>findMetric("processedWalEntries").value()
+                        )
+                    )
+                );
+            }
+
             return null;
         }
     }
@@ -183,7 +207,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         private final int incIdx;
 
         /** Request ID. */
-        private final String requestId;
+        private final String reqId;
 
         /** Start time. */
         private final long startTime;
@@ -196,14 +220,14 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
             SnapshotOperation op,
             String name,
             int incIdx,
-            String requestId,
+            String reqId,
             long startTime,
             Map<UUID, T5<Long, Long, Long, Long, Long>> progress
         ) {
             this.op = op;
             this.name = name;
             this.incIdx = incIdx;
-            this.requestId = requestId;
+            this.reqId = reqId;
             this.startTime = startTime;
             this.progress = Collections.unmodifiableMap(progress);
         }
@@ -225,7 +249,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
 
         /** @return Request ID. */
         public String requestId() {
-            return requestId;
+            return reqId;
         }
 
         /** @return Start time. */
@@ -241,10 +265,13 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
 
     /** Snapshot operation type. */
     public enum SnapshotOperation {
-        /** Create snapshot. */
+        /** Snapshot creation. */
         CREATE,
 
-        /** Restore snapshot. */
-        RESTORE
+        /** Snapshot restoration. */
+        RESTORE,
+
+        /** Snapshot checking before restoration. */
+        CHECK_RESTORE
     }
 }
