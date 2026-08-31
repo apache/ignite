@@ -424,8 +424,7 @@ public class GridLocalConfigManager {
                 log.warning("Cache storage directory is not empty and cannot be removed: " + dir.getAbsolutePath());
             }
             catch (IOException e) {
-                log.warning("Failed to remove cache storage directory [dir=" + dir.getAbsolutePath() +
-                    ", reason=" + e.getMessage() + ']');
+                log.warning("Failed to remove cache storage directory [dir=" + dir.getAbsolutePath() + ']', e);
             }
         }
     }
