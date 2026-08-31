@@ -1483,7 +1483,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     synchronized (mux) {
                         if (ses == this.ses)
-                            this.ses = null; // Connection has dead.
+                            this.ses = null; // Connection has died.
 
                         clear();
                     }
