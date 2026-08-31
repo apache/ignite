@@ -43,6 +43,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientAddressFinder;
+import org.apache.ignite.client.ClientAffinityConfiguration;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
@@ -166,6 +167,7 @@ public class JavaThinClient {
         // tag::getOrCreateCache[]
         ClientCacheConfiguration cacheCfg = new ClientCacheConfiguration().setName("References")
                 .setCacheMode(CacheMode.REPLICATED)
+                .setAffinityConfiguration(new ClientAffinityConfiguration().setPartitions(64))
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         ClientCache<Integer, String> cache = client.getOrCreateCache(cacheCfg);
@@ -188,11 +190,12 @@ public class JavaThinClient {
         cache.put(101, "101");
 
         cache.removeAll(data.keySet());
-        assert cache.size() == 1;
+        long cacheSize = cache.sizeLong();
+        assert cacheSize == 1;
         assert "101".equals(cache.get(101));
 
         cache.removeAll();
-        assert 0 == cache.size();
+        assert cache.sizeLong() == 0;
         // end::key-value-operations[]
         System.out.println("done");
     }
@@ -493,6 +496,9 @@ public class JavaThinClient {
 
         IgniteClientFuture<String> getFut = cache.getAsync(1);
         getFut.thenAccept(val -> System.out.println(val)); // Non-blocking continuation.
+
+        IgniteClientFuture<Long> sizeFut = cache.sizeLongAsync();
+        sizeFut.thenAccept(size -> System.out.println("Cache size: " + size));
         //end::async-api[]
     }
 

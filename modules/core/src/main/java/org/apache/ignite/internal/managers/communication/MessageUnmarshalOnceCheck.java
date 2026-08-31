@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.MarshallableMessage;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
@@ -58,7 +57,7 @@ public class MessageUnmarshalOnceCheck {
      * this pass.
      */
     public static boolean firstUnmarshal(Message msg, boolean cacheMode) {
-        if (!(msg instanceof MarshallableMessage) && !(msg instanceof SelfMarshallingMessage))
+        if (!(msg instanceof MarshallableMessage))
             return true;
 
         // Static set: evict entries whose message was already collected, so it doesn't grow across the suite.

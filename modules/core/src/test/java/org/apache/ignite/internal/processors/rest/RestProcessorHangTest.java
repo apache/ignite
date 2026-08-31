@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -73,7 +72,6 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
         // Discovery spi that never allows connecting.
         TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi() {
             @Override protected void writeToSocket(
-                TcpDiscoveryAbstractMessage msg,
                 Socket sock,
                 int res,
                 long timeout
@@ -86,7 +84,7 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
                     //  No-op.
                 }
 
-                super.writeToSocket(msg, sock, 255, timeout);
+                super.writeToSocket(sock, 255, timeout);
             }
         };
 
