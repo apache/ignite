@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.OP_FEATURES_PROPAGATION_FEATURE;
 import static org.apache.ignite.internal.thread.context.OperationContextDispatcher.MAX_ATTRS_CNT;
 
 /**
@@ -37,6 +38,9 @@ import static org.apache.ignite.internal.thread.context.OperationContextDispatch
 public class DistributedAttributeKeyRegistry {
     /** Attribute reserved for {@link SecurityContext} propagation. */
     public static final DistributedAttributeKey SECURITY = new DistributedAttributeKey(0);
+
+    /** Attribute reserved for propagating RU features that determine how an operation should be processed.  */
+    public static final DistributedAttributeKey ROLLING_UPGRADE = new DistributedAttributeKey(1, OP_FEATURES_PROPAGATION_FEATURE);
 
     /** Package private so that tests can declare keys that are not constants of this registry. */
     static final DistributedAttributeKey[] VALS = new DistributedAttributeKey[MAX_ATTRS_CNT];

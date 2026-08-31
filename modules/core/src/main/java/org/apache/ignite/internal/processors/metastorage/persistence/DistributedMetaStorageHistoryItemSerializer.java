@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -38,7 +39,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class DistributedMetaStorageHistoryItemSerializer implements IgniteDataTransferObjectSerializer<DistributedMetaStorageHistoryItem> {
     /** {@inheritDoc} */
-    @Override public void writeExternal(DistributedMetaStorageHistoryItem obj, ObjectOutput out) throws IOException {
+    @Override public void writeExternal(
+        DistributedMetaStorageHistoryItem obj,
+        ObjectOutput out,
+        MessageSerializationContext ctx
+    ) throws IOException {
         out.writeInt(obj.keys.length);
 
         for (int i = 0; i < obj.keys.length; i++) {
@@ -48,7 +53,11 @@ public class DistributedMetaStorageHistoryItemSerializer implements IgniteDataTr
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(DistributedMetaStorageHistoryItem obj, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(
+        DistributedMetaStorageHistoryItem obj,
+        ObjectInput in,
+        MessageSerializationContext ctx
+    ) throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
         obj.keys = new String[len];

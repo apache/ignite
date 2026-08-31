@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -52,6 +51,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import org.apache.ignite.internal.MessageProcessor.FieldFeatureGuard;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -61,6 +61,7 @@ import static org.apache.ignite.internal.MessageCompanionGenerator.NL;
 import static org.apache.ignite.internal.MessageCompanionGenerator.TAB;
 import static org.apache.ignite.internal.MessageCompanionGenerator.identicalFileIsAlreadyGenerated;
 import static org.apache.ignite.internal.MessageCompanionGenerator.writeLicense;
+import static org.apache.ignite.internal.MessageProcessor.buildFieldFeatureGuard;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
 import static org.apache.ignite.internal.MessageSerializerGenerator.qualifiedClassName;
 import static org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor.DTO_CLASS;
@@ -253,6 +254,7 @@ public class IDTOSerializerGenerator {
         imports.add(ObjectInput.class.getName());
         imports.add(IOException.class.getName());
         imports.add("org.apache.ignite.internal.util.typedef.internal.U");
+        imports.add("org.apache.ignite.internal.MessageSerializationContext");
 
         if (type.getNestingKind() != NestingKind.TOP_LEVEL)
             imports.add(type.getQualifiedName().toString());
@@ -312,7 +314,10 @@ public class IDTOSerializerGenerator {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void writeExternal(" + typeWithGeneric(type.asType()) + " obj, ObjectOutput out) throws IOException {");
+        code.add("@Override public void writeExternal(" +
+            typeWithGeneric(type.asType()) + " obj," +
+            " ObjectOutput out," +
+            " MessageSerializationContext ctx) throws IOException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
@@ -328,8 +333,10 @@ public class IDTOSerializerGenerator {
         List<String> code = new ArrayList<>();
 
         code.add("/** {@inheritDoc} */");
-        code.add("@Override public void readExternal(" + typeWithGeneric(type.asType()) + " obj, ObjectInput in) " +
-            "throws IOException, ClassNotFoundException {");
+        code.add("@Override public void readExternal(" +
+            typeWithGeneric(type.asType()) + " obj," +
+            " ObjectInput in," +
+            " MessageSerializationContext ctx) throws IOException, ClassNotFoundException {");
 
         fieldsSerdes(flds).forEach(line -> code.add(TAB + line));
 
@@ -343,9 +350,27 @@ public class IDTOSerializerGenerator {
      * @return Lines to serdes fields.
      */
     private List<String> fieldsSerdes(Collection<VariableElement> flds) {
-        return flds.stream()
-            .flatMap(fld -> variableCode(fld.asType(), "obj." + fld.getSimpleName().toString()))
-            .collect(Collectors.toList());
+        List<String> res = new ArrayList<>();
+
+        for (VariableElement fld : flds) {
+            List<String> lines = variableCode(fld.asType(), "obj." + fld.getSimpleName()).toList();
+
+            FieldFeatureGuard guard = buildFieldFeatureGuard(env, fld);
+
+            if (guard == null)
+                res.addAll(lines);
+            else {
+                imports.add(guard.registry());
+
+                res.add("if (" + guard.expression() + ") {");
+
+                lines.forEach(line -> res.add(TAB + line));
+
+                res.add("}");
+            }
+        }
+
+        return res;
     }
 
     /**

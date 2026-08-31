@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.thread.context.DistributedAttributeKey;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
@@ -38,6 +39,7 @@ import org.apache.ignite.spi.MessagesPluginProvider;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.OP_FEATURES_ATTR;
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0.VER_2_20_0_ID_3_FEATURE;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.RollingUpgradeDistributedAttributeTest.TestIgniteComponent.PTR_VAL;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.RollingUpgradeDistributedAttributeTest.TestIgniteComponent.USR_VAL;
@@ -127,6 +129,30 @@ public class RollingUpgradeDistributedAttributeTest extends AbstractRollingUpgra
 
         assertAttributes(PTR_VAL, USR_VAL, send(grid(1), newVerCli, TestCoreMessage.build()));
         assertAttributes(PTR_VAL, null, send(grid(1), oldVerCli, TestCoreMessage.build()));
+    }
+
+    /** */
+    @Test
+    public void testInitiatorFeaturesAreCutForPeerWithoutTheFeature() throws Exception {
+        startServerNodes("2.19.0", "2.20.0");
+
+        try (Scope ignored = OperationContext.set(OP_FEATURES_ATTR, createNodeFeatureSet("2.20.0"))) {
+            assertNull(send(grid(1), grid(0), TestCoreMessage.build()).attribute(OP_FEATURES_ATTR));
+            assertNull(send(grid(0), grid(1), TestCoreMessage.build()).attribute(OP_FEATURES_ATTR));
+        }
+    }
+
+    /** */
+    @Test
+    public void testInitiatorFeaturesReachPeerWithTheFeature() throws Exception {
+        startServerNodes("2.19.2", "2.20.0");
+
+        IgniteNodeFeatureSet features = createNodeFeatureSet("2.20.0 | 1.0.0");
+
+        try (Scope ignored = OperationContext.set(OP_FEATURES_ATTR, features)) {
+            assertEquals(features, send(grid(1), grid(0), TestCoreMessage.build()).attribute(OP_FEATURES_ATTR));
+            assertEquals(features, send(grid(0), grid(1), TestCoreMessage.build()).attribute(OP_FEATURES_ATTR));
+        }
     }
 
     /** */

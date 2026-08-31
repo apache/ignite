@@ -17,22 +17,31 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_21_0;
 
 /** */
-public class TestIgniteDataTransferObject extends IgniteDataTransferObject {
+@FeatureRegistry(TestIgniteReleaseFeatures_2_21_0.class)
+public class TestCommandArgument extends IgniteDataTransferObject {
     /** */
-    @Order(0)
-    @Argument
-    char[] charArray;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 1, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
-    String deprecatedFld;
+    @Order(value = 0, deprecatedBy = "VER_2_21_0_ID_5_FEATURE")
+    public String fldA;
 
     /** */
-    @Order(value = 2, introducedBy = "ROLLING_UPGRADE_FEATURE")
-    String introducedFld;
+    @Order(value = 1, introducedBy = "VER_2_21_0_ID_5_FEATURE")
+    public String fldB;
+
+    /** */
+    public TestCommandArgument() {
+        // No-op.
+    }
+
+    /** */
+    public TestCommandArgument(String fldA, String fldB) {
+        this.fldA = fldA;
+        this.fldB = fldB;
+    }
 }

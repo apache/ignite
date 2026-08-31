@@ -396,10 +396,7 @@ public abstract class AbstractRollingUpgradeTest extends AbstractDistributedAttr
         IgniteCoreFeatureSet expPrevCoreFeatures = expVersions != null ? createCoreFeatureSet(expVersions.coreVersion()) : null;
 
         IgnitePluginFeatureSet expPrevPluginFeatures = expVersions != null && expVersions.containsPlugin()
-            ? new IgnitePluginFeatureSet(
-                TestPluginFeature.COMPONENT_NAME,
-                IgniteProductVersion.fromString(expVersions.pluginVersion()),
-                IgniteFeatureSet.buildFrom(readDeclaredPluginFeatures(expVersions.pluginVersion())))
+            ? createPluginFeatureSet(expVersions.pluginVersion())
             : null;
 
         for (Ignite ignite : Ignition.allGrids()) {
@@ -422,6 +419,25 @@ public abstract class AbstractRollingUpgradeTest extends AbstractDistributedAttr
         return new IgniteCoreFeatureSet(
             IgniteProductVersion.fromString(ver),
             IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(ver)));
+    }
+
+    /** */
+    public static IgnitePluginFeatureSet createPluginFeatureSet(String ver) throws Exception {
+        return new IgnitePluginFeatureSet(
+            TestPluginFeature.COMPONENT_NAME,
+            IgniteProductVersion.fromString(ver),
+            IgniteFeatureSet.buildFrom(readDeclaredPluginFeatures(ver)));
+    }
+
+    /** */
+    public static IgniteNodeFeatureSet createNodeFeatureSet(String ver) throws Exception {
+        TestVersions versions = TestVersions.parse(ver);
+
+        IgniteCoreFeatureSet coreFeatures = createCoreFeatureSet(versions.coreVersion());
+
+        return versions.containsPlugin()
+            ? new IgniteNodeFeatureSet(coreFeatures, createPluginFeatureSet(versions.pluginVersion()))
+            : new IgniteNodeFeatureSet(coreFeatures);
     }
 
     /** */

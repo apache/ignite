@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFe
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureManager;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -58,6 +59,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ROLLING_UPGRADE_PROC;
+import static org.apache.ignite.internal.thread.context.DistributedAttributeKeyRegistry.ROLLING_UPGRADE;
+import static org.apache.ignite.internal.thread.context.OperationContextAttribute.newInstance;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ABORT_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_COMPLETE_VERSION_FINALIZATION;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_ENABLE;
@@ -66,6 +69,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_ROLLING
 
 /** */
 public class RollingUpgradeProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
+    /** */
+    public static final OperationContextAttribute<IgniteNodeFeatureSet> OP_FEATURES_ATTR = newInstance();
+
     /** */
     private final IgniteFeatureManager featureMgr;
 
@@ -180,6 +186,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        ctx.operationContextDispatcher().registerDistributedAttribute(ROLLING_UPGRADE, OP_FEATURES_ATTR);
+
         ctx.event().addLocalEventListener(
             evt -> {
                 synchronized (topGuard) {
