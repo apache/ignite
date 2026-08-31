@@ -164,6 +164,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testApplyTableFunction() {
+        assertQuery("SELECT v.a, r.x FROM (VALUES (1), (2)) v(a) "
+            + "CROSS APPLY TABLE(system_range(1, v.a)) r ORDER BY v.a, r.x")
+            .returns(1, 1L)
+            .returns(2, 1L)
+            .returns(2, 2L)
+            .check();
+
+        assertQuery("SELECT v.a, r.x FROM (VALUES (0), (2)) v(a) "
+            + "OUTER APPLY TABLE(system_range(1, v.a)) r ORDER BY v.a, r.x")
+            .returns(0, null)
+            .returns(2, 1L)
+            .returns(2, 2L)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testFunctions() throws Exception {
         // Cache with impicit schema.
         IgniteCache<Integer, Employer> emp1 = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp1")

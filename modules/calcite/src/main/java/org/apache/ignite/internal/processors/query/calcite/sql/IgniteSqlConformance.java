@@ -50,4 +50,9 @@ public class IgniteSqlConformance extends SqlAbstractConformance {
     @Override public boolean allowNiladicParentheses() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isApplyAllowed() {
+        return true;
+    }
 }

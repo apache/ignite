@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -103,6 +104,36 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
         String sql = "SELECT t.id, (SELECT x FROM TABLE(system_range(t.id, t.id))) FROM random_tbl t";
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, nodeOrAnyChild(isTableScan("random_tbl"))))
+            .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
+        ));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCrossApply() throws Exception {
+        String sql = "SELECT t.id, r.x FROM random_tbl t "
+            + "CROSS APPLY TABLE(system_range(t.id, t.id)) r";
+
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(join -> join.getJoinType() == JoinRelType.INNER)
+            .and(input(0, nodeOrAnyChild(isTableScan("random_tbl"))))
+            .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
+        ));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOuterApply() throws Exception {
+        String sql = "SELECT t.id, r.x FROM random_tbl t "
+            + "OUTER APPLY TABLE(system_range(t.id, t.id)) r";
+
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(join -> join.getJoinType() == JoinRelType.LEFT)
             .and(input(0, nodeOrAnyChild(isTableScan("random_tbl"))))
             .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteTableFunctionScan.class))))
         ));
