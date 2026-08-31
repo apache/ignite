@@ -58,6 +58,15 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
  * Cache data row adapter.
  */
 public class CacheDataRowAdapter implements CacheDataRow {
+    /** Version is ready flag. */
+    protected static final byte FLAG_VER_READY = 0x01;
+
+    /** Store cache ID flag. */
+    protected static final byte FLAG_STORE_CACHE_ID = 0x02;
+
+    /** Allow null as value. */
+    protected static final byte FLAG_ALLOW_NULL_VAL = 0x04;
+
     /** */
     @GridToStringExclude
     protected long link;
@@ -68,7 +77,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** */
     @GridToStringInclude
-    protected CacheObject val;
+    @Nullable protected CacheObject val;
 
     /** */
     @GridToStringInclude
@@ -78,8 +87,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected GridCacheVersion ver;
 
-    /** Whether version is ready. */
-    protected boolean verReady;
+    /** */
+    protected byte flags;
 
     /** */
     @GridToStringInclude
@@ -105,7 +114,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         this.ver = ver;
         this.expireTime = expireTime;
 
-        verReady = true;
+        flags = FLAG_VER_READY;
     }
 
     /**
@@ -290,6 +299,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) throws IgniteCheckedException {
         assert link != 0 : "link";
         assert key == null : "key";
+
+        if (readCacheId)
+            flags |= FLAG_STORE_CACHE_ID;
 
         long nextLink = link;
 
@@ -483,7 +495,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
 
         // Read version.
-        if (!verReady) {
+        if ((flags & FLAG_VER_READY) == 0) {
             incomplete = readIncompleteVersion(buf, incomplete, skipVer);
 
             assert skipVer || ver != null || incomplete != null;
@@ -562,7 +574,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             verLen = CacheVersionIO.size(ver, false);
         }
 
-        verReady = true;
+        flags |= FLAG_VER_READY;
 
         off += verLen;
 
@@ -737,7 +749,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     assert ver != null;
                 }
 
-                verReady = true;
+                flags |= FLAG_VER_READY;
 
                 return null;
             }
@@ -759,7 +771,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 assert ver != null;
             }
 
-            verReady = true;
+            flags |= FLAG_VER_READY;
         }
 
         assert !buf.hasRemaining();
@@ -825,7 +837,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return {@code True} if entry is ready.
      */
     public boolean isReady() {
-        return verReady && val != null && key != null;
+        return ((flags & FLAG_VER_READY) != 0) && val != null && key != null;
     }
 
     /** {@inheritDoc} */
@@ -845,20 +857,25 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean storeCacheId() {
+        return (flags & FLAG_STORE_CACHE_ID) != 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public int cacheId() {
         return cacheId;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        assert val != null : "Value is not ready: " + this;
+        assert val != null || (flags & FLAG_ALLOW_NULL_VAL) != 0 : "Value is not ready: " + this;
 
         return val;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
-        assert verReady : "Version is not ready: " + this;
+        assert (flags & FLAG_VER_READY) != 0 : "Version is not ready: " + this;
 
         return ver;
     }
@@ -894,7 +911,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
 
-        return len + (cacheId() != 0 ? 4 : 0);
+        return len + (storeCacheId() ? 4 : 0);
     }
 
     /**

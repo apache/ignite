@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -69,7 +70,15 @@ public class DataRow extends CacheDataRowAdapter {
      * @param expireTime Expire time.
      * @param cacheId Cache ID.
      */
-    public DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
+    public DataRow(
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        GridCacheVersion ver,
+        int part,
+        long expireTime,
+        int cacheId,
+        boolean storeCacheId
+    ) {
         super(0);
 
         this.hash = key.hashCode();
@@ -80,7 +89,9 @@ public class DataRow extends CacheDataRowAdapter {
         this.expireTime = expireTime;
         this.cacheId = cacheId;
 
-        verReady = true;
+        flags = (byte)(FLAG_VER_READY +
+            (storeCacheId ? FLAG_STORE_CACHE_ID : 0) +
+            (val == null ? FLAG_ALLOW_NULL_VAL : 0));
     }
 
     /**

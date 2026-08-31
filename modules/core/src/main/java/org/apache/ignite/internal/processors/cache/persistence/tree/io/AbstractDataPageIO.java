@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
@@ -776,10 +775,11 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     }
 
     /**
+     * In-place signle-page row update.
+     *
      * @param pageAddr Page address.
      * @param itemId Item ID.
      * @param pageSize Page size.
-     * @param payload Row data.
      * @param row Row.
      * @param rowSize Row size.
      * @return {@code True} if entry is not fragmented.
@@ -789,11 +789,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         final long pageAddr,
         int itemId,
         int pageSize,
-        @Nullable byte[] payload,
-        @Nullable T row,
-        final int rowSize) throws IgniteCheckedException {
+        T row,
+        final int rowSize
+    ) throws IgniteCheckedException {
         assert checkIndex(itemId) : itemId;
-        assert row != null ^ payload != null;
         assertPageType(pageAddr);
 
         final int dataOff = getDataOffset(pageAddr, itemId, pageSize);
@@ -801,12 +800,107 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         if (isFragmented(pageAddr, dataOff))
             return false;
 
-        if (row != null)
-            writeRowData(pageAddr, dataOff, rowSize, row, false);
-        else
-            writeRowData(pageAddr, dataOff, payload);
+        writeRowData(pageAddr, dataOff, rowSize, row, false);
 
         return true;
+    }
+
+    /**
+     * In-place row update. Modifies only entry payload, keeps size and next fragment link.
+     *
+     * @param pageAddr Page address.
+     * @param itemId Item ID.
+     * @param pageSize Page size.
+     * @param payload Row data.
+     */
+    public void updateRow(
+        final long pageAddr,
+        int itemId,
+        int pageSize,
+        byte[] payload
+    ) {
+        assert checkIndex(itemId) : itemId;
+        assertPageType(pageAddr);
+
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        boolean fragmented = isFragmented(pageAddr, dataOff);
+
+        assert getPageEntrySize(pageAddr, dataOff, 0) == payload.length : "Unexpected payload length [" +
+            "stored=" + getPageEntrySize(pageAddr, dataOff, 0) + ", updated=" + payload.length + ']';
+
+        PageUtils.putBytes(pageAddr, dataOff + PAYLOAD_LEN_SIZE + (fragmented ? LINK_SIZE : 0), payload);
+    }
+
+    /**
+     * In-place fragmented row update.
+     *
+     * @param pageAddr Page address.
+     * @param itemId Item ID.
+     * @param pageSize Page size.
+     * @param row Row.
+     * @param needPayload If modified payload required (to write WAL records).
+     * @return {@code True} if entry is not fragmented.
+     * @throws IgniteCheckedException If failed.
+     */
+    public DataPageUpdateResult updateRowFragment(
+        PageMemory pageMem,
+        long pageAddr,
+        int itemId,
+        int pageSize,
+        T row,
+        int written,
+        boolean needPayload
+    ) throws IgniteCheckedException {
+        assert checkIndex(itemId) : itemId;
+        assertPageType(pageAddr);
+
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+        boolean fragmented = isFragmented(pageAddr, dataOff);
+
+        if (!fragmented) {
+            int rowSize = row.size();
+
+            // Different format is used for not fragmented row, can't use writeFragmentData and unify method.
+            writeRowData(pageAddr, dataOff, rowSize, row, false);
+
+            byte[] modifiedPayload = null;
+
+            if (needPayload) {
+                modifiedPayload = new byte[rowSize];
+                PageUtils.getBytes(pageAddr, dataOff + PAYLOAD_LEN_SIZE, modifiedPayload, 0, rowSize);
+            }
+
+            return new DataPageUpdateResult(rowSize, modifiedPayload, 0L);
+        }
+
+        long nextLink = getNextFragmentLink(pageAddr, dataOff);
+        int payloadSize = getPageEntrySize(pageAddr, dataOff, 0);
+
+        ByteBuffer pageBuf = pageMem.pageBuffer(pageAddr);
+        pageBuf.position(dataOff + PAYLOAD_LEN_SIZE + LINK_SIZE);
+        pageBuf.limit(pageBuf.position() + payloadSize);
+
+        byte[] modifiedPayload = null;
+
+        if (needPayload) {
+            ByteBuffer buf = ByteBuffer.allocate(payloadSize).order(pageBuf.order());
+
+            writeFragmentData(row, buf, written, payloadSize);
+
+            buf.rewind();
+
+            boolean modified = buf.compareTo(pageBuf) != 0;
+
+            if (modified) {
+                pageBuf.put(buf);
+                modifiedPayload = buf.array();
+            }
+        }
+        else
+            writeFragmentData(row, pageBuf, written, payloadSize);
+
+        return new DataPageUpdateResult(payloadSize, modifiedPayload, nextLink);
     }
 
     /**
@@ -1156,6 +1250,8 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             buf.putLong(lastLink);
 
             int rowOff = rowSize - written - payloadSize;
+
+            assertPageType(buf);
 
             writeFragmentData(row, buf, rowOff, payloadSize);
         }

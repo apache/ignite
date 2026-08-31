@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageUpdateResult;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -90,7 +91,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
-    private final PageHandler<T, Boolean> updateRow = new UpdateRowHandler();
+    private final PageHandler<T, Boolean> updateSignlePageRow = new UpdateSinglePageRowHandler();
+
+    /** */
+    private final PageHandler<PartiallyWritten, PartiallyWritten> updateFragmentedRow = new UpdateFragmentedRowHandler();
 
     /** */
     private final DataRegionMetricsImpl memMetrics;
@@ -104,7 +108,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /**
      *
      */
-    private final class UpdateRowHandler extends PageHandler<T, Boolean> {
+    private final class UpdateSinglePageRowHandler extends PageHandler<T, Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean run(
             int cacheId,
@@ -115,37 +119,112 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             T row,
             int itemId,
-            IoStatisticsHolder statHolder)
-            throws IgniteCheckedException {
+            IoStatisticsHolder statHolder
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int rowSize = row.size();
 
-            boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
+            boolean updated = io.updateRow(pageAddr, itemId, pageSize(), row, rowSize);
 
             evictionTracker.touchPage(pageId);
 
-            if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[rowSize];
-
-                DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
-
-                assert data.payloadSize() == rowSize;
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
-
+            if (updated) {
                 statHolder.trackPageRemoveData(rowSize);
                 statHolder.trackPageInsertData(rowSize);
 
+                if (needWalDeltaRecord(pageId, page, walPlc)) {
+                    // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
+                    byte[] payload = new byte[rowSize];
+
+                    DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
+
+                    assert data.payloadSize() == rowSize;
+
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
+
+                    wal.log(new DataPageUpdateRecord(
+                        cacheId,
+                        pageId,
+                        itemId,
+                        payload));
+                }
+            }
+
+            return updated;
+        }
+    }
+
+    /** Current state (for last processed page) of partially written row. */
+    private final class PartiallyWritten {
+        /** */
+        private final T row;
+
+        /** */
+        private long nextLink;
+
+        /** */
+        private int written;
+
+        /** */
+        private boolean modified;
+
+        /** */
+        public PartiallyWritten(T row) {
+            this.row = row;
+        }
+    }
+
+    /**
+     *
+     */
+    private final class UpdateFragmentedRowHandler extends PageHandler<PartiallyWritten, PartiallyWritten> {
+        /** {@inheritDoc} */
+        @Override public PartiallyWritten run(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PageIO iox,
+            Boolean walPlc,
+            PartiallyWritten fragment,
+            int itemId,
+            IoStatisticsHolder statHolder
+        ) throws IgniteCheckedException {
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
+
+            boolean walEnabled = wal != null && !wal.pageRecordsDisabled(grpId, pageId);
+
+            DataPageUpdateResult updateRes = io.updateRowFragment(pageMem, pageAddr, itemId, pageSize(),
+                fragment.row, fragment.written, walEnabled);
+
+            evictionTracker.touchPage(pageId);
+
+            if (updateRes.modifiedPayload() != null && walEnabled && needWalDeltaRecord(pageId, page, walPlc)) {
                 wal.log(new DataPageUpdateRecord(
                     cacheId,
                     pageId,
                     itemId,
-                    payload));
+                    updateRes.modifiedPayload()));
             }
 
-            return updated;
+            fragment.modified = !walEnabled || updateRes.modifiedPayload() != null;
+            fragment.nextLink = updateRes.nextLink();
+            fragment.written += updateRes.payloadSize();
+
+            return fragment;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean markDirtyAfterWrite(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PartiallyWritten fragment,
+            int intArg
+        ) {
+            return fragment.modified;
         }
     }
 
@@ -788,19 +867,50 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(long link, T row,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public boolean updateDataRow(
+        T oldRow,
+        T newRow,
+        boolean allowFragmented,
+        IoStatisticsHolder statHolder
+    ) throws IgniteCheckedException {
+        long link = oldRow.link();
+        int size = newRow.size();
+
         assert link != 0;
+        assert oldRow.size() == size :
+            "Unexpected row size on update [oldSize=" + oldRow.size() + ", newSize=" + size + ']';
 
         try {
             long pageId = PageIdUtils.pageId(link);
             int itemId = PageIdUtils.itemId(link);
 
-            Boolean updated = write(pageId, updateRow, row, itemId, null, statHolder);
+            if (!allowFragmented) {
+                Boolean updated = write(pageId, updateSignlePageRow, newRow, itemId, null, statHolder);
 
-            assert updated != null; // Can't fail here.
+                assert updated != null; // Can't fail here.
 
-            return updated;
+                return updated;
+            }
+
+            PartiallyWritten updateRes = write(pageId, updateFragmentedRow, new PartiallyWritten(newRow), itemId,
+                null, statHolder);
+
+            while (updateRes.written < newRow.size()) {
+                pageId = PageIdUtils.pageId(updateRes.nextLink);
+                itemId = PageIdUtils.itemId(updateRes.nextLink);
+
+                updateRes = write(pageId, updateFragmentedRow, updateRes, itemId, null, statHolder);
+            }
+            statHolder.trackPageRemoveData(size);
+            statHolder.trackPageInsertData(size);
+
+            assert updateRes.written == newRow.size() :
+                "Unexpected written row size [written=" + updateRes.written + ", rowSize=" + newRow.size() + ']';
+
+            assert updateRes.nextLink == 0 :
+                "Unexpected next page link [nextLink=" + Long.toHexString(updateRes.nextLink) + ']';
+
+            return true;
         }
         catch (AssertionError e) {
             throw corruptedFreeListException(e);
@@ -809,7 +919,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to update data row", t, grpId);
+            throw new CorruptedFreeListException("Failed to update data newRow", t, grpId);
         }
     }
 
