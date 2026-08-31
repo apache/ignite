@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlNodeRewriter;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -96,6 +98,9 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                                     .withSqlNodeRewriter(new SqlRewriter()))
                             .context(Contexts.chain(
                                 CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
+                                Contexts.of(IgniteSqlSemantics.builder()
+                                    .paginationRoundingMode(RoundingMode.DOWN)
+                                    .build()),
                                 Contexts.of(new AccumulatorFactoryProviderImpl())))
                             .build();
 
@@ -213,6 +218,23 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < ?)")
             .withParams(3)
             .returns(2L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testPaginationRoundingPolicy() {
+        assertQuery("SELECT x FROM (VALUES (0), (1), (2)) t(x) ORDER BY x LIMIT 1.9")
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT x FROM (VALUES (0), (1), (2)) t(x) ORDER BY x FETCH FIRST 1.9 ROWS ONLY")
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT x FROM (VALUES (0), (1), (2)) t(x) ORDER BY x OFFSET 1.9 ROWS")
+            .returns(1)
+            .returns(2)
             .check();
     }
 
@@ -360,7 +382,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             super(
                 "TEST_SUM",
                 null,
-                SqlKind.SUM,
+                SqlKind.OTHER_FUNCTION,
                 ReturnTypes.AGG_SUM,
                 null,
                 OperandTypes.NUMERIC,
@@ -379,7 +401,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             super(
                 "TEST_COUNT_PAIRS",
                 null,
-                SqlKind.SUM,
+                SqlKind.OTHER_FUNCTION,
                 opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.BIGINT),
                 null,
                 OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),

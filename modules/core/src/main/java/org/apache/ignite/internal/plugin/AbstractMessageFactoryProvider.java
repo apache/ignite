@@ -20,7 +20,6 @@ package org.apache.ignite.internal.plugin;
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallableMessage;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
@@ -55,8 +54,7 @@ public abstract class AbstractMessageFactoryProvider implements MessageFactoryPr
         if (NonMarshallableMessage.class.isAssignableFrom(cls))
             marshaller = null;
         else {
-            boolean required = MarshallableMessage.class.isAssignableFrom(cls)
-                || SelfMarshallingMessage.class.isAssignableFrom(cls);
+            boolean required = MarshallableMessage.class.isAssignableFrom(cls);
 
             marshaller = loadGenerated(cls, "Marshaller", required);
         }

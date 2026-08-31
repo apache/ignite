@@ -149,18 +149,18 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
     public void testFractionalLimitOffset() throws Exception {
         fillCache(cacheRepl, 4);
 
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 0.5").check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 0.5").returns(0).check();
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.2").returns(0).check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.5").returns(0).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id LIMIT 1.5").returns(0).returns(1).check();
 
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 0.5 ROWS ONLY").check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 0.5 ROWS ONLY").returns(0).check();
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.3 ROWS ONLY").returns(0).check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.6 ROWS ONLY").returns(0).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id FETCH FIRST 1.6 ROWS ONLY").returns(0).returns(1).check();
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 0.5 ROWS")
-            .returns(0).returns(1).returns(2).returns(3).check();
+            .returns(1).returns(2).returns(3).check();
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.3 ROWS").returns(2).returns(3).check();
-        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.6 ROWS").returns(2).returns(3).check();
+        assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 2.6 ROWS").returns(3).check();
     }
 
     /**
@@ -352,7 +352,7 @@ public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTransact
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "
                 + "FETCH FIRST (ABS(0.5)) ROWS ONLY")
-            .resultSize(0)
+            .returns(1)
             .check();
 
         assertQuery("SELECT id FROM TEST_REPL ORDER BY id OFFSET 1 ROWS "

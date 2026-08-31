@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -115,25 +114,31 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private final RelDataType nullType;
 
+    /** */
+    private final @Nullable IgniteSqlSemantics sqlSem;
+
     /**
      * Creates a validator.
      *
-     * @param opTab         Operator table
-     * @param catalogReader Catalog reader
-     * @param typeFactory   Type factory
-     * @param cfg           Config
-     * @param parameters    Dynamic parameters
+     * @param opTab Operator table.
+     * @param catalogReader Catalog reader.
+     * @param typeFactory Type factory.
+     * @param cfg Config.
+     * @param parameters Dynamic parameters.
+     * @param sqlSem SQL semantics.
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
         CalciteCatalogReader catalogReader,
         IgniteTypeFactory typeFactory,
         SqlValidator.Config cfg,
-        @Nullable Object[] parameters
+        @Nullable Object[] parameters,
+        @Nullable IgniteSqlSemantics sqlSem
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
+        this.sqlSem = sqlSem;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
@@ -385,7 +390,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (val.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + nodeName);
 
-            IgniteMath.convertToLongExact(val, RoundingMode.DOWN);
+            IgniteSqlSemantics.convertPaginationValueToLong(val, sqlSem);
         }
         catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
@@ -615,6 +620,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case LAST_VALUE:
             case NTILE:
             case NTH_VALUE:
+            case OTHER_FUNCTION:
                 return;
             default:
                 throw newValidationError(call,

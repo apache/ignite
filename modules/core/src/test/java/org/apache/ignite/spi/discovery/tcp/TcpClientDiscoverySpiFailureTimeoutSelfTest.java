@@ -447,14 +447,12 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /**  */
         @Override protected void writeToSocket(
             Socket sock,
-            TcpDiscoveryAbstractMessage msg,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
                 try {
-                    U.dumpStack(log, "Before sleep [msg=" + msg +
-                        ", arrLen=" + (data != null ? data.length : "n/a") + ']');
+                    U.dumpStack(log, "Before sleep [arrLen=" + (data != null ? data.length : "n/a") + ']');
 
                     Thread.sleep(writeToSocketDelay);
                 }
@@ -464,7 +462,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             }
 
             if (sock.getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(sock, msg, data, timeout);
+                super.writeToSocket(sock, data, timeout);
             else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
         }
@@ -494,14 +492,13 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
         /**  */
         @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
             Socket sock,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
                 try {
-                    U.dumpStack(log, "Before sleep [msg=" + msg + ']');
+                    U.dumpStack(log, "Before sleep [res=" + res + ']');
 
                     Thread.sleep(writeToSocketDelay);
                 }
@@ -511,7 +508,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             }
 
             if (sock.getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(msg, sock, res, timeout);
+                super.writeToSocket(sock, res, timeout);
             else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
         }

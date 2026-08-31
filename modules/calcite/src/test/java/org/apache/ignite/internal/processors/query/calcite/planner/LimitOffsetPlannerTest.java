@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.math.RoundingMode;
+import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.type.RelDataType;
@@ -25,6 +27,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -88,7 +91,20 @@ public class LimitOffsetPlannerTest extends AbstractPlannerTest {
                         .and(sort -> sort.fetch != null))))));
 
         assertPlan("SELECT * FROM TEST ORDER BY ID OFFSET 1 ROWS "
-                + "FETCH FIRST (ABS(0.5)) ROWS ONLY", publicSchema,
+                + "FETCH FIRST (ABS(0.6)) ROWS ONLY", publicSchema,
+            isInstanceOf(IgniteLimit.class)
+                .and(limit -> limit.offset() != null && limit.fetch() != null)
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteSort.class)
+                        .and(sort -> sort.offset != null && sort.fetch != null))))));
+
+        assertPlan(contextBuilder()
+                .query("SELECT * FROM TEST ORDER BY ID OFFSET 1 ROWS "
+                    + "FETCH FIRST (ABS(0.6)) ROWS ONLY")
+                .schema(publicSchema)
+                .additionalCtx(Contexts.of(IgniteSqlSemantics.builder()
+                    .paginationRoundingMode(RoundingMode.DOWN)
+                    .build())),
             isInstanceOf(IgniteLimit.class)
                 .and(limit -> limit.offset() != null && limit.fetch() != null)
                 .and(input(isInstanceOf(IgniteExchange.class)

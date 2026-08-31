@@ -6861,7 +6861,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                             ringMessageReceived();
 
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                             continue;
                         }
@@ -6887,7 +6887,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             TcpDiscoverySpiState state = spiStateCopy();
 
                             if (state == CONNECTED) {
-                                spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                                spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                                 if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone())
                                     new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
@@ -6901,21 +6901,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // If message is received from previous node and node is connecting forward to next node.
                                 if (!getLocalNodeId().equals(msg0.routerNodeId()) && state == CONNECTING) {
-                                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                                    spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                                     msgWorker.addMessage(msg);
 
                                     continue;
                                 }
 
-                                spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
+                                spi.writeToSocket(sock, RES_CONTINUE_JOIN, sockTimeout);
 
                                 break;
                             }
                         }
                         else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                             boolean ignored = false;
 
@@ -6944,7 +6944,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                             synchronized (mux) {
                                 if (spiState == CONNECTING) {
@@ -6972,7 +6972,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                             boolean ignored = false;
 
@@ -7015,7 +7015,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                             boolean ignored = false;
 
@@ -7080,7 +7080,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             clientMsgWrk.addMessage(ack);
                         }
                         else
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                         if (metricsUpdateMsg != null)
                             processClientMetricsUpdateMessage(metricsUpdateMsg);
@@ -7398,13 +7398,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Check that joining node can accept incoming connections.
                 if (node.clientRouterNodeId() == null) {
                     if (!pingJoiningNode(node)) {
-                        spi.writeToSocket(msg, sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
+                        spi.writeToSocket(sock, RES_JOIN_IMPOSSIBLE, sockTimeout);
 
                         return false;
                     }
                 }
 
-                spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                spi.writeToSocket(sock, RES_OK, sockTimeout);
 
                 if (log.isDebugEnabled())
                     log.debug("Responded to join request message [msg=" + msg + ", res=" + RES_OK + ']');
@@ -7441,7 +7441,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Local node is stopping. Remote node should try next one.
                     res = RES_CONTINUE_JOIN;
 
-                spi.writeToSocket(msg, sock, res, sockTimeout);
+                spi.writeToSocket(sock, res, sockTimeout);
 
                 if (log.isDebugEnabled())
                     log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
@@ -7719,7 +7719,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             throws IgniteCheckedException, IOException {
             byte[] msgBytes = msgT.get2() == null ? clientMsgSer.serializeMessage(msgT.get1()) : msgT.get2();
 
-            spi.writeToSocket(sock, msgT.get1(), msgBytes, timeout);
+            spi.writeToSocket(sock, msgBytes, timeout);
         }
 
         /**

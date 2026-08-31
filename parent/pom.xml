@@ -89,8 +89,8 @@
         <failureaccess.version>1.0.3</failureaccess.version>
         <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
-        <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.21.5</jackson.version>
+        <hamcrest.version>3.0</hamcrest.version>
+        <jackson.version>2.22.2</jackson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
@@ -108,7 +108,7 @@
         <log4j2.version>2.26.1</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.4</lucene.version>
-        <lz4.version>1.11.1</lz4.version>
+        <lz4.version>1.11.2</lz4.version>
         <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
