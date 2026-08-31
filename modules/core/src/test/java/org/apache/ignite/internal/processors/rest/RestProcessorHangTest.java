@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -71,8 +71,8 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
 
         // Discovery spi that never allows connecting.
         TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi() {
-            @Override protected void writeToSocket(
-                Socket sock,
+            @Override protected void writeReceipt(
+                TcpDiscoveryIoSession ses,
                 int res,
                 long timeout
             ) throws IOException, IgniteCheckedException {
@@ -84,7 +84,7 @@ public class RestProcessorHangTest extends GridCommonAbstractTest {
                     //  No-op.
                 }
 
-                super.writeToSocket(sock, 255, timeout);
+                super.writeReceipt(ses, 255, timeout);
             }
         };
 

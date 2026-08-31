@@ -26,18 +26,23 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.direct.IgniteMessageSerializationContext;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.X;
@@ -45,6 +50,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,24 +67,27 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  * A leading byte is used to distinguish between the modes. The byte will be removed in future.
  */
-public class TcpDiscoveryIoSession {
+public class TcpDiscoveryIoSession implements AutoCloseable {
     /** Default size of buffer used for buffering socket in/out. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 8192;
 
-    /** Size for an intermediate buffer for serializing discovery messages. */
-    private static final int MSG_BUFFER_SIZE = 100;
+    /** Size of the intermediate buffer a message is deserialized through. */
+    private static final int READ_BUFFER_SIZE = 100;
 
     /** */
-    final TcpDiscoverySpi spi;
+    private final TcpDiscoverySpi spi;
 
     /** */
     private final Socket sock;
 
     /** */
-    private final DirectMessageWriter msgWriter;
+    private final TcpDiscoveryMessageSerializer msgSer;
 
     /** */
     private final DirectMessageReader msgReader;
+
+    /** */
+    private final ByteBuffer readBuf;
 
     /** Buffered socket output stream. */
     private final OutputStream out;
@@ -85,8 +95,11 @@ public class TcpDiscoveryIoSession {
     /** Buffered socket input stream. */
     private final CompositeInputStream in;
 
-    /** Intermediate buffer for serializing discovery messages. */
-    private final ByteBuffer msgBuf;
+    /** */
+    private final ReentrantLock sesWriteLock = new ReentrantLock();
+
+    /** */
+    private volatile MessageSerializationContext serCtx = MessageSerializationContext.UNNEGOTIATED;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.
@@ -99,10 +112,10 @@ public class TcpDiscoveryIoSession {
         this.sock = sock;
         this.spi = spi;
 
-        msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
-
-        msgWriter = new DirectMessageWriter(spi.messageFactory());
+        readBuf = ByteBuffer.allocate(READ_BUFFER_SIZE);
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
+
+        this.msgSer = new TcpDiscoveryMessageSerializer(spi);
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
@@ -116,6 +129,16 @@ public class TcpDiscoveryIoSession {
         }
     }
 
+    /** */
+    void rebuildMessageSerializationContext(@Nullable IgniteNodeFeatureSet rmtFeatures) throws UnsupportedNodeVersionException {
+        serCtx = IgniteMessageSerializationContext.buildForPeers(spi.ignite(), rmtFeatures);
+    }
+
+    /** @return Serialization context the two nodes of this session agreed on. */
+    public MessageSerializationContext serializationContext() {
+        return serCtx;
+    }
+
     /**
      * Writes a discovery message to the underlying socket output stream.
      *
@@ -123,8 +146,10 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If serialization fails.
      */
     void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+        sesWriteLock.lock();
+
         try {
-            serializeMessage((Message)msg, out);
+            msgSer.writeTo(msg, out, serCtx);
 
             out.flush();
         }
@@ -138,6 +163,23 @@ public class TcpDiscoveryIoSession {
                 throw (IgniteCheckedException)e;
 
             throw new IgniteCheckedException(e);
+        }
+        finally {
+            sesWriteLock.unlock();
+        }
+    }
+
+    /**
+     * Reads the next discovery message from the socket input stream limiting read time.
+     *
+     * @param timeout Socket read timeout for this operation, {@code 0} means infinite.
+     * @param <T> Type of the expected message.
+     * @return Deserialized message instance.
+     * @throws IgniteCheckedException If deserialization fails.
+     */
+    <T extends Message> T readMessage(long timeout) throws IgniteCheckedException, IOException {
+        try (SocketTimeoutScope ignored = withTimeout(timeout)) {
+            return readMessage();
         }
     }
 
@@ -161,37 +203,37 @@ public class TcpDiscoveryIoSession {
                 msg = spi.messageFactory().create(msgType);
             }
             catch (IgniteException e) {
-                detectSslAlert(b0, b1, in);
+                detectSslAlert(b0, b1);
 
                 // 'Invalid message type' should not be lost.
                 throw e;
             }
 
             msgReader.reset();
-            msgReader.setBuffer(msgBuf);
+            msgReader.setBuffer(readBuf);
 
             boolean finished;
 
             do {
-                msgBuf.clear();
+                readBuf.clear();
 
-                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
+                int read = in.read(readBuf.array(), readBuf.position(), readBuf.remaining());
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                msgBuf.limit(read);
+                readBuf.limit(read);
 
-                finished = MessageSerialization.readFrom(spi.messageFactory(), msg, msgReader);
+                finished = MessageSerialization.readFrom(spi.messageFactory(), msg, msgReader, serCtx);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
                 // the previous message. But it is not guaranteed with Client Discovery where messages aren't acknowledged.
                 // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
-                if (msgBuf.hasRemaining()) {
-                    byte[] unprocessedReadTail = new byte[msgBuf.remaining()];
+                if (readBuf.hasRemaining()) {
+                    byte[] unprocessedReadTail = new byte[readBuf.remaining()];
 
-                    msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
+                    readBuf.get(unprocessedReadTail, 0, readBuf.remaining());
 
                     in.attachByteArray(unprocessedReadTail);
                 }
@@ -237,39 +279,108 @@ public class TcpDiscoveryIoSession {
     }
 
     /**
-     * Serializes a discovery message into given output stream.
+     * Writes raw data to the underlying socket output stream.
      *
-     * @param m Discovery message to serialize.
-     * @param out Output stream to write serialized message.
-     * @throws IOException If serialization fails.
+     * @param data Raw data to write.
+     * @throws IOException If failed.
      */
-    void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
+    void write(byte[] data) throws IOException {
+        sesWriteLock.lock();
 
-        DiscoveryMarshalling.marshal(m, kctx, null);
+        try {
+            out.write(data);
 
-        msgWriter.reset();
-        msgWriter.setBuffer(msgBuf);
-
-        boolean finished;
-
-        do {
-            // Should be cleared before first operation.
-            msgBuf.clear();
-
-            finished = MessageSerialization.writeTo(spi.messageFactory(), m, msgWriter);
-
-            out.write(msgBuf.array(), 0, msgBuf.position());
+            out.flush();
         }
-        while (!finished);
+        finally {
+            sesWriteLock.unlock();
+        }
     }
 
     /**
-     * Checks wheter input stream contains SSL alert.
+     * Writes a single byte response to the underlying socket output stream.
+     *
+     * @param b Integer response.
+     * @throws IOException If failed.
+     */
+    void write(int b) throws IOException {
+        sesWriteLock.lock();
+
+        try {
+            out.write(b);
+
+            out.flush();
+        }
+        finally {
+            sesWriteLock.unlock();
+        }
+    }
+
+    /**
+     * Reads a single byte from the underlying socket input stream limiting read time.
+     *
+     * @param timeout Socket read timeout for this operation, {@code 0} means infinite.
+     * @return Receipt.
+     * @throws IOException If failed.
+     * @throws EOFException If the connection has been closed.
+     */
+    int read(long timeout) throws IOException {
+        try (SocketTimeoutScope ignored = withTimeout(timeout)) {
+            int res = in.read();
+
+            if (res == -1)
+                throw new EOFException();
+
+            return res;
+        }
+    }
+
+    /**
+     * Reads {@code data.length} bytes from the underlying socket stream into the given array limiting
+     * read time.
+     *
+     * @param data Array to read the data into.
+     * @param timeout Socket read timeout for this operation, {@code 0} means infinite.
+     * @return Number of bytes read, less than {@code data.length} only if the connection has been closed.
+     * @throws IOException If failed.
+     */
+    int read(byte[] data, long timeout) throws IOException {
+        try (SocketTimeoutScope ignored = withTimeout(timeout)) {
+            return in.readNBytes(data, 0, data.length);
+        }
+    }
+
+    /**
+     * Applies the given read timeout to the session socket until the returned scope is closed.
+     *
+     * @param timeout Socket read timeout, {@code 0} means infinite.
+     * @return Scope restoring the previous socket read timeout when closed.
+     * @throws SocketException If the timeout can not be applied.
+     */
+    private SocketTimeoutScope withTimeout(long timeout) throws SocketException {
+        SocketTimeoutScope scope = new SocketTimeoutScope(sock.getSoTimeout());
+
+        sock.setSoTimeout((int)timeout);
+
+        return scope;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        U.closeQuiet(sock);
+    }
+
+    /** */
+    void close(IgniteLogger log) {
+        U.close(sock, log);
+    }
+
+    /**
+     * Checks whether input stream contains SSL alert.
      * See handling {@code StreamCorruptedException} in {@link #readMessage()}.
      * Keeps logic similar to {@link java.io.ObjectInputStream#readStreamHeader}.
      */
-    private void detectSslAlert(byte b0, byte b1, InputStream in) throws IOException {
+    private void detectSslAlert(byte b0, byte b1) throws IOException {
         byte[] hdr = new byte[4];
         hdr[0] = b0;
         hdr[1] = b1;
@@ -282,6 +393,32 @@ public class TcpDiscoveryIoSession {
 
         if (hex.matches("15....00"))
             throw new StreamCorruptedException("invalid stream header: " + hex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "TcpDiscoveryIoSession [sock=" + sock + ']';
+    }
+
+    /** Restores the socket read timeout changed for the duration of a single operation. */
+    private final class SocketTimeoutScope implements AutoCloseable {
+        /** */
+        private final int oldTimeout;
+
+        /** */
+        private SocketTimeoutScope(int oldTimeout) {
+            this.oldTimeout = oldTimeout;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            try {
+                sock.setSoTimeout(oldTimeout);
+            }
+            catch (SocketException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /**
@@ -327,7 +464,13 @@ public class TcpDiscoveryIoSession {
             if (len0 == len)
                 return len0;
 
-            return len0 + super.read(b, off + len0, len - len0);
+            int read = super.read(b, off + len0, len - len0);
+
+            // Do not report the bytes already taken from the prefix buffer as an end of the stream.
+            if (read < 0)
+                return len0 > 0 ? len0 : read;
+
+            return len0 + read;
         }
 
         /** {@inheritDoc} */
@@ -339,7 +482,9 @@ public class TcpDiscoveryIoSession {
         @Override public int readNBytes(byte[] b, int off, int len) throws IOException {
             int len0 = readPrefixBuffer(b, off, len);
 
-            return super.readNBytes(b, off + len0, len - len0);
+            assert len0 <= len;
+
+            return len0 + super.readNBytes(b, off + len0, len - len0);
         }
 
         /** {@inheritDoc} */

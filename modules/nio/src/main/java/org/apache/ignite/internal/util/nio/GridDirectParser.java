@@ -29,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
+import static org.apache.ignite.internal.util.nio.MessageSerialization.resolveSerializationContext;
 
 /**
  * Parser for direct messages.
@@ -86,7 +87,7 @@ public class GridDirectParser implements GridNioParser {
             if (msg != null && buf.hasRemaining()) {
                 reader.setBuffer(buf);
 
-                finished = MessageSerialization.readFrom(msgFactory, msg, reader);
+                finished = MessageSerialization.readFrom(msgFactory, msg, reader, resolveSerializationContext(ses));
             }
 
             if (finished) {

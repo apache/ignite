@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -246,10 +247,11 @@ public interface MessageWriter {
      * Writes nested message.
      *
      * @param val Message.
+     * @param ctx Serialization context.
      * @return Whether value was fully written.
      */
-    public default boolean writeMessage(Message val) {
-        return writeMessage(val, false);
+    public default boolean writeMessage(Message val, MessageSerializationContext ctx) {
+        return writeMessage(val, false, ctx);
     }
 
     /**
@@ -257,9 +259,10 @@ public interface MessageWriter {
      *
      * @param val Message.
      * @param compress Whether message should be compressed.
+     * @param ctx Serialization context.
      * @return Whether value was fully written.
      */
-    public boolean writeMessage(Message val, boolean compress);
+    public boolean writeMessage(Message val, boolean compress, MessageSerializationContext ctx);
 
     /**
      * Writes {@link CacheObject}.
@@ -290,32 +293,35 @@ public interface MessageWriter {
      *
      * @param arr Array of objects.
      * @param type Array component type.
+     * @param ctx Serialization context.
      * @param <T> Type of the objects that array contains.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(T[] arr, MessageArrayType type);
+    public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, MessageSerializationContext ctx);
 
     /**
      * Writes collection with its elements order.
      *
      * @param col Collection.
      * @param type Collection item type.
+     * @param ctx Serialization context.
      * @param <T> Type of the objects that collection contains.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type);
+    public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, MessageSerializationContext ctx);
 
     /**
      * Writes map.
      *
      * @param map Map.
      * @param type Map type.
+     * @param ctx Serialization context.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
-    public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type) {
-        return writeMap(map, type, false);
+    public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, MessageSerializationContext ctx) {
+        return writeMap(map, type, false, ctx);
     }
 
     /**
@@ -324,11 +330,13 @@ public interface MessageWriter {
      * @param map Map.
      * @param type Map type.
      * @param compress Whether map should be compressed.
+     * @param ctx Serialization context.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress);
+    public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress,
+        MessageSerializationContext ctx);
 
     /**
      * Writes ignite product version.

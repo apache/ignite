@@ -95,6 +95,45 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testRollingUpgradeAwareMessage() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestRollingUpgradeAwareMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestRollingUpgradeAwareMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestRollingUpgradeAwareMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testUnknownFeatureConstantRejected() {
+        Compilation compilation = compile("TestUnknownFeatureMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Failed to resolve feature in the registry by its name [featureName=NO_SUCH_FEATURE");
+    }
+
+    /** */
+    @Test
+    public void testSameFeatureInBothGuardsRejected() {
+        Compilation compilation = compile("TestFeatureConflictMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("must not reference the same feature");
+    }
+
+    /** */
+    @Test
+    public void testFeatureConstantOfWrongTypeRejected() {
+        Compilation compilation = compile("TestInvalidFeatureRegistry.java", "TestInvalidFeatureMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("must be of type IgniteFeature [registry=");
+    }
+
+    /** */
+    @Test
     public void testCollectionsMessage() {
         Compilation compilation = compile("TestCollectionsMessage.java");
 

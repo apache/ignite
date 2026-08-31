@@ -48,9 +48,11 @@ import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
+import static org.apache.ignite.internal.MessageSerializerGenerator.resolveFeatureRegistry;
 
 /**
  * Annotation processor that generates serialization and deserialization code for classes implementing the {@code Message} interface.
@@ -104,6 +106,9 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
+
+    /** */
+    private static final String IGNITE_FEATURE_CLS = "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature";
 
     /** Messages with no fields. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
@@ -274,12 +279,86 @@ public class MessageProcessor extends AbstractProcessor {
                 }
 
                 validateEnumFieldMapping(type, el);
+                validateRollingUpgradeAnnotations(el);
             }
         }
 
         hierList.add(elList);
 
         return hierList;
+    }
+
+    /** */
+    private void validateRollingUpgradeAnnotations(Element el) {
+        Order ann = el.getAnnotation(Order.class);
+
+        if (ann.introducedBy().isEmpty() && ann.deprecatedBy().isEmpty())
+            return;
+
+        String regCls = resolveFeatureRegistry(el.getEnclosingElement());
+
+        String introducedFeature = ann.introducedBy().isEmpty()
+            ? null
+            : resolveFeatureFullName(el, ann.introducedBy(), regCls);
+
+        String deprecatedFeature = ann.deprecatedBy().isEmpty()
+            ? null
+            : resolveFeatureFullName(el, ann.deprecatedBy(), regCls);
+
+        if (introducedFeature == null || deprecatedFeature == null)
+            return;
+
+        if (introducedFeature.equals(deprecatedFeature)) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                "Elements introducedBy and deprecatedBy of the @Order annotation must not reference the same feature.",
+                el);
+        }
+    }
+
+    /** */
+    @Nullable private String resolveFeatureFullName(Element el, String featureName, String regCls) {
+        TypeElement registryType = processingEnv.getElementUtils().getTypeElement(regCls);
+
+        if (registryType == null) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR, "Cannot resolve the feature registry class [registry=" + regCls + ']', el);
+
+            return null;
+        }
+
+        for (Element regTypeElement : registryType.getEnclosedElements()) {
+            if (regTypeElement.getKind() != ElementKind.FIELD || !regTypeElement.getSimpleName().contentEquals(featureName))
+                continue;
+
+            Set<Modifier> mods = regTypeElement.getModifiers();
+
+            if (!mods.contains(Modifier.PUBLIC) || !mods.contains(Modifier.STATIC) || !mods.contains(Modifier.FINAL)) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Feature constant must be public static final [registry=" + regCls + ", feature=" + featureName + ']', el);
+
+                return null;
+            }
+
+            TypeElement featureElement = processingEnv.getElementUtils().getTypeElement(IGNITE_FEATURE_CLS);
+
+            if (featureElement != null && !processingEnv.getTypeUtils().isAssignable(regTypeElement.asType(), featureElement.asType())) {
+                processingEnv.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    "Feature constant must be of type IgniteFeature [registry=" + regCls + ", feature=" + featureName + ']', el);
+
+                return null;
+            }
+
+            return regCls + '.' + featureName;
+        }
+
+        processingEnv.getMessager().printMessage(
+            Diagnostic.Kind.ERROR, "Failed to resolve feature in the registry by its name [featureName=" + featureName +
+                ", registry=" + regCls + ']', el);
+
+        return null;
     }
 
     /**
