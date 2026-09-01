@@ -351,7 +351,7 @@ public class SnapshotRestoreProcess {
                 .stream()
                 .findFirst();
 
-            if (firstMeta.isEmpty()) {
+            if (!firstMeta.isPresent()) {
                 finishProcess(
                     fut0.rqId,
                     new IllegalArgumentException(OP_REJECT_MSG + "No snapshot metadata read")

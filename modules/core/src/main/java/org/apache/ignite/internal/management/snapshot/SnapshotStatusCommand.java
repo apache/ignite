@@ -53,7 +53,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     }
 
     /** {@inheritDoc} */
-    @Override public Class<? extends SnapshotStatusTask> taskClass() {
+    @Override public Class<SnapshotStatusTask> taskClass() {
         return SnapshotStatusTask.class;
     }
 
@@ -65,14 +65,14 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             return;
         }
 
-        boolean creating = SnapshotStatusTask.SnapshotOperation.CREATE == status.operation();
-        boolean restoring = SnapshotStatusTask.SnapshotOperation.RESTORE == status.operation();
-        boolean inc = status.incrementIndex() > 0;
+        boolean isCreating = SnapshotStatusTask.SnapshotOperation.CREATE == status.operation();
+        boolean isRestoring = SnapshotStatusTask.SnapshotOperation.RESTORE == status.operation();
+        boolean isIncremental = status.incrementIndex() > 0;
 
-        assert (status instanceof SnapshotStatusTask.SnapshotStatusV2) == !(creating || restoring);
+        assert (status instanceof SnapshotStatusTask.SnapshotStatusV2) == !(isCreating || isRestoring);
 
-        // The check oeration can be run in parallel for different snapshots.
-        List<SnapshotStatus> multipleOpsView = creating || restoring
+        // The check operation can be run in parallel for different snapshots.
+        List<SnapshotStatus> multipleOpsView = isCreating || isRestoring
             ? Collections.singletonList(status)
             : ((SnapshotStatusTask.SnapshotStatusV2)status).allCheckStatuses;
 
@@ -85,12 +85,12 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             if (!oneOp.get())
                 printer.accept(U.nl());
 
-            if (creating) {
+            if (isCreating) {
                 assert multipleOpsView.size() == 1;
 
                 s.a("Create snapshot operation is in progress.").nl();
             }
-            else if (restoring) {
+            else if (isRestoring) {
                 assert multipleOpsView.size() == 1;
 
                 s.a("Restore snapshot operation is in progress.").nl();
@@ -99,9 +99,9 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
                 s.a("Check snapshot operation" + (multipleOpsView.size() < 2 ? " is " : "s are ") + "in progress.").nl();
 
             s.a("Snapshot name: ").a(s0.name()).nl();
-            s.a("Incremental: ").a(inc).nl();
+            s.a("Incremental: ").a(isIncremental).nl();
 
-            if (inc)
+            if (isIncremental)
                 s.a("Increment index: ").a(s0.incrementIndex()).nl();
 
             s.a("Operation request ID: ").a(s0.requestId()).nl();
@@ -114,12 +114,12 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
 
             SnapshotTaskProgressDesc desc;
 
-            if (creating)
-                desc = inc ? new CreateIncrementalSnapshotTaskProgressDesc() : new CreateFullSnapshotTaskProgressDesc();
-            else if (restoring)
-                desc = inc ? new RestoreIncrementalSnapshotTaskProgressDesc() : new RestoreFullSnapshotTaskProgressDesc();
+            if (isCreating)
+                desc = isIncremental ? new CreateIncrementalSnapshotTaskProgressDesc() : new CreateFullSnapshotTaskProgressDesc();
+            else if (isRestoring)
+                desc = isIncremental ? new RestoreIncrementalSnapshotTaskProgressDesc() : new RestoreFullSnapshotTaskProgressDesc();
             else
-                desc = new CheckSnapshotTaskProgressDesc(inc);
+                desc = new CheckSnapshotTaskProgressDesc(isIncremental);
 
             List<List<?>> rows = s0.progress().entrySet().stream().sorted(Map.Entry.comparingByKey())
                 .map(e -> desc.buildRow(e.getKey(), e.getValue()))
@@ -275,7 +275,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     /** */
     private static class CheckSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
-        private final boolean inc;
+        private final boolean incremental;
 
         /** */
         CheckSnapshotTaskProgressDesc(boolean incremental) {
@@ -285,12 +285,12 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
                     "processedSnapshotParts", "snapshotPartsToProcess", "percent")
             );
 
-            inc = incremental;
+            this.incremental = incremental;
         }
 
         /** {@inheritDoc} */
         @Override public List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress) {
-            if (inc) {
+            if (incremental) {
                 long processed = progress.get1();
                 long total = progress.get2();
 
@@ -308,7 +308,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             if (partitionsToCheck <= 0 || partsToCheck <= 0)
                 return F.asList(nodeId, "unknown", "unknown", "unknown", "unknown", "unknown", "unknown");
 
-            // Ration of checked partitions in current snapshot part * total parts ratio.
+            // Ratio of checked partitions in current snapshot part * total parts ratio.
             double totalRatio = ((double)progress.get2() / partitionsToCheck) * ((double)progress.get4() / partsToCheck);
 
             return F.asList(
