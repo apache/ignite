@@ -1,40 +1,38 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyResult;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /** */
 public class SnapshotStatusReproducerTest extends GridCommandHandlerAbstractTest {
-    /** Snapshot check latch. */
-    private static CountDownLatch snapshotCheckLatch;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new BlockingCheckSnapshotPluginProvider())
-            .setIncludeEventTypes(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
+        return super.getConfiguration(igniteInstanceName).setCommunicationSpi(new TestCommunicationSpi());
     }
 
     /** {@inheritDoc} */
@@ -44,8 +42,6 @@ public class SnapshotStatusReproducerTest extends GridCommandHandlerAbstractTest
         autoConfirmation = false;
 
         cleanPersistenceDir();
-
-        snapshotCheckLatch = new CountDownLatch(1);
 
         startGrids(3);
 
@@ -78,85 +74,81 @@ public class SnapshotStatusReproducerTest extends GridCommandHandlerAbstractTest
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
-        CountDownLatch restoreStarterdLatch = new CountDownLatch(1);
+        awaitPartitionMapExchange();
 
-        grid(0).events().localListen(
-            e -> {
-                restoreStarterdLatch.countDown();
+        CountDownLatch checkSingleResultsReceivedLatch = new CountDownLatch(2);
+        CountDownLatch restoreSingleResultsReceivedLatch = new CountDownLatch(2);
+        CountDownLatch proceedCheckLatch = new CountDownLatch(1);
 
-                return false;
-            },
-            EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED
-        );
+        for(var ig : Arrays.asList(grid(1), grid(2))) {
+            ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).msgCsmr = msg -> {
+                if(!(msg instanceof GridIoMessage ioMsg))
+                    return;
+
+                if(!(ioMsg.message() instanceof SingleNodeMessage<?> sm))
+                    return;
+
+                if (sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal()) {
+                    restoreSingleResultsReceivedLatch.countDown();
+                } else if (sm.type() == CHECK_SNAPSHOT_METAS.ordinal()) {
+                    checkSingleResultsReceivedLatch.countDown();
+
+                    try {
+                        assertTrue(proceedCheckLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+        }
 
         IgniteFutureImpl<Void> restoreFut = snapshotMgr.restoreSnapshot(snapshotName, null, null, 0, true);
 
-        try {
-            restoreStarterdLatch.await(getTestTimeout(), MILLISECONDS);
-            assertFalse("Snapshot future has finished", restoreFut.isDone());
+        assertTrue(checkSingleResultsReceivedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            int code = execute("--snapshot", "restore", snapshotName, "--status");
+        // Make sure no restoration started or finished.
+        assertTrue(restoreSingleResultsReceivedLatch.getCount() > 0);
+        assertFalse("Snapshot future has finished", restoreFut.isDone());
 
-            assertEquals("Unexpected exit code", EXIT_CODE_OK, code);
+        int code = execute("--snapshot", "status");
 
-            assertFalse("Snapshot future has finished", restoreFut.isDone());
+        assertEquals("Unexpected exit code", EXIT_CODE_OK, code);
+        assertContains(log, testOut.toString(), "Restore snapshot operation is in progress.");
 
-            code = execute("--snapshot", "status");
+        assertTrue(proceedCheckLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-            assertEquals("Unexpected exit code", EXIT_CODE_OK, code);
-            assertContains(log, testOut.toString(), "Restore snapshot operation is in progress.");
-        }
-        finally {
-            snapshotCheckLatch.countDown();
-
-            // Wait for future to finish in order to avoid excessive message about task cancellation.
-            restoreFut.get();
-        }
+        // Wait for future to finish in order to avoid excessive message about task cancellation.
+        restoreFut.get();
     }
 
     /** */
-    private static class BlockingCheckSnapshotPluginProvider extends AbstractTestPluginProvider {
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "BlockingCheckSnapshotPluginProvider";
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (IgniteSnapshotManager.class.equals(cls))
-                return (T)new BlockingCheckSnapshotManager(((IgniteEx)ctx.grid()).context());
-
-            return null;
-        }
-    }
-
-    /** Blocks restore proccess. */
-    protected static class BlockingCheckSnapshotManager extends IgniteSnapshotManager {
+    private class TestCommunicationSpi extends TcpCommunicationSpi {
         /** */
-        public BlockingCheckSnapshotManager(GridKernalContext ctx) {
-            super(ctx);
+        private volatile @Nullable Consumer<Message> msgCsmr;
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+            var msgCsmr = this.msgCsmr;
+
+            if (msgCsmr != null)
+                msgCsmr.accept(msg);
+
+            super.sendMessage(node, msg);
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(
-            String name,
-            @Nullable String snpPath,
-            @Nullable Collection<String> grps,
-            boolean includeCustomHandlers,
-            int incIdx, boolean check
-        ) {
-            return super.checkSnapshot(name, snpPath, grps, includeCustomHandlers, incIdx, check)
-                .chain(fut -> {
-                    try {
-                        if(check)
-                           snapshotCheckLatch.await(5, MINUTES);
-                    }
-                    catch (Throwable e) {
-                        log.error(X.getFullStackTrace(e));
-                    }
+        @Override public void sendMessage(
+            ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
+            var msgCsmr = this.msgCsmr;
 
-                    return fut.result();
-                });
+            if (msgCsmr != null)
+                msgCsmr.accept(msg);
+
+            super.sendMessage(node, msg, ackC);
         }
     }
 }

@@ -72,7 +72,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
 
         if (isCreating)
             s.a("Create snapshot operation is in progress.").nl();
-        else if(isRestoring)
+        else if (isRestoring)
             s.a("Restore snapshot operation is in progress.").nl();
         else
             s.a("Check snapshot operation is in progress.").nl();
@@ -255,21 +255,51 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     /** */
     private static class CheckSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
+        private final boolean inc;
+
+        /** */
         CheckSnapshotTaskProgressDesc(boolean incremental) {
-            super(F.asList("Node ID", "Processed, bytes", "Total, bytes", "Percent"));
+            super(incremental
+                ? F.asList("Node ID", "processedWalSegments", "totalWalSegments", "percent")
+                : F.asList("Node ID", "fullCheck", "processedPartitions", "totalPartitions",
+                    "processedSnapshotParts", "snapshotPartsToProcess", "percent")
+            );
+
+            inc = incremental;
         }
 
         /** {@inheritDoc} */
         @Override public List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress) {
-            long processed = progress.get1();
-            long total = progress.get2();
+            if (inc) {
+                long processed = progress.get1();
+                long total = progress.get2();
 
-            if (total <= 0)
-                return F.asList(nodeId, "unknown", "unknown", "unknown");
+                if (total <= 0)
+                    return F.asList(nodeId, "unknown", "unknown", "unknown");
 
-            String percent = (int)(processed * 100 / total) + "%";
+                String percent = (int)(processed * 100 / total) + "%";
 
-            return F.asList(nodeId, U.humanReadableByteCount(processed), U.humanReadableByteCount(total), percent);
+                return F.asList(nodeId, U.humanReadableByteCount(processed), U.humanReadableByteCount(total), percent);
+            }
+
+            long partitionsToCheck = progress.get3();
+            long partsToCheck = progress.get5();
+
+            if (partitionsToCheck <= 0 || partsToCheck <= 0)
+                return F.asList(nodeId, "unknown", "unknown", "unknown", "unknown", "unknown", "unknown");
+
+            // Checked partitions in current part ratio * shapshot parts ratio.
+            double totalRatio = ((double)progress.get2() / partitionsToCheck) * ((double)progress.get4() / partsToCheck);
+
+            return F.asList(
+                nodeId,
+                progress.get1() == 0L ? "false" : "true",  // Full check flag;
+                U.humanReadableByteCount(progress.get2()), // Checked partitions in current snapshot part;
+                U.humanReadableByteCount(partitionsToCheck), // Total partitions in current snapshot part;
+                U.humanReadableByteCount(progress.get4()), // Checked shapshot parts;
+                U.humanReadableByteCount(partsToCheck), // Total snapshot parts to check.
+                ((int)(totalRatio * 100.0d)) + '%'
+            );
         }
     }
 }

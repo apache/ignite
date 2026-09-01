@@ -383,7 +383,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                     metrics = new T5<>(
                         snpCheckMReg.<BooleanMetric>findMetric("checkPartitions").value() ? 1L : 0L,
                         (long)snpCheckMReg.<IntMetric>findMetric("processedPartitions").value(),
-                        (long)snpCheckMReg.<IntMetric>findMetric("processedSnapshotParts").value(),
+                        (long)snpCheckMReg.<IntMetric>findMetric("totalPartitions").value(),
                         (long)snpCheckMReg.<IntMetric>findMetric("processedSnapshotParts").value(),
                         (long)snpCheckMReg.<IntMetric>findMetric("snapshotPartsToProcess").value()
                     );

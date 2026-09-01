@@ -22,6 +22,7 @@ import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -98,5 +99,10 @@ public class SingleNodeMessage<R extends Message> implements Message {
     /** @return Error. */
     @Nullable public Throwable error() {
         return ErrorMessage.error(errMsg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SingleNodeMessage.class, this);
     }
 }
