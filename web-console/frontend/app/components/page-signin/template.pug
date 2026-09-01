@@ -1,0 +1,41 @@
+
+
+include /app/helpers/jade/mixins
+
+global-progress-line(is-loading='$ctrl.isLoading')
+
+h3.public-page__title(translate='signIn.pageTitle')
+p(ng-if='$ctrl.activationToken' translate='signIn.confirmRegistrationMessage')
+form(name='$ctrl.form' novalidate ng-submit='$ctrl.signin()')
+    +form-field__email({
+        label: 'Email:',
+        model: '$ctrl.data.email',
+        name: '"email"',
+        placeholder: '{{::"signIn.emailInput.placeholder"|translate}}',
+        required: true
+    })(
+        ng-model-options='{allowInvalid: true}'
+        autocomplete='email'
+        ignite-auto-focus
+    )
+        +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+    +form-field__password({
+        label: 'Password:',
+        model: '$ctrl.data.password',
+        name: '"password"',
+        placeholder: '{{::"signIn.passwordInput.placeholder"|translate}}',
+        required: true
+    })(
+        ng-model-options='{allowInvalid: true}'
+        autocomplete='current-password'
+    )
+        +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+    footer.form-footer
+        a(ui-sref='forgotPassword({email: $ctrl.data.email})' translate='signIn.forgotPasswordLinkLabel')
+        button.btn-ignite.btn-ignite--primary(
+            type='submit'
+            ng-disabled='$ctrl.isLoading'
+            translate='signIn.formActionButtonLabel'
+            translate-values='::{activationToken: $ctrl.activationToken}'
+        )
+footer.page-signin__no-account-message(translate='signIn.signupMessage')

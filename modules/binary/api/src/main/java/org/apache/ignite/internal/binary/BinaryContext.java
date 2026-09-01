@@ -314,8 +314,13 @@ public class BinaryContext {
     public boolean mustDeserialize(Class cls) {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null)
-            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
+        if (desc == null) {
+            if (cls == TreeMap.class || cls == TreeSet.class)
+                return false;            
+
+            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
+                    CommonUtils.isGeometryClass(cls);
+        }
         else
             return desc.useOptimizedMarshaller();
     }

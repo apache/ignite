@@ -1,0 +1,21 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'statistics'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Statistics
+    panel-description Cache statistics and management data.
+    panel-content.pca-data-column-12(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pco-relative-root
+            ignite-grid-table(
+                tab-name='cache-metrics'    
+                max-rows-to-show='8'
+                one-way-selection='true'
+                column-defs='$ctrl.kvColumnDefs'
+                items='$ctrl.cacheMetrics'    
+                grid-thin='true'
+            )  

@@ -68,7 +68,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
      *
      * @param mem Memory.
      */
-    GridLuceneDirectory(GridUnsafeMemory mem) {
+    public GridLuceneDirectory(GridUnsafeMemory mem) {
         super(new GridLuceneLockFactory());
 
         this.mem = mem;

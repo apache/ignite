@@ -1,0 +1,23 @@
+
+
+include /app/helpers/jade/mixins
+
+.modal.modal--ignite.theme--ignite.center.modal-import-service-form(tabindex='-1' role='dialog')
+    .modal-dialog
+        .modal-content
+            .modal-header
+                h4.modal-title
+                    svg(ignite-icon="plus")
+                    span Service Grid allows for deployments of arbitrary user-defined services on the cluster.
+                button.close(type='button' aria-label='Close' ng-click='$ctrl.onHide()')
+                     svg(ignite-icon="cross")
+
+            .modal-body(
+                ignite-loading='importServiceLoading'
+                ignite-loading-text='Service Grid allows for deployments of arbitrary user-defined services on the cluster.'
+            )
+                include create_service
+            .modal-footer
+                div
+                    button.btn-ignite.btn-ignite--secondary(ng-click='$ctrl.onHide()') Close
+                    button.btn-ignite.btn-ignite--success(ng-click='$ctrl.addServiceConfiguration()') Save

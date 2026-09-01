@@ -2665,8 +2665,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             pauseResumeOperation(true, openSockLock, writeLock);
 
             if (suspend) {
-                for (Thread t : impl.threads())
-                    t.suspend();
+                //--for (Thread t : impl.threads())
+                    //--t.suspend();
             }
         }
 
@@ -2676,8 +2676,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         public void resumeAll() {
             pauseResumeOperation(false, openSockLock, writeLock);
 
-            for (IgniteSpiThread t : impl.threads())
-                t.resume();
+            //for (IgniteSpiThread t : impl.threads())
+                //--t.resume();
         }
 
         /** {@inheritDoc} */

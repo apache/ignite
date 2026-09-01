@@ -20,17 +20,25 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Comparator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.h2.engine.Mode;
 import org.h2.message.DbException;
 import org.h2.util.Bits;
 import org.h2.util.JdbcUtils;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
+import org.h2.value.ValueEnum;
+import org.h2.value.ValueEnumBase;
+import org.h2.value.ValueInt;
 import org.h2.value.ValueJavaObject;
+import org.h2.value.ValueString;
 
 /**
  * H2 Value over {@link CacheObject}. Replacement for {@link ValueJavaObject}.
@@ -198,5 +206,36 @@ public class GridH2ValueCacheObject extends Value {
     /** {@inheritDoc} */
     @Override public int getMemory() {
         return 0;
+    }
+    
+    /** {@inheritDoc} add@byron */
+    @Override public int getInt() {
+    	if(obj	instanceof BinaryEnumObjectImpl) {
+    		BinaryEnumObjectImpl enumObj = (BinaryEnumObjectImpl) obj;
+    		return enumObj.enumOrdinal();
+    	}
+        return super.getInt();
+    }
+    
+    /**
+     * Compare a value to the specified type.
+     * add@byron
+     * @param targetType the type of the returned value
+     * @return the converted value
+     */
+    @Override public Value convertTo(int targetType, int precision, Mode mode, Object column, String[] enumerators) {
+        if(obj	instanceof BinaryEnumObjectImpl) {
+        	BinaryEnumObjectImpl enumObj = (BinaryEnumObjectImpl) obj;
+        	if(Value.ENUM == targetType) {            	
+            	return ValueEnum.get(enumObj.enumName(), enumObj.enumOrdinal());
+            }
+        	if(Value.INT == targetType) {            	
+            	return ValueInt.get(enumObj.enumOrdinal());
+            }
+        	if(Value.STRING == targetType) {            	
+            	return ValueString.get(enumObj.enumName());
+            }
+        }
+        return super.convertTo(targetType, precision, mode,column,enumerators);
     }
 }

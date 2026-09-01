@@ -1,0 +1,26 @@
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+- const clusterModel = '$ctrl.clonedCluster'
+- let form = '$ctrl.form'
+
+form(novalidate name=form)
+    h2.pcb-section-header.pcb-inner-padding 1. Servcies Configuration
+
+    .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.clonedCluster.serviceConfigurations.length==0')
+        | You have no services.
+        | Let’s configure your first services and associate it with caches.
+    .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.clonedCluster.serviceConfigurations.length>0')
+        | Configure cluster services and associate your cache with services.
+
+    .pcb-form-grid-row.pc-form-grid-row
+        include service 
+
+    .pc-form-actions-panel        
+        span.message {{ $ctrl.$scope.message }} 
+        
+        .pc-form-actions-panel__right-after        
+
+        pc-split-button(actions=`::$ctrl.formActionsMenu`)
+

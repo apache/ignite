@@ -23,7 +23,6 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -169,18 +168,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 platformCtx.writeClusterMetrics(writer, prj.metrics());
 
                 break;
-
-            case OP_MEMORY_METRICS: {
-                Collection<MemoryMetrics> metrics = prj.ignite().memoryMetrics();
-
-                writer.writeInt(metrics.size());
-
-                for (MemoryMetrics m : metrics) {
-                    writeMemoryMetrics(writer, m);
-                }
-
-                break;
-            }
+            
 
             case OP_DATA_REGION_METRICS: {
                 Collection<DataRegionMetrics> metrics = prj.ignite().dataRegionMetrics();
@@ -277,22 +265,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
                 break;
             }
-
-            case OP_MEMORY_METRICS_BY_NAME: {
-                String plcName = reader.readString();
-
-                MemoryMetrics metrics = platformCtx.kernalContext().grid().memoryMetrics(plcName);
-
-                if (metrics != null) {
-                    writer.writeBoolean(true);
-                    writeMemoryMetrics(writer, metrics);
-                }
-                else {
-                    writer.writeBoolean(false);
-                }
-
-                break;
-            }
+           
 
             case OP_DATA_REGION_METRICS_BY_NAME: {
                 String name = reader.readString();
@@ -504,25 +477,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
 
         return ((IgniteCluster)prj).topology(topVer);
-    }
-
-    /**
-     * Writes the memory metrics.
-     *
-     * @param writer Writer.
-     * @param metrics Metrics.
-     */
-    @SuppressWarnings("deprecation")
-    private static void writeMemoryMetrics(BinaryRawWriter writer, MemoryMetrics metrics) {
-        assert writer != null;
-        assert metrics != null;
-
-        writer.writeString(metrics.getName());
-        writer.writeLong(metrics.getTotalAllocatedPages());
-        writer.writeFloat(metrics.getAllocationRate());
-        writer.writeFloat(metrics.getEvictionRate());
-        writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
-        writer.writeFloat(metrics.getPagesFillFactor());
     }
 
     /**

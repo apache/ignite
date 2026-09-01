@@ -109,6 +109,30 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
             gate.leave();
         }
     }
+    
+    /** {@inheritDoc} */
+    @Override public boolean addFirst(final T item) {
+        gate.enter();
+
+        try {
+            return delegate.addFirst(item);
+        }
+        finally {
+            gate.leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public T pollLast() {
+        gate.enter();
+
+        try {
+            return delegate.pollLast();
+        }
+        finally {
+            gate.leave();
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public boolean addAll(final Collection<? extends T> items) {

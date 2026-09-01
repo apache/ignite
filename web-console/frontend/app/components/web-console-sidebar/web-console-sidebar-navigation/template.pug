@@ -1,0 +1,21 @@
+
+
+nav
+    li(
+        ng-repeat='item in $ctrl.menu$|async:this track by item.sref'
+        ng-if='!item.hidden'
+    )
+        a.web-console-sidebar-navigation__link(
+            ui-sref='{{item.sref}}'
+            ui-sref-active=`{
+                "web-console-sidebar-navigation__link-active": item.activeSref
+            }`
+            title='{{item.label|translate}}'
+            ng-class=`{
+                'web-console-sidebar-navigation__link-narrow': !$ctrl.opened,
+                'web-console-sidebar-navigation__link-wide': $ctrl.opened
+            }`
+            tabindex='0'
+        )
+            svg.web-console-sidebar-navigation__link-icon(ignite-icon='{{item.icon}}')
+            span.web-console-sidebar-navigation__link-content(translate='{{item.label}}')

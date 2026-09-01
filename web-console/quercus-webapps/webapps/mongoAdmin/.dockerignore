@@ -1,0 +1,6 @@
+docs/
+tests/
+.git/
+.gitignore
+.htaccess
+Dockerfile

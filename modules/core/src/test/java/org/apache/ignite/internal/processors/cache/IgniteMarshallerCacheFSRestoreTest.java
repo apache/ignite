@@ -95,11 +95,10 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         //persistence must be enabled to verify restoring mappings from FS case
         if (isPersistenceEnabled) {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)));
+        	DataStorageConfiguration dsc = new DataStorageConfiguration();
+        	dsc.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        	cfg.setDataStorageConfiguration(dsc);            
         }
-
         return cfg;
     }
 
