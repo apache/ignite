@@ -85,8 +85,11 @@ public class TcpDiscoveryIoSession {
     /** Buffered socket input stream. */
     private final CompositeInputStream in;
 
-    /** Intermediate buffer for serializing discovery messages. */
-    private final ByteBuffer msgBuf;
+    /** */
+    private final ByteBuffer readBuf;
+
+    /** */
+    private final ByteBuffer writeBuf;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.
@@ -99,7 +102,8 @@ public class TcpDiscoveryIoSession {
         this.sock = sock;
         this.spi = spi;
 
-        msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
+        readBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
+        writeBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
         msgWriter = new DirectMessageWriter(spi.messageFactory());
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
@@ -168,19 +172,19 @@ public class TcpDiscoveryIoSession {
             }
 
             msgReader.reset();
-            msgReader.setBuffer(msgBuf);
+            msgReader.setBuffer(readBuf);
 
             boolean finished;
 
             do {
-                msgBuf.clear();
+                readBuf.clear();
 
-                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
+                int read = in.read(readBuf.array(), readBuf.position(), readBuf.remaining());
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                msgBuf.limit(read);
+                readBuf.limit(read);
 
                 finished = MessageSerialization.readFrom(spi.messageFactory(), msg, msgReader);
 
@@ -188,10 +192,10 @@ public class TcpDiscoveryIoSession {
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
                 // the previous message. But it is not guaranteed with Client Discovery where messages aren't acknowledged.
                 // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
-                if (msgBuf.hasRemaining()) {
-                    byte[] unprocessedReadTail = new byte[msgBuf.remaining()];
+                if (readBuf.hasRemaining()) {
+                    byte[] unprocessedReadTail = new byte[readBuf.remaining()];
 
-                    msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
+                    readBuf.get(unprocessedReadTail, 0, readBuf.remaining());
 
                     in.attachByteArray(unprocessedReadTail);
                 }
@@ -249,17 +253,17 @@ public class TcpDiscoveryIoSession {
         DiscoveryMarshalling.marshal(m, kctx, null);
 
         msgWriter.reset();
-        msgWriter.setBuffer(msgBuf);
+        msgWriter.setBuffer(writeBuf);
 
         boolean finished;
 
         do {
             // Should be cleared before first operation.
-            msgBuf.clear();
+            writeBuf.clear();
 
             finished = MessageSerialization.writeTo(spi.messageFactory(), m, msgWriter);
 
-            out.write(msgBuf.array(), 0, msgBuf.position());
+            out.write(writeBuf.array(), 0, writeBuf.position());
         }
         while (!finished);
     }
@@ -282,6 +286,11 @@ public class TcpDiscoveryIoSession {
 
         if (hex.matches("15....00"))
             throw new StreamCorruptedException("invalid stream header: " + hex);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "TcpDiscoveryIoSession [sock=" + sock + ']';
     }
 
     /**
