@@ -724,6 +724,8 @@ public class SnapshotCheckProcess {
 
     /** */
     private void registerMetrics(SnapshotCheckContext ctx) {
+        log.error("TEST | registerMetrics");
+
         MetricRegistryImpl mreg = kctx.metric().registry(MetricUtils.metricName(SNAPSHOT_CHECK_METRIC, ctx.req.snapshotName()));
 
         assert !mreg.iterator().hasNext();
