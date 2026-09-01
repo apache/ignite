@@ -60,37 +60,25 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
  */
 @GridInternal
 public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus, SnapshotStatus> {
-    /**
-     *
-     */
+    /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     *
-     */
+    /** */
     @LoggerResource
     private transient IgniteLogger log;
 
-    /**
-     *
-     */
+    /** */
     private transient @Nullable Boolean checkStatusSupported;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** @inheritDoc}  */
     @Override protected VisorJob<NoArg, SnapshotStatus> job(NoArg arg) {
         if (checkStatusSupported == null)
             resolveCheckStatusSupported();
 
-        assert checkStatusSupported != null;
-
         return checkStatusSupported ? new SnapshotStatusJobV2(arg, debug) : new SnapshotStatusJob(arg, debug);
     }
 
-    /**
-     *
-     */
+    /** */
     private void resolveCheckStatusSupported() {
         var feature = new IgniteCoreFeature(SupportedFeatureRegistry.SNAPSHOT_CHECK_STATUS_FEATURE.id());
 
@@ -137,16 +125,12 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         checkStatusSupported = true;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<NoArg> arg) {
         return nodeIds(ignite.cluster().forServers().nodes());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected @Nullable SnapshotStatus reduce0(List<ComputeJobResult> results) {
         if (results.isEmpty())
             throw new IgniteException("Failed to get the snapshot status. Topology is empty.");
@@ -201,13 +185,9 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         return new SnapshotStatus(firstRes.op, firstRes.name, firstRes.incIdx, firstRes.reqId, firstRes.startTime, mergedProgress);
     }
 
-    /**
-     *
-     */
+    /** */
     private static class SnapshotStatusJob extends SnapshotJob<NoArg, SnapshotStatus> {
-        /**
-         *
-         */
+        /**  */
         private static final long serialVersionUID = 0L;
 
         /**
@@ -218,9 +198,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
             super(arg, debug);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected @Nullable SnapshotStatus run(@Nullable NoArg arg) throws IgniteException {
             if (!CU.isPersistenceEnabled(ignite.context().config()))
                 return null;
@@ -284,48 +262,30 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         }
     }
 
-    /**
-     * Snapshot operation status.
-     */
+    /**  Snapshot operation status. */
     public static class SnapshotStatus implements Serializable {
-        /**
-         *
-         */
+        /** */
         private static final long serialVersionUID = 0L;
 
-        /**
-         * Operation type. {@code Null} for other operation types.
-         */
+        /** Operation type. {@code Null} for other operation types. */
         private final @Nullable SnapshotOperation op;
 
-        /**
-         * Snapshot name.
-         */
+        /** Snapshot name. */
         private final String name;
 
-        /**
-         * Incremental snapshot index.
-         */
+        /** Incremental snapshot index. */
         private final int incIdx;
 
-        /**
-         * Request ID.
-         */
+        /** Request ID. */
         private final String reqId;
 
-        /**
-         * Start time.
-         */
+        /**vStart time. */
         private final long startTime;
 
-        /**
-         * Progress of operation on nodes.
-         */
+        /** Progress of operation on nodes. */
         private final Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
 
-        /**
-         *
-         */
+        /** */
         private SnapshotStatus(
             @Nullable SnapshotOperation op,
             String name,
@@ -342,88 +302,63 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
             this.progress = progress;
         }
 
-        /**
-         * @return Operation type. {@code Null} for other operation types.
-         */
+        /** @return Operation type. {@code Null} for other operation types. */
         @Nullable SnapshotOperation operation() {
             return op;
         }
 
-        /**
-         * @return Snapshot name.
-         */
+        /** @return Snapshot name. */
         String name() {
             return name;
         }
 
-        /**
-         * @return Incremental snapshot index.
-         */
+        /** @return Incremental snapshot index. */
         int incrementIndex() {
             return incIdx;
         }
 
-        /**
-         * @return Request ID.
-         */
+        /** @return Request ID. */
         String requestId() {
             return reqId;
         }
 
-        /**
-         * @return Start time.
-         */
+        /** @return Start time. */
         long startTime() {
             return startTime;
         }
 
-        /**
-         * @return Progress of operation on nodes.
-         */
+        /** @return Progress of operation on nodes. */
         Map<UUID, T5<Long, Long, Long, Long, Long>> progress() {
             return progress;
         }
     }
 
-    /**
-     * Snapshot operation type.
-     */
+    /** Snapshot operation type. */
     enum SnapshotOperation {
-        /**
-         * Snapshot creation.
-         */
+        /** Snapshot creation. */
         CREATE,
 
-        /**
-         * Snapshot restoration.
-         */
+        /** Snapshot restoration. */
         RESTORE
     }
 
-    /**
-     *
-     */
+    /** */
     private static class SnapshotStatusJobV2 extends SnapshotStatusTask.SnapshotStatusJob {
-        /**
-         *
-         */
+        /** */
         private static final long serialVersionUID = 0L;
 
-        /**
-         *
-         */
+        /** */
         private SnapshotStatusJobV2(@Nullable NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override protected @Nullable SnapshotStatusV2 run(@Nullable NoArg arg) throws IgniteException {
+        /** {@inheritDoc} */
+        @Override protected @Nullable SnapshotStatus run(@Nullable NoArg arg) throws IgniteException {
             var res1 = super.run(arg);
 
+            // Create or restore status detected.
             if (res1 != null)
-                return new SnapshotStatusV2(res1);
+                return res1;
 
             List<SnapshotStatus> checkStatuses = null;
 
@@ -475,30 +410,20 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         }
     }
 
-    /**
-     * Supports snapsho status.
-     */
+    /** Supports snapsho status. */
     public static class SnapshotStatusV2 extends SnapshotStatusTask.SnapshotStatus {
-        /**
-         *
-         */
+        /** */
         private static final long serialVersionUID = 0L;
 
-        /**
-         * Nodes' statuses of all snapshot check operations
-         */
+        /** Nodes' statuses of all snapshot check operations. */
         @Nullable List<SnapshotStatus> allCheckStatuses;
 
-        /**
-         *
-         */
+        /** */
         private SnapshotStatusV2(SnapshotStatus s1) {
             super(s1.op, s1.name, s1.incIdx, s1.reqId, s1.startTime, s1.progress);
         }
 
-        /**
-         *
-         */
+        /** */
         private SnapshotStatusV2(List<SnapshotStatus> allCheckStatuses) {
             // Single, V1 status holds first found check status.
             super(
