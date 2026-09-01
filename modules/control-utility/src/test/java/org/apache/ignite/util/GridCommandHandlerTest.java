@@ -48,6 +48,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -121,6 +122,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
@@ -135,6 +137,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -148,10 +151,12 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
 
 import static java.io.File.separatorChar;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -182,6 +187,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -233,13 +239,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected ListeningTestLogger listeningLog;
 
+    /** */
+    protected @Nullable Supplier<TcpCommunicationSpi> communicationSpiSupp;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         initDiagnosticDir();
 
-        cleanDiagnosticDir();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -262,6 +271,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         if (listeningLog != null)
             cfg.setGridLogger(listeningLog);
+
+        if (communicationSpiSupp != null)
+            cfg.setCommunicationSpi(communicationSpiSupp.get());
 
         return cfg;
     }
@@ -3658,6 +3670,80 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
 
+    /** Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process. */
+    @Test
+    public void testRestoreSnapshotMetricsAtStart() throws Exception {
+        communicationSpiSupp = TestCommunicationSpi::new;
+
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
+
+        createCacheAndPreload(grid(1), 8192);
+
+        IgniteSnapshotManager snapshotMgr = (IgniteSnapshotManager)grid(0).snapshot();
+
+        snapshotMgr.createSnapshot("test_snapshot").get(getTestTimeout());
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        var checkSingleResultsReceivedLatch = new CountDownLatch(2);
+        var restoreSingleResultsReceivedLatch = new AtomicInteger(2);
+        var proceedCheckLatch = new CountDownLatch(1);
+
+        for (var ig : Arrays.asList(grid(1), grid(2))) {
+            ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).msgCsmr = msg -> {
+                if (!(msg instanceof GridIoMessage ioMsg))
+                    return;
+
+                if (!(ioMsg.message() instanceof SingleNodeMessage<?> sm))
+                    return;
+
+                if (sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())
+                    restoreSingleResultsReceivedLatch.decrementAndGet();
+                else if (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()) {
+                    checkSingleResultsReceivedLatch.countDown();
+
+                    try {
+                        assertTrue(proceedCheckLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+        }
+
+        IgniteFutureImpl<Void> restoreFut = snapshotMgr.restoreSnapshot("test_snapshot", null, null, 0, true);
+
+        assertTrue(checkSingleResultsReceivedLatch.await(getTestTimeout(), MILLISECONDS));
+
+        // Make sure no restoration started or finished.
+        assertTrue(restoreSingleResultsReceivedLatch.get() == 2);
+        assertFalse("Snapshot future has finished", restoreFut.isDone());
+
+        injectTestSystemOut();
+
+        int code = execute("--snapshot", "status");
+
+        // Ensures that there is a status despite unstarted restore process.
+        assertEquals("Unexpected exit code", EXIT_CODE_OK, code);
+
+        var out = testOut.toString();
+
+        assertContains(log, out, "Check snapshot operation is in progress");
+        assertContains(log, out, "Snapshot name: test_snapshot");
+        assertContains(log, out, "Incremental: false");
+        assertContains(log, out, "Estimated operation progress:");
+
+        proceedCheckLatch.countDown();
+
+        // Wait for future to finish in order to avoid excessive message about task cancellation.
+        restoreFut.get();
+
+        assertTrue(restoreSingleResultsReceivedLatch.get() == 0);
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotStatusInMemory() throws Exception {
@@ -4064,6 +4150,36 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         /** */
         public void input(String input) {
             this.input = input;
+        }
+    }
+
+    /** */
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        private volatile @Nullable Consumer<Message> msgCsmr;
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+            var msgCsmr = this.msgCsmr;
+
+            if (msgCsmr != null)
+                msgCsmr.accept(msg);
+
+            super.sendMessage(node, msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(
+            ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
+            var msgCsmr = this.msgCsmr;
+
+            if (msgCsmr != null)
+                msgCsmr.accept(msg);
+
+            super.sendMessage(node, msg, ackC);
         }
     }
 }
