@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.snapshot;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -61,17 +60,25 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
  */
 @GridInternal
 public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus, SnapshotStatus> {
-    /** */
+    /**
+     *
+     */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /**
+     *
+     */
     @LoggerResource
     private transient IgniteLogger log;
 
-    /** */
+    /**
+     *
+     */
     private transient @Nullable Boolean checkStatusSupported;
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected VisorJob<NoArg, SnapshotStatus> job(NoArg arg) {
         if (checkStatusSupported == null)
             resolveCheckStatusSupported();
@@ -81,7 +88,9 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         return checkStatusSupported ? new SnapshotStatusJobV2(arg, debug) : new SnapshotStatusJob(arg, debug);
     }
 
-    /** */
+    /**
+     *
+     */
     private void resolveCheckStatusSupported() {
         var feature = new IgniteCoreFeature(SupportedFeatureRegistry.SNAPSHOT_CHECK_STATUS_FEATURE.id());
 
@@ -128,12 +137,16 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         checkStatusSupported = true;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<NoArg> arg) {
         return nodeIds(ignite.cluster().forServers().nodes());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected @Nullable SnapshotStatus reduce0(List<ComputeJobResult> results) {
         if (results.isEmpty())
             throw new IgniteException("Failed to get the snapshot status. Topology is empty.");
@@ -155,22 +168,29 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         // Filter out differing requests due to concurrent updates on nodes.
         Collection<SnapshotStatus> sameRqRes = F.view(res0, s -> s.reqId.equals(firstRes.reqId));
 
-        if (firstRes instanceof SnapshotStatusTask.SnapshotStatusV2) {
-            var statusV2 = (SnapshotStatusTask.SnapshotStatusV2)firstRes;
+        if (firstRes instanceof SnapshotStatusV2 firstResV2) {
+            assert !F.isEmpty(firstResV2.allCheckStatuses);
 
-            assert !F.isEmpty(statusV2.allCheckStatuses);
-
-            Map<UUID, List<SnapshotStatus>> mergedAllCheckStatuses = U.newHashMap(sameRqRes.size());
+            // Check status: snpName, per node collection.
+            Map<String, SnapshotStatus> statusesMap = U.newHashMap(sameRqRes.size());
 
             sameRqRes.forEach(s -> {
                 assert s instanceof SnapshotStatusTask.SnapshotStatusV2;
 
-                mergedAllCheckStatuses.putAll(((SnapshotStatusTask.SnapshotStatusV2)s).allCheckStatuses);
+                for (SnapshotStatus s0 : ((SnapshotStatusTask.SnapshotStatusV2)s).allCheckStatuses) {
+                    var prev = statusesMap.putIfAbsent(s0.name, s0);
+
+                    if (prev == null)
+                        continue;
+
+                    // Merge nodes progress.
+                    prev.progress().putAll(s0.progress());
+                }
+
+                firstResV2.allCheckStatuses = new ArrayList<>(statusesMap.values());
             });
 
-            statusV2.allCheckStatuses = mergedAllCheckStatuses;
-
-            return statusV2;
+            return firstResV2;
         }
 
         // Merge nodes progress.
@@ -181,20 +201,26 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         return new SnapshotStatus(firstRes.op, firstRes.name, firstRes.incIdx, firstRes.reqId, firstRes.startTime, mergedProgress);
     }
 
-    /** */
+    /**
+     *
+     */
     private static class SnapshotStatusJob extends SnapshotJob<NoArg, SnapshotStatus> {
-        /** */
+        /**
+         *
+         */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param arg Job argument.
+         * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
         private SnapshotStatusJob(@Nullable NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override protected @Nullable SnapshotStatus run(@Nullable NoArg arg) throws IgniteException {
             if (!CU.isPersistenceEnabled(ignite.context().config()))
                 return null;
@@ -258,30 +284,48 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         }
     }
 
-    /** Snapshot operation status. */
-    static class SnapshotStatus implements Serializable {
-        /** */
+    /**
+     * Snapshot operation status.
+     */
+    public static class SnapshotStatus implements Serializable {
+        /**
+         *
+         */
         private static final long serialVersionUID = 0L;
 
-        /** Operation type. {@code Null} for other operation types. */
+        /**
+         * Operation type. {@code Null} for other operation types.
+         */
         private final @Nullable SnapshotOperation op;
 
-        /** Snapshot name. */
+        /**
+         * Snapshot name.
+         */
         private final String name;
 
-        /** Incremental snapshot index. */
+        /**
+         * Incremental snapshot index.
+         */
         private final int incIdx;
 
-        /** Request ID. */
+        /**
+         * Request ID.
+         */
         private final String reqId;
 
-        /** Start time. */
+        /**
+         * Start time.
+         */
         private final long startTime;
 
-        /** Progress of operation on nodes. */
+        /**
+         * Progress of operation on nodes.
+         */
         private final Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
 
-        /** */
+        /**
+         *
+         */
         private SnapshotStatus(
             @Nullable SnapshotOperation op,
             String name,
@@ -295,60 +339,86 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
             this.incIdx = incIdx;
             this.reqId = reqId;
             this.startTime = startTime;
-            this.progress = Collections.unmodifiableMap(progress);
+            this.progress = progress;
         }
 
-        /** @return Operation type. {@code Null} for other operation types. */
+        /**
+         * @return Operation type. {@code Null} for other operation types.
+         */
         @Nullable SnapshotOperation operation() {
             return op;
         }
 
-        /** @return Snapshot name. */
+        /**
+         * @return Snapshot name.
+         */
         String name() {
             return name;
         }
 
-        /** @return Incremental snapshot index. */
+        /**
+         * @return Incremental snapshot index.
+         */
         int incrementIndex() {
             return incIdx;
         }
 
-        /** @return Request ID. */
+        /**
+         * @return Request ID.
+         */
         String requestId() {
             return reqId;
         }
 
-        /** @return Start time. */
+        /**
+         * @return Start time.
+         */
         long startTime() {
             return startTime;
         }
 
-        /** @return Progress of operation on nodes. */
+        /**
+         * @return Progress of operation on nodes.
+         */
         Map<UUID, T5<Long, Long, Long, Long, Long>> progress() {
             return progress;
         }
     }
 
-    /** Snapshot operation type. */
+    /**
+     * Snapshot operation type.
+     */
     enum SnapshotOperation {
-        /** Snapshot creation. */
+        /**
+         * Snapshot creation.
+         */
         CREATE,
 
-        /** Snapshot restoration. */
+        /**
+         * Snapshot restoration.
+         */
         RESTORE
     }
 
-    /** */
+    /**
+     *
+     */
     private static class SnapshotStatusJobV2 extends SnapshotStatusTask.SnapshotStatusJob {
-        /** */
+        /**
+         *
+         */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /**
+         *
+         */
         private SnapshotStatusJobV2(@Nullable NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override protected @Nullable SnapshotStatusV2 run(@Nullable NoArg arg) throws IgniteException {
             var res1 = super.run(arg);
 
@@ -383,49 +453,61 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                     metrics = new T5<>(
                         snpCheckMReg.<BooleanMetric>findMetric("checkPartitions").value() ? 1L : 0L,
                         (long)snpCheckMReg.<IntMetric>findMetric("processedPartitions").value(),
-                        (long)snpCheckMReg.<IntMetric>findMetric("processedSnapshotParts").value(),
+                        (long)snpCheckMReg.<IntMetric>findMetric("totalPartitions").value(),
                         (long)snpCheckMReg.<IntMetric>findMetric("processedSnapshotParts").value(),
                         (long)snpCheckMReg.<IntMetric>findMetric("snapshotPartsToProcess").value()
                     );
                 }
 
-                checkStatuses.add(new SnapshotStatus(
+                var status = new SnapshotStatus(
                     null,
                     MetricUtils.fromFullName(snpCheckMReg.name()).get2(),
                     incIdx,
                     snpCheckMReg.findMetric("requestId").getAsString(),
                     ((LongMetric)snpCheckMReg.findMetric("startTime")).value(),
                     GridFunc.asMap(ignite.localNode().id(), metrics)
-                ));
+                );
+
+                checkStatuses.add(status);
             }
 
-            return checkStatuses == null ? null : new SnapshotStatusV2(Collections.singletonMap(ignite.localNode().id(), checkStatuses));
+            return checkStatuses == null ? null : new SnapshotStatusV2(checkStatuses);
         }
     }
 
-    /** Supports snapsho status. */
-    private static class SnapshotStatusV2 extends SnapshotStatusTask.SnapshotStatus {
-        /** */
+    /**
+     * Supports snapsho status.
+     */
+    public static class SnapshotStatusV2 extends SnapshotStatusTask.SnapshotStatus {
+        /**
+         *
+         */
         private static final long serialVersionUID = 0L;
 
-        /** Statuses of snapshot check operations per nodeID. */
-        private @Nullable Map<UUID, List<SnapshotStatus>> allCheckStatuses;
+        /**
+         * Nodes' statuses of all snapshot check operations
+         */
+        @Nullable List<SnapshotStatus> allCheckStatuses;
 
-        /** */
+        /**
+         *
+         */
         private SnapshotStatusV2(SnapshotStatus s1) {
             super(s1.op, s1.name, s1.incIdx, s1.reqId, s1.startTime, s1.progress);
         }
 
-        /** */
-        private SnapshotStatusV2(Map<UUID, List<SnapshotStatus>> allCheckStatuses) {
+        /**
+         *
+         */
+        private SnapshotStatusV2(List<SnapshotStatus> allCheckStatuses) {
             // Single, V1 status holds first found check status.
             super(
                 null,
-                F.first(allCheckStatuses.values()).get(0).name,
-                F.first(allCheckStatuses.values()).get(0).incIdx,
-                F.first(allCheckStatuses.values()).get(0).reqId,
-                F.first(allCheckStatuses.values()).get(0).startTime,
-                F.first(allCheckStatuses.values()).get(0).progress
+                allCheckStatuses.get(0).name,
+                allCheckStatuses.get(0).incIdx,
+                allCheckStatuses.get(0).reqId,
+                allCheckStatuses.get(0).startTime,
+                allCheckStatuses.get(0).progress
             );
 
             this.allCheckStatuses = allCheckStatuses;

@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.SystemViewCommand;
@@ -64,53 +65,72 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             return;
         }
 
-        boolean isCreating = SnapshotStatusTask.SnapshotOperation.CREATE == status.operation();
-        boolean isRestoring = SnapshotStatusTask.SnapshotOperation.RESTORE == status.operation();
-        boolean isIncremental = status.incrementIndex() > 0;
+        boolean creating = SnapshotStatusTask.SnapshotOperation.CREATE == status.operation();
+        boolean restoring = SnapshotStatusTask.SnapshotOperation.RESTORE == status.operation();
+        boolean inc = status.incrementIndex() > 0;
 
-        GridStringBuilder s = new GridStringBuilder();
+        assert (status instanceof SnapshotStatusTask.SnapshotStatusV2) == !(creating || restoring);
 
-        if (isCreating)
-            s.a("Create snapshot operation is in progress.").nl();
-        else if(isRestoring)
-            s.a("Restore snapshot operation is in progress.").nl();
-        else
-            s.a("Check snapshot operation is in progress.").nl();
+        // The check oeration can be run in parallel for different snapshots.
+        List<SnapshotStatus> multipleOpsView = creating || restoring
+            ? Collections.singletonList(status)
+            : ((SnapshotStatusTask.SnapshotStatusV2)status).allCheckStatuses;
 
-        s.a("Snapshot name: ").a(status.name()).nl();
-        s.a("Incremental: ").a(isIncremental).nl();
+        // Flag of additional line delimiter.
+        AtomicBoolean oneOp = new AtomicBoolean(true);
 
-        if (isIncremental)
-            s.a("Increment index: ").a(status.incrementIndex()).nl();
+        multipleOpsView.forEach(s0 -> {
+            GridStringBuilder s = new GridStringBuilder();
 
-        s.a("Operation request ID: ").a(status.requestId()).nl();
-        s.a("Started at: ").a(DateFormat.getDateTimeInstance().format(new Date(status.startTime()))).nl();
-        s.a("Duration: ").a(X.timeSpan2DHMSM(System.currentTimeMillis() - status.startTime())).nl()
-            .nl();
-        s.a("Estimated operation progress:").nl();
+            if (!oneOp.get())
+                printer.accept(U.nl());
 
-        printer.accept(s.toString());
+            if (creating) {
+                assert multipleOpsView.size() == 1;
 
-        SnapshotTaskProgressDesc desc;
+                s.a("Create snapshot operation is in progress.").nl();
+            }
+            else if (restoring) {
+                assert multipleOpsView.size() == 1;
 
-        if (isCreating && isIncremental)
-            desc = new CreateIncrementalSnapshotTaskProgressDesc();
-        else if (isCreating)
-            desc = new CreateFullSnapshotTaskProgressDesc();
-        else if (isRestoring && isIncremental)
-            desc = new RestoreIncrementalSnapshotTaskProgressDesc();
-        else if (isRestoring)
-            desc = new RestoreFullSnapshotTaskProgressDesc();
-        else
-            desc = new CheckSnapshotTaskProgressDesc(isIncremental);
+                s.a("Restore snapshot operation is in progress.").nl();
+            }
+            else
+                s.a("Check snapshot operation" + (multipleOpsView.size() < 2 ? " is " : "s are ") + "in progress.").nl();
 
-        List<List<?>> rows = status.progress().entrySet().stream().sorted(Map.Entry.comparingByKey())
-            .map(e -> desc.buildRow(e.getKey(), e.getValue()))
-            .collect(Collectors.toList());
+            s.a("Snapshot name: ").a(s0.name()).nl();
+            s.a("Incremental: ").a(inc).nl();
 
-        SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
+            if (inc)
+                s.a("Increment index: ").a(s0.incrementIndex()).nl();
 
-        printer.accept(U.nl());
+            s.a("Operation request ID: ").a(s0.requestId()).nl();
+            s.a("Started at: ").a(DateFormat.getDateTimeInstance().format(new Date(s0.startTime()))).nl();
+            s.a("Duration: ").a(X.timeSpan2DHMSM(System.currentTimeMillis() - s0.startTime())).nl()
+                .nl();
+            s.a("Estimated operation progress:").nl();
+
+            printer.accept(s.toString());
+
+            SnapshotTaskProgressDesc desc;
+
+            if (creating)
+                desc = inc ? new CreateIncrementalSnapshotTaskProgressDesc() : new CreateFullSnapshotTaskProgressDesc();
+            else if (restoring)
+                desc = inc ? new RestoreIncrementalSnapshotTaskProgressDesc() : new RestoreFullSnapshotTaskProgressDesc();
+            else
+                desc = new CheckSnapshotTaskProgressDesc(inc);
+
+            List<List<?>> rows = s0.progress().entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(e -> desc.buildRow(e.getKey(), e.getValue()))
+                .collect(Collectors.toList());
+
+            SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
+
+            printer.accept(U.nl());
+
+            oneOp.set(false);
+        });
     }
 
     /** Describes progress of a snapshot task. */
@@ -255,21 +275,51 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     /** */
     private static class CheckSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
+        private final boolean inc;
+
+        /** */
         CheckSnapshotTaskProgressDesc(boolean incremental) {
-            super(F.asList("Node ID", "Processed, bytes", "Total, bytes", "Percent"));
+            super(incremental
+                ? F.asList("Node ID", "processedWalSegments", "totalWalSegments", "percent")
+                : F.asList("Node ID", "fullCheck", "processedPartitions", "totalPartitions",
+                    "processedSnapshotParts", "snapshotPartsToProcess", "percent")
+            );
+
+            inc = incremental;
         }
 
         /** {@inheritDoc} */
         @Override public List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress) {
-            long processed = progress.get1();
-            long total = progress.get2();
+            if (inc) {
+                long processed = progress.get1();
+                long total = progress.get2();
 
-            if (total <= 0)
-                return F.asList(nodeId, "unknown", "unknown", "unknown");
+                if (total <= 0)
+                    return F.asList(nodeId, "unknown", "unknown", "unknown");
 
-            String percent = (int)(processed * 100 / total) + "%";
+                String percent = (int)(processed * 100 / total) + "%";
 
-            return F.asList(nodeId, U.humanReadableByteCount(processed), U.humanReadableByteCount(total), percent);
+                return F.asList(nodeId, processed, total, percent);
+            }
+
+            long partitionsToCheck = progress.get3();
+            long partsToCheck = progress.get5();
+
+            if (partitionsToCheck <= 0 || partsToCheck <= 0)
+                return F.asList(nodeId, "unknown", "unknown", "unknown", "unknown", "unknown", "unknown");
+
+            // Ration of checked partitions in current snapshot part * total parts ratio.
+            double totalRatio = ((double)progress.get2() / partitionsToCheck) * ((double)progress.get4() / partsToCheck);
+
+            return F.asList(
+                nodeId,
+                progress.get1() == 0L ? "false" : "true",  // Full check flag;
+                progress.get2(), // Checked partitions in current snapshot part;
+                partitionsToCheck, // Total partitions in current snapshot part;
+                progress.get4(), // Checked shapshot parts;
+                partsToCheck, // Total snapshot parts to check.
+                ((int)(totalRatio * 100.0d)) + '%'
+            );
         }
     }
 }
