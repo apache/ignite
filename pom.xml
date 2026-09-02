@@ -241,10 +241,11 @@
             <build>
                 <plugins>
                     <plugin><!-- skipping generation of dependencies licenses
-                     to keep clean /maven-shared-archive-resources/META-INF
-                     to prevent license.txt moving to sources.zip -->
+                      to keep clean /maven-shared-archive-resources/META-INF
+                      to prevent license.txt moving to sources.zip -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-remote-resources-plugin</artifactId>
+                        <version>${maven.remote.resources.version}</version>
                         <executions>
                             <execution>
                                 <id>ignite-dependencies</id>
@@ -650,6 +651,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
+                <version>${maven.clean.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>clean</phase>
@@ -669,6 +671,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven.deploy.plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
