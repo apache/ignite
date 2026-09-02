@@ -53,8 +53,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     }
 
     /** {@inheritDoc} */
-    @Override public Class<SnapshotStatusTask> taskClass() {
-        return SnapshotStatusTask.class;
+    @Override public Class<SnapshotStatusTaskV2> taskClass() {
+        return SnapshotStatusTaskV2.class;
     }
 
     /** {@inheritDoc} */
@@ -69,12 +69,13 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
         boolean isRestoring = status.operation() == SnapshotStatusTask.SnapshotOperation.RESTORE;
         boolean isIncremental = status.incrementIndex() > 0;
 
-        assert (status instanceof SnapshotStatusTask.SnapshotStatusV2) == !(isCreating || isRestoring);
+        assert (status instanceof SnapshotStatusTaskV2.SnapshotStatusV2) == !(isCreating || isRestoring)
+            : "No create or restore snapshot operation found but the status os not of V2 status.";
 
         // The check operation can be run in parallel for different snapshots.
         List<SnapshotStatus> multipleOpsView = isCreating || isRestoring
             ? Collections.singletonList(status)
-            : ((SnapshotStatusTask.SnapshotStatusV2)status).allCheckStatuses;
+            : ((SnapshotStatusTaskV2.SnapshotStatusV2)status).allCheckStatuses;
 
         // Flag of additional line delimiter.
         AtomicBoolean oneOp = new AtomicBoolean(true);

@@ -477,7 +477,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param checkCrc If {@code true} then run idle verify with --check-crc argument.
      * @param waitAtStart If {@code true} then forces nodes to wait after the procedure start and to proceed only after
      *                    the {@code prepare}'s before-latch switched.
-     */
+    */
     private void doTestCancelIdleVerify(
         BiConsumer<CountDownLatch, CountDownLatch> prepare,
         boolean checkCrc,
@@ -1253,7 +1253,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String what = "There is no connectivity between the following nodes";
 
         assertContains(log, out.replaceAll("[\\W_]+", "").trim(),
-            what.replaceAll("[\\W_]+", "").trim());
+                            what.replaceAll("[\\W_]+", "").trim());
     }
 
     /**
@@ -1687,14 +1687,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Test kill by xid.
         validate(h, map -> {
-                assertEquals(1, map.size());
+            assertEquals(1, map.size());
 
-                Map.Entry<ClusterNode, TxTaskResult> killedEntry = map.entrySet().iterator().next();
+            Map.Entry<ClusterNode, TxTaskResult> killedEntry = map.entrySet().iterator().next();
 
-                TxInfo info = killedEntry.getValue().getInfos().get(0);
+            TxInfo info = killedEntry.getValue().getInfos().get(0);
 
-                assertEquals(toKill[0].getXid(), info.getXid());
-            }, "--tx", "--kill",
+            assertEquals(toKill[0].getXid(), info.getXid());
+        }, "--tx", "--kill",
             "--xid", toKill[0].getXid().toString(), // Use saved on first run value.
             "--nodes", grid(0).localNode().consistentId().toString());
 
@@ -1925,8 +1925,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Ignite instase 1 can be logged only in arguments list.
         boolean isInstance1Found = Arrays.stream(testOutStr.split("\n"))
-            .filter(s -> s.contains("Arguments:"))
-            .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+                                        .filter(s -> s.contains("Arguments:"))
+                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 
@@ -3060,7 +3060,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             String expWarn = dataStmrDetected
                 ? DataStreamerUpdatesHandler.WRN_MSG
                 : String.format("Cache partitions differ for cache groups [%s]. ", CU.cacheId(DEFAULT_CACHE_NAME))
-                  + SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
+                    + SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
 
             assertContains(log, out, expWarn);
 
@@ -4048,8 +4048,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1));
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setBackups(1));
 
         cache.put("key", "value");
 
