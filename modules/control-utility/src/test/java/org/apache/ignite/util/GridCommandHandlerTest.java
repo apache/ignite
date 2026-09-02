@@ -137,7 +137,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -156,7 +155,6 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static java.io.File.separatorChar;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -3673,7 +3671,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process. */
     @Test
     public void testRestoreSnapshotMetricsAtStart() throws Exception {
-        communicationSpiSupp = TestCommunicationSpi::new;
+        communicationSpiSupp = TestRecordingCommunicationSpi::new;
 
         startGrids(3).cluster().state(ClusterState.ACTIVE);
 
@@ -3687,40 +3685,29 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         awaitPartitionMapExchange();
 
-        var checkSingleResultsReceivedLatch = new CountDownLatch(2);
-        var restoreSingleResultsReceivedLatch = new AtomicInteger(2);
-        var proceedCheckLatch = new CountDownLatch(1);
+        TestRecordingCommunicationSpi cm1 = ((TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi());
+        TestRecordingCommunicationSpi cm2 = ((TestRecordingCommunicationSpi)grid(2).configuration().getCommunicationSpi());
 
-        for (var ig : Arrays.asList(grid(1), grid(2))) {
-            ((TestCommunicationSpi)ig.configuration().getCommunicationSpi()).msgCsmr = msg -> {
-                if (!(msg instanceof GridIoMessage ioMsg))
-                    return;
-
-                if (!(ioMsg.message() instanceof SingleNodeMessage<?> sm))
-                    return;
-
-                if (sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())
-                    restoreSingleResultsReceivedLatch.decrementAndGet();
-                else if (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()) {
-                    checkSingleResultsReceivedLatch.countDown();
-
-                    try {
-                        assertTrue(proceedCheckLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                    }
-                    catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
+        // Block one of the process' first messages of snapshot restoring or snapshot checking.
+        for (var cm : Arrays.asList(cm1, cm2)) {
+            cm.blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> sm
+                && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal() || sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())
+            );
         }
 
+        // Snapshot restoration should get paused at the preceeding checking.
         IgniteFutureImpl<Void> restoreFut = snapshotMgr.restoreSnapshot("test_snapshot", null, null, 0, true);
 
-        assertTrue(checkSingleResultsReceivedLatch.await(getTestTimeout(), MILLISECONDS));
-
-        // Make sure no restoration started or finished.
-        assertTrue(restoreSingleResultsReceivedLatch.get() == 2);
-        assertFalse("Snapshot future has finished", restoreFut.isDone());
+        // Waiting for the nodes each to send snapshot check single result.
+        for (var cm : Arrays.asList(cm1, cm2)) {
+            assertTrue(waitForCondition(
+                () -> cm.blockedMessages().stream().anyMatch(
+                    m -> m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+                        && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()
+                ),
+                getTestTimeout()
+            ));
+        }
 
         injectTestSystemOut();
 
@@ -3736,12 +3723,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, out, "Incremental: false");
         assertContains(log, out, "Estimated operation progress:");
 
-        proceedCheckLatch.countDown();
+        // Let's suppose the restoration could start and wait for a while.
+        Thread.sleep(3000L);
+
+        // Ensure that no snapshot restoration started or finished.
+        assertFalse("Snapshot future has finished", restoreFut.isDone());
+
+        for (var cm : Arrays.asList(cm1, cm2)) {
+            // Ensure that nthe restoration process didn't start.
+            assertTrue(cm.blockedMessages().stream().noneMatch(
+                m -> m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+                    && sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())
+            );
+
+            cm.stopBlock();
+        }
 
         // Wait for future to finish in order to avoid excessive message about task cancellation.
         restoreFut.get();
-
-        assertTrue(restoreSingleResultsReceivedLatch.get() == 0);
     }
 
     /** @throws Exception If fails. */
@@ -4150,36 +4149,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         /** */
         public void input(String input) {
             this.input = input;
-        }
-    }
-
-    /** */
-    private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        private volatile @Nullable Consumer<Message> msgCsmr;
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-            var msgCsmr = this.msgCsmr;
-
-            if (msgCsmr != null)
-                msgCsmr.accept(msg);
-
-            super.sendMessage(node, msg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(
-            ClusterNode node,
-            Message msg,
-            IgniteInClosure<IgniteException> ackC
-        ) throws IgniteSpiException {
-            var msgCsmr = this.msgCsmr;
-
-            if (msgCsmr != null)
-                msgCsmr.accept(msg);
-
-            super.sendMessage(node, msg, ackC);
         }
     }
 }

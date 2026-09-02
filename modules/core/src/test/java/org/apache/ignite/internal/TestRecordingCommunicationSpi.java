@@ -32,6 +32,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -246,6 +247,13 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
             while (recordedMsgs.isEmpty())
                 wait();
         }
+    }
+
+    /** */
+    public List<BlockedMessageDescriptor> blockedMessages() {
+        var res = this.blockedMsgs;
+
+        return F.isEmpty(res) ? Collections.emptyList() : Collections.unmodifiableList(res);
     }
 
     /**
