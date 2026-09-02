@@ -24,22 +24,16 @@ import java.lang.reflect.Method;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.BinaryWriterExImpl.ZERO_COPY;
 
 /**
- * Writes {@link String} values to a {@link BinaryOutputStream} in UTF-8 without allocation of temporary byte arrays:
- * UTF-8 bytes are encoded directly into the stream buffer after a reserved length slot which is patched afterwards.
- * <p>
- * On JDKs with compact strings (9+) an additional fast path is used: for Latin-1 strings the internal {@code byte[]}
- * value of the string is encoded without per-char conversion, and for pure ASCII strings it is copied into the stream
- * as-is, since the UTF-8 representation is identical to the internal one.
- * <p>
- * The produced bytes are identical to serialization of {@code val.getBytes(UTF_8)}, including replacement of
- * malformed surrogates with {@code '?'}. Zero-copy serialization can be disabled with the
- * {@link IgniteCommonsSystemProperties#IGNITE_BINARY_STRING_ZERO_COPY} system property.
+ * Writes {@link String} values to a {@link BinaryOutputStream} in UTF-8 without allocation of temporary byte arrays.
+ *
+ * @see IgniteCommonsSystemProperties#IGNITE_BINARY_STRING_ZERO_COPY
  */
 public final class StringWriter {
     /** Latin-1 value of the {@code java.lang.String#coder} field. */
@@ -54,63 +48,18 @@ public final class StringWriter {
     /** Offset of the {@code java.lang.String#coder} field, or {@code -1} if the compact string fast path is unavailable. */
     private static final long STR_CODER_OFF;
 
+    static {
+        IgniteBiTuple<Long, Long> result = fieldsOffsets();
+
+        STR_VALUE_OFF = result.get1();
+        STR_CODER_OFF = result.get2();
+    }
+
     /**
      * Handle of the intrinsified {@code java.lang.StringCoding#hasNegatives}, or {@code null} if unavailable.
      * The intrinsic scans the array with SIMD instructions, far faster than any scalar loop.
      */
-    private static final MethodHandle HAS_NEGATIVES;
-
-    static {
-        MethodHandle hasNegatives = null;
-
-        if (ZERO_COPY) {
-            try {
-                Method mtd = Class.forName("java.lang.StringCoding").getDeclaredMethod("hasNegatives", byte[].class, int.class, int.class);
-
-                // Requires '--add-opens=java.base/java.lang=ALL-UNNAMED' which Ignite scripts pass by default.
-                mtd.setAccessible(true);
-
-                MethodHandle hasNegatives0 = MethodHandles.lookup().unreflect(mtd);
-
-                if (!(boolean)hasNegatives0.invokeExact(new byte[] {1, 2, 3}, 0, 3)
-                    && (boolean)hasNegatives0.invokeExact(new byte[] {1, -2, 3}, 0, 3))
-                    hasNegatives = hasNegatives0;
-            }
-            catch (Throwable ignored) {
-                // The scalar implementation will be used.
-            }
-        }
-
-        HAS_NEGATIVES = hasNegatives;
-
-        long valOff = -1;
-        long coderOff = -1;
-
-        if (ZERO_COPY) {
-            try {
-                Field valField = String.class.getDeclaredField("value");
-                Field coderField = String.class.getDeclaredField("coder");
-
-                // On JDK 8 the value field is a char[], only the generic encoder can be used.
-                if (valField.getType() == byte[].class && coderField.getType() == byte.class) {
-                    valOff = GridUnsafe.objectFieldOffset(valField);
-                    coderOff = GridUnsafe.objectFieldOffset(coderField);
-
-                    if (!probe(valOff, coderOff)) {
-                        valOff = -1;
-                        coderOff = -1;
-                    }
-                }
-            }
-            catch (Throwable ignored) {
-                valOff = -1;
-                coderOff = -1;
-            }
-        }
-
-        STR_VALUE_OFF = valOff;
-        STR_CODER_OFF = coderOff;
-    }
+    private static final MethodHandle HAS_NEGATIVES = hasNegativesHandle();
 
     /** */
     private StringWriter() {
@@ -125,7 +74,13 @@ public final class StringWriter {
      * @param out Output stream.
      */
     public static void write(@NotNull String val, BinaryOutputStream out) {
-        int lenPos = writeHeader(out);
+        // 1 byte for `GridBinaryMarshaller.STRING` and integer (4 bytes) for length.
+        out.unsafeEnsure(1 + 4);
+        out.unsafeWriteByte(GridBinaryMarshaller.STRING);
+
+        int lenPos = out.position();
+
+        out.unsafePosition(out.position() + 4);
 
         int writtenBytes;
 
@@ -158,43 +113,12 @@ public final class StringWriter {
                 writtenBytes = end - start;
 
                 out.unsafePosition(end);
-            } else
+            }
+            else
                 writtenBytes = writeChars(val, out);
         }
 
         out.unsafeWriteInt(lenPos, writtenBytes);
-    }
-
-    /**
-     * Checks that the internal layout of {@link String} behaves as the compact string fast path expects.
-     *
-     * @param valOff Offset of the {@code value} field.
-     * @param coderOff Offset of the {@code coder} field.
-     * @return {@code True} if the fast path can be used.
-     */
-    private static boolean probe(long valOff, long coderOff) {
-        String probe = "Ignite\u00e9";
-
-        // Compact strings can be disabled with -XX:-CompactStrings, then all strings are UTF-16 encoded.
-        if (GridUnsafe.getByteField(probe, coderOff) != LATIN1)
-            return false;
-
-        Object val = GridUnsafe.getObjectField(probe, valOff);
-
-        if (!(val instanceof byte[]))
-            return false;
-
-        byte[] arr = (byte[])val;
-
-        if (arr.length != probe.length())
-            return false;
-
-        for (int i = 0; i < arr.length; i++) {
-            if ((arr[i] & 0xFF) != probe.charAt(i))
-                return false;
-        }
-
-        return true;
     }
 
     /**
@@ -219,14 +143,11 @@ public final class StringWriter {
                 return (boolean)HAS_NEGATIVES.invokeExact(arr, 0, arr.length);
             }
             catch (Throwable ignored) {
-                // TODO LT log here.
                 // Fall through to the generic implementation.
             }
         }
 
-        // 8-byte strides with an early exit: measured on par with a branch-free loop for clean arrays
-        // (the exit branch is never taken there, and neither variant is vectorized by the JIT)
-        // and far faster when a negative byte occurs early.
+        // 8-byte strides with an early exit.
         int i = 0;
 
         for (int lim = arr.length - Long.BYTES; i <= lim; i += Long.BYTES) {
@@ -430,35 +351,76 @@ public final class StringWriter {
         return (int)(off - GridUnsafe.BYTE_ARR_OFF);
     }
 
+    /** */
+    private static IgniteBiTuple<Long, Long> fieldsOffsets() {
+        if (!ZERO_COPY) {
+            try {
+                Field valField = String.class.getDeclaredField("value");
+                Field coderField = String.class.getDeclaredField("coder");
+
+                // On JDK 8 the value field is a char[], only the generic encoder can be used.
+                if (valField.getType() == byte[].class && coderField.getType() == byte.class) {
+                    IgniteBiTuple<Long, Long> res = new IgniteBiTuple<>(
+                        GridUnsafe.objectFieldOffset(valField),
+                        GridUnsafe.objectFieldOffset(coderField)
+                    );
+
+                    if(probe(res))
+                        return res;
+                }
+            }
+            catch (Throwable ignored) {
+                // No-op.
+            }
+        }
+
+        return new IgniteBiTuple<>(-1L, -1L);
+    }
+
     /**
-     * Writes a string through a temporary UTF-8 byte array.
+     * Checks that the internal layout of {@link String} behaves as the compact string fast path expects.
      *
-     * @param val Value.
-     * @param out Output stream.
+     * @param offsets Offsets of methods.
+     * @return {@code True} if the fast path can be used.
      */
-    static int writeWithTemporaryArray(String val, BinaryOutputStream out) {
-        byte[] strArr;
+    private static boolean probe(IgniteBiTuple<Long, Long> offsets) {
+        String probe = "Ignite\u00e9";
 
-        if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
-            strArr = BinaryUtils.strToUtf8Bytes(val);
-        else
-            strArr = val.getBytes(UTF_8);
+        // Compact strings can be disabled with -XX:-CompactStrings, then all strings are UTF-16 encoded.
+        if (GridUnsafe.getByteField(probe, offsets.get1()) != LATIN1)
+            return false;
 
-        out.writeByteArray(strArr);
+        Object val = GridUnsafe.getObjectField(probe, offsets.get2());
 
-        return strArr.length;
+        if (!(val instanceof byte[] arr))
+            return false;
+
+        if (arr.length != probe.length())
+            return false;
+
+        for (int i = 0; i < arr.length; i++) {
+            if ((arr[i] & 0xFF) != probe.charAt(i))
+                return false;
+        }
+
+        return true;
     }
 
     /** */
-    private static int writeHeader(BinaryOutputStream out) {
-        // 1 byte for `GridBinaryMarshaller.STRING` and integer (4 bytes) for length.
-        out.unsafeEnsure(1 + 4);
-        out.unsafeWriteByte(GridBinaryMarshaller.STRING);
+    private static @Nullable MethodHandle hasNegativesHandle() {
+        if (ZERO_COPY) {
+            try {
+                Method mtd = Class.forName("java.lang.StringCoding").getDeclaredMethod("hasNegatives", byte[].class, int.class, int.class);
 
-        int pos = out.position();
+                mtd.setAccessible(true);
 
-        out.unsafePosition(out.position() + 4);
+                return MethodHandles.lookup().unreflect(mtd);
+            }
+            catch (Throwable ignored) {
+                // No-op.
+            }
+        }
 
-        return pos;
+        return null;
     }
 }

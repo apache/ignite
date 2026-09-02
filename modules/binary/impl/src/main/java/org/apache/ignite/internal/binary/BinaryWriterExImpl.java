@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_STRING_ZERO_COPY;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
@@ -739,8 +740,20 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             out.writeByte(GridBinaryMarshaller.NULL);
         else if (ZERO_COPY)
             StringWriter.write(val, out);
-        else
-            StringWriter.writeWithTemporaryArray(val, out);
+        else {
+            byte[] strArr;
+
+            if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
+                strArr = BinaryUtils.strToUtf8Bytes(val);
+            else
+                strArr = val.getBytes(UTF_8);
+
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(GridBinaryMarshaller.STRING);
+            out.unsafeWriteInt(strArr.length);
+
+            out.writeByteArray(strArr);
+        }
     }
 
     /** {@inheritDoc} */

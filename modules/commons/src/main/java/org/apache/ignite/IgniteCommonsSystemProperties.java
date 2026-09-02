@@ -129,8 +129,7 @@ public class IgniteCommonsSystemProperties {
         "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
 
     /**
-     * When set to {@code false}, disables zero-copy UTF-8 serialization of {@link String} values by BinaryMarshaller,
-     * reverting to serialization through a temporary byte array produced by {@link String#getBytes}.
+     * When set to {@code false}, disables zero-copy UTF-8 serialization of {@link String} values by BinaryMarshaller.
      * Default value is {@code true}.
      */
     @SystemProperty(value = "Enables zero-copy UTF-8 serialization of String values by BinaryMarshaller. " +
