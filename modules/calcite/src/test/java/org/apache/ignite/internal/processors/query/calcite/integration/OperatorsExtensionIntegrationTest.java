@@ -50,6 +50,8 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexContext;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
@@ -57,6 +59,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Optionality;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -79,6 +82,15 @@ import org.junit.Test;
  * Tests SQL engine extension with plugin.
  */
 public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final SqlConformance TEST_CONFORMANCE = new SqlDelegatingConformance(
+        CalciteQueryProcessor.FRAMEWORK_CONFIG.getParserConfig().conformance()) {
+        /** {@inheritDoc} */
+        @Override public boolean isSupportedDualTable() {
+            return true;
+        }
+    };
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -90,12 +102,15 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                     if (FrameworkConfig.class.equals(cls)) {
                         FrameworkConfig cfg = Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
+                            .parserConfig(CalciteQueryProcessor.FRAMEWORK_CONFIG.getParserConfig()
+                                .withConformance(TEST_CONFORMANCE))
                             .convertletTable(new ConvertletTable())
                             .operatorTable(SqlOperatorTables.chain(
                                 new OperatorTable().init(), CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable()))
                             .sqlValidatorConfig(
                                 ((IgniteSqlValidator.Config)CalciteQueryProcessor.FRAMEWORK_CONFIG.getSqlValidatorConfig())
-                                    .withSqlNodeRewriter(new SqlRewriter()))
+                                    .withSqlNodeRewriter(new SqlRewriter())
+                                    .withConformance(TEST_CONFORMANCE))
                             .context(Contexts.chain(
                                 CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
                                 Contexts.of(IgniteSqlSemantics.builder()
@@ -236,6 +251,57 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .returns(1)
             .returns(2)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testDualTable() {
+        assertQuery("SELECT 1 + 1 FROM dual").returns(2).check();
+
+        assertQuery("SELECT * FROM DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+
+        assertQuery("SELECT DUMMY FROM DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+
+        assertQuery("SELECT LAG(rate, 1, rate) OVER (ORDER BY period) FROM "
+            + "(SELECT 1 AS rate, 1 AS period FROM dual)")
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testDualTableInNewSchema() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("CUSTOM_SCHEMA_MARKER")
+            .setSqlSchema("CUSTOM_SCHEMA")
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        assertQuery("SELECT DUMMY FROM CUSTOM_SCHEMA.DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testUserDefinedDualView() {
+        sql("CREATE VIEW PUBLIC.DUAL AS SELECT 'USER' AS DUMMY");
+
+        try {
+            assertQuery("SELECT DUMMY FROM PUBLIC.DUAL")
+                .columnNames("DUMMY")
+                .returns("USER")
+                .check();
+        }
+        finally {
+            sql("DROP VIEW IF EXISTS PUBLIC.DUAL");
+        }
     }
 
     /** Rewrites LTRIM with 2 parameters. */
