@@ -300,7 +300,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** */
-    @Nullable private String buildRollingUpgradeFeatureGuard(VariableElement field) {
+    @Nullable private String buildFeatureCondition(VariableElement field) {
         Order ann = field.getAnnotation(Order.class);
 
         if (ann.introducedBy().isEmpty() && ann.deprecatedBy().isEmpty())
@@ -359,17 +359,17 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        String guard = buildRollingUpgradeFeatureGuard(field);
+        String featureCondition = buildFeatureCondition(field);
 
-        if (guard != null) {
-            write.add(indentedLine("if (%s) {", guard));
+        if (featureCondition != null) {
+            write.add(indentedLine("if (%s) {", featureCondition));
 
             indent++;
         }
 
         returnFalseIf(write, "!" + writeExpr);
 
-        if (guard != null) {
+        if (featureCondition != null) {
             indent--;
 
             write.add(indentedLine("}"));
@@ -402,10 +402,10 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        String guard = buildRollingUpgradeFeatureGuard(field);
+        String featureCondition = buildFeatureCondition(field);
 
-        if (guard != null) {
-            read.add(indentedLine("if (%s) {", guard));
+        if (featureCondition != null) {
+            read.add(indentedLine("if (%s) {", featureCondition));
 
             indent++;
         }
@@ -415,7 +415,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         returnFalseIf(read, "!reader.isLastRead()");
 
-        if (guard != null) {
+        if (featureCondition != null) {
             indent--;
 
             read.add(indentedLine("}"));
