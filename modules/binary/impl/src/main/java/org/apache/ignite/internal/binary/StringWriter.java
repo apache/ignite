@@ -46,7 +46,7 @@ public final class StringWriter {
     private static final byte LATIN1 = 0;
 
     /** Mask to test 8 bytes for a set sign bit at once. */
-    private static final long NEGATIVE_BYTES_MSK = 0x8080808080808080L;
+    private static final long NEGATIVE_BYTES_MSK = 0b10000000_10000000_10000000_10000000_10000000_10000000_10000000_10000000L;
 
     /** Offset of the {@code java.lang.String#value} field, or {@code -1} if the compact string fast path is unavailable. */
     private static final long STR_VALUE_OFF;
@@ -61,24 +61,20 @@ public final class StringWriter {
     private static final MethodHandle HAS_NEGATIVES;
 
     static {
-        long valOff = -1;
-        long coderOff = -1;
-
         MethodHandle hasNegatives = null;
 
         if (ZERO_COPY) {
             try {
-                Method mtd = Class.forName("java.lang.StringCoding")
-                    .getDeclaredMethod("hasNegatives", byte[].class, int.class, int.class);
+                Method mtd = Class.forName("java.lang.StringCoding").getDeclaredMethod("hasNegatives", byte[].class, int.class, int.class);
 
                 // Requires '--add-opens=java.base/java.lang=ALL-UNNAMED' which Ignite scripts pass by default.
                 mtd.setAccessible(true);
 
-                MethodHandle candidate = MethodHandles.lookup().unreflect(mtd);
+                MethodHandle hasNegatives0 = MethodHandles.lookup().unreflect(mtd);
 
-                if (!(boolean)candidate.invokeExact(new byte[] {1, 2, 3}, 0, 3)
-                    && (boolean)candidate.invokeExact(new byte[] {1, -2, 3}, 0, 3))
-                    hasNegatives = candidate;
+                if (!(boolean)hasNegatives0.invokeExact(new byte[] {1, 2, 3}, 0, 3)
+                    && (boolean)hasNegatives0.invokeExact(new byte[] {1, -2, 3}, 0, 3))
+                    hasNegatives = hasNegatives0;
             }
             catch (Throwable ignored) {
                 // The scalar implementation will be used.
@@ -86,6 +82,9 @@ public final class StringWriter {
         }
 
         HAS_NEGATIVES = hasNegatives;
+
+        long valOff = -1;
+        long coderOff = -1;
 
         if (ZERO_COPY) {
             try {
@@ -126,47 +125,41 @@ public final class StringWriter {
      * @param out Output stream.
      */
     public static void write(@NotNull String val, BinaryOutputStream out) {
-        int len = val.length();
-
-        // Worst case is 3 bytes per char: a surrogate pair (2 chars) produces 4 bytes, a lone surrogate 1 byte.
-        // 1 byte for `GridBinaryMarshaller.STRING` and integer (4 bytes) for length.
-        int worstLen = 1 + 4 + 3 * len;
-
-        if (worstLen + out.position() > Integer.MAX_VALUE) {
-            writeWithTemporaryArray(val, out);
-
-            return;
-        }
-
-        out.unsafeEnsure(worstLen);
-
-        out.unsafeWriteByte(GridBinaryMarshaller.STRING);
-
-        int lenPos = out.position();
-
-        out.unsafePosition(lenPos + 4);
-
-        byte[] latin1 = latin1Value(val);
+        int lenPos = writeHeader(out);
 
         int writtenBytes;
 
-        if (out.hasArray()) {
-            // Encode into the backing array directly: plain indexed writes are much faster than
-            // per-byte virtual calls through the stream interface.
-            int start = lenPos + 4;
+        byte[] latin1 = latin1Value(val);
 
-            int end = latin1 != null
-                ? encodeLatin1(latin1, out.array(), start)
-                : encodeChars(val, out.array(), start);
+        if (latin1 != null) {
+            if (out.hasArray()) {
+                // Encode into the backing array directly: plain indexed writes are much faster than
+                // per-byte virtual calls through the stream interface.
+                int start = lenPos + 4;
+                int end = encodeLatin1(latin1, out, start);
 
-            writtenBytes = end - start;
+                writtenBytes = end - start;
 
-            out.unsafePosition(end);
+                out.unsafePosition(end);
+            }
+            else
+                writtenBytes = writeLatin1(latin1, out);
         }
         else {
-            writtenBytes = latin1 != null
-                ? writeLatin1(latin1, out)
-                : writeChars(val, out);
+            // Worst case is 3 bytes per char: a surrogate pair (2 chars) produces 4 bytes, a lone surrogate 1 byte.
+            out.unsafeEnsure(Math.multiplyExact(3, val.length()));
+
+            if (out.hasArray()) {
+                // Encode into the backing array directly: plain indexed writes are much faster than
+                // per-byte virtual calls through the stream interface.
+                int start = lenPos + 4;
+                int end = encodeChars(val, out.array(), start);
+
+                writtenBytes = end - start;
+
+                out.unsafePosition(end);
+            } else
+                writtenBytes = writeChars(val, out);
         }
 
         out.unsafeWriteInt(lenPos, writtenBytes);
@@ -217,7 +210,40 @@ public final class StringWriter {
     }
 
     /**
-     * Writes a Latin-1 encoded string value to the stream. Stream capacity must be ensured by the caller.
+     * @param arr Array.
+     * @return {@code True} if the array contains a byte with the sign bit set.
+     */
+    private static boolean hasNegatives(byte[] arr) {
+        if (HAS_NEGATIVES != null) {
+            try {
+                return (boolean)HAS_NEGATIVES.invokeExact(arr, 0, arr.length);
+            }
+            catch (Throwable ignored) {
+                // TODO LT log here.
+                // Fall through to the generic implementation.
+            }
+        }
+
+        // 8-byte strides with an early exit: measured on par with a branch-free loop for clean arrays
+        // (the exit branch is never taken there, and neither variant is vectorized by the JIT)
+        // and far faster when a negative byte occurs early.
+        int i = 0;
+
+        for (int lim = arr.length - Long.BYTES; i <= lim; i += Long.BYTES) {
+            if ((GridUnsafe.getLong(arr, GridUnsafe.BYTE_ARR_OFF + i) & NEGATIVE_BYTES_MSK) != 0)
+                return true;
+        }
+
+        for (; i < arr.length; i++) {
+            if (arr[i] < 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Writes a Latin-1 encoded string value to the stream.
      *
      * @param val Internal Latin-1 array of the string.
      * @param out Output stream.
@@ -226,10 +252,12 @@ public final class StringWriter {
     private static int writeLatin1(byte[] val, BinaryOutputStream out) {
         if (!hasNegatives(val)) {
             // Pure ASCII: UTF-8 representation matches the internal array, copy it as-is.
-            out.write(val, 0, val.length);
+            out.writeByteArray(val);
 
             return val.length;
         }
+
+        out.unsafeEnsure(Math.addExact(val.length, val.length));
 
         int utfLen = 0;
 
@@ -313,55 +341,27 @@ public final class StringWriter {
     }
 
     /**
-     * @param arr Array.
-     * @return {@code True} if the array contains a byte with the sign bit set.
-     */
-    private static boolean hasNegatives(byte[] arr) {
-        if (HAS_NEGATIVES != null) {
-            try {
-                return (boolean)HAS_NEGATIVES.invokeExact(arr, 0, arr.length);
-            }
-            catch (Throwable ignored) {
-                // TODO LT log here.
-                // Fall through to the generic implementation.
-            }
-        }
-
-        // 8-byte strides with an early exit: measured on par with a branch-free loop for clean arrays
-        // (the exit branch is never taken there, and neither variant is vectorized by the JIT)
-        // and far faster when a negative byte occurs early.
-        int i = 0;
-
-        for (int lim = arr.length - Long.BYTES; i <= lim; i += Long.BYTES) {
-            if ((GridUnsafe.getLong(arr, GridUnsafe.BYTE_ARR_OFF + i) & NEGATIVE_BYTES_MSK) != 0)
-                return true;
-        }
-
-        for (; i < arr.length; i++) {
-            if (arr[i] < 0)
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Encodes a Latin-1 string value to the buffer as UTF-8. Buffer capacity must be ensured by the caller.
+     * Encodes a Latin-1 string value to the buffer as UTF-8.
      *
      * @param val Internal Latin-1 array of the string.
-     * @param buf Buffer.
+     * @param out Output stream.
      * @param pos Buffer position to encode to.
      * @return Buffer position after the last encoded byte.
      */
-    private static int encodeLatin1(byte[] val, byte[] buf, int pos) {
+    private static int encodeLatin1(byte[] val, BinaryOutputStream out, int pos) {
         if (!hasNegatives(val)) {
+            out.unsafeEnsure(val.length);
+
             // Pure ASCII: UTF-8 representation matches the internal array, copy it as-is.
-            System.arraycopy(val, 0, buf, pos, val.length);
+            System.arraycopy(val, 0, out.array(), pos, val.length);
 
             return pos + val.length;
         }
 
-        // Unsafe writes skip the array bounds checks: capacity is ensured by the caller.
+        out.unsafeEnsure(Math.addExact(val.length, val.length));
+
+        byte[] buf = out.array();
+
         long off = GridUnsafe.BYTE_ARR_OFF + pos;
 
         for (int i = 0; i < val.length; i++) {
@@ -436,7 +436,7 @@ public final class StringWriter {
      * @param val Value.
      * @param out Output stream.
      */
-    static void writeWithTemporaryArray(String val, BinaryOutputStream out) {
+    static int writeWithTemporaryArray(String val, BinaryOutputStream out) {
         byte[] strArr;
 
         if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
@@ -444,11 +444,21 @@ public final class StringWriter {
         else
             strArr = val.getBytes(UTF_8);
 
+        out.writeByteArray(strArr);
+
+        return strArr.length;
+    }
+
+    /** */
+    private static int writeHeader(BinaryOutputStream out) {
         // 1 byte for `GridBinaryMarshaller.STRING` and integer (4 bytes) for length.
         out.unsafeEnsure(1 + 4);
         out.unsafeWriteByte(GridBinaryMarshaller.STRING);
-        out.unsafeWriteInt(strArr.length);
 
-        out.writeByteArray(strArr);
+        int pos = out.position();
+
+        out.unsafePosition(out.position() + 4);
+
+        return pos;
     }
 }

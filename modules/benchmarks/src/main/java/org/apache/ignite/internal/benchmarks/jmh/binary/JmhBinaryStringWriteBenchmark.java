@@ -21,7 +21,6 @@ import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.binary.StringWriter;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.binary.streams.JmhBinaryStreamsFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -44,15 +43,15 @@ import static org.openjdk.jmh.annotations.Scope.Thread;
 
 /**
  * Compares zero-copy string serialization ({@link StringWriter} encoding directly into the stream buffer) with the
- * legacy serialization through a temporary array produced by {@link String#getBytes}. The {@code zeroCopy} parameter
+ * legacy serialization through a temporary array produced by {@link String#getBytes()}. The {@code zeroCopy} parameter
  * selects the implementation via the {@code IGNITE_BINARY_STRING_ZERO_COPY} system property, which is set before the
  * first use of {@link StringWriter} in each forked JVM.
  */
 @State(Thread)
 @OutputTimeUnit(NANOSECONDS)
 @BenchmarkMode(AverageTime)
-@Warmup(iterations = 5, time = 1, timeUnit = SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = SECONDS)
+@Warmup(iterations = 5, time = 5, timeUnit = SECONDS)
+@Measurement(iterations = 5, time = 10, timeUnit = SECONDS)
 public class JmhBinaryStringWriteBenchmark {
     /** */
     @Param({"true", "false"})
@@ -65,10 +64,6 @@ public class JmhBinaryStringWriteBenchmark {
     /** */
     @Param({"ascii", "latin1", "cyrillic", "mixed"})
     private String content;
-
-    /** */
-    @Param({"heap", "offheap"})
-    private String stream;
 
     /** */
     private BinaryOutputStream out;
@@ -154,9 +149,7 @@ public class JmhBinaryStringWriteBenchmark {
 
         str = sb.toString();
 
-        out = "offheap".equals(stream)
-            ? JmhBinaryStreamsFactory.offheapOutputStream(4 * len + 64)
-            : BinaryStreams.outputStream(4 * len + 64);
+        out = BinaryStreams.outputStream(4 * len + 64);
     }
 
     /** */
