@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME;
 
 /** Coordinator-side executor for recursive UNION ALL. */
 public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstream<Row> {
@@ -104,9 +108,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
 
         if (curSrc == SEED_SOURCE) {
             if (iterationLimit == 0) {
-                finish();
-
-                return;
+                throw iterationLimitExceeded();
             }
 
             curSrc = RECURSIVE_SOURCE;
@@ -118,9 +120,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         iteration++;
 
         if (iterationLimit >= 0 && iteration == iterationLimit) {
-            finish();
-
-            return;
+            throw iterationLimitExceeded();
         }
 
         source().rewind();
@@ -170,5 +170,14 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         waiting = -1;
         state.clear();
         downstream().end();
+    }
+
+    /** */
+    private IgniteSQLException iterationLimitExceeded() {
+        return new IgniteSQLException(
+            "Recursive CTE iteration limit exceeded [limit=" + iterationLimit +
+                ", property=" + RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME + ']',
+            IgniteQueryErrorCode.QUERY_CANCELED
+        );
     }
 }

@@ -34,6 +34,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.DFLT_RECURSIVE_CTE_ITERATION_LIMIT;
+
 /**
  * Planning context.
  */
@@ -61,6 +63,9 @@ public final class PlanningContext implements Context {
 
     /** */
     private final long plannerTimeout;
+
+    /** Maximum number of recursive CTE iterations, or a negative value for no limit. */
+    private int recursiveCteIterationLimit = DFLT_RECURSIVE_CTE_ITERATION_LIMIT;
 
     /**
      * Private constructor, used by a builder.
@@ -113,6 +118,20 @@ public final class PlanningContext implements Context {
      */
     public long plannerTimeout() {
         return plannerTimeout;
+    }
+
+    /**
+     * @return Maximum number of recursive CTE iterations, or a negative value for no limit.
+     */
+    public int recursiveCteIterationLimit() {
+        return recursiveCteIterationLimit;
+    }
+
+    /**
+     * @param recursiveCteIterationLimit Maximum number of recursive CTE iterations, or a negative value for no limit.
+     */
+    void recursiveCteIterationLimit(int recursiveCteIterationLimit) {
+        this.recursiveCteIterationLimit = recursiveCteIterationLimit;
     }
 
     /**

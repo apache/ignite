@@ -30,6 +30,7 @@ import org.apache.calcite.rel.logical.LogicalTableSpool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
 
@@ -57,6 +58,7 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
             throw unsupported("only UNION ALL is supported");
 
         String stateId = RecursiveCteUtils.stateId(planner, table);
+        int iterationLimit = planner.getContext().unwrap(PlanningContext.class).recursiveCteIterationLimit();
 
         RelNode seed = unwrapSpool(rel.getSeedRel(), table, "seed");
         RelNode iterative = unwrapSpool(rel.getIterativeRel(), table, "recursive term");
@@ -74,7 +76,7 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
             convert(seed, traits),
             convert(iterative, traits),
             stateId,
-            rel.iterationLimit
+            iterationLimit
         );
     }
 

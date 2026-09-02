@@ -42,17 +42,27 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
     /** Plan cache size property name. */
     public static final String PLAN_CACHE_SIZE_PROPERTY_NAME = "sql.calcite.planCacheSize";
 
+    /** Recursive CTE iteration limit property name. */
+    public static final String RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME =
+        "sql.calcite.recursiveCteIterationLimit";
+
     /** Default value of the disabled rules. */
     public static final String[] DFLT_DISABLED_RULES = new String[0];
 
     /** Default value of plan cache size. */
     public static final int DFLT_PLAN_CACHE_SIZE = 1024;
 
+    /** Default recursive CTE iteration limit. */
+    public static final int DFLT_RECURSIVE_CTE_ITERATION_LIMIT = 100;
+
     /** Globally disabled rules. */
     private volatile DistributedChangeableProperty<String[]> disabledRules;
 
     /** Plan cache size. */
     private volatile DistributedChangeableProperty<Integer> planCacheSize;
+
+    /** Recursive CTE iteration limit. */
+    private volatile DistributedChangeableProperty<Integer> recursiveCteIterationLimit;
 
     /** */
     private QueryPlanCache qryPlanCache;
@@ -89,6 +99,13 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
      */
     public int planCacheSize() {
         return getProperty(planCacheSize, DFLT_PLAN_CACHE_SIZE);
+    }
+
+    /**
+     * @return Maximum number of recursive CTE iterations, or a negative value for no limit.
+     */
+    public int recursiveCteIterationLimit() {
+        return getProperty(recursiveCteIterationLimit, DFLT_RECURSIVE_CTE_ITERATION_LIMIT);
     }
 
     /** */
@@ -140,6 +157,21 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
         );
 
         planCacheSize.addListener(planCacheCleaner);
+
+        registerProperty(
+            dispatcher,
+            RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME,
+            prop -> recursiveCteIterationLimit = prop,
+            () -> new SimpleDistributedProperty<>(
+                RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME,
+                Integer::parseInt,
+                "Maximum number of recursive CTE iterations before query execution fails. " +
+                    "A negative value disables the limit. NOTE: cleans the planning cache on change."
+            ),
+            log
+        );
+
+        recursiveCteIterationLimit.addListener(planCacheCleaner);
     }
 
     /** {@inheritDoc} */
@@ -148,5 +180,6 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
 
         setDefaultValue(disabledRules, DFLT_DISABLED_RULES, log);
         setDefaultValue(planCacheSize, DFLT_PLAN_CACHE_SIZE, log);
+        setDefaultValue(recursiveCteIterationLimit, DFLT_RECURSIVE_CTE_ITERATION_LIMIT, log);
     }
 }
