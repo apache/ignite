@@ -42,9 +42,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Task to get the status of the current snapshot operation in the cluster.
- */
+/** V2 of {@link SnapshotStatusTask} with the support of snapshot check status. */
 @GridInternal
 public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
     /** */
@@ -140,7 +138,7 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
         return firstResV2;
     }
 
-    /** */
+    /** V2 of {@link SnapshotStatusJob} with the support of snapshot check status. */
     private static class SnapshotStatusJobV2 extends SnapshotStatusTask.SnapshotStatusJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -208,7 +206,8 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
         }
     }
 
-    /** {@link SnapshotStatus} with support of snapshot check process. */
+    /** V2 of {@link SnapshotStatus} with the support of snapshot check status. */
+
     public static class SnapshotStatusV2 extends SnapshotStatusTask.SnapshotStatus {
         /** */
         private static final long serialVersionUID = 0L;

@@ -251,7 +251,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
 
     /** */
     public List<BlockedMessageDescriptor> blockedMessages() {
-        var res = this.blockedMsgs;
+        var res = blockedMsgs;
 
         return F.isEmpty(res) ? Collections.emptyList() : Collections.unmodifiableList(res);
     }

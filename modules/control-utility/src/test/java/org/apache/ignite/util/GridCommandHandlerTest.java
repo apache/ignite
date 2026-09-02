@@ -3785,7 +3785,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 .formatted(grid(2).localNode().id())).build();
 
             listeningLog.registerListener(logLsnr);
-        } else if (Boolean.TRUE.equals(allNodesNotSupporting)) {
+        }
+        else if (Boolean.TRUE.equals(allNodesNotSupporting)) {
             logLsnr = LogListener.matches("The snapshot-check-aware status feature isn't enabled").build();
 
             listeningLog.registerListener(logLsnr);

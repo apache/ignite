@@ -535,7 +535,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
-    @Nullable private SocketStream joinTopology(
+    @Nullable private TcpDiscoveryIoSession joinTopology(
         InetSocketAddress prevAddr,
         long timeout,
         @Nullable Runnable beforeEachSleep,
@@ -581,12 +581,12 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             Collection<InetSocketAddress> addrs0 = new ArrayList<>(addrs);
 
-            T2<Boolean, T2<SocketStream, Integer>> waitAndRes = sendJoinRequests(prevAddr != null, addrs);
+            T2<Boolean, T2<TcpDiscoveryIoSession, Integer>> waitAndRes = sendJoinRequests(prevAddr != null, addrs);
 
             addrs.clear();
 
             boolean wait = waitAndRes.get1();
-            T2<SocketStream, Integer> res = waitAndRes.get2();
+            T2<TcpDiscoveryIoSession, Integer> res = waitAndRes.get2();
 
             if (res != null)
                 return res.get1();
@@ -611,7 +611,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private T2<Boolean, T2<SocketStream, Integer>> sendJoinRequests(
+    private T2<Boolean, T2<TcpDiscoveryIoSession, Integer>> sendJoinRequests(
         boolean recon,
         Collection<InetSocketAddress> addrs
     ) throws InterruptedException {
@@ -619,21 +619,21 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
 
-            T2<SocketStream, Integer> sockAndRes = sendJoinRequest(recon, addr);
+            T2<TcpDiscoveryIoSession, Integer> joinRes = sendJoinRequest(recon, addr);
 
-            if (sockAndRes == null)
+            if (joinRes == null)
                 continue;
 
-            assert sockAndRes.get1() != null && sockAndRes.get2() != null : sockAndRes;
+            assert joinRes.get1() != null && joinRes.get2() != null : joinRes;
 
-            Socket sock = sockAndRes.get1().socket();
+            Socket sock = joinRes.get1().socket();
 
             if (log.isDebugEnabled())
-                log.debug("Received response to join request [addr=" + addr + ", res=" + sockAndRes.get2() + ']');
+                log.debug("Received response to join request [addr=" + addr + ", res=" + joinRes.get2() + ']');
 
-            switch (sockAndRes.get2()) {
+            switch (joinRes.get2()) {
                 case RES_OK:
-                    return new T2<>(false, sockAndRes);
+                    return new T2<>(false, joinRes);
 
                 case RES_CONTINUE_JOIN:
                 case RES_WAIT:
@@ -643,7 +643,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 default:
                     if (log.isDebugEnabled())
-                        log.debug("Received unexpected response to join request: " + sockAndRes.get2());
+                        log.debug("Received unexpected response to join request: " + joinRes.get2());
 
                     U.closeQuiet(sock);
             }
@@ -671,7 +671,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param addr Address.
      * @return Socket, connect response and client acknowledge support flag.
      */
-    @Nullable private T2<SocketStream, Integer> sendJoinRequest(boolean recon,
+    @Nullable private T2<TcpDiscoveryIoSession, Integer> sendJoinRequest(boolean recon,
         InetSocketAddress addr) throws InterruptedException {
         assert addr != null;
 
@@ -731,7 +731,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     if (log.isInfoEnabled())
                         log.info("Reconnecting to the addresses of a proper DC [addrs=" + redirectAddrs + ']');
 
-                    T2<Boolean, T2<SocketStream, Integer>> redirectedRes = sendJoinRequests(recon, redirectAddrs);
+                    T2<Boolean, T2<TcpDiscoveryIoSession, Integer>> redirectedRes = sendJoinRequests(recon, redirectAddrs);
 
                     return redirectedRes.get2();
                 }
