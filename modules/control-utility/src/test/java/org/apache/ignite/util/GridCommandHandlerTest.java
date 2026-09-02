@@ -78,6 +78,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -117,6 +118,10 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -136,7 +141,11 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -240,20 +249,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected @Nullable Supplier<TcpCommunicationSpi> communicationSpiSupp;
 
+    /** */
+    protected @Nullable PluginProvider pluginProvider;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         initDiagnosticDir();
 
-        cleanDiagnosticDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        listeningLog = null;
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -272,6 +277,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         if (communicationSpiSupp != null)
             cfg.setCommunicationSpi(communicationSpiSupp.get());
+
+        if (pluginProvider != null)
+            cfg.setPluginProviders(pluginProvider);
 
         return cfg;
     }
@@ -469,7 +477,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param checkCrc If {@code true} then run idle verify with --check-crc argument.
      * @param waitAtStart If {@code true} then forces nodes to wait after the procedure start and to proceed only after
      *                    the {@code prepare}'s before-latch switched.
-    */
+     */
     private void doTestCancelIdleVerify(
         BiConsumer<CountDownLatch, CountDownLatch> prepare,
         boolean checkCrc,
@@ -1245,7 +1253,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String what = "There is no connectivity between the following nodes";
 
         assertContains(log, out.replaceAll("[\\W_]+", "").trim(),
-                            what.replaceAll("[\\W_]+", "").trim());
+            what.replaceAll("[\\W_]+", "").trim());
     }
 
     /**
@@ -1679,14 +1687,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Test kill by xid.
         validate(h, map -> {
-            assertEquals(1, map.size());
+                assertEquals(1, map.size());
 
-            Map.Entry<ClusterNode, TxTaskResult> killedEntry = map.entrySet().iterator().next();
+                Map.Entry<ClusterNode, TxTaskResult> killedEntry = map.entrySet().iterator().next();
 
-            TxInfo info = killedEntry.getValue().getInfos().get(0);
+                TxInfo info = killedEntry.getValue().getInfos().get(0);
 
-            assertEquals(toKill[0].getXid(), info.getXid());
-        }, "--tx", "--kill",
+                assertEquals(toKill[0].getXid(), info.getXid());
+            }, "--tx", "--kill",
             "--xid", toKill[0].getXid().toString(), // Use saved on first run value.
             "--nodes", grid(0).localNode().consistentId().toString());
 
@@ -1917,8 +1925,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Ignite instase 1 can be logged only in arguments list.
         boolean isInstance1Found = Arrays.stream(testOutStr.split("\n"))
-                                        .filter(s -> s.contains("Arguments:"))
-                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+            .filter(s -> s.contains("Arguments:"))
+            .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 
@@ -3052,7 +3060,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             String expWarn = dataStmrDetected
                 ? DataStreamerUpdatesHandler.WRN_MSG
                 : String.format("Cache partitions differ for cache groups [%s]. ", CU.cacheId(DEFAULT_CACHE_NAME))
-                    + SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
+                  + SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
 
             assertContains(log, out, expWarn);
 
@@ -3668,10 +3676,69 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
 
-    /** Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process. */
+    /**
+     * Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process.
+     * All nodes support the check status.
+     */
     @Test
-    public void testRestoreSnapshotMetricsAtStart() throws Exception {
+    public void testRestoreSnapshotMetricsAtStartAllNodesSupport() throws Exception {
+        doTestRestoreSnapshotMetricsAtStart(null);
+    }
+
+    /**
+     * Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process.
+     * One node doesn't support the check status.
+     */
+    @Test
+    public void testRestoreSnapshotMetricsAtStartOneNodeDoesntSupport() throws Exception {
+        doTestRestoreSnapshotMetricsAtStart(false);
+    }
+
+    /**
+     * Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process.
+     * All nodes don't support the check status.
+     */
+    @Test
+    public void testRestoreSnapshotMetricsAtStartNoSupport() throws Exception {
+        doTestRestoreSnapshotMetricsAtStart(true);
+    }
+
+    /**
+     * @param allNodesNotSupporting Flag of how many nodes don't support the snapshot check status.
+     *                              If {@code null}, all nodes support.
+     *                              If {@code true}, none of nodes support the snapshot check status.
+     *                              If {@code false}, just one node doesn't support the snapshot check status.
+     */
+    private void doTestRestoreSnapshotMetricsAtStart(@Nullable Boolean allNodesNotSupporting) throws Exception {
         communicationSpiSupp = TestRecordingCommunicationSpi::new;
+
+        // Creates empty feature set unsupporting the snpshot check ststus if required.
+        pluginProvider = allNodesNotSupporting == null ? null : new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "Test features provider";
+            }
+
+            @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
+                if (!cls.equals(DiscoveryNodeValidationProcessor.class))
+                    return null;
+
+                assert allNodesNotSupporting != null;
+
+                boolean doNotSupport = allNodesNotSupporting
+                    || ctx.igniteConfiguration().getIgniteInstanceName().equals(getTestIgniteInstanceName(2));
+
+                return (T)new RollingUpgradeProcessor(
+                    ((IgniteEx)ctx.grid()).context(),
+                    doNotSupport ? new IgniteCoreFeatureSet(IgniteVersionUtils.VER, new IgniteFeatureSet()) : IgniteCoreFeatureSet.local()
+                ) {
+                    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode joiningNode) {
+                        return null;
+                    }
+                };
+            }
+        };
+
+        listeningLog = new ListeningTestLogger(log);
 
         startGrids(3).cluster().state(ClusterState.ACTIVE);
 
@@ -3711,17 +3778,37 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
+        LogListener logLsnr = null;
+
+        if (Boolean.FALSE.equals(allNodesNotSupporting)) {
+            logLsnr = LogListener.matches("Node %s doesn't support the snapshot-check-aware status feature"
+                .formatted(grid(2).localNode().id())).build();
+
+            listeningLog.registerListener(logLsnr);
+        } else if (Boolean.TRUE.equals(allNodesNotSupporting)) {
+            logLsnr = LogListener.matches("The snapshot-check-aware status feature isn't enabled").build();
+
+            listeningLog.registerListener(logLsnr);
+        }
+
         int code = execute("--snapshot", "status");
 
-        // Ensures that there is a status despite unstarted restore process.
         assertEquals("Unexpected exit code", EXIT_CODE_OK, code);
 
         var out = testOut.toString();
 
-        assertContains(log, out, "Check snapshot operation is in progress");
-        assertContains(log, out, "Snapshot name: test_snapshot");
-        assertContains(log, out, "Incremental: false");
-        assertContains(log, out, "Estimated operation progress:");
+        if (allNodesNotSupporting == null) {
+            assertContains(log, out, "Check snapshot operation is in progress");
+            assertContains(log, out, "Snapshot name: test_snapshot");
+            assertContains(log, out, "Incremental: false");
+            assertContains(log, out, "Estimated operation progress:");
+        } else {
+            assert logLsnr != null;
+
+            assertTrue(logLsnr.check(getTestTimeout()));
+
+            assertContains(log, out, "There is no create or restore snapshot operation in progress");
+        }
 
         // Ensure that no snapshot restoration started or finished.
         assertFalse("Snapshot future has finished", restoreFut.isDone());
@@ -3961,8 +4048,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setBackups(1));
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1));
 
         cache.put("key", "value");
 
