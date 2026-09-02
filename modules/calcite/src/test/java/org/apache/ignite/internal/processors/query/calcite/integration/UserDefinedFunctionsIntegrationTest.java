@@ -96,6 +96,27 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testOverloadedFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("overloaded-functions")
+            .setSqlSchema("UDF")
+            .setSqlFunctionClasses(OverloadedFunctionsLibrary.class));
+
+        SchemaPlus schema = queryProcessor(client).schemaHolder().schema("UDF");
+
+        assertEquals(2, schema.getFunctions("OVERLOADED").size());
+        assertEquals(2, schema.getFunctions("OVERLOADED_TABLE").size());
+        assertEquals(1, schema.getFunctions("SQL_EQUIVALENT").size());
+        assertEquals(1, schema.getFunctions("SQL_EQUIVALENT_TABLE").size());
+
+        assertQuery("SELECT UDF.OVERLOADED(1, 'a')").returns("1a").check();
+        assertQuery("SELECT UDF.OVERLOADED('a', 1)").returns("a1").check();
+
+        assertQuery("SELECT * FROM TABLE(UDF.OVERLOADED_TABLE(1, 'a'))").returns("1a").check();
+        assertQuery("SELECT * FROM TABLE(UDF.OVERLOADED_TABLE('a', 1))").returns("a1").check();
+    }
+
+    /** */
+    @Test
     public void testSystemFunctionOverriding() throws Exception {
         // To a custom schema.
         client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEST_CACHE_OWN")
@@ -827,6 +848,57 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         /** */
         @Override public String toString() {
             return "CustomClass.toString";
+        }
+    }
+
+    /** */
+    public static class OverloadedFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static String overloaded(int i, String s) {
+            return i + s;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String overloaded(String s, int i) {
+            return s + i;
+        }
+
+        /** */
+        @QuerySqlFunction(alias = "SQL_EQUIVALENT")
+        public static String sqlEquivalent(int i) {
+            return String.valueOf(i);
+        }
+
+        /** */
+        @QuerySqlFunction(alias = "SQL_EQUIVALENT")
+        public static String sqlEquivalent(Integer i) {
+            return String.valueOf(i);
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "OVERLOADED_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> overloadedTable(int i, String s) {
+            return List.of(List.of(i + s));
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "OVERLOADED_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> overloadedTable(String s, int i) {
+            return List.of(List.of(s + i));
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "SQL_EQUIVALENT_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> sqlEquivalentTable(int i) {
+            return List.of(List.of(String.valueOf(i)));
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "SQL_EQUIVALENT_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> sqlEquivalentTable(Integer i) {
+            return List.of(List.of(String.valueOf(i)));
         }
     }
 }
