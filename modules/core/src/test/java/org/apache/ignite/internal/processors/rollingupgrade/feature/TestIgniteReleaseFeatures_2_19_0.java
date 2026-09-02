@@ -21,7 +21,4 @@ package org.apache.ignite.internal.processors.rollingupgrade.feature;
 public class TestIgniteReleaseFeatures_2_19_0 {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
-
-    /** */
-    public static final IgniteFeature SNAPSHOT_CHECK_STATUS_FEATURE = new IgniteCoreFeature(1);
 }

@@ -83,10 +83,8 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         var feature = new IgniteCoreFeature(SupportedFeatureRegistry.SNAPSHOT_CHECK_STATUS_FEATURE.id());
 
         if (!ignite.context().rollingUpgrade().features().isActive(feature)) {
-            if (log.isInfoEnabled()) {
-                log.info("The snapshot-check-aware status feature isn't enabled. The status is available only for " +
-                    "snapshot creation and restoration.");
-            }
+            log.warning("The snapshot-check-aware status feature isn't enabled. The status is available only for " +
+                "snapshot creation and restoration.");
 
             checkStatusSupported = false;
 
@@ -95,13 +93,11 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
 
         for (var n : ignite.cluster().nodes()) {
             if (!(n instanceof IgniteClusterNode cn) || !cn.features().contains(feature)) {
-                if (log.isInfoEnabled()) {
-                    log.info(String.format(
-                        "Node %s doesn't support the snapshot-check-aware status feature. The status is available only " +
-                            "for snapshot creation and restoration.",
-                        n.id()
-                    ));
-                }
+                log.warning(String.format(
+                    "Node %s doesn't support the snapshot-check-aware status feature. The status is available only " +
+                        "for snapshot creation and restoration.",
+                    n.id()
+                ));
 
                 checkStatusSupported = false;
 
