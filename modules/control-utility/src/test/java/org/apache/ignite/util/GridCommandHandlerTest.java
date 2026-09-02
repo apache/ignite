@@ -3723,14 +3723,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, out, "Incremental: false");
         assertContains(log, out, "Estimated operation progress:");
 
-        // Let's suppose the restoration could start and wait for a while.
-        Thread.sleep(3000L);
-
         // Ensure that no snapshot restoration started or finished.
         assertFalse("Snapshot future has finished", restoreFut.isDone());
 
         for (var cm : Arrays.asList(cm1, cm2)) {
-            // Ensure that nthe restoration process didn't start.
+            // Ensure that the restore process didn't start.
             assertTrue(cm.blockedMessages().stream().noneMatch(
                 m -> m.ioMessage().message() instanceof SingleNodeMessage<?> sm
                     && sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())
@@ -3740,7 +3737,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
 
         // Wait for future to finish in order to avoid excessive message about task cancellation.
-        restoreFut.get();
+        restoreFut.get(getTestTimeout());
     }
 
     /** @throws Exception If fails. */

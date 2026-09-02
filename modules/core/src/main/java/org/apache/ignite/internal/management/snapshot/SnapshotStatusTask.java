@@ -94,20 +94,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         }
 
         for (var n : ignite.cluster().nodes()) {
-            if (!(n instanceof IgniteClusterNode)) {
-                if (log.isInfoEnabled()) {
-                    log.info(String.format(
-                        "Cannot extract features of node %s. The status is available only for snapshot creation and restoration.",
-                        n.id()
-                    ));
-                }
-
-                checkStatusSupported = false;
-
-                return;
-            }
-
-            if (!((IgniteClusterNode)n).features().contains(feature)) {
+            if (!(n instanceof IgniteClusterNode cn) || !cn.features().contains(feature)) {
                 if (log.isInfoEnabled()) {
                     log.info(String.format(
                         "Node %s doesn't support the snapshot-check-aware status feature. The status is available only " +
@@ -141,16 +128,16 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         if (error != null)
             throw new IgniteException("Failed to get the snapshot status.", error);
 
-        Collection<SnapshotStatus> res0 = F.viewReadOnly(results, ComputeJobResult::getData, r -> r.getData() != null);
+        Collection<SnapshotStatus> res = F.viewReadOnly(results, ComputeJobResult::getData, r -> r.getData() != null);
 
         // There is no snapshot operation.
-        if (res0.isEmpty())
+        if (res.isEmpty())
             return null;
 
-        SnapshotStatus firstRes = F.first(res0);
+        SnapshotStatus firstRes = F.first(res);
 
         // Filter out differing requests due to concurrent updates on nodes.
-        Collection<SnapshotStatus> sameRqRes = F.view(res0, s -> s.reqId.equals(firstRes.reqId));
+        Collection<SnapshotStatus> sameRqRes = F.view(res, s -> s.reqId.equals(firstRes.reqId));
 
         if (firstRes instanceof SnapshotStatusV2 firstResV2) {
             assert !F.isEmpty(firstResV2.allCheckStatuses);
@@ -218,10 +205,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                     metrics = new T5<>(
                         mreg.<LongMetric>findMetric("CurrentSnapshotProcessedSize").value(),
                         mreg.<LongMetric>findMetric("CurrentSnapshotTotalSize").value(),
-                        -1L,
-                        -1L,
-                        -1L
-                    );
+                        -1L, -1L, -1L);
                 }
 
                 return new SnapshotStatus(
