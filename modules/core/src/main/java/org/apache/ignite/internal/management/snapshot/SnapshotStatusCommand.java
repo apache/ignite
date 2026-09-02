@@ -65,8 +65,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             return;
         }
 
-        boolean isCreating = SnapshotStatusTask.SnapshotOperation.CREATE == status.operation();
-        boolean isRestoring = SnapshotStatusTask.SnapshotOperation.RESTORE == status.operation();
+        boolean isCreating = status.operation() == SnapshotStatusTask.SnapshotOperation.CREATE;
+        boolean isRestoring = status.operation() == SnapshotStatusTask.SnapshotOperation.RESTORE;
         boolean isIncremental = status.incrementIndex() > 0;
 
         assert (status instanceof SnapshotStatusTask.SnapshotStatusV2) == !(isCreating || isRestoring);
