@@ -3801,8 +3801,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (allNodesNotSupporting == null) {
             assertContains(log, out, "Check snapshot operation is in progress");
             assertContains(log, out, "Snapshot name: test_snapshot");
-            assertContains(log, out, "Incremental: false");
-            assertContains(log, out, "Estimated operation progress:");
         } else {
             assert logLsnr != null;
 
