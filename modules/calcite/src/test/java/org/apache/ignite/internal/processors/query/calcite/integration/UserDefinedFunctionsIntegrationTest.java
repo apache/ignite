@@ -21,7 +21,9 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
@@ -465,6 +467,43 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testBinaryFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("binary-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BinaryFunctionsLibrary.class));
+
+        byte[] bytes = {1, 2, 3};
+        Consumer<List<List<?>>> binaryResultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertEqualsArraysAware(bytes, rows.get(0).get(0));
+        };
+
+        // Scalar function arguments.
+        assertQuery("SELECT binaryLength(x'010203')").returns(3).check();
+        assertQuery("SELECT binaryLength(?)").withParams(bytes).returns(3).check();
+
+        // Scalar function results.
+        assertQuery("SELECT binaryValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(x'010203')").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(binaryValue())").returns(3).check();
+
+        // Table function results.
+        assertQuery("SELECT * FROM binaryTableValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT * FROM binaryTable(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(bytes) FROM binaryTableValue()").returns(3).check();
+        assertQuery("SELECT binaryLength(bytes) FROM binaryTableValue()").returns(3).check();
+
+        // Table function arguments.
+        assertQuery("SELECT * FROM binaryTableLength(x'010203')").returns(3).check();
+        assertQuery("SELECT * FROM binaryTableLength(?)").withParams(bytes).returns(3).check();
+        assertQuery("SELECT * FROM TABLE(binaryTableLength(binaryValue()))").returns(3).check();
+        assertQuery("SELECT * FROM binaryTable(x'010203')").withResultChecker(binaryResultChecker).check();
+    }
+
+    /** */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
@@ -827,6 +866,45 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         /** */
         @Override public String toString() {
             return "CustomClass.toString";
+        }
+    }
+
+    /** */
+    public static class BinaryFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static int binaryLength(byte[] bytes) {
+            return bytes.length;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryValue() {
+            return new byte[] {1, 2, 3};
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryEcho(byte[] bytes) {
+            return bytes;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {int.class}, columnNames = {"LENGTH"})
+        public static Iterable<Object[]> binaryTableLength(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes.length});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTableValue() {
+            return Collections.singletonList(new Object[] {new byte[] {1, 2, 3}});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTable(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes});
         }
     }
 }

@@ -309,7 +309,7 @@ public class TypeUtils {
 
     /** */
     private static Function<Object, Object> fieldConverter(ExecutionContext<?> ectx, RelDataType fieldType) {
-        Type storageType = ectx.getTypeFactory().getJavaClass(fieldType);
+        Type storageType = SqlTypeUtil.isBinary(fieldType) ? byte[].class : ectx.getTypeFactory().getJavaClass(fieldType);
 
         if (isConvertableType(storageType))
             return v -> fromInternal(ectx, v, storageType);
@@ -331,7 +331,7 @@ public class TypeUtils {
     /** */
     private static boolean hasConvertableFields(RelDataType resultType) {
         return RelOptUtil.getFieldTypeList(resultType).stream()
-            .anyMatch(TypeUtils::isConvertableType);
+            .anyMatch(type -> SqlTypeUtil.isBinary(type) || isConvertableType(type));
     }
 
     /** */

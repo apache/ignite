@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -66,6 +68,22 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
 
-        return rowFactory.create(rowArr);
+        return rowFactory.create(convertBinaryColumns(rowArr));
+    }
+
+    /** Converts binary column values to the internal representation. */
+    private Object[] convertBinaryColumns(Object[] row) {
+        Object[] convertedRow = row;
+
+        for (int i = 0; i < row.length; i++) {
+            if (row[i] instanceof byte[] && SqlTypeUtil.isBinary(rowType.getFieldList().get(i).getType())) {
+                if (convertedRow == row)
+                    convertedRow = row.clone();
+
+                convertedRow[i] = new ByteString((byte[])row[i]);
+            }
+        }
+
+        return convertedRow;
     }
 }
