@@ -205,9 +205,9 @@ class ClientImpl extends TcpDiscoveryImpl {
     ClientImpl(TcpDiscoverySpi adapter) {
         super(adapter);
 
-        String instanceName = adapter.ignite().name() == null ? "client-node" : adapter.ignite().name();
+        String instanceName = ctx.igniteInstanceName();
 
-        executorSrvc = newSingleThreadScheduledExecutor("tcp-discovery-exec", instanceName);
+        executorSrvc = newSingleThreadScheduledExecutor("tcp-discovery-exec", instanceName == null ? "client-node" : instanceName);
     }
 
     /** {@inheritDoc} */
@@ -1090,7 +1090,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          */
         SocketReader() {
-            super(spi.ignite().name(), "tcp-client-disco-sock-reader-[]", log);
+            super(ctx.igniteInstanceName(), "tcp-client-disco-sock-reader-[]", log);
         }
 
         /**
@@ -1263,7 +1263,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          *
          */
         SocketWriter() {
-            super(spi.ignite().name(), "tcp-client-disco-sock-writer", log);
+            super(ctx.igniteInstanceName(), "tcp-client-disco-sock-writer", log);
 
             sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
                 spi.getSocketTimeout();
@@ -1513,7 +1513,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param prevAddr Address of the node, that this client was previously connected to.
          */
         protected Reconnector(boolean join, InetSocketAddress prevAddr) {
-            super(spi.ignite().name(), "tcp-client-disco-reconnector", log);
+            super(ctx.igniteInstanceName(), "tcp-client-disco-reconnector", log);
 
             this.join = join;
             this.prevAddr = prevAddr;
@@ -1678,7 +1678,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private MessageWorker(IgniteLogger log) {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, ctx.workersRegistry());
+            super(ctx.igniteInstanceName(), "tcp-client-disco-msg-worker", log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -2198,7 +2198,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             if (joining())
                                 delayDiscoData.add(dataPacket);
                             else
-                                spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                                spi.onExchange(dataPacket, U.resolveClassLoader(ctx.config()));
                         }
                     }
                 }
@@ -2232,11 +2232,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                     DiscoveryDataPacket dataContainer = msg.clientDiscoData();
 
                     if (dataContainer != null)
-                        spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
+                        spi.onExchange(dataContainer, U.resolveClassLoader(ctx.config()));
 
                     if (!delayDiscoData.isEmpty()) {
                         for (DiscoveryDataPacket data : delayDiscoData)
-                            spi.onExchange(data, U.resolveClassLoader(spi.ignite().configuration()));
+                            spi.onExchange(data, U.resolveClassLoader(ctx.config()));
 
                         delayDiscoData.clear();
                     }

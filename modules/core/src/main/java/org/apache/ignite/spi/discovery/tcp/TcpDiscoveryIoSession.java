@@ -76,6 +76,9 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     private final MessageFactory<?> msgFactory;
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private final Socket sock;
 
     /** */
@@ -99,7 +102,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
-     * @param ctx Kernel context.
+     * @param ctx Kernal context.
      * @param sock Socket connected to a remote discovery node.
      * @throws IgniteException If an I/O error occurs while initializing buffers.
      */
@@ -107,6 +110,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
         this.sock = sock;
         this.ctx = ctx;
         this.msgFactory = ctx.messageFactory();
+        this.log = ctx.log(getClass());
 
         readBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
         writeBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
@@ -240,16 +244,14 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
     /** @return SSL certificate this session is established with. {@code null} if SSL is disabled or certificate validation failed. */
     @Nullable Certificate[] extractCertificates() {
-        boolean isSslEnabled = ctx.config().getSslContextFactory() != null;
-
-        if (!isSslEnabled)
+        if (!(sock instanceof SSLSocket))
             return null;
 
         try {
             return ((SSLSocket)sock).getSession().getPeerCertificates();
         }
         catch (SSLPeerUnverifiedException e) {
-            U.error(ctx.log(getClass()), "Failed to extract discovery IO session certificates", e);
+            U.error(log, "Failed to extract discovery IO session certificates", e);
 
             return null;
         }

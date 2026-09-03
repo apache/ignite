@@ -360,7 +360,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         super(adapter);
 
         utilityPool = new IgniteThreadPoolExecutor("disco-pool",
-            spi.ignite().name(),
+            ctx.igniteInstanceName(),
             0,
             utilityPoolSize,
             2000,
@@ -2247,7 +2247,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Constructor.
          */
         private IpFinderCleaner() {
-            super(spi.ignite().name(), "tcp-disco-ip-finder-cleaner", log);
+            super(ctx.igniteInstanceName(), "tcp-disco-ip-finder-cleaner", log);
 
             setPriority(spi.threadPri);
         }
@@ -4582,8 +4582,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             DiscoveryDataPacket packet = req.gridDiscoveryData();
 
             try {
-                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(spi.ignite().log(),
-                    spi.ignite().configuration().isClientMode());
+                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(log, ctx.config().isClientMode());
 
                 return spi.getSpiContext().validateNode(req.node(), dataBag);
             }
@@ -4927,7 +4926,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (dataPacket.hasJoiningNodeData()) {
                         if (spiState == CONNECTED) {
                             // Node already connected to the cluster can apply joining nodes' disco data immediately
-                            spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                            spi.onExchange(dataPacket, U.resolveClassLoader(ctx.config()));
 
                             spi.collectExchangeData(dataPacket);
                         }
@@ -5145,11 +5144,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (gridDiscoveryData != null)
-                    spi.onExchange(gridDiscoveryData, U.resolveClassLoader(spi.ignite().configuration()));
+                    spi.onExchange(gridDiscoveryData, U.resolveClassLoader(ctx.config()));
 
                 if (joiningNodesDiscoDataList != null) {
                     for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList)
-                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                        spi.onExchange(dataPacket, U.resolveClassLoader(ctx.config()));
                 }
 
                 nullifyDiscoData();
@@ -6301,7 +6300,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr-[]", log, ctx.workersRegistry());
+            super(ctx.igniteInstanceName(), "tcp-disco-srvr-[]", log, ctx.workersRegistry());
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -6321,7 +6320,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
                             ", localHost=" + spi.locHost +
-                            ", locNodeId=" + spi.ignite().configuration().getNodeId() +
+                            ", locNodeId=" + spi.cfgNodeId +
                             ']');
                     }
 
@@ -6447,7 +6446,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param sock Socket to read data from.
          */
         SocketReader(Socket sock) {
-            super(spi.ignite().name(), "tcp-disco-sock-reader-[]", log);
+            super(ctx.igniteInstanceName(), "tcp-disco-sock-reader-[]", log);
 
             this.sock = sock;
 
@@ -7446,7 +7445,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Constructor.
          */
         StatisticsPrinter() {
-            super(spi.ignite().name(), "tcp-disco-stats-printer", log);
+            super(ctx.igniteInstanceName(), "tcp-disco-stats-printer", log);
 
             assert spi.statsPrintFreq > 0;
 
@@ -7863,7 +7862,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             @Nullable GridWorkerListener lsnr,
             BlockingDeque<T> queue
         ) {
-            super(spi.ignite().name(), name, log, lsnr);
+            super(ctx.igniteInstanceName(), name, log, lsnr);
 
             this.queue = queue;
             this.pollingTimeout = pollingTimeout;
@@ -8086,7 +8085,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             rmtDcPingPool = new IgniteThreadPoolExecutor(
                 "disco-remote-dc-ping-worker",
-                spi.ignite().name(),
+                ctx.igniteInstanceName(),
                 pingRmtDcPoolSz,
                 pingRmtDcPoolSz,
                 0,

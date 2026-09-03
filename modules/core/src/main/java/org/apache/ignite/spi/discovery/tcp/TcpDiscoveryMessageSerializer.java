@@ -36,7 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
  */
 class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
     /**
-     * @param ctx Kernel context.
+     * @param ctx Kernal context.
      */
     public TcpDiscoveryMessageSerializer(GridKernalContext ctx) {
         super(ctx, new Socket() {

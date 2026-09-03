@@ -57,7 +57,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
@@ -2119,11 +2118,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
         }
         catch (IgniteCheckedException e) {
-            if (ignite() instanceof IgniteEx) {
-                FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                failure.process(new FailureContext(CRITICAL_ERROR, e));
-            }
+            ignite.context().failure().process(new FailureContext(CRITICAL_ERROR, e));
 
             throw new IgniteException(e);
         }
