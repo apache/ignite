@@ -39,6 +39,7 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
 /** */
 public class ConverterUtils {
@@ -150,6 +151,64 @@ public class ConverterUtils {
             }
         }
         return list;
+    }
+
+    /** */
+    static List<Expression> fromInternal(RexToLixTranslator translator,
+        Class<?>[] targetTypes,
+        List<Expression> expressions
+    ) {
+        final List<Expression> list = new ArrayList<>();
+
+        if (targetTypes.length == expressions.size()) {
+            for (int i = 0; i < expressions.size(); i++)
+                list.add(fromInternal(translator, expressions.get(i), targetTypes[i]));
+        }
+        else {
+            int j = 0;
+
+            for (Expression expression : expressions) {
+                Class<?> targetType;
+
+                if (!targetTypes[j].isArray()) {
+                    targetType = targetTypes[j];
+                    j++;
+                }
+                else
+                    targetType = targetTypes[j].getComponentType();
+
+                list.add(fromInternal(translator, expression, targetType));
+            }
+        }
+
+        return list;
+    }
+
+    /** */
+    private static Expression fromInternal(RexToLixTranslator translator, Expression operand, Type targetType) {
+        if (Types.isAssignableFrom(targetType, operand.getType()))
+            return operand;
+
+        if (!TypeUtils.isConvertableType(targetType))
+            return targetType == BigDecimal.class ? fromInternal(operand, targetType) :
+                convert(operand, operand.getType(), targetType);
+
+        if (Primitive.is(operand.getType()))
+            operand = Expressions.box(operand);
+
+        Expression converted = Expressions.call(
+            TypeUtils.class,
+            "fromInternal",
+            translator.getRoot(),
+            operand,
+            Expressions.constant(targetType)
+        );
+
+        Primitive primitive = Primitive.of(targetType);
+
+        return primitive == null
+            ? Expressions.convert_(converted, targetType)
+            : Expressions.unbox(Expressions.convert_(converted, primitive.boxClass), primitive);
     }
 
     /** */

@@ -18,9 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,7 +45,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     /** Column names of the returned table representation. */
     private final List<String> colNames;
 
-    /** Function parameters. */
+    /** */
     private final List<FunctionParameter> funcParams;
 
     /**
@@ -66,7 +64,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
         this.colTypes = colTypes;
         this.colNames = Arrays.asList(colNames);
 
-        funcParams = sqlParameters(method, super.getParameters());
+        funcParams = IgniteFunctionParameter.toSql(super.getParameters());
     }
 
     /**
@@ -88,7 +86,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, List<?> arguments) {
         JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
 
-        List<RelDataType> converted = Stream.of(colTypes).map(cl -> tf.toSql(tf.createType(cl))).collect(Collectors.toList());
+        List<RelDataType> converted = Stream.of(colTypes).map(cl -> tf.toSql(tf.createJavaType(cl))).collect(Collectors.toList());
 
         return typeFactory.createStructType(converted, colNames);
     }
@@ -144,44 +142,5 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
             .collect(Collectors.joining(", ")) + ')';
 
         throw new IgniteSQLException("Unable to create table function for method '" + mtdSign + "'. " + errPostfix);
-    }
-
-    /** Returns function parameters represented as SQL types where required. */
-    private static List<FunctionParameter> sqlParameters(Method method, List<FunctionParameter> functionParameters) {
-        var res = new ArrayList<>(functionParameters);
-
-        for (int i = 0; i < method.getParameterTypes().length; i++) {
-            if (method.getParameterTypes()[i] == byte[].class)
-                res.set(i, sqlBinaryParameter(res.get(i)));
-        }
-
-        return Collections.unmodifiableList(res);
-    }
-
-    /** Prevents Calcite from evaluating binary literals while deriving a table function row type. */
-    private static FunctionParameter sqlBinaryParameter(FunctionParameter delegate) {
-        return new FunctionParameter() {
-            /** {@inheritDoc} */
-            @Override public int getOrdinal() {
-                return delegate.getOrdinal();
-            }
-
-            /** {@inheritDoc} */
-            @Override public String getName() {
-                return delegate.getName();
-            }
-
-            /** {@inheritDoc} */
-            @Override public RelDataType getType(RelDataTypeFactory typeFactory) {
-                JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
-
-                return tf.toSql(tf.createType(byte[].class));
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isOptional() {
-                return delegate.isOptional();
-            }
-        };
     }
 }
