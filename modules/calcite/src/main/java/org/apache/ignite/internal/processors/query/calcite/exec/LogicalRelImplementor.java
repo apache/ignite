@@ -768,7 +768,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
-        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(rowType, dataSupplier, rowFactory));
+        boolean emptyStrIsNull = IgniteSqlSemantics.emptyStringIsNull(ctx.unwrap(IgniteSqlSemantics.class));
+
+        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(rowType, dataSupplier, rowFactory, emptyStrIsNull));
     }
 
     /** {@inheritDoc} */

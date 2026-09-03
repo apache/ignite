@@ -27,8 +27,12 @@ public final class IgniteSqlSemantics {
     private final RoundingMode paginationRoundingMode;
 
     /** */
+    private final boolean emptyStrIsNull;
+
+    /** */
     private IgniteSqlSemantics(Builder builder) {
         paginationRoundingMode = builder.paginationRoundingMode;
+        emptyStrIsNull = builder.emptyStrIsNull;
     }
 
     /** Returns a new builder initialized with default settings. */
@@ -41,10 +45,25 @@ public final class IgniteSqlSemantics {
         return paginationRoundingMode;
     }
 
+    /**
+     * Returns whether empty string in literals, parameters, SQL writes, expression results, and UDF/UDTF
+     * inputs and outputs are treated as {@code null}.
+     *
+     * <p>The setting must be identical on all cluster nodes and should only be enabled on a new cluster. Existing
+     * empty strings and indexes built for them may otherwise produce inconsistent query results. The setting affects
+     * SQL only; values written through key-value APIs must be normalized by the user.
+     */
+    public boolean emptyStringIsNull() {
+        return emptyStrIsNull;
+    }
+
     /** */
     public static final class Builder {
         /** */
         private RoundingMode paginationRoundingMode = IgniteMath.NUMERIC_ROUNDING_MODE;
+
+        /** */
+        private boolean emptyStrIsNull;
 
         /** */
         private Builder() {
@@ -58,6 +77,20 @@ public final class IgniteSqlSemantics {
             return this;
         }
 
+        /**
+         * Sets whether empty string in literals, parameters, SQL writes, expression results, and UDF/UDTF
+         * inputs and outputs should be treated as {@code null}.
+         *
+         * <p>The value must be identical on all cluster nodes and should only be enabled on a new cluster. Existing
+         * empty strings and indexes built for them may otherwise produce inconsistent query results. The setting
+         * affects SQL only; values written through key-value APIs must be normalized by the user.
+         */
+        public Builder emptyStringIsNull(boolean emptyStrIsNull) {
+            this.emptyStrIsNull = emptyStrIsNull;
+
+            return this;
+        }
+
         /** */
         public IgniteSqlSemantics build() {
             return new IgniteSqlSemantics(this);
@@ -67,5 +100,10 @@ public final class IgniteSqlSemantics {
     /** Rounds the given pagination value according to the specified SQL semantics and converts it to {@code long}. */
     public static long convertPaginationValueToLong(Number value, @Nullable IgniteSqlSemantics sem) {
         return sem == null ? IgniteMath.convertToLongExact(value) : IgniteMath.convertToLongExact(value, sem.paginationRoundingMode());
+    }
+
+    /** Returns whether empty string is treated as {@code null} by the specified SQL semantics. */
+    public static boolean emptyStringIsNull(@Nullable IgniteSqlSemantics sem) {
+        return sem != null && sem.emptyStrIsNull;
     }
 }

@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToLixTran
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
@@ -108,6 +109,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     private final RexBuilder rexBuilder;
 
     /** */
+    private final boolean emptyStrIsNull;
+
+    /** */
     private static final RelDataType EMPTY_TYPE = new RelDataTypeFactory.Builder(Commons.typeFactory()).build();
 
     /** */
@@ -130,6 +134,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         this.typeFactory = typeFactory;
         this.conformance = conformance;
         this.rexBuilder = rexBuilder;
+
+        emptyStrIsNull = IgniteSqlSemantics.emptyStringIsNull(ctx.unwrap(IgniteSqlSemantics.class));
     }
 
     /** {@inheritDoc} */
@@ -549,7 +555,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         Function1<String, InputGetter> correlates = new CorrelatesBuilder(builder, ctx_, hnd_).build(nodes);
 
         List<Expression> projects = RexToLixTranslator.translateProjects(program, typeFactory, conformance,
-            builder, null, ctx_, inputGetter, correlates);
+            builder, null, ctx_, inputGetter, correlates, emptyStrIsNull);
 
         assert nodes.size() == projects.size();
 
@@ -618,6 +624,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         }
 
         b.append(", biParam=").append(biParam);
+        b.append(", emptyStrIsNull=").append(emptyStrIsNull);
 
         b.append(']');
 

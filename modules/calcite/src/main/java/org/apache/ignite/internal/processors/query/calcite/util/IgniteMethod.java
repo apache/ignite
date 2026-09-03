@@ -89,6 +89,21 @@ public enum IgniteMethod {
     /** See {@link IgniteSqlFunctions#toByteString(String)} */
     STRING_TO_BYTESTRING(IgniteSqlFunctions.class, "toByteString", String.class),
 
+    /** See {@link IgniteSqlFunctions#nullIfEmpty(String)} */
+    NULL_IF_EMPTY(IgniteSqlFunctions.class, "nullIfEmpty", String.class),
+
+    /** See {@link IgniteSqlFunctions#posixRegexCaseSensitive(String, String)} */
+    POSIX_REGEX_CASE_SENSITIVE(IgniteSqlFunctions.class, "posixRegexCaseSensitive", String.class, String.class),
+
+    /** See {@link IgniteSqlFunctions#posixRegexCaseInsensitive(String, String)} */
+    POSIX_REGEX_CASE_INSENSITIVE(IgniteSqlFunctions.class, "posixRegexCaseInsensitive", String.class, String.class),
+
+    /** See {@link IgniteSqlFunctions#negatedPosixRegexCaseSensitive(String, String)} */
+    NEGATED_POSIX_REGEX_CASE_SENSITIVE(IgniteSqlFunctions.class, "negatedPosixRegexCaseSensitive", String.class, String.class),
+
+    /** See {@link IgniteSqlFunctions#negatedPosixRegexCaseInsensitive(String, String)} */
+    NEGATED_POSIX_REGEX_CASE_INSENSITIVE(IgniteSqlFunctions.class, "negatedPosixRegexCaseInsensitive", String.class, String.class),
+
     /** See {@link IgniteSqlFunctions#least2(Object, Object)} */
     LEAST2(IgniteSqlFunctions.class, "least2", Object.class, Object.class),
 

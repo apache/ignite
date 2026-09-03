@@ -61,6 +61,7 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -722,7 +723,17 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 return type;
         }
 
-        return super.deriveType(scope, expr);
+        RelDataType type = super.deriveType(scope, expr);
+
+        if (IgniteSqlSemantics.emptyStringIsNull(sqlSem)
+            && expr instanceof SqlCall && !((SqlCall)expr).getOperator().isAggregator()
+            && expr.getKind() != SqlKind.AS && expr.getKind() != SqlKind.CAST
+            && SqlTypeUtil.isCharacter(type) && !type.isNullable()) {
+            type = typeFactory.createTypeWithNullability(type, true);
+            setValidatedNodeType(expr, type);
+        }
+
+        return type;
     }
 
     /** */
@@ -814,6 +825,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override public SqlLiteral resolveLiteral(SqlLiteral literal) {
+        // Replace it before type inference so an empty string literal has a nullable SQL type.
+        if (IgniteSqlSemantics.emptyStringIsNull(sqlSem)
+            && literal.getTypeName().getFamily() == SqlTypeFamily.CHARACTER
+            && literal.getValueAs(String.class).isEmpty()) {
+            return SqlLiteral.createNull(literal.getParserPosition());
+        }
+
         if (literal instanceof SqlNumericLiteral && literal.createSqlType(typeFactory).getSqlTypeName() == SqlTypeName.BIGINT) {
             BigDecimal bd = literal.getValueAs(BigDecimal.class);
 
