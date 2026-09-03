@@ -1493,7 +1493,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             // since remote node may leave in the middle of the first iteration.
             joinReqSent = false;
 
-            boolean openSock = false;
+            boolean openSes = false;
 
             TcpDiscoveryIoSession ses = null;
 
@@ -1502,7 +1502,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 ses = spi.openSession(addr, timeoutHelper);
 
-                openSock = true;
+                openSes = true;
 
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId, locNode.features());
 
@@ -1629,7 +1629,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!spi.failureDetectionTimeoutEnabled() && ++reconCnt == spi.getReconnectCount())
                     break;
 
-                if (!openSock) {
+                if (!openSes) {
                     // Reconnect for the second time, if connection is not established.
                     if (connectAttempts < 2) {
                         connectAttempts++;

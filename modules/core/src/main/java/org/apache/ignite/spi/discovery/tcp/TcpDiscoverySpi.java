@@ -1874,14 +1874,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Reads and verifies the {@code U.IGNITE_HEADER} an incoming connection is expected to start with.
-     * See {@link #openSession(Socket, InetSocketAddress, IgniteSpiOperationTimeoutHelper)} writing this prefix.
+     * Reads and verifies the {@code U.IGNITE_HEADER} with which an incoming connection is expected to start.
+     * See {@link #openSession(Socket, InetSocketAddress, IgniteSpiOperationTimeoutHelper)} for writing this prefix.
+     *
+     * <p>If the {@code U.IGNITE_HEADER} is not received within the specified timeout or its value is unexpected, the
+     * IO session remains open and its handling is left to the caller.</p>
      *
      * @param ses IO session.
      * @param timeout Operation timeout.
-     * @return {@code true} if the Ignite header was successfully read during the specified timeout,
-     *      {@code false} otherwise.
-     * @throws IOException If IO failed or read timed out.
+     * @return {@code true} if the Ignite header was successfully read within the specified timeout, {@code false} otherwise.
+     * @throws IOException If an I/O error occurs or the read times out.
      */
     protected boolean readMagicHeader(TcpDiscoveryIoSession ses, long timeout) throws IOException {
         byte[] buf = new byte[U.IGNITE_HEADER.length];
