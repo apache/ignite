@@ -25,12 +25,12 @@ link:monitoring-metrics/new-metrics-system[Metric System].
 Custom Metrics are local and are bound only to the local node.
 ====
 
-== Custom metric creation
+== Custom Metric Creation
 
 To register a custom metric, you need to add a new link:monitoring-metrics/new-metrics-system#registry[registry] first.
 After that, metrics can be added to this registry.
 
-=== Custom metric registry
+=== Custom Metric Registry
 
 You can create custom metric registries via the `IgniteMetrics` interface which is obtained by `Ignite.metrics()`.
 
@@ -40,7 +40,7 @@ You can create custom metric registries via the `IgniteMetrics` interface which 
 * `void remove(String registryName)` removes the entire custom metric registry.
 
 
-=== Adding a metric to a registry
+=== Adding a Metric to a Registry
 
 To register a new custom metric, use the `MetricRegistry` interface which is obtained by `IgniteMetrics.getOrCreate(...)`.
 
@@ -51,7 +51,7 @@ To register a new custom metric, use the `MetricRegistry` interface which is obt
 * `void remove(String name);` removes a metric.
 
 
-== Naming convention
+== Naming Convention
 Names of the custom metrics (and its registries) are similar to the names of internal metrics. The name can have dot-separated
 parts like 'process.status.suspended'.
 

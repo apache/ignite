@@ -256,7 +256,7 @@ counters, for example `[3, 15, 2]`. Bucket bounds are not exposed there yet, so 
 JMX, the OpenCensus exporter, or `control.sh --metric`, where every bucket name carries its bounds.
 
 
-== Common monitoring tasks
+== Common Monitoring Tasks
 === Monitoring the Amount of Data
 
 If you do not use link:persistence/native-persistence[Native persistence] (i.e., all your data is kept in memory), you would want to monitor RAM usage.

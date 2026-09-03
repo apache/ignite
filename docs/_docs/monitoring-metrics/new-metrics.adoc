@@ -251,7 +251,7 @@ Register name: `io.statistics.cacheGroups.{group_name}`
 |===
 
 
-== Sorted Indexes I/O statistics
+== Sorted Indexes I/O Statistics
 
 Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 
@@ -267,7 +267,7 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 |startTime|   long|    Statistics collection start time
 |===
 
-== Sorted Indexes operations
+== Sorted Indexes Operations
 
 Contains metrics about low-level operations (such as `Insert`, `Search`, etc.) on pages of sorted secondary indexes.
 
@@ -281,7 +281,7 @@ Register name: `index.{schema_name}.{table_name}.{index_name}`
 |===
 
 
-== Hash Indexes I/O statistics
+== Hash Indexes I/O Statistics
 
 Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
 
@@ -485,7 +485,7 @@ Register name: `cluster`
 |TotalServerNodes| integer | Server nodes count.
 |===
 
-== Cache processor
+== Cache Processor
 
 Cache processor metrics.
 
@@ -499,7 +499,7 @@ Register name: `cache`
 |DataVersionClusterId| integer | Data version cluster id.
 |===
 
-== SQL parser metrics
+== SQL Parser Metrics
 
 Register name: `sql.parser.cache`
 
@@ -510,7 +510,7 @@ Register name: `sql.parser.cache`
 |misses| long | The number of SQL queries that were parsed and planned.
 |===
 
-== SQL executor metrics
+== SQL Executor Metrics
 
 Register name: `sql.queries.user`
 
