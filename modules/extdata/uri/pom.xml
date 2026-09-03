@@ -79,6 +79,8 @@
         <bad-signed.clr>bad-signed</bad-signed.clr>
         <bad-signed.jar>${bad-signed.fn}-${bad-signed.clr}.jar</bad-signed.jar>
 
+        <javax.mail.version>1.6.2</javax.mail.version>
+
     </properties>
 
     <build>
@@ -229,6 +231,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.sun.mail</groupId>
+                        <artifactId>javax.mail</artifactId>
+                        <version>${javax.mail.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>jar-badly-signed</id>
@@ -287,6 +296,8 @@
                                 <zip destfile="${basedir}/target/classes/lib/depend.jar" encoding="UTF-8">
                                     <zipfileset dir="modules/uri-dependency/target/classes" />
                                 </zip>
+
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/${javax.mail.version}/javax.mail-${javax.mail.version}.jar" todir="${basedir}/target/classes/lib" />
 
                                 <!--uri-libs.gar-->
                                 <gar destfile="${basedir}/target/deploy2/uri-libs.gar" basedir="${basedir}/target/classes/lib" />
