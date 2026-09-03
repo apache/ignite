@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.core.Exchange;
+import org.apache.calcite.rel.core.Join;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
@@ -27,8 +29,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -59,23 +62,20 @@ public class PlanSplitterTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testSplitterColocatedPartitionedPartitioned() throws Exception {
+        ColocationGroup assignments = ColocationGroup.forAssignments(List.of(
+            select(nodes, 0, 1),
+            select(nodes, 1, 2),
+            select(nodes, 2, 0),
+            select(nodes, 0, 1),
+            select(nodes, 1, 2)
+        ));
+
         IgniteSchema schema = createSchema(
             IgniteDistributions.affinity(0, "Developer", "hash"),
-            ColocationGroup.forAssignments(Arrays.asList(
-                select(nodes, 0, 1),
-                select(nodes, 1, 2),
-                select(nodes, 2, 0),
-                select(nodes, 0, 1),
-                select(nodes, 1, 2)
-            )),
+            assignments,
+
             IgniteDistributions.affinity(0, "Project", "hash"),
-            ColocationGroup.forAssignments(Arrays.asList(
-                select(nodes, 0, 1),
-                select(nodes, 1, 2),
-                select(nodes, 2, 0),
-                select(nodes, 0, 1),
-                select(nodes, 1, 2)
-            ))
+            assignments
         );
 
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
@@ -132,10 +132,14 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
-        // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
-        // fragments split to send data to initiator node.
-        assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
+        // First table is replicated and planned with Exchange to colocate data, but set of nodes for partitioned
+        // table is differ, so exchange is added after fragments split for colocation.
+        assertPlan(sql, schema, hasFragmentsCount(2)
+            .and(nodeOrAnyChild(isInstanceOf(Join.class)
+                .and(hasChildThat(isInstanceOf(IgniteSort.class))
+                    .and(hasChildThat(isTableScan("DEVELOPER")))
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class))
+                    .and(hasChildThat(isTableScan("PROJECT"))))))));
     }
 
     /** */
@@ -159,10 +163,15 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
-        // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
-        // fragments split to send data to initiator node.
-        assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
+        // First table is replicated and planned with Exchange to colocate data, but set of nodes for partitioned
+        // table is differ, so exchange is added after fragments split for colocation.
+        assertPlan(sql, schema, hasFragmentsCount(3)
+            .and(nodeOrAnyChild(isInstanceOf(Join.class)
+                .and(hasChildThat(isInstanceOf(IgniteSort.class))
+                    .and(hasChildThat(isTableScan("DEVELOPER")))
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class))
+                    .and(hasChildThat(isTableScan("PROJECT")))))))
+        );
     }
 
     /** */
@@ -187,9 +196,13 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) = ?";
 
         // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
-        // fragments split to send data to initiator node.
-        assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
+        // table is differ, so exchange is added after fragments split for colocation.
+        assertPlan(sql, schema, hasFragmentsCount(2)
+            .and(nodeOrAnyChild(isInstanceOf(Join.class)
+                .and(hasChildThat(isInstanceOf(IgniteSort.class))
+                    .and(hasChildThat(isTableScan("DEVELOPER")))
+                .and(hasChildThat(isInstanceOf(IgniteExchange.class))
+                    .and(hasChildThat(isTableScan("PROJECT"))))))));
     }
 
     /** */
