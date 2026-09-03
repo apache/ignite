@@ -65,7 +65,7 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(single());
-        iterative = RecursiveCteUtils.markStaticInputs(iterative, table);
+        iterative = RecursiveCteUtils.convertStaticInputs(iterative, table, traits);
 
         return new IgniteRepeatUnion(
             cluster,
