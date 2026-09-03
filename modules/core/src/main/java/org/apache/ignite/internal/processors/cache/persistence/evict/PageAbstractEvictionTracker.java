@@ -41,6 +41,13 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /** Millis in day. */
     private static final int DAY = 24 * 60 * 60 * 1000;
 
+    /**
+     * Thread-local marker that the current eviction is requested by size-aware eviction, which may run
+     * while the calling thread already holds entry locks. When set, entries whose locks are contended are skipped
+     * (via a non-blocking {@code evictInternal}) instead of blocking, avoiding a lock-ordering deadlock.
+     */
+    private static final ThreadLocal<Boolean> EVICT_NON_BLOCKING = new ThreadLocal<>();
+
     /** Page memory. */
     protected final PageMemoryNoStoreImpl pageMem;
 
@@ -85,6 +92,26 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         double pagesThreshold = regCfg.getEvictionThreshold() * regCfg.getMaxSize() / pageMem.systemPageSize();
 
         return pageMem.loadedPages() > pagesThreshold && freeList.emptyDataPages() < regCfg.getEmptyPagesPoolSize();
+    }
+
+    /**
+     * Evicts a data page, acquiring entry locks in a non-blocking way so that contended entries are skipped instead
+     * of blocked upon. Used by size-aware eviction which may run while the calling thread already holds
+     * entry locks, to avoid a lock-ordering deadlock.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void evictDataPageNonBlocking() throws IgniteCheckedException {
+        Boolean prev = EVICT_NON_BLOCKING.get();
+
+        EVICT_NON_BLOCKING.set(Boolean.TRUE);
+
+        try {
+            evictDataPage();
+        }
+        finally {
+            EVICT_NON_BLOCKING.set(prev);
+        }
     }
 
     /**
@@ -144,7 +171,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
                 cacheCtx.cache().entryEx(dataRow.key());
 
-            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
+            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true,
+                Boolean.TRUE.equals(EVICT_NON_BLOCKING.get()));
         }
 
         return evictionDone;

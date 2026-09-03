@@ -70,6 +70,9 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
         for (Integer key : primaryKeys(grid(1).cache(DEFAULT_CACHE_NAME), ENTRIES))
             cache.put(key, val);
 
-        assertTrue(cache.size() < ENTRIES);
+        // With size-aware eviction the large records do not fail with OOM: older records are evicted to
+        // make room for the newer ones. The resident set must therefore be bounded well below the total written
+        // (50 x 80MB >> 1GB region) but stay non-empty (at least the most recently written entries survive).
+        assertTrue(cache.size() > 0 && cache.size() < ENTRIES);
     }
 }
