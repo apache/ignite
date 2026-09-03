@@ -3706,23 +3706,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /**
      * @param allNodesNotSupporting Flag of how many nodes don't support the snapshot check status.
      *                              If {@code null}, all nodes support.
-     *                              If {@code true}, none of nodes support the snapshot check status.
-     *                              If {@code false}, just one node doesn't support the snapshot check status.
+     *                              If {@code true}, none supports.
+     *                              If {@code false}, just one node doesn't support.
      */
     private void doTestRestoreSnapshotMetricsAtStart(@Nullable Boolean allNodesNotSupporting) throws Exception {
         communicationSpiSupp = TestRecordingCommunicationSpi::new;
 
-        // Creates empty feature set unsupporting the snpshot check ststus if required.
+        // Creates empty feature set unsupporting the snapshot check ststus if required.
         pluginProvider = allNodesNotSupporting == null ? null : new AbstractTestPluginProvider() {
             @Override public String name() {
-                return "Test features provider";
+                return "Test Ignite features provider";
             }
 
             @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                 if (!cls.equals(DiscoveryNodeValidationProcessor.class))
                     return null;
-
-                assert allNodesNotSupporting != null;
 
                 boolean doNotSupport = allNodesNotSupporting
                     || ctx.igniteConfiguration().getIgniteInstanceName().equals(getTestIgniteInstanceName(2));
@@ -3756,38 +3754,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         TestRecordingCommunicationSpi cm2 = ((TestRecordingCommunicationSpi)grid(2).configuration().getCommunicationSpi());
 
         // Block one of the process' first messages of snapshot restoring or snapshot checking.
-        for (var cm : Arrays.asList(cm1, cm2)) {
-            cm.blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> sm
-                && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal() || sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())
-            );
-        }
+        F.asList(cm1, cm2).forEach(cm -> cm.blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> sm
+                && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal() || sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())));
 
-        // Snapshot restoration should get paused at the preceeding checking.
+        // Snapshot restoration should get paused at the preceeding snapshot check.
         IgniteFutureImpl<Void> restoreFut = snapshotMgr.restoreSnapshot("test_snapshot", null, null, 0, true);
 
-        // Waiting for the nodes each to send snapshot check single result.
-        for (var cm : Arrays.asList(cm1, cm2)) {
-            assertTrue(waitForCondition(
-                () -> cm.blockedMessages().stream().anyMatch(
-                    m -> m.ioMessage().message() instanceof SingleNodeMessage<?> sm
-                        && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()
-                ),
-                getTestTimeout()
-            ));
+        // Waiting for each node to send snapshot check single result.
+        for (var cm : F.asList(cm1, cm2)) {
+            assertTrue(waitForCondition(() -> cm.blockedMessages().stream().anyMatch(m ->
+                    m.ioMessage().message() instanceof SingleNodeMessage<?> sm && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()),
+                getTestTimeout()));
         }
 
         injectTestSystemOut();
 
         LogListener logLsnr = null;
 
-        if (Boolean.FALSE.equals(allNodesNotSupporting)) {
-            logLsnr = LogListener.matches("Node %s doesn't support the snapshot-check-aware status feature"
-                .formatted(grid(2).localNode().id())).build();
+        if (Boolean.TRUE.equals(allNodesNotSupporting)) {
+            logLsnr = LogListener.matches("The snapshot-check-aware status feature isn't enabled").build();
 
             listeningLog.registerListener(logLsnr);
         }
-        else if (Boolean.TRUE.equals(allNodesNotSupporting)) {
-            logLsnr = LogListener.matches("The snapshot-check-aware status feature isn't enabled").build();
+        else if (Boolean.FALSE.equals(allNodesNotSupporting)) {
+            logLsnr = LogListener.matches("Node %s doesn't support the snapshot check status feature"
+                .formatted(grid(2).localNode().id())).build();
 
             listeningLog.registerListener(logLsnr);
         }
@@ -3801,29 +3792,97 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (allNodesNotSupporting == null) {
             assertContains(log, out, "Check snapshot operation is in progress");
             assertContains(log, out, "Snapshot name: test_snapshot");
-        } else {
-            assert logLsnr != null;
-
+        }
+        else {
             assertTrue(logLsnr.check(getTestTimeout()));
-
             assertContains(log, out, "There is no create or restore snapshot operation in progress");
         }
 
-        // Ensure that no snapshot restoration started or finished.
+        // Ensure that no snapshot restore started or finished.
         assertFalse("Snapshot future has finished", restoreFut.isDone());
 
-        for (var cm : Arrays.asList(cm1, cm2)) {
-            // Ensure that the restore process didn't start.
-            assertTrue(cm.blockedMessages().stream().noneMatch(
-                m -> m.ioMessage().message() instanceof SingleNodeMessage<?> sm
-                    && sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())
-            );
+        F.asList(cm1, cm2).forEach(cm -> {
+            assertTrue(cm.blockedMessages().stream().noneMatch(m ->
+                m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+                    && sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal()));
 
             cm.stopBlock();
+        });
+
+        restoreFut.get(getTestTimeout());
+    }
+
+    /** */
+    @Test
+    public void testOneSnapshotCheckStatus() throws Exception {
+        doTestSnapshotsChecksStatus(false);
+    }
+
+    /** */
+    @Test
+    public void testTwoSnapshotsChecksStatus() throws Exception {
+        doTestSnapshotsChecksStatus(true);
+    }
+
+    /** */
+    private void doTestSnapshotsChecksStatus(boolean twoSnapshots) throws Exception {
+        communicationSpiSupp = TestRecordingCommunicationSpi::new;
+
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
+
+        IgniteSnapshotManager snapshotMgr = (IgniteSnapshotManager)grid(0).snapshot();
+
+        createCacheAndPreload(grid(1), DEFAULT_CACHE_NAME, 4096, 64, null);
+        snapshotMgr.createSnapshot("testSnapshot0").get(getTestTimeout());
+
+        if (twoSnapshots) {
+            createCacheAndPreload(grid(1), "cache2", 4096, 64, null);
+            snapshotMgr.createSnapshot("testSnapshot1").get(getTestTimeout());
         }
 
-        // Wait for future to finish in order to avoid excessive message about task cancellation.
-        restoreFut.get(getTestTimeout());
+        grid(0).destroyCaches(twoSnapshots ? F.asList(DEFAULT_CACHE_NAME, "cache2") : F.asList(DEFAULT_CACHE_NAME));
+
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi cm1 = ((TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi());
+        TestRecordingCommunicationSpi cm2 = ((TestRecordingCommunicationSpi)grid(2).configuration().getCommunicationSpi());
+
+        F.asList(cm1, cm2).forEach(cm -> cm.blockMessages((node, msg) ->
+            msg instanceof SingleNodeMessage<?> sm && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal())));
+
+        var checkFut0 = runAsync(() -> execute("--snapshot", "check", "testSnapshot0"));
+        var checkFut1 = twoSnapshots ? runAsync(() -> execute("--snapshot", "check", "testSnapshot1")) : null;
+
+        // Waiting for the nodes each to send snapshot check single result.
+        for (var cm : F.asList(cm1, cm2)) {
+            assertTrue(waitForCondition(
+                () -> cm.blockedMessages().stream().filter(
+                    m -> m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+                        && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()).count() == (twoSnapshots ? 2 : 1),
+                getTestTimeout()
+            ));
+        }
+
+        injectTestSystemOut();
+
+        assertEquals("Unexpected exit code", EXIT_CODE_OK, execute("--snapshot", "status"));
+
+        var out = testOut.toString();
+
+        if (log.isInfoEnabled())
+            log.info("Test out:" + U.nl() + out);
+
+        assertTrue(out.contains(twoSnapshots ? "Check snapshot operations are in progress" : "Check snapshot operation is in progress"));
+        assertTrue(out.contains("Snapshot name: testSnapshot0"));
+        if (twoSnapshots)
+            assertTrue(out.contains("Snapshot name: testSnapshot1"));
+
+        F.asList(cm1, cm2).forEach(TestRecordingCommunicationSpi::stopBlock);
+
+        checkFut0.get();
+
+        if (twoSnapshots)
+            checkFut1.get();
     }
 
     /** @throws Exception If fails. */

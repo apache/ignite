@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.SystemViewCommand;
@@ -75,29 +74,21 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
         // The check operation can be run in parallel for different snapshots.
         List<SnapshotStatus> multipleOpsView = isCreating || isRestoring
             ? Collections.singletonList(status)
-            : ((SnapshotStatusTaskV2.SnapshotStatusV2)status).allCheckStatuses;
+            : ((SnapshotStatusTaskV2.SnapshotStatusV2)status).checkStatuses();
 
-        // Flag of additional line delimiter.
-        AtomicBoolean oneOp = new AtomicBoolean(true);
+        assert multipleOpsView.size() == 1 || !(isCreating || isRestoring) : "Only snapshot check supports multiple operations.";
+
+        if (isCreating)
+            printer.accept("Create snapshot operation is in progress.");
+        else if (isRestoring)
+            printer.accept("Restore snapshot operation is in progress.");
+        else
+            printer.accept("Check snapshot operation" + (multipleOpsView.size() < 2 ? " is " : "s are ") + "in progress.");
+
+        printer.accept(U.nl());
 
         multipleOpsView.forEach(s0 -> {
             GridStringBuilder s = new GridStringBuilder();
-
-            if (!oneOp.get())
-                printer.accept(U.nl());
-
-            if (isCreating) {
-                assert multipleOpsView.size() == 1;
-
-                s.a("Create snapshot operation is in progress.").nl();
-            }
-            else if (isRestoring) {
-                assert multipleOpsView.size() == 1;
-
-                s.a("Restore snapshot operation is in progress.").nl();
-            }
-            else
-                s.a("Check snapshot operation" + (multipleOpsView.size() < 2 ? " is " : "s are ") + "in progress.").nl();
 
             s.a("Snapshot name: ").a(s0.name()).nl();
             s.a("Incremental: ").a(isIncremental).nl();
@@ -129,8 +120,6 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
 
             printer.accept(U.nl());
-
-            oneOp.set(false);
         });
     }
 
@@ -279,7 +268,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
         private final boolean incremental;
 
         /** */
-        CheckSnapshotTaskProgressDesc(boolean incremental) {
+        private CheckSnapshotTaskProgressDesc(boolean incremental) {
             super(incremental
                 ? F.asList("Node ID", "processedWalSegments", "totalWalSegments", "percent")
                 : F.asList("Node ID", "fullCheck", "processedPartitions", "totalPartitions",

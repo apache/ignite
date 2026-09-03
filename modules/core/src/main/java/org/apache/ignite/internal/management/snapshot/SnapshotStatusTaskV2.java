@@ -42,7 +42,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
-/** V2 of {@link SnapshotStatusTask} with the support of snapshot check status. */
+/** V2 of {@link SnapshotStatusTask} with support of the snapshot check status. */
 @GridInternal
 public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
     /** */
@@ -78,11 +78,8 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
 
         for (var n : ignite.cluster().nodes()) {
             if (!(n instanceof IgniteClusterNode cn) || !cn.features().contains(feature)) {
-                log.warning(String.format(
-                    "Node %s doesn't support the snapshot-check-aware status feature. The status is available only " +
-                        "for snapshot creation and restoration.",
-                    n.id()
-                ));
+                log.warning(String.format("Node %s doesn't support the snapshot check status feature. The status " +
+                    "is available only for snapshot creation and restoration.", n.id()));
 
                 checkStatusSupported = false;
 
@@ -101,7 +98,7 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
         if (res0 == null)
             return null;
 
-        // Found crate or restore result.
+        // Found create or restore result.
         if (res0.operation() != null)
             return res0;
 
@@ -122,7 +119,7 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
         sameRqRes.forEach(s -> {
             assert s instanceof SnapshotStatusV2;
 
-            for (SnapshotStatus s0 : ((SnapshotStatusV2)s).allCheckStatuses) {
+            for (SnapshotStatus s0 : ((SnapshotStatusV2)s).checkStatuses) {
                 var prev = statusesMap.putIfAbsent(s0.name(), s0);
 
                 if (prev == null)
@@ -132,13 +129,13 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
                 prev.progress().putAll(s0.progress());
             }
 
-            firstResV2.allCheckStatuses = new ArrayList<>(statusesMap.values());
+            firstResV2.checkStatuses = new ArrayList<>(statusesMap.values());
         });
 
         return firstResV2;
     }
 
-    /** V2 of {@link SnapshotStatusJob} with the support of snapshot check status. */
+    /** V2 of {@link SnapshotStatusJob} with support of the snapshot check status. */
     private static class SnapshotStatusJobV2 extends SnapshotStatusTask.SnapshotStatusJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -206,14 +203,13 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
         }
     }
 
-    /** V2 of {@link SnapshotStatus} with the support of snapshot check status. */
-
+    /** V2 of {@link SnapshotStatus} with support of the snapshot check status. */
     public static class SnapshotStatusV2 extends SnapshotStatusTask.SnapshotStatus {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Nodes' statuses of all snapshot check operations. */
-        @Nullable List<SnapshotStatus> allCheckStatuses;
+        private List<SnapshotStatus> checkStatuses;
 
         /** */
         private SnapshotStatusV2(SnapshotStatus s1) {
@@ -221,18 +217,23 @@ public class SnapshotStatusTaskV2 extends SnapshotStatusTask {
         }
 
         /** */
-        private SnapshotStatusV2(List<SnapshotStatus> allCheckStatuses) {
-            // Single, V1 status holds first found check status.
+        private SnapshotStatusV2(List<SnapshotStatus> checkStatuses) {
+            // Single, V1 status holds first check status.
             super(
                 null,
-                allCheckStatuses.get(0).name(),
-                allCheckStatuses.get(0).incrementIndex(),
-                allCheckStatuses.get(0).requestId(),
-                allCheckStatuses.get(0).startTime(),
-                allCheckStatuses.get(0).progress()
+                checkStatuses.get(0).name(),
+                checkStatuses.get(0).incrementIndex(),
+                checkStatuses.get(0).requestId(),
+                checkStatuses.get(0).startTime(),
+                checkStatuses.get(0).progress()
             );
 
-            this.allCheckStatuses = allCheckStatuses;
+            this.checkStatuses = checkStatuses;
+        }
+
+        /** */
+        public List<SnapshotStatus> checkStatuses() {
+            return checkStatuses;
         }
     }
 }
