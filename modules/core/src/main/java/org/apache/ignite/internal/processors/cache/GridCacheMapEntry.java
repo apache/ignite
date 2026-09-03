@@ -3659,6 +3659,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private void ensureFreeSpace() throws IgniteCheckedException {
         // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
+        // This entry-level eviction is invoked only while NOT holding this entry's lock (all call sites run before
+        // lockEntry()). The separately invoked size-aware path (see RowStore.addRow ->
+        // IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert) runs while the lock IS held, so it relies on
+        // the non-blocking tryLockEntry(ENTRY_LOCK_TIMEOUT) inside evictInternal to avoid a lock-ordering deadlock.
         assert !lock.isHeldByCurrentThread();
 
         cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
@@ -3687,11 +3691,28 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean evictOffheap)
         throws IgniteCheckedException {
 
+        return evictInternal(obsoleteVer, filter, evictOffheap, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean evictInternal(
+        GridCacheVersion obsoleteVer,
+        @Nullable CacheEntryPredicate[] filter,
+        boolean evictOffheap,
+        boolean tryLock)
+        throws IgniteCheckedException {
+
         boolean marked = false;
 
         try {
             if (F.isEmptyOrNulls(filter)) {
-                lockEntry();
+                // With tryLock=true (size-aware eviction running while the current thread already holds entry locks)
+                // the lock is acquired non-blockingly: a contended entry is skipped (returning false) rather than
+                // blocking, which prevents a lock-ordering deadlock between concurrent evictions. The eviction tracker
+                // will then pick another page. For all other paths (tryLock=false) the original
+                // blocking lockEntry() is preserved.
+                if (!lockEntry(tryLock))
+                    return false;
 
                 try {
                     if (evictionDisabled()) {
@@ -3728,7 +3749,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 while (true) {
                     GridCacheVersion v;
 
-                    lockEntry();
+                    if (!lockEntry(tryLock))
+                        return false;
 
                     try {
                         v = ver;
@@ -3740,7 +3762,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (!cctx.isAll(/*version needed for sync evicts*/this, filter))
                         return false;
 
-                    lockEntry();
+                    if (!lockEntry(tryLock))
+                        return false;
 
                     try {
                         if (evictionDisabled()) {
@@ -4180,6 +4203,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public void lockEntry() {
         lock.lock();
+    }
+
+    /**
+     * Acquires the entry lock either blocking ({@code tryLock == false}) or non-blockingly with the configured
+     * {@link #ENTRY_LOCK_TIMEOUT} ({@code tryLock == true}). Used by {@link #evictInternal} to let size-aware
+     * eviction skip contended entries instead of blocking, avoiding a lock-ordering deadlock.
+     *
+     * @param tryLock {@code true} to acquire the lock non-blockingly.
+     * @return {@code true} if the lock was acquired (always {@code true} when {@code tryLock == false}).
+     */
+    private boolean lockEntry(boolean tryLock) {
+        if (tryLock)
+            return tryLockEntry(ENTRY_LOCK_TIMEOUT);
+
+        lockEntry();
+
+        return true;
     }
 
     /** {@inheritDoc} */

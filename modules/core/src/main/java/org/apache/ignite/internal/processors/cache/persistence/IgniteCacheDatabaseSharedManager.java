@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gro
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.evict.PageAbstractEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
@@ -1172,32 +1173,56 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Checks that the given {@code region} has enough space for putting a new entry.
+     * Checks that the given {@code region} has enough space for putting a new entry of {@code dataRowSize} bytes.
      *
-     * This method makes sense then and only then
-     * the data region is not persisted {@link DataRegionConfiguration#isPersistenceEnabled()}
-     * and page eviction is disabled {@link DataPageEvictionMode#DISABLED}.
+     * For a non-persistent region with page eviction disabled, verifies that the region reserves enough pages to
+     * support a free list {@link AbstractFreeList}. For example, removing a row from underlying store may require
+     * allocating a new data page in order to move a tracked page from one bucket to another one which does not have
+     * a free space for a new stripe. See {@link AbstractFreeList#removeDataRowByLink}. Therefore, inserting a new
+     * entry should be prevented in case of some threshold is exceeded.
      *
-     * The non-persistent region should reserve a number of pages to support a free list {@link AbstractFreeList}.
-     * For example, removing a row from underlying store may require allocating a new data page
-     * in order to move a tracked page from one bucket to another one which does not have a free space for a new stripe.
-     * See {@link AbstractFreeList#removeDataRowByLink}.
-     * Therefore, inserting a new entry should be prevented in case of some threshold is exceeded.
+     * For a non-persistent region with page eviction enabled, additionally performs size-aware eviction: when the
+     * row does not fit into the currently available page space, data pages are evicted until either enough space is
+     * freed or it becomes clear that the goal is unreachable (in which case an
+     * {@link IgniteOutOfMemoryException} is thrown).
+     *
+     * The size-aware reserve is required because page eviction by itself only keeps a steady-state pool of empty pages
+     * ({@link DataRegionConfiguration#getEmptyPagesPoolSize()}) and does not guarantee enough space for a single row
+     * larger than this pool.
      *
      * @param region Data region to be checked.
      * @param dataRowSize Size of data row to be inserted.
-     * @throws IgniteOutOfMemoryException In case of the given data region does not have enough free space
-     * for putting a new entry.
+     * @throws IgniteOutOfMemoryException In case the given data region does not have enough free space
+     * for putting a new entry, even after eviction.
+     * @throws IgniteCheckedException If failed to evict data pages.
      */
-    public void ensureFreeSpaceForInsert(DataRegion region, int dataRowSize) throws IgniteOutOfMemoryException {
+    public void ensureFreeSpaceForInsert(DataRegion region, int dataRowSize)
+        throws IgniteOutOfMemoryException, IgniteCheckedException {
         if (region == null)
             return;
 
         DataRegionConfiguration regCfg = region.config();
 
-        if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED || regCfg.isPersistenceEnabled())
+        if (regCfg.isPersistenceEnabled())
             return;
 
+        if (regCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+            checkOomThreshold(region, regCfg, dataRowSize);
+        else
+            ensureFreeSpaceForEviction(region, regCfg, dataRowSize);
+    }
+
+    /**
+     * Checks that a non-persistent region with disabled page eviction has enough pages for a new row, taking into
+     * account the pages required to support the free list.
+     *
+     * @param region Data region.
+     * @param regCfg Data region configuration.
+     * @param dataRowSize Size of data row to be inserted.
+     * @throws IgniteOutOfMemoryException If the region does not have enough free space for the new entry.
+     */
+    private void checkOomThreshold(DataRegion region, DataRegionConfiguration regCfg, int dataRowSize)
+        throws IgniteOutOfMemoryException {
         long memorySize = regCfg.getMaxSize();
 
         PageMemory pageMem = region.pageMemory();
@@ -1216,22 +1241,126 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         boolean oomThreshold = (memorySize / pageMem.systemPageSize()) <
             ((double)dataRowSize / pageMem.pageSize() + nonEmptyPages * (8.0 * 1.5 / pageMem.pageSize() + 1) + 256 /*one page per bucket*/);
 
-        if (oomThreshold) {
-            IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
-                "name=" + regCfg.getName() +
-                ", initSize=" + U.readableSize(regCfg.getInitialSize(), false) +
-                ", maxSize=" + U.readableSize(regCfg.getMaxSize(), false) +
-                ", persistenceEnabled=" + regCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
-                "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
-                "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
-                "  ^-- Enable eviction or expiration policies"
-            );
+        if (oomThreshold)
+            throw outOfMemory(regCfg);
+    }
 
-            if (cctx.kernalContext() != null)
-                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+    /**
+     * Size-aware reserve for an eviction-enabled non-persistent region. Runs eviction until the region has enough
+     * available pages to accommodate the row, or throws {@link IgniteOutOfMemoryException} if the goal is
+     * unreachable / no progress can be made.
+     *
+     * @param region Data region.
+     * @param regCfg Data region configuration.
+     * @param dataRowSize Size of data row to be inserted.
+     * @throws IgniteOutOfMemoryException If the target cannot be reached (row too large for the region or eviction
+     * makes no progress).
+     * @throws IgniteCheckedException If failed to evict data pages.
+     */
+    private void ensureFreeSpaceForEviction(DataRegion region, DataRegionConfiguration regCfg, int dataRowSize)
+        throws IgniteOutOfMemoryException, IgniteCheckedException {
+        PageMemory pageMem = region.pageMemory();
 
-            throw oom;
+        CacheFreeList freeList = freeListMap.get(regCfg.getName());
+
+        if (freeList == null)
+            return;
+
+        long sysPageSize = pageMem.systemPageSize();
+        long pageSize = pageMem.pageSize();
+
+        long totalPages = regCfg.getMaxSize() / sysPageSize;
+
+        // Pages required to place the row (rounded up) plus a margin for the page header and fragmentation.
+        long requiredPages = (dataRowSize + pageSize - 1) / pageSize + 1;
+
+        // If the row fits into the configured steady-state empty-pages pool, normal threshold eviction is enough.
+        if (requiredPages <= regCfg.getEmptyPagesPoolSize())
+            return;
+
+        // The row fundamentally cannot fit into the whole region.
+        if (requiredPages > totalPages)
+            throw outOfMemory(regCfg);
+
+        long availablePages = (totalPages - pageMem.loadedPages()) + freeList.emptyDataPages();
+
+        // Fast path: enough pages are already available, no eviction is needed.
+        if (availablePages >= requiredPages)
+            return;
+
+        PageEvictionTracker evictionTracker = region.evictionTracker();
+
+        // Evict data pages until enough free space is available. Progress is measured against the overall available
+        // space, so pages freed concurrently (e.g. by TTL cleanup) also count as progress. The loop is bounded to
+        // avoid an infinite busy-spin when there is nothing more to evict. Eviction here runs while the current
+        // thread may already hold entry locks (single-row insertion), so entries whose locks are contended are
+        // skipped (non-blocking) rather than blocked upon, to avoid a lock-ordering deadlock.
+        final int maxAttemptsWithoutProgress = 300;
+
+        long bestAvailable = availablePages;
+        int attemptsWithoutProgress = 0;
+
+        while (bestAvailable < requiredPages) {
+            evictDataPageNonBlocking(evictionTracker);
+
+            long curAvailable = (totalPages - pageMem.loadedPages()) + freeList.emptyDataPages();
+
+            // Progress is measured against the best available space observed so far. Concurrent inserts may
+            // temporarily reduce available (loadedPages grows) even while eviction is freeing pages, so a drop below
+            // the running best is not treated as "no progress". Only when available fails to exceed the best value
+            // over many attempts we conclude that no more space can be freed (e.g. all candidate entries are locked
+            // by other threads/transactions).
+            if (curAvailable > bestAvailable) {
+                bestAvailable = curAvailable;
+
+                attemptsWithoutProgress = 0;
+            }
+            else if (curAvailable < bestAvailable) {
+                // A transient drop caused by concurrent activity: keep the best value, do not penalize.
+            }
+            else
+                attemptsWithoutProgress++;
+
+            if (attemptsWithoutProgress >= maxAttemptsWithoutProgress)
+                throw outOfMemory(regCfg);
         }
+    }
+
+    /**
+     * Invokes a single page eviction, acquiring entry locks non-blockingly so that contended entries are skipped.
+     * This is required when eviction runs while the current thread already holds entry locks (size-aware eviction
+     * from a single-row insertion) to avoid a lock-ordering deadlock. {@link NoOpPageEvictionTracker}
+     * (disabled eviction, never reaching this path) falls back to the plain {@code evictDataPage()}.
+     *
+     * @param evictionTracker Page eviction tracker.
+     * @throws IgniteCheckedException If failed to evict a data page.
+     */
+    private void evictDataPageNonBlocking(PageEvictionTracker evictionTracker) throws IgniteCheckedException {
+        if (evictionTracker instanceof PageAbstractEvictionTracker)
+            ((PageAbstractEvictionTracker)evictionTracker).evictDataPageNonBlocking();
+        else
+            evictionTracker.evictDataPage();
+    }
+
+    /**
+     * @param regCfg Data region configuration.
+     * @return New {@link IgniteOutOfMemoryException} (also reported as a critical failure) for the given region.
+     */
+    private IgniteOutOfMemoryException outOfMemory(DataRegionConfiguration regCfg) {
+        IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
+            "name=" + regCfg.getName() +
+            ", initSize=" + U.readableSize(regCfg.getInitialSize(), false) +
+            ", maxSize=" + U.readableSize(regCfg.getMaxSize(), false) +
+            ", persistenceEnabled=" + regCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+            "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+            "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+            "  ^-- Enable eviction or expiration policies"
+        );
+
+        if (cctx.kernalContext() != null)
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+        return oom;
     }
 
     /**
