@@ -2591,11 +2591,13 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
+            Socket sock = ses.socket();
+
             waitFor(writeLock);
 
             TcpDiscoveryAbstractMessage msg = decodeMessage(this, data);
@@ -2603,7 +2605,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             if (msg != null && !onMessage(sock, msg))
                 return;
 
-            super.writeToSocket(sock, data, timeout);
+            super.write(ses, data, timeout);
 
             if (msg != null && afterWrite != null)
                 afterWrite.apply(msg, sock);
@@ -2642,13 +2644,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
         ) throws IOException, IgniteCheckedException {
             waitFor(openSockLock);
 
-            return super.openSocket(sockAddr, timeoutHelper);
+            return super.openSession(sock, sockAddr, timeoutHelper);
         }
 
         /**
@@ -2689,12 +2692,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            TcpDiscoveryAbstractMessage msg = msgTracker.lastFor(sock);
+            Socket sock = ses.socket();
+
+            TcpDiscoveryAbstractMessage msg = msgTracker.lastFor(ses);
 
             if (delayJoinAckFor != null && msg instanceof TcpDiscoveryJoinRequestMessage) {
                 TcpDiscoveryJoinRequestMessage msg0 = (TcpDiscoveryJoinRequestMessage)msg;
@@ -2713,12 +2718,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            super.writeToSocket(sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
-            int res = super.readReceipt(sock, timeout);
+        @Override protected int readReceipt(TcpDiscoveryIoSession ses, long timeout) throws IOException {
+            int res = super.readReceipt(ses, timeout);
 
             if (res != TcpDiscoveryImpl.RES_OK) {
                 invalidRes = true;

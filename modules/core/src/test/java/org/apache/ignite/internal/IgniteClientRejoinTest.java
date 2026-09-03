@@ -353,15 +353,15 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
      */
     private class DiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (blockAll || block && sock.getPort() == 47500)
+            if (blockAll || block && ses.socket().getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            super.writeToSocket(sock, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -377,27 +377,27 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (blockAll || block && sock.getPort() == 47500)
+            if (blockAll || block && ses.socket().getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            super.writeToSocket(sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
             Socket sock,
             InetSocketAddress remAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
         ) throws IOException, IgniteCheckedException {
-            if (blockAll || block && sock.getPort() == 47500)
+            if (blockAll || block && remAddr.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            return super.openSession(sock, remAddr, timeoutHelper);
         }
     }
 }

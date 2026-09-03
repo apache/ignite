@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -268,13 +267,13 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      */
     private class DyingDiscoverySpi extends NoRingClosingTcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(sock, data, timeout);
+                super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -285,13 +284,13 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(sock, res, timeout);
+                super.writeReceipt(ses, res, timeout);
         }
     }
 

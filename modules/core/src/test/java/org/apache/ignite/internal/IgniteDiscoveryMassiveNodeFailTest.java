@@ -302,17 +302,17 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            assertNotFailedNode(sock);
+            assertNotFailedNode(ses.socket());
 
             if (isDrop())
                 return;
 
-            super.writeToSocket(sock, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -335,17 +335,17 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            assertNotFailedNode(sock);
+            assertNotFailedNode(ses.socket());
 
             if (isDrop())
                 return;
 
-            super.writeToSocket(sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /**
