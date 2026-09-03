@@ -47,7 +47,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -60,7 +59,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
@@ -73,7 +71,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -208,8 +205,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     ClientImpl(TcpDiscoverySpi adapter) {
         super(adapter);
 
-        String instanceName = adapter.ignite() == null || adapter.ignite().name() == null
-            ? "client-node" : adapter.ignite().name();
+        String instanceName = adapter.ignite().name() == null ? "client-node" : adapter.ignite().name();
 
         executorSrvc = newSingleThreadScheduledExecutor("tcp-discovery-exec", instanceName);
     }
@@ -1053,13 +1049,6 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private WorkersRegistry getWorkersRegistry() {
-        Ignite ignite = spi.ignite();
-
-        return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
-    }
-
-    /** */
     private Collection<ClusterNode> remoteVisibleNodes() {
         return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
     }
@@ -1689,7 +1678,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param log Logger.
          */
         private MessageWorker(IgniteLogger log) {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, getWorkersRegistry());
+            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log, ctx.workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -1957,8 +1946,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 Thread.currentThread().interrupt();
             }
             catch (Throwable t) {
-                if (spi.ignite() instanceof IgniteEx)
-                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(CRITICAL_ERROR, t));
+                ctx.failure().process(new FailureContext(CRITICAL_ERROR, t));
             }
             finally {
                 TcpDiscoveryIoSession ses = this.currSes;

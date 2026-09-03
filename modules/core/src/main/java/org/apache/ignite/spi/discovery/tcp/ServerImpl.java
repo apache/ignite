@@ -76,7 +76,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -107,7 +106,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -369,7 +367,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             new LinkedBlockingQueue<>());
 
         List<DistributedBooleanProperty> props = newConnectionEnabledProperty(
-            ((IgniteEx)spi.ignite()).context().internalSubscriptionProcessor(),
+            ctx.internalSubscriptionProcessor(),
             log,
             "ClientNode",
             "ServerNode"
@@ -2458,11 +2456,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         node.setAttributes(attrs);
     }
 
-    /** */
-    private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
-        return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
-    }
-
     /**
      * Upcasts collection type.
      *
@@ -2866,7 +2859,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         // To address this, we use TcpDiscoveryMessageSerializer, which includes some code copied from TcpDiscoveryIoSession
         // and can be instantiated independently of any active session.
         /** */
-        private final TcpDiscoveryMessageSerializer clientMsgSer = new TcpDiscoveryMessageSerializer(spi);
+        private final TcpDiscoveryMessageSerializer clientMsgSer = new TcpDiscoveryMessageSerializer(ctx);
 
         /** IO session. */
         private TcpDiscoveryIoSession ses;
@@ -2902,7 +2895,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         protected RingMessageWorker(IgniteLogger log, BlockingDeque<TcpDiscoveryAbstractMessage> queue) {
-            super("tcp-disco-msg-worker-[]", log, 10, getWorkerRegistry(spi), queue);
+            super("tcp-disco-msg-worker-[]", log, 10, ctx.workersRegistry(), queue);
 
             setBeforeEachPollAction(() -> {
                 updateHeartbeat();
@@ -3049,17 +3042,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw e;
             }
             finally {
-                if (spi.ignite() instanceof IgniteEx) {
-                    if (err == null && !spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
-                        err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
+                if (err == null && !spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
+                    err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
 
-                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+                FailureProcessor failure = ctx.failure();
 
-                    if (err instanceof OutOfMemoryError)
-                        failure.process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err != null)
-                        failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                }
+                if (err instanceof OutOfMemoryError)
+                    failure.process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -6310,7 +6301,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteSpiException In case of error.
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr-[]", log, getWorkerRegistry(spi));
+            super(spi.ignite().name(), "tcp-disco-srvr-[]", log, ctx.workersRegistry());
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -6413,17 +6404,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw t;
             }
             finally {
-                if (spi.ignite() instanceof IgniteEx) {
-                    if (err == null && !spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
-                        err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
+                if (err == null && !spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING)
+                    err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
 
-                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+                FailureProcessor failure = ctx.failure();
 
-                    if (err instanceof OutOfMemoryError)
-                        failure.process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err != null)
-                        failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
-                }
+                if (err instanceof OutOfMemoryError)
+                    failure.process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
 
                 U.closeQuiet(srvrSock);
             }
@@ -6462,7 +6451,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             this.sock = sock;
 
-            ses = createSession(sock);
+            ses = new TcpDiscoveryIoSession(ctx, sock);
 
             setPriority(spi.threadPri);
         }
@@ -7085,11 +7074,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             catch (UnknownMessageException e) {
-                if (spi.ignite() instanceof IgniteEx) {
-                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
-
-                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-                }
+                ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
             }
             finally {
                 if (clientMsgWrk != null) {
@@ -7534,7 +7519,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.ses = ses;
             this.clientNodeId = clientNodeId;
 
-            clientMsgSer = new TcpDiscoveryMessageSerializer(spi);
+            clientMsgSer = new TcpDiscoveryMessageSerializer(ctx);
 
             lastMetricsUpdateMsgTimeNanos = System.nanoTime();
         }
