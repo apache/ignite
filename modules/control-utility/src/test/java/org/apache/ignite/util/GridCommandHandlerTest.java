@@ -252,6 +252,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected @Nullable PluginProvider pluginProvider;
 
+    /** */
+    protected boolean walCompaction;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -280,6 +283,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         if (pluginProvider != null)
             cfg.setPluginProviders(pluginProvider);
+
+        cfg.getDataStorageConfiguration().setWalCompactionEnabled(walCompaction);
 
         return cfg;
     }
@@ -3740,11 +3745,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         startGrids(3).cluster().state(ClusterState.ACTIVE);
 
-        createCacheAndPreload(grid(1), 8192);
+        createCacheAndPreload(grid(1), 1000);
 
-        IgniteSnapshotManager snapshotMgr = (IgniteSnapshotManager)grid(0).snapshot();
+        IgniteSnapshotManager snpMgr = (IgniteSnapshotManager)grid(0).snapshot();
 
-        snapshotMgr.createSnapshot("test_snapshot").get(getTestTimeout());
+        snpMgr.createSnapshot("test_snapshot").get(getTestTimeout());
 
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
@@ -3758,7 +3763,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal() || sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())));
 
         // Snapshot restoration should get paused at the preceeding snapshot check.
-        IgniteFutureImpl<Void> restoreFut = snapshotMgr.restoreSnapshot("test_snapshot", null, null, 0, true);
+        IgniteFutureImpl<Void> restoreFut = snpMgr.restoreSnapshot("test_snapshot", null, null, 0, true);
 
         // Waiting for each node to send snapshot check single result.
         for (var cm : F.asList(cm1, cm2)) {
@@ -3815,29 +3820,61 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     @Test
     public void testOneSnapshotCheckStatus() throws Exception {
-        doTestSnapshotsChecksStatus(false);
+        doTestSnapshotsChecksStatus(false, false);
+    }
+
+    /** */
+    @Test
+    public void testOneIncrementalSnapshotCheckStatus() throws Exception {
+        doTestSnapshotsChecksStatus(false, true);
     }
 
     /** */
     @Test
     public void testTwoSnapshotsChecksStatus() throws Exception {
-        doTestSnapshotsChecksStatus(true);
+        doTestSnapshotsChecksStatus(true, false);
     }
 
     /** */
-    private void doTestSnapshotsChecksStatus(boolean twoSnapshots) throws Exception {
+    @Test
+    public void testTwoIncrementalsSnapshotsChecksStatus() throws Exception {
+        doTestSnapshotsChecksStatus(true, true);
+    }
+
+    /** */
+    private void doTestSnapshotsChecksStatus(boolean twoSnapshots, boolean incremental) throws Exception {
         communicationSpiSupp = TestRecordingCommunicationSpi::new;
+
+        walCompaction = incremental;
 
         startGrids(3).cluster().state(ClusterState.ACTIVE);
 
-        IgniteSnapshotManager snapshotMgr = (IgniteSnapshotManager)grid(0).snapshot();
+        IgniteSnapshotManager snpMgr = (IgniteSnapshotManager)grid(0).snapshot();
 
-        createCacheAndPreload(grid(1), DEFAULT_CACHE_NAME, 4096, 64, null);
-        snapshotMgr.createSnapshot("testSnapshot0").get(getTestTimeout());
+        createCacheAndPreload(grid(1), DEFAULT_CACHE_NAME, 1000, 32, null);
+        snpMgr.createSnapshot("testSnapshot0").get(getTestTimeout());
+
+        if (incremental) {
+            try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                for (int i = 1000; i < 2000; i++)
+                    streamer.addData(i, i);
+            }
+
+            snpMgr.createIncrementalSnapshot("testSnapshot0").get(getTestTimeout());
+        }
 
         if (twoSnapshots) {
-            createCacheAndPreload(grid(1), "cache2", 4096, 64, null);
-            snapshotMgr.createSnapshot("testSnapshot1").get(getTestTimeout());
+            createCacheAndPreload(grid(1), "cache2", 1000, 32, null);
+            snpMgr.createSnapshot("testSnapshot1").get(getTestTimeout());
+
+            if (incremental) {
+                try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer("cache2")) {
+                    for (int i = 1000; i < 2000; i++)
+                        streamer.addData(i, i);
+                }
+
+                snpMgr.createIncrementalSnapshot("testSnapshot1").get(getTestTimeout());
+            }
         }
 
         grid(0).destroyCaches(twoSnapshots ? F.asList(DEFAULT_CACHE_NAME, "cache2") : F.asList(DEFAULT_CACHE_NAME));
@@ -3850,8 +3887,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         F.asList(cm1, cm2).forEach(cm -> cm.blockMessages((node, msg) ->
             msg instanceof SingleNodeMessage<?> sm && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal())));
 
-        var checkFut0 = runAsync(() -> execute("--snapshot", "check", "testSnapshot0"));
-        var checkFut1 = twoSnapshots ? runAsync(() -> execute("--snapshot", "check", "testSnapshot1")) : null;
+        var checkFut0 = runAsync(() -> incremental
+            ? execute("--snapshot", "check", "testSnapshot0", "--increment", "1")
+            : execute("--snapshot", "check", "testSnapshot0"));
+
+        var checkFut1 = twoSnapshots
+            ? runAsync(() -> incremental
+                             ? execute("--snapshot", "check", "testSnapshot1", "--increment", "1")
+                             : execute("--snapshot", "check", "testSnapshot1"))
+            : null;
 
         // Waiting for the nodes each to send snapshot check single result.
         for (var cm : F.asList(cm1, cm2)) {
@@ -3874,8 +3918,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(out.contains(twoSnapshots ? "Check snapshot operations are in progress" : "Check snapshot operation is in progress"));
         assertTrue(out.contains("Snapshot name: testSnapshot0"));
-        if (twoSnapshots)
+
+        if (incremental)
+            assertTrue(out.contains("Increment index: 1"));
+
+        if (twoSnapshots) {
             assertTrue(out.contains("Snapshot name: testSnapshot1"));
+
+            if (incremental) {
+                // Number of 'Increment index: 1' entries.
+                var sum = Arrays.stream(out.split(U.nl()))
+                    .mapToInt(l -> (l.length() - l.replace("Increment index: 1", "").length()) / "Increment index: 1".length())
+                    .sum();
+
+                assertEquals(2, sum);
+            }
+        }
 
         F.asList(cm1, cm2).forEach(TestRecordingCommunicationSpi::stopBlock);
 
