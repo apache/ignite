@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import com.google.common.collect.Multimap;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -32,7 +30,6 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
@@ -44,7 +41,6 @@ import org.apache.calcite.rel.metadata.UnboundMetadata;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformance;
@@ -180,12 +176,6 @@ public final class BaseQueryContext extends AbstractQueryContext {
     /** */
     private final int[] parts;
 
-    /** Query-local identifiers of recursive transient tables. */
-    private final Map<TransientTable, String> recursiveCteStateIds = new IdentityHashMap<>();
-
-    /** Next query-local recursive CTE identifier. */
-    private int nextRecursiveCteStateId;
-
     /**
      * Private constructor, used by a builder.
      */
@@ -320,18 +310,6 @@ public final class BaseQueryContext extends AbstractQueryContext {
             return Arrays.copyOf(parts, parts.length);
 
         return null;
-    }
-
-    /** Returns an identifier unique for the given recursive CTE within this planning context. */
-    public synchronized String recursiveCteStateId(RelOptTable table) {
-        TransientTable transientTable = table.unwrap(TransientTable.class);
-
-        assert transientTable != null;
-
-        return recursiveCteStateIds.computeIfAbsent(
-            transientTable,
-            key -> String.join(".", table.getQualifiedName()) + '#' + nextRecursiveCteStateId++
-        );
     }
 
     /**

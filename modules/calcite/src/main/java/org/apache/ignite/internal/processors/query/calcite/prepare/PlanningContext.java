@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
@@ -57,6 +61,12 @@ public final class PlanningContext implements Context {
 
     /** */
     private IgnitePlanner planner;
+
+    /** Query-local identifiers of recursive transient tables. */
+    private final Map<TransientTable, String> recursiveCteStateIds = new IdentityHashMap<>();
+
+    /** Next query-local recursive CTE identifier. */
+    private int nextRecursiveCteStateId;
 
     /** */
     private final long startTs;
@@ -177,6 +187,18 @@ public final class PlanningContext implements Context {
      */
     public RelOptCluster cluster() {
         return planner().cluster();
+    }
+
+    /** Returns an identifier unique for the given recursive CTE within this planning context. */
+    public synchronized String recursiveCteStateId(RelOptTable table) {
+        TransientTable transientTable = table.unwrap(TransientTable.class);
+
+        assert transientTable != null;
+
+        return recursiveCteStateIds.computeIfAbsent(
+            transientTable,
+            key -> String.join(".", table.getQualifiedName()) + '#' + nextRecursiveCteStateId++
+        );
     }
 
     /** {@inheritDoc} */

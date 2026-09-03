@@ -22,9 +22,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiPredicate;
@@ -167,9 +165,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** */
     private final ExpressionFactory<Row> expressionFactory;
-
-    /** Query-local recursive CTE states, keyed by transient table identifier. */
-    private final Map<String, RecursiveCteState<Row>> recursiveStates = new HashMap<>();
 
     /**
      * @param ctx Root context.
@@ -625,7 +620,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteRecursiveTableScan rel) {
-        return new ScanNode<>(ctx, rel.getRowType(), recursiveState(rel.stateId()).current());
+        return new ScanNode<>(ctx, rel.getRowType(), ctx.recursiveCteState(rel.stateId()).current());
     }
 
     /** {@inheritDoc} */
@@ -650,7 +645,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteRepeatUnion rel) {
-        RecursiveCteState<Row> state = recursiveState(rel.stateId());
+        RecursiveCteState<Row> state = ctx.recursiveCteState(rel.stateId());
         RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), state, rel.iterationLimit());
 
         state.clear();
@@ -1048,11 +1043,6 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** */
     public <T extends Node<Row>> T go(IgniteRel rel) {
         return (T)visit(rel);
-    }
-
-    /** Returns the state shared by the repeat union, spool and scan of one recursive CTE. */
-    private RecursiveCteState<Row> recursiveState(String stateId) {
-        return recursiveStates.computeIfAbsent(stateId, key -> new RecursiveCteState<>(ctx));
     }
 
     /** */

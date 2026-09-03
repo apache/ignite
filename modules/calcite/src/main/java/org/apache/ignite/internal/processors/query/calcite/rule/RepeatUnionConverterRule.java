@@ -37,12 +37,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /** Converts Calcite's logical recursive union to coordinator-side execution. */
-public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<LogicalRepeatUnion> {
+public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<LogicalRepeatUnion> {
     /** Instance. */
-    public static final RelOptRule INSTANCE = new RecursiveCteConverterRule();
+    public static final RelOptRule INSTANCE = new RepeatUnionConverterRule();
 
     /** */
-    private RecursiveCteConverterRule() {
+    private RepeatUnionConverterRule() {
         super(LogicalRepeatUnion.class, "RecursiveCteConverterRule");
     }
 
@@ -62,9 +62,6 @@ public class RecursiveCteConverterRule extends AbstractIgniteConverterRule<Logic
 
         RelNode seed = unwrapSpool(rel.getSeedRel(), table, "seed");
         RelNode iterative = unwrapSpool(rel.getIterativeRel(), table, "recursive term");
-
-        if (RecursiveCteUtils.referenceCount(iterative, table) > 1)
-            throw unsupported("the recursive term must contain no more than one self-reference");
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(single());

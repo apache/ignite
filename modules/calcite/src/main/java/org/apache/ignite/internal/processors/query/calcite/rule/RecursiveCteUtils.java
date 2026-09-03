@@ -36,7 +36,7 @@ import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
-import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 
 /** Utilities shared by recursive CTE converter rules. */
 final class RecursiveCteUtils {
@@ -52,7 +52,7 @@ final class RecursiveCteUtils {
 
     /** Stable identifier preserved in the serialized physical plan. */
     static String stateId(RelOptPlanner planner, RelOptTable table) {
-        BaseQueryContext ctx = planner.getContext().unwrap(BaseQueryContext.class);
+        PlanningContext ctx = planner.getContext().unwrap(PlanningContext.class);
 
         assert ctx != null;
 

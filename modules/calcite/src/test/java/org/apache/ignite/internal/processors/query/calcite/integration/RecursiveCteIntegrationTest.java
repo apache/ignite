@@ -120,9 +120,8 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testRecursiveTermWithMultipleSelfReferencesIsRejected() {
-        assertThrows(
-            "WITH RECURSIVE numbers(n) AS (" +
+    public void testRecursiveTermWithMultipleSelfReferences() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
                 "SELECT 1 " +
                 "UNION ALL " +
                 "SELECT left_numbers.n + 1 " +
@@ -130,17 +129,17 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
                 "JOIN numbers right_numbers ON left_numbers.n = right_numbers.n " +
                 "WHERE left_numbers.n < 3" +
             ") " +
-            "SELECT n FROM numbers",
-            IgniteSQLException.class,
-            "the recursive term must contain no more than one self-reference"
-        );
+            "SELECT n FROM numbers")
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
     }
 
     /** */
     @Test
-    public void testRecursiveCteWithMultipleRecursiveBranchesIsRejected() {
-        assertThrows(
-            "WITH RECURSIVE numbers(n) AS (" +
+    public void testRecursiveCteWithMultipleRecursiveBranches() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
                 "SELECT 1 " +
                 "UNION ALL " +
                 "(" +
@@ -149,10 +148,13 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
                     "SELECT n + 10 FROM numbers WHERE n < 3" +
                 ")" +
             ") " +
-            "SELECT n FROM numbers",
-            IgniteSQLException.class,
-            "the recursive term must contain no more than one self-reference"
-        );
+            "SELECT n FROM numbers")
+            .returns(1)
+            .returns(2)
+            .returns(11)
+            .returns(3)
+            .returns(12)
+            .check();
     }
 
     /** */
