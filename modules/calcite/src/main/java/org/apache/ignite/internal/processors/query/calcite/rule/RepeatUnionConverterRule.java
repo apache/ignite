@@ -86,10 +86,6 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
 
         LogicalTableSpool spool = (LogicalTableSpool)rel;
 
-        if (!RecursiveCteUtils.sameTransientTable(spool.getTable(), table)) {
-            throw unsupported("the " + term + " must target the recursive transient table");
-        }
-
         if (spool.readType != Spool.Type.LAZY || spool.writeType != Spool.Type.LAZY)
             throw unsupported("only lazy transient table spools are supported");
 

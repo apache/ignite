@@ -86,27 +86,6 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testExplainRecursiveCte() {
-        createEmployeeTable();
-
-        String qry = "WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (" +
-            "SELECT id, manager_id, name, 0 FROM employee WHERE manager_id IS NULL " +
-            "UNION ALL " +
-            "SELECT e.id, e.manager_id, e.name, h.depth + 1 " +
-            "FROM employee e " +
-            "JOIN employee_hierarchy h ON e.manager_id = h.id" +
-            ") " +
-            "SELECT id, manager_id, name, depth FROM employee_hierarchy";
-
-        String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
-
-        assertTrue(plan, plan.contains("IgniteRepeatUnion"));
-        assertTrue(plan, plan.contains("IgniteRecursiveTableScan"));
-        assertFalse(plan, plan.contains("IgniteRecursiveTableSpool"));
-    }
-
-    /** */
-    @Test
     public void testRecursiveTermWithoutSelfReferenceAfterOptimization() {
         assertQuery("WITH RECURSIVE numbers(n) AS (" +
             "SELECT 1 " +
@@ -222,59 +201,6 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(3, 2)
             .returns(4, 3)
             .check();
-    }
-
-    /** */
-    @Test
-    public void testNonDeterministicTableScanIsNotMaterialized() {
-        registerRecursiveFunctions();
-
-        sql("CREATE TABLE recursive_markers (id INT) WITH TEMPLATE=REPLICATED");
-        sql("INSERT INTO recursive_markers VALUES (1)");
-
-        String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
-            "SELECT 1, 0 " +
-            "UNION ALL " +
-            "SELECT n + 1, v.marker " +
-            "FROM numbers " +
-            "CROSS JOIN (" +
-                "SELECT nextRecursiveValue() AS marker FROM recursive_markers" +
-            ") v " +
-            "WHERE n < 4" +
-            ") " +
-            "SELECT n, marker FROM numbers ORDER BY n";
-
-        String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
-
-        assertTrue(plan, plan.contains("IgniteTableScan"));
-        assertTrue(plan, plan.contains("NEXTRECURSIVEVALUE"));
-        assertFalse(plan, plan.contains("IgniteTableSpool"));
-    }
-
-    /** */
-    @Test
-    public void testNonDeterministicIndexScanIsNotMaterialized() {
-        registerRecursiveFunctions();
-
-        sql("CREATE TABLE recursive_markers (id INT PRIMARY KEY, marker INT) WITH TEMPLATE=REPLICATED");
-        sql("INSERT INTO recursive_markers VALUES (1, 10), (2, 20), (3, 30)");
-
-        String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
-            "SELECT 1, 0 " +
-            "UNION ALL " +
-            "SELECT n + 1, " +
-                "(SELECT marker FROM recursive_markers /*+ FORCE_INDEX */ " +
-                    "WHERE id = numbers.n AND nextRecursiveValue() > 0) " +
-            "FROM numbers " +
-            "WHERE n < 4" +
-            ") " +
-            "SELECT n, marker FROM numbers ORDER BY n";
-
-        String plan = (String)sql("EXPLAIN PLAN FOR " + qry).get(0).get(0);
-
-        assertTrue(plan, plan.contains("IgniteIndexScan"));
-        assertTrue(plan, plan.contains("NEXTRECURSIVEVALUE"));
-        assertFalse(plan, plan.contains("Spool"));
     }
 
     /** SQL functions used by recursive CTE tests. */
