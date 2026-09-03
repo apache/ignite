@@ -60,8 +60,8 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
         String stateId = RecursiveCteUtils.stateId(planner, table);
         int iterationLimit = planner.getContext().unwrap(PlanningContext.class).recursiveCteIterationLimit();
 
-        RelNode seed = unwrapSpool(rel.getSeedRel(), table, "seed");
-        RelNode iterative = unwrapSpool(rel.getIterativeRel(), table, "recursive term");
+        RelNode seed = unwrapSpool(rel.getSeedRel(), "seed");
+        RelNode iterative = unwrapSpool(rel.getIterativeRel(), "recursive term");
 
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(single());
@@ -78,7 +78,7 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
     }
 
     /** */
-    private static RelNode unwrapSpool(RelNode rel, RelOptTable table, String term) {
+    private static RelNode unwrapSpool(RelNode rel, String term) {
         rel = RecursiveCteUtils.original(rel);
 
         if (!(rel instanceof LogicalTableSpool))
