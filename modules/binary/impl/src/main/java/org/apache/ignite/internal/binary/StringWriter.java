@@ -302,7 +302,7 @@ public final class StringWriter {
      * @param arr Array.
      * @return {@code True} if the array contains a byte with the sign bit set.
      */
-    private static boolean hasNegatives(byte[] arr) {
+    public static boolean hasNegatives(byte[] arr) {
         if (HAS_NEGATIVES != null) {
             try {
                 return (boolean)HAS_NEGATIVES.invokeExact(arr, 0, arr.length);

@@ -38,6 +38,9 @@ public class IgniteCommonsSystemProperties {
     /** Default value of {@link IgniteCommonsSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
     public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
 
+    /** Default value of {@link IgniteCommonsSystemProperties#IGNITE_BINARY_STRING_ZERO_COPY}. */
+    public static final boolean DFLT_ZERO_COPY = true;
+
     /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
@@ -132,7 +135,7 @@ public class IgniteCommonsSystemProperties {
      * Enables zero-copy UTF-8 serialization of {@link String} values.
      * Default value is {@code true}.
      */
-    @SystemProperty(value = "Enables zero-copy UTF-8 serialization of String values", defaults = "false")
+    @SystemProperty(value = "Enables zero-copy UTF-8 serialization of String values", defaults = "" + DFLT_ZERO_COPY)
     public static final String IGNITE_BINARY_STRING_ZERO_COPY = "IGNITE_BINARY_STRING_ZERO_COPY";
 
     /**

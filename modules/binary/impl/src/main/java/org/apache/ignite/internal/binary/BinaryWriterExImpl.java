@@ -42,6 +42,7 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_ZERO_COPY;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_STRING_ZERO_COPY;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
@@ -50,7 +51,7 @@ import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
  */
 class BinaryWriterExImpl implements BinaryWriterEx {
     /** Zero-copy serialization enabled flag. */
-    static final boolean ZERO_COPY = IgniteCommonsSystemProperties.getBoolean(IGNITE_BINARY_STRING_ZERO_COPY, true);
+    static final boolean ZERO_COPY = IgniteCommonsSystemProperties.getBoolean(IGNITE_BINARY_STRING_ZERO_COPY, DFLT_ZERO_COPY);
 
     /** Length: integer. */
     private static final int LEN_INT = 4;
