@@ -6,19 +6,19 @@
 query TTTTTTT
 select LTRIM(''), LTRIM('Neither'), LTRIM(' Leading'), LTRIM('Trailing   '), LTRIM(' Both '), LTRIM(NULL), LTRIM('     ')
 ----
-(empty)	Neither	Leading	Trailing   	Both 	NULL	(empty)
+NULL	Neither	Leading	Trailing   	Both 	NULL	NULL
 
 # test rtrim on scalars
 query TTTTTTT
 select RTRIM(''), RTRIM('Neither'), RTRIM(' Leading'), RTRIM('Trailing   '), RTRIM(' Both '), RTRIM(NULL), RTRIM('    ')
 ----
-(empty)	Neither	 Leading	Trailing	 Both	NULL	(empty)
+NULL	Neither	 Leading	Trailing	 Both	NULL	NULL
 
 # test trim on scalars
 query TTTTTTT
 select TRIM(''), TRIM('Neither'), TRIM(' Leading'), TRIM('Trailing   '), TRIM(' Both '), TRIM(NULL), TRIM('     ')
 ----
-(empty)	Neither	Leading	Trailing	Both	NULL	(empty)
+NULL	Neither	Leading	Trailing	Both	NULL	NULL
 
 # test trim with flags
 query TTTTTTT
@@ -36,10 +36,10 @@ INSERT INTO strings VALUES (0, '', 'Neither'), (1, ' Leading', NULL), (2, ' Both
 query T
 select LTRIM(a) FROM strings ORDER BY id
 ----
-(empty)
+NULL
 Leading
 Both 
-(empty)
+NULL
 
 query T
 select LTRIM(b) FROM strings ORDER BY id
@@ -52,17 +52,17 @@ NULL
 query T
 select LTRIM(a) FROM strings WHERE b IS NOT NULL ORDER BY id
 ----
-(empty)
+NULL
 Both 
 
 # test rtrim on tables
 query T
 select RTRIM(a) FROM strings ORDER BY id
 ----
-(empty)
+NULL
  Leading
  Both
-(empty)
+NULL
 
 query T
 select RTRIM(b) FROM strings ORDER BY id
@@ -75,7 +75,7 @@ NULL
 query T
 select RTRIM(a) FROM strings WHERE b IS NOT NULL ORDER BY id
 ----
-(empty)
+NULL
  Both
 
 
@@ -103,4 +103,3 @@ select TRIM()
 
 statement error
 select TRIM('hello', 'world', 'aaa')
-

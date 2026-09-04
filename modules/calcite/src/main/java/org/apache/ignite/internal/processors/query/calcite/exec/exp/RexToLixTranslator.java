@@ -206,7 +206,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     Expression translate(RexNode expr, RexImpTable.NullAs nullAs,
         Type storageType) {
         currentStorageType = storageType;
-        final Result result = expr.accept(this);
+        final Result result = normalizeStringResult(expr, expr.accept(this));
         final Expression translated =
             ConverterUtils.toInternal(result.valueVariable, storageType);
         assert translated != null;
@@ -831,7 +831,24 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
      * @return Whether expression is nullable
      */
     public boolean isNullable(RexNode e) {
-        return e.getType().isNullable();
+        return SqlTypeUtil.isCharacter(e.getType()) || e.getType().isNullable();
+    }
+
+    /** Converts an empty result of a character expression to {@code null}. */
+    private Result normalizeStringResult(RexNode node, Result result) {
+        if (!SqlTypeUtil.isCharacter(node.getType()) || result.valueVariable.getType() != String.class)
+            return result;
+
+        final ParameterExpression valVariable = Expressions.parameter(
+            String.class, list.newName(result.valueVariable.name + "_null_if_empty"));
+        list.add(Expressions.declare(Modifier.FINAL, valVariable,
+            Expressions.call(IgniteMethod.NULL_IF_EMPTY.method(), result.valueVariable)));
+
+        final ParameterExpression isNullVariable = Expressions.parameter(
+            Boolean.TYPE, list.newName(result.isNullVariable.name + "_null_if_empty"));
+        list.add(Expressions.declare(Modifier.FINAL, isNullVariable, checkNull(valVariable)));
+
+        return new Result(isNullVariable, valVariable);
     }
 
     /** */
@@ -1064,7 +1081,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         final Type storageType, final RexToLixTranslator translator) {
         final Type originalStorageType = translator.currentStorageType;
         translator.currentStorageType = storageType;
-        Result operandResult = operand.accept(translator);
+        Result operandResult = translator.normalizeStringResult(operand, operand.accept(translator));
         if (storageType != null)
             operandResult = translator.toInnerStorageType(operandResult, storageType);
         translator.currentStorageType = originalStorageType;
