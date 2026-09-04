@@ -86,9 +86,9 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
         MetricRegistryImpl mreg = mmgr.registry(metricRegistryName());
 
-        mreg.longMetric("startTime", null).value(U.currentTimeMillis());
-        mreg.objectMetric("name", String.class, null).value(grpName);
-        mreg.objectMetric("indexName", String.class, null).value(idxName);
+        mreg.longMetric("startTime", "Statistics collection start time, in milliseconds.").value(U.currentTimeMillis());
+        mreg.objectMetric("name", String.class, "Cache group name.").value(grpName);
+        mreg.objectMetric("indexName", String.class, "Index name.").value(idxName);
 
         logicalReadLeafCtr = mreg.longAdderMetric(LOGICAL_READS_LEAF, null);
         logicalReadInnerCtr = mreg.longAdderMetric(LOGICAL_READS_INNER, null);

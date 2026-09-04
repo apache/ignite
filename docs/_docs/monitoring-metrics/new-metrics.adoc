@@ -16,9 +16,7 @@
 
 This page describes metrics registers (categories) and the metrics available in each register.
 
-
 == System
-
 
 System metrics such as JVM or CPU metrics.
 
@@ -28,25 +26,72 @@ Register name: `sys`
 |===
 |Name    |Type|    Description
 |CpuLoad| double|  CPU load.
-|CurrentThreadCpuTime  |  long|    ThreadMXBean.getCurrentThreadCpuTime()
-|CurrentThreadUserTime|   long   | ThreadMXBean.getCurrentThreadUserTime()
-|DaemonThreadCount|   integer| ThreadMXBean.getDaemonThreadCount()
+|CurrentThreadCpuTime | long | Total CPU time of the current thread, in nanoseconds.
+|CurrentThreadUserTime | long | User-mode CPU time of the current thread, in nanoseconds.
+|DaemonThreadCount | integer | Current number of live daemon threads.
 |GcCpuLoad   |double|  GC CPU load.
-|PeakThreadCount |integer| ThreadMXBean.getPeakThreadCount
-|SystemLoadAverage|   java.lang.Double|    OperatingSystemMXBean.getSystemLoadAverage()
-|ThreadCount |integer| ThreadMXBean.getThreadCount
+|PeakThreadCount | integer | Peak live thread count since the JVM started.
+|SystemLoadAverage | double | System load average for the last minute, or a negative value if not available.
+|ThreadCount | integer | Current number of live threads, including daemon threads.
 |TotalExecutedTasks  |long|    Total executed tasks.
-|TotalStartedThreadCount |long|    ThreadMXBean.getTotalStartedThreadCount
-|UpTime|  long  |  RuntimeMxBean.getUptime()
-|memory.heap.committed|   long|    MemoryUsage.getHeapMemoryUsage().getCommitted()
-|memory.heap.init |   long|    MemoryUsage.getHeapMemoryUsage().getInit()
-|memory.heap.used    |long|    MemoryUsage.getHeapMemoryUsage().getUsed()
-|memory.nonheap.committed|    long|    MemoryUsage.getNonHeapMemoryUsage().getCommitted()
-|memory.nonheap.init |long  |  MemoryUsage.getNonHeapMemoryUsage().getInit()
-|memory.nonheap.max  |long  |  MemoryUsage.getNonHeapMemoryUsage().getMax()
-|memory.nonheap.used |long  |  MemoryUsage.getNonHeapMemoryUsage().getUsed()
+|TotalStartedThreadCount | long | Total number of threads created and started since the JVM started.
+|UpTime | long | JVM uptime, in milliseconds.
+|memory.heap.committed | long | Amount of heap memory committed for the JVM to use, in bytes.
+|memory.heap.init | long | Initial amount of heap memory requested by the JVM, in bytes; -1 if undefined.
+|memory.heap.max | long | Maximum amount of heap memory that can be used, in bytes; -1 if undefined.
+|memory.heap.used | long | Amount of used heap memory, in bytes.
+|memory.nonheap.committed | long | Amount of non-heap memory committed for the JVM to use, in bytes.
+|memory.nonheap.init | long | Initial amount of non-heap memory requested by the JVM, in bytes; -1 if undefined.
+|memory.nonheap.max | long | Maximum amount of non-heap memory that can be used, in bytes; -1 if undefined.
+|memory.nonheap.used | long | Amount of used non-heap memory, in bytes.
 |===
 
+== Node
+
+Node-level information: version, uptime, cluster state, configured SPIs. Most values are formatted strings intended for humans.
+
+Register name: `ignite`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|active | boolean | Checks Ignite grid is active or is not active.
+|checkpointSpiFormatted | string | Formatted instance of configured checkpoint SPI implementation.
+|clusterState | string | Checks cluster state.
+|collisionSpiFormatted | string | Formatted instance of configured collision SPI implementations.
+|communicationSpiFormatted | string | Formatted instance of fully configured SPI communication implementation.
+|copyright | string | Copyright statement for Ignite product.
+|currentCoordinatorFormatted | string | Formatted properties of current coordinator.
+|deploymentSpiFormatted | string | Formatted instance of fully configured deployment SPI implementation.
+|discoverySpiFormatted | string | Formatted instance of configured discovery SPI implementation.
+|eventStorageSpiFormatted | string | Formatted instance of fully configured event SPI implementation.
+|executorServiceFormatted | string | Formatted instance of fully configured thread pool that is used in grid.
+|failoverSpiFormatted | string | Formatted instance of fully configured failover SPI implementations.
+|fullVersion | string | String presentation of the Ignite version.
+|gridLoggerFormatted | string | Formatted instance of logger that is in grid.
+|igniteHome | string | Ignite installation home folder.
+|instanceName | string | Optional kernal instance name.
+|isNodeInBaseline | boolean | Baseline node flag.
+|isPeerClassLoadingEnabled | boolean | Whether or not peer class loading (a.k.a. P2P class loading) is enabled.
+|isRebalanceEnabled | boolean | Rebalance enabled flag.
+|jdkInformation | string | JDK information.
+|lastClusterStateChangeTime | long | Unix time of last cluster state change operation.
+|lifecycleBeansFormatted | List | String representation of lifecycle beans.
+|loadBalancingSpiFormatted | string | Formatted instance of fully configured load balancing SPI implementations.
+|localNodeId | UUID | Unique identifier for this node within grid.
+|longJVMPauseLastEvents | Map | Long JVM pause last events.
+|longJVMPausesCount | long | Long JVM pauses count.
+|longJVMPausesTotalDuration | long | Long JVM pauses total duration.
+|mBeanServerFormatted | string | Formatted instance of MBean server instance.
+|osInformation | string | OS information.
+|osUser | string | OS user name.
+|startTimestamp | long | Start timestamp of the kernal.
+|startTimestampFormatted | string | String presentation of the kernal start timestamp.
+|uptime | long | Up-time of the kernal.
+|uptimeFormatted | string | String presentation of up-time for the kernal.
+|userAttributesFormatted | List | Collection of formatted user-defined attributes added to this node.
+|vmName | string | VM name.
+|===
 
 == Caches
 
@@ -63,14 +108,14 @@ Register name: `cache.{cache_name}.{near}`
 |CacheMisses |long|A miss is a get request that is not satisfied.
 |CachePuts   |long|The total number of puts to the cache.
 |CacheRemovals  | long|The total number of removals from the cache.
+|CacheSize|long|Local cache size.
 |CacheTxCommits | long|Total number of transaction commits.
 |CacheTxRollbacks |long|Total number of transaction rollbacks.
-|CacheSize|long|Local cache size.
 |CommitTime  |histogram  | Commit time in nanoseconds.
 |CommitTimeTotal |long| The total time of commit, in nanoseconds.
 |ConflictResolverAcceptedCount|long|Conflict resolver accepted entries count.
-|ConflictResolverRejectedCount|long|Conflict resolver rejected entries count.
 |ConflictResolverMergedCount|long|Conflict resolver merged entries count.
+|ConflictResolverRejectedCount|long|Conflict resolver rejected entries count.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
 |EntryProcessorInvokeTimeNanos | long | The total time of cache invocations for which this node is the initiator, in nanoseconds.
 |EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator, in nanoseconds.
@@ -80,14 +125,16 @@ Register name: `cache.{cache_name}.{near}`
 |EntryProcessorReadOnlyInvocations   |long|The total number of cache invocations, caused no updates.
 |EntryProcessorRemovals  |long|The total number of cache invocations, caused removals.
 |EstimatedRebalancingKeys|long|Number estimated to rebalance keys.
+|EvictingPartitionsLeft | long | The number of non-affinity partitions scheduled for eviction.
 |GetAllTime | histogram | GetAll time for which this node is the initiator, in nanoseconds.
 |GetTime | histogram | Get time for which this node is the initiator, in nanoseconds.
 |GetTimeTotal | long | The total time of cache gets for which this node is the initiator, in nanoseconds.
 |HeapEntriesCount|long|Onheap entries count.
-|IndexRebuildKeysProcessed|long | The number of keys with rebuilt indexes.
+|IndexBuildPartitionsLeftCount | integer | The number of local node partitions that remain to be processed to complete indexing.
+|IndexRebuildKeyProcessed | long | Number of keys processed during the index rebuilding.
 |IsCacheAffinityConfigurationMdcSafe|boolean | True if cache affinity guarantees having a copy of each partition in each data center.
 |IsCachePartitionDistributionSafe|boolean | True if current cache partition distribution maintains the guarantee of one partition copy in each data center.
-|IsIndexRebuildInProgress|boolean | True if index build or rebuild is in progress.
+|IsIndexRebuildInProgress | boolean | True if index rebuild is in progress.
 |OffHeapBackupEntriesCount|long|Offheap backup entries count.
 |OffHeapEntriesCount|long|Offheap entries count.
 |OffHeapEvictions|long|The total number of evictions from the off-heap memory.
@@ -101,54 +148,72 @@ Register name: `cache.{cache_name}.{near}`
 |PutAllTime | histogram | PutAll time for which this node is the initiator, in nanoseconds.
 |PutTime | histogram | Put time for which this node is the initiator, in nanoseconds.
 |PutTimeTotal | long | The total time of cache puts for which this node is the initiator, in nanoseconds.
-|QueryCompleted  |long|Count of completed queries.
-|QueryExecuted   |long|Count of executed queries.
-|QueryFailed |long|Count of failed queries.
-|QueryMaximumTime |long| Maximum query execution time, in milliseconds.
-|QueryMinimalTime |long| Minimum query execution time, in milliseconds.
-|QuerySumTime |long| Query summary time, in milliseconds.
-|RebalanceClearingPartitionsLeft |long| Number of partitions need to be cleared before actual rebalance start.
+|QueryCompleted | long | Number of completed queries.
+|QueryExecuted | long | Number of executed queries.
+|QueryFailed | long | Number of failed queries.
+|QueryMaximumTime | long | Maximum execution time of queries, in milliseconds.
+|QueryMinimalTime | long | Minimum execution time of queries, in milliseconds.
+|QuerySumTime | long | Total execution time of queries, in milliseconds.
+|RebalanceClearingPartitionsLeft | long | The number of partitions need to be cleared before actual rebalance start.
 |RebalanceStartTime  |long| Rebalance start time.
 |RebalancedKeys |long| Number of already rebalanced keys.
-|RebalancingBytesRate|long|Estimated rebalancing speed in bytes.
-|RebalancingKeysRate |long|Estimated rebalancing speed in keys.
+|RebalancingBytesRate | hitrate | Estimated rebalancing speed in bytes.
+|RebalancingKeysRate | hitrate | Estimated rebalancing speed in keys.
 |RemoveAllConflictTime | histogram | RemoveAllConflict time for which this node is the initiator, in nanoseconds.
 |RemoveAllTime | histogram | RemoveAll time for which this node is the initiator, in nanoseconds.
 |RemoveTime | histogram | Remove time for which this node is the initiator, in nanoseconds.
-|RemoveTimeTotal | long | The total time of cache removal, in nanoseconds.
+|RemoveTimeTotal | long | The total time of cache removal for which this node is the initiator, in nanoseconds.
 |RollbackTime|histogram|   Rollback time in nanoseconds.
 |RollbackTimeTotal   |long|The total time of rollback, in nanoseconds.
 |TotalRebalancedBytes|long|Number of already rebalanced bytes.
+|TxKeyCollisions | string | Tx key collisions. Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows corresponding keys.
 |===
 
-== Cache Groups
+NOTE: `ConflictResolver*` metrics are registered only when a conflict resolver is configured for the cache. `IsCacheAffinityConfigurationMdcSafe` and `IsCachePartitionDistributionSafe` are registered on server nodes only, and only when the node has a data center ID.
 
+== Cache Groups
 
 Register name: `cacheGroups.{group_name}`
 
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
-|AffinityPartitionsAssignmentMap |java.util.Map|  Affinity partitions assignment map.
-|Caches  |java.util.ArrayList| List of caches
+|AffinityPartitionsAssignmentMap | Map | Affinity partitions assignment map.
+|Caches | List | List of caches.
+|ClusterMovingPartitionsCount | integer | Count of partitions for this cache group in the entire cluster with state MOVING.
+|ClusterOwningPartitionsCount | integer | Count of partitions for this cache group in the entire cluster with state OWNING.
+|InMemoryIndexPages | long | Amount of index pages loaded into memory.
 |IndexBuildCountPartitionsLeft |  long|    Number of partitions need processed for finished indexes create or rebuilding.
+|InitializedLocalPartitionsNumber | long | Number of local partitions initialized on current node.
 |LocalNodeMovingPartitionsCount  |integer| Count of partitions with state MOVING for this cache group located on this node.
 |LocalNodeOwningPartitionsCount  |integer| Count of partitions with state OWNING for this cache group located on this node.
 |LocalNodeRentingEntriesCount |   long|    Count of entries remains to evict in RENTING partitions located on this node for this cache group.
 |LocalNodeRentingPartitionsCount |integer| Count of partitions with state RENTING for this cache group located on this node.
 |MaximumNumberOfPartitionCopies | integer| Maximum number of partition copies for all partitions of this cache group.
 |MinimumNumberOfPartitionCopies  |integer| Minimum number of partition copies for all partitions of this cache group.
-|MovingPartitionsAllocationMap   |java.util.Map|  Allocation map of partitions with state MOVING in the cluster.
-|OwningPartitionsAllocationMap   |java.util.Map | Allocation map of partitions with state OWNING in the cluster.
-|PartitionIds    |java.util.ArrayList| Local partition ids.
-|SparseStorageSize  | long|    Storage space allocated for group adjusted for possible sparsity, in bytes.
-|StorageSize |long|    Storage space allocated for group, in bytes.
-|TotalAllocatedPages |long|    Cache group total allocated pages.
-|TotalAllocatedSize  |long|    Total size of memory allocated for group, in bytes.
+|MovingPartitionsAllocationMap | Map | Allocation map of partitions with state MOVING in the cluster.
+|OwningPartitionsAllocationMap | Map | Allocation map of partitions with state OWNING in the cluster.
+|PartitionIds | List | Local partition ids.
+|RebalancingEndTime | long | The time the rebalancing was completed. If the rebalancing completed with an error, was cancelled, or the start time was undefined, the rebalancing end time will be undefined.
+|RebalancingFullReceivedBytes | Map | Currently received bytes for full rebalance by supplier.
+|RebalancingFullReceivedKeys | Map | Currently received keys for full rebalance by supplier.
+|RebalancingHistReceivedBytes | Map | Currently received bytes for historical rebalance by supplier.
+|RebalancingHistReceivedKeys | Map | Currently received keys for historical rebalance by supplier.
+|RebalancingLastCancelledTime | long | The time the rebalancing was completed with an error or was cancelled. If there were several such cases, the metric stores the last time. The metric displays the value even if there is no rebalancing process.
+|RebalancingPartitionsLeft | long | The number of cache group partitions left to be rebalanced.
+|RebalancingPartitionsTotal | integer | The total number of cache group partitions to be rebalanced.
+|RebalancingReceivedBytes | long | The number of currently rebalanced bytes of this cache group.
+|RebalancingReceivedKeys | long | The number of currently rebalanced keys for the whole cache group.
+|RebalancingStartTime | long | The time the first partition demand message was sent. If there are no messages to send, the rebalancing time will be undefined.
 |ReencryptionBytesLeft |long| The number of bytes left for re-encryption.
 |ReencryptionFinished |boolean| The flag indicates whether re-encryption is finished or not.
+|SparseStorageSize  | long|    Storage space allocated for group adjusted for possible sparsity, in bytes.
+|StorageSize |long|    Storage space allocated for group, in bytes.
+|TotalAllocatedPages | long | Total allocated pages.
+|TotalAllocatedSize  |long|    Total size of memory allocated for group, in bytes.
 |===
 
+NOTE: `ReencryptionBytesLeft` and `ReencryptionFinished` are registered only when cache encryption is enabled.
 
 == Transactions
 
@@ -159,21 +224,20 @@ Register name: `tx`
 [cols="2,1,3",opts="header"]
 |===
 |Name   | Type |    Description
-|AllOwnerTransactions|    java.util.HashMap|   Map of local node owning transactions.
+|AllOwnerTransactions | Map | Map of local node owning transactions.
 |LockedKeysNumber   | long|    The number of keys locked on the node.
 |OwnerTransactionsNumber |long|    The number of active transactions for which this node is the initiator.
 |TransactionsHoldingLockNumber |  long|    The number of active transactions holding at least one key lock.
-|LastCommitTime  |long|    Last commit time.
+|commitTime | long | Last commit time.
 |nodeSystemTimeHistogram| histogram|   Transactions system times on node represented as histogram, in milliseconds.
 |nodeUserTimeHistogram|   histogram|   Transactions user times on node represented as histogram, in milliseconds.
-|LastRollbackTime|    long|    Last rollback time.
+|rollbackTime | long | Last rollback time.
 |totalNodeSystemTime |long|    Total transactions system time on node, in milliseconds.
 |totalNodeUserTime   |long|    Total transactions user time on node, in milliseconds.
 |txCommits   |integer| Number of transaction commits.
-|txRollbacks |integer| Number of transaction rollbacks.
 |txDeadlocks |integer| Number of transaction deadlocks.
+|txRollbacks |integer| Number of transaction rollbacks.
 |===
-
 
 == Partition Map Exchange
 
@@ -190,7 +254,6 @@ Register name: `pme`
 |DurationHistogram |  histogram  | Histogram of PME durations in milliseconds.
 |===
 
-
 == Compute Jobs
 
 Register name: `compute.jobs`
@@ -198,14 +261,14 @@ Register name: `compute.jobs`
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
-|compute.jobs.Active  |long|    Number of active jobs currently executing.
-|compute.jobs.Canceled    |long|    Number of cancelled jobs that are still running.
-|compute.jobs.ExecutionTime   |long|    Total execution time of jobs, in milliseconds.
-|compute.jobs.Finished    |long|    Number of finished jobs.
-|compute.jobs.Rejected    |long|    Number of jobs rejected after more recent collision resolution operation.
-|compute.jobs.Started |long|    Number of started jobs.
-|compute.jobs.Waiting |long|    Number of currently queued jobs waiting to be executed.
-|compute.jobs.WaitingTime |long|    Total time jobs spent on waiting queue, in milliseconds.
+|Active | long | Number of active jobs currently executing.
+|Canceled | long | Number of cancelled jobs that are still running.
+|ExecutionTime | long | Total execution time of jobs, in milliseconds.
+|Finished | long | Number of finished jobs.
+|Rejected | long | Number of jobs rejected after more recent collision resolution operation.
+|Started | long | Number of started jobs.
+|Waiting | long | Number of currently queued jobs waiting to be executed.
+|WaitingTime | long | Total time jobs spent on waiting queue, in milliseconds.
 |===
 
 == Thread Pools
@@ -215,41 +278,56 @@ Register name: `threadPools.{thread_pool_name}`
 [cols="2,1,3",opts="header"]
 |===
 |Name |   Type |   Description
-|ActiveCount |long  |  Approximate number of threads that are actively executing tasks.
+|ActiveCount | integer | Approximate number of threads that are actively executing tasks.
 |CompletedTaskCount|  long |   Approximate total number of tasks that have completed execution.
-|CorePoolSize    |long  |  The core number of threads.
+|CorePoolSize | integer | The core number of threads.
 |KeepAliveTime|   long  |  Thread keep-alive time, which is the amount of time which threads in excess of the core pool size may remain idle before being terminated.
-|LargestPoolSize| long  |  Largest number of threads that have ever simultaneously been in the pool.
-|MaximumPoolSize |long  |  The maximum allowed number of threads.
-|PoolSize    |long|    Current number of threads in the pool.
-|QueueSize   |long |   Current size of the execution queue.
+|LargestPoolSize | integer | Largest number of threads that have ever simultaneously been in the pool.
+|MaximumPoolSize | integer | The maximum allowed number of threads.
+|PoolSize | integer | Current number of threads in the pool.
+|QueueSize | integer | Current size of the execution queue.
 |RejectedExecutionHandlerClass|   string | Class name of current rejection handler.
 |Shutdown  |  boolean| True if this executor has been shut down.
 |TaskCount |  long |   Approximate total number of tasks that have been scheduled for execution.
-|TaskExecutionTime | histogram | Task execution time, in milliseconds.
+|TaskExecutionTime | histogram | Tasks execution times as histogram (milliseconds).
 |Terminated  |boolean| True if all tasks have completed following shut down.
-|Terminating |long|    True if terminating but not yet terminated.
+|Terminating | boolean | True if terminating but not yet terminated.
 |ThreadFactoryClass|  string|  Class name of thread factory used to create new threads.
 |===
 
+Striped executors (`StripedExecutor`, `GridDataStreamExecutor`) expose a different set of metrics:
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|ActiveCount | integer | Number of active tasks of all stripes.
+|DetectStarvation | boolean | True if possible starvation in striped pool is detected.
+|Shutdown | boolean | True if this executor has been shut down.
+|StripesActiveStatuses | boolean[] | Number of active tasks per stripe.
+|StripesCompletedTasksCounts | long[] | Number of completed tasks per stripe.
+|StripesCount | integer | Stripes count.
+|StripesQueueSizes | int[] | Size of queue per stripe.
+|TaskExecutionTime | histogram | Tasks execution times as histogram (milliseconds).
+|Terminated | boolean | True if all tasks have completed following shut down.
+|TotalCompletedTasksCount | long | Completed tasks count of all stripes.
+|TotalQueueSize | integer | Total queue size of all stripes.
+|===
 
 == Cache Group IO
 
 Register name: `io.statistics.cacheGroups.{group_name}`
 
-
 [cols="2,1,3",opts="header"]
 |===
 |Name |   Type |   Description
-|LOGICAL_READS  | long |   Number of logical reads
-|PHYSICAL_READS | long |   Number of physical reads
-|grpId  | integer | Group id
-|name  |  string | Name of the index
-|startTime  | long |   Statistics collect start time
+|LOGICAL_READS | long | Count of logical page reads.
+|PHYSICAL_READS | long | Count of physical page reads.
+|grpId | integer | Cache group ID.
 |insertedBytes | long | Count of inserted to store bytes
+|name | string | Cache group name.
 |removedBytes | long | Count of removed from store bytes
+|startTime | long | Statistics collection start time, in milliseconds.
 |===
-
 
 == Sorted Indexes I/O Statistics
 
@@ -262,29 +340,27 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 |LOGICAL_READS_LEAF | long  |  Number of logical reads for leaf tree node
 |PHYSICAL_READS_INNER|    long|    Number of physical reads for inner tree node
 |PHYSICAL_READS_LEAF| long|    Number of physical reads for leaf tree node
-|indexName|   string|  Name of the index
-|name|    string|  Name of the cache
-|startTime|   long|    Statistics collection start time
+|indexName | string | Index name.
+|name | string | Cache group name.
+|startTime | long | Statistics collection start time, in milliseconds.
 |===
 
 == Sorted Indexes Operations
 
-Contains metrics about low-level operations (such as `Insert`, `Search`, etc.) on pages of sorted secondary indexes.
+Contains metrics about low-level operations on pages of sorted secondary indexes. `{opType}` is one of: `AskNeighbor`, `Insert`, `LockBackAndRmvFromLeaf`, `LockBackAndTail`, `LockTail`, `LockTailExact`, `LockTailForward`, `RemoveFromLeaf`, `RemoveRangeFromLeaf`, `Replace`, `Search`.
 
 Register name: `index.{schema_name}.{table_name}.{index_name}`
 
 [cols="2,1,3",opts="header"]
 |===
 |Name |    Type |    Description
-|{opType}Count|   long|   Count of {opType} operations on index.
-|{opType}Time|   long|   Total duration (nanoseconds) of {opType} operations on index.
+|{opType}Count | long | Count of {opType} operations.
+|{opType}Time | long | Total time of {opType} operations (nanoseconds)
 |===
-
 
 == Hash Indexes I/O Statistics
 
 Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
-
 
 [cols="2,1,3",opts="header"]
 |===
@@ -293,97 +369,165 @@ Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
 |LOGICAL_READS_LEAF|  long|    Number of logical reads for leaf tree node
 |PHYSICAL_READS_INNER|    long|    Number of physical reads for inner tree node
 |PHYSICAL_READS_LEAF| long|    Number of physical reads for leaf tree node
-|indexName|   string|  Name of the index
-|name|    string|  Name of the cache
-|startTime|   long|    Statistics collection start time
+|indexName | string | Index name.
+|name | string | Cache group name.
+|startTime | long | Statistics collection start time, in milliseconds.
 |===
-
 
 == Communication IO
 
 Register name: `io.communication`
 
-
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
-|ActiveSessionsCount|   integer|   Active TCP sessions count.
 |OutboundMessagesQueueSize|   integer| Outbound messages queue size.
-|SentMessagesCount  | integer| Sent messages count.
-|SentBytesCount | long  |  Sent bytes count.
 |ReceivedBytesCount|  long|    Received bytes count.
 |ReceivedMessagesCount|   integer| Received messages count.
-|RejectedSslSessionsCount|   integer|   TCP sessions count that were rejected due to the SSL errors (metric is exported only if SSL is enabled).
-|SslEnabled|   boolean|   Indicates whether SSL is enabled.
-|SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|SentBytesCount | long  |  Sent bytes count.
+|SentMessagesCount  | integer| Sent messages count.
 |===
 
+== Communication SPI
+
+Metrics of the TCP communication SPI. `{message_type}` is the numeric direct type of an Ignite message; a pair of counters exists for every message type the node has sent or received.
+
+Register name: `communication.tcp`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|ActiveSessionsCount | integer | Active TCP sessions count.
+|RejectedSslSessionsCount | integer | TCP sessions count that were rejected due to SSL errors.
+|SslEnabled | boolean | Whether SSL is enabled.
+|SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
+|maxOutboundMessagesQueueSize | max value | Maximum number of messages waiting to be sent.
+|outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
+|receivedBytes | long | Total number of bytes received by current node.
+|receivedMessagesByType.{message_type} | long | Total number of messages with given type received by current node.
+|receivedMessagesCount | long | Total number of messages received by current node.
+|sentBytes | long | Total number of bytes sent by current node.
+|sentMessagesByType.{message_type} | long | Total number of messages with given type sent by current node.
+|sentMessagesCount | long | Total number of messages sent by current node.
+|===
+
+NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registered only when SSL is enabled.
+
+A separate register is created for every remote node the local node has exchanged messages with:
+
+Register name: `communication.tcp.{node_consistent_id}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|receivedMessagesFromNode | long | Total number of messages received by current node from the given node.
+|sentMessagesToNode | long | Total number of messages sent by current node to the given node.
+|===
+
+== Communication Connection Pool
+
+Register name: `communication.tcp.connectionPool`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|isAsync | boolean | Asynchronous flag. If TRUE, connections put data in a queue (with some preprocessing) instead of immediate sending.
+|isPaired | boolean | Paired connections flag.
+|maxConnectionsCnt | integer | Maximal connections number to a remote node.
+|===
+
+Per remote node:
+
+Register name: `communication.tcp.connectionPool.{node_id}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|acquiringThreadsCnt | integer | Number of threads currently acquiring a connection.
+|avgConnectionLifetime | long | Average connection lifetime in milliseconds.
+|consistentId | string | Consistent id of the remote node as string.
+|currentConnectionsCnt | integer | Number of current connections to the remote node.
+|maxNetworkIdleTime | long | Maximal idle time of physical sending or receiving data in milliseconds.
+|outboundMessagesQueueSize | integer | Overall number of pending messages to the remote node.
+|removedConnectionsCnt | long | Total number of removed connections.
+|===
 
 == Ignite Thin Client Connector
 
 Register name: `client.connector`
 
-
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
 |ActiveSessionsCount|   integer|   Active TCP sessions count.
-|ReceivedBytesCount|   long|   Received bytes count.
-|RejectedSslSessionsCount|   integer|   TCP sessions count that were rejected due to the SSL errors (metric is exported only if SSL is enabled).
-|RejectedSessionsTimeout|   integer|   TCP sessions count that were rejected due to handshake timeout.
-|RejectedSessionsAuthenticationFailed|   integer|   TCP sessions count that were rejected due to failed authentication.
-|RejectedSessionsTotal|   integer|   Total number of rejected TCP connections.
-|{clientType}.AcceptedSessions|   integer|   Number of successfully established sessions for the client type.
-|{clientType}.ActiveSessions|   integer|   Number of active sessions for the client type.
-|SentBytesCount|   long|   Sent bytes count.
-|SslEnabled|   boolean|   Indicates whether SSL is enabled.
-|SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
 |AffinityKeyRequestsHits|   long|   The number of affinity-aware cache key requests that were sent to the primary node.
 |AffinityKeyRequestsMisses|   long|   The number of affinity-aware cache key requests that were sent not to the primary node.
 |AffinityQueryRequestsHits|   long|   The number of affinity-aware query requests that were sent to the primary node.
 |AffinityQueryRequestsMisses|   long|   The number of affinity-aware query requests that were sent not to the primary node.
+|RejectedSessionsAuthenticationFailed|   integer|   TCP sessions count that were rejected due to failed authentication.
+|RejectedSessionsTimeout|   integer|   TCP sessions count that were rejected due to handshake timeout.
+|RejectedSessionsTotal|   integer|   Total number of rejected TCP connections.
+|RejectedSslSessionsCount | integer | TCP sessions count that were rejected due to SSL errors.
+|SslEnabled | boolean | Whether SSL is enabled.
+|SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
+|jdbc.AcceptedSessions | integer | Number of successfully established sessions for the client type.
+|jdbc.ActiveSessions | integer | Number of active sessions for the jdbc client.
+|maxOutboundMessagesQueueSize | max value | Maximum number of messages waiting to be sent.
+|odbc.AcceptedSessions | integer | Number of successfully established sessions for the client type.
+|odbc.ActiveSessions | integer | Number of active sessions for the odbc client.
+|outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
+|receivedBytes | long | Total number of bytes received by current node.
+|sentBytes | long | Total number of bytes sent by current node.
+|thin.AcceptedSessions | integer | Number of successfully established sessions for the client type.
+|thin.ActiveSessions | integer | Number of active sessions for the thin client.
 |===
 
+NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registered only when SSL is enabled.
 
 == Ignite REST Client Connector
 
 Register name: `rest.client`
 
-
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
 |ActiveSessionsCount|   integer|   Active TCP sessions count.
-|ReceivedBytesCount|   long|    Received bytes count.
-|RejectedSslSessionsCount|   integer|   TCP sessions count that were rejected due to the SSL errors (metric is exported only if SSL is enabled).
-|SentBytesCount|   long|   Sent bytes count.
-|SslEnabled|   boolean|   Indicates whether SSL is enabled.
-|SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|RejectedSslSessionsCount | integer | TCP sessions count that were rejected due to SSL errors.
+|SslEnabled | boolean | Whether SSL is enabled.
+|SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
+|maxOutboundMessagesQueueSize | max value | Maximum number of messages waiting to be sent.
+|outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
+|receivedBytes | long | Total number of bytes received by current node.
+|sentBytes | long | Total number of bytes sent by current node.
 |===
 
+NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registered only when SSL is enabled.
 
 == Discovery IO
 
 Register name: `io.discovery`
 
-
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
-|ClientRouterNodeId|   String|   Client router node ID (metric is exported only from client nodes).
-|CoordinatorSince|   long|   Timestamp since which the local node became the coordinator (metric is exported only from server nodes).
-|Coordinator|   UUID|   Coordinator ID (metric is exported only from server nodes).
+|ClientRouterNodeId | string | Client router node ID.
+|Coordinator | UUID | Coordinator ID.
+|CoordinatorSince | long | Coordinator since timestamp.
 |CurrentTopologyVersion|   long|   Current topology version.
+|FailedNodes | integer | Failed nodes count.
 |JoinedNodes|   integer|   Joined nodes count.
 |LeftNodes|   integer|   Left nodes count.
-|MessageWorkerQueueSize|   integer|   Current message worker queue size.
-|PendingMessagesRegistered|   integer|   Pending registered messages count.
-|RejectedSslConnectionsCount|   integer|   TCP discovery connections count that were rejected due to the SSL errors.
-|SslEnabled|   boolean|   Indicates whether SSL is enabled.
+|MaxMsgQueueSize | max value | Max message queue size.
+|MessageWorkerQueueSize | integer | Message worker queue current size.
+|Next | UUID | Next in the ring node ID.
+|PendingMessagesRegistered | integer | Pending messages registered count.
+|RejectedSslConnectionsCount | integer | TCP discovery connections count that were rejected due to SSL errors.
+|SslEnabled | boolean | Whether SSL is enabled.
 |TotalProcessedMessages|   integer|   Total processed messages count.
 |TotalReceivedMessages|   integer|   Total received messages count.
 |===
 
+NOTE: `Coordinator`, `CoordinatorSince`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only.
 
 == Data Region IO
 
@@ -398,25 +542,31 @@ Register name: `io.dataregion.{data_region_name}`
 |EmptyDataPages|  long|    Calculates empty data pages count for region. It counts only totally free pages that can be reused (e. g. pages that are contained in reuse bucket of free list).
 |EvictionRate|    hitrate|    Eviction rate (pages per second).
 |EvictionsStarted | boolean |   True if page eviction was triggered due to data region memory pressure.
-|LargeEntriesPagesCount|  long|    Count of pages that fully occupied by large entries that go beyond page size
+|InMemoryIndexPages | long | Amount of index pages loaded into memory.
+|InitialSize | long | Initial memory region size in bytes defined by its data region.
+|LargeEntriesPagesCount | long | Number of pages fully occupied by large entries that go beyond the page size.
+|MaxSize | long | Maximum memory region size in bytes defined by its data region.
 |OffHeapSize| long|    Offheap size in bytes.
 |OffheapUsedSize| long|    Offheap used size in bytes.
-|PagesFillFactor| double|  The average amount of data in non-empty pages as a ratio of the page size.
+|PageTimestampHistogram | histogram | Histogram of pages last access time.
+|PagesFillFactor | double | The ratio of space occupied by user and system data to the size of all pages that contain this data.
 |PagesRead|   long|    Number of pages read from last restart.
+|PagesReadTime | long | Total pages read time in nanoseconds since last restart.
 |PagesReplaceAge| hitrate|    Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).
 |PagesReplaceRate|    hitrate|    Rate at which pages in memory are replaced with pages from persistent storage (pages per second).
+|PagesReplaceTime | long | Total pages replace time in nanoseconds since last restart.
 |PagesReplaced|   long|    Number of pages replaced from last restart.
 |PagesWritten|    long|    Number of pages written from last restart.
 |PhysicalMemoryPages| long|    Number of pages residing in physical RAM.
 |PhysicalMemorySize | long|    Gets total size of pages loaded to the RAM, in bytes
-|SizeUsedByData| long|    Estimated number of bytes occupied by data in the region, taking into account free space inside non-empty pages.
-|TotalAllocatedPages |long|    Total number of allocated pages.
-|TotalAllocatedSize|  long  |  Gets a total size of memory allocated in the data region, in bytes
+|SizeUsedByData | long | The number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account the empty space in non-empty pages.
+|TotalAllocatedPages | long | Total allocated pages.
+|TotalAllocatedSize | long | Total size of memory allocated in the data region, in bytes.
 |TotalThrottlingTime| long|    Total throttling threads time in milliseconds. The Ignite throttles threads that generate dirty pages during the ongoing checkpoint.
+|TotalUsedPages | long | The number of non-empty pages allocated in the data region.
+|TotalUsedSize | long | The number of bytes occupied by non-empty pages allocated in the data region.
 |UsedCheckpointBufferSize  |  long|    Gets used checkpoint buffer size in bytes
-
 |===
-
 
 == Data Storage
 
@@ -428,6 +578,7 @@ Register name: `io.datastorage`
 |===
 |Name |    Type |    Description
 |CheckpointBeforeLockHistogram| histogram |   Histogram of checkpoint action before taken write lock duration in milliseconds.
+|CheckpointBufferSize | long | Checkpoint buffer size in bytes.
 |CheckpointFsyncHistogram| histogram |   Histogram of checkpoint fsync duration in milliseconds.
 |CheckpointHistogram| histogram |   Histogram of checkpoint duration in milliseconds.
 |CheckpointListenersExecuteHistogram| histogram |   Histogram of checkpoint execution listeners under write lock duration in milliseconds.
@@ -435,10 +586,12 @@ Register name: `io.datastorage`
 |CheckpointLockWaitHistogram| histogram |   Histogram of checkpoint lock wait duration in milliseconds.
 |CheckpointMarkHistogram| histogram |   Histogram of checkpoint mark duration in milliseconds.
 |CheckpointPagesWriteHistogram| histogram |   Histogram of checkpoint pages write duration in milliseconds.
+|CheckpointRecoveryDataWriteHistogram | histogram | Histogram of checkpoint recovery data write duration in milliseconds.
 |CheckpointSplitAndSortPagesHistogram| histogram |   Histogram of splitting and sorting checkpoint pages duration in milliseconds.
 |CheckpointTotalTime| long |   Total duration of checkpoint
 |CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint duration in milliseconds.
 |CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file duration in milliseconds.
+|DirtyPages | long | Total dirty pages for the next checkpoint.
 |LastArchivedSegment | long | Last archived segment index.
 |LastCheckpointBeforeLockDuration|  long |   Duration of the checkpoint action before taken write lock in milliseconds.
 |LastCheckpointCopiedOnWritePagesNumber|  long |   Number of pages copied to a temporary checkpoint buffer during the last checkpoint.
@@ -450,30 +603,112 @@ Register name: `io.datastorage`
 |LastCheckpointLockWaitDuration|  long|    Duration of the checkpoint lock wait in milliseconds.
 |LastCheckpointMarkDuration | long  |  Duration of the checkpoint mark in milliseconds.
 |LastCheckpointPagesWriteDuration|    long|    Duration of the checkpoint pages write in milliseconds.
-|LastCheckpointTotalPagesNumber|  long|    Total number of pages written during the last checkpoint.
+|LastCheckpointRecoveryDataSize | long | Size of checkpoint recovery data in bytes.
+|LastCheckpointRecoveryDataWriteDuration | long | Duration of checkpoint recovery data write in milliseconds.
 |LastCheckpointSplitAndSortPagesDuration|  long|    Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.
 |LastCheckpointStart|  long|    Start timestamp of the last checkpoint.
+|LastCheckpointTotalPagesNumber|  long|    Total number of pages written during the last checkpoint.
 |LastCheckpointWalRecordFsyncDuration|  long|    Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint in milliseconds.
 |LastCheckpointWriteEntryDuration|  long|    Duration of entry buffer writing to file of the last checkpoint in milliseconds.
+|OffHeapSize | long | Total offheap size in bytes.
+|OffheapUsedSize | long | Total used offheap size in bytes.
+|PagesRead | long | The number of read pages from last restart.
+|PagesReplaced | long | The number of replaced pages from last restart.
+|PagesWritten | long | The number of written pages from last restart.
 |SparseStorageSize  | long|    Storage space allocated adjusted for possible sparsity, in bytes.
 |StorageSize | long|    Storage space allocated, in bytes.
+|TotalAllocatedSize | long | Total size of memory allocated in bytes.
+|UsedCheckpointBufferPages | long | Used checkpoint buffer size in pages.
+|UsedCheckpointBufferSize | long | Used checkpoint buffer size in bytes.
 |WalArchiveSegments | integer| Current number of WAL segments in the WAL archive.
 |WalBuffPollSpinsRate|    hitrate  |  WAL buffer poll spins number over the last time interval.
+|WalCompressedBytes | long | Total size of the compressed segments in bytes.
 |WalFsyncTimeDuration |   hitrate |   Total duration of fsync
 |WalFsyncTimeNum |hitrate  |  Total count of fsync
 |WalLastRollOverTime |long |   Time of the last WAL segment rollover.
 |WalLoggingRate | hitrate|    Average number of WAL records per second written during the last time interval.
 |WalTotalSize|    long  |  Total size in bytes for storage wal files.
 |WalWritingRate|  hitrate  |  Average number of bytes per second written during the last time interval.
+|WalWrittenBytes | long | Total number of logged bytes into the WAL.
+|walFsyncTimeAverage | double | Average WAL fsync duration in microseconds over the last time interval.
 |===
 
+== Snapshot
+
+Register name: `snapshot`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|CurrentSnapshotProcessedSize | long | Processed size of current cluster snapshot in bytes on this node.
+|CurrentSnapshotTotalSize | long | Estimated size of current cluster snapshot in bytes on this node. The value may grow during snapshot creation.
+|LastRequestId | string | The ID of the last started snapshot operation.
+|LastSnapshotEndTime | long | The system time of the last cluster snapshot request end time on this node.
+|LastSnapshotErrorMessage | string | The error message of last started cluster snapshot request which fail with an error. This value will be empty if last snapshot request has been completed successfully.
+|LastSnapshotName | string | The name of last started cluster snapshot request on this node.
+|LastSnapshotStartTime | long | The system time of the last cluster snapshot request start time on this node.
+|LocalSnapshotNames | List | The list of names of all snapshots currently saved on the local node with respect to the configured via IgniteConfiguration snapshot working path.
+|===
+
+== Incremental Snapshot
+
+Register name: `snapshot.incremental`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|endTime | long | The system time of the last incremental snapshot creation end time on this node.
+|error | string | The error message of last started incremental snapshot on this node.
+|incrementIndex | integer | The index of the last incremental snapshot created on this node.
+|snapshotName | string | The name of full snapshot for which the last incremental snapshot created on this node.
+|startTime | long | The system time of the last incremental snapshot creation start time on this node.
+|===
+
+== Snapshot Restore
+
+Register name: `snapshot-restore`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|endTime | long | The system time when the restore operation of a cluster snapshot on this node ended.
+|error | string | Error message of the last running cluster snapshot restore operation on this node.
+|incrementIndex | integer | The index of incremental snapshot of the last snapshot restore operation on this node.
+|processedPartitions | integer | The number of processed partitions on this node.
+|processedWalEntries | long | The number of processed entries from incremental snapshot on this node.
+|processedWalSegments | integer | The number of processed WAL segments in the incremental snapshot on this node.
+|requestId | string | The request ID of the last running cluster snapshot restore operation on this node.
+|snapshotName | string | The snapshot name of the last running cluster snapshot restore operation on this node.
+|startTime | long | The system time of the start of the cluster snapshot restore operation on this node.
+|totalPartitions | integer | The total number of partitions to be restored on this node.
+|totalWalSegments | integer | The total number of WAL segments in the incremental snapshot to be restored on this node.
+|===
+
+== Snapshot Check
+
+The register exists only while a snapshot check operation is running and is removed when it completes. `incrementIndex`, `totalWalSegments` and `processedWalSegments` are registered for incremental snapshots; the remaining metrics except `startTime` are registered for full snapshots.
+
+Register name: `snapshot-check.{snapshot_name}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|checkPartitions | boolean | Shows whether full validation of snapshot partitions is enabled.
+|incrementIndex | integer | The index of incremental snapshot of the snapshot check operation.
+|processedPartitions | integer | The number of checked partitions on current node.
+|processedSnapshotParts | integer | Number of checked snapshot parts (nodes data) on current node.
+|processedWalSegments | integer | The number of checked WAL segments in the incremental snapshot on current node.
+|snapshotPartsToProcess | integer | Number of parts (nodes data) of snapshot to check on current node.
+|startTime | long | The system time of the start of the cluster snapshot check operation on current node.
+|totalPartitions | integer | The total number of partitions to check on current node.
+|totalWalSegments | integer | The total number of WAL segments in the incremental snapshot to check on current node.
+|===
 
 == Cluster
 
 Cluster metrics.
 
 Register name: `cluster`
-
 
 [cols="2,1,3",opts="header"]
 |===
@@ -491,12 +726,11 @@ Cache processor metrics.
 
 Register name: `cache`
 
-
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
-|LastDataVer| long | The latest data version on the node.
 |DataVersionClusterId| integer | Data version cluster id.
+|LastDataVersion | long | The latest data version on the node.
 |===
 
 == SQL Parser Metrics
@@ -506,7 +740,7 @@ Register name: `sql.parser.cache`
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
-|hits| long | The number of SQL queries that were found in the parsers cache (doesn't require to be parsed and planned before execution).
+|hits | long | The number of SQL queries found in the parser cache, which do not require parsing and planning before execution.
 |misses| long | The number of SQL queries that were parsed and planned.
 |===
 
@@ -517,9 +751,25 @@ Register name: `sql.queries.user`
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
-|success| long | The number of successfully executed SQL queries.
-|failed| long | The number of failed SQL queries (including canceled).
-|canceled| long | The number of canceled SQL queries.
-|resultSetSizeHistogram| histogram | Histogram of fetched result set sizes for SQL queries.
-|maxResultSetSize| max value | Maximum fetched result set size for SQL queries.
+|canceled | long | Number of canceled queries that have been started on this node. This metric number included in the general 'failed' metric.
+|failed | long | Total number of failed by any reason (cancel, etc) queries that have been started on this node.
+|maxResultSetSize | max value | Maximum result set size for SQL queries.
+|resultSetSizeHistogram | histogram | Histogram of result set sizes for SQL queries.
+|success | long | Number of successfully executed user queries that have been started on this node.
 |===
+
+== Services
+
+Invocation histograms of a deployed service. The register is created on the nodes where the service instance is deployed, and only if `ServiceConfiguration.setStatisticsEnabled(true)` is set. One histogram is registered per public method of the service interfaces; the bounds are 1, 10, 50, 200 and 1000 milliseconds.
+
+Register name: `Services.{service_name}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|{method_name} | histogram | Duration in milliseconds of '{method_name}()'.
+|===
+
+== Custom Metrics
+
+Registers created by the application through `Ignite.metrics()`. Their names start with `custom.`, see link:monitoring-metrics/custom-metrics[Custom Metrics].
