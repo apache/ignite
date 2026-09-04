@@ -1270,6 +1270,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     );
                 }
 
+                ctx.query().runningQueryManager().onFullyFetched(resultSetChecker.fetchedSize());
+
                 resultSetChecker.checkOnClose();
             };
 

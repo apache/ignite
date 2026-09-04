@@ -122,6 +122,36 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     }
 
     /** {@inheritDoc} */
+    @Override public RelNode accept(RexShuttle shuttle) {
+        List<RexNode> newProjects = projects == null ? null : shuttle.apply(projects);
+        RexNode newCondition = shuttle.apply(condition);
+
+        if (newProjects == projects && newCondition == condition)
+            return this;
+
+        RelDataType newRowType = rowType;
+
+        if (newProjects != projects) {
+            newRowType = RexUtil.createStructType(
+                getCluster().getTypeFactory(),
+                newProjects,
+                getRowType().getFieldNames(),
+                null
+            );
+        }
+
+        return copy(getTraitSet(), newRowType, newProjects, newCondition);
+    }
+
+    /** Creates a copy with transformed projects and condition. */
+    protected abstract ProjectableFilterableTableScan copy(
+        RelTraitSet traitSet,
+        @Nullable RelDataType rowType,
+        @Nullable List<RexNode> projects,
+        @Nullable RexNode condition
+    );
+
+    /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return explainTerms0(super.explainTerms(pw));
     }

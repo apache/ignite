@@ -57,6 +57,9 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
     /** Whether remote resources were released. */
     private boolean released;
 
+    /** Fetched rows count. */
+    private long fetched;
+
     /**
      * Constructor.
      *
@@ -94,6 +97,8 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
 
         if (res == null)
             throw new NoSuchElementException();
+
+        fetched++;
 
         advance();
 
@@ -156,6 +161,7 @@ public class ReduceIndexIterator implements Iterator<List<?>>, AutoCloseable {
         if (!released) {
             try {
                 rdcExec.releaseRemoteResources(nodes, run, qryReqId, distributedJoins);
+                rdcExec.h2().runningQueryManager().onFullyFetched(fetched);
             }
             finally {
                 released = true;

@@ -376,9 +376,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         finishedJobsMetric = mreg.longMetric(FINISHED, "Number of finished jobs.");
 
-        totalExecutionTimeMetric = mreg.longMetric(EXECUTION_TIME, "Total execution time of jobs.");
+        totalExecutionTimeMetric = mreg.longMetric(EXECUTION_TIME, "Total execution time of jobs, in milliseconds.");
 
-        totalWaitTimeMetric = mreg.longMetric(WAITING_TIME, "Total time jobs spent on waiting queue.");
+        totalWaitTimeMetric = mreg.longMetric(WAITING_TIME, "Total time jobs spent on waiting queue, in milliseconds.");
 
         ctx.systemView().registerInnerCollectionView(JOBS_VIEW, JOBS_VIEW_DESC,
             new ComputeJobViewWalker(),
