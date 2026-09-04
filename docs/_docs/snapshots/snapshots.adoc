@@ -292,9 +292,9 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --increment 1
 The status of current snapshot operations in the cluster can be obtained using the `control.sh|bat` script.
 
 Snapshot operations include:                                                                                                                                                                                                                                  │
-* **Create** - Creating a full or incremental snapshot                                                                                                                                                                                                        │
-* **Restore** - Restoring cache groups from a snapshot                                                                                                                                                                                                        │
-* **Check** - Verifying snapshot consistency (can run in parallel for multiple snapshots)                                                                                                                                                                     │
+* `Create` - Full or incremental snapshot creation
+* `Restore` - Cache group restoration from snapshot
+* `Check` - Snapshot consistency verification (parallel execution allowed)                                                                                                                                                                   │
 
 [tabs]
 --
