@@ -26,19 +26,15 @@ import java.net.Socket;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,12 +52,6 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
-
-    /** */
-    private MessageFactory msgFactory;
-
-    /** */
-    private MessageFactoryProvider provider;
 
     /** {@inheritDoc} */
     @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
@@ -119,42 +109,8 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         this.discoHook = discoHook;
     }
 
-    /**
-     * Sets test discovery messages factory provider. Note that {@link MessageFactoryProvider} must be set before SPI start.
-     * Otherwise, this method call will take no effect.
-     *
-     * @param msgFactoryProvider Discovery messages factory provider.
-     */
-    public void messageFactory(MessageFactoryProvider msgFactoryProvider) {
-        provider = msgFactoryProvider;
-        assert !started();
-
-        msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(),
-            msgFactoryProvider
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageFactoryProvider messageFactoryProvider() {
-        return provider;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
-        if (msgFactory != null)
-            GridTestUtils.setFieldValue(this, TcpDiscoverySpi.class, "msgFactory", msgFactory);
-
-        super.initLocalNode(srvPort, addExtAddrAttr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageFactory messageFactory() {
-        return msgFactory != null ? msgFactory : super.messageFactory();
-    }
-
     /** */
-    public static @Nullable TcpDiscoveryAbstractMessage decodeMessage(TcpDiscoverySpi spi, byte[] data) {
+    public static @Nullable TcpDiscoveryAbstractMessage decodeMessage(GridKernalContext ctx, byte[] data) {
         if (Arrays.equals(U.IGNITE_HEADER, data))
             return null;
 
@@ -169,7 +125,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         };
 
         try (dataSock) {
-            return new TcpDiscoveryIoSession(dataSock, spi).readMessage();
+            return new TcpDiscoveryIoSession(ctx, dataSock).readMessage();
         }
         catch (Exception e) {
             throw new IgniteException("Failed to decode a message", e);
