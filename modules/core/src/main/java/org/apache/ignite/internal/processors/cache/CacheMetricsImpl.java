@@ -305,10 +305,10 @@ public class CacheMetricsImpl implements CacheMetrics {
             "The total time of cache invocations for which this node is the initiator, in nanoseconds.");
 
         entryProcessorMinInvocationTime = mreg.longMetric("EntryProcessorMinInvocationTime",
-            "So far, the minimum time to execute cache invokes for which this node is the initiator.");
+            "So far, the minimum time to execute cache invokes for which this node is the initiator, in nanoseconds.");
 
         entryProcessorMaxInvocationTime = mreg.longMetric("EntryProcessorMaxInvocationTime",
-            "So far, the maximum time to execute cache invokes for which this node is the initiator.");
+            "So far, the maximum time to execute cache invokes for which this node is the initiator, in nanoseconds.");
 
         entryProcessorHits = mreg.longMetric("EntryProcessorHits",
             "The total number of invocations on keys, which exist in cache.");
