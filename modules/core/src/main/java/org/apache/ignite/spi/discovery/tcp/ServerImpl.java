@@ -3236,6 +3236,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (spi.ensured(msg))
                 msgHist.add(msg);
 
+            if (clientMsgWorkers.isEmpty())
+                return;
+
             ClientMessageHolder sharedMsgHolder = new ClientMessageHolder(msg);
 
             for (ClientMessageWorker worker : clientMsgWorkers.values()) {
