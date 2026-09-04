@@ -26,8 +26,8 @@ Register name: `sys`
 |===
 |Name    |Type|    Description
 |CpuLoad| double|  CPU load.
-|CurrentThreadCpuTime | long | Total CPU time of the current thread, in nanoseconds.
-|CurrentThreadUserTime | long | User-mode CPU time of the current thread, in nanoseconds.
+|CurrentThreadCpuTime | long | CPU time of the thread that reads the metric, in nanoseconds.
+|CurrentThreadUserTime | long | User-mode CPU time of the thread that reads the metric, in nanoseconds.
 |DaemonThreadCount | integer | Current number of live daemon threads.
 |GcCpuLoad   |double|  GC CPU load.
 |PeakThreadCount | integer | Peak live thread count since the JVM started.
@@ -133,7 +133,7 @@ Register name: `cache.{cache_name}.{near}`
 |IndexBuildPartitionsLeftCount | integer | The number of local node partitions that remain to be processed to complete indexing.
 |IndexRebuildKeyProcessed | long | Number of keys processed during the index rebuilding.
 |IsCacheAffinityConfigurationMdcSafe|boolean | True if cache affinity guarantees having a copy of each partition in each data center.
-|IsCachePartitionDistributionSafe|boolean | True if current cache partition distribution maintains the guarantee of one partition copy in each data center.
+|IsCachePartitionDistributionSafe | boolean | True if current cache partition distribution maintains guarantee 'one partition copy in each datacenter'.
 |IsIndexRebuildInProgress | boolean | True if index rebuild is in progress.
 |OffHeapBackupEntriesCount|long|Offheap backup entries count.
 |OffHeapEntriesCount|long|Offheap entries count.
@@ -206,7 +206,7 @@ Register name: `cacheGroups.{group_name}`
 |RebalancingReceivedKeys | long | The number of currently rebalanced keys for the whole cache group.
 |RebalancingStartTime | long | The time the first partition demand message was sent. If there are no messages to send, the rebalancing time will be undefined.
 |ReencryptionBytesLeft |long| The number of bytes left for re-encryption.
-|ReencryptionFinished |boolean| The flag indicates whether re-encryption is finished or not.
+|ReencryptionFinished | boolean | The flag indicates whether reencryption is finished or not.
 |SparseStorageSize  | long|    Storage space allocated for group adjusted for possible sparsity, in bytes.
 |StorageSize |long|    Storage space allocated for group, in bytes.
 |TotalAllocatedPages | long | Total allocated pages.
@@ -324,7 +324,7 @@ Register name: `io.statistics.cacheGroups.{group_name}`
 |PHYSICAL_READS | long | Count of physical page reads.
 |grpId | integer | Cache group ID.
 |insertedBytes | long | Count of inserted to store bytes
-|name | string | Cache group name.
+|name | string | Cache or cache group name.
 |removedBytes | long | Count of removed from store bytes
 |startTime | long | Statistics collection start time, in milliseconds.
 |===
@@ -341,7 +341,7 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 |PHYSICAL_READS_INNER|    long|    Number of physical reads for inner tree node
 |PHYSICAL_READS_LEAF| long|    Number of physical reads for leaf tree node
 |indexName | string | Index name.
-|name | string | Cache group name.
+|name | string | Cache or cache group name.
 |startTime | long | Statistics collection start time, in milliseconds.
 |===
 
@@ -370,7 +370,7 @@ Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
 |PHYSICAL_READS_INNER|    long|    Number of physical reads for inner tree node
 |PHYSICAL_READS_LEAF| long|    Number of physical reads for leaf tree node
 |indexName | string | Index name.
-|name | string | Cache group name.
+|name | string | Cache or cache group name.
 |startTime | long | Statistics collection start time, in milliseconds.
 |===
 
@@ -401,7 +401,7 @@ Register name: `communication.tcp`
 |RejectedSslSessionsCount | integer | TCP sessions count that were rejected due to SSL errors.
 |SslEnabled | boolean | Whether SSL is enabled.
 |SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
-|maxOutboundMessagesQueueSize | max value | Maximum number of messages waiting to be sent.
+|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent.
 |outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
 |receivedBytes | long | Total number of bytes received by current node.
 |receivedMessagesByType.{message_type} | long | Total number of messages with given type received by current node.
@@ -472,7 +472,7 @@ Register name: `client.connector`
 |SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
 |jdbc.AcceptedSessions | integer | Number of successfully established sessions for the client type.
 |jdbc.ActiveSessions | integer | Number of active sessions for the jdbc client.
-|maxOutboundMessagesQueueSize | max value | Maximum number of messages waiting to be sent.
+|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent.
 |odbc.AcceptedSessions | integer | Number of successfully established sessions for the client type.
 |odbc.ActiveSessions | integer | Number of active sessions for the odbc client.
 |outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
@@ -495,7 +495,7 @@ Register name: `rest.client`
 |RejectedSslSessionsCount | integer | TCP sessions count that were rejected due to SSL errors.
 |SslEnabled | boolean | Whether SSL is enabled.
 |SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
-|maxOutboundMessagesQueueSize | max value | Maximum number of messages waiting to be sent.
+|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent.
 |outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
 |receivedBytes | long | Total number of bytes received by current node.
 |sentBytes | long | Total number of bytes sent by current node.
@@ -517,7 +517,7 @@ Register name: `io.discovery`
 |FailedNodes | integer | Failed nodes count.
 |JoinedNodes|   integer|   Joined nodes count.
 |LeftNodes|   integer|   Left nodes count.
-|MaxMsgQueueSize | max value | Max message queue size.
+|MaxMsgQueueSize | long | Max message queue size.
 |MessageWorkerQueueSize | integer | Message worker queue current size.
 |Next | UUID | Next in the ring node ID.
 |PendingMessagesRegistered | integer | Pending messages registered count.
@@ -558,15 +558,17 @@ Register name: `io.dataregion.{data_region_name}`
 |PagesReplaced|   long|    Number of pages replaced from last restart.
 |PagesWritten|    long|    Number of pages written from last restart.
 |PhysicalMemoryPages| long|    Number of pages residing in physical RAM.
-|PhysicalMemorySize | long|    Gets total size of pages loaded to the RAM, in bytes
-|SizeUsedByData | long | The number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account the empty space in non-empty pages.
+|PhysicalMemorySize | long | Total size of pages loaded to the RAM, in bytes.
+|SizeUsedByData | long | Estimated number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account the empty space in non-empty pages.
 |TotalAllocatedPages | long | Total allocated pages.
 |TotalAllocatedSize | long | Total size of memory allocated in the data region, in bytes.
 |TotalThrottlingTime| long|    Total throttling threads time in milliseconds. The Ignite throttles threads that generate dirty pages during the ongoing checkpoint.
 |TotalUsedPages | long | The number of non-empty pages allocated in the data region.
 |TotalUsedSize | long | The number of bytes occupied by non-empty pages allocated in the data region.
-|UsedCheckpointBufferSize  |  long|    Gets used checkpoint buffer size in bytes
+|UsedCheckpointBufferSize | long | Used checkpoint buffer size in bytes.
 |===
+
+NOTE: `PageTimestampHistogram` is registered only for data regions with persistence enabled.
 
 == Data Storage
 
@@ -753,21 +755,21 @@ Register name: `sql.queries.user`
 |Name|    Type|    Description
 |canceled | long | Number of canceled queries that have been started on this node. This metric number included in the general 'failed' metric.
 |failed | long | Total number of failed by any reason (cancel, etc) queries that have been started on this node.
-|maxResultSetSize | max value | Maximum result set size for SQL queries.
+|maxResultSetSize | long | Maximum result set size for SQL queries.
 |resultSetSizeHistogram | histogram | Histogram of result set sizes for SQL queries.
 |success | long | Number of successfully executed user queries that have been started on this node.
 |===
 
 == Services
 
-Invocation histograms of a deployed service. The register is created on the nodes where the service instance is deployed, and only if `ServiceConfiguration.setStatisticsEnabled(true)` is set. One histogram is registered per public method of the service interfaces; the bounds are 1, 10, 50, 200 and 1000 milliseconds.
+Invocation histograms of a deployed service. The register is created on the nodes where the service instance is deployed, and only if `ServiceConfiguration.setStatisticsEnabled(true)` is set. One histogram is registered per public method of the service interfaces; durations are measured in nanoseconds, the default bounds correspond to 1, 10, 50, 200 and 1000 milliseconds.
 
 Register name: `Services.{service_name}`
 
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
-|{method_name} | histogram | Duration in milliseconds of '{method_name}()'.
+|{method_name} | histogram | Duration in nanoseconds of '{method_name}()'.
 |===
 
 == Custom Metrics

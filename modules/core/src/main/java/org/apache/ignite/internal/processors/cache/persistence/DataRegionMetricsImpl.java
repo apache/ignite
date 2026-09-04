@@ -731,7 +731,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("SizeUsedByData",
             this::getSizeUsedByData,
-            "The number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account " +
+            "Estimated number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account " +
                 "the empty space in non-empty pages.");
 
         mreg.register("PhysicalMemoryPages",
@@ -758,11 +758,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("PhysicalMemorySize",
             this::getPhysicalMemorySize,
-            "Gets total size of pages loaded to the RAM, in bytes");
+            "Total size of pages loaded to the RAM, in bytes.");
 
         mreg.register("UsedCheckpointBufferSize",
             this::getUsedCheckpointBufferSize,
-            "Gets used checkpoint buffer size in bytes");
+            "Used checkpoint buffer size in bytes.");
     }
 
     /**

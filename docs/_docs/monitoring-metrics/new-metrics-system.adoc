@@ -298,7 +298,7 @@ The total amount of data each node keeps on disk consists of the persistent stor
 ===== Persistent Storage Size
 To monitor the size of the persistent storage on disk, use the following metrics:
 
-* `TotalAllocatedSize` - The size of the space allocated on disk for the entire data storage (in bytes). {allocsize_note}.
+* `TotalAllocatedSize` - The size of the space allocated on disk for the entire data storage (in bytes). {allocsize_note}
 * `WalTotalSize` - Total size of the WAL files in bytes, including the WAL archive files.
 * `WalArchiveSegments` - The number of WAL segments in the archive.
 
@@ -310,7 +310,7 @@ Metrics collection for data regions is disabled by default. You can link:monitor
 
 The size of the data region on a node comprises the size of all partitions (including backup partitions) that this node owns for all caches in that data region.
 
-* `TotalAllocatedSize` - The size of the space allocated for this data region (in bytes). {allocsize_note}.
+* `TotalAllocatedSize` - The size of the space allocated for this data region (in bytes). {allocsize_note}
 * `SizeUsedByData` - The estimated number of bytes occupied by data in this data region, taking into account free space inside non-empty pages.
 * `PagesFillFactor` - The average amount of data in non-empty pages as a ratio of the page size.
 * `TotalUsedPages` - The number of data pages that are currently in use.
@@ -346,12 +346,9 @@ link:data-rebalancing[Rebalancing] is the process of moving partitions between t
 If you have multiple caches, they will be rebalanced sequentially.
 There are several metrics that you can use to monitor the progress of the rebalancing process for a specific cache.
 
-In the metric system, link:monitoring-metrics/new-metrics#caches[Cache metrics]:
-* `RebalancingStartTime` - This metric shows the time when rebalancing of local partitions started for the cache. This metric will return 0 if the local partitions do not participate in the rebalancing. The time is returned in milliseconds.
-* `EstimatedRebalancingFinishTime` - Expected time of completion of the rebalancing process. Attribute of the `CacheMetricsMXBean` MBean, not available in the metric registers.
-* `KeysToRebalanceLeft` - The number of keys on the node that remain to be rebalanced. You can monitor this metric to learn when the rebalancing process finishes. Attribute of the `CacheMetricsMXBean` MBean, not available in the metric registers.
-
-The metrics belong to the `cache.{cache_name}.{near}` register, see link:monitoring-metrics/new-metrics#caches[Caches].
+* `RebalancingStartTime` - The time the first partition demand message was sent. If there are no messages to send, the rebalancing time will be undefined. Belongs to the `cacheGroups.{group_name}` register, see link:monitoring-metrics/new-metrics#cache-groups[Cache Groups].
+* `RebalancingKeysRate`, `RebalancingBytesRate`, `EstimatedRebalancingKeys`, `RebalancedKeys` - Rebalancing progress of a cache, see link:monitoring-metrics/new-metrics#caches[Caches].
+* `EstimatedRebalancingFinishTime` and `KeysToRebalanceLeft` - Available only through the `CacheMetrics` Java API (`IgniteCache.metrics()`); the latter equals `EstimatedRebalancingKeys - RebalancedKeys`.
 
 === Monitoring Topology
 Topology refers to the set of nodes in a cluster. There are a number of metrics that expose the information about the topology of the cluster. If the topology changes too frequently or has a size that is different from what you expect, you may want to look into whether there are network problems.
@@ -384,7 +381,7 @@ See the new metric system, link:monitoring-metrics/new-metrics#caches[Cache metr
 
 To get an estimate on how long it takes to rebuild cache indexes, you can use one of the metrics listed below:
 
-. `IsIndexRebuildInProgress` - tells whether indexes are being built or rebuilt at the moment;
+. `IsIndexRebuildInProgress` - tells whether indexes are being rebuilt at the moment;
 . `IndexBuildCountPartitionsLeft` - gives the remaining number of partitions (by cache group) for indexes to rebuild.
 
 Note that the `IndexBuildCountPartitionsLeft` metric allows to estimate only an approximate number of indexes left to rebuild.
@@ -398,8 +395,8 @@ For a more accurate estimate, use the `IndexRebuildKeyProcessed` cache metric:
 Note that if a transaction spans multiple nodes (i.e., if the keys that are changed as a result of the transaction execution are located on multiple nodes), the counters will increase on each node. For example, the 'TransactionsCommittedNumber' counter will increase on each node where the keys affected by the transaction are stored.
 
 * `LockedKeysNumber` - The number of keys locked on the node.
-* `TransactionsCommittedNumber` - The number of transactions that have been committed on the node. Attribute of the `TransactionMetricsMxBean` MBean, not available in the metric registers.
-* `TransactionsRolledBackNumber` - The number of transactions that were rolled back. Attribute of the `TransactionMetricsMxBean` MBean, not available in the metric registers.
+* `TransactionsCommittedNumber` - The number of transactions that have been committed on the node. Exposed as `txCommits` in the `tx` register.
+* `TransactionsRolledBackNumber` - The number of transactions that were rolled back. Exposed as `txRollbacks` in the `tx` register.
 * `OwnerTransactionsNumber` - The number of transactions initiated on the node.
 * `TransactionsHoldingLockNumber` - The number of open transactions that hold a lock on at least one key on the node.
 

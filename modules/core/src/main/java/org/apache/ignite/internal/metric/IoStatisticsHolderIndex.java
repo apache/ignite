@@ -87,13 +87,13 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         MetricRegistryImpl mreg = mmgr.registry(metricRegistryName());
 
         mreg.longMetric("startTime", "Statistics collection start time, in milliseconds.").value(U.currentTimeMillis());
-        mreg.objectMetric("name", String.class, "Cache group name.").value(grpName);
+        mreg.objectMetric("name", String.class, "Cache or cache group name.").value(grpName);
         mreg.objectMetric("indexName", String.class, "Index name.").value(idxName);
 
-        logicalReadLeafCtr = mreg.longAdderMetric(LOGICAL_READS_LEAF, null);
-        logicalReadInnerCtr = mreg.longAdderMetric(LOGICAL_READS_INNER, null);
-        physicalReadLeafCtr = mreg.longAdderMetric(PHYSICAL_READS_LEAF, null);
-        physicalReadInnerCtr = mreg.longAdderMetric(PHYSICAL_READS_INNER, null);
+        logicalReadLeafCtr = mreg.longAdderMetric(LOGICAL_READS_LEAF, "Number of logical reads for leaf tree node.");
+        logicalReadInnerCtr = mreg.longAdderMetric(LOGICAL_READS_INNER, "Number of logical reads for inner tree node.");
+        physicalReadLeafCtr = mreg.longAdderMetric(PHYSICAL_READS_LEAF, "Number of physical reads for leaf tree node.");
+        physicalReadInnerCtr = mreg.longAdderMetric(PHYSICAL_READS_INNER, "Number of physical reads for inner tree node.");
     }
 
     /** {@inheritDoc} */

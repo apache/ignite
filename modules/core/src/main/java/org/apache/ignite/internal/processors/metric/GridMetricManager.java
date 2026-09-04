@@ -244,9 +244,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             "Total number of threads created and started since the JVM started.");
         sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, "Current number of live daemon threads.");
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime,
-            "Total CPU time of the current thread, in nanoseconds.");
+            "CPU time of the thread that reads the metric, in nanoseconds.");
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime,
-            "User-mode CPU time of the current thread, in nanoseconds.");
+            "User-mode CPU time of the thread that reads the metric, in nanoseconds.");
 
         MetricRegistryImpl pmeReg = registry(PME_METRICS);
 

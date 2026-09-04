@@ -76,7 +76,7 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         MetricRegistryImpl mreg = mmgr.registry(metricRegistryName());
 
         mreg.longMetric("startTime", "Statistics collection start time, in milliseconds.").value(U.currentTimeMillis());
-        mreg.objectMetric("name", String.class, "Cache group name.").value(grpName);
+        mreg.objectMetric("name", String.class, "Cache or cache group name.").value(grpName);
         mreg.intMetric("grpId", "Cache group ID.").value(grpId);
 
         logicalReadCtr = mreg.longAdderMetric(LOGICAL_READS, "Count of logical page reads");
