@@ -20,6 +20,7 @@ package org.apache.ignite.compatibility.testframework.testcontainers;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.IgniteException;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.lifecycle.Startables;
@@ -30,21 +31,52 @@ public class IgniteClusterContainer implements Startable {
     private final List<IgniteContainer> containers;
 
     /** Network. */
-    private final Network net = Network.newNetwork();
+    private final Network net;
+
+    /** Image name. */
+    private final String imageName;
+
+    /** Consistent ID's. */
+    private final List<String> consistentIds;
 
     /**
      * @param imageName Image name.
      * @param consistentIds Consistent ID's.
      */
-    public IgniteClusterContainer(String imageName, List<String> consistentIds) throws Exception {
-        containers = new ArrayList<>(consistentIds.size());
+    public IgniteClusterContainer(String imageName, List<String> consistentIds) {
+        this.imageName = imageName;
+        this.consistentIds = consistentIds;
 
+        net = Network.newNetwork();
+        containers = new ArrayList<>(consistentIds.size());
+    }
+
+    /**
+     * @param imageName Image name.
+     * @param net Shared test network the container must be attached to.
+     * @param consistentIds Consistent ID's.
+     * @param idx Node index.
+     * @return The node container.
+     */
+    protected IgniteContainer container(String imageName, Network net, List<String> consistentIds, int idx) throws Exception {
+        return new IgniteContainer(imageName, net, "node" + (1 + idx), consistentIds.get(idx), idx);
+    }
+
+    /** Builds the node containers. */
+    protected void initContainers() throws Exception {
         for (int i = 0; i < consistentIds.size(); i++)
-            containers.add(new IgniteContainer(imageName, net, "node" + (1 + i), consistentIds.get(i), i));
+            containers.add(container(imageName, net, consistentIds, i));
     }
 
     /** {@inheritDoc} */
     @Override public void start() {
+        try {
+            initContainers();
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+
         Startables.deepStart(containers).join();
 
         containers.get(0).activateCluster(containers.size());
