@@ -74,6 +74,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveCteState;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RepeatUnionNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanTableRowNode;
@@ -101,8 +103,10 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -616,6 +620,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteRecursiveTableScan rel) {
+        return new ScanNode<>(ctx, rel.getRowType(), ctx.recursiveCteState(rel.stateId()).current());
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteValues rel) {
         List<RexLiteral> vals = Commons.flat(Commons.cast(rel.getTuples()));
 
@@ -631,6 +640,17 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<Node<Row>> inputs = Commons.transform(rel.getInputs(), this::visit);
 
         node.register(inputs);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteRepeatUnion rel) {
+        RecursiveCteState<Row> state = ctx.recursiveCteState(rel.stateId());
+        RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), state, rel.iterationLimit());
+
+        state.clear();
+        node.register(F.asList(visit(rel.getLeft()), visit(rel.getRight())));
 
         return node;
     }

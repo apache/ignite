@@ -103,6 +103,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
             assert distrCfg != null;
 
+            ctx.recursiveCteIterationLimit(distrCfg.recursiveCteIterationLimit());
+
             String[] disbledRules = distrCfg.disabledRules();
 
             if (!F.isEmpty(disbledRules))
