@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
@@ -41,12 +42,17 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_ZERO_COPY;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_STRING_ZERO_COPY;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
 /**
  * Binary writer implementation.
  */
 class BinaryWriterExImpl implements BinaryWriterEx {
+    /** Zero-copy serialization enabled flag. */
+    static final boolean ZERO_COPY = IgniteCommonsSystemProperties.getBoolean(IGNITE_BINARY_STRING_ZERO_COPY, DFLT_ZERO_COPY);
+
     /** Length: integer. */
     private static final int LEN_INT = 4;
 
@@ -733,6 +739,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     @Override public void writeString(@Nullable String val) throws BinaryObjectException {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
+        else if (ZERO_COPY)
+            StringWriter.write(val, out);
         else {
             byte[] strArr;
 
