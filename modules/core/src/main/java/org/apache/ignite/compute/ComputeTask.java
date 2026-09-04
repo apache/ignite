@@ -229,7 +229,7 @@ import org.jetbrains.annotations.Nullable;
  * @param <T> Type of the task argument that is passed into {@link ComputeTask#map(List, Object)} method.
  * @param <R> Type of the task result returning from {@link ComputeTask#reduce(List)} method.
  */
-public interface ComputeTask<T, R> extends Serializable {
+public interface  ComputeTask<T, R> extends Serializable {
     /**
      * This method is called to map or split grid task into multiple grid jobs. This is the
      * first method that gets called when task execution starts.
