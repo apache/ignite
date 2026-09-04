@@ -23,6 +23,7 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test, TestContext
 
 from ignitetest.services.utils.ducktests_service import DucktestsService
+from ignitetest.utils.pause import DemoPause
 
 # globals:
 JFR_ENABLED = "jfr_enabled"
@@ -65,6 +66,50 @@ class IgniteTest(Test):
             "any IgniteTest MUST BE decorated with the @ignitetest.utils.cluster decorator"
 
         super().__init__(test_context=test_context)
+
+        self.__demo_pause = None
+
+        # Stamped here rather than at the first breakpoint: it is what demo breakpoints count
+        # their elapsed time from, and what they measure the runner budget against, and both
+        # of those mean the start of the test - setup included. This is deliberately
+        # conservative: ducktape's kill timer is actually reset by the last client event
+        # before a pause, which fires after setup, so the real window is longer - but
+        # anchoring at construction needs no hook into the runner client and never
+        # overestimates the budget.
+        self.__started_at = monotonic()
+
+    def pause(self, name, *describers):
+        """
+        Holds the scenario at a named demo breakpoint until it is resumed from the host, so
+        that the cluster can be shown in exactly this state. Does nothing at all unless the
+        `demo_pause` global names this breakpoint - see :mod:`ignitetest.utils.pause`.
+
+        Must be called from the test body: :meth:`tearDown` kills every service, so a
+        breakpoint placed after the body would only ever show a dead cluster.
+
+        :param name: Breakpoint name, matched against the `demo_pause` global.
+        :param describers: Objects exposing `describe() -> list of str`, each contributing a
+               section to the banner shown while paused, on top of the service list every
+               breakpoint reports. Any fixture a test drives can implement it.
+        """
+        if self.__demo_pause is None:
+            self.__demo_pause = DemoPause(self.logger, self.test_context.globals, self.test_context.test_name,
+                                          started_at=self.__started_at,
+                                          runner_timeout_sec=self.__runner_timeout_sec())
+
+        self.__demo_pause.pause(name, describers, self.test_context.services)
+
+    def __runner_timeout_sec(self):
+        """
+        :return: Ducktape's `--test-runner-timeout` in seconds, None when the session carries
+                 none. A breakpoint has to give up inside it, since the runner kills a test
+                 client it hears nothing from for that long - see
+                 :meth:`ignitetest.utils.pause.DemoPause._budgeted_timeout`.
+        """
+        session_context = getattr(self.test_context, "session_context", None)
+        timeout_ms = getattr(session_context, "test_runner_timeout", None)
+
+        return timeout_ms / 1000 if timeout_ms else None
 
     @property
     def available_cluster_size(self):

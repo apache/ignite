@@ -16,6 +16,7 @@
 """
 Checks Spec class that describes config and command line to start Ignite-aware service.
 """
+import os
 from unittest.mock import Mock
 
 import pytest
@@ -90,10 +91,15 @@ def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_v
 
 def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
     service.log_dir = "/default-path"
+
+    # The default is built with os.path.join, which follows the control machine rather than the
+    # node - so the expectation is joined the same way instead of being written out, or the check
+    # would only hold where the separator happens to be "/".
+    default_gc_log = ("-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:"
+                      f"{os.path.join(service.log_dir, 'gc.log')}:uptime,time,level,tags")
+
     spec = IgniteApplicationSpec(service, jvm_opts=["-Xlog:gc:/some-non-default-path/gc.log"])
+
     assert "-Xlog:gc:/some-non-default-path/gc.log" in spec.jvm_opts
-    assert "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags" \
-           in spec.jvm_opts
-    assert spec.jvm_opts.index("-Xlog:gc:/some-non-default-path/gc.log") > \
-           spec.jvm_opts.index(
-               "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags")
+    assert default_gc_log in spec.jvm_opts
+    assert spec.jvm_opts.index("-Xlog:gc:/some-non-default-path/gc.log") > spec.jvm_opts.index(default_gc_log)
