@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
@@ -70,7 +70,13 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     private static final int MSG_BUFFER_SIZE = 100;
 
     /** */
-    private final TcpDiscoverySpi spi;
+    private final GridKernalContext ctx;
+
+    /** */
+    private final MessageFactory<?> msgFactory;
+
+    /** */
+    private final IgniteLogger log;
 
     /** */
     private final Socket sock;
@@ -96,19 +102,21 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
+     * @param ctx Kernal context.
      * @param sock Socket connected to a remote discovery node.
-     * @param spi  Discovery SPI instance owning this session.
      * @throws IgniteException If an I/O error occurs while initializing buffers.
      */
-    TcpDiscoveryIoSession(Socket sock, TcpDiscoverySpi spi) {
+    TcpDiscoveryIoSession(GridKernalContext ctx, Socket sock) {
         this.sock = sock;
-        this.spi = spi;
+        this.ctx = ctx;
+        this.msgFactory = ctx.messageFactory();
+        this.log = ctx.log(getClass());
 
         readBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
         writeBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory());
-        msgReader = new DirectMessageReader(spi.messageFactory(), null);
+        msgWriter = new DirectMessageWriter(msgFactory);
+        msgReader = new DirectMessageReader(msgFactory, null);
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
@@ -178,7 +186,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
             Message msg;
 
             try {
-                msg = spi.messageFactory().create(msgType);
+                msg = msgFactory.create(msgType);
             }
             catch (IgniteException e) {
                 detectSslAlert(b0, b1);
@@ -202,7 +210,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
                 readBuf.limit(read);
 
-                finished = MessageSerialization.readFrom(spi.messageFactory(), msg, msgReader);
+                finished = MessageSerialization.readFrom(msgFactory, msg, msgReader);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
@@ -218,9 +226,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
             }
             while (!finished);
 
-            GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
-
-            DiscoveryMarshalling.unmarshal(msg, kctx);
+            DiscoveryMarshalling.unmarshal(msg, ctx);
 
             return (T)msg;
         }
@@ -238,14 +244,14 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
     /** @return SSL certificate this session is established with. {@code null} if SSL is disabled or certificate validation failed. */
     @Nullable Certificate[] extractCertificates() {
-        if (!spi.isSslEnabled())
+        if (!(sock instanceof SSLSocket))
             return null;
 
         try {
             return ((SSLSocket)sock).getSession().getPeerCertificates();
         }
         catch (SSLPeerUnverifiedException e) {
-            U.error(spi.log, "Failed to extract discovery IO session certificates", e);
+            U.error(log, "Failed to extract discovery IO session certificates", e);
 
             return null;
         }
@@ -264,9 +270,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
      * @throws IOException If serialization fails.
      */
     void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        GridKernalContext kctx = ((IgniteEx)spi.ignite()).context();
-
-        DiscoveryMarshalling.marshal(m, kctx, null);
+        DiscoveryMarshalling.marshal(m, ctx, null);
 
         msgWriter.reset();
         msgWriter.setBuffer(writeBuf);
@@ -277,7 +281,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
             // Should be cleared before first operation.
             writeBuf.clear();
 
-            finished = MessageSerialization.writeTo(spi.messageFactory(), m, msgWriter);
+            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter);
 
             out.write(writeBuf.array(), 0, writeBuf.position());
         }
