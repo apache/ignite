@@ -47,6 +47,7 @@ Run the following commands from your host system's shell inside `${IGNITE_HOME}/
 # Create and activate an isolated development virtual environment
 python3 -m venv ~/.virtualenvs/ignite-ducktests-dev
 source ~/.virtualenvs/ignite-ducktests-dev/bin/activate
+python3 -m pip install --upgrade pip setuptools
 
 # Install core framework testing requirements and editable dependencies
 pip install -r docker/requirements-dev.txt
@@ -172,7 +173,7 @@ You can modify test environments at execution time using global flags injected t
 | Global Parameter Key | Definition | Example Configuration |
 |---------------------|------------|----------------------|
 | **cluster_size** | Controls the cluster size for tests. Overrides the default num_nodes value passed in the @cluster annotation. Default value is determined by the test framework. | ```{"cluster_size": 13}``` |
-| **ignite_versions** | List of Ignite versions for testing. Tests run for each version in the list. Values are folder names in /opt/ (e.g., "ignite-dev" for master branch, "ignite-2.17.0" for release). Default is determined by test annotations. | ```{"ignite_versions": ["ignite-dev", "ignite-2.17.0"]}``` |
+| **ignite_versions** | List of Ignite versions for testing. Tests run for each version in the list. Values are folder names in /opt/ (e.g., "ignite-dev" for master branch, "ignite-2.18.0" for release). Default is determined by test annotations. | ```{"ignite_versions": ["ignite-dev", "ignite-2.18.0"]}``` |
 | **failure_detection_timeout** | Timeout in milliseconds for failure detection in discovery. Used to detect node failures in the cluster. Default value is 10000 ms (10 seconds). | ```{"failure_detection_timeout": 20000}``` |
 
 #### Security & Authentication
