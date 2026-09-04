@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -37,19 +38,34 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     private final RowFactory<Row> rowFactory;
 
     /** */
+    Function<Object, Object> binaryMarshaller;
+
+    /** */
+    private static final String ERR_SIZE_TEMPLATE = "Unable to process table function data: row length [%d]" +
+        " doesn't match defined columns number [%d].";
+
+    /** */
     public TableFunctionScan(
         RelDataType rowType,
         Supplier<Iterable<?>> dataSupplier,
-        RowFactory<Row> rowFactory
+        RowFactory<Row> rowFactory,
+        Function<Object, Object> marshaller
     ) {
         this.rowType = rowType;
         this.dataSupplier = dataSupplier;
         this.rowFactory = rowFactory;
+        binaryMarshaller = marshaller;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> iterator() {
         return F.iterator(dataSupplier.get(), this::convertToRow, true);
+    }
+
+    /** */
+    private static void rowSizeChecker(int rowSize, int fldCount) {
+        if (rowSize != fldCount)
+            throw new IgniteSQLException(ERR_SIZE_TEMPLATE.formatted(rowSize, fldCount));
     }
 
     /** */
@@ -65,6 +81,10 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
             throw new IgniteSQLException("Unable to process table function data: row length [" + rowArr.length
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
+
+        int pos = 0;
+        for (Object el : rowArr)
+            rowArr[pos++] = binaryMarshaller.apply(el);
 
         return rowFactory.create(rowArr);
     }

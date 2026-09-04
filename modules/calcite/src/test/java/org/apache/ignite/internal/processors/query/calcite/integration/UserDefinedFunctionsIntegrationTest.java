@@ -257,6 +257,23 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testTemporalFunc() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("TEMPORAL")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Object.class).setTableName("emp")))
+        );
+
+        sql("CREATE TABLE \"TEMPORAL\".test(id int, ts TIMESTAMP)");
+        sql("INSERT INTO \"TEMPORAL\".test VALUES (1, ?)", Timestamp.valueOf("2026-01-01 00:00:01"));
+
+        assertQuery("SELECT ts FROM \"TEMPORAL\".test WHERE ts = \"TEMPORAL\".tsFromStr(?)")
+            .withParams("2026-01-01 00:00:01")
+            .returns(Timestamp.valueOf("2026-01-01 00:00:01"))
+            .check();
+    }
+
+    /** */
+    @Test
     public void testTableFunctions() throws Exception {
         IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
             .setSqlSchema("PUBLIC")
@@ -333,15 +350,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertThrows("SELECT * from raiseException(?, ?, ?)", RuntimeException.class, "Test exception",
             1, "test", true);
 
+        var empObj1 = new Employer("emp1", 1000d);
+        var empObj10 = new Employer("emp10", 10000d);
+
         // Object type.
-        assertQuery("SELECT * from withObjectType(1)")
-            .returns(1, new Employer("emp1", 1000d))
-            .returns(10, new Employer("emp10", 10000d))
+        assertQuery("SELECT * from withObjectType(1) ORDER BY ID")
+            .returns(1, empObj1)
+            .returns(10, empObj10)
+            .withKeepBinary(false)
             .check();
 
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT EMP from withObjectType(1) where EMP=?").setArgs(empObj10);
+        List<?> res = emp.withKeepBinary().query(qry).getAll().get(0);
+        assertEquals(client.binary().toBinary(empObj10), res.get(0));
+
         assertQuery("SELECT * from withObjectType(1) where EMP=?")
-            .withParams(new Employer("emp10", 10000d))
-            .returns(10, new Employer("emp10", 10000d))
+            .withParams(empObj10)
+            .returns(10, empObj10)
+            .withKeepBinary(false)
             .check();
     }
 
@@ -756,6 +782,15 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         @QuerySqlFunction
         public static int decimalToInt(BigDecimal val) {
             return val.intValue();
+        }
+    }
+
+    /** */
+    public static class TemporalFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static Timestamp tsFromStr(String in) {
+            return Timestamp.valueOf(in);
         }
     }
 

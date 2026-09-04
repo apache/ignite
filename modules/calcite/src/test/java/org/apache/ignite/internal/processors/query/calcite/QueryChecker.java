@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
@@ -305,6 +306,9 @@ public abstract class QueryChecker {
     private Object[] params = X.EMPTY_OBJECT_ARRAY;
 
     /** */
+    private boolean keepBinary = true;
+
+    /** */
     private String exactPlan;
 
     /** */
@@ -347,6 +351,13 @@ public abstract class QueryChecker {
     /** */
     public QueryChecker withParams(Object... params) {
         this.params = params;
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker withKeepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
 
         return this;
     }
@@ -424,9 +435,11 @@ public abstract class QueryChecker {
             ? ((TransactionProxyImpl)tx).tx().xidVersion()
             : null;
 
+        QueryProperties qryProps = new QueryProperties(null, keepBinary, false);
+
         QueryContext ctx = (frameworkCfg != null || txVer != null || planLsnr != null)
-            ? QueryContext.of(frameworkCfg, txVer, planLsnr)
-            : null;
+            ? QueryContext.of(QueryContext.of(frameworkCfg, txVer, planLsnr), qryProps)
+            : QueryContext.of(qryProps);
 
         List<FieldsQueryCursor<List<?>>> explainCursors =
             engine.query(ctx, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
