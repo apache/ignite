@@ -223,6 +223,137 @@ Configuration parameters:
 * `sendNodeId` - if enabled, a tag with the Ignite node id is added to each metric.
 * `sendConsistentId` - if enabled, a tag with the Ignite node consistent id is added to each metric.
 
+==== Prometheus HTTP and REST Endpoints
+
+`OpenCensusMetricExporterSpi` writes metrics to the OpenCensus API, but does not start an HTTP endpoint itself.
+To expose the metrics in the Prometheus format, register the Prometheus collector and start its HTTP server on a port
+that is different from the Ignite REST API port:
+
+[source,java]
+----
+PrometheusStatsCollector.createAndRegister();
+
+// Prometheus metrics: http://localhost:8082/
+HTTPServer metricsServer = new HTTPServer("localhost", 8082, true);
+
+OpenCensusMetricExporterSpi exporter = new OpenCensusMetricExporterSpi();
+exporter.setPeriod(1_000);
+
+IgniteConfiguration cfg = new IgniteConfiguration();
+cfg.setMetricExporterSpi(exporter);
+----
+
+The example requires the `ignite-opencensus` module, `opencensus-exporter-stats-prometheus`, and Prometheus `simpleclient_httpserver`.
+The Prometheus client used by Ignite serves metrics at the root path, for example:
+
+[source,shell]
+----
+curl http://localhost:8082/
+----
+
+The Ignite HTTP REST API is provided by the `ignite-rest-http` module and uses port `8080` by default.
+Use `IGNITE_JETTY_HOST` and `IGNITE_JETTY_PORT` to change its endpoint.
+For example, the following requests return the cluster state and node data:
+
+[source,shell]
+----
+curl http://localhost:8080/ignite?cmd=state
+curl "http://localhost:8080/ignite?cmd=node&id=<node-id>&attr=true&mtr=true&caches=true"
+----
+
+See link:restapi[REST API] for the complete configuration and command reference.
+
+==== Metrics Not Available Through the Prometheus HTTP Endpoint
+
+The OpenCensus exporter supports `LongMetric`, `IntMetric`, `BooleanMetric`, `DoubleMetric`, `HistogramMetric`,
+and object metrics whose declared type is `Date` or `OffsetDateTime`.
+JMX also exposes other object metric types. Therefore, the following JMX metrics are not exported through the
+Prometheus HTTP endpoint. A metric registry in angle brackets is created dynamically.
+
+[cols="25%,40%,35%",options="header"]
+|===
+|Registry
+|Metrics not exported
+|REST alternative
+
+|`ignite`
+a|`fullVersion`, `copyright`, `startTimestampFormatted`, `uptimeFormatted`, `osInformation`, `jdkInformation`,
+`osUser`, `vmName`, `instanceName`, `currentCoordinatorFormatted`, `longJVMPauseLastEvents`, `active`,
+`clusterState`, `userAttributesFormatted`, `gridLoggerFormatted`, `executorServiceFormatted`, `igniteHome`,
+`mBeanServerFormatted`, `localNodeId`, `isPeerClassLoadingEnabled`, `lifecycleBeansFormatted`,
+`discoverySpiFormatted`, `communicationSpiFormatted`, `deploymentSpiFormatted`, `checkpointSpiFormatted`,
+`collisionSpiFormatted`, `eventStorageSpiFormatted`, `failoverSpiFormatted`, `loadBalancingSpiFormatted`
+a|`active` and `clusterState`: `cmd=state`.
+
+`localNodeId`: the `nodeId` field of `cmd=node` or `cmd=top`.
+
+`instanceName` and `isPeerClassLoadingEnabled`: attributes `org.apache.ignite.ignite.name` and
+`org.apache.ignite.peer.classloading.enabled` returned by `cmd=node&attr=true` or `cmd=top&attr=true`.
+
+`startTimestampFormatted` and `uptimeFormatted` are available only as unformatted numeric values in the `metrics`
+object returned with `mtr=true`. Other listed metrics have no REST equivalent.
+
+|`sys`
+|`SystemLoadAverage`
+|No equivalent. The `averageCpuLoad` and `currentCpuLoad` fields returned with `mtr=true` are different metrics.
+
+|`discovery.<name>`
+|`Coordinator`; `ClientRouterNodeId` for `TcpDiscoverySpi`
+|No direct equivalent. Node IDs are returned by `cmd=node` and `cmd=top`, but the coordinator and client router are not identified.
+
+|`communication.tcp.<connection>`
+|`consistentId`
+|The `consistentId` field of each node returned by `cmd=node` or `cmd=top`.
+
+|`threadPools.<name>`
+|`RejectedExecutionHandlerClass`, `ThreadFactoryClass`
+|No equivalent.
+
+|`cacheGroups.<cache-group>`
+a|`Caches`, `OwningPartitionsAllocationMap`, `MovingPartitionsAllocationMap`,
+`AffinityPartitionsAssignmentMap`, `PartitionIds`, `RebalancingFullReceivedKeys`,
+`RebalancingHistReceivedKeys`, `RebalancingFullReceivedBytes`, `RebalancingHistReceivedBytes`
+|No equivalent. `cmd=node&caches=true` and `cmd=top&caches=true` return a node's cache configurations, not cache-group allocation metrics.
+
+|`cache.<cache>`
+|`TxKeyCollisions`
+|No equivalent. `cmd=cache` returns only reads, writes, hits, and misses.
+
+|`tx`
+|`AllOwnerTransactions`
+|No equivalent.
+
+|`io.statistics.cacheGroups.<cache-group>`
+|`name`
+|No equivalent.
+
+|`io.statistics.hashIndexes.<index>` or `io.statistics.sortedIndexes.<index>`
+|`name`, `indexName`
+|No equivalent.
+
+|`snapshot`
+|`LastSnapshotName`, `LastSnapshotErrorMessage`, `LocalSnapshotNames`, `LastRequestId`
+|No equivalent.
+
+|`snapshot.incremental` and `snapshot-restore`
+|`snapshotName`, `requestId`, `error`
+|No equivalent.
+
+|`cdc`
+|`BinaryMetaDir`, `MarshallerDir`, `CdcDir`, `CdcMode`
+|No equivalent. These metrics belong to the standalone CDC application, which does not expose the Ignite node REST API.
+|===
+
+The list also applies to the `Coordinator` metric of `ZookeeperDiscoverySpi`.
+Custom object metrics are not exported unless their declared type is `Date` or `OffsetDateTime`.
+
+[NOTE]
+====
+OpenCensus does not accept negative values. A supported numeric metric is omitted from an export cycle while its value
+is negative, but becomes available again when the value is non-negative. This is different from the unsupported object
+metrics listed above, which cannot be exported through this exporter for any value.
+====
+
 
 
 
