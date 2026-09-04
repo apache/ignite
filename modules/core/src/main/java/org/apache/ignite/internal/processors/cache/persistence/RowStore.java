@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -134,6 +135,20 @@ public class RowStore {
      */
     public void addRows(Collection<? extends CacheDataRow> rows,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        if (!persistenceEnabled && grp.dataRegion().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
+            // Size-aware reserve for the largest row in the batch. Eviction performed here runs without entry locks
+            // (see AbstractFreeList#insertDataRows), so reserving space for any single large row is safe and keeps the
+            // batch path consistent with the single-row path. Smaller rows are covered by the regular
+            // threshold eviction loop inside insertDataRows.
+            int maxRowSize = 0;
+
+            for (CacheDataRow row : rows)
+                maxRowSize = Math.max(maxRowSize, row.size());
+
+            if (maxRowSize > 0)
+                ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), maxRowSize);
+        }
+
         assert ctx.database().checkpointLockIsHeldByThread();
 
         freeList.insertDataRows(rows, statHolder);
