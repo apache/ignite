@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -52,8 +53,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     }
 
     /** {@inheritDoc} */
-    @Override public Class<SnapshotStatusTaskV2> taskClass() {
-        return SnapshotStatusTaskV2.class;
+    @Override public Class<SnapshotStatusTask> taskClass() {
+        return SnapshotStatusTask.class;
     }
 
     /** {@inheritDoc} */
@@ -64,36 +65,46 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             return;
         }
 
-        boolean isCreating = status.operation() == SnapshotStatusTask.SnapshotOperation.CREATE;
-        boolean isRestoring = status.operation() == SnapshotStatusTask.SnapshotOperation.RESTORE;
-        boolean isIncremental = status.incrementIndex() > 0;
-
-        assert (status instanceof SnapshotStatusTaskV2.SnapshotStatusV2) == !(isCreating || isRestoring)
-            : "No create or restore snapshot operation found but the status os not of V2 status.";
+        assert status.checkStatuses() != null || status.operation() != SnapshotStatusTask.SnapshotOperation.CHECK
+            : "No create or restore snapshot operation found but the check statuses are also empty.";
 
         // The check operation can be run in parallel for different snapshots.
-        List<SnapshotStatus> multipleOpsView = isCreating || isRestoring
-            ? Collections.singletonList(status)
-            : ((SnapshotStatusTaskV2.SnapshotStatusV2)status).checkStatuses();
+        List<SnapshotStatus> multipleOpsView;
 
-        assert multipleOpsView.size() == 1 || !(isCreating || isRestoring) : "Only snapshot check supports multiple operations.";
+        if (status.operation() == SnapshotStatusTask.SnapshotOperation.CHECK) {
+            // Check operation always has itself in its aggregated check sattuses.
+            multipleOpsView = status.checkStatuses();
+        }
+        else {
+            // If the operation is not check, attach possible parallel checks after.
+            multipleOpsView = status.checkStatuses() == null
+                ? Collections.singletonList(status)
+                : Stream.concat(Stream.of(status), status.checkStatuses().stream()).collect(Collectors.toList());
+        }
 
-        if (isCreating)
-            printer.accept("Create snapshot operation is in progress.");
-        else if (isRestoring)
-            printer.accept("Restore snapshot operation is in progress.");
-        else
-            printer.accept("Check snapshot operation" + (multipleOpsView.size() < 2 ? " is " : "s are ") + "in progress.");
+        boolean first = true;
 
-        printer.accept(U.nl());
+        for (SnapshotStatus s0 : multipleOpsView) {
+            if (!first)
+                printer.accept(U.nl());
 
-        multipleOpsView.forEach(s0 -> {
+            if (s0.operation() == SnapshotStatusTask.SnapshotOperation.CREATE)
+                printer.accept("Create snapshot operation is in progress.");
+            else if (s0.operation() == SnapshotStatusTask.SnapshotOperation.RESTORE)
+                printer.accept("Restore snapshot operation is in progress.");
+            else
+                printer.accept("Check snapshot operation is in progress.");
+
+            printer.accept("");
+
             GridStringBuilder s = new GridStringBuilder();
 
-            s.a("Snapshot name: ").a(s0.name()).nl();
-            s.a("Incremental: ").a(isIncremental).nl();
+            boolean incremental = s0.incrementIndex() > 0;
 
-            if (isIncremental)
+            s.a("Snapshot name: ").a(s0.name()).nl();
+            s.a("Incremental: ").a(incremental).nl();
+
+            if (incremental)
                 s.a("Increment index: ").a(s0.incrementIndex()).nl();
 
             s.a("Operation request ID: ").a(s0.requestId()).nl();
@@ -106,12 +117,12 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
 
             SnapshotTaskProgressDesc desc;
 
-            if (isCreating)
-                desc = isIncremental ? new CreateIncrementalSnapshotTaskProgressDesc() : new CreateFullSnapshotTaskProgressDesc();
-            else if (isRestoring)
-                desc = isIncremental ? new RestoreIncrementalSnapshotTaskProgressDesc() : new RestoreFullSnapshotTaskProgressDesc();
+            if (s0.operation() == SnapshotStatusTask.SnapshotOperation.CREATE)
+                desc = incremental ? new CreateIncrementalSnapshotTaskProgressDesc() : new CreateFullSnapshotTaskProgressDesc();
+            else if (s0.operation() == SnapshotStatusTask.SnapshotOperation.RESTORE)
+                desc = incremental ? new RestoreIncrementalSnapshotTaskProgressDesc() : new RestoreFullSnapshotTaskProgressDesc();
             else
-                desc = new CheckSnapshotTaskProgressDesc(isIncremental);
+                desc = new CheckSnapshotTaskProgressDesc(incremental);
 
             List<List<?>> rows = s0.progress().entrySet().stream().sorted(Map.Entry.comparingByKey())
                 .map(e -> desc.buildRow(e.getKey(), e.getValue()))
@@ -119,8 +130,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
 
             SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
 
-            printer.accept(U.nl());
-        });
+            first = false;
+        }
     }
 
     /** Describes progress of a snapshot task. */
@@ -265,51 +276,25 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     /** */
     private static class CheckSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
-        private final boolean incremental;
-
-        /** */
         private CheckSnapshotTaskProgressDesc(boolean incremental) {
             super(incremental
                 ? F.asList("Node ID", "processedWalSegments", "totalWalSegments", "percent")
-                : F.asList("Node ID", "fullCheck", "processedPartitions", "totalPartitions",
-                    "processedSnapshotParts", "snapshotPartsToProcess", "percent")
+                : F.asList("Node ID", "processedPartitions", "totalPartitions", "percent")
             );
-
-            this.incremental = incremental;
         }
 
         /** {@inheritDoc} */
         @Override public List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress) {
-            if (incremental) {
-                long processed = progress.get1();
-                long total = progress.get2();
+            long total = progress.get2();
 
-                if (total <= 0)
-                    return F.asList(nodeId, "unknown", "unknown", "unknown");
+            if (total <= 0)
+                return F.asList(nodeId, "unknown", "unknown", "unknown");
 
-                String percent = (int)(processed * 100 / total) + "%";
+            long processed = progress.get1();
 
-                return F.asList(nodeId, processed, total, percent);
-            }
+            String percent = (int)(processed * 100 / total) + "%";
 
-            long partitionsToCheck = progress.get3();
-            long partsToCheck = progress.get5();
-
-            if (partitionsToCheck <= 0 || partsToCheck <= 0)
-                return F.asList(nodeId, "unknown", "unknown", "unknown", "unknown", "unknown", "unknown");
-
-            // Ratio of checked partitions in current snapshot part * total parts ratio.
-            double totalRatio = ((double)progress.get2() / partitionsToCheck) * ((double)progress.get4() / partsToCheck);
-
-            return F.asList(
-                nodeId,
-                progress.get1() == 0L ? "false" : "true",  // Full check flag;
-                progress.get2(), // Checked partitions in current snapshot part;
-                partitionsToCheck, // Total partitions in current snapshot part;
-                progress.get4(), // Checked shapshot parts;
-                partsToCheck, // Total snapshot parts to check.
-                ((int)(totalRatio * 100.0d)) + '%'
-            );
+            return F.asList(nodeId, processed, total, percent);
         }
     }
 }

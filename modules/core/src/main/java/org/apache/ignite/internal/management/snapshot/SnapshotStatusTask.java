@@ -18,26 +18,38 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.management.snapshot.SnapshotStatusTask.SnapshotStatus;
@@ -74,29 +86,98 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         if (error != null)
             throw new IgniteException("Failed to get the snapshot status.", error);
 
-        Collection<SnapshotStatus> res = F.viewReadOnly(results, ComputeJobResult::getData, r -> r.getData() != null);
+        // First, find create or restore operation. Check sattuses, if are, contains any status.
+        Collection<SnapshotStatus> res = F.viewReadOnly(results, ComputeJobResult::getData,
+            r -> r.getData() != null && ((SnapshotStatus)r.getData()).operation() != SnapshotOperation.CHECK);
+
+        if (res.isEmpty())
+            res = F.viewReadOnly(results, ComputeJobResult::getData, r -> r.getData() != null);
 
         // There is no snapshot operation.
         if (res.isEmpty())
             return null;
 
-        SnapshotStatus s0 = F.first(res);
+        SnapshotStatus mergerRes = F.first(res);
+
+        // Try to find check statutes.
+        Map<String, SnapshotStatus> chkStatuses = null;
+
+        for (SnapshotStatus s : res) {
+            if (s.checkStatuses == null) {
+                assert s.op != SnapshotOperation.CHECK;
+
+                continue;
+            }
+
+            if (chkStatuses == null)
+                chkStatuses = U.newHashMap(res.size());
+
+            for (SnapshotStatus s0 : s.checkStatuses) {
+                var prev = chkStatuses.putIfAbsent(s0.name(), s0);
+
+                if (prev == null)
+                    continue;
+
+                // Merge nodes progress.
+                prev.progress.putAll(s0.progress());
+            }
+        }
+
+        var rqId = mergerRes.requestId;
 
         // Filter out differing requests due to concurrent updates on nodes.
-        res = F.view(res, s -> s.requestId.equals(s0.requestId));
+        res = F.view(res, s -> s.requestId.equals(rqId));
 
-        // Merge nodes progress.
-        Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
+        // Create of restore.
+        if (mergerRes.operation() != SnapshotOperation.CHECK) {
+            // Merge nodes progress.
+            Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
 
-        res.forEach(s -> progress.putAll(s.progress));
+            res.forEach(s -> progress.putAll(s.progress));
 
-        return new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.requestId, s0.startTime, progress);
+            mergerRes = new SnapshotStatus(mergerRes.op, mergerRes.name, mergerRes.incIdx, mergerRes.requestId,
+                mergerRes.startTime, progress);
+
+            if (chkStatuses != null)
+                mergerRes.checkStatuses = new ArrayList<>(chkStatuses.values());
+        }
+
+        assert !F.isEmpty(mergerRes.progress);
+
+        return mergerRes;
     }
 
     /** */
     protected static class SnapshotStatusJob extends SnapshotJob<NoArg, SnapshotStatus> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** */
+        @LoggerResource
+        private transient IgniteLogger log;
+
+        /** */
+        private boolean clusterSupportsSnapshotCheckStatus() {
+            var feature = new IgniteCoreFeature(SupportedFeatureRegistry.SNAPSHOT_CHECK_STATUS_FEATURE.id());
+
+            if (!ignite.context().rollingUpgrade().features().isActive(feature)) {
+                log.warning("The snapshot-check-aware status feature isn't enabled. The status is available only for " +
+                    "snapshot creation and restoration.");
+
+                return false;
+            }
+
+            for (var n : ignite.cluster().nodes()) {
+                if (!(n instanceof IgniteClusterNode cn) || !cn.features().contains(feature)) {
+                    log.warning(String.format("Node %s doesn't support the snapshot check status feature. The status " +
+                        "is available only for snapshot creation and restoration.", n.id()));
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         /**
          * @param arg Job argument.
@@ -107,13 +188,13 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         }
 
         /** {@inheritDoc} */
-        @Override protected SnapshotStatus run(@Nullable NoArg arg) throws IgniteException {
+        @Override protected @Nullable SnapshotStatus run(@Nullable NoArg arg) throws IgniteException {
             if (!CU.isPersistenceEnabled(ignite.context().config()))
                 return null;
 
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-
             SnapshotOperationRequest req = snpMgr.currentCreateRequest();
+            SnapshotStatus res = null;
 
             if (req != null) {
                 T5<Long, Long, Long, Long, Long> metrics;
@@ -129,7 +210,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                         -1L, -1L, -1L);
                 }
 
-                return new SnapshotStatus(
+                res = new SnapshotStatus(
                     SnapshotOperation.CREATE,
                     req.snapshotName(),
                     req.incrementIndex(),
@@ -138,32 +219,91 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                     F.asMap(ignite.localNode().id(), metrics)
                 );
             }
+            else {
+                MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
 
-            MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+                long startTime = mreg.<LongMetric>findMetric("startTime").value();
 
-            long startTime = mreg.<LongMetric>findMetric("startTime").value();
-
-            if (startTime > mreg.<LongMetric>findMetric("endTime").value()) {
-                return new SnapshotStatus(
-                    SnapshotOperation.RESTORE,
-                    mreg.findMetric("snapshotName").getAsString(),
-                    mreg.<IntMetric>findMetric("incrementIndex").value(),
-                    mreg.findMetric("requestId").getAsString(),
-                    mreg.<LongMetric>findMetric("startTime").value(),
-                    F.asMap(
-                        ignite.localNode().id(),
-                        new T5<>(
-                            (long)mreg.<IntMetric>findMetric("processedPartitions").value(),
-                            (long)mreg.<IntMetric>findMetric("totalPartitions").value(),
-                            (long)mreg.<IntMetric>findMetric("processedWalSegments").value(),
-                            (long)mreg.<IntMetric>findMetric("totalWalSegments").value(),
-                            mreg.<LongMetric>findMetric("processedWalEntries").value()
+                if (startTime > mreg.<LongMetric>findMetric("endTime").value()) {
+                    res = new SnapshotStatus(
+                        SnapshotOperation.RESTORE,
+                        mreg.findMetric("snapshotName").getAsString(),
+                        mreg.<IntMetric>findMetric("incrementIndex").value(),
+                        mreg.findMetric("requestId").getAsString(),
+                        mreg.<LongMetric>findMetric("startTime").value(),
+                        F.asMap(
+                            ignite.localNode().id(),
+                            new T5<>(
+                                (long)mreg.<IntMetric>findMetric("processedPartitions").value(),
+                                (long)mreg.<IntMetric>findMetric("totalPartitions").value(),
+                                (long)mreg.<IntMetric>findMetric("processedWalSegments").value(),
+                                (long)mreg.<IntMetric>findMetric("totalWalSegments").value(),
+                                mreg.<LongMetric>findMetric("processedWalEntries").value()
+                            )
                         )
-                    )
-                );
+                    );
+                }
             }
 
-            return null;
+            if (!clusterSupportsSnapshotCheckStatus())
+                return res;
+
+            List<SnapshotStatus> checkStatuses = null;
+
+            for (var snpCheckMReg : ignite.context().metric()) {
+                if (!snpCheckMReg.name().startsWith(SnapshotCheckProcess.SNAPSHOT_CHECK_METRIC))
+                    continue;
+
+                Metric rqIdMetric = snpCheckMReg.findMetric("requestId");
+
+                // The requestId metric is registered last.
+                if (rqIdMetric == null)
+                    continue;
+
+                if (checkStatuses == null)
+                    checkStatuses = new ArrayList<>();
+
+                int incIdx = snpCheckMReg.findMetric("incrementIndex") == null
+                    ? 0
+                    : snpCheckMReg.<IntMetric>findMetric("incrementIndex").value();
+
+                T5<Long, Long, Long, Long, Long> metrics;
+
+                if (incIdx > 0) {
+                    metrics = new T5<>(
+                        (long)snpCheckMReg.<IntMetric>findMetric("processedWalSegments").value(),
+                        (long)snpCheckMReg.<IntMetric>findMetric("totalWalSegments").value(),
+                        -1L, -1L, -1L
+                    );
+                }
+                else {
+                    metrics = new T5<>(
+                        (long)snpCheckMReg.<IntMetric>findMetric("processedPartitions").value(),
+                        (long)snpCheckMReg.<IntMetric>findMetric("totalPartitions").value(),
+                        -1L, -1L, -1L
+                    );
+                }
+
+                var status = new SnapshotStatus(
+                    null,
+                    MetricUtils.fromFullName(snpCheckMReg.name()).get2(),
+                    incIdx,
+                    rqIdMetric.getAsString(),
+                    ((LongMetric)snpCheckMReg.findMetric("startTime")).value(),
+                    GridFunc.asMap(ignite.localNode().id(), metrics)
+                );
+
+                checkStatuses.add(status);
+            }
+
+            if (checkStatuses != null) {
+                if (res == null)
+                    res = new SnapshotStatus(checkStatuses);
+                else
+                    res.checkStatuses = checkStatuses;
+            }
+
+            return res;
         }
     }
 
@@ -190,8 +330,11 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         /** Progress of operation on nodes. */
         private final Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
 
+        /** Nodes' statuses of all snapshot check operations. */
+        private @Nullable List<SnapshotStatus> checkStatuses;
+
         /** */
-        public SnapshotStatus(
+        SnapshotStatus(
             SnapshotOperation op,
             String name,
             int incIdx,
@@ -207,34 +350,56 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
             this.progress = progress;
         }
 
+        /** */
+        private SnapshotStatus(List<SnapshotStatus> checkStatuses) {
+            // Single, V1 status holds first check status.
+            this(
+                SnapshotOperation.CHECK,
+                checkStatuses.get(0).name(),
+                checkStatuses.get(0).incrementIndex(),
+                checkStatuses.get(0).requestId(),
+                checkStatuses.get(0).startTime(),
+                checkStatuses.get(0).progress()
+            );
+
+            assert !F.isEmpty(checkStatuses);
+
+            this.checkStatuses = checkStatuses;
+        }
+
         /** @return Operation type. */
-        public SnapshotOperation operation() {
+        SnapshotOperation operation() {
             return op;
         }
 
         /** @return Snapshot name. */
-        public String name() {
+        String name() {
             return name;
         }
 
         /** @return Incremental snapshot index. */
-        public int incrementIndex() {
+        int incrementIndex() {
             return incIdx;
         }
 
         /** @return Request ID. */
-        public String requestId() {
+        String requestId() {
             return requestId;
         }
 
         /** @return Start time. */
-        public long startTime() {
+        long startTime() {
             return startTime;
         }
 
         /** @return Progress of operation on nodes. */
-        public Map<UUID, T5<Long, Long, Long, Long, Long>> progress() {
-            return progress;
+        Map<UUID, T5<Long, Long, Long, Long, Long>> progress() {
+            return Collections.unmodifiableMap(progress);
+        }
+
+        /** @return Statuses of parallel check. */
+        @Nullable List<SnapshotStatus> checkStatuses() {
+            return checkStatuses;
         }
     }
 
@@ -244,6 +409,9 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         CREATE,
 
         /** Restore snapshot. */
-        RESTORE
+        RESTORE,
+
+        /** Check snapshot. */
+        CHECK
     }
 }

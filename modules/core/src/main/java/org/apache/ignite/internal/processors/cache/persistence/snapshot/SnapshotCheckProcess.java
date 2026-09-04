@@ -732,13 +732,6 @@ public class SnapshotCheckProcess {
         mreg.register("startTime", U::currentTimeMillis,
             "The system time of the start of the cluster snapshot check operation on current node.");
 
-        mreg.register(
-            "requestId",
-            () -> ctx.req.requestId().toString(),
-            String.class,
-            "The request ID of the last running cluster snapshot restore operation on this node."
-        );
-
         if (ctx.req.incrementalIndex() > 0) {
             mreg.register("incrementIndex", ctx.req::incrementalIndex,
                 "The index of incremental snapshot of the snapshot check operation.");
@@ -758,6 +751,14 @@ public class SnapshotCheckProcess {
             mreg.register("processedSnapshotParts", ctx.checkedSnapshotParts::get,
                 "Number of checked snapshot parts (nodes data) on current node.");
         }
+
+        // Persistence of this metrics also marks that the registry is complete.
+        mreg.register(
+            "requestId",
+            () -> ctx.req.requestId().toString(),
+            String.class,
+            "The request ID of the last running cluster snapshot check operation on this node."
+        );
     }
 
     /** */
@@ -784,7 +785,7 @@ public class SnapshotCheckProcess {
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-        /** Common counter of total work units to process on current node. */
+        /** Common counter of total work units to process on current node, of all snapshot parts ({@link #checkedSnapshotParts}). */
         @GridToStringExclude
         private final AtomicInteger totalCounter = new AtomicInteger(-1);
 
