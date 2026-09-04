@@ -578,6 +578,8 @@ namespace Apache.Ignite.AspNet.Tests
             {
                 throw new NotImplementedException();
             }
+
+            public bool HasPlatformCache => throw new NotImplementedException();
         }
     }
 }
