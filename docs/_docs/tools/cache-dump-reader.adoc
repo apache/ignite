@@ -1,0 +1,133 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Cache Dump Reader
+
+Cache dump reader is a standalone Java API for reading an Apache Ignite cache dump without starting the source cluster.
+Use it to inspect dump contents, export entries, or restore data with a custom `DumpConsumer`.
+
+Create a cache dump with `IgniteSnapshot.createDump(String name, Collection<String> cacheGroupNames)`.
+The `cacheGroupNames` argument limits the created dump to the specified cache groups; pass `null` to include all user cache groups.
+Dump creation uses the link:snapshots/snapshots#distributed-properties[`snapshotTransferRate`] distributed property to limit disk write rate.
+
+== Reading a Dump
+
+Implement `DumpConsumer` and pass it to `DumpReader` through `DumpReaderConfiguration`.
+The reader calls the consumer lifecycle methods in this order:
+
+* `start()`;
+* `onMappings(Iterator<TypeMapping>)`;
+* `onTypes(Iterator<BinaryType>)`;
+* `onCacheConfigs(Iterator<StoredCacheData>)`;
+* `onPartition(int grp, int part, Iterator<DumpEntry>)`;
+* `stop()`.
+
+The `onPartition(...)` callback can be invoked concurrently when `threadCount` is greater than `1`.
+If a dump contains partition copies from multiple nodes, the callback can receive the same `[grp, part]` pair more than once unless `skipCopies` is enabled.
+
+[source, java]
+----
+DumpConsumer consumer = new DumpConsumer() {
+    @Override public void start() {
+        // Initialize resources.
+    }
+
+    @Override public void onMappings(Iterator<TypeMapping> mappings) {
+        // Consume binary type mappings.
+    }
+
+    @Override public void onTypes(Iterator<BinaryType> types) {
+        // Consume binary types.
+    }
+
+    @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+        // Consume stored cache configurations.
+    }
+
+    @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+        data.forEachRemaining(entry -> {
+            Object key = entry.key();
+            Object value = entry.value();
+            // Process the entry.
+        });
+    }
+
+    @Override public void stop() {
+        // Release resources.
+    }
+};
+
+DumpReaderConfiguration cfg = new DumpReaderConfiguration(
+    null,                       // Optional dump name.
+    "/absolute/path/to/dump",   // Absolute dump directory.
+    null,                       // IgniteConfiguration; optional for absolute paths.
+    consumer
+);
+
+new DumpReader(cfg, logger).run();
+----
+
+When an `IgniteConfiguration` is provided, the dump can be addressed by dump name and dump root path resolved from that configuration.
+Without an `IgniteConfiguration`, use an absolute path to the dump directory and leave the dump name empty.
+
+== Reader Options
+
+The full `DumpReaderConfiguration` constructor allows you to control dump reading:
+
+[cols="1,3",opts="header"]
+|===
+|Option | Description
+
+| `threadCount`
+| Number of threads used to consume dumped partitions. The default is `1`.
+
+| `timeout`
+| Maximum time to wait for partition-processing tasks to finish. The default is 7 days.
+
+| `failFast`
+| Skips partition-processing tasks that have not started after the first consumer error when set to `true`.
+
+| `keepBinary`
+| Keeps entry keys and values as `BinaryObject` instances when `keepRaw` is `false`.
+
+| `keepRaw`
+| Keeps entry keys as `KeyCacheObject` and values as `CacheObject`. When enabled, it disables `keepBinary`.
+
+| `groupNames`
+| Reads only the specified cache groups from the dump.
+
+| `cacheNames`
+| Reads only the specified caches from the dump. The filter applies to both cache configurations and partition entries.
+
+| `skipCopies`
+| Processes only one copy of each cache group partition and skips duplicate partition copies found in the dump.
+
+| `encryptionSpi`
+| Encryption SPI used to read encrypted cache dump data.
+|===
+
+== Log Messages
+
+Partition-processing log messages include the node, cache group, and partition being processed.
+The `grp` field contains the cache group name, or the cache name for caches without an explicit group name.
+For example:
+
+[source, text]
+----
+Consuming partition [node=node1, grp=my-cache-group, part=42]
+Skip copy partition [node=node2, grp=my-cache-group, part=42]
+Error consuming partition [node=node1, grp=my-cache-group, part=42]
+----
+
+Use this value to match reader log entries to `groupNames`, `cacheNames`, and `DumpConsumer.onPartition(...)` processing.
