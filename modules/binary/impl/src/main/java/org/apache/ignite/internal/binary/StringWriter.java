@@ -39,9 +39,6 @@ public final class StringWriter {
     /** Latin-1 value of the {@code java.lang.String#coder} field. */
     private static final byte LATIN1 = 0;
 
-    /** Mask to test 8 bytes for a set sign bit at once. */
-    private static final long NEGATIVE_BYTES_MSK = 0b10000000_10000000_10000000_10000000_10000000_10000000_10000000_10000000L;
-
     /** Offset of the {@code java.lang.String#value} field, or {@code -1} if the compact string fast path is unavailable. */
     private static final long STR_VALUE_OFF;
 
@@ -59,7 +56,7 @@ public final class StringWriter {
      * Handle of the intrinsified {@code java.lang.StringCoding#hasNegatives}, or {@code null} if unavailable.
      * The intrinsic scans the array with SIMD instructions, far faster than any scalar loop.
      */
-    private static final MethodHandle HAS_NEGATIVES = hasNegativesHandle();
+    private static final MethodHandle HAS_NEGATIVES = hasNegatives();
 
     /** */
     private StringWriter() {
@@ -67,8 +64,7 @@ public final class StringWriter {
     }
 
     /**
-     * Writes a string to the output stream as a {@link GridBinaryMarshaller#STRING} flag followed by UTF-8 length
-     * (int) and UTF-8 bytes.
+     * Writes a string to the output stream.
      *
      * @param val Value.
      * @param out Output stream.
@@ -82,49 +78,218 @@ public final class StringWriter {
 
         out.unsafePosition(out.position() + 4);
 
-        int writtenBytes;
+        int written;
 
         byte[] latin1 = latin1Value(val);
 
         if (latin1 != null) {
             if (out.hasArray()) {
-                // Encode into the backing array directly: plain indexed writes are much faster than
-                // per-byte virtual calls through the stream interface.
-                int start = lenPos + 4;
-                int end = encodeLatin1(latin1, out, start);
+                if (!hasNegatives(latin1)) {
+                    out.unsafeEnsure(latin1.length);
+                    // Pure ASCII: UTF-8 representation matches the internal array, copy it as-is.
+                    System.arraycopy(latin1, 0, out.array(), out.position(), latin1.length);
 
-                writtenBytes = end - start;
+                    written = latin1.length;
+                }
+                else
+                    written = encodeLatin1(latin1, out);
 
-                out.unsafePosition(end);
+                out.unsafePosition(out.position() + written);
             }
             else
-                writtenBytes = writeLatin1(latin1, out);
+                written = writeLatin1(latin1, out);
         }
         else {
-            // Worst case is 3 bytes per char: a surrogate pair (2 chars) produces 4 bytes, a lone surrogate 1 byte.
+            // Allocating memory for worst case - 3 bytes per char.
             out.unsafeEnsure(Math.multiplyExact(3, val.length()));
 
             if (out.hasArray()) {
-                // Encode into the backing array directly: plain indexed writes are much faster than
-                // per-byte virtual calls through the stream interface.
-                int start = lenPos + 4;
-                int end = encodeChars(val, out.array(), start);
+                written = encodeChars(val, out);
 
-                writtenBytes = end - start;
-
-                out.unsafePosition(end);
+                out.unsafePosition(out.position() + written);
             }
             else
-                writtenBytes = writeChars(val, out);
+                written = writeChars(val, out);
         }
 
-        out.unsafeWriteInt(lenPos, writtenBytes);
+        out.unsafeWriteInt(lenPos, written);
+    }
+
+    /**
+     * Writes a Latin-1 encoded string value to the stream.
+     *
+     * @param val Internal Latin-1 array of the string.
+     * @param out Output stream.
+     * @return Number of bytes written.
+     */
+    private static int writeLatin1(byte[] val, BinaryOutputStream out) {
+        out.unsafeEnsure(Math.addExact(val.length, val.length));
+
+        int utfLen = 0;
+
+        for (int i = 0; i < val.length; i++) {
+            byte b = val[i];
+
+            if (b >= 0) {
+                out.unsafeWriteByte(b);
+
+                utfLen++;
+            }
+            else {
+                int c = b & 0b1111_1111;
+
+                out.unsafeWriteByte((byte)(0b1100_0000 | (c >> 6)));
+                out.unsafeWriteByte((byte)(0b1000_0000 | (c & 0b0011_1111)));
+
+                utfLen += 2;
+            }
+        }
+
+        return utfLen;
+    }
+
+    /**
+     * Encodes a Latin-1 string value to the buffer as UTF-8.
+     *
+     * @param val Internal Latin-1 array of the string.
+     * @param out Output stream.
+     * @return Count of written bytes.
+     */
+    private static int encodeLatin1(byte[] val, BinaryOutputStream out) {
+        out.unsafeEnsure(Math.addExact(val.length, val.length));
+
+        byte[] buf = out.array();
+
+        long off = out.position() + GridUnsafe.BYTE_ARR_OFF;
+
+        for (int i = 0; i < val.length; i++) {
+            byte b = val[i];
+
+            if (b >= 0)
+                GridUnsafe.putByte(buf, off++, b);
+            else {
+                int c = b & 0xFF;
+
+                GridUnsafe.putByte(buf, off++, (byte)(0b1100_0000 | (c >> 6)));
+                GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | (c & 0b0011_1111)));
+            }
+        }
+
+        return (int)(off - GridUnsafe.BYTE_ARR_OFF - out.position());
+    }
+
+    /**
+     * Writes string chars UTF-8 encoded to the stream. Replicates {@code String#getBytes(UTF_8)} behavior exactly,
+     * including replacement of malformed surrogates with {@code '?'}. Stream capacity must be ensured by the caller.
+     *
+     * @param val Value.
+     * @param out Output stream.
+     * @return Number of bytes written.
+     */
+    private static int writeChars(String val, BinaryOutputStream out) {
+        int len = val.length();
+        int utfLen = 0;
+
+        for (int i = 0; i < len; i++) {
+            char c = val.charAt(i);
+
+            if (c < 0x80) {
+                out.unsafeWriteByte((byte)c);
+
+                utfLen++;
+            }
+            else if (c < 0x800) {
+                out.unsafeWriteByte((byte)(0b11_000000 | (c >> 6)));
+                out.unsafeWriteByte((byte)(0b10_000000 | (c & 0b00_111111)));
+
+                utfLen += 2;
+            }
+            else if (!Character.isSurrogate(c)) {
+                out.unsafeWriteByte((byte)(0b1110_0000 | (c >> 12)));
+                out.unsafeWriteByte((byte)(0b1000_0000 | ((c >> 6) & 0b0011_1111)));
+                out.unsafeWriteByte((byte)(0b1000_0000 | (c & 0b0011_1111)));
+
+                utfLen += 3;
+            }
+            else {
+                char c2;
+
+                if (Character.isHighSurrogate(c) && i + 1 < len && Character.isLowSurrogate(c2 = val.charAt(i + 1))) {
+                    int cp = Character.toCodePoint(c, c2);
+
+                    out.unsafeWriteByte((byte)(0b1111_0000 | (cp >> 18)));
+                    out.unsafeWriteByte((byte)(0b1000_0000 | ((cp >> 12) & 0b0011_1111)));
+                    out.unsafeWriteByte((byte)(0b1000_0000 | ((cp >> 6) & 0b0011_1111)));
+                    out.unsafeWriteByte((byte)(0b1000_0000 | (cp & 0b0011_1111)));
+
+                    utfLen += 4;
+                    i++;
+                }
+                else {
+                    out.unsafeWriteByte((byte)'?');
+
+                    utfLen++;
+                }
+            }
+        }
+
+        return utfLen;
+    }
+
+    /**
+     * Encodes string chars to the buffer as UTF-8. Replicates {@code String#getBytes(UTF_8)} behavior exactly,
+     * including replacement of malformed surrogates with {@code '?'}. Buffer capacity must be ensured by the caller.
+     *
+     * @param val Value.
+     * @param out Output stream.
+     * @return Count of written bytes.
+     */
+    private static int encodeChars(String val, BinaryOutputStream out) {
+        byte[] buf = out.array();
+        int len = val.length();
+
+        // Unsafe writes skip the array bounds checks: capacity is ensured by the caller.
+        long off = GridUnsafe.BYTE_ARR_OFF + out.position();
+
+        for (int i = 0; i < len; i++) {
+            char c = val.charAt(i);
+
+            if (c < 0x80)
+                GridUnsafe.putByte(buf, off++, (byte)c);
+            else if (c < 0x800) {
+                GridUnsafe.putByte(buf, off++, (byte)(0b1100_0000 | (c >> 6)));
+                GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | (c & 0b0011_1111)));
+            }
+            else if (!Character.isSurrogate(c)) {
+                GridUnsafe.putByte(buf, off++, (byte)(0b1110_0000 | (c >> 12)));
+                GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | ((c >> 6) & 0b0011_1111)));
+                GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | (c & 0b0011_1111)));
+            }
+            else {
+                char c2;
+
+                if (Character.isHighSurrogate(c) && i + 1 < len && Character.isLowSurrogate(c2 = val.charAt(i + 1))) {
+                    int cp = Character.toCodePoint(c, c2);
+
+                    GridUnsafe.putByte(buf, off++, (byte)(0b1111_0000 | (cp >> 18)));
+                    GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | ((cp >> 12) & 0b0011_1111)));
+                    GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | ((cp >> 6) & 0b0011_1111)));
+                    GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | (cp & 0b0011_1111)));
+
+                    i++;
+                }
+                else
+                    GridUnsafe.putByte(buf, off++, (byte)'?');
+            }
+        }
+
+        return (int)(off - GridUnsafe.BYTE_ARR_OFF - out.position());
     }
 
     /**
      * @param val String.
-     * @return Internal Latin-1 array of the string, or {@code null} if the string is UTF-16 encoded or the internal
-     *      layout of {@link String} is unknown.
+     * @return Internal Latin-1 array of the string,
+     *      or {@code null} if the string is UTF-16 encoded or the internal layout of {@link String} is unknown.
      */
     public static byte[] latin1Value(String val) {
         if (STR_VALUE_OFF < 0 || GridUnsafe.getByteField(val, STR_CODER_OFF) != LATIN1)
@@ -151,7 +316,10 @@ public final class StringWriter {
         int i = 0;
 
         for (int lim = arr.length - Long.BYTES; i <= lim; i += Long.BYTES) {
-            if ((GridUnsafe.getLong(arr, GridUnsafe.BYTE_ARR_OFF + i) & NEGATIVE_BYTES_MSK) != 0)
+            long hasNegatives = GridUnsafe.getLong(arr, GridUnsafe.BYTE_ARR_OFF + i)
+                & 0b10000000_10000000_10000000_10000000_10000000_10000000_10000000_10000000L;
+
+            if (hasNegatives != 0)
                 return true;
         }
 
@@ -163,210 +331,19 @@ public final class StringWriter {
         return false;
     }
 
-    /**
-     * Writes a Latin-1 encoded string value to the stream.
-     *
-     * @param val Internal Latin-1 array of the string.
-     * @param out Output stream.
-     * @return Number of bytes written.
-     */
-    private static int writeLatin1(byte[] val, BinaryOutputStream out) {
-        if (!hasNegatives(val)) {
-            // Pure ASCII: UTF-8 representation matches the internal array, copy it as-is.
-            out.writeByteArray(val);
-
-            return val.length;
-        }
-
-        out.unsafeEnsure(Math.addExact(val.length, val.length));
-
-        int utfLen = 0;
-
-        for (int i = 0; i < val.length; i++) {
-            byte b = val[i];
-
-            if (b >= 0) {
-                out.unsafeWriteByte(b);
-
-                utfLen++;
-            }
-            else {
-                int c = b & 0xFF;
-
-                out.unsafeWriteByte((byte)(0xC0 | (c >> 6)));
-                out.unsafeWriteByte((byte)(0x80 | (c & 0x3F)));
-
-                utfLen += 2;
-            }
-        }
-
-        return utfLen;
-    }
-
-    /**
-     * Writes string chars UTF-8 encoded to the stream. Replicates {@code String#getBytes(UTF_8)} behavior exactly,
-     * including replacement of malformed surrogates with {@code '?'}. Stream capacity must be ensured by the caller.
-     *
-     * @param val Value.
-     * @param out Output stream.
-     * @return Number of bytes written.
-     */
-    private static int writeChars(String val, BinaryOutputStream out) {
-        int len = val.length();
-        int utfLen = 0;
-
-        for (int i = 0; i < len; i++) {
-            char c = val.charAt(i);
-
-            if (c < 0x80) {
-                out.unsafeWriteByte((byte)c);
-
-                utfLen++;
-            }
-            else if (c < 0x800) {
-                out.unsafeWriteByte((byte)(0xC0 | (c >> 6)));
-                out.unsafeWriteByte((byte)(0x80 | (c & 0x3F)));
-
-                utfLen += 2;
-            }
-            else if (Character.isSurrogate(c)) {
-                char c2;
-
-                if (Character.isHighSurrogate(c) && i + 1 < len && Character.isLowSurrogate(c2 = val.charAt(i + 1))) {
-                    int cp = Character.toCodePoint(c, c2);
-
-                    out.unsafeWriteByte((byte)(0xF0 | (cp >> 18)));
-                    out.unsafeWriteByte((byte)(0x80 | ((cp >> 12) & 0x3F)));
-                    out.unsafeWriteByte((byte)(0x80 | ((cp >> 6) & 0x3F)));
-                    out.unsafeWriteByte((byte)(0x80 | (cp & 0x3F)));
-
-                    utfLen += 4;
-                    i++;
-                }
-                else {
-                    out.unsafeWriteByte((byte)'?');
-
-                    utfLen++;
-                }
-            }
-            else {
-                out.unsafeWriteByte((byte)(0xE0 | (c >> 12)));
-                out.unsafeWriteByte((byte)(0x80 | ((c >> 6) & 0x3F)));
-                out.unsafeWriteByte((byte)(0x80 | (c & 0x3F)));
-
-                utfLen += 3;
-            }
-        }
-
-        return utfLen;
-    }
-
-    /**
-     * Encodes a Latin-1 string value to the buffer as UTF-8.
-     *
-     * @param val Internal Latin-1 array of the string.
-     * @param out Output stream.
-     * @param pos Buffer position to encode to.
-     * @return Buffer position after the last encoded byte.
-     */
-    private static int encodeLatin1(byte[] val, BinaryOutputStream out, int pos) {
-        if (!hasNegatives(val)) {
-            out.unsafeEnsure(val.length);
-
-            // Pure ASCII: UTF-8 representation matches the internal array, copy it as-is.
-            System.arraycopy(val, 0, out.array(), pos, val.length);
-
-            return pos + val.length;
-        }
-
-        out.unsafeEnsure(Math.addExact(val.length, val.length));
-
-        byte[] buf = out.array();
-
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
-
-        for (int i = 0; i < val.length; i++) {
-            byte b = val[i];
-
-            if (b >= 0)
-                GridUnsafe.putByte(buf, off++, b);
-            else {
-                int c = b & 0xFF;
-
-                GridUnsafe.putByte(buf, off++, (byte)(0xC0 | (c >> 6)));
-                GridUnsafe.putByte(buf, off++, (byte)(0x80 | (c & 0x3F)));
-            }
-        }
-
-        return (int)(off - GridUnsafe.BYTE_ARR_OFF);
-    }
-
-    /**
-     * Encodes string chars to the buffer as UTF-8. Replicates {@code String#getBytes(UTF_8)} behavior exactly,
-     * including replacement of malformed surrogates with {@code '?'}. Buffer capacity must be ensured by the caller.
-     *
-     * @param val Value.
-     * @param buf Buffer.
-     * @param pos Buffer position to encode to.
-     * @return Buffer position after the last encoded byte.
-     */
-    private static int encodeChars(String val, byte[] buf, int pos) {
-        int len = val.length();
-
-        // Unsafe writes skip the array bounds checks: capacity is ensured by the caller.
-        long off = GridUnsafe.BYTE_ARR_OFF + pos;
-
-        for (int i = 0; i < len; i++) {
-            char c = val.charAt(i);
-
-            if (c < 0x80)
-                GridUnsafe.putByte(buf, off++, (byte)c);
-            else if (c < 0x800) {
-                GridUnsafe.putByte(buf, off++, (byte)(0xC0 | (c >> 6)));
-                GridUnsafe.putByte(buf, off++, (byte)(0x80 | (c & 0x3F)));
-            }
-            else if (Character.isSurrogate(c)) {
-                char c2;
-
-                if (Character.isHighSurrogate(c) && i + 1 < len && Character.isLowSurrogate(c2 = val.charAt(i + 1))) {
-                    int cp = Character.toCodePoint(c, c2);
-
-                    GridUnsafe.putByte(buf, off++, (byte)(0xF0 | (cp >> 18)));
-                    GridUnsafe.putByte(buf, off++, (byte)(0x80 | ((cp >> 12) & 0x3F)));
-                    GridUnsafe.putByte(buf, off++, (byte)(0x80 | ((cp >> 6) & 0x3F)));
-                    GridUnsafe.putByte(buf, off++, (byte)(0x80 | (cp & 0x3F)));
-
-                    i++;
-                }
-                else
-                    GridUnsafe.putByte(buf, off++, (byte)'?');
-            }
-            else {
-                GridUnsafe.putByte(buf, off++, (byte)(0xE0 | (c >> 12)));
-                GridUnsafe.putByte(buf, off++, (byte)(0x80 | ((c >> 6) & 0x3F)));
-                GridUnsafe.putByte(buf, off++, (byte)(0x80 | (c & 0x3F)));
-            }
-        }
-
-        return (int)(off - GridUnsafe.BYTE_ARR_OFF);
-    }
-
     /** */
     private static IgniteBiTuple<Long, Long> fieldsOffsets() {
-        if (!ZERO_COPY) {
+        if (ZERO_COPY) {
             try {
                 Field valField = String.class.getDeclaredField("value");
                 Field coderField = String.class.getDeclaredField("coder");
 
                 // On JDK 8 the value field is a char[], only the generic encoder can be used.
                 if (valField.getType() == byte[].class && coderField.getType() == byte.class) {
-                    IgniteBiTuple<Long, Long> res = new IgniteBiTuple<>(
+                    return new IgniteBiTuple<>(
                         GridUnsafe.objectFieldOffset(valField),
                         GridUnsafe.objectFieldOffset(coderField)
                     );
-
-                    if(probe(res))
-                        return res;
                 }
             }
             catch (Throwable ignored) {
@@ -377,37 +354,8 @@ public final class StringWriter {
         return new IgniteBiTuple<>(-1L, -1L);
     }
 
-    /**
-     * Checks that the internal layout of {@link String} behaves as the compact string fast path expects.
-     *
-     * @param offsets Offsets of methods.
-     * @return {@code True} if the fast path can be used.
-     */
-    private static boolean probe(IgniteBiTuple<Long, Long> offsets) {
-        String probe = "Ignite\u00e9";
-
-        // Compact strings can be disabled with -XX:-CompactStrings, then all strings are UTF-16 encoded.
-        if (GridUnsafe.getByteField(probe, offsets.get1()) != LATIN1)
-            return false;
-
-        Object val = GridUnsafe.getObjectField(probe, offsets.get2());
-
-        if (!(val instanceof byte[] arr))
-            return false;
-
-        if (arr.length != probe.length())
-            return false;
-
-        for (int i = 0; i < arr.length; i++) {
-            if ((arr[i] & 0xFF) != probe.charAt(i))
-                return false;
-        }
-
-        return true;
-    }
-
     /** */
-    private static @Nullable MethodHandle hasNegativesHandle() {
+    private static @Nullable MethodHandle hasNegatives() {
         if (ZERO_COPY) {
             try {
                 Method mtd = Class.forName("java.lang.StringCoding").getDeclaredMethod("hasNegatives", byte[].class, int.class, int.class);

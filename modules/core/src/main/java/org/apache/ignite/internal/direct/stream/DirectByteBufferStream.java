@@ -738,7 +738,7 @@ public class DirectByteBufferStream {
                 curStrBackingArr = StringWriter.latin1Value(val);
 
                 if (curStrBackingArr == null)
-                    val.getBytes();
+                    curStrBackingArr = val.getBytes();
             }
 
             writeByteArray(curStrBackingArr);

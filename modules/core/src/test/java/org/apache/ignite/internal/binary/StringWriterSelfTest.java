@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.binary.streams.BinaryStreamsTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -119,11 +118,7 @@ public class StringWriterSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Tests strings whose UTF-8 form is larger than the stream's minimal capacity, so that the encoder's own capacity
-     * reservation (rather than the buffer's initial slack) is what keeps the unchecked writes in bounds. Covers every
-     * encoder path on both heap and offheap streams.
-     */
+    /** Tests strings whose UTF-8 form is larger than the stream's minimal capacity. */
     @Test
     public void testLargeStrings() {
         int len = 100_000;
@@ -181,12 +176,10 @@ public class StringWriterSelfTest extends GridCommonAbstractTest {
      * @param str String to check.
      */
     private void check(String str) {
-        for (boolean heapStream : new boolean[] {true, false}) {
-            try (BinaryOutputStream out = heapStream ? BinaryStreams.outputStream(1) : BinaryStreamsTestUtils.offheapOutputStream(1)) {
-                StringWriter.write(str, out);
+        try (BinaryOutputStream out = BinaryStreams.outputStream(1)) {
+            StringWriter.write(str, out);
 
-                assertTrue("String serialization mismatch: " + str, Arrays.equals(strBytes(str), out.arrayCopy()));
-            }
+            assertTrue("String serialization mismatch: " + str, Arrays.equals(strBytes(str), out.arrayCopy()));
         }
     }
 

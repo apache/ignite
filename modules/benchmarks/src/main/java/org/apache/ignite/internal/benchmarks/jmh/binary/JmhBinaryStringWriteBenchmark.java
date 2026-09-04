@@ -42,10 +42,8 @@ import static org.openjdk.jmh.annotations.Mode.AverageTime;
 import static org.openjdk.jmh.annotations.Scope.Thread;
 
 /**
- * Compares zero-copy string serialization ({@link StringWriter} encoding directly into the stream buffer) with the
- * legacy serialization through a temporary array produced by {@link String#getBytes()}. The {@code zeroCopy} parameter
- * selects the implementation via the {@code IGNITE_BINARY_STRING_ZERO_COPY} system property, which is set before the
- * first use of {@link StringWriter} in each forked JVM.
+ * Compares zero-copy string serialization with the legacy serialization.
+ * @see org.apache.ignite.IgniteCommonsSystemProperties#IGNITE_BINARY_STRING_ZERO_COPY
  */
 @State(Thread)
 @OutputTimeUnit(NANOSECONDS)
@@ -71,9 +69,7 @@ public class JmhBinaryStringWriteBenchmark {
     /** */
     private String str;
 
-    /**
-     * @param args Optional values of the {@code stream} parameter to run (e.g. {@code offheap}); all when empty.
-     */
+    /** */
     public static void main(String[] args) throws Exception {
         OptionsBuilder builder = JmhIdeBenchmarkRunner.create()
             .forks(1)
@@ -81,16 +77,13 @@ public class JmhBinaryStringWriteBenchmark {
             .profilers(GCProfiler.class)
             .optionsBuilder();
 
-        if (args.length > 0)
-            builder.param("stream", args);
-
         new Runner(builder.build()).run();
     }
 
     /** */
     @Setup
     public void setup() {
-        // Must be set before the first use of StringWriter in this JVM: the flag is read on class initialization.
+        // Must be set before the first use of StringWriter in this JVM.
         System.setProperty(IGNITE_BINARY_STRING_ZERO_COPY, String.valueOf(zeroCopy));
 
         StringBuilder sb = new StringBuilder(len);

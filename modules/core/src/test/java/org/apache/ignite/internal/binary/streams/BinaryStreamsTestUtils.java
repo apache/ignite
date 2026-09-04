@@ -29,12 +29,4 @@ public class BinaryStreamsTestUtils {
     public static boolean threadLocalIsAcquired() {
         return THREAD_LOCAL.isAcquired();
     }
-
-    /**
-     * @param cap Initial capacity.
-     * @return Offheap output stream.
-     */
-    public static BinaryOutputStream offheapOutputStream(int cap) {
-        return new BinaryOffheapOutputStream(cap);
-    }
 }
