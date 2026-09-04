@@ -323,9 +323,9 @@ Register name: `io.statistics.cacheGroups.{group_name}`
 |LOGICAL_READS | long | Count of logical page reads.
 |PHYSICAL_READS | long | Count of physical page reads.
 |grpId | integer | Cache group ID.
-|insertedBytes | long | Count of inserted to store bytes
+|insertedBytes | long | Count of inserted to store bytes.
 |name | string | Cache or cache group name.
-|removedBytes | long | Count of removed from store bytes
+|removedBytes | long | Count of removed from store bytes.
 |startTime | long | Statistics collection start time, in milliseconds.
 |===
 
@@ -336,10 +336,10 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 [cols="2,1,3",opts="header"]
 |===
 |Name |    Type |    Description
-|LOGICAL_READS_INNER |long|    Number of logical reads for inner tree node
-|LOGICAL_READS_LEAF | long  |  Number of logical reads for leaf tree node
-|PHYSICAL_READS_INNER|    long|    Number of physical reads for inner tree node
-|PHYSICAL_READS_LEAF| long|    Number of physical reads for leaf tree node
+|LOGICAL_READS_INNER | long | Number of logical reads for inner tree node.
+|LOGICAL_READS_LEAF | long | Number of logical reads for leaf tree node.
+|PHYSICAL_READS_INNER | long | Number of physical reads for inner tree node.
+|PHYSICAL_READS_LEAF | long | Number of physical reads for leaf tree node.
 |indexName | string | Index name.
 |name | string | Cache or cache group name.
 |startTime | long | Statistics collection start time, in milliseconds.
@@ -347,7 +347,7 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 
 == Sorted Indexes Operations
 
-Contains metrics about low-level operations on pages of sorted secondary indexes. `{opType}` is one of: `AskNeighbor`, `Insert`, `LockBackAndRmvFromLeaf`, `LockBackAndTail`, `LockTail`, `LockTailExact`, `LockTailForward`, `RemoveFromLeaf`, `RemoveRangeFromLeaf`, `Replace`, `Search`.
+Contains metrics about low-level operations on pages of sorted secondary indexes. `{opType}` is the name of a B+ tree page operation such as `Insert`, `Search`, `Replace`, `RemoveFromLeaf` or `LockTail`; the exact set is defined by the index implementation and may change between versions.
 
 Register name: `index.{schema_name}.{table_name}.{index_name}`
 
@@ -355,7 +355,7 @@ Register name: `index.{schema_name}.{table_name}.{index_name}`
 |===
 |Name |    Type |    Description
 |{opType}Count | long | Count of {opType} operations.
-|{opType}Time | long | Total time of {opType} operations (nanoseconds)
+|{opType}Time | long | Total time of {opType} operations (nanoseconds).
 |===
 
 == Hash Indexes I/O Statistics
@@ -365,10 +365,10 @@ Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
 [cols="2,1,3",opts="header"]
 |===
 |Name |   Type|    Description
-|LOGICAL_READS_INNER| long|    Number of logical reads for inner tree node
-|LOGICAL_READS_LEAF|  long|    Number of logical reads for leaf tree node
-|PHYSICAL_READS_INNER|    long|    Number of physical reads for inner tree node
-|PHYSICAL_READS_LEAF| long|    Number of physical reads for leaf tree node
+|LOGICAL_READS_INNER | long | Number of logical reads for inner tree node.
+|LOGICAL_READS_LEAF | long | Number of logical reads for leaf tree node.
+|PHYSICAL_READS_INNER | long | Number of physical reads for inner tree node.
+|PHYSICAL_READS_LEAF | long | Number of physical reads for leaf tree node.
 |indexName | string | Index name.
 |name | string | Cache or cache group name.
 |startTime | long | Statistics collection start time, in milliseconds.
@@ -390,7 +390,7 @@ Register name: `io.communication`
 
 == Communication SPI
 
-Metrics of the TCP communication SPI. `{message_type}` is the numeric direct type of an Ignite message; a pair of counters exists for every message type the node has sent or received.
+Metrics of the TCP communication SPI. `{message_type}` is the numeric direct type of an Ignite message; a pair of counters is registered at startup for every message type known to the node (several hundred in total).
 
 Register name: `communication.tcp`
 
@@ -590,7 +590,7 @@ Register name: `io.datastorage`
 |CheckpointPagesWriteHistogram| histogram |   Histogram of checkpoint pages write duration in milliseconds.
 |CheckpointRecoveryDataWriteHistogram | histogram | Histogram of checkpoint recovery data write duration in milliseconds.
 |CheckpointSplitAndSortPagesHistogram| histogram |   Histogram of splitting and sorting checkpoint pages duration in milliseconds.
-|CheckpointTotalTime| long |   Total duration of checkpoint
+|CheckpointTotalTime | long | Total duration of checkpoint.
 |CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint duration in milliseconds.
 |CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file duration in milliseconds.
 |DirtyPages | long | Total dirty pages for the next checkpoint.
@@ -625,8 +625,8 @@ Register name: `io.datastorage`
 |WalArchiveSegments | integer| Current number of WAL segments in the WAL archive.
 |WalBuffPollSpinsRate|    hitrate  |  WAL buffer poll spins number over the last time interval.
 |WalCompressedBytes | long | Total size of the compressed segments in bytes.
-|WalFsyncTimeDuration |   hitrate |   Total duration of fsync
-|WalFsyncTimeNum |hitrate  |  Total count of fsync
+|WalFsyncTimeDuration | hitrate | Total duration of fsync.
+|WalFsyncTimeNum | hitrate | Total count of fsync.
 |WalLastRollOverTime |long |   Time of the last WAL segment rollover.
 |WalLoggingRate | hitrate|    Average number of WAL records per second written during the last time interval.
 |WalTotalSize|    long  |  Total size in bytes for storage wal files.
