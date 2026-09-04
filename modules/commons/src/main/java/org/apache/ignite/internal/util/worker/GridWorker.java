@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.worker;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteInterruptedException;
@@ -227,20 +228,43 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     }
 
     /**
-     * Joins this runnable.
+     * Joins this runnable with a timeout.
      *
-     * @throws InterruptedException Thrown in case of interruption.
+     * @param timeout Operation timeout in milliseconds. If negative, ignored.
+     * @throws InterruptedException In case of the interruption.
+     * @throws TimeoutException In case of expired {@code timeout} to join.
      */
-    public void join() throws InterruptedException {
-        if (log.isDebugEnabled())
-            log.debug("Joining grid runnable: " + this);
+    public void join(long timeout) throws InterruptedException, TimeoutException {
+        long timeThresholdNs = timeout < 0L ? -1L : System.nanoTime() + CommonUtils.millisToNanos(timeout);
+
+        if (log.isDebugEnabled()) {
+            if (timeout >= 0L)
+                log.debug("Joining grid runnable: " + this + " with the Wtimeout: " + timeout + "ms.");
+            else
+                log.debug("Joining grid runnable: " + this + '.');
+        }
 
         if ((runner == null && isCancelled.get()) || finished)
             return;
 
-        synchronized (mux) {
-            while (!finished)
-                mux.wait();
+        while (!finished) {
+            if (timeout >= 0L) {
+                long leftMs = CommonUtils.nanosToMillis(timeThresholdNs - System.nanoTime());
+
+                if (leftMs < 1L)
+                    throw new TimeoutException("The timeout has expired while waiting to join.");
+
+                synchronized (mux) {
+                    if (!finished)
+                        mux.wait(leftMs);
+                }
+            }
+            else {
+                synchronized (mux) {
+                    if (!finished)
+                        mux.wait();
+                }
+            }
         }
     }
 

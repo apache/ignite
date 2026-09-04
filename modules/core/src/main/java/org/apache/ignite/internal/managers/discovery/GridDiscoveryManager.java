@@ -96,6 +96,7 @@ import org.apache.ignite.internal.thread.OomExceptionHandler;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1683,9 +1684,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         // Stop segment checker.
         if (segChecker != null) {
-            segChecker.cancel();
+            if (cancel)
+                segChecker.cancel();
 
-            U.join(segChecker, log);
+            U.join(segChecker, 0L, log);
         }
 
         if (!locJoin.isDone())
@@ -1700,12 +1702,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         getSpi().setListener(null);
 
         U.cancel(discoEvtHnd);
-
-        U.join(discoEvtHnd, log);
-
         U.cancel(discoMsgNotifier);
 
-        U.join(discoMsgNotifier, log);
+        U.join(discoMsgNotifier, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
+        // Event processing might have crusial routines better to wait for. Or requiring to stop (process) manually.
+        U.join(discoEvtHnd, log);
 
         // Stop SPI itself.
         stopSpi();

@@ -512,10 +512,10 @@ public class GridNioServer<T> {
 
             // Make sure to entirely stop acceptor if any.
             CommonUtils.cancel(acceptWorker);
-            CommonUtils.join(acceptWorker, log);
-
             CommonUtils.cancel(clientWorkers);
-            CommonUtils.join(clientWorkers, log);
+
+            CommonUtils.join(acceptWorker, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
+            CommonUtils.join(clientWorkers, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
 
             filterChain.stop();
 

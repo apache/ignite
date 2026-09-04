@@ -466,7 +466,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public void onStop() {
         stopping = true;
 
-        cancelClientFutures(stopError());
+        var stopErr = stopError();
+
+        cancelClientFutures(stopErr);
+        cancelFuturesWithException(stopErr, dataStreamerFuts);
     }
 
     /** {@inheritDoc} */
@@ -496,7 +499,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             try {
                 ((GridFutureAdapter)fut).onDone(err);
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 U.warn(log, "Failed to complete future on node stop (will ignore): " + fut, e);
             }
         }
@@ -611,6 +614,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         boolean add = dataStreamerFuts.add(fut);
 
         assert add;
+
+        onFutureAdded(fut);
 
         return fut;
     }
