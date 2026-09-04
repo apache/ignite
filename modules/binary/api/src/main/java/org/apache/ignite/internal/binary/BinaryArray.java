@@ -106,8 +106,10 @@ class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryAr
     @Override public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException {
         ClassLoader resolveLdr = ldr == null ? ctx.classLoader() : ldr;
 
+/*
         if (ldr != null)
             Marshallers.USE_CACHE.set(Boolean.FALSE);
+*/
 
         try {
             Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);

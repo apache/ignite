@@ -694,7 +694,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (ldr == null)
             return deserialize();
 
+/*
         Marshallers.USE_CACHE.set(Boolean.FALSE);
+*/
 
         try {
             return (T)reader(null, ldr, true).deserialize();
