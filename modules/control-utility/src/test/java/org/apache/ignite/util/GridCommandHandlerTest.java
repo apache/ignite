@@ -48,7 +48,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -195,6 +194,7 @@ import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcess
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -247,13 +247,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     protected ListeningTestLogger listeningLog;
 
     /** */
-    protected @Nullable Supplier<TcpCommunicationSpi> communicationSpiSupp;
-
-    /** */
     protected @Nullable PluginProvider pluginProvider;
-
-    /** */
-    protected boolean walCompaction;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -261,7 +255,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         initDiagnosticDir();
 
-        cleanPersistenceDir();
+        cleanDiagnosticDir();
     }
 
     /** {@inheritDoc} */
@@ -278,13 +272,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (listeningLog != null)
             cfg.setGridLogger(listeningLog);
 
-        if (communicationSpiSupp != null)
-            cfg.setCommunicationSpi(communicationSpiSupp.get());
-
         if (pluginProvider != null)
             cfg.setPluginProviders(pluginProvider);
-
-        cfg.getDataStorageConfiguration().setWalCompactionEnabled(walCompaction);
 
         return cfg;
     }
@@ -3687,7 +3676,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testRestoreSnapshotMetricsAtStartAllNodesSupport() throws Exception {
-        doTestRestoreSnapshotMetricsAtStart(null);
+        doTestRestoreSnapshotMetricsAtStart(false);
     }
 
     /**
@@ -3696,29 +3685,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testRestoreSnapshotMetricsAtStartOneNodeDoesntSupport() throws Exception {
-        doTestRestoreSnapshotMetricsAtStart(false);
-    }
-
-    /**
-     * Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process.
-     * All nodes don't support the check status.
-     */
-    @Test
-    public void testRestoreSnapshotMetricsAtStartNoSupport() throws Exception {
         doTestRestoreSnapshotMetricsAtStart(true);
     }
 
     /**
-     * @param allNodesNotSupporting Flag of how many nodes don't support the snapshot check status.
-     *                              If {@code null}, all nodes support.
-     *                              If {@code true}, none supports.
-     *                              If {@code false}, just one node doesn't support.
+     * @param oneNodeDoesntSupport If {@code true}, one node will simulate not supporting snapshot check status.
      */
-    private void doTestRestoreSnapshotMetricsAtStart(@Nullable Boolean allNodesNotSupporting) throws Exception {
-        communicationSpiSupp = TestRecordingCommunicationSpi::new;
-
+    private void doTestRestoreSnapshotMetricsAtStart(boolean oneNodeDoesntSupport) throws Exception {
         // Creates empty feature set unsupporting the snapshot check ststus if required.
-        pluginProvider = allNodesNotSupporting == null ? null : new AbstractTestPluginProvider() {
+        pluginProvider = !oneNodeDoesntSupport ? null : new AbstractTestPluginProvider() {
             @Override public String name() {
                 return "Test Ignite features provider";
             }
@@ -3727,14 +3702,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 if (!cls.equals(DiscoveryNodeValidationProcessor.class))
                     return null;
 
-                boolean doNotSupport = allNodesNotSupporting
-                    || ctx.igniteConfiguration().getIgniteInstanceName().equals(getTestIgniteInstanceName(2));
+                boolean doNotSupport = ctx.igniteConfiguration().getIgniteInstanceName().equals(getTestIgniteInstanceName(2));
 
                 return (T)new RollingUpgradeProcessor(
                     ((IgniteEx)ctx.grid()).context(),
                     doNotSupport ? new IgniteCoreFeatureSet(IgniteVersionUtils.VER, new IgniteFeatureSet()) : IgniteCoreFeatureSet.local()
                 ) {
                     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode joiningNode) {
+                        // Simulates started rolling updrade allowing node with other features join cluster.
                         return null;
                     }
                 };
@@ -3776,12 +3751,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         LogListener logLsnr = null;
 
-        if (Boolean.TRUE.equals(allNodesNotSupporting)) {
-            logLsnr = LogListener.matches("The snapshot-check-aware status feature isn't enabled").build();
-
-            listeningLog.registerListener(logLsnr);
-        }
-        else if (Boolean.FALSE.equals(allNodesNotSupporting)) {
+        if (oneNodeDoesntSupport) {
             logLsnr = LogListener.matches("Node %s doesn't support the snapshot check status feature"
                 .formatted(grid(2).localNode().id())).build();
 
@@ -3794,13 +3764,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         var out = testOut.toString();
 
-        if (allNodesNotSupporting == null) {
-            assertContains(log, out, "Check snapshot operation is in progress");
-            assertContains(log, out, "Snapshot name: test_snapshot");
-        }
-        else {
+        if (oneNodeDoesntSupport) {
             assertTrue(logLsnr.check(getTestTimeout()));
             assertContains(log, out, "There is no create or restore snapshot operation in progress");
+        }
+        else {
+            assertContains(log, out, "Check snapshot operation is in progress");
+            assertContains(log, out, "Snapshot name: test_snapshot");
         }
 
         // Ensure that no snapshot restore started or finished.
@@ -3843,9 +3813,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     private void doTestSnapshotsChecksStatus(boolean twoSnapshots, boolean incremental) throws Exception {
-        communicationSpiSupp = TestRecordingCommunicationSpi::new;
-
-        walCompaction = incremental;
+        walCompactionEnabled(incremental);
 
         startGrids(3).cluster().state(ClusterState.ACTIVE);
 
@@ -3877,10 +3845,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }
         }
 
-        grid(0).destroyCaches(twoSnapshots ? F.asList(DEFAULT_CACHE_NAME, "cache2") : F.asList(DEFAULT_CACHE_NAME));
-
-        awaitPartitionMapExchange();
-
         TestRecordingCommunicationSpi cm1 = ((TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi());
         TestRecordingCommunicationSpi cm2 = ((TestRecordingCommunicationSpi)grid(2).configuration().getCommunicationSpi());
 
@@ -3899,9 +3863,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Waiting for the nodes each to send snapshot check single result.
         for (var cm : F.asList(cm1, cm2)) {
-            assertTrue(waitForCondition(
-                () -> cm.blockedMessages().stream().filter(
-                    m -> m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+            assertTrue(waitForCondition(() -> cm.blockedMessages().stream().filter(m ->
+                    m.ioMessage().message() instanceof SingleNodeMessage<?> sm
                         && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()).count() == (twoSnapshots ? 2 : 1),
                 getTestTimeout()
             ));
@@ -3916,7 +3879,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (log.isInfoEnabled())
             log.info("Test out:" + U.nl() + out);
 
-        assertTrue(out.contains(twoSnapshots ? "Check snapshot operations are in progress" : "Check snapshot operation is in progress"));
+        String chkSnpE = "Check snapshot operation is in progress";
+        var chkSnpESum = Arrays.stream(out.split(U.nl()))
+            .mapToInt(l -> (l.length() - l.replace(chkSnpE, "").length()) / chkSnpE.length())
+            .sum();
+        assertEquals(twoSnapshots ? 2 : 1, chkSnpESum);
+
         assertTrue(out.contains("Snapshot name: testSnapshot0"));
 
         if (incremental)
@@ -3940,6 +3908,94 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         checkFut0.get();
 
         if (twoSnapshots)
+            checkFut1.get();
+    }
+
+    /** */
+    @Test
+    public void testSnapshotCheckStatusWithParallelCreate() throws Exception {
+        doTestSnapshotsChecksStatusWithParallelCreate(false);
+    }
+
+    /** */
+    @Test
+    public void testTwoSnapshotsChecksStatusWithParallelCreate() throws Exception {
+        doTestSnapshotsChecksStatusWithParallelCreate(true);
+    }
+
+    /** */
+    private void doTestSnapshotsChecksStatusWithParallelCreate(boolean twoChecks) throws Exception {
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
+
+        IgniteSnapshotManager snpMgr = (IgniteSnapshotManager)grid(0).snapshot();
+
+        createCacheAndPreload(grid(1), DEFAULT_CACHE_NAME, 1000, 32, null);
+        snpMgr.createSnapshot("testSnapshot0").get(getTestTimeout());
+
+        if (twoChecks) {
+            createCacheAndPreload(grid(1), "cache2", 1000, 32, null);
+            snpMgr.createSnapshot("testSnapshot1").get(getTestTimeout());
+        }
+
+        createCacheAndPreload(grid(1), "cache3", 1000, 32, null);
+
+        TestRecordingCommunicationSpi cm1 = ((TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi());
+        TestRecordingCommunicationSpi cm2 = ((TestRecordingCommunicationSpi)grid(2).configuration().getCommunicationSpi());
+
+        F.asList(cm1, cm2).forEach(cm -> cm.blockMessages((node, msg) ->
+            msg instanceof SingleNodeMessage<?> sm && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()
+                || sm.type() == END_SNAPSHOT.ordinal()))
+        );
+
+        var createFut = snpMgr.createSnapshot("testSnapshot2");
+
+        var checkFut0 = runAsync(() -> execute("--snapshot", "check", "testSnapshot0"));
+        var checkFut1 = twoChecks ? runAsync(() -> execute("--snapshot", "check", "testSnapshot1")) : null;
+
+        // Waiting for the nodes each to send snapshot create single result.
+        for (var cm : F.asList(cm1, cm2)) {
+            assertTrue(waitForCondition(() -> cm.blockedMessages().stream().anyMatch(m ->
+                    m.ioMessage().message() instanceof SingleNodeMessage<?> sm && sm.type() == END_SNAPSHOT.ordinal()),
+                getTestTimeout()
+            ));
+        }
+
+        // Waiting for the nodes each to send snapshot check single result.
+        for (var cm : F.asList(cm1, cm2)) {
+            assertTrue(waitForCondition(() -> cm.blockedMessages().stream().filter(m ->
+                    m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+                        && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()).count() == (twoChecks ? 2 : 1),
+                getTestTimeout()
+            ));
+        }
+
+        injectTestSystemOut();
+
+        assertEquals("Unexpected exit code", EXIT_CODE_OK, execute("--snapshot", "status"));
+
+        var out = testOut.toString();
+
+        if (log.isInfoEnabled())
+            log.info("Test out:" + U.nl() + out);
+
+        assertTrue(out.contains("Create snapshot operation is in progress"));
+        assertTrue(out.contains("Snapshot name: testSnapshot2"));
+
+        String chkLogE = "Check snapshot operation is in progress";
+        var chkLogSum = Arrays.stream(out.split(U.nl()))
+                    .mapToInt(l -> (l.length() - l.replace(chkLogE, "").length()) / chkLogE.length())
+                    .sum();
+        assertEquals(twoChecks ? 2 : 1, chkLogSum);
+
+        assertTrue(out.contains("Snapshot name: testSnapshot0"));
+        if (twoChecks)
+            assertTrue(out.contains("Snapshot name: testSnapshot1"));
+
+        F.asList(cm1, cm2).forEach(TestRecordingCommunicationSpi::stopBlock);
+
+        createFut.get();
+        checkFut0.get();
+        if (twoChecks)
             checkFut1.get();
     }
 

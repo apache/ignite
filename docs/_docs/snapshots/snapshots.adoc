@@ -289,34 +289,35 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --increment 1
 
 == Getting Snapshot Operation Status
 
-The status of the current snapshot operation in the cluster can be obtained using the `control.sh|bat` script or JMX interface:
+The status of current snapshot operations in the cluster can be obtained using the `control.sh|bat` script.
+
+Snapshot operations include:                                                                                                                                                                                                                                  │
+* **Create** - Creating a full or incremental snapshot                                                                                                                                                                                                        │
+* **Restore** - Restoring cache groups from a snapshot                                                                                                                                                                                                        │
+* **Check** - Verifying snapshot consistency (can run in parallel for multiple snapshots)                                                                                                                                                                     │
 
 [tabs]
 --
 tab:Unix[]
 [source,shell]
 ----
-# Get the status of the snapshot operation.
+# Get the status of snapshot operation.
 control.sh --snapshot status
 ----
 
 tab:Windows[]
 [source,shell]
 ----
-# Get the status of the snapshot operation.
+# Get the status of snapshot operation.
 control.bat --snapshot status
 ----
-
-tab:JMX[]
-You can also get the current snapshot status via the `SnapshotMXBean` interface:
-[source,java]
-----
-SnapshotMXBean mxBean = ...;
-
-// The status of a current snapshot operation in the cluster.
-String status = mxBean.status();
-----
 --
+
+ [NOTE]                                                                                                                                                                                                                                                        │
+====                                                                                                                                                                                                                                                          │
+Parallel and multiple snapshot check operations can be running concurrently with any other snapshot operation.
+But only one check for one snapshot. Create and restore operations cannot run in parallel  - only one of each type can
+be active at a time. The status is printed for each running snapshot operation (if multiple) separately, one after another.
 
 == Cancelling Snapshot Operation
 
