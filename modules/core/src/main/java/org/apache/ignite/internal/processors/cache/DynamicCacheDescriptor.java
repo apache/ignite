@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -133,12 +132,6 @@ public class DynamicCacheDescriptor {
         assert cacheCfg != null;
         assert grpDesc != null || template;
         assert schema != null;
-
-        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED && cacheCfg.getNearConfiguration() != null) {
-            cacheCfg = new CacheConfiguration(cacheCfg);
-
-            cacheCfg.setNearConfiguration(null);
-        }
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
