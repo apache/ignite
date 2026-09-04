@@ -90,8 +90,11 @@ public class ResultSetSizeMetricsTest extends AbstractMultiEngineIntegrationTest
         assertEquals(500L, resultSetSizeMax(initNode).value());
 
         // Verify all other server nodes have zero metrics.
-        for (int i = 1; i < nodeCount(); i++) {
+        for (int i = 0; i < nodeCount(); i++) {
             IgniteEx node = grid(i);
+
+            if (node == initNode)
+                continue;
 
             long[] nodeVals = resultSetSizeHistogram(node).value();
 
