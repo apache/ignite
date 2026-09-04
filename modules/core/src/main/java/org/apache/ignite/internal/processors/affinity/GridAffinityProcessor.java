@@ -1059,6 +1059,11 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
+            return mapKeyToPrimaryAndBackupsList(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
             ctx.gateway().readLock();
 
             try {
@@ -1115,6 +1120,11 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
+            return mapPartitionToPrimaryAndBackupsList(part);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
             ctx.gateway().readLock();
 
             try {
