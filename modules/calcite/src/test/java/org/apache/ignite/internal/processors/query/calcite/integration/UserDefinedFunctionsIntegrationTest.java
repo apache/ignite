@@ -18,16 +18,26 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -465,6 +475,227 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testBinaryFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("binary-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BinaryFunctionsLibrary.class));
+
+        byte[] bytes = {1, 2, 3};
+        Consumer<List<List<?>>> binaryResultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertEqualsArraysAware(bytes, rows.get(0).get(0));
+        };
+
+        // Scalar function arguments.
+        assertQuery("SELECT binaryLength(x'010203')").returns(3).check();
+        assertQuery("SELECT binaryLength(?)").withParams(bytes).returns(3).check();
+
+        // Scalar function results.
+        assertQuery("SELECT binaryValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(x'010203')").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(binaryValue())").returns(3).check();
+
+        // Table function results.
+        assertQuery("SELECT * FROM binaryTableValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT * FROM binaryTable(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(bytes) FROM binaryTableValue()").returns(3).check();
+        assertQuery("SELECT binaryLength(bytes) FROM binaryTableValue()").returns(3).check();
+
+        // Table function arguments.
+        assertQuery("SELECT * FROM binaryTableLength(x'010203')").returns(3).check();
+        assertQuery("SELECT * FROM binaryTableLength(?)").withParams(bytes).returns(3).check();
+        assertQuery("SELECT * FROM TABLE(binaryTableLength(binaryValue()))").returns(3).check();
+        assertQuery("SELECT * FROM binaryTable(x'010203')").withResultChecker(binaryResultChecker).check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryObjectFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("binary-object-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BinaryObjectFunctionsLibrary.class));
+
+        BinaryObject obj = client.binary().builder("TestBinaryObject")
+            .setField("value", 42, Integer.class)
+            .build();
+
+        Consumer<List<List<?>>> resultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertTrue(rows.get(0).get(0) instanceof BinaryObject);
+            assertEquals(Integer.valueOf(42), ((BinaryObject)rows.get(0).get(0)).field("value"));
+        };
+
+        assertQuery("SELECT binaryObjectEcho(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+
+        assertQuery("SELECT * FROM binaryObjectTable(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testPrimitiveFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("primitive-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(PrimitiveFunctionsLibrary.class));
+
+        Object[] values = {true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d, 'a'};
+
+        assertQuery("SELECT checkPrimitiveTypes(?, ?, ?, ?, ?, ?, ?, ?)")
+            .withParams(values)
+            .returns(true)
+            .check();
+
+        assertQuery("SELECT primitiveBoolean(), primitiveByte(), primitiveShort(), primitiveInt(), "
+            + "primitiveLong(), primitiveFloat(), primitiveDouble(), primitiveChar()")
+            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d, "a")
+            .check();
+
+        assertQuery("SELECT * FROM primitiveTable(?, ?, ?, ?, ?, ?, ?, ?)")
+            .withParams(values)
+            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d, "a")
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testCustomTypeFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("custom-type-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
+
+        Employer obj = new Employer("Igor", 42.0d);
+        Consumer<List<List<?>>> resultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertTrue(rows.get(0).get(0) instanceof Employer);
+            assertEquals(obj, rows.get(0).get(0));
+        };
+
+        assertQuery("SELECT customTypeEcho(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+
+        assertQuery("SELECT * FROM customTypeTable(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testObjectTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("object-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
+
+        BinaryObject binaryObj = client.binary().builder("TestObjectTableBinaryObject")
+            .setField("value", 42, Integer.class)
+            .build();
+        Object[] exp = objectValues(binaryObj);
+
+        assertQuery("SELECT * FROM objectTableValues(?)")
+            .withParams(binaryObj)
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(exp.length, rows.get(0).size());
+
+                for (int i = 0; i < exp.length; i++) {
+                    Object actual = rows.get(0).get(i);
+
+                    assertEquals("Unexpected value type at index " + i, exp[i].getClass(), actual.getClass());
+                    assertEqualsArraysAware("Unexpected value at index " + i, exp[i], actual);
+                }
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testTemporalFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("temporal-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT checkTemporalTypes(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .withParams(temporalValues())
+            .returns(true)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfUtilDateValue()), EXTRACT(DAY FROM udfDateValue()), "
+            + "EXTRACT(HOUR FROM udfTimeValue()), EXTRACT(YEAR FROM udfTimestampValue()), "
+            + "EXTRACT(DAY FROM udfLocalDateValue()), EXTRACT(HOUR FROM udfLocalTimeValue()), "
+            + "EXTRACT(YEAR FROM udfLocalDateTimeValue()), EXTRACT(DAY FROM udfDurationValue()), "
+            + "EXTRACT(HOUR FROM udfDurationValue()), EXTRACT(MINUTE FROM udfDurationValue()), "
+            + "EXTRACT(YEAR FROM udfPeriodValue()), EXTRACT(MONTH FROM udfPeriodValue())")
+            .returns(2020L, 15L, 2L, 2021L, 16L, 3L, 2023L, 1L, 2L, 3L, 1L, 2L)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM util_date), EXTRACT(DAY FROM sql_date), "
+            + "EXTRACT(HOUR FROM sql_time), EXTRACT(YEAR FROM sql_timestamp), "
+            + "EXTRACT(DAY FROM local_date), EXTRACT(HOUR FROM local_time), "
+            + "EXTRACT(YEAR FROM local_timestamp), EXTRACT(DAY FROM duration_value), "
+            + "EXTRACT(HOUR FROM duration_value), EXTRACT(MINUTE FROM duration_value), "
+            + "EXTRACT(YEAR FROM period_value), EXTRACT(MONTH FROM period_value) "
+            + "FROM temporalTable(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .withParams(temporalValues())
+            .returns(2020L, 15L, 2L, 2021L, 16L, 3L, 2023L, 1L, 2L, 3L, 1L, 2L)
+            .check();
+    }
+
+    /** */
+    private static Object[] temporalValues() {
+        return new Object[] {
+            new java.util.Date(Timestamp.valueOf("2020-01-14 01:02:03").getTime()),
+            Date.valueOf("2021-01-15"),
+            Time.valueOf("02:03:04"),
+            Timestamp.valueOf("2021-01-15 02:03:04"),
+            LocalDate.of(2022, 2, 16),
+            LocalTime.of(3, 4, 5),
+            LocalDateTime.of(2023, 3, 17, 4, 5, 6),
+            Duration.ofDays(1).plusHours(2).plusMinutes(3),
+            Period.of(1, 2, 0)
+        };
+    }
+
+    /** */
+    private static Object[] objectValues(BinaryObject binaryObj) {
+        Object[] temporalValues = temporalValues();
+
+        return new Object[] {
+            new byte[] {1, 2, 3},
+            true,
+            (byte)1,
+            (short)2,
+            3,
+            4L,
+            5.0f,
+            6.0d,
+            'a',
+            temporalValues[0],
+            temporalValues[1],
+            temporalValues[2],
+            temporalValues[3],
+            temporalValues[4],
+            temporalValues[5],
+            temporalValues[6],
+            temporalValues[7],
+            temporalValues[8],
+            new Employer("Igor", 42.0d),
+            binaryObj
+        };
+    }
+
+    /** */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
@@ -827,6 +1058,347 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         /** */
         @Override public String toString() {
             return "CustomClass.toString";
+        }
+    }
+
+    /** */
+    public static class BinaryFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static int binaryLength(byte[] bytes) {
+            return bytes.length;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryValue() {
+            return new byte[] {1, 2, 3};
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryEcho(byte[] bytes) {
+            return bytes;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {int.class}, columnNames = {"LENGTH"})
+        public static Iterable<Object[]> binaryTableLength(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes.length});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTableValue() {
+            return Collections.singletonList(new Object[] {new byte[] {1, 2, 3}});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTable(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes});
+        }
+    }
+
+    /** */
+    public static class BinaryObjectFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static BinaryObject binaryObjectEcho(BinaryObject obj) {
+            return obj;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {BinaryObject.class}, columnNames = {"OBJ"})
+        public static Iterable<Object[]> binaryObjectTable(BinaryObject obj) {
+            return Collections.singletonList(new Object[] {obj});
+        }
+    }
+
+    /** */
+    public static class PrimitiveFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static boolean checkPrimitiveTypes(
+            boolean booleanVal,
+            byte byteVal,
+            short shortVal,
+            int intVal,
+            long longVal,
+            float floatVal,
+            double doubleVal,
+            char charVal
+        ) {
+            return booleanVal && byteVal == 1 && shortVal == 2 && intVal == 3 && longVal == 4
+                && floatVal == 5.0f && doubleVal == 6.0d && charVal == 'a';
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static boolean primitiveBoolean() {
+            return true;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte primitiveByte() {
+            return 1;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static short primitiveShort() {
+            return 2;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static int primitiveInt() {
+            return 3;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static long primitiveLong() {
+            return 4;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static float primitiveFloat() {
+            return 5.0f;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static double primitiveDouble() {
+            return 6.0d;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static char primitiveChar() {
+            return 'a';
+        }
+
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {
+                boolean.class,
+                byte.class,
+                short.class,
+                int.class,
+                long.class,
+                float.class,
+                double.class,
+                char.class
+            },
+            columnNames = {
+                "BOOLEAN_VALUE",
+                "BYTE_VALUE",
+                "SHORT_VALUE",
+                "INT_VALUE",
+                "LONG_VALUE",
+                "FLOAT_VALUE",
+                "DOUBLE_VALUE",
+                "CHAR_VALUE"
+            }
+        )
+        public static Iterable<Object[]> primitiveTable(
+            boolean booleanVal,
+            byte byteVal,
+            short shortVal,
+            int intVal,
+            long longVal,
+            float floatVal,
+            double doubleVal,
+            char charVal
+        ) {
+            return Collections.singletonList(new Object[] {
+                booleanVal, byteVal, shortVal, intVal, longVal, floatVal, doubleVal, charVal
+            });
+        }
+    }
+
+    /** */
+    public static class CustomTypeFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static Employer customTypeEcho(Employer obj) {
+            return obj;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {Employer.class}, columnNames = {"OBJ"})
+        public static Iterable<Object[]> customTypeTable(Employer obj) {
+            return Collections.singletonList(new Object[] {obj});
+        }
+
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class
+            },
+            columnNames = {
+                "BYTES",
+                "BOOLEAN_VALUE",
+                "BYTE_VALUE",
+                "SHORT_VALUE",
+                "INT_VALUE",
+                "LONG_VALUE",
+                "FLOAT_VALUE",
+                "DOUBLE_VALUE",
+                "CHAR_VALUE",
+                "UTIL_DATE",
+                "SQL_DATE",
+                "SQL_TIME",
+                "SQL_TIMESTAMP",
+                "LOCAL_DATE",
+                "LOCAL_TIME",
+                "LOCAL_TIMESTAMP",
+                "DURATION_VALUE",
+                "PERIOD_VALUE",
+                "CUSTOM_VALUE",
+                "BINARY_OBJECT_VALUE"
+            }
+        )
+        public static Iterable<Object[]> objectTableValues(BinaryObject binaryObj) {
+            return Collections.singletonList(objectValues(binaryObj));
+        }
+    }
+
+    /** */
+    public static class TemporalFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfUtilDateValue() {
+            return new java.util.Date(Timestamp.valueOf("2020-01-14 01:02:03").getTime());
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Date udfDateValue() {
+            return Date.valueOf("2021-01-15");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Time udfTimeValue() {
+            return Time.valueOf("02:03:04");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Timestamp udfTimestampValue() {
+            return Timestamp.valueOf("2021-01-15 02:03:04");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalDate udfLocalDateValue() {
+            return LocalDate.of(2022, 2, 16);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalTime udfLocalTimeValue() {
+            return LocalTime.of(3, 4, 5);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalDateTime udfLocalDateTimeValue() {
+            return LocalDateTime.of(2023, 3, 17, 4, 5, 6);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Duration udfDurationValue() {
+            return Duration.ofDays(1).plusHours(2).plusMinutes(3);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Period udfPeriodValue() {
+            return Period.of(1, 2, 0);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static boolean checkTemporalTypes(
+            java.util.Date utilDate,
+            Date date,
+            Time time,
+            Timestamp timestamp,
+            LocalDate localDate,
+            LocalTime localTime,
+            LocalDateTime localDateTime,
+            Duration duration,
+            Period period
+        ) {
+            return Arrays.equals(temporalValues(), new Object[] {
+                utilDate, date, time, timestamp, localDate, localTime, localDateTime, duration, period
+            });
+        }
+
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {
+                java.util.Date.class,
+                Date.class,
+                Time.class,
+                Timestamp.class,
+                LocalDate.class,
+                LocalTime.class,
+                LocalDateTime.class,
+                Duration.class,
+                Period.class
+            },
+            columnNames = {
+                "UTIL_DATE",
+                "SQL_DATE",
+                "SQL_TIME",
+                "SQL_TIMESTAMP",
+                "LOCAL_DATE",
+                "LOCAL_TIME",
+                "LOCAL_TIMESTAMP",
+                "DURATION_VALUE",
+                "PERIOD_VALUE"
+            }
+        )
+        public static Iterable<Object[]> temporalTable(
+            java.util.Date utilDate,
+            Date date,
+            Time time,
+            Timestamp timestamp,
+            LocalDate localDate,
+            LocalTime localTime,
+            LocalDateTime localDateTime,
+            Duration duration,
+            Period period
+        ) {
+            return Collections.singletonList(new Object[] {
+                utilDate, date, time, timestamp, localDate, localTime, localDateTime, duration, period
+            });
         }
     }
 }

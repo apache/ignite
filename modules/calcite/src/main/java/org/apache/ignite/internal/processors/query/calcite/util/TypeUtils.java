@@ -94,6 +94,8 @@ public class TypeUtils {
         LocalTime.class,
         Duration.class,
         Period.class,
+        char.class,
+        Character.class,
         byte[].class
     );
 
@@ -355,12 +357,12 @@ public class TypeUtils {
     }
 
     /** */
-    public static Object toInternal(DataContext ctx, Object val) {
+    public static @Nullable Object toInternal(DataContext ctx, @Nullable Object val) {
         return val == null ? null : toInternal(ctx, val, val.getClass());
     }
 
     /** */
-    public static Object toInternal(DataContext ctx, Object val, Type storageType) {
+    public static @Nullable Object toInternal(DataContext ctx, @Nullable Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class)
@@ -383,6 +385,8 @@ public class TypeUtils {
         }
         else if (storageType == Period.class)
             return (int)((Period)val).toTotalMonths();
+        else if ((storageType == char.class || storageType == Character.class) && val instanceof Character)
+            return val.toString();
         else if (storageType == byte[].class)
             return new ByteString((byte[])val);
         else if (val instanceof Number && storageType != val.getClass()) {
@@ -429,7 +433,7 @@ public class TypeUtils {
     }
 
     /** */
-    public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
+    public static @Nullable Object fromInternal(DataContext ctx, @Nullable Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class && val instanceof Integer)
@@ -450,6 +454,8 @@ public class TypeUtils {
             return Duration.ofMillis((Long)val);
         else if (storageType == Period.class && val instanceof Integer)
             return Period.of((Integer)val / 12, (Integer)val % 12, 0);
+        else if ((storageType == char.class || storageType == Character.class) && val instanceof String)
+            return ((String)val).charAt(0);
         else if (storageType == byte[].class && val instanceof ByteString)
             return ((ByteString)val).getBytes();
         else

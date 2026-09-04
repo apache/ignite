@@ -23,10 +23,15 @@ import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class TableFunctionScan<Row> implements Iterable<Row> {
+    /** */
+    private final ExecutionContext<Row> ctx;
+
     /** */
     private final RelDataType rowType;
 
@@ -38,10 +43,12 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
     /** */
     public TableFunctionScan(
+        ExecutionContext<Row> ctx,
         RelDataType rowType,
         Supplier<Iterable<?>> dataSupplier,
         RowFactory<Row> rowFactory
     ) {
+        this.ctx = ctx;
         this.rowType = rowType;
         this.dataSupplier = dataSupplier;
         this.rowFactory = rowFactory;
@@ -58,12 +65,17 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
             throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 
         Object[] rowArr = rowContainer.getClass() == Object[].class
-            ? (Object[])rowContainer
+            ? ((Object[])rowContainer).clone()
             : ((Collection<?>)rowContainer).toArray();
 
         if (rowArr.length != rowType.getFieldCount()) {
             throw new IgniteSQLException("Unable to process table function data: row length [" + rowArr.length
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
+        }
+
+        for (int i = 0; i < rowArr.length; i++) {
+            if (!(rowType.getFieldList().get(i).getType() instanceof OtherType))
+                rowArr[i] = TypeUtils.toInternal(ctx, rowArr[i]);
         }
 
         return rowFactory.create(rowArr);

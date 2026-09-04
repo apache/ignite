@@ -18,11 +18,13 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.List;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rex.RexCall;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod.UDF_INSTANCE;
 
@@ -49,10 +51,10 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
     @Override public Expression implement(RexToLixTranslator translator,
         RexCall call, List<Expression> translatedOperands) {
         translatedOperands =
-            ConverterUtils.fromInternal(method.getParameterTypes(), translatedOperands);
+            ConverterUtils.fromInternal(translator, method.getParameterTypes(), translatedOperands);
         translatedOperands =
             ConverterUtils.convertAssignableTypes(method.getParameterTypes(), translatedOperands);
-        final Expression callExpr;
+        Expression callExpr;
         if ((method.getModifiers() & Modifier.STATIC) != 0)
             callExpr = Expressions.call(method, translatedOperands);
 
@@ -66,6 +68,17 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
 
             callExpr = Expressions.call(target, method, translatedOperands);
         }
+
+        if (TypeUtils.isConvertableType(method.getReturnType())) {
+            Type targetType = translator.typeFactory.getJavaClass(call.getType());
+            Expression result = method.getReturnType().isPrimitive() ? Expressions.box(callExpr) : callExpr;
+
+            callExpr = Expressions.convert_(
+                Expressions.call(TypeUtils.class, "toInternal", translator.getRoot(), result),
+                targetType
+            );
+        }
+
         if (!containsCheckedException(method))
             return callExpr;
 

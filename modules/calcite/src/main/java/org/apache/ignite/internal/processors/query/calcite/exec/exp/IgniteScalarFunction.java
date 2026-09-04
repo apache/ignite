@@ -17,9 +17,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.ScalarFunction;
 
 /**
@@ -29,6 +32,9 @@ public class IgniteScalarFunction extends IgniteReflectiveFunctionBase implement
     /** */
     private final boolean deterministic;
 
+    /** */
+    private final List<FunctionParameter> funcParams;
+
     /**
      * Private constructor.
      */
@@ -36,6 +42,8 @@ public class IgniteScalarFunction extends IgniteReflectiveFunctionBase implement
         super(method, implementor);
 
         this.deterministic = deterministic;
+
+        funcParams = IgniteFunctionParameter.toSql(super.getParameters());
     }
 
     /**
@@ -54,7 +62,14 @@ public class IgniteScalarFunction extends IgniteReflectiveFunctionBase implement
 
     /** {@inheritDoc} */
     @Override public RelDataType getReturnType(RelDataTypeFactory typeFactory) {
-        return typeFactory.createJavaType(method.getReturnType());
+        JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
+
+        return tf.toSql(tf.createJavaType(method.getReturnType()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<FunctionParameter> getParameters() {
+        return funcParams;
     }
 
     /**

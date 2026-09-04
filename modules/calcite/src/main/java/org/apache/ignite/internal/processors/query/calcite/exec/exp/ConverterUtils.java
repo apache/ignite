@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -38,6 +39,7 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
 /** */
 public class ConverterUtils {
@@ -74,6 +76,9 @@ public class ConverterUtils {
             else if (targetType == Long.class)
                 return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL.method, operand);
         }
+        else if (fromType == byte[].class && targetType == ByteString.class)
+            return Expressions.call(BuiltInMethod.BYTE_ARRAY_TO_BYTE_STRING.method, operand);
+
         return operand;
     }
 
@@ -111,6 +116,9 @@ public class ConverterUtils {
             if (isA(fromType, Primitive.LONG))
                 return Expressions.call(BuiltInMethod.INTERNAL_TO_TIMESTAMP.method, operand);
         }
+        else if (targetType == byte[].class && fromType == ByteString.class)
+            return Expressions.call(BuiltInMethod.BYTE_STRING_TO_BYTE_ARRAY.method, operand);
+
         if (Primitive.is(operand.type)
             && Primitive.isBox(targetType)) {
             // E.g. operand is "int", target is "Long", generate "(long) operand".
@@ -143,6 +151,64 @@ public class ConverterUtils {
             }
         }
         return list;
+    }
+
+    /** */
+    static List<Expression> fromInternal(RexToLixTranslator translator,
+        Class<?>[] targetTypes,
+        List<Expression> expressions
+    ) {
+        final List<Expression> list = new ArrayList<>();
+
+        if (targetTypes.length == expressions.size()) {
+            for (int i = 0; i < expressions.size(); i++)
+                list.add(fromInternal(translator, expressions.get(i), targetTypes[i]));
+        }
+        else {
+            int j = 0;
+
+            for (Expression expression : expressions) {
+                Class<?> targetType;
+
+                if (!targetTypes[j].isArray()) {
+                    targetType = targetTypes[j];
+                    j++;
+                }
+                else
+                    targetType = targetTypes[j].getComponentType();
+
+                list.add(fromInternal(translator, expression, targetType));
+            }
+        }
+
+        return list;
+    }
+
+    /** */
+    private static Expression fromInternal(RexToLixTranslator translator, Expression operand, Type targetType) {
+        if (Types.isAssignableFrom(targetType, operand.getType()))
+            return operand;
+
+        if (!TypeUtils.isConvertableType(targetType))
+            return targetType == BigDecimal.class ? fromInternal(operand, targetType) :
+                convert(operand, operand.getType(), targetType);
+
+        if (Primitive.is(operand.getType()))
+            operand = Expressions.box(operand);
+
+        Expression converted = Expressions.call(
+            TypeUtils.class,
+            "fromInternal",
+            translator.getRoot(),
+            operand,
+            Expressions.constant(targetType)
+        );
+
+        Primitive primitive = Primitive.of(targetType);
+
+        return primitive == null
+            ? Expressions.convert_(converted, targetType)
+            : Expressions.unbox(Expressions.convert_(converted, primitive.boxClass), primitive);
     }
 
     /** */
@@ -229,6 +295,12 @@ public class ConverterUtils {
 
         if (toType == BigDecimal.class)
             throw new AssertionError("For conversion to decimal, ConverterUtils#convertToDecimal method should be used instead.");
+
+        if (fromType == byte[].class && toType == ByteString.class)
+            return Expressions.call(BuiltInMethod.BYTE_ARRAY_TO_BYTE_STRING.method, operand);
+
+        if (fromType == ByteString.class && toType == byte[].class)
+            return Expressions.call(BuiltInMethod.BYTE_STRING_TO_BYTE_ARRAY.method, operand);
 
         // E.g. from "Short" to "int".
         // Generate "x.intValue()".
