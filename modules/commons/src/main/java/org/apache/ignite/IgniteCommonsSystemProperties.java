@@ -132,7 +132,7 @@ public class IgniteCommonsSystemProperties {
      * Enables zero-copy UTF-8 serialization of {@link String} values.
      * Default value is {@code true}.
      */
-    @SystemProperty(value = "Enables zero-copy UTF-8 serialization of String values", defaults = "true")
+    @SystemProperty(value = "Enables zero-copy UTF-8 serialization of String values", defaults = "false")
     public static final String IGNITE_BINARY_STRING_ZERO_COPY = "IGNITE_BINARY_STRING_ZERO_COPY";
 
     /**
