@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import org.apache.ignite.configuration.DataPageEvictionMode;
@@ -21,9 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 
 import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionAbstractTest.setEvictionMode;
 
-/**
- * Concurrent eviction/insertion test for {@link DataPageEvictionMode#RANDOM_2_LRU}.
- */
+/** Concurrent eviction/insertion test for {@link DataPageEvictionMode#RANDOM_2_LRU}. */
 public class Random2LruPageEvictionConcurrentWritesTest extends PageEvictionConcurrentWritesAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

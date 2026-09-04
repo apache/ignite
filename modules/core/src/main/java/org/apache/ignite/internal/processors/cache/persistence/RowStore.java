@@ -136,17 +136,17 @@ public class RowStore {
     public void addRows(Collection<? extends CacheDataRow> rows,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled && grp.dataRegion().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
-            // Size-aware reserve for the largest row in the batch. Eviction performed here runs without entry locks
-            // (see AbstractFreeList#insertDataRows), so reserving space for any single large row is safe and keeps the
-            // batch path consistent with the single-row path. Smaller rows are covered by the regular
-            // threshold eviction loop inside insertDataRows.
-            int maxRowSize = 0;
+            // Size-aware reserve for each row in the batch. Eviction performed here runs without entry locks
+            // (see AbstractFreeList#insertDataRows), so this is safe. Reserving only the largest row is insufficient:
+            // insertDataRows consumes the reserve while writing the first large row, and its per-row threshold loop
+            // only restores emptyPagesPoolSize, which is smaller than a large row. A later large row in the batch
+            // would therefore exhaust page memory.
+            for (CacheDataRow row : rows) {
+                int rowSize = row.size();
 
-            for (CacheDataRow row : rows)
-                maxRowSize = Math.max(maxRowSize, row.size());
-
-            if (maxRowSize > 0)
-                ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), maxRowSize);
+                if (rowSize > 0)
+                    ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), rowSize);
+            }
         }
 
         assert ctx.database().checkpointLockIsHeldByThread();

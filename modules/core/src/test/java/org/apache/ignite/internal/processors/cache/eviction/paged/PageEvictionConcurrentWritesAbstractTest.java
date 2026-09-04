@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.concurrent.CountDownLatch;
@@ -49,7 +50,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
     private static final int PARTITIONS = 32;
 
     /** Large record size (much larger than the empty-pages pool). */
-    private static final int LARGE_RECORD_SIZE = 4 * 1024 * 1024;
+    private static final int LARGE_RECORD_SIZE = 16 * 1024 * 1024;
 
     /** Small record size used to pre-fill the region with evictable data. */
     private static final int SMALL_RECORD_SIZE = 4096;
@@ -58,13 +59,13 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
     private static final int POOL_SIZE = 100;
 
     /** Number of small pre-fill entries. */
-    private static final int SMALL_ENTRIES = 10_000;
+    private static final int SMALL_ENTRIES = 30_000;
 
     /** Number of writer threads. */
     private static final int THREADS = 4;
 
     /** Large rows inserted per thread (moderate total, kept within region capacity after eviction of small rows). */
-    private static final int LARGE_ROWS_PER_THREAD = 3;
+    private static final int LARGE_ROWS_PER_THREAD = 1;
 
     /** Global deadline for the whole test (protects against a deadlock/busy-spin hang). */
     private static final long DEADLINE = TimeUnit.MINUTES.toMillis(3);
@@ -76,10 +77,8 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setInitialSize(SIZE)
                     .setMaxSize(SIZE)
-                    .setEmptyPagesPoolSize(POOL_SIZE)
-                )
-                .setPageSize(DFLT_PAGE_SIZE)
-            );
+                    .setEmptyPagesPoolSize(POOL_SIZE))
+                .setPageSize(DFLT_PAGE_SIZE));
     }
 
     /** {@inheritDoc} */

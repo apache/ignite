@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -33,13 +35,11 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 
 /**
  * Tests size-aware page eviction on in-memory (non-persistent) data regions.
- *
+ * <p>
  * Verifies that a row larger than the configured {@code emptyPagesPoolSize} (in pages) is still written successfully
  * when page eviction is enabled, by evicting old entries to free enough space. Also verifies that a row
  * which fundamentally cannot fit into the region fails with OOM instead of hanging in an infinite eviction loop.
- *
- * Note: the atomic DHT batch path (putAll of many large rows overflowing a small region) is out of scope here — it is
- * handled by a separate size-aware reserve in the batch store path and already fails on the original code.
+ * The batch path ({@code putAll} of large rows) and the update path (growing a row) are covered as well.
  */
 public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstractTest {
     /** Off-heap region size (large enough to hold cache structural pages with the configured partition count). */
@@ -60,8 +60,12 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
     /** Small record size used to pre-fill the region with evictable data (for putAll tests). */
     private static final int SMALL_RECORD_SIZE = 4096;
 
-    /** Small pre-fill entries count. */
-    private static final int SMALL_ENTRIES = 8000;
+    /**
+     * Small pre-fill entries count. Chosen to fill the 128 MiB region close to capacity so that less than one large
+     * record ({@link #RECORD_SIZE}) remains available, forcing {@code ensureFreeSpaceForInsert} to actually evict
+     * prefilled entries rather than taking its fast path.
+     */
+    private static final int SMALL_ENTRIES = 28_000;
 
     /** Large rows written via putAll. */
     private static final int PUT_ALL_LARGE_ROWS = 3;
@@ -73,10 +77,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setInitialSize(SIZE)
                     .setMaxSize(SIZE)
-                    .setEmptyPagesPoolSize(POOL_SIZE)
-                )
-                .setPageSize(DFLT_PAGE_SIZE)
-            );
+                    .setEmptyPagesPoolSize(POOL_SIZE))
+                .setPageSize(DFLT_PAGE_SIZE));
     }
 
     /** {@inheritDoc} */
@@ -158,7 +160,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
             cache.put(1, new byte[SIZE * 2]);
         }
         catch (Exception e) {
-            // OOM (possibly wrapped) because the row cannot fit into the region.
+            assertTrue("Expected IgniteOutOfMemoryException because the row cannot fit into the region, but got: " + e,
+                isOutOfMemory(e));
+
             rejected = true;
         }
 
@@ -177,7 +181,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
 
         IgniteCache<Integer, Object> cache = createCache(ignite);
 
-        // Pre-fill with small evictable entries so large rows below region capacity fit via the reserve path.
+        // Pre-fill the region to near capacity with small evictable entries so that less than one large row remains
+        // available. This forces ensureFreeSpaceForInsert to evict prefilled entries rather than taking its fast path.
         byte[] small = new byte[SMALL_RECORD_SIZE];
 
         for (int i = 0; i < SMALL_ENTRIES; i++)
@@ -198,7 +203,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
 
     /**
      * Updating a record from a small to a large value (larger than the empty-pages pool) must succeed with page
-     * eviction enabled: the update goes through the same size-aware reserve as an insert.
+     * eviction enabled: the update goes through the same size-aware reserve as an insert. The region is pre-filled
+     * to near capacity so that the grown value cannot fit without evicting prefilled entries.
      *
      * @throws Exception If failed.
      */
@@ -208,6 +214,14 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
 
         IgniteCache<Integer, Object> cache = createCache(ignite);
 
+        // Pre-fill the region to near capacity with small evictable entries so that the grown value below cannot
+        // fit without eviction.
+        byte[] small = new byte[SMALL_RECORD_SIZE];
+
+        for (int i = 0; i < SMALL_ENTRIES; i++)
+            cache.put(SMALL_ENTRIES + i, small);
+
+        // Insert key 1 with a small value, then update it to a large value that requires size-aware eviction.
         cache.put(1, new byte[1024]);
 
         byte[] big = new byte[RECORD_SIZE];
@@ -221,5 +235,18 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
         assertNotNull("Updated large value must be readable", read);
 
         assertTrue("Updated value must equal the stored value", Arrays.equals(big, read));
+    }
+
+    /**
+     * @param t Throwable.
+     * @return {@code True} if {@code t} or any of its causes is an out-of-memory.
+     */
+    static boolean isOutOfMemory(Throwable t) {
+        for (Throwable cur = t; cur != null; cur = cur.getCause()) {
+            if (cur instanceof IgniteOutOfMemoryException)
+                return true;
+        }
+
+        return false;
     }
 }

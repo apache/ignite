@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import javax.cache.expiry.CreatedExpiryPolicy;
@@ -60,10 +61,8 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setInitialSize(SIZE)
                     .setMaxSize(SIZE)
-                    .setEmptyPagesPoolSize(POOL_SIZE)
-                )
-                .setPageSize(DFLT_PAGE_SIZE)
-            );
+                    .setEmptyPagesPoolSize(POOL_SIZE))
+                .setPageSize(DFLT_PAGE_SIZE));
     }
 
     /** {@inheritDoc} */
@@ -73,11 +72,12 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
 
     /**
      * @param ignite Ignite node.
+     * @param cacheName Cache name.
      * @param ttl TTL in milliseconds ({@code 0} for no expiry).
      * @return Cache with a small partition count and, if {@code ttl > 0}, eager TTL expiry.
      */
-    private IgniteCache<Integer, Object> createCache(IgniteEx ignite, long ttl) {
-        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
+    private IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName, long ttl) {
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<Integer, Object>(cacheName)
             .setAffinity(new RendezvousAffinityFunction(false, PARTITIONS));
 
         if (ttl > 0) {
@@ -99,7 +99,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
         IgniteEx ignite = startGrid(1);
 
         // Short-TTL entries keep the TTL worker actively freeing pages while eviction runs.
-        IgniteCache<Integer, Object> cache = createCache(ignite, TTL);
+        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, TTL);
 
         Object val = new byte[RECORD_SIZE];
 
@@ -114,6 +114,10 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
     /**
      * Space freed by TTL cleanup must be taken into account by size-aware eviction: a large record written after some
      * entries have expired must be accepted (no OOM) because their pages become available.
+     * <p>
+     * The region is filled to near capacity with non-expiring small entries, then large short-TTL entries are added
+     * (evicting some small entries). After the TTL entries expire and their pages are freed, a fresh large record is
+     * written — it can only fit if size-aware eviction accounts for the space freed by TTL.
      *
      * @throws Exception If failed.
      */
@@ -121,20 +125,36 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
     public void testTtlFreedSpaceAccountedForByEviction() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        IgniteCache<Integer, Object> cache = createCache(ignite, TTL);
+        // Non-expiring cache for prefill and the final large put.
+        IgniteCache<Integer, Object> plainCache = createCache(ignite, "plain-cache", 0);
 
-        // Fill the region up to its capacity with short-TTL large records.
+        // Short-TTL cache for entries that will expire and free pages.
+        IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL);
+
+        // Pre-fill the region to near capacity with small non-expiring entries.
+        byte[] small = new byte[4096];
+
+        for (int i = 0; i < 28_000; i++)
+            plainCache.put(i, small);
+
+        // Add large short-TTL entries that occupy significant space and will expire.
         Object val = new byte[RECORD_SIZE];
 
-        for (int i = 0; i < 10; i++)
-            cache.put(i, val);
+        for (int i = 0; i < 4; i++)
+            ttlCache.put(i, val);
+
+        // Verify the TTL entries are present before expiry.
+        assertNotNull("TTL entry must be present before expiry", ttlCache.get(0));
 
         // Wait for the TTL worker to expire and free the short-TTL entries.
         Thread.sleep(TTL + 1500);
 
-        // A fresh large record must now be accepted (space freed by TTL counts as available for eviction).
-        cache.put(100, val);
+        // Verify the TTL entries have expired.
+        assertNull("TTL entry must be expired", ttlCache.get(0));
 
-        assertNotNull(cache.get(100));
+        // A fresh large record must now be accepted: space freed by TTL counts as available for eviction.
+        plainCache.put(100, val);
+
+        assertNotNull(plainCache.get(100));
     }
 }

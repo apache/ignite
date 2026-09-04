@@ -59,8 +59,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     public void testNoEvictionBelowThreshold() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        DataRegionMetricsImpl metrics =
-            ignite.context().cache().context().database().dataRegion(null).metrics();
+        DataRegionMetricsImpl metrics = ignite.context().cache().context().database().dataRegion(null).metrics();
 
         metrics.enableMetrics();
 

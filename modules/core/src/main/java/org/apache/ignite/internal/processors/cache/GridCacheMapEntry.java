@@ -3662,7 +3662,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         // This entry-level eviction is invoked only while NOT holding this entry's lock (all call sites run before
         // lockEntry()). The separately invoked size-aware path (see RowStore.addRow ->
         // IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert) runs while the lock IS held, so it relies on
-        // the non-blocking tryLockEntry(ENTRY_LOCK_TIMEOUT) inside evictInternal to avoid a lock-ordering deadlock.
+        // the non-blocking tryLockEntry(0) inside evictInternal to avoid a lock-ordering deadlock.
         assert !lock.isHeldByCurrentThread();
 
         cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
@@ -4206,8 +4206,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Acquires the entry lock either blocking ({@code tryLock == false}) or non-blockingly with the configured
-     * {@link #ENTRY_LOCK_TIMEOUT} ({@code tryLock == true}). Used by {@link #evictInternal} to let size-aware
+     * Acquires the entry lock either blocking ({@code tryLock == false}) or non-blockingly with an immediate
+     * {@code tryLock(0)} ({@code tryLock == true}). Used by {@link #evictInternal} to let size-aware
      * eviction skip contended entries instead of blocking, avoiding a lock-ordering deadlock.
      *
      * @param tryLock {@code true} to acquire the lock non-blockingly.
@@ -4215,7 +4215,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private boolean lockEntry(boolean tryLock) {
         if (tryLock)
-            return tryLockEntry(ENTRY_LOCK_TIMEOUT);
+            return !lock.isHeldByCurrentThread() && tryLockEntry(0);
 
         lockEntry();
 

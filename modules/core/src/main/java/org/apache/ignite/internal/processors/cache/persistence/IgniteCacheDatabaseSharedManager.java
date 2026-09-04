@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
@@ -1271,8 +1272,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         long totalPages = regCfg.getMaxSize() / sysPageSize;
 
-        // Pages required to place the row (rounded up) plus a margin for the page header and fragmentation.
-        long requiredPages = (dataRowSize + pageSize - 1) / pageSize + 1;
+        // Maximum payload bytes that a single data page can hold for a fragmented row.
+        long pagePayload = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
+
+        // Pages required to place the row, computed from the actual data-page payload capacity.
+        long requiredPages = (dataRowSize + pagePayload - 1) / pagePayload;
 
         // If the row fits into the configured steady-state empty-pages pool, normal threshold eviction is enough.
         if (requiredPages <= regCfg.getEmptyPagesPoolSize())
@@ -1301,22 +1305,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         int attemptsWithoutProgress = 0;
 
         while (bestAvailable < requiredPages) {
+            if (region.metrics().onPageEvictionsStarted()) {
+                U.warn(log, "Page-based evictions started." +
+                    " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
+            }
+
             evictDataPageNonBlocking(evictionTracker);
+
+            region.metrics().updateEvictionRate();
 
             long curAvailable = (totalPages - pageMem.loadedPages()) + freeList.emptyDataPages();
 
-            // Progress is measured against the best available space observed so far. Concurrent inserts may
-            // temporarily reduce available (loadedPages grows) even while eviction is freeing pages, so a drop below
-            // the running best is not treated as "no progress". Only when available fails to exceed the best value
-            // over many attempts we conclude that no more space can be freed (e.g. all candidate entries are locked
-            // by other threads/transactions).
+            // Progress is measured against the best available space observed so far. Any iteration that does not
+            // establish a new best (including drops caused by concurrent inserts consuming pages) counts toward the
+            // no-progress guard, so the loop is bounded: if eviction cannot outpace concurrent consumption within
+            // a fixed number of attempts, an OOM is thrown rather than busy-spinning indefinitely.
             if (curAvailable > bestAvailable) {
                 bestAvailable = curAvailable;
 
                 attemptsWithoutProgress = 0;
-            }
-            else if (curAvailable < bestAvailable) {
-                // A transient drop caused by concurrent activity: keep the best value, do not penalize.
             }
             else
                 attemptsWithoutProgress++;

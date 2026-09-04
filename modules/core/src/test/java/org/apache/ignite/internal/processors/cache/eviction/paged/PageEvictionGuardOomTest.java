@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.ArrayList;
@@ -31,25 +32,22 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionSizeAwareAbstractTest.isOutOfMemory;
 
 /**
  * Negative test for the size-aware eviction progress guard.
  * <p>
  * When every resident entry is locked by another thread/transaction, page eviction cannot free any page: the guarded
- * {@code tryLockEntry} in {@code evictInternal} fails for every candidate, so {@link
+ * {@code tryLockEntry(0)} in {@code evictInternal} fails for every candidate, so {@link
  * IgniteCacheDatabaseSharedManager#ensureFreeSpaceForEviction} makes no progress and must fail with an
  * {@code IgniteOutOfMemoryException} within bounded time instead of busy-spinning forever (deadlock).
  * <p>
- * The lock timeout is reduced via {@code -DENTRY_LOCK_TIMEOUT=1} (applied through {@code @WithSystemProperty} before
- * the node starts) so that each non-blocking lock attempt fails quickly and the whole guard run stays within a few
- * seconds. The test is self-guarded by {@code @Test(timeout = ...)}: a deadlock or unbounded busy-spin would fail the
+ * The test is self-guarded by {@code @Test(timeout = ...)}: a deadlock or unbounded busy-spin would fail the
  * deadline.
  */
 public class PageEvictionGuardOomTest extends GridCommonAbstractTest {
@@ -84,8 +82,7 @@ public class PageEvictionGuardOomTest extends GridCommonAbstractTest {
                     .setInitialSize(SIZE)
                     .setMaxSize(SIZE)
                     .setEmptyPagesPoolSize(POOL_SIZE)
-                    .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU)
-                )
+                    .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU))
                 .setPageSize(DFLT_PAGE_SIZE)
             );
     }
@@ -114,7 +111,6 @@ public class PageEvictionGuardOomTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test(timeout = 180_000)
-    @WithSystemProperty(key = "ENTRY_LOCK_TIMEOUT", value = "1")
     public void testGuardOomWhenAllEntriesLocked() throws Exception {
         IgniteEx ignite = startGrid(1);
 
@@ -159,35 +155,24 @@ public class PageEvictionGuardOomTest extends GridCommonAbstractTest {
 
         locker.start();
 
-        assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
-
-        assertNull("Unexpected error while locking entries: " + lockerErr.get(), lockerErr.get());
-
         try {
-            cache.put(FILL_ENTRIES + 1, new byte[LARGE_RECORD_SIZE]);
+            assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
 
-            fail("Expected out-of-memory because all resident entries are locked, but put succeeded");
-        }
-        catch (Exception e) {
-            assertTrue("Expected an out-of-memory (progress guard) failure, but got: " + e, isOutOfMemory(e));
+            assertNull("Unexpected error while locking entries: " + lockerErr.get(), lockerErr.get());
+
+            try {
+                cache.put(FILL_ENTRIES + 1, new byte[LARGE_RECORD_SIZE]);
+
+                fail("Expected out-of-memory because all resident entries are locked, but put succeeded");
+            }
+            catch (Exception e) {
+                assertTrue("Expected an out-of-memory (progress guard) failure, but got: " + e, isOutOfMemory(e));
+            }
         }
         finally {
             release.countDown();
 
             locker.join(TimeUnit.SECONDS.toMillis(10));
         }
-    }
-
-    /**
-     * @param t Throwable.
-     * @return {@code True} if {@code t} or any of its causes is an out-of-memory.
-     */
-    private static boolean isOutOfMemory(Throwable t) {
-        for (Throwable cur = t; cur != null; cur = cur.getCause()) {
-            if (cur instanceof IgniteOutOfMemoryException)
-                return true;
-        }
-
-        return false;
     }
 }
