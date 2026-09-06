@@ -29,7 +29,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
@@ -97,9 +96,6 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     /** Buffered socket input stream. */
     private final CompositeInputStream in;
 
-    /** */
-    private final ReentrantLock sesWriteLock = new ReentrantLock();
-
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
@@ -136,9 +132,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
      * @param msg Message to send to the remote node.
      * @throws IgniteCheckedException If serialization fails.
      */
-    void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        sesWriteLock.lock();
-
+    synchronized void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         try {
             msgSer.writeTo(msg, out);
 
@@ -154,9 +148,6 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
                 throw (IgniteCheckedException)e;
 
             throw new IgniteCheckedException(e);
-        }
-        finally {
-            sesWriteLock.unlock();
         }
     }
 
@@ -273,17 +264,10 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
      * @param data Raw data to write.
      * @throws IOException If failed.
      */
-    void write(byte[] data) throws IOException {
-        sesWriteLock.lock();
+    synchronized void write(byte[] data) throws IOException {
+        out.write(data);
 
-        try {
-            out.write(data);
-
-            out.flush();
-        }
-        finally {
-            sesWriteLock.unlock();
-        }
+        out.flush();
     }
 
     /**
@@ -292,17 +276,10 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
      * @param b Integer response.
      * @throws IOException If failed.
      */
-    void write(int b) throws IOException {
-        sesWriteLock.lock();
+    synchronized void write(int b) throws IOException {
+        out.write(b);
 
-        try {
-            out.write(b);
-
-            out.flush();
-        }
-        finally {
-            sesWriteLock.unlock();
-        }
+        out.flush();
     }
 
     /**
