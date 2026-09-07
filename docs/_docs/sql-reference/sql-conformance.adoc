@@ -162,7 +162,7 @@ Ignite does not support the following sub-feature:
 
 `E071–06` Table operators in subqueries
 
-Note that there is no support for non-recursive WITH clause in H2 and Ignite. According to link:http://www.h2database.com/html/grammar.html#with[the H2 docs, window=_blank] there is support for recursive WITH clause, but it fails in Ignite.
+The H2-based SQL engine does not support non-recursive `WITH` clauses. The Calcite-based SQL engine supports recursive CTEs with `WITH RECURSIVE` and `UNION ALL`; see link:SQL/sql-calcite#recursive-ctes[Recursive CTEs, window=_blank].
 
 | E081 Basic Privileges
 | Ignite does not support the following sub-feature:
@@ -173,7 +173,7 @@ Note that there is no support for non-recursive WITH clause in H2 and Ignite. Ac
 
 `E081–03` INSERT privilege at the table level
 
-`E081–04` UPDATE privilege at the table level
+`E081–04` UPDATE privilege
 
 `E081–05` UPDATE privilege at the column level
 
