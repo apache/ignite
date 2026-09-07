@@ -183,8 +183,8 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
             return;
 
         if (!F.isEmpty(node.sources())) {
-            for (Node<Row> source : node.sources())
-                bindRecursiveScans(source);
+            for (Node<Row> src : node.sources())
+                bindRecursiveScans(src);
         }
     }
 
