@@ -61,6 +61,8 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Optionality;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -93,6 +95,11 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getConfiguration(igniteInstanceName, TEST_CONFORMANCE);
+    }
+
+    /** */
+    private IgniteConfiguration getConfiguration(String igniteInstanceName, SqlConformance conformance) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new AbstractTestPluginProvider() {
                 @Override public String name() {
@@ -103,14 +110,14 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                     if (FrameworkConfig.class.equals(cls)) {
                         FrameworkConfig cfg = Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
                             .parserConfig(CalciteQueryProcessor.FRAMEWORK_CONFIG.getParserConfig()
-                                .withConformance(TEST_CONFORMANCE))
+                                .withConformance(conformance))
                             .convertletTable(new ConvertletTable())
                             .operatorTable(SqlOperatorTables.chain(
                                 new OperatorTable().init(), CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable()))
                             .sqlValidatorConfig(
                                 ((IgniteSqlValidator.Config)CalciteQueryProcessor.FRAMEWORK_CONFIG.getSqlValidatorConfig())
                                     .withSqlNodeRewriter(new SqlRewriter())
-                                    .withConformance(TEST_CONFORMANCE))
+                                    .withConformance(conformance))
                             .context(Contexts.chain(
                                 CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
                                 Contexts.of(IgniteSqlSemantics.builder()
@@ -272,6 +279,23 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             + "(SELECT 1 AS rate, 1 AS period FROM dual)")
             .returns(1)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testDualWithisFromRequired() throws Exception {
+        SqlConformance conformance = new SqlDelegatingConformance(TEST_CONFORMANCE) {
+            /** {@inheritDoc} */
+            @Override public boolean isFromRequired() {
+                return true;
+            }
+        };
+
+        try (IgniteEx c = startClientGrid(getConfiguration("from-required-client", conformance))) {
+            assertThrows(c, "SELECT 1", IgniteSQLException.class, "SELECT must have a FROM clause");
+
+            assertQuery(c, "SELECT 1 + 1 FROM dual").returns(2).check();
+        }
     }
 
     /** */

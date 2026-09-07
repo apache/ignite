@@ -42,7 +42,7 @@ public class IgniteSchema extends AbstractSchema {
     private static final String DUAL_TBL_NAME = "DUAL";
 
     /** */
-    private static final String DUAL_TBL_VIEW = "SELECT 'X' AS DUMMY";
+    private static final String DUAL_TBL_VIEW = "SELECT * FROM (VALUES ('X')) AS T(DUMMY)";
 
     /** */
     private final String schemaName;
@@ -157,7 +157,7 @@ public class IgniteSchema extends AbstractSchema {
 
     /** */
     private static void registerDualTableIfSupported(SchemaPlus schema, FrameworkConfig frameworkCfg) {
-        if (frameworkCfg != null && frameworkCfg.getParserConfig().conformance().isSupportedDualTable()
+        if (frameworkCfg != null && frameworkCfg.getSqlValidatorConfig().conformance().isSupportedDualTable()
             && schema.tables().get(DUAL_TBL_NAME) == null
             && schema.getFunctions(DUAL_TBL_NAME).stream().noneMatch(TableMacro.class::isInstance)) {
             schema.add(DUAL_TBL_NAME, new ViewTableMacroImpl(DUAL_TBL_VIEW, schema, frameworkCfg));
