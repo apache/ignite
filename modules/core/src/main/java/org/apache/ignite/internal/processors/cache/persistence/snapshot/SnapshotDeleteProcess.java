@@ -71,7 +71,7 @@ public class SnapshotDeleteProcess {
 
         log = ctx.log(getClass());
 
-        deleteProc = new DistributedProcess<>(ctx, DELETE_SNAPSHOT, this::deleteLocalSnapshot, this::reduceAndFinish);
+        deleteProc = new DistributedProcess<>(ctx, DELETE_SNAPSHOT, this::deleteDistributedSnapshot, this::reduceAndFinish);
     }
 
     /**
@@ -122,7 +122,7 @@ public class SnapshotDeleteProcess {
     }
 
     /** Local phase: delete the snapshot directory on the node. */
-    private IgniteInternalFuture<SnapshotDeleteProcessResponse> проверь илиdeleteLocalSnapshot(
+    private IgniteInternalFuture<SnapshotDeleteProcessResponse> deleteDistributedSnapshot(
         UUID ignored,
         SnapshotDeleteProcessRequest req
     ) {
