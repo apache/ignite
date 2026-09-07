@@ -768,7 +768,7 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 
 |`TIME`
 |`TIME(value)` or `TIME(hour, minute, second)`
-|Converts a value to a time or creates a time from date fields.
+|Converts a value to a time or creates a time from time fields.
 
 |`DATETIME`
 |`DATETIME(value)` or `DATETIME(year, month, day, hour, minute, second)`
