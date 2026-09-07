@@ -173,7 +173,7 @@ The H2-based SQL engine does not support non-recursive `WITH` clauses. The Calci
 
 `E081–03` INSERT privilege at the table level
 
-`E081–04` UPDATE privilege
+`E081–04` UPDATE privilege at the table level
 
 `E081–05` UPDATE privilege at the column level
 
