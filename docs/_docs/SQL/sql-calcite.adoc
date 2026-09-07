@@ -356,7 +356,7 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 
 |`SHA1`
 |`SHA1(string)`
-|Returns the SHA-1 hash of a string.
+|Returns the SHA-1 hash of a string as a hexadecimal string.
 
 |`SUBSTRING`
 |`SUBSTRING(string FROM start [FOR length])`
@@ -479,7 +479,7 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 |Checks whether a string does not match a case-sensitive POSIX regular expression.
 
 |`!~*`
-|`string !~* pattern`
+|`string !~ pattern`
 |Checks whether a string does not match a case-insensitive POSIX regular expression.
 
 |`REGEXP_REPLACE`
@@ -1104,7 +1104,7 @@ It is allowed to define several hints for the same relation operator. To use sev
 Example:
 [source, SQL]
 ----
-SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 GROUP BY V3
+SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 WHERE V3=? GROUP BY V3
 ----
 
 ==== Hint parameters
@@ -1118,7 +1118,7 @@ Example:
 ----
 SELECT /*+ FORCE_INDEX(TBL1_IDX2,TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
 
-SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, T2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
+SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
 ----
 
 === Hint scope
