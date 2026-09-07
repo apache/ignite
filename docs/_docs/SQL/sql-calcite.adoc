@@ -768,7 +768,7 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 
 |`TIME`
 |`TIME(value)` or `TIME(hour, minute, second)`
-|Converts a value to a time or creates a time from time fields.
+|Converts a value to a time or creates a time from date fields.
 
 |`DATETIME`
 |`DATETIME(value)` or `DATETIME(year, month, day, hour, minute, second)`
@@ -1308,7 +1308,7 @@ The following API "transactional aware":
 
 1. ACID in the same way as key-value API.
 2. Any data modified or deleted within a transaction will not be visible to concurrent transactions until it is committed.
-3. Any data modified by a query will be returned with updated values by subsequent queries within a transaction.
+3. Any data modified by a query will be returned with updated values by subsequent queries within the same transaction.
 
 So, when `txAwareQueriesEnabled = true` enabled the usage:
 
