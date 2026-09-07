@@ -28,6 +28,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.BinaryWriterExImpl.ZERO_COPY;
 
 /**
@@ -291,7 +292,7 @@ public final class StringWriter {
      * @return Internal Latin-1 array of the string,
      *      or {@code null} if the string is UTF-16 encoded or the internal layout of {@link String} is unknown.
      */
-    public static byte[] latin1Value(String val) {
+    @Nullable public static byte[] latin1Value(String val) {
         if (STR_VALUE_OFF < 0 || GridUnsafe.getByteField(val, STR_CODER_OFF) != LATIN1)
             return null;
 
@@ -370,5 +371,21 @@ public final class StringWriter {
         }
 
         return null;
+    }
+
+    /** */
+    public static void writeStringLegacy(@NotNull String val, BinaryOutputStream out) {
+        byte[] strArr;
+
+        if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
+            strArr = BinaryUtils.strToUtf8Bytes(val);
+        else
+            strArr = val.getBytes(UTF_8);
+
+        out.unsafeEnsure(1 + 4);
+        out.unsafeWriteByte(GridBinaryMarshaller.STRING);
+        out.unsafeWriteInt(strArr.length);
+
+        out.writeByteArray(strArr);
     }
 }

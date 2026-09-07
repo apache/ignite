@@ -156,7 +156,10 @@ public class JmhBinaryStringWriteBenchmark {
     public void writeString(Blackhole bh) {
         out.position(0);
 
-        StringWriter.write(str, out);
+        if (zeroCopy)
+            StringWriter.write(str, out);
+        else
+            StringWriter.writeStringLegacy(str, out);
 
         bh.consume(out.position());
     }
