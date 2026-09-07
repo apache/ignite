@@ -26,9 +26,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -593,6 +595,38 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testArrayListTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("array-list-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CollectionFunctionsLibrary.class));
+
+        assertQuery("SELECT val FROM arrayListTable()")
+            .returns(Arrays.asList(1, 2))
+            .check();
+
+        assertQuery("SELECT CARDINALITY(val), val[1], val[2] FROM arrayListTable()")
+            .returns(2, 1, 2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testHashMapTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("hash-map-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CollectionFunctionsLibrary.class));
+
+        assertQuery("SELECT val FROM hashMapTable()")
+            .returns(F.asMap("first", 10, "second", 20))
+            .check();
+
+        assertQuery("SELECT CARDINALITY(val), val['first'], val['second'], val['missing'] FROM hashMapTable()")
+            .returns(2, 10, 20, null)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testObjectTableFunctionResult() {
         client.getOrCreateCache(new CacheConfiguration<>("object-table-functions")
             .setSqlSchema("PUBLIC")
@@ -650,6 +684,79 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .withParams(temporalValues())
             .returns(2020L, 15L, 2L, 2021L, 16L, 3L, 2023L, 1L, 2L, 3L, 1L, 2L)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testTemporalScalarFunctionResultSubtypes() {
+        client.getOrCreateCache(new CacheConfiguration<>("temporal-scalar-result-subtypes")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT udfDateAsUtilDate()")
+            .returns(Timestamp.valueOf("2020-01-01 00:00:00"))
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfDateAsUtilDate()), EXTRACT(HOUR FROM udfDateAsUtilDate())")
+            .returns(2020L, 0L)
+            .check();
+
+        assertQuery("SELECT udfTimeAsUtilDate()")
+            .returns(Timestamp.valueOf("1970-01-01 02:03:04"))
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfTimeAsUtilDate()), EXTRACT(HOUR FROM udfTimeAsUtilDate())")
+            .returns(1970L, 2L)
+            .check();
+
+        assertQuery("SELECT udfTimestampAsUtilDate()")
+            .returns(Timestamp.valueOf("2021-01-15 03:04:05"))
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfTimestampAsUtilDate()), "
+            + "EXTRACT(HOUR FROM udfTimestampAsUtilDate())")
+            .returns(2021L, 3L)
+            .check();
+
+        assertQuery("SELECT udfNullUtilDate()")
+            .returns(NULL_RESULT)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfNullUtilDate()), EXTRACT(HOUR FROM udfNullUtilDate())")
+            .returns(null, null)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testTemporalTableFunctionResultSubtypes() {
+        client.getOrCreateCache(new CacheConfiguration<>("temporal-table-result-subtypes")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT d FROM utilDateSubtypeTable()")
+            .returns(Timestamp.valueOf("2020-01-01 00:00:00"))
+            .returns(Timestamp.valueOf("1970-01-01 02:03:04"))
+            .returns(Timestamp.valueOf("2021-01-15 03:04:05"))
+            .returns(NULL_RESULT)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM d), EXTRACT(HOUR FROM d) FROM utilDateSubtypeTable()")
+            .returns(2020L, 0L)
+            .returns(1970L, 2L)
+            .returns(2021L, 3L)
+            .returns(null, null)
+            .check();
+    }
+
+    /** */
+    private static java.util.Date[] temporalSubtypeValues() {
+        return new java.util.Date[] {
+            Date.valueOf("2020-01-01"),
+            Time.valueOf("02:03:04"),
+            Timestamp.valueOf("2021-01-15 03:04:05"),
+            null
+        };
     }
 
     /** */
@@ -1221,6 +1328,21 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    public static class CollectionFunctionsLibrary {
+        /** */
+        @QuerySqlTableFunction(columnTypes = {ArrayList.class}, columnNames = {"VAL"})
+        public static Iterable<Object[]> arrayListTable() {
+            return Collections.singletonList(new Object[] {new ArrayList<>(Arrays.asList(1, 2))});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {HashMap.class}, columnNames = {"VAL"})
+        public static Iterable<Object[]> hashMapTable() {
+            return Collections.singletonList(new Object[] {new HashMap<>(F.asMap("first", 10, "second", 20))});
+        }
+    }
+
+    /** */
     public static class CustomTypeFunctionsLibrary {
         /** */
         @QuerySqlFunction
@@ -1288,6 +1410,36 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     public static class TemporalFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfDateAsUtilDate() {
+            return Date.valueOf("2020-01-01");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfTimeAsUtilDate() {
+            return Time.valueOf("02:03:04");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfTimestampAsUtilDate() {
+            return Timestamp.valueOf("2021-01-15 03:04:05");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfNullUtilDate() {
+            return null;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {java.util.Date.class}, columnNames = {"D"})
+        public static Iterable<Object[]> utilDateSubtypeTable() {
+            return Arrays.stream(temporalSubtypeValues()).map(val -> new Object[] {val}).collect(Collectors.toList());
+        }
+
         /** */
         @QuerySqlFunction
         public static java.util.Date udfUtilDateValue() {

@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
+import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class TableFunctionScan<Row> implements Iterable<Row> {
@@ -73,11 +77,26 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
 
-        for (int i = 0; i < rowArr.length; i++) {
-            if (!(rowType.getFieldList().get(i).getType() instanceof OtherType))
-                rowArr[i] = TypeUtils.toInternal(ctx, rowArr[i]);
-        }
+        for (int i = 0; i < rowArr.length; i++)
+            rowArr[i] = convertToInternal(rowArr[i], rowType.getFieldList().get(i).getType());
 
         return rowFactory.create(rowArr);
+    }
+
+    /** */
+    private @Nullable Object convertToInternal(@Nullable Object val, RelDataType type) {
+        if (val == null || type instanceof OtherType)
+            return val;
+
+        Type storageType = ctx.getTypeFactory().getResultClass(type);
+
+        if (!TypeUtils.isConvertableType(storageType))
+            return TypeUtils.toInternal(ctx, val);
+
+        // SQL table functions can already return values in the internal representation.
+        if (Types.isAssignableFrom(Primitive.box(ctx.getTypeFactory().getJavaClass(type)), val.getClass()))
+            return val;
+
+        return TypeUtils.toInternal(ctx, val, storageType);
     }
 }

@@ -74,7 +74,8 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
             Expression result = method.getReturnType().isPrimitive() ? Expressions.box(callExpr) : callExpr;
 
             callExpr = Expressions.convert_(
-                Expressions.call(TypeUtils.class, "toInternal", translator.getRoot(), result),
+                Expressions.call(TypeUtils.class, "toInternal", translator.getRoot(), result,
+                    Expressions.constant(method.getReturnType())),
                 targetType
             );
         }

@@ -21,6 +21,7 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
@@ -86,7 +87,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, List<?> arguments) {
         JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
 
-        List<RelDataType> converted = Stream.of(colTypes).map(cl -> tf.toSql(tf.createJavaType(cl))).collect(Collectors.toList());
+        List<RelDataType> converted = Stream.of(colTypes).map(cl -> columnType(tf, cl)).collect(Collectors.toList());
 
         return typeFactory.createStructType(converted, colNames);
     }
@@ -109,6 +110,15 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     /** {@inheritDoc} */
     @Override public List<FunctionParameter> getParameters() {
         return funcParams;
+    }
+
+    /** Resolves collection types without treating user-defined classes as records. */
+    private static RelDataType columnType(JavaTypeFactory tf, Class<?> cls) {
+        RelDataType type = cls.isArray() || List.class.isAssignableFrom(cls) || Map.class.isAssignableFrom(cls)
+            ? tf.createType(cls)
+            : tf.createJavaType(cls);
+
+        return tf.toSql(type);
     }
 
     /** Validates the parameters and throws an exception if it finds an incorrect parameter. */
