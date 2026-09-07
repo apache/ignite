@@ -479,7 +479,7 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 |Checks whether a string does not match a case-sensitive POSIX regular expression.
 
 |`!~*`
-|`string !~ pattern`
+|`string !~* pattern`
 |Checks whether a string does not match a case-insensitive POSIX regular expression.
 
 |`REGEXP_REPLACE`
@@ -1308,7 +1308,7 @@ The following API "transactional aware":
 
 1. ACID in the same way as key-value API.
 2. Any data modified or deleted within a transaction will not be visible to concurrent transactions until it is committed.
-3. Any data modified by a query will be returned with updated values by subsequent queries within the same transaction.
+3. Any data modified by a query will be returned with updated values by subsequent queries within a transaction.
 
 So, when `txAwareQueriesEnabled = true` enabled the usage:
 
