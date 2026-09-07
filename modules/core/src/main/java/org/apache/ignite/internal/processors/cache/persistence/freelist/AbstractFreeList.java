@@ -729,18 +729,18 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long pageId = takePage(row.size() - written, row, statHolder);
 
         if (pageId == 0L) {
-            // The steady-state pool of empty pages is exhausted. If the region is comfortably below the eviction
-            // threshold, satisfy the demand by growing the region (allocating a fresh page) rather than evicting a live
-            // entry: eviction would otherwise thrash live entries merely because the steady-state pool is momentarily
-            // drained (e.g. while initially filling the region). Once the region reaches the eviction-threshold point,
-            // it is effectively full for a single fresh page, so we fall back to (non-blocking) eviction and retake,
-            // which closes the TOCTOU gap between a size-aware reserve performed in RowStore.addRow and the actual
-            // consumption of pages here: pages freed by a concurrent eviction can then be reused instead of a spurious
-            // raw OOM.
-            if (pageMem.loadedPages() < maxGrowPages)
-                pageId = allocateDataPage(row.partition());
-            else
+            // The steady-state pool of empty pages is exhausted. The demand-eviction fallback only applies to
+            // regions with an active page eviction tracker (in-memory regions with eviction enabled). Once the region
+            // reaches the eviction-threshold point, it is effectively full for a single fresh page, so we fall back to
+            // (non-blocking) eviction and retake, which closes the TOCTOU gap between a size-aware reserve performed in
+            // RowStore.addRow and the actual consumption of pages here: pages freed by a concurrent eviction can then
+            // be reused instead of a spurious raw OOM. Below the threshold (or in the absence of a real eviction
+            // tracker - persistent regions and regions with eviction disabled use a NoOp tracker) we keep the original
+            // behaviour and simply grow the region by allocating a fresh page.
+            if (evictionTracker instanceof PageAbstractEvictionTracker && pageMem.loadedPages() >= maxGrowPages)
                 pageId = evictAndTakePage(row, row.size() - written, statHolder);
+            else
+                pageId = allocateDataPage(row.partition());
 
             initIo = row.ioVersions().latest();
         }
