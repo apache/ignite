@@ -278,6 +278,9 @@ public class SnapshotRestoreProcess {
             if (snpMgr.isSnapshotCreating())
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
+            if (snpMgr.isSnapshotDeleting())
+                throw new IgniteException(OP_REJECT_MSG + "A snapshot delete operation is in progress.");
+
             synchronized (this) {
                 if (restoringSnapshotName() != null || fut != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");

@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+/** */
+public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, Void> {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Delete snapshot and all its increments from the cluster";
+    }
 
-/** Snapshot commands. */
-public class SnapshotCommand extends CommandRegistryImpl {
-    /** */
-    public SnapshotCommand() {
-        super(
-            new SnapshotCreateCommand(),
-            new SnapshotCancelCommand(),
-            new SnapshotCheckCommand(),
-            new SnapshotDeleteCommand(),
-            new SnapshotListCommand(),
-            new SnapshotRestoreCommand(),
-            new SnapshotStatusCommand()
-        );
+    /** {@inheritDoc} */
+    @Override public Class<SnapshotDeleteCommandArg> argClass() {
+        return SnapshotDeleteCommandArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<SnapshotDeleteTask> taskClass() {
+        return SnapshotDeleteTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
+        return "Warning: command will delete snapshot " + arg.snapshotName() + " and all its increments " +
+            "from all the cluster nodes. This operation is irreversible.";
     }
 }

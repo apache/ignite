@@ -344,6 +344,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot validation distributed process. */
     private final SnapshotCheckProcess checkSnpProc;
 
+    /** Distributed process to delete cluster snapshot. */
+    private final SnapshotDeleteProcess deleteSnpProc;
+
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationEndRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -445,6 +448,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
         checkSnpProc = new SnapshotCheckProcess(ctx);
+
+        deleteSnpProc = new SnapshotDeleteProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -664,6 +669,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         restoreCacheGrpProc.interrupt(stopErr);
         checkSnpProc.interrupt(stopErr);
+        deleteSnpProc.interrupt(stopErr);
 
         // Try stop all snapshot processing if not yet.
         for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
@@ -696,6 +702,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         restoreCacheGrpProc.interrupt(new IgniteCheckedException("The cluster has been deactivated."));
+        deleteSnpProc.interrupt(new IgniteCheckedException("The cluster has been deactivated."));
     }
 
     /**
@@ -714,6 +721,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             snpDir.getParent(),
             ft.folderName(),
             pdsSettings.consistentId().toString()));
+    }
+
+    /**
+     * Deletes the local snapshot directory with the given name and path.
+     *
+     * @param snpName Full snapshot name.
+     * @param snpPath Snapshot directory path. If {@code null}, the default snapshot directory is used.
+     * @return {@code True} if the snapshot directory existed on the local node and was removed, {@code false} otherwise.
+     */
+    public boolean deleteSnapshotLocal(String snpName, @Nullable String snpPath) {
+        if (cctx.kernalContext().clientNode())
+            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
+
+        if (ft == null)
+            return false;
+
+        File snpDir = snpPath == null ? new File(ft.snapshotsRoot(), snpName) : new File(snpPath, snpName);
+
+        if (!snpDir.exists())
+            return false;
+
+        if (!snpDir.isDirectory())
+            return false;
+
+        deleteSnapshot(new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath));
+
+        return true;
     }
 
     /** */
@@ -1447,6 +1481,31 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @return {@code True} if a snapshot delete operation is in progress.
+     */
+    public boolean isSnapshotDeleting() {
+        return deleteSnpProc.isSnapshotDeleting();
+    }
+
+    /**
+     * Deletes the cluster snapshot with the given name. The snapshot data is removed on all the baseline nodes.
+     * <p>
+     * The operation is rejected if a snapshot operation (create, restore or check) is in progress for the snapshot.
+     *
+     * @param name Snapshot name.
+     * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory will be used.
+     * @return Future which will be completed when the snapshot is deleted on all the baseline nodes.
+     */
+    public IgniteFutureImpl<Void> deleteSnapshot(String name, @Nullable String snpPath) {
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        return deleteSnpProc.start(name, snpPath);
+    }
+
+    /**
      * Sets the streamer warning flag to current snapshot process if it is active.
      */
     public void streamerWarning() {
@@ -2052,6 +2111,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (isRestoring()) {
                     throw new IgniteException(
                         "Snapshot operation has been rejected. Cache group restore operation is currently in progress."
+                    );
+                }
+
+                if (isSnapshotDeleting()) {
+                    throw new IgniteException(
+                        "Snapshot operation has been rejected. Snapshot delete operation is currently in progress."
                     );
                 }
 

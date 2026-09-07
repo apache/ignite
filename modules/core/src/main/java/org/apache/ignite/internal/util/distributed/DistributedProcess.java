@@ -501,6 +501,13 @@ public class DistributedProcess<I extends Message, R extends Message> {
         CHECK_SNAPSHOT_PARTS,
 
         /**
+         * Delete snapshot procedure.
+         *
+         * @see IgniteSnapshotManager
+         */
+        DELETE_SNAPSHOT,
+
+        /**
          * Cluster version Rolling Upgrade enable process.
          */
         RU_ENABLE,

@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -3241,6 +3242,109 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ((SnapshotPartitionsVerifyResult)h.getLastOperationResult()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotList() throws Exception {
+        IgniteEx ig = startGrid(0);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, 100);
+
+        String snpName1 = "snapshot_01012024";
+        String snpName2 = "snapshot_02022024";
+
+        snp(ig).createSnapshot(snpName2).get(getTestTimeout());
+        snp(ig).createSnapshot(snpName1).get(getTestTimeout());
+
+        TestCommandHandler h = newCommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "list"));
+
+        Collection<String> res = h.getLastOperationResult();
+
+        assertNotNull(res);
+
+        assertEquals(2, res.size());
+
+        // Result must be sorted.
+        Iterator<String> it = res.iterator();
+
+        assertEquals(snpName1, it.next());
+        assertEquals(snpName2, it.next());
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotDelete() throws Exception {
+        String snpName = "snapshot_03032024";
+
+        IgniteEx ig = startGrid(0);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, 100);
+
+        snp(ig).createSnapshot(snpName).get(getTestTimeout());
+
+        File snpDir = new File(ig.context().pdsFolderResolver().fileTree().snapshotsRoot(), snpName);
+
+        assertTrue("Snapshot directory must exist: " + snpDir, snpDir.exists());
+
+        injectTestSystemOut();
+
+        TestCommandHandler h = newCommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "delete", snpName));
+
+        assertTrue(waitForCondition(() -> !snpDir.exists(), getTestTimeout()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotDeleteMissing() throws Exception {
+        IgniteEx ig = startGrid(0);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, 100);
+
+        injectTestSystemOut();
+
+        TestCommandHandler h = newCommandHandler();
+
+        // Deleting a non-existent snapshot is a no-op and must complete successfully.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "delete", "snapshot_MISSING"));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotDeleteCustomDir() throws Exception {
+        String snpName = "snapshot_04042024";
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots_delete", true);
+
+        try {
+            assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
+
+            IgniteEx ig = startGrid(0);
+            ig.cluster().state(ACTIVE);
+
+            createCacheAndPreload(ig, 100);
+
+            assertEquals(EXIT_CODE_OK,
+                execute("--snapshot", "create", snpName, "--sync", "--dest", snpDir.getAbsolutePath()));
+
+            File snpLocDir = new File(snpDir, snpName);
+
+            assertTrue("Snapshot directory must exist: " + snpLocDir, snpLocDir.exists());
+
+            assertEquals(EXIT_CODE_OK,
+                execute("--snapshot", "delete", snpName, "--dest", snpDir.getAbsolutePath()));
+
+            assertTrue(waitForCondition(() -> !snpLocDir.exists(), getTestTimeout()));
+        }
+        finally {
+            U.delete(snpDir);
+        }
     }
 
     /** @throws Exception If fails. */
