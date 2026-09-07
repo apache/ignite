@@ -30,7 +30,7 @@ public class SnapshotDeleteCommandArg extends IgniteDataTransferObject {
     /** */
     @Order(0)
     @Positional
-    @Argument(description = "Snapshot name")
+    @Argument(description = "Snapshot name.")
     String snapshotName;
 
     /** */
@@ -38,7 +38,7 @@ public class SnapshotDeleteCommandArg extends IgniteDataTransferObject {
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot is located. " +
             "If not specified, the default configured snapshot directory will be used")
-    String dest;
+    String src;
 
     /** */
     public String snapshotName() {
@@ -51,12 +51,12 @@ public class SnapshotDeleteCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String dest() {
-        return dest;
+    public String src() {
+        return src;
     }
 
     /** */
-    public void dest(String dest) {
-        this.dest = dest;
+    public void src(String src) {
+        this.src = src;
     }
 }
