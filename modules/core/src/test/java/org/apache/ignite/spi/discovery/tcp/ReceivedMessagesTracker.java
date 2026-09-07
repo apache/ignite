@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.net.Socket;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -28,18 +27,18 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class ReceivedMessagesTracker {
     /** */
-    private final Map<Socket, TcpDiscoveryAbstractMessage> msgs = Collections.synchronizedMap(new WeakHashMap<>());
+    private final Map<TcpDiscoveryIoSession, TcpDiscoveryAbstractMessage> msgs = Collections.synchronizedMap(new WeakHashMap<>());
 
     /** */
     public <T extends Message> T track(TcpDiscoveryIoSession ses, T msg) {
         if (msg instanceof TcpDiscoveryAbstractMessage)
-            msgs.put(ses.socket(), (TcpDiscoveryAbstractMessage)msg);
+            msgs.put(ses, (TcpDiscoveryAbstractMessage)msg);
 
         return msg;
     }
 
     /** */
-    public @Nullable TcpDiscoveryAbstractMessage lastFor(Socket sock) {
-        return msgs.get(sock);
+    public @Nullable TcpDiscoveryAbstractMessage lastFor(TcpDiscoveryIoSession ses) {
+        return msgs.get(ses);
     }
 }

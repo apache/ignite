@@ -263,7 +263,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         private volatile IgniteSpiOperationTimeoutException err;
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
             Socket sock,
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
@@ -291,7 +291,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 }
             }
 
-            super.openSocket(sock, sockAddr, timeoutHelper);
+            TcpDiscoveryIoSession ses = super.openSession(sock, sockAddr, timeoutHelper);
 
             try {
                 Thread.sleep(1500);
@@ -300,7 +300,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 // No-op.
             }
 
-            return sock;
+            return ses;
         }
 
         /** {@inheritDoc} */

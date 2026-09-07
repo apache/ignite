@@ -326,7 +326,7 @@ Note that you will only have to set the inline size for the index on `stringFiel
 
 Refer to the link:SQL/indexes#configuring-index-inline-size[Configuring Index Inline Size] section for the information on how to change the inline size.
 
-You can check the inline size of an existing index in the link:monitoring-metrics/system-views#indexes-view[INDEXES] system view.
+You can check the inline size of an existing index in the link:monitoring-metrics/system-views#indexes[INDEXES] system view.
 
 [WARNING]
 ====

@@ -73,8 +73,8 @@ Register name: `cache.{cache_name}.{near}`
 |ConflictResolverMergedCount|long|Conflict resolver merged entries count.
 |EntryProcessorHits | long|The total number of invocations on keys, which exist in cache.
 |EntryProcessorInvokeTimeNanos | long | The total time of cache invocations for which this node is the initiator, in nanoseconds.
-|EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator.
-|EntryProcessorMinInvocationTime |long | So far, the minimum time to execute cache invokes for which this node is the initiator.
+|EntryProcessorMaxInvocationTime |long | So far, the maximum time to execute cache invokes for which this node is the initiator, in nanoseconds.
+|EntryProcessorMinInvocationTime |long | So far, the minimum time to execute cache invokes for which this node is the initiator, in nanoseconds.
 |EntryProcessorMisses |long|The total number of invocations on keys, which don't exist in cache.
 |EntryProcessorPuts   |long|The total number of cache invocations, caused update.
 |EntryProcessorReadOnlyInvocations   |long|The total number of cache invocations, caused no updates.
@@ -104,9 +104,9 @@ Register name: `cache.{cache_name}.{near}`
 |QueryCompleted  |long|Count of completed queries.
 |QueryExecuted   |long|Count of executed queries.
 |QueryFailed |long|Count of failed queries.
-|QueryMaximumTime |long| Maximum query execution time.
-|QueryMinimalTime |long| Minimum query execution time.
-|QuerySumTime |long| Query summary time.
+|QueryMaximumTime |long| Maximum query execution time, in milliseconds.
+|QueryMinimalTime |long| Minimum query execution time, in milliseconds.
+|QuerySumTime |long| Query summary time, in milliseconds.
 |RebalanceClearingPartitionsLeft |long| Number of partitions need to be cleared before actual rebalance start.
 |RebalanceStartTime  |long| Rebalance start time.
 |RebalancedKeys |long| Number of already rebalanced keys.
@@ -114,7 +114,7 @@ Register name: `cache.{cache_name}.{near}`
 |RebalancingKeysRate |long|Estimated rebalancing speed in keys.
 |RemoveAllConflictTime | histogram | RemoveAllConflict time for which this node is the initiator, in nanoseconds.
 |RemoveAllTime | histogram | RemoveAll time for which this node is the initiator, in nanoseconds.
-|RemoveTime | histogram | Remove time for which this node is the initiator. in nanoseconds.
+|RemoveTime | histogram | Remove time for which this node is the initiator, in nanoseconds.
 |RemoveTimeTotal | long | The total time of cache removal, in nanoseconds.
 |RollbackTime|histogram|   Rollback time in nanoseconds.
 |RollbackTimeTotal   |long|The total time of rollback, in nanoseconds.
@@ -164,11 +164,11 @@ Register name: `tx`
 |OwnerTransactionsNumber |long|    The number of active transactions for which this node is the initiator.
 |TransactionsHoldingLockNumber |  long|    The number of active transactions holding at least one key lock.
 |LastCommitTime  |long|    Last commit time.
-|nodeSystemTimeHistogram| histogram|   Transactions system times on node represented as histogram.
-|nodeUserTimeHistogram|   histogram|   Transactions user times on node represented as histogram.
+|nodeSystemTimeHistogram| histogram|   Transactions system times on node represented as histogram, in milliseconds.
+|nodeUserTimeHistogram|   histogram|   Transactions user times on node represented as histogram, in milliseconds.
 |LastRollbackTime|    long|    Last rollback time.
-|totalNodeSystemTime |long|    Total transactions system time on node.
-|totalNodeUserTime   |long|    Total transactions user time on node.
+|totalNodeSystemTime |long|    Total transactions system time on node, in milliseconds.
+|totalNodeUserTime   |long|    Total transactions user time on node, in milliseconds.
 |txCommits   |integer| Number of transaction commits.
 |txRollbacks |integer| Number of transaction rollbacks.
 |txDeadlocks |integer| Number of transaction deadlocks.
@@ -200,12 +200,12 @@ Register name: `compute.jobs`
 |Name|    Type|    Description
 |compute.jobs.Active  |long|    Number of active jobs currently executing.
 |compute.jobs.Canceled    |long|    Number of cancelled jobs that are still running.
-|compute.jobs.ExecutionTime   |long|    Total execution time of jobs.
+|compute.jobs.ExecutionTime   |long|    Total execution time of jobs, in milliseconds.
 |compute.jobs.Finished    |long|    Number of finished jobs.
 |compute.jobs.Rejected    |long|    Number of jobs rejected after more recent collision resolution operation.
 |compute.jobs.Started |long|    Number of started jobs.
 |compute.jobs.Waiting |long|    Number of currently queued jobs waiting to be executed.
-|compute.jobs.WaitingTime |long|    Total time jobs spent on waiting queue.
+|compute.jobs.WaitingTime |long|    Total time jobs spent on waiting queue, in milliseconds.
 |===
 
 == Thread Pools
@@ -251,7 +251,7 @@ Register name: `io.statistics.cacheGroups.{group_name}`
 |===
 
 
-== Sorted Indexes I/O statistics
+== Sorted Indexes I/O Statistics
 
 Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 
@@ -267,7 +267,7 @@ Register name: `io.statistics.sortedIndexes.{cache_name}.{index_name}`
 |startTime|   long|    Statistics collection start time
 |===
 
-== Sorted Indexes operations
+== Sorted Indexes Operations
 
 Contains metrics about low-level operations (such as `Insert`, `Search`, etc.) on pages of sorted secondary indexes.
 
@@ -281,7 +281,7 @@ Register name: `index.{schema_name}.{table_name}.{index_name}`
 |===
 
 
-== Hash Indexes I/O statistics
+== Hash Indexes I/O Statistics
 
 Register name: `io.statistics.hashIndexes.{cache_name}.{index_name}`
 
@@ -398,7 +398,7 @@ Register name: `io.dataregion.{data_region_name}`
 |EmptyDataPages|  long|    Calculates empty data pages count for region. It counts only totally free pages that can be reused (e. g. pages that are contained in reuse bucket of free list).
 |EvictionRate|    hitrate|    Eviction rate (pages per second).
 |EvictionsStarted | boolean |   True if page eviction was triggered due to data region memory pressure.
-|LargeEntriesPagesCount|  long|    Count of pages that fully ocupied by large entries that go beyond page size
+|LargeEntriesPagesCount|  long|    Count of pages that fully occupied by large entries that go beyond page size
 |OffHeapSize| long|    Offheap size in bytes.
 |OffheapUsedSize| long|    Offheap used size in bytes.
 |PagesFillFactor| double|  The average amount of data in non-empty pages as a ratio of the page size.
@@ -437,7 +437,7 @@ Register name: `io.datastorage`
 |CheckpointPagesWriteHistogram| histogram |   Histogram of checkpoint pages write duration in milliseconds.
 |CheckpointSplitAndSortPagesHistogram| histogram |   Histogram of splitting and sorting checkpoint pages duration in milliseconds.
 |CheckpointTotalTime| long |   Total duration of checkpoint
-|CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging ChTotalNodeseckpointRecord on begin of checkpoint duration in milliseconds.
+|CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging CheckpointRecord on begin of checkpoint duration in milliseconds.
 |CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file duration in milliseconds.
 |LastArchivedSegment | long | Last archived segment index.
 |LastCheckpointBeforeLockDuration|  long |   Duration of the checkpoint action before taken write lock in milliseconds.
@@ -485,7 +485,7 @@ Register name: `cluster`
 |TotalServerNodes| integer | Server nodes count.
 |===
 
-== Cache processor
+== Cache Processor
 
 Cache processor metrics.
 
@@ -499,7 +499,7 @@ Register name: `cache`
 |DataVersionClusterId| integer | Data version cluster id.
 |===
 
-== SQL parser metrics
+== SQL Parser Metrics
 
 Register name: `sql.parser.cache`
 
@@ -510,14 +510,16 @@ Register name: `sql.parser.cache`
 |misses| long | The number of SQL queries that were parsed and planned.
 |===
 
-== SQL executor metrics
+== SQL Executor Metrics
 
 Register name: `sql.queries.user`
 
 [cols="2,1,3",opts="header"]
 |===
 |Name|    Type|    Description
-|success| long | The number of succesfully executed SQL queries.
+|success| long | The number of successfully executed SQL queries.
 |failed| long | The number of failed SQL queries (including canceled).
 |canceled| long | The number of canceled SQL queries.
+|resultSetSizeHistogram| histogram | Histogram of fetched result set sizes for SQL queries.
+|maxResultSetSize| max value | Maximum fetched result set size for SQL queries.
 |===
