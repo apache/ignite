@@ -351,10 +351,10 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, byte[] data, long timeout) throws IOException, IgniteCheckedException {
-            tryToBlock(sock, data, timeout);
+        @Override protected void write(TcpDiscoveryIoSession ses, byte[] data, long timeout) throws IOException, IgniteCheckedException {
+            tryToBlock(ses.socket(), data, timeout);
 
-            super.writeToSocket(sock, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** */

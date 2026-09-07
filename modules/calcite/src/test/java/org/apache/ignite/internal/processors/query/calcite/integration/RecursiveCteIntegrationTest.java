@@ -17,44 +17,216 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import org.apache.calcite.plan.RelOptPlanner;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.junit.Test;
 
 /**
  * Integration tests for recursive common table expressions.
  */
 public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Number of invocations of a non-deterministic function. */
+    private static final AtomicInteger nonDeterministicCallCnt = new AtomicInteger();
+
     /** */
     @Test
-    public void testHierarchicalQueryIsNotSupported() {
-        sql("CREATE TABLE employee (id INT PRIMARY KEY, manager_id INT, name VARCHAR)");
-        sql("INSERT INTO employee VALUES " +
-            "(1, NULL, 'CEO'), " +
-            "(2, 1, 'Manager'), " +
-            "(3, 2, 'Developer'), " +
-            "(4, 1, 'Accountant')");
+    public void testEmployeeHierarchy() {
+        createEmployeeTable();
 
-        String qry = "WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (" +
+        assertQuery("WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (" +
             "SELECT id, manager_id, name, 0 FROM employee WHERE manager_id IS NULL " +
             "UNION ALL " +
             "SELECT e.id, e.manager_id, e.name, h.depth + 1 " +
             "FROM employee e " +
             "JOIN employee_hierarchy h ON e.manager_id = h.id" +
             ") " +
-            "SELECT id, manager_id, name, depth FROM employee_hierarchy ORDER BY depth, id";
+            "SELECT id, manager_id, name, depth FROM employee_hierarchy ORDER BY depth, id")
+            .returns(1, null, "CEO", 0)
+            .returns(2, 1, "Manager", 1)
+            .returns(4, 1, "Accountant", 1)
+            .returns(3, 2, "Developer", 2)
+            .check();
+    }
 
-        Throwable err = GridTestUtils.assertThrows(
-            log,
-            () -> sql(qry),
+    /** */
+    @Test
+    public void testRecursionStopsWhenDeltaIsEmpty() {
+        sql("CREATE TABLE employee (id INT PRIMARY KEY, manager_id INT, name VARCHAR)");
+        sql("INSERT INTO employee VALUES (1, NULL, 'CEO')");
+
+        assertQuery("WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (" +
+            "SELECT id, manager_id, name, 0 FROM employee WHERE manager_id IS NULL " +
+            "UNION ALL " +
+            "SELECT e.id, e.manager_id, e.name, h.depth + 1 " +
+            "FROM employee e " +
+            "JOIN employee_hierarchy h ON e.manager_id = h.id" +
+            ") " +
+            "SELECT id, manager_id, name, depth FROM employee_hierarchy")
+            .returns(1, null, "CEO", 0)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursiveTermIsNotExecutedWhenSeedIsEmpty() {
+        sql("CREATE TABLE empty_seed (n INT PRIMARY KEY)");
+
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+            "SELECT n FROM empty_seed " +
+            "UNION ALL " +
+            "SELECT v.n FROM numbers RIGHT JOIN (VALUES (42)) v(n) ON TRUE" +
+            ") " +
+            "SELECT n FROM numbers FETCH FIRST 1 ROW ONLY")
+            .resultSize(0)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursiveTermWithoutSelfReferenceAfterOptimization() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+            "SELECT 1 " +
+            "UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE FALSE" +
+            ") " +
+            "SELECT n FROM numbers")
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursiveTermWithMultipleSelfReferences() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT left_numbers.n + 1 " +
+                "FROM numbers left_numbers " +
+                "JOIN numbers right_numbers ON left_numbers.n = right_numbers.n " +
+                "WHERE left_numbers.n < 3" +
+            ") " +
+            "SELECT n FROM numbers")
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursiveCteWithMultipleRecursiveBranches() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "(" +
+                    "SELECT n + 1 FROM numbers WHERE n < 3 " +
+                    "UNION ALL " +
+                    "SELECT n + 10 FROM numbers WHERE n < 3" +
+                ")" +
+            ") " +
+            "SELECT n FROM numbers")
+            .returns(1)
+            .returns(2)
+            .returns(11)
+            .returns(3)
+            .returns(12)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursiveCteWithDistinctUnionIsRejected() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION " +
+                "SELECT n + 1 FROM numbers WHERE n < 3" +
+            ") " +
+            "SELECT n FROM numbers",
             IgniteSQLException.class,
-            "Failed to plan query"
+            "only UNION ALL is supported"
         );
+    }
 
-        assertEquals(1, err.getSuppressed().length);
-        assertTrue(err.getSuppressed()[0] instanceof RelOptPlanner.CannotPlanException);
-        assertTrue(err.getSuppressed()[0].getMessage().contains(
-            "There are not enough rules to produce a node with desired properties"));
+    /** */
+    @Test
+    public void testStateIsIsolatedBetweenSameNamedRecursiveCtes() {
+        assertQuery("SELECT /*+ MERGE_JOIN */ l.n, r.n " +
+            "FROM (" +
+                "WITH RECURSIVE numbers(n) AS (" +
+                    "SELECT 1 " +
+                    "UNION ALL " +
+                    "SELECT n + 1 FROM numbers WHERE n < 3" +
+                ") " +
+                "SELECT n, n + 9 AS join_key FROM numbers" +
+            ") l " +
+            "JOIN (" +
+                "WITH RECURSIVE numbers(n) AS (" +
+                    "SELECT 10 " +
+                    "UNION ALL " +
+                    "SELECT n + 1 FROM numbers WHERE n < 12" +
+                ") " +
+                "SELECT n, n - 9 AS join_key FROM numbers" +
+            ") r ON l.join_key = r.n")
+            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
+            .returns(1, 10)
+            .returns(2, 11)
+            .returns(3, 12)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIndependentNonDeterministicSubtreeIsEvaluatedForEveryIteration() {
+        registerRecursiveFunctions();
+
+        nonDeterministicCallCnt.set(0);
+
+        String qry = "WITH RECURSIVE numbers(n, marker) AS (" +
+            "SELECT 1, 0 " +
+            "UNION ALL " +
+            "SELECT n + 1, v.marker " +
+            "FROM numbers " +
+            "CROSS JOIN (SELECT nextRecursiveValue() AS marker) v " +
+            "WHERE n < 4" +
+            ") " +
+            "SELECT n, marker FROM numbers ORDER BY n";
+
+        assertQuery(qry)
+            .returns(1, 0)
+            .returns(2, 1)
+            .returns(3, 2)
+            .returns(4, 3)
+            .check();
+    }
+
+    /** SQL functions used by recursive CTE tests. */
+    public static class RecursiveFunctions {
+        /** Returns a different value on every invocation. */
+        @QuerySqlFunction(deterministic = false)
+        public static int nextRecursiveValue() {
+            return nonDeterministicCallCnt.incrementAndGet();
+        }
+    }
+
+    /** */
+    private void createEmployeeTable() {
+        sql("CREATE TABLE employee (id INT PRIMARY KEY, manager_id INT, name VARCHAR)");
+
+        sql("INSERT INTO employee VALUES " +
+            "(1, NULL, 'CEO'), " +
+            "(2, 1, 'Manager'), " +
+            "(3, 2, 'Developer'), " +
+            "(4, 1, 'Accountant')");
+    }
+
+    /** Registers SQL functions used by recursive CTE tests. */
+    private void registerRecursiveFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("recursive_functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(RecursiveFunctions.class));
     }
 }

@@ -249,11 +249,11 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 
 [{table_opts}]
 |===
+| Column | Type |    Description
 |AFFINITY_KEY | string |  Affinity key value for service
 |CACHE_NAME | string |  Cache name
 |MAX_PER_NODE_COUNT | int | Maximum count of services instances per node
 |NAME | string |  Service name
-|NAME | TYPE |    DESCRIPTION
 |NODE_FILTER | string |  String representation of node filter
 |ORIGIN_NODE_ID | UUID |    Originating node ID
 |SERVICE_CLASS | string |  Service class name

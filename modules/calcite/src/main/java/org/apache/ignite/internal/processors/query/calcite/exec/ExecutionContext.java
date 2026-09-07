@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionChang
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ReflectiveCallNotNullImplementor;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveCteState;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
@@ -138,6 +140,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
     /** Map associates UDF name to instance of class that contains this UDF. */
     private final Map<String, Object> udfInstances = new ConcurrentHashMap<>();
+
+    /** Query-local recursive CTE states, keyed by transient table identifier. */
+    private final Map<String, RecursiveCteState<Row>> recursiveCteStates = new HashMap<>();
 
     /** Session context provider injected into UDF targets. */
     private final SessionContextProvider sesCtxProv = new SessionContextProviderImpl();
@@ -470,6 +475,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public <R> RowTracker<R> createNodeMemoryTracker(long rowOverhead) {
         return ExecutionNodeMemoryTracker.create(qryMemoryTracker, rowOverhead);
+    }
+
+    /** Returns the state shared by the repeat union and scans of one recursive CTE. */
+    RecursiveCteState<Row> recursiveCteState(String stateId) {
+        return recursiveCteStates.computeIfAbsent(stateId, key -> new RecursiveCteState<>(this));
     }
 
     /** */
