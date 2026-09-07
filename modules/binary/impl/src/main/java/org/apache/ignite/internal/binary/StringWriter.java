@@ -339,13 +339,10 @@ public final class StringWriter {
                 Field valField = String.class.getDeclaredField("value");
                 Field coderField = String.class.getDeclaredField("coder");
 
-                // On JDK 8 the value field is a char[], only the generic encoder can be used.
-                if (valField.getType() == byte[].class && coderField.getType() == byte.class) {
-                    return new IgniteBiTuple<>(
-                        GridUnsafe.objectFieldOffset(valField),
-                        GridUnsafe.objectFieldOffset(coderField)
-                    );
-                }
+                return new IgniteBiTuple<>(
+                    GridUnsafe.objectFieldOffset(valField),
+                    GridUnsafe.objectFieldOffset(coderField)
+                );
             }
             catch (Throwable ignored) {
                 // No-op.
