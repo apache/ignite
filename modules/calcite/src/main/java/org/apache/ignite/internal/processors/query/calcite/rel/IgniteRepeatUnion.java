@@ -22,28 +22,19 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.RepeatUnion;
-
-import static java.util.Objects.requireNonNull;
 
 /** Coordinator-side iterative UNION ALL for a recursive CTE. */
 public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
-    /** Query-local recursive state identifier. */
-    private final String stateId;
-
     /** */
     public IgniteRepeatUnion(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode seed,
         RelNode iterative,
-        String stateId,
         int iterationLimit
     ) {
         super(cluster, traits, seed, iterative, true, iterationLimit, null);
-
-        this.stateId = stateId;
     }
 
     /** Constructor used for deserialization. */
@@ -53,14 +44,8 @@ public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
             input.getInputs().get(1),
-            requireNonNull(input.getString("stateId"), "stateId"),
             iterationLimit(input)
         );
-    }
-
-    /** Query-local recursive state identifier. */
-    public String stateId() {
-        return stateId;
     }
 
     /** Maximum number of recursive iterations, or a negative value for no limit. */
@@ -72,7 +57,7 @@ public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.size() == 2;
 
-        return new IgniteRepeatUnion(getCluster(), traitSet, inputs.get(0), inputs.get(1), stateId, iterationLimit);
+        return new IgniteRepeatUnion(getCluster(), traitSet, inputs.get(0), inputs.get(1), iterationLimit);
     }
 
     /** {@inheritDoc} */
@@ -84,16 +69,10 @@ public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         assert inputs.size() == 2;
 
-        return new IgniteRepeatUnion(cluster, getTraitSet(), inputs.get(0), inputs.get(1), stateId, iterationLimit);
+        return new IgniteRepeatUnion(cluster, getTraitSet(), inputs.get(0), inputs.get(1), iterationLimit);
     }
 
-    /** {@inheritDoc} */
-    @Override public RelWriter explainTerms(RelWriter pw) {
-        return super.explainTerms(pw)
-            .item("stateId", stateId);
-    }
-
-    /** Reads the optional iteration limit emitted by {@link RepeatUnion#explainTerms(RelWriter)}. */
+    /** Reads the optional iteration limit from a serialized plan. */
     private static int iterationLimit(RelInput input) {
         Number iterationLimit = (Number)input.get("iterationLimit");
 
