@@ -133,8 +133,7 @@ public class RowStore {
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRows(Collection<? extends CacheDataRow> rows,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled && grp.dataRegion().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
             // Size-aware reserve for each row in the batch. Eviction performed here runs without entry locks
             // (see AbstractFreeList#insertDataRows), so this is safe. Reserving only the largest row is insufficient:

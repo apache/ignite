@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -145,6 +146,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
 
     /**
      * A record larger than the whole region must fail (not hang) even when size-aware eviction is enabled.
+     * Uses a transactional cache so that the size-aware OOM propagates directly (in an atomic cache it is wrapped in
+     * a {@code CachePartialUpdateException} and would not be detectable as the specific OOM).
      *
      * @throws Exception If failed.
      */
@@ -152,7 +155,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
     public void testRecordLargerThanRegionOom() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        IgniteCache<Integer, Object> cache = createCache(ignite);
+        IgniteCache<Integer, Object> cache = ignite.createCache(new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, PARTITIONS))
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         boolean rejected = false;
 

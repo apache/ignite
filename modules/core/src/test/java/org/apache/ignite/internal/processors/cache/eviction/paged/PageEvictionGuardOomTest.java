@@ -83,8 +83,7 @@ public class PageEvictionGuardOomTest extends GridCommonAbstractTest {
                     .setMaxSize(SIZE)
                     .setEmptyPagesPoolSize(POOL_SIZE)
                     .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU))
-                .setPageSize(DFLT_PAGE_SIZE)
-            );
+                .setPageSize(DFLT_PAGE_SIZE));
     }
 
     /** {@inheritDoc} */

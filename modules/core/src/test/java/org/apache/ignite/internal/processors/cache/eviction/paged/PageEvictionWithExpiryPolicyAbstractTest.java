@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -52,7 +53,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
     private static final int POOL_SIZE = 100;
 
     /** Short TTL applied to some entries. */
-    private static final long TTL = 1500;
+    private static final long TTL = 8000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -112,12 +113,13 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
     }
 
     /**
-     * Space freed by TTL cleanup must be taken into account by size-aware eviction: a large record written after some
+     * Space freed by TTL cleanup must be taken into account by size-aware eviction: large records written after some
      * entries have expired must be accepted (no OOM) because their pages become available.
      * <p>
-     * The region is filled to near capacity with non-expiring small entries, then large short-TTL entries are added
-     * (evicting some small entries). After the TTL entries expire and their pages are freed, a fresh large record is
-     * written — it can only fit if size-aware eviction accounts for the space freed by TTL.
+     * The region is pre-filled with non-expiring small entries and large short-TTL entries that later expire and free
+     * their pages. After expiry, fresh large records are written — totalling more than the space freed by TTL, so that
+     * the pre-fill plus the fresh records exceed the region size. The writes can only succeed because size-aware
+     * eviction accounts for the TTL-freed pages (as available) and frees further pages for the rest.
      *
      * @throws Exception If failed.
      */
@@ -131,30 +133,40 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
         // Short-TTL cache for entries that will expire and free pages.
         IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL);
 
-        // Pre-fill the region to near capacity with small non-expiring entries.
+        // Pre-fill the region with small non-expiring entries, but leave enough room for the large TTL entries to be
+        // written without evicting them (so they are guaranteed to be present until they expire).
         byte[] small = new byte[4096];
 
-        for (int i = 0; i < 28_000; i++)
+        for (int i = 0; i < 22_000; i++)
             plainCache.put(i, small);
 
-        // Add large short-TTL entries that occupy significant space and will expire.
+        // Add large short-TTL entries that occupy significant space and will expire. They fit in the remaining free
+        // space, and being the freshest entries they are not evicted while they are being stored.
         Object val = new byte[RECORD_SIZE];
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 2; i++)
             ttlCache.put(i, val);
 
         // Verify the TTL entries are present before expiry.
         assertNotNull("TTL entry must be present before expiry", ttlCache.get(0));
 
         // Wait for the TTL worker to expire and free the short-TTL entries.
-        Thread.sleep(TTL + 1500);
+        U.sleep(TTL + 1500);
 
         // Verify the TTL entries have expired.
         assertNull("TTL entry must be expired", ttlCache.get(0));
 
-        // A fresh large record must now be accepted: space freed by TTL counts as available for eviction.
-        plainCache.put(100, val);
+        // Now write large records to the non-expiring cache, totalling more than the space freed by TTL (the prefill
+        // plus the fresh large records exceed the region size). The put can only succeed because size-aware eviction
+        // accounts for the pages freed by TTL (as available) and frees further pages for the rest; this verifies the
+        // synergy between TTL cleanup and size-aware eviction — a row that only fits once expired entries are removed
+        // is written without OOM.
+        for (int i = 0; i < 6; i++)
+            plainCache.put(100 + i, val);
 
-        assertNotNull(plainCache.get(100));
+        // The most recently written large record is still present: it was accepted without OOM thanks to the space
+        // freed by TTL and the additional pages freed by size-aware eviction. (Earlier large records may already have
+        // been evicted to make room for the subsequent ones, so only the freshest is asserted.)
+        assertNotNull("Fresh large record must be present after TTL-assisted eviction", plainCache.get(105));
     }
 }

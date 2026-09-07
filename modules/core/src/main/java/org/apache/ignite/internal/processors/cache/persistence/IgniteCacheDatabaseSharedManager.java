@@ -1175,18 +1175,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Checks that the given {@code region} has enough space for putting a new entry of {@code dataRowSize} bytes.
-     *
+     * <p>
      * For a non-persistent region with page eviction disabled, verifies that the region reserves enough pages to
      * support a free list {@link AbstractFreeList}. For example, removing a row from underlying store may require
      * allocating a new data page in order to move a tracked page from one bucket to another one which does not have
      * a free space for a new stripe. See {@link AbstractFreeList#removeDataRowByLink}. Therefore, inserting a new
      * entry should be prevented in case of some threshold is exceeded.
-     *
+     * <p>
      * For a non-persistent region with page eviction enabled, additionally performs size-aware eviction: when the
      * row does not fit into the currently available page space, data pages are evicted until either enough space is
      * freed or it becomes clear that the goal is unreachable (in which case an
      * {@link IgniteOutOfMemoryException} is thrown).
-     *
+     * <p>
      * The size-aware reserve is required because page eviction by itself only keeps a steady-state pool of empty pages
      * ({@link DataRegionConfiguration#getEmptyPagesPoolSize()}) and does not guarantee enough space for a single row
      * larger than this pool.

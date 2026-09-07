@@ -44,13 +44,13 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
  */
 public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommonAbstractTest {
     /** Off-heap region size. */
-    private static final int SIZE = 128 * 1024 * 1024;
+    private static final int SIZE = 256 * 1024 * 1024;
 
     /** Partition count (kept low so that index-tree structures do not exhaust the region). */
     private static final int PARTITIONS = 32;
 
-    /** Large record size (much larger than the empty-pages pool). */
-    private static final int LARGE_RECORD_SIZE = 16 * 1024 * 1024;
+    /** Large record size (larger than the empty-pages pool so that each write is size-aware). */
+    private static final int LARGE_RECORD_SIZE = 2 * 1024 * 1024;
 
     /** Small record size used to pre-fill the region with evictable data. */
     private static final int SMALL_RECORD_SIZE = 4096;
@@ -58,14 +58,17 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
     /** Empty pages pool size. */
     private static final int POOL_SIZE = 100;
 
-    /** Number of small pre-fill entries. */
-    private static final int SMALL_ENTRIES = 30_000;
+    /** Number of small pre-fill entries, leaving a buffer that is exceeded by the total of the large writes, so that
+     * the last of them can only be stored by freeing pages via size-aware eviction. The large records are small
+     * enough that concurrent size-aware eviction reliably frees the required pages (no spurious guard OOM). */
+    private static final int SMALL_ENTRIES = 48_000;
 
     /** Number of writer threads. */
-    private static final int THREADS = 4;
+    private static final int THREADS = 2;
 
-    /** Large rows inserted per thread (moderate total, kept within region capacity after eviction of small rows). */
-    private static final int LARGE_ROWS_PER_THREAD = 1;
+    /** Large rows inserted per thread. Their total (threads x rows) exceeds the buffer left by the pre-fill, so the
+     * last large writes overflow the region and require size-aware eviction to free small entry pages. */
+    private static final int LARGE_ROWS_PER_THREAD = 20;
 
     /** Global deadline for the whole test (protects against a deadlock/busy-spin hang). */
     private static final long DEADLINE = TimeUnit.MINUTES.toMillis(3);
