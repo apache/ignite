@@ -231,7 +231,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
-        boolean arrayVals = cacheName.endsWith("Array");
+        boolean arrVals = cacheName.endsWith("Array");
 
         for (int i = 0; i < 100; i++) {
             BinaryObject binaryVal = binaryCache.get(i);
@@ -244,7 +244,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
                     info("Can not execute toString() on class " + binaryVal.type().typeName());
                 }
 
-            if (!arrayVals)
+            if (!arrVals)
                 assertEquals(binaryVal.type().typeName(), valClsName);
 
             boolean catchEx = false;
@@ -267,7 +267,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
             assertNotNull(personVal);
 
-            if (!arrayVals)
+            if (!arrVals)
                 assertTrue(personVal.getClass().getName().equals(valClsName));
             else {
                 assertTrue(personVal.getClass().isArray());
