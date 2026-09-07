@@ -189,6 +189,52 @@ The new SQL engine mostly inherits data manipulation language (DML) statements s
 
 In most cases, statement syntax is compliant with the old SQL engine. But there are still some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note the `MERGE` statement syntax has changed.
 
+=== Recursive CTEs
+
+The Calcite-based SQL engine supports recursive common table expressions (CTEs) that use `WITH RECURSIVE` and `UNION ALL`.
+Recursive CTEs can be used to express hierarchical traversals, graph-style parent-child walks, and sequence generation queries.
+
+[source,sql]
+----
+WITH RECURSIVE employee_hierarchy (id, manager_id, name, depth) AS (
+    SELECT id, manager_id, name, 0
+    FROM employee
+    WHERE manager_id IS NULL
+
+    UNION ALL
+
+    SELECT e.id, e.manager_id, e.name, h.depth + 1
+    FROM employee e
+    JOIN employee_hierarchy h ON e.manager_id = h.id
+)
+SELECT id, manager_id, name, depth
+FROM employee_hierarchy
+ORDER BY depth, id;
+----
+
+The recursive part can reference the recursive CTE more than once and can contain multiple recursive branches.
+`UNION DISTINCT` recursive CTEs are not supported.
+
+Recursive CTE execution keeps the recursive delta on the query coordinator.
+The delta memory is included into the Calcite query memory quota. See <<memory-quotas>> for details about memory quota configuration.
+
+To protect the cluster from accidentally unbounded recursion, Ignite limits the number of recursive CTE iterations to `100` by default.
+You can change the limit with the `sql.calcite.recursiveCteIterationLimit` distributed property. A negative value disables the limit.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name sql.calcite.recursiveCteIterationLimit --val 1000
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property set --name sql.calcite.recursiveCteIterationLimit --val 1000
+----
+--
+
 === Transactions
 
 The Calcite-based SQL engine supports SQL savepoint commands for explicit transactions. See link:sql-reference/transactions[Transactions, window=_blank] for syntax and usage details.
@@ -310,7 +356,7 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 
 |`SHA1`
 |`SHA1(string)`
-|Returns the SHA-1 hash of a string as a hexadecimal string.
+|Returns the SHA-1 hash of a string.
 
 |`SUBSTRING`
 |`SUBSTRING(string FROM start [FOR length])`
@@ -1058,7 +1104,7 @@ It is allowed to define several hints for the same relation operator. To use sev
 Example:
 [source, SQL]
 ----
-SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 WHERE V3=? GROUP BY V3
+SELECT /*+ NO_INDEX, EXPAND_DISTINCT_AGG */ SUM(DISTINCT V1), AVG(DISTINCT V2) FROM TBL1 GROUP BY V3
 ----
 
 ==== Hint parameters
@@ -1072,7 +1118,7 @@ Example:
 ----
 SELECT /*+ FORCE_INDEX(TBL1_IDX2,TBL2_IDX1) */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
 
-SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, TBL2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
+SELECT /*+ FORCE_INDEX('TBL2_idx1') */ T1.V1, T2.V1 FROM TBL1 T1, T2 T2 WHERE T1.V1 = T2.V1 AND T1.V2 > ? AND T2.V2 > ?;
 ----
 
 === Hint scope
