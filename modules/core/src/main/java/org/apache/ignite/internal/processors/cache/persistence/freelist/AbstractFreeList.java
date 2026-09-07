@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
+import org.apache.ignite.internal.processors.cache.persistence.evict.PageAbstractEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
@@ -97,6 +98,25 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /**
+     * Upper bound on consecutive eviction attempts that free no page before falling back to raw page allocation
+     * (which throws an {@link org.apache.ignite.internal.mem.IgniteOutOfMemoryException} when the region is full).
+     * Guards against an unbounded busy-spin when eviction cannot free anything (e.g. all entries are locked).
+     */
+    private static final int MAX_CONSECUTIVE_DEMAND_EVICTIONS = 100;
+
+    /**
+     * Region capacity in pages ({@code maxSize / systemPageSize}) scaled by the eviction threshold. While the number
+     * of loaded pages is below this bound the region is comfortably under-utilized, so a need for a fresh page is
+     * satisfied by growing the region (allocating a new page) instead of evicting a live entry. Once the region is at
+     * or above the eviction-threshold point it is considered effectively full for a single "new page" demand, and the
+     * free list falls back to eviction to recycle existing pages (closing the TOCTOU gap between a size-aware reserve
+     * in RowStore.addRow and the actual page consumption). A raw compare against the full capacity is insufficient
+     * because a small fraction of pages is consumed by non-data structures, so the region cannot grow all the way to
+     * {@code maxSize / systemPageSize}.
+     */
+    private final long maxGrowPages;
 
     /** Page list cache limit. */
     private final AtomicLong pageListCacheLimit;
@@ -465,6 +485,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
+        maxGrowPages = (long)(dataRegion.config().getMaxSize() / (double)pageMem.systemPageSize()
+            * dataRegion.config().getEvictionThreshold());
+
         assert U.isPow2(pageSize) : "Page size must be a power of 2: " + pageSize;
         assert U.isPow2(BUCKETS);
         assert BUCKETS <= pageSize : pageSize;
@@ -706,7 +729,18 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long pageId = takePage(row.size() - written, row, statHolder);
 
         if (pageId == 0L) {
-            pageId = allocateDataPage(row.partition());
+            // The steady-state pool of empty pages is exhausted. If the region is comfortably below the eviction
+            // threshold, satisfy the demand by growing the region (allocating a fresh page) rather than evicting a live
+            // entry: eviction would otherwise thrash live entries merely because the steady-state pool is momentarily
+            // drained (e.g. while initially filling the region). Once the region reaches the eviction-threshold point,
+            // it is effectively full for a single fresh page, so we fall back to (non-blocking) eviction and retake,
+            // which closes the TOCTOU gap between a size-aware reserve performed in RowStore.addRow and the actual
+            // consumption of pages here: pages freed by a concurrent eviction can then be reused instead of a spurious
+            // raw OOM.
+            if (pageMem.loadedPages() < maxGrowPages)
+                pageId = allocateDataPage(row.partition());
+            else
+                pageId = evictAndTakePage(row, row.size() - written, statHolder);
 
             initIo = row.ioVersions().latest();
         }
@@ -716,6 +750,48 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         assert written != FAIL_I; // We can't fail here.
 
         return written;
+    }
+
+    /**
+     * Attempts to free a page through eviction and retake a page of the given size from the free list, repeating up
+     * to {@link #MAX_CONSECUTIVE_DEMAND_EVICTIONS} times. Falls back to a raw page allocation (which throws an
+     * {@link org.apache.ignite.internal.mem.IgniteOutOfMemoryException} when the region is over capacity) once eviction
+     * stops freeing pages.
+     *
+     * @param row Row to write.
+     * @param size Required free space on the page.
+     * @param statHolder Statistics holder to track IO operations.
+     * @return Page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long evictAndTakePage(T row, int size, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        for (int i = 0; i < MAX_CONSECUTIVE_DEMAND_EVICTIONS; i++) {
+            evictDataPageSafe();
+
+            memMetrics.updateEvictionRate();
+
+            long pageId = takePage(size, row, statHolder);
+
+            if (pageId != 0L)
+                return pageId;
+        }
+
+        return allocateDataPage(row.partition());
+    }
+
+    /**
+     * Evicts a single data page, acquiring entry locks non-blockingly when the tracker supports it. The size-aware
+     * single-row insert path can invoke this while the current thread already holds the entry lock of the row being
+     * inserted, so a blocking eviction of another entry would risk a lock-ordering deadlock. Mirrors the non-blocking
+     * eviction used by {@code IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert}.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void evictDataPageSafe() throws IgniteCheckedException {
+        if (evictionTracker instanceof PageAbstractEvictionTracker)
+            ((PageAbstractEvictionTracker)evictionTracker).evictDataPageNonBlocking();
+        else
+            evictionTracker.evictDataPage();
     }
 
     /**

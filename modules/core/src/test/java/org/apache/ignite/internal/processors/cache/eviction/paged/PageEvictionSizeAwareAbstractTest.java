@@ -49,8 +49,11 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
     /** Partition count (kept low so that index-tree structures do not exhaust the region). */
     private static final int PARTITIONS = 32;
 
-    /** Record size: chosen to be much larger than {@code emptyPagesPoolSize} pages. */
-    private static final int RECORD_SIZE = 4 * 1024 * 1024;
+    /** Record size: chosen so that a single row requires more pages than are left free when the region is kept at the
+     * eviction threshold ({@code (1 - threshold) * totalPages}). This guarantees a large put cannot take the fast
+     * path of {@code ensureFreeSpaceForInsert} and must actually run the size-aware eviction reserve
+     * ({@code ensureFreeSpaceForEviction}), which is the scenario these tests are meant to cover. */
+    private static final int RECORD_SIZE = 32 * 1024 * 1024;
 
     /** Empty pages pool size. */
     private static final int POOL_SIZE = 100;

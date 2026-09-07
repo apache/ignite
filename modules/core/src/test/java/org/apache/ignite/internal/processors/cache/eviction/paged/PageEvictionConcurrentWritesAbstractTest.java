@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -118,6 +119,8 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
 
         AtomicLong errors = new AtomicLong();
 
+        AtomicReference<Throwable> firstErr = new AtomicReference<>();
+
         CountDownLatch startLatch = new CountDownLatch(1);
 
         long deadline = System.currentTimeMillis() + DEADLINE;
@@ -137,6 +140,8 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
                 catch (Throwable e) {
                     errors.incrementAndGet();
 
+                    firstErr.compareAndSet(null, e);
+
                     log.error("Unexpected error in writer thread", e);
                 }
             }, "paged-writer-" + i);
@@ -146,14 +151,26 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
 
         startLatch.countDown();
 
+        long start = System.currentTimeMillis();
+
         for (Thread t : threads)
             t.join(Math.max(1, deadline - System.currentTimeMillis()));
 
         // The core assertion of this deadlock test: every writer must have completed (no thread is stuck waiting on
         // an entry lock held by size-aware eviction running under another entry lock).
+        for (Thread t : threads) {
+            if (t.isAlive()) {
+                log.error("Writer thread " + t.getName() + " is still alive after " +
+                    (System.currentTimeMillis() - start) + "ms, state=" + t.getState());
+
+                for (StackTraceElement frame : t.getStackTrace())
+                    log.error("  at " + frame);
+            }
+        }
+
         for (Thread t : threads)
             assertFalse("Writer thread " + t.getName() + " did not finish (possible deadlock)", t.isAlive());
 
-        assertEquals("Writer threads reported errors", 0, errors.get());
+        assertEquals("Writer threads reported errors, reason: " + firstErr.get(), 0, errors.get());
     }
 }
