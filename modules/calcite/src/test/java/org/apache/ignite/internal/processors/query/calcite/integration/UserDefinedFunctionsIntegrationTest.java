@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
@@ -549,22 +550,47 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .setSqlSchema("PUBLIC")
             .setSqlFunctionClasses(PrimitiveFunctionsLibrary.class));
 
-        Object[] values = {true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d, 'a'};
+        Object[] values = {true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d};
 
-        assertQuery("SELECT checkPrimitiveTypes(?, ?, ?, ?, ?, ?, ?, ?)")
+        assertQuery("SELECT checkPrimitiveTypes(?, ?, ?, ?, ?, ?, ?)")
             .withParams(values)
             .returns(true)
             .check();
 
         assertQuery("SELECT primitiveBoolean(), primitiveByte(), primitiveShort(), primitiveInt(), "
-            + "primitiveLong(), primitiveFloat(), primitiveDouble(), primitiveChar()")
-            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d, "a")
+            + "primitiveLong(), primitiveFloat(), primitiveDouble()")
+            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d)
             .check();
 
-        assertQuery("SELECT * FROM primitiveTable(?, ?, ?, ?, ?, ?, ?, ?)")
+        assertQuery("SELECT * FROM primitiveTable(?, ?, ?, ?, ?, ?, ?)")
             .withParams(values)
-            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d, "a")
+            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testBoxedFunctionArguments() {
+        client.getOrCreateCache(new CacheConfiguration<>("boxed-argument-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BoxedArgumentsFunctionsLibrary.class));
+
+        String[] literals = {"-1", "CAST(-1 AS BIGINT)", "CAST(-1 AS REAL)", "CAST(-1 AS DOUBLE)"};
+        Object[] values = {-1, -1L, -1.0f, -1.0d};
+
+        for (int i = 0; i < literals.length; i++) {
+            String args = String.join(", ", Collections.nCopies(3, literals[i]));
+            Object val = values[i];
+
+            assertQuery("SELECT checkBoxedArguments(" + args + ")").returns(true).check();
+            assertQuery("SELECT checkBoxedArguments(?, ?, ?)").withParams(val, val, val).returns(true).check();
+
+            assertQuery("SELECT * FROM boxedArgumentsTable(" + args + ")").returns(val, val, val).check();
+            assertQuery("SELECT * FROM boxedArgumentsTable(?, ?, ?)")
+                .withParams(val, val, val)
+                .returns(val, val, val)
+                .check();
+        }
     }
 
     /** */
@@ -649,6 +675,25 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                     assertEquals("Unexpected value type at index " + i, exp[i].getClass(), actual.getClass());
                     assertEqualsArraysAware("Unexpected value at index " + i, exp[i], actual);
                 }
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testSerializableTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("serializable-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(SerializableFunctionsLibrary.class));
+
+        assertQuery("SELECT * FROM serializableTableValues()")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(2, rows.get(0).size());
+                assertEquals(Date.class, rows.get(0).get(0).getClass());
+                assertEquals(Date.valueOf("2020-01-01"), rows.get(0).get(0));
+                assertEquals(byte[].class, rows.get(0).get(1).getClass());
+                assertEqualsArraysAware(new byte[] {1, 2, 3}, rows.get(0).get(1));
             })
             .check();
     }
@@ -787,7 +832,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             4L,
             5.0f,
             6.0d,
-            'a',
             temporalValues[0],
             temporalValues[1],
             temporalValues[2],
@@ -1233,11 +1277,10 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             int intVal,
             long longVal,
             float floatVal,
-            double doubleVal,
-            char charVal
+            double doubleVal
         ) {
             return booleanVal && byteVal == 1 && shortVal == 2 && intVal == 3 && longVal == 4
-                && floatVal == 5.0f && doubleVal == 6.0d && charVal == 'a';
+                && floatVal == 5.0f && doubleVal == 6.0d;
         }
 
         /** */
@@ -1283,12 +1326,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         }
 
         /** */
-        @QuerySqlFunction
-        public static char primitiveChar() {
-            return 'a';
-        }
-
-        /** */
         @QuerySqlTableFunction(
             columnTypes = {
                 boolean.class,
@@ -1297,8 +1334,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 int.class,
                 long.class,
                 float.class,
-                double.class,
-                char.class
+                double.class
             },
             columnNames = {
                 "BOOLEAN_VALUE",
@@ -1307,8 +1343,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 "INT_VALUE",
                 "LONG_VALUE",
                 "FLOAT_VALUE",
-                "DOUBLE_VALUE",
-                "CHAR_VALUE"
+                "DOUBLE_VALUE"
             }
         )
         public static Iterable<Object[]> primitiveTable(
@@ -1318,12 +1353,35 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             int intVal,
             long longVal,
             float floatVal,
-            double doubleVal,
-            char charVal
+            double doubleVal
         ) {
             return Collections.singletonList(new Object[] {
-                booleanVal, byteVal, shortVal, intVal, longVal, floatVal, doubleVal, charVal
+                booleanVal, byteVal, shortVal, intVal, longVal, floatVal, doubleVal
             });
+        }
+    }
+
+    /** */
+    public static class BoxedArgumentsFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static boolean checkBoxedArguments(Object obj, Number num, Serializable serializable) {
+            return obj.equals(num) && obj.equals(serializable);
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {Object.class, Object.class, Object.class}, columnNames = {"O", "N", "S"})
+        public static Iterable<Object[]> boxedArgumentsTable(Object obj, Number num, Serializable serializable) {
+            return Collections.singletonList(new Object[] {obj, num, serializable});
+        }
+    }
+
+    /** */
+    public static class SerializableFunctionsLibrary {
+        /** */
+        @QuerySqlTableFunction(columnTypes = {Serializable.class, Serializable.class}, columnNames = {"D", "B"})
+        public static Iterable<Object[]> serializableTableValues() {
+            return Collections.singletonList(new Object[] {Date.valueOf("2020-01-01"), new byte[] {1, 2, 3}});
         }
     }
 
@@ -1377,7 +1435,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 Object.class,
                 Object.class,
                 Object.class,
-                Object.class,
                 Object.class
             },
             columnNames = {
@@ -1389,7 +1446,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 "LONG_VALUE",
                 "FLOAT_VALUE",
                 "DOUBLE_VALUE",
-                "CHAR_VALUE",
                 "UTIL_DATE",
                 "SQL_DATE",
                 "SQL_TIME",

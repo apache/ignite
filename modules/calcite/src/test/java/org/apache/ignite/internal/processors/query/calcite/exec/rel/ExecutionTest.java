@@ -17,18 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
+import org.apache.calcite.rel.type.RelRecordType;
+import org.apache.calcite.sql.type.BasicSqlType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.TableFunctionScan;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,6 +77,51 @@ public class ExecutionTest extends AbstractExecutionTest {
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
+    }
+
+    /** */
+    @Test
+    public void testTableFunctionOtherValues() {
+        checkTableFunctionOtherValues(new BasicSqlType(IgniteTypeSystem.INSTANCE, SqlTypeName.OTHER));
+        checkTableFunctionOtherValues(new OtherType(true));
+    }
+
+    /** */
+    private void checkTableFunctionOtherValues(RelDataType colType) {
+        ExecutionContext<Object[]> ctx = executionContext();
+
+        // Bypass type canonization to test both representations of OTHER regardless of the shared type cache state.
+        RelDataType rowType = new RelRecordType(Collections.singletonList(new RelDataTypeFieldImpl("V", 0, colType)));
+
+        Object[] vals = {
+            new byte[] {1, 2, 3},
+            new java.util.Date(0),
+            Date.valueOf("2020-01-01"),
+            Time.valueOf("02:03:04"),
+            Timestamp.valueOf("2020-01-01 02:03:04"),
+            LocalDate.of(2020, 1, 1),
+            LocalTime.of(2, 3, 4),
+            LocalDateTime.of(2020, 1, 1, 2, 3, 4),
+            Duration.ofHours(2),
+            Period.ofMonths(3),
+            null
+        };
+
+        for (Object val : vals) {
+            Object[] row = {val};
+
+            for (Object container : new Object[] {row, Collections.singletonList(val)}) {
+                TableFunctionScan<Object[]> scan = new TableFunctionScan<>(ctx, rowType,
+                    () -> Collections.singletonList(container), ctx.rowHandler().factory(ctx.getTypeFactory(), rowType));
+
+                Object[] res = scan.iterator().next();
+
+                assertNotSame(row, res);
+                assertEquals(1, res.length);
+                assertSame(val, res[0]);
+                assertSame(val, row[0]);
+            }
+        }
     }
 
     /**

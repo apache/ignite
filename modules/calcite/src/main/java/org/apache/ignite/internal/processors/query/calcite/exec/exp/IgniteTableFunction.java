@@ -28,7 +28,6 @@ import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.TableFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -46,9 +45,6 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     /** Column names of the returned table representation. */
     private final List<String> colNames;
 
-    /** */
-    private final List<FunctionParameter> funcParams;
-
     /**
      * Creates user-defined table function holder.
      *
@@ -64,8 +60,6 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
 
         this.colTypes = colTypes;
         this.colNames = Arrays.asList(colNames);
-
-        funcParams = IgniteFunctionParameter.toSql(super.getParameters());
     }
 
     /**
@@ -105,11 +99,6 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
         }
 
         return Iterable.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<FunctionParameter> getParameters() {
-        return funcParams;
     }
 
     /** Resolves collection types without treating user-defined classes as records. */

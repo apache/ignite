@@ -94,8 +94,6 @@ public class TypeUtils {
         LocalTime.class,
         Duration.class,
         Period.class,
-        char.class,
-        Character.class,
         byte[].class
     );
 
@@ -385,8 +383,6 @@ public class TypeUtils {
         }
         else if (storageType == Period.class)
             return (int)((Period)val).toTotalMonths();
-        else if ((storageType == char.class || storageType == Character.class) && val instanceof Character)
-            return val.toString();
         else if (storageType == byte[].class)
             return new ByteString((byte[])val);
         else if (val instanceof Number && storageType != val.getClass()) {
@@ -454,8 +450,6 @@ public class TypeUtils {
             return Duration.ofMillis((Long)val);
         else if (storageType == Period.class && val instanceof Integer)
             return Period.of((Integer)val / 12, (Integer)val % 12, 0);
-        else if ((storageType == char.class || storageType == Character.class) && val instanceof String)
-            return ((String)val).charAt(0);
         else if (storageType == byte[].class && val instanceof ByteString)
             return ((ByteString)val).getBytes();
         else

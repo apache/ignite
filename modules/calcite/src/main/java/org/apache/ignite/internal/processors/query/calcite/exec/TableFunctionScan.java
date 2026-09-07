@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
@@ -85,7 +86,8 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
 
     /** */
     private @Nullable Object convertToInternal(@Nullable Object val, RelDataType type) {
-        if (val == null || type instanceof OtherType)
+        // Preserve objects for both Ignite's custom OTHER type and Calcite's SQL OTHER type.
+        if (val == null || type instanceof OtherType || type.getSqlTypeName() == SqlTypeName.OTHER)
             return val;
 
         Type storageType = ctx.getTypeFactory().getResultClass(type);

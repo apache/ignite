@@ -76,9 +76,6 @@ public class ConverterUtils {
             else if (targetType == Long.class)
                 return Expressions.call(BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL.method, operand);
         }
-        else if (fromType == byte[].class && targetType == ByteString.class)
-            return Expressions.call(BuiltInMethod.BYTE_ARRAY_TO_BYTE_STRING.method, operand);
-
         return operand;
     }
 
@@ -186,7 +183,9 @@ public class ConverterUtils {
 
     /** */
     private static Expression fromInternal(RexToLixTranslator translator, Expression operand, Type targetType) {
-        if (Types.isAssignableFrom(targetType, operand.getType()))
+        // Let the Java method call box compatible primitives instead of generating a reference cast.
+        if (Types.isAssignableFrom(targetType, operand.getType())
+            || Types.isAssignableFrom(targetType, Primitive.box(operand.getType())))
             return operand;
 
         if (!TypeUtils.isConvertableType(targetType))
