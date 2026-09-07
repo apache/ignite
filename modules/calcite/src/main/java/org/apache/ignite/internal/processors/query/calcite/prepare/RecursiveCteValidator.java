@@ -53,7 +53,7 @@ final class RecursiveCteValidator {
 
         withItem.query.accept(finder);
 
-        if (finder.found) {
+        if (finder.nestedSelfReferenceFound) {
             throw new IgniteSQLException(
                 "Unsupported recursive CTE: self-references inside subqueries are not supported",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION
@@ -93,7 +93,7 @@ final class RecursiveCteValidator {
         private boolean insideSubquery;
 
         /** Whether an unsupported reference was found. */
-        private boolean found;
+        private boolean nestedSelfReferenceFound;
 
         /** */
         private RecursiveCteReferenceFinder(
@@ -108,16 +108,16 @@ final class RecursiveCteValidator {
 
         /** {@inheritDoc} */
         @Override public Void visit(SqlCall call) {
-            if (found)
+            if (nestedSelfReferenceFound)
                 return null;
 
-            boolean previous = insideSubquery;
+            boolean wasInsideSubquery = insideSubquery;
 
             insideSubquery |= call.isA(SqlKind.QUERY) && !topLevelQueries.contains(call);
 
             super.visit(call);
 
-            insideSubquery = previous;
+            insideSubquery = wasInsideSubquery;
 
             return null;
         }
@@ -132,7 +132,7 @@ final class RecursiveCteValidator {
 
             if (resolvedNode instanceof SqlWithItemTableRef
                 && ((SqlWithItemTableRef)resolvedNode).getWithItem() == withItem) {
-                found = true;
+                nestedSelfReferenceFound = true;
             }
 
             return null;

@@ -178,6 +178,7 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
             return;
         }
 
+        // Nested recursive unions bind their own scans when registering their sources.
         if (node instanceof RepeatUnionNode)
             return;
 

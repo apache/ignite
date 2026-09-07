@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.Collections;
 import java.util.Iterator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -25,37 +26,24 @@ import static java.util.Objects.requireNonNull;
 
 /** Scan of the current delta owned by the enclosing recursive union. */
 public class RecursiveTableScanNode<Row> extends ScanNode<Row> {
-    /** Late-bound current delta source. */
-    private final RecursiveRows<Row> rows;
+    /** Owning recursive union, bound when its sources are registered. */
+    private RepeatUnionNode<Row> repeatUnion;
 
     /** */
     public RecursiveTableScanNode(ExecutionContext<Row> ctx, RelDataType rowType) {
-        this(ctx, rowType, new RecursiveRows<>());
-    }
-
-    /** */
-    private RecursiveTableScanNode(ExecutionContext<Row> ctx, RelDataType rowType, RecursiveRows<Row> rows) {
-        super(ctx, rowType, rows);
-
-        this.rows = rows;
+        super(ctx, rowType, Collections.emptyList());
     }
 
     /** Binds this scan to the recursive union that owns its current delta. */
     void bind(RepeatUnionNode<Row> repeatUnion) {
-        assert rows.repeatUnion == null;
+        assert this.repeatUnion == null;
 
-        rows.repeatUnion = repeatUnion;
+        this.repeatUnion = requireNonNull(repeatUnion);
     }
 
-    /** Late-bound current delta source. */
-    private static class RecursiveRows<Row> implements Iterable<Row> {
-        /** Owning recursive union. */
-        private RepeatUnionNode<Row> repeatUnion;
-
-        /** {@inheritDoc} */
-        @Override public Iterator<Row> iterator() {
-            return requireNonNull(repeatUnion, "Recursive table scan is not bound to a repeat union")
-                .current().iterator();
-        }
+    /** {@inheritDoc} */
+    @Override protected Iterator<Row> sourceIterator() {
+        return requireNonNull(repeatUnion, "Recursive table scan is not bound to a repeat union")
+            .current().iterator();
     }
 }
