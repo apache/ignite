@@ -40,7 +40,7 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
         ClassLoader ldr = getGarClassLoader();
 
         // Load class from nested JAR file
-        assert ldr.loadClass("org.apache.ignite.compute.ComputeJob") != null;
+        assert ldr.loadClass("org.apache.ignite.spi.deployment.uri.tasks.GarHelloWorldBean") != null;
     }
 
     /**
