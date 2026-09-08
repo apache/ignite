@@ -3699,9 +3699,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter,
         boolean evictOffheap,
-        boolean tryLock)
-        throws IgniteCheckedException {
-
+        boolean tryLock
+    ) throws IgniteCheckedException {
         boolean marked = false;
 
         try {

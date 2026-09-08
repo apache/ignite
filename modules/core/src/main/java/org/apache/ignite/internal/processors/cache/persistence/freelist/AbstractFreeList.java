@@ -706,12 +706,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long pageId = takePage(row.size() - written, row, statHolder);
 
         if (pageId == 0L) {
-            // The steady-state pool of empty pages is exhausted; allocate a fresh page. This path must NOT perform
-            // eviction (evictAndTakePage): it is reached while the row insert is already inside the cache data tree
-            // (BPlusTree.invoke on createRow), so evicting another entry here would recursively modify the same tree
-            // structure concurrently and corrupt it. Size-aware space management for eviction-enabled regions is
-            // handled separately and safely (before the tree operation) in
-            // IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert and the batch insertDataRows loop.
             pageId = allocateDataPage(row.partition());
 
             initIo = row.ioVersions().latest();

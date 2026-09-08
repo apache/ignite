@@ -1247,9 +1247,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Size-aware reserve for an eviction-enabled non-persistent region. Runs eviction until the region has enough
-     * available pages to accommodate the row, or throws {@link IgniteOutOfMemoryException} if the goal is
-     * unreachable / no progress can be made.
+     * Size-aware reserve for an eviction-enabled non-persistent region. Runs eviction until the free list holds
+     * enough real empty pages to accommodate the row, or throws {@link IgniteOutOfMemoryException} if the goal is
+     * unreachable / no progress can be made. Progress is measured against the number of empty pages in the free list
+     * (the only resource a subsequent fragmented write can reliably consume once the region is effectively full); the
+     * region's spare capacity (headroom) is only trusted in the fast path while the region is below the eviction
+     * threshold.
      *
      * @param region Data region.
      * @param regCfg Data region configuration.
@@ -1290,10 +1293,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // The reserve must guarantee that the free list actually holds `requiredPages` REAL empty pages, not merely
         // that the region "as a whole" has apparent headroom. The apparent headroom (totalPages - loadedPages) is a
         // shared, non-exclusive resource: two concurrent inserts may both count on it and then both run out of pages
-        // while the fragmented write is in progress (TOCTOU // raw OOM), because a fresh allocation cannot grow the
+        // while the fragmented write is in progress (TOCTOU / raw OOM), because a fresh allocation cannot grow the
         // region beyond its capacity. Real empty pages already sitting in the free list are the only resource
         // writeSinglePage can reliably consume once the region is effectively full, so the loop below accumulates them
-        // until it has enough.
+        // until it has enough. (The headroom is nonetheless trusted in the fast path below, but only while the region
+        // is below the eviction threshold, i.e. where enough slack is guaranteed not to be exhausted by contention.)
         long emptyPages = freeList.emptyDataPages();
 
         long headroom = totalPages - pageMem.loadedPages();
