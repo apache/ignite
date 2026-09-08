@@ -25,6 +25,7 @@ IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
 JDK_VERSION="${JDK_VERSION:-17}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.13}"
 IMAGE_PREFIX="ducker-ignite-eclipse-temurin"
 
 ###
@@ -130,6 +131,7 @@ while [[ $# -ge 1 ]]; do
         -r|--repeat) REPEAT="$2"; shift 2;;
         --subnet) SUBNET="--subnet $2"; shift 2;;
         --jdk) JDK_VERSION="$2"; shift 2;;
+        --python) PYTHON_VERSION="$2"; shift 2;;
         --image) IMAGE_NAME="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
@@ -138,7 +140,7 @@ done
 
 if [ -z "$IMAGE_NAME" ]; then
     IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
-    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" -p "$PYTHON_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
          "Otherwise build it with 'ducker-ignite build' command"
