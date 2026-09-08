@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.binary.cheap.CheapString;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -747,6 +748,14 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
             out.writeByteArray(strArr);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeCheapString(@Nullable CheapString val) throws BinaryObjectException {
+        out.unsafeEnsure(1 + 4);
+        out.unsafeWriteByte(GridBinaryMarshaller.STRING);
+        out.unsafeWriteInt(val.len);
+        out.writeByteArray(val.arr, val.off, val.len);
     }
 
     /** {@inheritDoc} */

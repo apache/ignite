@@ -42,6 +42,7 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.binary.cheap.CheapString;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -661,7 +662,10 @@ class BinaryClassDescriptor {
                     break;
 
                 case STRING:
-                    writer.writeString((String)obj);
+                    if (obj instanceof CheapString)
+                        writer.writeCheapString((CheapString)obj);
+                    else
+                        writer.writeString((String)obj);
 
                     break;
 

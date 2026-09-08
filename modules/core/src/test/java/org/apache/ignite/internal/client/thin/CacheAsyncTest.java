@@ -369,6 +369,16 @@ public class CacheAsyncTest extends AbstractThinClientTest {
      * Tests normal operation of all async cache APIs.
      */
     @Test
+    public void testCacheGet() throws Exception {
+        // Put.
+        strCache.put(11, "2");
+        assertEquals("2", strCache.get(11));
+    }
+
+    /**
+     * Tests normal operation of all async cache APIs.
+     */
+    @Test
     public void testAsyncCacheOperations() throws Exception {
         // Get.
         strCache.put(1, "1");

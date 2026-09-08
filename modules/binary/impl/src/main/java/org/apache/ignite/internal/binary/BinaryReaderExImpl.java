@@ -1809,7 +1809,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case STRING:
-                obj = BinaryUtils.doReadString(in);
+                obj = BinaryUtils.doReadStringPossiblyCheap(in);
 
                 break;
 

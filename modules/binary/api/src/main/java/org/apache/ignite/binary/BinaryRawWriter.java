@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.binary.cheap.CheapString;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -91,6 +92,12 @@ public interface BinaryRawWriter {
      * @throws BinaryObjectException In case of error.
      */
     public void writeString(@Nullable String val) throws BinaryObjectException;
+
+    /**
+     * @param val Value to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeCheapString(CheapString val);
 
     /**
      * @param val UUID to write.
