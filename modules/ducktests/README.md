@@ -132,9 +132,8 @@ To locally simulate validation matrices across distinct target runtimes (e.g., P
    pyenv install 3.9
    pyenv shell 3.8 3.9
    ```
-3. Install `tox` and run the validation suite:
+3. Run the validation suite:
    ```bash
-   pip install tox
    tox
    tox -r -e codestyle,py3
    ```
@@ -238,6 +237,69 @@ You can target specific cross-product version compatibility combinations inside 
 # Enable JVM Safepoints performance logging
 --global-json '{"safepoint_log_enabled": true}'
 ```
+
+### Demo Mode (Breakpoints)
+
+Scenarios can be frozen at named breakpoints, so a cluster can be shown to an audience in exactly that state and then resumed. Ducktape runs the test inside `ducker01` with stdin closed, so the keyboard lives in a second terminal.
+
+Terminal 1 - run the test with the `demo_pause` global:
+```bash
+./docker/run_tests.sh -n 12 -gj '{"demo_pause": "*"}' \
+  -t ./ignitetest/tests/mdc/partition_resilience_test.py::MdcPartitionResilienceTest.test_mdc_cluster_partition_resilience
+```
+
+Terminal 2 - drive the breakpoints:
+```bash
+python docker/demo_console.py
+```
+
+At every breakpoint the console prints the step, the elapsed time, every service node with its liveness, the live network state (netem delays and partition drops as they are actually applied), and ready-to-paste commands for entering nodes and reading their logs and configs. `Enter` continues, `c` runs the rest unattended, `a` aborts the test.
+
+While paused the cluster keeps running and any network impairment stays in effect, so nodes can be inspected freely:
+```bash
+./docker/ducker-ignite ssh ducker03
+docker exec ducker03 bash -c "tail -n 50 /mnt/service/logs/ignite*.log"
+docker exec ducker03 cat /mnt/service/config/ignite-config.xml
+```
+
+The console is optional - the test communicates through files under `<repository root>/.ducktests-demo`, which is shared with the host by the same bind mount that carries the repository into the containers. Each file is a simple signal - its presence is the command, its content (where any) is the data:
+
+| File | Meaning |
+|------|---------|
+| `paused.txt` | The banner of the breakpoint currently held, human readable. |
+| `paused.json` | The same banner plus run metadata, for the console to read. |
+| `continue-<N>` | Resume breakpoint `N`, where `N` is the number shown in the banner's `PAUSED N` line. The banner itself prints the exact `touch` command to paste. |
+| `continue-all` | Resume and skip every remaining breakpoint. |
+| `abort` | Fail the test and tear down the cluster. |
+
+```bash
+cat .ducktests-demo/paused.txt      # read the banner of the breakpoint currently held
+touch .ducktests-demo/continue-3    # resume breakpoint 3 (the number matches PAUSED 3 in the banner)
+touch .ducktests-demo/continue-all  # resume and skip the remaining breakpoints
+touch .ducktests-demo/abort         # fail the test and tear down
+```
+
+Both sides find that directory on their own, so by default nothing has to be configured. `demo_pause_dir` overrides it - but the two sides name the same directory differently, since the test runs inside `ducker01`, where the repository is mounted at `/opt/ignite-dev`, while the console runs on the host. Override it and the console has to be pointed at the host side of it:
+```bash
+./docker/run_tests.sh -gj '{"demo_pause": "*", "demo_pause_dir": "/opt/ignite-dev/.demo"}' -t ./ignitetest/tests/<some_test.py>
+
+python docker/demo_console.py -d .demo
+```
+
+Breakpoints are added to a test with `self.pause("name", mdc, net)` and cost nothing when the global is absent, which is how they stay in the tests without affecting CI. Run one test at a time in demo mode (no `--max-parallel`): a single control directory holds one breakpoint at a time.
+
+A held test reports nothing back to ducktape, which kills a session it has heard nothing from for `--test-runner-timeout` (30 minutes by default) - and that budget is measured from the construction of the test (setup included), which is deliberately conservative: ducktape's kill timer is actually reset by the last client event before the pause, which fires after setup, so the real window is longer. Breakpoints therefore auto-continue while the runner is still waiting, shortening themselves below `demo_pause_timeout_sec` when there is not enough of the budget left and saying so in the test log. For a demo that needs longer, raise the runner timeout too (milliseconds):
+```bash
+./docker/run_tests.sh -n 12 --test-runner-timeout 7200000 \
+  -gj '{"demo_pause": "*", "demo_pause_timeout_sec": 1800}' \
+  -t ./ignitetest/tests/mdc/partition_resilience_test.py
+```
+
+| Global Parameter Key | Definition | Example Configuration |
+|---------------------|------------|----------------------|
+| **demo_pause** | Which breakpoints stop the scenario. Absent or `false` disables them all (the default); `true` or `"*"` stops at every one; a list or comma separated string stops only at the named ones, matched case insensitively. | ```{"demo_pause": "split-brain,healed"}``` |
+| **demo_pause_timeout_sec** | How long one breakpoint may hold the scenario before it resumes on its own. Default is 600, and it is capped by what is left of `--test-runner-timeout`. | ```{"demo_pause_timeout_sec": 1800}``` |
+| **demo_pause_dir** | Control directory shared with the host, named as the test sees it - inside the containers the repository is `/opt/ignite-dev`. Default is `<repository root>/.ducktests-demo`; anything else has to be passed to the console as well, with `-d` and the host path. | ```{"demo_pause_dir": "/opt/ignite-dev/.demo"}``` |
 
 ### Security Settings
 ```bash
