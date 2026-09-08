@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
@@ -840,10 +841,10 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param pageSize Page size.
      * @param row Row.
      * @param needPayload If modified payload required (to write WAL records).
-     * @return {@code True} if entry is not fragmented.
+     * @return Next page and payload if needed, or {@code null} for last page if no payload needed.
      * @throws IgniteCheckedException If failed.
      */
-    public DataPageUpdateResult updateRowFragment(
+    public @Nullable DataPageUpdateResult updateRowFragment(
         PageMemory pageMem,
         long pageAddr,
         int itemId,
@@ -864,12 +865,11 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             // Different format is used for not fragmented row, can't use writeFragmentData and unify method.
             writeRowData(pageAddr, dataOff, rowSize, row, false);
 
-            byte[] modifiedPayload = null;
+            if (!needPayload)
+                return null;
 
-            if (needPayload) {
-                modifiedPayload = new byte[rowSize];
-                PageUtils.getBytes(pageAddr, dataOff + PAYLOAD_LEN_SIZE, modifiedPayload, 0, rowSize);
-            }
+            byte[] modifiedPayload = new byte[rowSize];
+            PageUtils.getBytes(pageAddr, dataOff + PAYLOAD_LEN_SIZE, modifiedPayload, 0, rowSize);
 
             return new DataPageUpdateResult(rowSize, modifiedPayload, 0L);
         }
@@ -897,8 +897,12 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
                 modifiedPayload = buf.array();
             }
         }
-        else
+        else {
             writeFragmentData(row, pageBuf, written, payloadSize);
+
+            if (nextLink == 0L)
+                return null;
+        }
 
         return new DataPageUpdateResult(payloadSize, modifiedPayload, nextLink);
     }

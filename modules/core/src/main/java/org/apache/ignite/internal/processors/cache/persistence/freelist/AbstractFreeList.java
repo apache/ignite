@@ -200,7 +200,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             evictionTracker.touchPage(pageId);
 
-            if (updateRes.modifiedPayload() != null && walEnabled && needWalDeltaRecord(pageId, page, walPlc)) {
+            if (updateRes != null && updateRes.modifiedPayload() != null
+                && walEnabled && needWalDeltaRecord(pageId, page, walPlc)) {
                 wal.log(new DataPageUpdateRecord(
                     cacheId,
                     pageId,
@@ -208,9 +209,16 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     updateRes.modifiedPayload()));
             }
 
-            fragment.modified = !walEnabled || updateRes.modifiedPayload() != null;
-            fragment.nextLink = updateRes.nextLink();
-            fragment.written += updateRes.payloadSize();
+            if (updateRes != null) {
+                fragment.modified = !walEnabled || updateRes.modifiedPayload() != null;
+                fragment.nextLink = updateRes.nextLink();
+                fragment.written += updateRes.payloadSize();
+            }
+            else {
+                fragment.modified = true;
+                fragment.nextLink = 0L;
+                fragment.written = fragment.row.size();
+            }
 
             return fragment;
         }
@@ -895,7 +903,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PartiallyWritten updateRes = write(pageId, updateFragmentedRow, new PartiallyWritten(newRow), itemId,
                 null, statHolder);
 
-            while (updateRes.written < newRow.size()) {
+            while (updateRes.written < size) {
                 pageId = PageIdUtils.pageId(updateRes.nextLink);
                 itemId = PageIdUtils.itemId(updateRes.nextLink);
 
@@ -904,8 +912,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             statHolder.trackPageRemoveData(size);
             statHolder.trackPageInsertData(size);
 
-            assert updateRes.written == newRow.size() :
-                "Unexpected written row size [written=" + updateRes.written + ", rowSize=" + newRow.size() + ']';
+            assert updateRes.written == size :
+                "Unexpected written row size [written=" + updateRes.written + ", rowSize=" + size + ']';
 
             assert updateRes.nextLink == 0 :
                 "Unexpected next page link [nextLink=" + Long.toHexString(updateRes.nextLink) + ']';
