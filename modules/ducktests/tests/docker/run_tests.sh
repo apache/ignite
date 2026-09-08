@@ -148,7 +148,7 @@ while [[ $# -ge 1 ]]; do
 done
 
 if [ -z "$IMAGE_NAME" ]; then
-    IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
+    IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION-py$PYTHON_VERSION"
     "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" -p "$PYTHON_VERSION" $NO_CACHE_FLAG $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \

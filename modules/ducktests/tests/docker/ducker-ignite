@@ -66,8 +66,10 @@ Usage: ${script_path} [command] [options]
 help|-h|--help
     Display this help message
 
-build [-j|--jdk JDK] [-p|--python PYTHON_VERSION] [-c|--context] [image-name]
+build [-j|--jdk JDK] [-p|--python PYTHON_VERSION] [--no-cache] [-c|--context] [image-name]
     Build a docker image that represents ducker node. Image is tagged with specified ${image_name}.
+    If the image name is omitted, it defaults to ${default_image_name}-<jdk>-py<python-version>,
+    so that images built with different JDK or Python versions do not overwrite each other.
 
     If --jdk is specified then we will use this argument as base image for ducker docker images.
     Otherwise ${default_jdk} is used.
@@ -308,7 +310,7 @@ ducker_build() {
     [[ -n "${jdk_version}" ]] || jdk_version="${default_jdk}"
     [[ -n "${python_version}" ]] || python_version="${default_python}"
     [[ -n "${no_cache}" ]] || no_cache="${default_no_cache}"
-    [[ -n "${image_name}" ]] || image_name="${default_image_name}-${jdk_version/:/-}"
+    [[ -n "${image_name}" ]] || image_name="${default_image_name}-${jdk_version/:/-}-py${python_version}"
     [[ -n "${docker_context}" ]] || docker_context="${ducker_dir}"
 
     ducker_build_image "${docker_context}" "${image_name}"
@@ -381,7 +383,7 @@ ducker_up() {
         esac
     done
     [[ -n "${num_nodes}" ]] || num_nodes="${default_num_nodes}"
-    [[ -n "${image_name}" ]] || image_name="${default_image_name}-${default_jdk/:/-}"
+    [[ -n "${image_name}" ]] || image_name="${default_image_name}-${default_jdk/:/-}-py${default_python}"
     [[ "${num_nodes}" =~ ^-?[0-9]+$ ]] || \
         die "ducker_up: the number of nodes must be an integer."
     [[ "${num_nodes}" -gt 0 ]] || die "ducker_up: the number of nodes must be greater than 0."
@@ -675,7 +677,7 @@ ducker_compare() {
         esac
     done
 
-    [ -n "${image_name}" ] || image_name="${default_image_name}-${default_jdk/:/-}"
+    [ -n "${image_name}" ] || image_name="${default_image_name}-${default_jdk/:/-}-py${default_python}"
 
     cmp -s "${ducker_dir}/build/image_${image_name}.build" "${ducker_dir}/build/image_id.up"
     local ret="$?"
