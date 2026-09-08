@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -55,13 +56,21 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     public RepeatUnionNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        RecursiveCteState<Row> state,
         int iterationLimit
     ) {
         super(ctx, rowType);
 
-        this.state = state;
+        state = new RecursiveCteState<>(ctx);
         this.iterationLimit = iterationLimit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(List<Node<Row>> sources) {
+        assert sources.size() == 2;
+
+        bindRecursiveScans(sources.get(RECURSIVE_SOURCE));
+
+        super.register(sources);
     }
 
     /** {@inheritDoc} */
@@ -134,6 +143,11 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         return this;
     }
 
+    /** Current delta visible to recursive scans owned by this union. */
+    Iterable<Row> current() {
+        return state.current();
+    }
+
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
         curSrc = SEED_SOURCE;
@@ -153,6 +167,24 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** */
     private Node<Row> source() {
         return sources().get(curSrc);
+    }
+
+    /** Binds recursive scans in this union's recursive term without crossing nested recursive unions. */
+    private void bindRecursiveScans(Node<Row> node) {
+        if (node instanceof RecursiveTableScanNode) {
+            ((RecursiveTableScanNode<Row>)node).bind(this);
+
+            return;
+        }
+
+        // Nested recursive unions bind their own scans when registering their sources.
+        if (node instanceof RepeatUnionNode)
+            return;
+
+        if (!F.isEmpty(node.sources())) {
+            for (Node<Row> src : node.sources())
+                bindRecursiveScans(src);
+        }
     }
 
     /** Starts collecting and requests rows from the active input. */

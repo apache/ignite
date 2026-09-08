@@ -57,7 +57,6 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
         if (!rel.all)
             throw unsupported("only UNION ALL is supported");
 
-        String stateId = RecursiveCteUtils.stateId(planner, table);
         int iterationLimit = planner.getContext().unwrap(PlanningContext.class).recursiveCteIterationLimit();
 
         RelNode seed = unwrapSpool(rel.getSeedRel(), "seed");
@@ -72,7 +71,6 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
             traits,
             convert(seed, traits),
             convert(iterative, traits),
-            stateId,
             iterationLimit
         );
     }
