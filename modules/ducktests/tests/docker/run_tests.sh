@@ -25,7 +25,7 @@ IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
 JDK_VERSION="${JDK_VERSION:-17}"
-PYTHON_VERSION="${PYTHON_VERSION:-3.13}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.11}"
 IMAGE_PREFIX="ducker-ignite-eclipse-temurin"
 
 ###
@@ -85,7 +85,7 @@ The options are as follows:
     Set jdk version to build, default is 17
 
 --python
-    Set python version to build, default is 3.13
+    Set python version to build, default is 3.11
 
 --no-cache
     Rebuild the Docker image from scratch without using cached layers.
