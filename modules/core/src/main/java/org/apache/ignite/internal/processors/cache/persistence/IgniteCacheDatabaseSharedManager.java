@@ -1275,7 +1275,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // Maximum payload bytes that a single data page can hold for a fragmented row.
         long pagePayload = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
-        // Pages required to place the row, computed from the actual data-page payload capacity.
+        // Pages the row will actually occupy once written, and which the free list must be able to hand out on
+        // demand during the fragmented write.
         long requiredPages = (dataRowSize + pagePayload - 1) / pagePayload;
 
         // If the row fits into the configured steady-state empty-pages pool, normal threshold eviction is enough.
@@ -1286,25 +1287,45 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (requiredPages > totalPages)
             throw outOfMemory(regCfg);
 
-        long availablePages = (totalPages - pageMem.loadedPages()) + freeList.emptyDataPages();
+        // The reserve must guarantee that the free list actually holds `requiredPages` REAL empty pages, not merely
+        // that the region "as a whole" has apparent headroom. The apparent headroom (totalPages - loadedPages) is a
+        // shared, non-exclusive resource: two concurrent inserts may both count on it and then both run out of pages
+        // while the fragmented write is in progress (TOCTOU // raw OOM), because a fresh allocation cannot grow the
+        // region beyond its capacity. Real empty pages already sitting in the free list are the only resource
+        // writeSinglePage can reliably consume once the region is effectively full, so the loop below accumulates them
+        // until it has enough.
+        long emptyPages = freeList.emptyDataPages();
 
-        // Fast path: enough pages are already available, no eviction is needed.
-        if (availablePages >= requiredPages)
+        long headroom = totalPages - pageMem.loadedPages();
+
+        // The region is "under pressure" once its loaded pages reach the eviction threshold: beyond that point a fresh
+        // allocation can no longer be trusted to grow the region, because concurrent writers may exhaust the shared
+        // headroom before this thread's fragmented write runs (TOCTOU raw OOM). Below the threshold the region has
+        // genuine slack, so a row that fits into the combined spare space is satisfied by growing the region rather
+        // than entering the eviction loop, which would otherwise destroy evictable entries (e.g. live short-TTL
+        // entries that must survive) merely to accumulate empty pages that the slack could have absorbed.
+        long pagesThreshold = (long)(totalPages * regCfg.getEvictionThreshold());
+
+        boolean underPressure = pageMem.loadedPages() >= pagesThreshold;
+
+        // Fast path: the row can be satisfied without eviction when (a) the free list already holds enough real empty
+        // pages, or (b) the region is not under pressure and has enough spare space to grow into.
+        if (emptyPages >= requiredPages || (!underPressure && emptyPages + headroom >= requiredPages))
             return;
 
         PageEvictionTracker evictionTracker = region.evictionTracker();
 
-        // Evict data pages until enough free space is available. Progress is measured against the overall available
-        // space, so pages freed concurrently (e.g. by TTL cleanup) also count as progress. The loop is bounded to
-        // avoid an infinite busy-spin when there is nothing more to evict. Eviction here runs while the current
-        // thread may already hold entry locks (single-row insertion), so entries whose locks are contended are
+        // Evict data pages until the free list holds enough real empty pages. Progress is measured against the
+        // number of empty pages, so pages freed concurrently (e.g. by TTL cleanup) also count as progress. The loop
+        // is bounded to avoid an infinite busy-spin when there is nothing more to evict. Eviction here runs while the
+        // current thread may already hold entry locks (single-row insertion), so entries whose locks are contended are
         // skipped (non-blocking) rather than blocked upon, to avoid a lock-ordering deadlock.
         final int maxAttemptsWithoutProgress = 300;
 
-        long bestAvailable = availablePages;
+        long bestEmptyPages = emptyPages;
         int attemptsWithoutProgress = 0;
 
-        while (bestAvailable < requiredPages) {
+        while (bestEmptyPages < requiredPages) {
             if (region.metrics().onPageEvictionsStarted()) {
                 U.warn(log, "Page-based evictions started." +
                     " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
@@ -1314,22 +1335,26 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             region.metrics().updateEvictionRate();
 
-            long curAvailable = (totalPages - pageMem.loadedPages()) + freeList.emptyDataPages();
+            long curEmptyPages = freeList.emptyDataPages();
 
-            // Progress is measured against the best available space observed so far. Any iteration that does not
-            // establish a new best (including drops caused by concurrent inserts consuming pages) counts toward the
-            // no-progress guard, so the loop is bounded: if eviction cannot outpace concurrent consumption within
-            // a fixed number of attempts, an OOM is thrown rather than busy-spinning indefinitely.
-            if (curAvailable > bestAvailable) {
-                bestAvailable = curAvailable;
+            // Progress is measured against the best number of empty pages observed so far. Any iteration that does
+            // not establish a new best (including drops caused by concurrent inserts consuming pages) counts toward
+            // the no-progress guard, so the loop is bounded: if eviction cannot outpace concurrent consumption within
+            // a fixed number of attempts, we stop rather than busy-spinning indefinitely.
+            if (curEmptyPages > bestEmptyPages) {
+                bestEmptyPages = curEmptyPages;
 
                 attemptsWithoutProgress = 0;
             }
             else
                 attemptsWithoutProgress++;
 
-            if (attemptsWithoutProgress >= maxAttemptsWithoutProgress)
+            if (attemptsWithoutProgress >= maxAttemptsWithoutProgress) {
+                // No progress after many eviction attempts. The region is under pressure (fast path was already
+                // insufficient: real empty pages are below requiredPages), and eviction can neither outpace concurrent
+                // consumption nor free enough space. Throw OOM rather than busy-spinning indefinitely.
                 throw outOfMemory(regCfg);
+            }
         }
     }
 
