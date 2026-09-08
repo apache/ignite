@@ -31,6 +31,8 @@ IMAGE_PREFIX="ducker-ignite-eclipse-temurin"
 ###
 # DuckerTest parameters are specified with options to the script
 
+NO_CACHE_FLAG=""
+
 # Path to ducktests
 TC_PATHS="./ignitetest/"
 # Global parameters to pass to ducktape util with --global param
@@ -82,6 +84,12 @@ The options are as follows:
 --jdk
     Set jdk version to build, default is 17
 
+--python
+    Set python version to build, default is 3.13
+
+--no-cache
+    Rebuild the Docker image from scratch without using cached layers.
+
 --image
     Set custom docker image to run tests on.
 
@@ -132,6 +140,7 @@ while [[ $# -ge 1 ]]; do
         --subnet) SUBNET="--subnet $2"; shift 2;;
         --jdk) JDK_VERSION="$2"; shift 2;;
         --python) PYTHON_VERSION="$2"; shift 2;;
+        --no-cache) NO_CACHE_FLAG="--no-cache"; shift;;
         --image) IMAGE_NAME="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
@@ -140,7 +149,7 @@ done
 
 if [ -z "$IMAGE_NAME" ]; then
     IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
-    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" -p "$PYTHON_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" -p "$PYTHON_VERSION" $NO_CACHE_FLAG $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
          "Otherwise build it with 'ducker-ignite build' command"
