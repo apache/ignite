@@ -1289,7 +1289,7 @@ public class BinaryUtils {
     }
 
     /** @return Value. */
-    static Object doReadStringPossiblyCheap(BinaryInputStream in) {
+    public static Object doReadStringPossiblyCheap(BinaryInputStream in) {
         if (!OperationContext.get(Marshallers.USE_CHEAP_STR))
             return doReadString(in);
 
@@ -1313,7 +1313,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    static String doReadString(BinaryInputStream in) {
+    public static String doReadString(BinaryInputStream in) {
         if (!in.hasArray()) {
             byte[] arr = doReadByteArray(in);
 
