@@ -180,6 +180,18 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
         }
     }
 
+    /** DISTINCT semantics survive conversion and plan serialization. */
+    @Test
+    public void testRecursiveDistinctPlan() throws Exception {
+        for (String union : new String[] {"UNION", "UNION DISTINCT"}) {
+            assertPlan("WITH RECURSIVE numbers(n) AS (SELECT 1 " + union +
+                " SELECT n FROM numbers) SELECT n FROM numbers",
+                new IgniteSchema(DEFAULT_SCHEMA), isInstanceOf(IgniteRepeatUnion.class)
+                    .and(rel -> !rel.all)
+                    .and(hasDistribution(IgniteDistributions.single())));
+        }
+    }
+
     /** A replicated source can be read on the coordinator without an exchange. */
     @Test
     public void testRecursiveCteWithReplicatedTable() throws Exception {

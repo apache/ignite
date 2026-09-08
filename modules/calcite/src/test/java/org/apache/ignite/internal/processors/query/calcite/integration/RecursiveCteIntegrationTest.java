@@ -244,19 +244,41 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
-    /** */
+    /** Both DISTINCT spellings eliminate duplicates in the seed and across recursive iterations. */
     @Test
-    public void testRecursiveCteWithDistinctUnionIsRejected() {
-        assertThrows(
-            "WITH RECURSIVE numbers(n) AS (" +
-                "SELECT 1 " +
-                "UNION " +
-                "SELECT n + 1 FROM numbers WHERE n < 3" +
-            ") " +
-            "SELECT n FROM numbers",
-            IgniteSQLException.class,
-            "only UNION ALL is supported"
-        );
+    public void testRecursiveCteWithDistinctUnion() {
+        for (String union : new String[] {"UNION", "UNION DISTINCT"}) {
+            assertQuery("WITH RECURSIVE numbers(n) AS (" +
+                "SELECT * FROM (VALUES (1), (1), (2)) " + union + " " +
+                "SELECT MOD(n, 3) + 1 FROM numbers" +
+                ") SELECT n FROM numbers")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+        }
+    }
+
+    /** NULLs compare equal and all columns participate in duplicate elimination. */
+    @Test
+    public void testRecursiveDistinctNulls() {
+        assertQuery("WITH RECURSIVE numbers(n, label) AS (" +
+            "SELECT * FROM (VALUES (1, CAST(NULL AS VARCHAR)), (1, CAST(NULL AS VARCHAR)), (1, 'x')) " +
+            "UNION DISTINCT SELECT n, label FROM numbers" +
+            ") SELECT n, label FROM numbers")
+            .returns(1, null)
+            .returns(1, "x")
+            .check();
+    }
+
+    /** Duplicate-only input batches must keep requesting rows until the source ends. */
+    @Test
+    public void testRecursiveDistinctLargeDuplicateBatch() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+            "SELECT 1 UNION SELECT n FROM numbers CROSS JOIN TABLE(SYSTEM_RANGE(1, 10000))" +
+            ") SELECT n FROM numbers")
+            .returns(1)
+            .check();
     }
 
     /** */

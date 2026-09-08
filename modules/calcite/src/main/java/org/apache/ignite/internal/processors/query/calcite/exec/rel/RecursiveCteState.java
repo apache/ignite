@@ -19,18 +19,31 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /** Query-local current and next deltas of a recursive CTE. */
 public class RecursiveCteState<Row> {
+    /** Rows seen across all iterations, or null for UNION ALL. */
+    private final Set<GroupKey<Row>> seen;
+
+    /** Row handler used for SQL grouping keys. */
+    private final RowHandler<Row> hnd;
+
+    /** Memory tracker for keys and their rows retained for duplicate elimination. */
+    private final RowTracker<GroupKey<Row>> seenMemoryTracker;
+
     /** Rows visible to the recursive table scan. */
     private List<Row> cur = Collections.emptyList();
 
     /** Rows produced by the active seed or recursive term. */
-    private List<Row> next;
+    private List<Row> next = new ArrayList<>();
 
     /** Memory tracker for rows in the current delta. */
     private RowTracker<Row> curMemoryTracker;
@@ -39,33 +52,38 @@ public class RecursiveCteState<Row> {
     private RowTracker<Row> nextMemoryTracker;
 
     /** */
-    public RecursiveCteState(ExecutionContext<Row> ctx) {
+    public RecursiveCteState(ExecutionContext<Row> ctx, boolean all) {
+        seen = all ? null : new HashSet<>();
+        hnd = ctx.rowHandler();
+        seenMemoryTracker = ctx.createNodeMemoryTracker(MemoryTrackingNode.HASH_MAP_ROW_OVERHEAD);
         curMemoryTracker = ctx.createNodeMemoryTracker(GridUnsafe.OBJ_REF_SIZE);
         nextMemoryTracker = ctx.createNodeMemoryTracker(GridUnsafe.OBJ_REF_SIZE);
     }
 
-    /** Starts collecting the next delta. */
-    public void beginWrite() {
-        assert next == null;
+    /** Adds a new row to the next delta, returning false for duplicates in DISTINCT mode. */
+    public boolean add(Row row) {
+        if (seen != null) {
+            GroupKey<Row> rowKey = GroupKey.of(row, hnd);
 
-        next = new ArrayList<>();
-    }
+            if (!seen.add(rowKey))
+                return false;
 
-    /** Adds a row to the next delta. */
-    public void add(Row row) {
-        assert next != null;
+            seenMemoryTracker.onRowAdded(rowKey);
+        }
 
         next.add(row);
-        nextMemoryTracker.onRowAdded(row);
+
+        // DISTINCT already accounts for the row in seen; null charges only the delta's reference overhead.
+        nextMemoryTracker.onRowAdded(seen == null ? row : null);
+
+        return true;
     }
 
-    /** Makes the collected delta visible to recursive scans. */
+    /** Publishes the collected delta and prepares an empty buffer for the next iteration. */
     public void commit() {
-        assert next != null;
-
         curMemoryTracker.reset();
         cur = next;
-        next = null;
+        next = new ArrayList<>();
 
         RowTracker<Row> tracker = curMemoryTracker;
 
@@ -86,9 +104,13 @@ public class RecursiveCteState<Row> {
     /** Clears all query-local rows. */
     public void clear() {
         cur = Collections.emptyList();
-        next = null;
+        next = new ArrayList<>();
 
         curMemoryTracker.reset();
         nextMemoryTracker.reset();
+        seenMemoryTracker.reset();
+
+        if (seen != null)
+            seen.clear();
     }
 }
