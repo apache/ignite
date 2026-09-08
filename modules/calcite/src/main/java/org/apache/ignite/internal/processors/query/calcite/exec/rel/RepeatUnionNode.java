@@ -170,7 +170,6 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     }
 
     /** Binds recursive scans in this union's recursive term without crossing nested recursive unions. */
-    @SuppressWarnings("unchecked")
     private void bindRecursiveScans(Node<Row> node) {
         if (node instanceof RecursiveTableScanNode) {
             ((RecursiveTableScanNode<Row>)node).bind(this);
