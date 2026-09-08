@@ -113,7 +113,6 @@ class IgniteSpec(metaclass=ABCMeta):
 
         # The caller's delta is kept alongside the merged result so that another service can inherit the
         # tuning a test applied here without inheriting this service's role-dependent options too.
-        # See rebuild_as() -- copying the resolved list across services is what broke the CDC path.
         self.user_jvm_opts = jvm_opts.split() if isinstance(jvm_opts, str) else list(jvm_opts or [])
         self.merge_with_default = merge_with_default
 
@@ -407,7 +406,8 @@ class IgniteApplicationSpec(IgniteSpec):
         return [
             "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows performing operations on app termination.
             "-Xmx1G",
-            "-Xms1G",  # kept in step with -Xmx: _remove_duplicates drops the base -Xmx but keeps the base -Xms.
+            "-Xms1G",
+            "-XX:+AlwaysPreTouch",
             "-ea",
             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"
         ]
