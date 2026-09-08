@@ -16,12 +16,14 @@
 """
 Checks Spec class that describes config and command line to start Ignite-aware service.
 """
-from unittest.mock import Mock
+import os
+from unittest.mock import Mock, PropertyMock
 
 import pytest
 
 from ignitetest.services.utils.ignite_spec import IgniteApplicationSpec
 from ignitetest.utils.ignite_test import JFR_ENABLED
+from ignitetest.utils.version import DEV_BRANCH
 
 
 @pytest.fixture
@@ -34,6 +36,11 @@ def service():
     service.persistent_root = ''
     service.context.globals = {"cluster_size": 1}
     service.log_config_file = ''
+    service.config.version = DEV_BRANCH
+    service.modules = []
+    service.install_root = ''
+
+    type(service).product = PropertyMock(return_value="ignite-dev")
 
     return service
 
@@ -91,9 +98,26 @@ def check_boolean_options__go_after_default_ones_and_overwrite_them__if_passed_v
 def check_colon_options__go_after_default_ones_and_overwrite_them__if_passed_via_jvm_opt(service):
     service.log_dir = "/default-path"
     spec = IgniteApplicationSpec(service, jvm_opts=["-Xlog:gc:/some-non-default-path/gc.log"])
-    assert "-Xlog:gc:/some-non-default-path/gc.log" in spec.jvm_opts
-    assert "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags" \
-           in spec.jvm_opts
-    assert spec.jvm_opts.index("-Xlog:gc:/some-non-default-path/gc.log") > \
-           spec.jvm_opts.index(
-               "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags")
+
+    # Normalize JVM options on Windows
+    normalized_opts = [opt.replace("\\", "/") for opt in spec.jvm_opts] if os.name == "nt" else spec.jvm_opts
+
+    expected_custom_gc_opt = "-Xlog:gc:/some-non-default-path/gc.log"
+    expected_default_gc_opt = "-Xlog:gc*=debug,gc+stats*=debug,gc+ergo*=debug:/default-path/gc.log:uptime,time,level,tags"
+
+    # Use actual_opts everywhere
+    assert expected_custom_gc_opt in normalized_opts
+    assert expected_default_gc_opt in normalized_opts
+    assert normalized_opts.index(expected_custom_gc_opt) > normalized_opts.index(expected_default_gc_opt)
+
+
+def check_ducktest_module_excluded(service):
+    spec = IgniteApplicationSpec(service, with_ducktest_module=False)
+    assert "ducktests" not in spec.modules()
+    assert "ducktests" in (spec.envs().get("EXCLUDE_MODULES") or "").split(",")
+
+
+def check_ducktest_module_included(service):
+    spec = IgniteApplicationSpec(service)
+    assert "ducktests" in spec.modules()
+    assert "ducktests" not in (spec.envs().get("EXCLUDE_MODULES") or "").split(",")

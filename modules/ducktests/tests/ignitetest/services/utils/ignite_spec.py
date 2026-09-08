@@ -82,7 +82,7 @@ class IgniteSpec(metaclass=ABCMeta):
     This class is a basic Spec
     """
 
-    def __init__(self, service, jvm_opts=None, merge_with_default=True):
+    def __init__(self, service, jvm_opts=None, merge_with_default=True, with_ducktest_module=True):
         """
         :param service: Service
         :param jvm_opts: If passed will be added with higher priority to or overwrite completely the default options
@@ -93,6 +93,8 @@ class IgniteSpec(metaclass=ABCMeta):
         self.service = service
         self.jvm_opts = merge_jvm_settings(self.__get_default_jvm_opts() if merge_with_default else [],
                                            jvm_opts if jvm_opts else [])
+
+        self.with_ducktest_module = with_ducktest_module
 
     def __get_default_jvm_opts(self):
         """
@@ -238,7 +240,9 @@ class IgniteSpec(metaclass=ABCMeta):
             modules = []
 
         modules.append("log4j2")
-        modules.append("ducktests")
+
+        if self.with_ducktest_module:
+            modules.append("ducktests")
 
         if is_opencensus_metrics_enabled(self.service):
             modules.append("opencensus")
@@ -264,8 +268,16 @@ class IgniteSpec(metaclass=ABCMeta):
             "MAIN_CLASS": self.service.main_java_class
         }
 
-        if "direct-io" not in self.modules():
-            environment_dict['EXCLUDE_MODULES'] = "direct-io"
+        candidate_modules = ["direct-io", "ducktests"]
+        exclude_modules = []
+
+        # Loop through candidates
+        for mod in candidate_modules:
+            if mod not in self.modules():
+                exclude_modules.append(mod)
+
+        # Join back to comma-separated string
+        environment_dict["EXCLUDE_MODULES"] = ",".join(exclude_modules)
 
         return environment_dict
 
@@ -342,12 +354,13 @@ class IgniteApplicationSpec(IgniteSpec):
     """
     Spec to run ignite application
     """
-    def __init__(self, service, jvm_opts=None, merge_with_default=True):
+    def __init__(self, service, jvm_opts=None, merge_with_default=True, with_ducktest_module=True):
         super().__init__(
             service,
             merge_jvm_settings(self.__get_default_jvm_opts() if merge_with_default else [],
                                jvm_opts if jvm_opts else []),
-            merge_with_default)
+            merge_with_default,
+            with_ducktest_module)
 
     def __get_default_jvm_opts(self):
         return [
