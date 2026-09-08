@@ -162,6 +162,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         boolean evictionDone = false;
 
+        boolean nonBlocking = Boolean.TRUE.equals(EVICT_NON_BLOCKING.get());
+
         for (CacheDataRowAdapter dataRow : rowsToEvict) {
             GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(dataRow.cacheId());
 
@@ -171,8 +173,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
                 cacheCtx.cache().entryEx(dataRow.key());
 
-            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true,
-                Boolean.TRUE.equals(EVICT_NON_BLOCKING.get()));
+            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true, nonBlocking);
         }
 
         return evictionDone;

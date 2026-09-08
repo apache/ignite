@@ -102,6 +102,10 @@ public abstract class PageEvictionSizeAwareAbstractTest extends GridCommonAbstra
     /**
      * A large record (larger than the empty-pages pool) must be stored without OOM when there is evictable data,
      * by evicting previously stored records to free enough space.
+     * <p>
+     * This scenario intentionally overlaps with
+     * {@link PageEvictionPutLargeObjectsAbstractTest#testPutLargeObjects}; the added value of this class is the
+     * additional coverage below (putAll, update-growth, read-back and the larger-than-region OOM case).
      *
      * @throws Exception If failed.
      */

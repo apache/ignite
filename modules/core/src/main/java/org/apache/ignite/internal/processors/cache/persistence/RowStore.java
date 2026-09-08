@@ -135,11 +135,15 @@ public class RowStore {
      */
     public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled && grp.dataRegion().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
-            // Size-aware reserve for each row in the batch. Eviction performed here runs without entry locks
-            // (see AbstractFreeList#insertDataRows), so this is safe. Reserving only the largest row is insufficient:
-            // insertDataRows consumes the reserve while writing the first large row, and its per-row threshold loop
-            // only restores emptyPagesPoolSize, which is smaller than a large row. A later large row in the batch
-            // would therefore exhaust page memory.
+            // Size-aware reserve for each row in the batch (reserving only the largest is insufficient: a later large
+            // row can still exhaust page memory mid-write). The reserve/consume TOCTOU race and the "second large row
+            // in a batch" case are both closed by the lazy re-reserve in AbstractFreeList#writeSinglePage, which
+            // re-runs the reserve on the row remainder when a fragmented write cannot take a page (a raw OOM there
+            // would otherwise be wrapped by insertDataRows into CorruptedFreeListException and reported as corruption).
+            //
+            // The reserve evicts non-blockingly even though the batch path holds no entry locks (so blocking would be
+            // deadlock-safe and more effective here): the same reserve path is shared with single-row insertion,
+            // which runs under an entry lock and must not block.
             for (CacheDataRow row : rows) {
                 int rowSize = row.size();
 

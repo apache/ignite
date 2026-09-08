@@ -63,9 +63,9 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
      * the region capacity so that the large short-TTL records are guaranteed not to be evicted before they expire. */
     private static final int SMALL_ENTRIES = 6_000;
 
-    /** Fresh large records written after TTL expiry. Together with the pre-fill (6000 pages) plus the index structures
-     * they exceed the region capacity (~32768 pages), forcing size-aware eviction that accounts for the TTL-freed
-     * space. */
+    /** Fresh large records written after TTL expiry. Together with the pre-fill ({@link #SMALL_ENTRIES} small entries,
+     * each occupying roughly one data page) plus the index structures, they exceed the region capacity (~32768 pages
+     * for a 128 MiB region with 4 KiB pages), forcing size-aware eviction that accounts for the TTL-freed space. */
     private static final int FRESH_RECORDS = 12;
 
     /** Short TTL applied to some entries. */
@@ -125,7 +125,10 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends GridCommo
         for (int i = 0; i < 30; i++)
             cache.put(i, val);
 
-        cache.get(0);
+        // The most recently written entry cannot have expired yet (TTL is far larger than this read), so a non-null
+        // read both verifies the cache is responsive after concurrent expiry/eviction (the test's goal) and is not
+        // racy. Reading the first written key would be racy (it may already have expired under the TTL).
+        assertNotNull("Cache must remain responsive after concurrent expiry and eviction", cache.get(29));
     }
 
     /**

@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,8 +42,8 @@ import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvi
  * Negative test for the size-aware eviction progress guard.
  * <p>
  * When every resident entry is locked by another thread/transaction, page eviction cannot free any page: the guarded
- * {@code tryLockEntry(0)} in {@code evictInternal} fails for every candidate, so {@link
- * IgniteCacheDatabaseSharedManager#ensureFreeSpaceForEviction} makes no progress and must fail with an
+ * {@code tryLockEntry(0)} in {@code evictInternal} fails for every candidate, so {@code ensureFreeSpaceForEviction}
+ * makes no progress and must fail with an
  * {@code IgniteOutOfMemoryException} within bounded time instead of busy-spinning forever (deadlock).
  * <p>
  * The test is self-guarded by {@code @Test(timeout = ...)}: a deadlock or unbounded busy-spin would fail the

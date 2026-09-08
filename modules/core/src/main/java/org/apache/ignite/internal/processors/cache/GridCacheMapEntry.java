@@ -3658,10 +3658,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * Evicts necessary number of data pages if per-page eviction is configured in current {@link DataRegion}.
      */
     private void ensureFreeSpace() throws IgniteCheckedException {
-        // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
-        // This entry-level eviction is invoked only while NOT holding this entry's lock (all call sites run before
-        // lockEntry()). The separately invoked size-aware path (see RowStore.addRow ->
-        // IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert) runs while the lock IS held, so it relies on
+        // Deadlock alert: evicting a data page removes (and locks) all entries on the page one by one, so this
+        // entry-level eviction must only run while NOT holding this entry's lock (all call sites run before
+        // lockEntry()). The separate size-aware path (RowStore.addRow ->
+        // IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert) runs under the lock and instead relies on
         // the non-blocking tryLockEntry(0) inside evictInternal to avoid a lock-ordering deadlock.
         assert !lock.isHeldByCurrentThread();
 
@@ -3706,10 +3706,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         try {
             if (F.isEmptyOrNulls(filter)) {
                 // With tryLock=true (size-aware eviction running while the current thread already holds entry locks)
-                // the lock is acquired non-blockingly: a contended entry is skipped (returning false) rather than
-                // blocking, which prevents a lock-ordering deadlock between concurrent evictions. The eviction tracker
-                // will then pick another page. For all other paths (tryLock=false) the original
-                // blocking lockEntry() is preserved.
+                // the lock is taken non-blockingly and a contended entry is skipped (returns false) to avoid a
+                // lock-ordering deadlock; the tracker then picks another page. All other paths (tryLock=false) keep
+                // the original blocking lockEntry().
                 if (!lockEntry(tryLock))
                     return false;
 

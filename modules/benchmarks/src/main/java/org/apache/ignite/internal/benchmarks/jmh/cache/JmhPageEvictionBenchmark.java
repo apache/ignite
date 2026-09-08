@@ -50,9 +50,9 @@ import org.openjdk.jmh.annotations.Warmup;
  * Two benchmark methods:
  * <ul>
  *   <li>{@link #putSmall()} - puts of small values (well below the empty-pages pool, so the size-aware reserve
- *       in {@code RowStore.addRow} hits its fast path). This is the hot path whose per-operation cost the patch
- *       adds on every put, and is the primary A/B metric for detecting a performance regression between the
- *       unpatched baseline and this branch.</li>
+ *       in {@code RowStore.addRow} hits its fast path) within a bounded key range that keeps the region below the
+ *       eviction threshold. This is the hot path whose per-operation cost the patch adds on every put, and is the
+ *       primary A/B metric for detecting a performance regression between the unpatched baseline and this branch.</li>
  *   <li>{@link #putLarge()} - puts of large values (larger than the empty-pages pool) against a region that has
  *       been pre-filled to near capacity, so that each large put must actually run the size-aware eviction loop.
  *       This exercises the new eviction behavior; on an unpatched build such a put fails with an out-of-memory
@@ -79,8 +79,24 @@ public class JmhPageEvictionBenchmark {
     /** Large value size (bytes): larger than the empty-pages pool in page terms. */
     private static final int LARGE_VALUE_SIZE = 2 * 1024 * 1024;
 
-    /** Number of pre-fill small entries for the LARGE scenario (fills the region close to capacity). */
-    private static final int PRE_FILL_ENTRIES = 48_000;
+    /**
+     * Number of pre-fill small entries for the LARGE scenario. Chosen so that the total written data
+     * (400k x 1 KiB) far exceeds the region capacity: threshold eviction then pins the region at the eviction
+     * threshold (default ~90% of {@code maxSize}), leaving the free list with only its empty-pages pool. At that
+     * point a {@link #LARGE_VALUE_SIZE} put cannot take the fast path and must actually run the size-aware eviction
+     * loop. (A modest pre-fill such as 48k x 1 KiB would leave the region only ~19% full and let every large put
+     * fit into the headroom via the fast path, so it would never exercise the code under measurement.)
+     */
+    private static final int PRE_FILL_ENTRIES = 400_000;
+
+    /**
+     * Bounded key range for {@link #putSmall()}. Each {@link #SMALL_VALUE_SIZE} value occupies one data page, so a
+     * working set of this many resident keys (~32k x 4 KiB ~ 128 MiB) stays comfortably below the eviction
+     * threshold (~90% of the 256 MiB region). Overwriting within this bounded range (instead of append-style fresh
+     * keys) keeps the region from filling up and drifting into steady-state threshold eviction during measurement,
+     * so the run isolates the per-put cost of the size-aware-reserve fast path.
+     */
+    private static final int SMALL_KEY_RANGE = 32_000;
 
     /** Benchmark scenario: selects the value size and the pre-fill strategy. */
     @Param({"SMALL", "LARGE"})
@@ -95,27 +111,35 @@ public class JmhPageEvictionBenchmark {
     /** Pre-allocated large value (reused to avoid allocation noise in the hot path). */
     private final byte[] largeVal = new byte[LARGE_VALUE_SIZE];
 
-    /** Monotonic key source for overwrite-style puts. */
+    /** Monotonic key source: bounded (mod {@link #SMALL_KEY_RANGE}) for {@link #putSmall()} to keep the region below
+     * the eviction threshold, and unbounded (append-style) for {@link #putLarge()} to avoid overwriting entries. */
     private final AtomicInteger keyGen = new AtomicInteger();
 
-    /** Checked once whether the region currently evicts (to warn about the LARGE scenario on an unpatched build). */
-    private volatile String evictionMode;
+    /** Page eviction mode used for the data region. */
+    @Param("RANDOM_LRU")
+    private String evictionMode;
 
-    /** {@inheritDoc} */
-    public JmhPageEvictionBenchmark() {
-        keyGen.set(0);
-    }
-
-    /** Put of a small value (hot path, size-aware reserve takes its fast path). */
+    /** Put of a small value (hot path, size-aware reserve takes its fast path). Keys are wrapped within a bounded
+     * range ({@link #SMALL_KEY_RANGE}) so the resident working set stays below the eviction threshold and the run
+     * isolates the fast-path cost instead of drifting into steady-state threshold eviction. */
     @Benchmark
     public void putSmall() {
-        int key = keyGen.incrementAndGet();
+        int key = keyGen.incrementAndGet() % SMALL_KEY_RANGE;
 
         cache.put(key, smallVal);
     }
 
-    /** Put of a large value against a nearly-full region (runs the size-aware eviction loop). */
+    /**
+     * Put of a large value against a nearly-full region (runs the size-aware eviction loop).
+     * <p>
+     * Pinned to a single thread: the size-aware reserve accumulates {@code requiredPages} real empty pages
+     * in the shared free list before writing, and with multiple concurrent writers those free pages are consumed
+     * by rivals as fast as they are freed, so no thread ever accumulates enough and the loop exhausts its
+     * no-progress budget into an out-of-memory. At one thread the free-page count grows monotonically and the
+     * reserve completes, measuring the honest per-put cost of eviction.
+     */
     @Benchmark
+    @Threads(1)
     public void putLarge() {
         int key = keyGen.incrementAndGet();
 
@@ -125,10 +149,6 @@ public class JmhPageEvictionBenchmark {
     /** Starts Ignite with an in-memory, eviction-enabled data region and pre-fills it for the LARGE scenario. */
     @Setup(Level.Trial)
     public void setup() {
-        DataPageEvictionMode evictionMode = DataPageEvictionMode.RANDOM_LRU;
-
-        this.evictionMode = evictionMode.name();
-
         long regionSize = 256 * 1024L * 1024L;
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
@@ -136,7 +156,7 @@ public class JmhPageEvictionBenchmark {
                 .setPersistenceEnabled(false)
                 .setMaxSize(regionSize)
                 .setEmptyPagesPoolSize(POOL_SIZE)
-                .setPageEvictionMode(evictionMode));
+                .setPageEvictionMode(DataPageEvictionMode.valueOf(evictionMode)));
 
         IgniteConfiguration cfg = new IgniteConfiguration()
             .setIgniteInstanceName("test")
@@ -147,8 +167,8 @@ public class JmhPageEvictionBenchmark {
 
         cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Object>(CACHE_NAME).setBackups(0));
 
-        // Pre-fill the region with small entries for the LARGE scenario so that a large put cannot fit into the
-        // remaining headroom and must actually evict.
+        // Pre-fill the region with small entries for the LARGE scenario until threshold eviction pins it at the
+        // eviction threshold, so that a large put has no headroom to grow into and must actually evict.
         if ("LARGE".equalsIgnoreCase(scenario)) {
             try (IgniteDataStreamer<Integer, Object> ldr = ignite.dataStreamer(CACHE_NAME)) {
                 ldr.perNodeBufferSize(1024);
@@ -156,6 +176,11 @@ public class JmhPageEvictionBenchmark {
                 for (int i = 0; i < PRE_FILL_ENTRIES; i++)
                     ldr.addData(i, smallVal);
             }
+
+            // The pre-fill consumed keys [0, PRE_FILL_ENTRIES). Start large puts after that range so they write
+            // brand-new keys (true append), leaving the pre-filled small entries in place to be the eviction
+            // candidates, instead of overwriting them in place.
+            keyGen.set(PRE_FILL_ENTRIES);
         }
     }
 

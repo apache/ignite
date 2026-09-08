@@ -36,6 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
@@ -97,6 +98,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** Data region this free list belongs to (used for lazy size-aware re-reserve on fragmented writes). */
+    private final DataRegion dataRegion;
+
+    /** Database shared manager (used for lazy size-aware re-reserve on fragmented writes). */
+    private final IgniteCacheDatabaseSharedManager dbMgr;
 
     /** Page list cache limit. */
     private final AtomicLong pageListCacheLimit;
@@ -462,6 +469,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         rmvRow = new RemoveRowHandler(cacheGrpId == 0);
 
         this.evictionTracker = dataRegion.evictionTracker();
+        this.dataRegion = dataRegion;
+        // The database manager is only needed for the on-demand re-reserve (an eviction-enabled, in-memory region),
+        // and is looked up lazily/null-safely because free lists can be built in unit tests against a kernal context
+        // without a cache processor (in which case eviction is disabled and the re-reserve never fires).
+        dbMgr = ctx.cache() == null ? null : ctx.cache().context().database();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -701,9 +713,28 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @throws IgniteCheckedException If failed.
      */
     private int writeSinglePage(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        // TOCTOU closure: the size-aware reserve (ensureFreeSpaceForInsert, invoked from RowStore.addRow/addRows
+        // before this write) accumulates enough real empty pages but does not pin them to this thread - a concurrent
+        // writer can consume them between the reserve and this allocation. When the free list cannot hand out a page,
+        // re-reserve on the remaining size and retry before allocating a brand-new page; otherwise the race surfaces
+        // as a raw IgniteOutOfMemoryException (wrapped into CorruptedFreeListException in the batch path).
+        //
+        // The re-reserve is an inline demand-eviction: reached from the BPlusTree.invoke row-creation closure, it may
+        // re-entrantly remove other entries from the same data tree. That is safe because the closure runs with no
+        // data-tree page locks held (page read lock released before it runs, leaf write lock taken after), and the
+        // outer operation revalidates via the page tag / triangle / removeId protocols. The key being written is
+        // skipped (its entry lock is held, so tryLock fails for it), so there is no self-eviction or lock-ordering
+        // deadlock; like the initial reserve, the re-reserve throws OOM if the row genuinely cannot fit.
         AbstractDataPageIO initIo = null;
 
         long pageId = takePage(row.size() - written, row, statHolder);
+
+        if (pageId == 0L) {
+            if (dbMgr != null)
+                dbMgr.ensureFreeSpaceForInsert(dataRegion, row.size() - written);
+
+            pageId = takePage(row.size() - written, row, statHolder);
+        }
 
         if (pageId == 0L) {
             pageId = allocateDataPage(row.partition());
