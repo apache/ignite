@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import java.util.Collection;
+import java.util.UUID;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyResult;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, String> {
+public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Delete snapshot and all its increments from the cluster";
@@ -38,8 +42,48 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
     }
 
     /** {@inheritDoc} */
+    @Override public void printResult(SnapshotDeleteCommandArg arg, SnapshotDeleteProcessResult res, Consumer<String> printer) {
+        boolean found = false;
+
+        if (!F.isEmpty(res.uncompletedNodes())) {
+            found = true;
+
+            printer.accept("WARNING, the following nodes found snapshot data but might not remove it completely "
+                + nodeIdsStrLst(res.uncompletedNodes()));
+
+            printer.accept("");
+        }
+
+        if (!F.isEmpty(res.completedNodes())) {
+            found = true;
+
+            printer.accept("Snapshot removed on the following nodes " + nodeIdsStrLst(res.completedNodes()));
+
+            printer.accept("");
+        }
+
+        if (found) {
+            if (!F.isEmpty(res.emptyNodes())) {
+                printer.accept("NOTE, the following nodes didn't find any snapshot data, nothing to delete "
+                    + nodeIdsStrLst(res.emptyNodes()));
+            }
+        }
+        else {
+            if (!F.isEmpty(res.emptyNodes()))
+                printer.accept("Snapshot not found on current server nodes.");
+            else
+                printer.accept("Unknown result.");
+        }
+    }
+
+    /** */
+    private static String nodeIdsStrLst(Collection<UUID> uuids) {
+        return "[cnt=" + uuids.size() + "]: " + uuids.stream().map(UUID::toString).collect(Collectors.joining(", "));
+    }
+
+    /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "Warning: command will delete snapshot " + arg.snapshotName() + " and all its increments " +
-            "from all the cluster nodes. This operation is irreversible.";
+        return "Warning: this will delete snapshot '" + arg.snapshotName() + "' and all its increments " +
+            "from all online server nodes. This operation is irreversible.";
     }
 }

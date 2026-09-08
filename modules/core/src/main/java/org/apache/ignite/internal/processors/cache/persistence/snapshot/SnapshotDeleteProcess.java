@@ -17,26 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
-import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 
 /**
  * Distributed process to delete a cluster snapshot. The operation is rejected if any concurrent snapshot operation is
@@ -44,42 +45,35 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
  */
 public class SnapshotDeleteProcess {
     /** Reject operation messages. */
-    private static final String OP_REJECT_MSG = "Snapshot deletion was rejected. ";
+    private static final String OP_REJECT_MSG = "Snapshot deletion was rejected.";
 
     /** Kernal context. */
-    private final GridKernalContext ctx;
+    private final GridKernalContext kctx;
 
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Cluster-wide operation contexts per request id. */
+    /** */
+    private volatile boolean interrupted;
 
-    private final Map<UUID, DeleteContext> contexts = new ConcurrentHashMap<>();
+    /** Cluster-wide operation futures per request id on certain node. */
+    private final Map<UUID, GridFutureAdapter<SnapshotDeleteProcessResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
-    /** Delete snapshot phase subprocess. */
-    private final DistributedProcess<SnapshotDeleteProcessRequest, SnapshotDeleteProcessResponse> deleteProc;
+    /** Process requests per id on eah baseline node. */
+    private final Map<UUID, SnapshotDeleteRequest> requests = new ConcurrentHashMap<>();
 
-    /** Stop node lock. */
-    private boolean nodeStopping;
+    /** The distributed process. */
+    private final DistributedProcess<SnapshotDeleteRequest, SnapshotDeleteResponse> distrProc;
 
     /**
      * @param ctx Kernal context.
      */
     public SnapshotDeleteProcess(GridKernalContext ctx) {
-        this.ctx = ctx;
+        this.kctx = ctx;
 
         log = ctx.log(getClass());
 
-        deleteProc = new DistributedProcess<>(ctx, DELETE_SNAPSHOT, this::deleteDistributedSnapshot, this::reduceAndFinish);
-    }
-
-    /**
-     * Stops all the running processes with the provided exception.
-     *
-     * @param err The interrupt reason.
-     */
-    void interrupt(Throwable err) {
-        contexts.forEach((reqId, c) -> c.fut.onDone(err));
+        distrProc = new DistributedProcess<>(ctx, DELETE_SNAPSHOT, this::deletePhase, this::reducePhase);
     }
 
     /**
@@ -89,125 +83,158 @@ public class SnapshotDeleteProcess {
      * @param snpPath Snapshot directory path (optional).
      * @return Future that will be completed when the snapshot is deleted.
      */
-    public IgniteFutureImpl<String> start(String snpName, @Nullable String snpPath) {
+    public IgniteFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
         UUID reqId = UUID.randomUUID();
 
-        Set<UUID> requiredNodes = new HashSet<>(
-            F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), node2id()));
+        var clusterOpFut = new GridFutureAdapter<SnapshotDeleteProcessResult>();
 
-        SnapshotDeleteProcessRequest req = new SnapshotDeleteProcessRequest(reqId, snpName, snpPath, requiredNodes);
+        clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId));
 
-        GridFutureAdapter<Void> clusterOpFut = new GridFutureAdapter<>();
+        try {
+            synchronized (clusterOpFuts) {
+                if (interrupted || kctx.isStopping())
+                    throw new NodeStoppingException("Failed to start snapshot delete process: node is stopping.");
 
-        DeleteContext dctx = new DeleteContext(req, clusterOpFut);
+                clusterOpFuts.put(reqId, clusterOpFut);
+            }
 
-        contexts.put(reqId, dctx);
+            SnapshotDeleteRequest req = new SnapshotDeleteRequest(reqId, snpName, snpPath);
 
-        clusterOpFut.listen(fut -> contexts.remove(reqId));
+            distrProc.start(reqId, req);
+        }
+        catch (Throwable t) {
+            log.error("Failed to start distributed delete snapshot process [snpName=" + snpName + ", snpPath=" + snpPath + ']', t);
 
-        deleteProc.start(reqId, req);
+            clusterOpFut.onDone(t);
+        }
 
         return new IgniteFutureImpl<>(clusterOpFut);
     }
 
-    /** Local phase: delete the snapshot directory on the node. */
-    private IgniteInternalFuture<SnapshotDeleteProcessResponse> deleteDistributedSnapshot(
-        UUID ignored,
-        SnapshotDeleteProcessRequest req
-    ) {
-        if (!baseline(ctx.localNodeId()))
-            return new GridFinishedFuture<>(new SnapshotDeleteProcessResponse(false));
-
-        IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
-
-        String snpName = req.snapshotName();
-
-        if (snpMgr.isSnapshotCreating())
-            return new GridFinishedFuture<>(new ClusterTopologyCheckedException(
-                OP_REJECT_MSG + "a snapshot operation is in progress [snapshot=" + snpName + ']'));
-
-        if (snpMgr.isRestoring(snpName))
-            return new GridFinishedFuture<>(new ClusterTopologyCheckedException(
-                OP_REJECT_MSG + "the snapshot is being restored [snapshot=" + snpName + ']'));
-
-        if (snpMgr.isSnapshotChecking(snpName))
-            return new GridFinishedFuture<>(new ClusterTopologyCheckedException(
-                OP_REJECT_MSG + "the snapshot is being checked [snapshot=" + snpName + ']'));
-
-        boolean deleted = snpMgr.deleteSnapshotLocal(snpName, req.snapshotPath());
-
-        if (log.isInfoEnabled()) {
-            log.info("Snapshot delete operation [snapshot=" + snpName +
-                ", snpPath=" + req.snapshotPath() + ", node=" + ctx.localNodeId() + ", deleted=" + deleted + ']');
+    /** Local phase: delete the snapshot directory on a node. */
+    private IgniteInternalFuture<SnapshotDeleteResponse> deletePhase(UUID ignored, SnapshotDeleteRequest req) {
+        if (kctx.isStopping()) {
+            return new GridFinishedFuture<>(new NodeStoppingException(OP_REJECT_MSG +
+                " Node is stopping [req=" + req + ']'));
         }
 
-        return new GridFinishedFuture<>(new SnapshotDeleteProcessResponse(deleted));
+        if (kctx.clientNode())
+            return new GridFinishedFuture<>(new SnapshotDeleteResponse(-1));
+
+        kctx.security().authorize(ADMIN_SNAPSHOT);
+
+        IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
+
+        var curCreateRq = snpMgr.currentCreateRequest();
+
+        if (curCreateRq != null && curCreateRq.snpName.equals(req.snpName)) {
+            return new GridFinishedFuture<>(new IllegalStateException(OP_REJECT_MSG +
+                " Snapshot with this name is being created [req=" + req + ']'));
+        }
+
+        if (snpMgr.isRestoring(req.snpName)) {
+            return new GridFinishedFuture<>(new IllegalStateException(OP_REJECT_MSG +
+                " Snapshot with this name is being restored [req=" + req + ']'));
+        }
+
+        if (snpMgr.isSnapshotChecking(req.snpName)) {
+            return new GridFinishedFuture<>(new IllegalStateException(OP_REJECT_MSG +
+                " Snapshot with this name is being checked [req=" + req + ']'));
+        }
+
+        if (requests.putIfAbsent(req.reqId, req) != null) {
+            return new GridFinishedFuture<>(new IllegalStateException("Deletion of the snapshot has already started [req="
+                + req + ']'));
+        }
+
+        try {
+            var foundFlag = new AtomicBoolean();
+
+            boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
+
+            if (deleted && log.isInfoEnabled())
+                log.info("Snapshot successfully deleted, req=" + req);
+            else if (!deleted)
+                log.warning("Snapshot deleted not completely, req=" + req);
+
+            return new GridFinishedFuture<>(new SnapshotDeleteResponse(deleted ? 0 : 1));
+        }
+        catch (Throwable t) {
+            log.error("An error occured during snapshot deletion, req=" + req, t);
+
+            return new GridFinishedFuture<>(t);
+        } finally {
+            requests.remove(req.reqId);
+        }
     }
 
     /** Coordinator finish: aggregate node results and complete the user future. */
-    private void reduceAndFinish(
-        UUID reqId,
-        Map<UUID, SnapshotDeleteProcessResponse> results,
-        Map<UUID, Throwable> errors
-    ) {
-        DeleteContext dctx = contexts.get(reqId);
+    private void reducePhase(UUID reqId, Map<UUID, SnapshotDeleteResponse> results, Map<UUID, Throwable> errors) {
+        var clusterOpFut = clusterOpFuts.get(reqId);
 
-        if (dctx == null)
+        if (clusterOpFut == null)
             return;
 
         try {
-            if (!errors.isEmpty())
-                throw F.firstValue(errors);
+            var errP = F.isEmpty(errors) ? null : F.first(errors.entrySet());
 
-            ClusterTopologyCheckedException ex = checkNodeLeft(dctx.req.nodes(), results.keySet());
+            if (errP != null) {
+                log.warning("Snapshot deletion finished with an error [reqId=" + reqId + ", nodeId="
+                    + errP.getKey() + ", err='" + errP.getValue().getMessage() + "']", errP.getValue());
 
-            if (ex != null)
-                throw ex;
+                clusterOpFut.onDone(errP.getValue());
 
-            dctx.fut.onDone();
+                return;
+            }
+
+            var completedNodes = new ArrayList<UUID>(results.size());
+            var uncompletedNodes = new ArrayList<UUID>(results.size());
+            var emptyNodes = new ArrayList<UUID>(results.size());
+
+            results.forEach((nodeId, nodeRes) -> {
+                switch (nodeRes.deleted) {
+                    case -1:
+                        emptyNodes.add(nodeId);
+                        break;
+                    case 0:
+                        completedNodes.add(nodeId);
+                        break;
+                    case 1:
+                        uncompletedNodes.add(nodeId);
+                        break;
+                    default:
+                        throw new IgniteIllegalStateException("Unknown snapshot deletion node result [nodeRes" + nodeRes +
+                            ", nodeId=" + nodeId + ']');
+                }
+            });
+
+            clusterOpFut.onDone(new SnapshotDeleteProcessResult(
+                completedNodes.isEmpty() ? null : completedNodes,
+                uncompletedNodes.isEmpty() ? null : uncompletedNodes,
+                emptyNodes.isEmpty() ? null : emptyNodes
+            ));
         }
-        catch (Throwable th) {
-            dctx.fut.onDone(th);
+        catch (Throwable t) {
+            clusterOpFut.onDone(t);
         }
+    }
+
+    /** */
+    public boolean isSnapshotDeleting(String name) {
+        return false;
     }
 
     /**
-     * @param reqNodes Set of required topology nodes.
-     * @param respNodes Set of responded topology nodes.
-     * @return Error, if no response was received from a required topology node.
+     * @param err The interrupt reason.
      */
-    private static @Nullable ClusterTopologyCheckedException checkNodeLeft(Set<UUID> reqNodes, Set<UUID> respNodes) {
-        if (!respNodes.containsAll(reqNodes)) {
-            Set<UUID> leftNodes = new HashSet<>(reqNodes);
-
-            leftNodes.removeAll(respNodes);
-
-            return new ClusterTopologyCheckedException("Snapshot deletion stopped. " +
-                "Required node has left the cluster [nodeId=" + leftNodes + ']');
+    void interrupt(Throwable err) {
+        // Prevents starting new processes in #prepareAndCheckMetas.
+        synchronized (clusterOpFuts) {
+            interrupted = true;
         }
 
-        return null;
-    }
+        clusterOpFuts.forEach((reqId, fut) -> fut.onDone(err));
 
-    /** @return {@code True} if the local node is a baseline node. */
-    private boolean baseline(UUID nodeId) {
-        ClusterNode node = ctx.cluster().get().node(nodeId);
-
-        return node != null && CU.baselineNode(node, ctx.state().clusterState());
-    }
-
-    /** Delete operation context. */
-    private static final class DeleteContext {
-        /** Request. */
-        private final SnapshotDeleteProcessRequest req;
-
-        /** Cluster operation future. */
-        private final GridFutureAdapter<Void> fut;
-
-        /** */
-        private DeleteContext(SnapshotDeleteProcessRequest req, GridFutureAdapter<Void> fut) {
-            this.req = req;
-            this.fut = fut;
-        }
+        clusterOpFuts.clear();;
     }
 }

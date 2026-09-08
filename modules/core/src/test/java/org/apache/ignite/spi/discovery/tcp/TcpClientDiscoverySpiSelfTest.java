@@ -2600,7 +2600,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             waitFor(writeLock);
 
-            TcpDiscoveryAbstractMessage msg = decodeMessage(ignite.context(), data);
+            TcpDiscoveryAbstractMessage msg = decodeMessage(this, data);
 
             if (msg != null && !onMessage(sock, msg))
                 return;

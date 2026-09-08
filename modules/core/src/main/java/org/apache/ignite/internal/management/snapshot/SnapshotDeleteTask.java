@@ -17,26 +17,29 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * @see IgniteSnapshotManager#deleteDistributedSnapshot(String, String)
+ * @see IgniteSnapshotManager#deleteSnapshot(String, String)
  */
 @GridInternal
-public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandArg, Void> {
+public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<SnapshotDeleteCommandArg, Void> job(SnapshotDeleteCommandArg arg) {
+    @Override protected VisorJob<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> job(SnapshotDeleteCommandArg arg) {
         return new SnapshotDeleteJob(arg, debug);
     }
 
     /** */
-    private static class SnapshotDeleteJob extends SnapshotJob<SnapshotDeleteCommandArg, Void> {
+    private static class SnapshotDeleteJob extends SnapshotJob<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -49,12 +52,10 @@ public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandAr
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(SnapshotDeleteCommandArg arg) {
+        @Override protected SnapshotDeleteProcessResult run(SnapshotDeleteCommandArg arg) {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            snpMgr.deleteDistributedSnapshot(arg.snapshotName(), arg.src()).get();
-
-            return null;
+            return snpMgr.deleteSnapshot(arg.snapshotName(), arg.src()).get();
         }
     }
 }

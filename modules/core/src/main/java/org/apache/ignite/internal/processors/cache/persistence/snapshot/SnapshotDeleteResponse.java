@@ -17,37 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Collection;
-import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
- * Cluster snapshot delete distributed process request.
+ * Single-node result of the snapshot deletion distributed process.
  *
  * @see SnapshotDeleteProcess
  */
-public class SnapshotDeleteProcessRequest extends AbstractSnapshotOperationRequest {
+public class SnapshotDeleteResponse implements Message {
+    /** The result. If {@code -1}, if node isn't a server node. {@code 0} if the snapshot was completely
+     * removed on the node. {@code 1}, if snapshot was removed on the node not completely. */
+    @Order(0)
+    byte deleted;
+
     /** Default constructor for {@link MessageFactory}. */
-    public SnapshotDeleteProcessRequest() {
+    public SnapshotDeleteResponse() {
         // No-op.
     }
 
     /**
-     * @param reqId Request ID.
-     * @param snpName Snapshot name.
-     * @param snpPath Snapshot directory path.
-     * @param nodes Baseline node IDs that must be alive to complete the operation.
+     * @param deleted If {@code -1}, if node isn't a server node. {@code 1} if the snapshot was completely
+     * removed on the node. {@code 0}, if snapshot was removed on the node not completely.
      */
-    SnapshotDeleteProcessRequest(UUID reqId, String snpName, String snpPath, Collection<UUID> nodes) {
-        super(reqId, snpName, snpPath, null, nodes);
+    SnapshotDeleteResponse(int deleted) {
+        assert deleted >= -1 && deleted < 2;
 
-        assert !F.isEmpty(nodes);
+        this.deleted = (byte)deleted;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotDeleteProcessRequest.class, this, super.toString());
+        return S.toString(SnapshotDeleteResponse.class, this);
     }
 }

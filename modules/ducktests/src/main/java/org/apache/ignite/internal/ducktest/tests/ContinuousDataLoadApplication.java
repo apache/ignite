@@ -78,7 +78,7 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
                     if (notifyTime + TimeUnit.MILLISECONDS.toNanos(1500) < System.nanoTime())
                         notifyTime = System.nanoTime();
 
-                    // Delayed notify of the initialization to make sure the data load has completelly began and
+                    // Delayed notify of the initialization to make sure the data load has completely began and
                     // has produced some valuable amount of data.
                     if (!inited() && warmUpCnt == loaded)
                         markInitialized();

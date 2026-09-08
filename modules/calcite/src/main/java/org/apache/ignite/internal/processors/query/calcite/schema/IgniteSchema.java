@@ -28,7 +28,6 @@ import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.IgniteException;
@@ -38,12 +37,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Ignite schema.
  */
 public class IgniteSchema extends AbstractSchema {
-    /** */
-    private static final String DUAL_TBL_NAME = "DUAL";
-
-    /** */
-    private static final String DUAL_TBL_VIEW = "SELECT * FROM (VALUES ('X')) AS T(DUMMY)";
-
     /** */
     private final String schemaName;
 
@@ -150,17 +143,6 @@ public class IgniteSchema extends AbstractSchema {
 
         viewMap.forEach((name, sql) -> newSchema.add(name, new ViewTableMacroImpl(sql, newSchema, frameworkCfg)));
 
-        registerDualTableIfSupported(newSchema, frameworkCfg);
-
         return newSchema;
-    }
-
-    /** */
-    private static void registerDualTableIfSupported(SchemaPlus schema, FrameworkConfig frameworkCfg) {
-        if (frameworkCfg != null && frameworkCfg.getSqlValidatorConfig().conformance().isSupportedDualTable()
-            && schema.tables().get(DUAL_TBL_NAME) == null
-            && schema.getFunctions(DUAL_TBL_NAME).stream().noneMatch(TableMacro.class::isInstance)) {
-            schema.add(DUAL_TBL_NAME, new ViewTableMacroImpl(DUAL_TBL_VIEW, schema, frameworkCfg));
-        }
     }
 }

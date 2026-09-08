@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -24,6 +25,8 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.testframework.GridTestUtils.loadMarshaller;
@@ -74,5 +77,15 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         // Register messages into the communication protocol.
         registry.registerExtension(MessageFactoryProvider.class, msgFactoryProvider);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start(PluginContext ctx) throws IgniteCheckedException {
+        DiscoverySpi discoSpi = ctx.igniteConfiguration().getDiscoverySpi();
+
+        if (discoSpi instanceof TestTcpDiscoverySpi testDiscoSpi) {
+            // Register messages into the discovery protocol.
+            testDiscoSpi.messageFactory(msgFactoryProvider);
+        }
     }
 }

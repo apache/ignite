@@ -70,7 +70,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
         long timeout
     ) throws IOException, IgniteCheckedException {
         if (spiCtx != null) {
-            TcpDiscoveryAbstractMessage msg = decodeMessage(ignite.context(), data);
+            TcpDiscoveryAbstractMessage msg = decodeMessage(this, data);
 
             if (msg != null)
                 apply(spiCtx.localNode(), msg);

@@ -17,40 +17,49 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Single-node result of the snapshot delete distributed process.
+ * Cluster snapshot delete distributed process request.
  *
  * @see SnapshotDeleteProcess
  */
-public class SnapshotDeleteProcessResponse implements Message {
-    /** {@code True} if the snapshot directory was actually removed on the node. */
+public class SnapshotDeleteRequest implements Message {
+    /** Request ID. */
     @Order(0)
-    boolean deleted;
+    UUID reqId;
+
+    /** Snapshot name. */
+    @Order(1)
+    String snpName;
+
+    /** Snapshot directory path. */
+    @Order(2)
+    @Nullable String snpPath;
 
     /** Default constructor for {@link MessageFactory}. */
-    public SnapshotDeleteProcessResponse() {
+    public SnapshotDeleteRequest() {
         // No-op.
     }
 
     /**
-     * @param deleted {@code True} if the snapshot directory was actually removed on the node.
+     * @param reqId Request ID.
+     * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
      */
-    public SnapshotDeleteProcessResponse(boolean deleted) {
-        this.deleted = deleted;
-    }
-
-    /** @return {@code True} if the snapshot directory was actually removed on the node. */
-    public boolean deleted() {
-        return deleted;
+    SnapshotDeleteRequest(UUID reqId, String snpName, @Nullable String snpPath) {
+        this.reqId = reqId;
+        this.snpName = snpName;
+        this.snpPath = snpPath;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotDeleteProcessResponse.class, this);
+        return S.toString(SnapshotDeleteRequest.class, this, super.toString());
     }
 }

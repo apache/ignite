@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -36,10 +35,10 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
  */
 class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
     /**
-     * @param ctx Kernal context.
+     * @param spi Discovery SPI instance.
      */
-    public TcpDiscoveryMessageSerializer(GridKernalContext ctx) {
-        super(ctx, new Socket() {
+    public TcpDiscoveryMessageSerializer(TcpDiscoverySpi spi) {
+        super(new Socket() {
             @Override public OutputStream getOutputStream() throws IOException {
                 return null;
             }
@@ -47,7 +46,7 @@ class TcpDiscoveryMessageSerializer extends TcpDiscoveryIoSession {
             @Override public InputStream getInputStream() throws IOException {
                 return null;
             }
-        });
+        }, spi);
     }
 
     /**

@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -240,14 +239,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         initDiagnosticDir();
 
-        cleanDiagnosticDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        listeningLog = null;
+        // Handy if other test runs interrupted.
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -3244,43 +3237,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
-    /** @throws Exception If fails. */
-    @Test
-    public void testSnapshotList() throws Exception {
-        IgniteEx ig = startGrid(0);
-        ig.cluster().state(ACTIVE);
-
-        createCacheAndPreload(ig, 100);
-
-        String snpName1 = "snapshot_01012024";
-        String snpName2 = "snapshot_02022024";
-
-        snp(ig).createSnapshot(snpName2).get(getTestTimeout());
-        snp(ig).createSnapshot(snpName1).get(getTestTimeout());
-
-        TestCommandHandler h = newCommandHandler();
-
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "list"));
-
-        Collection<String> res = h.getLastOperationResult();
-
-        assertNotNull(res);
-
-        assertEquals(2, res.size());
-
-        // Result must be sorted.
-        Iterator<String> it = res.iterator();
-
-        assertEquals(snpName1, it.next());
-        assertEquals(snpName2, it.next());
-    }
-
-    /** @throws Exception If fails. */
+    /** */
     @Test
     public void testSnapshotDelete() throws Exception {
         String snpName = "snapshot_03032024";
 
-        IgniteEx ig = startGrid(0);
+        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(3);
         ig.cluster().state(ACTIVE);
 
         createCacheAndPreload(ig, 100);
@@ -3293,14 +3255,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        TestCommandHandler h = newCommandHandler();
-
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "delete", snpName));
+        assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", snpName));
 
         assertTrue(waitForCondition(() -> !snpDir.exists(), getTestTimeout()));
     }
 
-    /** @throws Exception If fails. */
+    /** */
     @Test
     public void testSnapshotDeleteMissing() throws Exception {
         IgniteEx ig = startGrid(0);

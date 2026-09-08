@@ -35,6 +35,7 @@ import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -104,7 +105,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         msg.addServerMetrics(srvrId, new ClusterMetricsSnapshot());
         msg.addServerCacheMetrics(srvrId, cacheMetrics);
 
-        MessageFactory msgFactory = grid(0).context().messageFactory();
+        MessageFactory msgFactory = ((TcpDiscoverySpi)grid(0).context().discovery().getInjectedDiscoverySpi()).messageFactory();
 
         // First time we write initial message type which is not read by the reader because the message type is known.
         // We have to skip this header at the further message reading.

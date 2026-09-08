@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.binary;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -40,16 +38,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
 /**
  * Test class covering feature that allows to unmarshal binary object with custom classloader.
  */
-@WithSystemProperty(key = IGNITE_USE_BINARY_ARRAYS, value = "true")
 public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
     /** Person class name. */
     private static final String PERSON_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
@@ -75,20 +69,12 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected List<String> additionalRemoteJvmArgs() {
-        return List.of("-D" + IGNITE_USE_BINARY_ARRAYS + "=true");
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setNetworkTimeout(10000)
             .setClientMode(getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName))
             .setCacheConfiguration(
                 new CacheConfiguration("SomeCache")
-                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC),
-                new CacheConfiguration("SomeCacheArray")
                     .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC),
                 new CacheConfiguration("SomeCacheEnum")
@@ -139,8 +125,6 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
             });
 
             checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, ign);
-
-            checkItems(testClsLdr, "SomeCacheArray", PERSON_CLASS_NAME, ign);
 
             checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, ign);
 
@@ -195,8 +179,6 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
             checkItems(testClsLdr, "SomeCache", PERSON_CLASS_NAME, ign);
 
-            checkItems(testClsLdr, "SomeCacheArray", PERSON_CLASS_NAME, ign);
-
             checkItems(testClsLdr, "SomeCacheEnum", ENUM_CLASS_NAME, ign);
 
             checkItems(testClsLdr, "OrganizationCache", ORGANIZATION_CLASS_NAME, ign);
@@ -231,9 +213,8 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
-        boolean arrVals = cacheName.endsWith("Array");
-
         for (int i = 0; i < 100; i++) {
+
             BinaryObject binaryVal = binaryCache.get(i);
 
             if (i % 50 == 0)
@@ -244,8 +225,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
                     info("Can not execute toString() on class " + binaryVal.type().typeName());
                 }
 
-            if (!arrVals)
-                assertEquals(binaryVal.type().typeName(), valClsName);
+            assertEquals(binaryVal.type().typeName(), valClsName);
 
             boolean catchEx = false;
 
@@ -265,14 +245,7 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
             Object personVal = binaryVal.deserialize(testClsLdr);
 
-            assertNotNull(personVal);
-
-            if (!arrVals)
-                assertTrue(personVal.getClass().getName().equals(valClsName));
-            else {
-                assertTrue(personVal.getClass().isArray());
-                assertTrue(personVal.getClass().getComponentType().getName().equals(valClsName));
-            }
+            assertTrue(personVal != null && personVal.getClass().getName().equals(valClsName));
         }
     }
 
@@ -281,26 +254,12 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
      * @param ignite Ignite.
      */
     private void loadItems(ClassLoader testClsLdr, Ignite ignite) throws Exception {
-        Class<?> personCls = testClsLdr.loadClass(PERSON_CLASS_NAME);
-
-        Constructor personConstructor = personCls.getConstructor(String.class);
+        Constructor personConstructor = testClsLdr.loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
 
         IgniteCache<Integer, Object> cache = ignite.cache("SomeCache");
 
         for (int i = 0; i < 100; i++)
             cache.put(i, personConstructor.newInstance("Persone name " + i));
-
-        assertEquals(cache.size(CachePeekMode.PRIMARY), 100);
-
-        cache = ignite.cache("SomeCacheArray");
-
-        for (int i = 0; i < 100; i++) {
-            Object arr = Array.newInstance(personCls, 1);
-
-            Array.set(arr, 0, personConstructor.newInstance("Persone name " + i));
-
-            cache.put(i, arr);
-        }
 
         assertEquals(cache.size(CachePeekMode.PRIMARY), 100);
     }
