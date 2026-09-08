@@ -16,7 +16,7 @@
 # =====================================================================
 # GLOBAL ARGS (Must be declared at the very top, before any FROM)
 # =====================================================================
-ARG python_version="3.11"
+ARG python_version="3.13"
 ARG jdk_version="eclipse-temurin:17"
 
 # ---------------------------------------------------------------------
@@ -104,9 +104,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Print the active python version and verify ssl is importable
 RUN python3 --version && python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
-
-# Upgrade pip to the latest version
-RUN pip install --no-cache-dir --upgrade pip
 
 COPY ./requirements.txt /root/requirements.txt
 
