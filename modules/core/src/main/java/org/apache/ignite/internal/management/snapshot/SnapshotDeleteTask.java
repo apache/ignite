@@ -21,10 +21,9 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * @see IgniteSnapshotManager#deleteSnapshot(String, String)
+ * @see IgniteSnapshotManager#deleteDistributedSnapshot(String, String)
  */
 @GridInternal
 public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandArg, Void> {
@@ -53,7 +52,7 @@ public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandAr
         @Override protected Void run(SnapshotDeleteCommandArg arg) {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            snpMgr.deleteSnapshot(arg.snapshotName(), arg.dest()).get();
+            snpMgr.deleteDistributedSnapshot(arg.snapshotName(), arg.src()).get();
 
             return null;
         }

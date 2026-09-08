@@ -39,9 +39,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
 /**
- * Distributed process to delete a cluster snapshot. The snapshot data is spread across the baseline nodes,
- * so each node removes its local snapshot directory. The operation is rejected if any of the following
- * conflicts is detected: the snapshot is being created, restored or checked.
+ * Distributed process to delete a cluster snapshot. The operation is rejected if any concurrent snapshot operation is
+ * active.
  */
 public class SnapshotDeleteProcess {
     /** Reject operation messages. */
@@ -88,11 +87,9 @@ public class SnapshotDeleteProcess {
      *
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path (optional).
-     * @return Future that will be completed when the snapshot is deleted on all the baseline nodes.
+     * @return Future that will be completed when the snapshot is deleted.
      */
-    public IgniteFutureImpl<Void> start(String snpName, @Nullable String snpPath) {
-        assert !F.isEmpty(snpName);
-
+    public IgniteFutureImpl<String> start(String snpName, @Nullable String snpPath) {
         UUID reqId = UUID.randomUUID();
 
         Set<UUID> requiredNodes = new HashSet<>(
@@ -111,14 +108,6 @@ public class SnapshotDeleteProcess {
         deleteProc.start(reqId, req);
 
         return new IgniteFutureImpl<>(clusterOpFut);
-    }
-
-    /**
-     * @param snpName Snapshot name.
-     * @return {@code True} if a delete operation for the snapshot is in progress.
-     */
-    boolean isSnapshotDeleting() {
-        return !contexts.isEmpty();
     }
 
     /** Local phase: delete the snapshot directory on the node. */

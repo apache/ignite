@@ -502,8 +502,6 @@ public class DistributedProcess<I extends Message, R extends Message> {
 
         /**
          * Delete snapshot procedure.
-         *
-         * @see IgniteSnapshotManager
          */
         DELETE_SNAPSHOT,
 

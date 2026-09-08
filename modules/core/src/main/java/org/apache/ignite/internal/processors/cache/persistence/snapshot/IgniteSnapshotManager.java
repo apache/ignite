@@ -708,14 +708,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpDir Snapshot dir.
      */
-    public void deleteSnapshot(File snpDir) {
+    public void deleteLocalSnapshot(File snpDir) {
         if (!snpDir.exists())
             return;
 
         if (!snpDir.isDirectory())
             return;
 
-        deleteSnapshot(new SnapshotFileTree(
+        deleteLocalSnapshot(new SnapshotFileTree(
             cctx.kernalContext(),
             snpDir.getName(),
             snpDir.getParent(),
@@ -723,35 +723,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             pdsSettings.consistentId().toString()));
     }
 
-    /**
-     * Deletes the local snapshot directory with the given name and path.
-     *
-     * @param snpName Full snapshot name.
-     * @param snpPath Snapshot directory path. If {@code null}, the default snapshot directory is used.
-     * @return {@code True} if the snapshot directory existed on the local node and was removed, {@code false} otherwise.
-     */
-    public boolean deleteSnapshotLocal(String snpName, @Nullable String snpPath) {
-        if (cctx.kernalContext().clientNode())
-            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
-
-        if (ft == null)
-            return false;
-
-        File snpDir = snpPath == null ? new File(ft.snapshotsRoot(), snpName) : new File(snpPath, snpName);
-
-        if (!snpDir.exists())
-            return false;
-
-        if (!snpDir.isDirectory())
-            return false;
-
-        deleteSnapshot(new SnapshotFileTree(cctx.kernalContext(), snpName, snpPath));
-
-        return true;
-    }
-
     /** */
-    public void deleteSnapshot(SnapshotFileTree sft) {
+    public void deleteLocalSnapshot(SnapshotFileTree sft) {
         try {
             U.delete(sft.binaryMeta());
             sft.allStorages().forEach(U::delete);
@@ -1316,7 +1289,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (snpStartReq.incremental())
                         U.delete(snpOp.snapshotFileTree().incrementalSnapshotFileTree(snpStartReq.incrementIndex()).root());
                     else
-                        deleteSnapshot(snpOp.snapshotFileTree());
+                        deleteLocalSnapshot(snpOp.snapshotFileTree());
                 }
                 else if (!F.isEmpty(endReq.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -1481,25 +1454,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return {@code True} if a snapshot delete operation is in progress.
+     * @return {@code True} if a snapshot {@code snpName} delete operation is in progress.
      */
-    public boolean isSnapshotDeleting() {
-        return deleteSnpProc.isSnapshotDeleting();
+    public boolean isSnapshotDeleting(String snpName) {
+        return deleteSnpProc.isSnapshotDeleting(snpName);
     }
 
     /**
-     * Deletes the cluster snapshot with the given name. The snapshot data is removed on all the baseline nodes.
+     * Deletes the cluster-wide snapshot with the given name.
      * <p>
-     * The operation is rejected if a snapshot operation (create, restore or check) is in progress for the snapshot.
+     * The operation is rejected if a concurrent snapshot operation (create, restore, check, etc...) is in progress
+     * for the snapshot.
      *
      * @param name Snapshot name.
-     * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory will be used.
+     * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory is be used.
      * @return Future which will be completed when the snapshot is deleted on all the baseline nodes.
      */
-    public IgniteFutureImpl<Void> deleteSnapshot(String name, @Nullable String snpPath) {
-        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
-        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
-
+    public IgniteFutureImpl<String> deleteDistributedSnapshot(String name, @Nullable String snpPath) {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
         return deleteSnpProc.start(name, snpPath);
@@ -2114,7 +2085,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                if (isSnapshotDeleting()) {
+                if (isSnapshotDeleting(name)) {
                     throw new IgniteException(
                         "Snapshot operation has been rejected. Snapshot delete operation is currently in progress."
                     );
@@ -2328,7 +2299,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (SnapshotFileTree.incrementSnapshotDir(snpDir))
                 U.delete(snpDir);
             else
-                deleteSnapshot(snpDir);
+                deleteLocalSnapshot(snpDir);
         }
 
         if (log.isInfoEnabled()) {
@@ -4022,7 +3993,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteSnapshot(sft);
+                deleteLocalSnapshot(sft);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
