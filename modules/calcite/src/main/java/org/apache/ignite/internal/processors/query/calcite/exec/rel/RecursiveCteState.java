@@ -32,13 +32,13 @@ import org.jetbrains.annotations.Nullable;
 /** Query-local current and next deltas of a recursive CTE. */
 public class RecursiveCteState<Row> {
     /** Rows seen across all iterations, or null for UNION ALL. */
-    @Nullable private final Set<GroupKey<Row>> seen;
+    private final @Nullable Set<GroupKey<Row>> seen;
 
     /** Row handler used for SQL grouping keys. */
     private final RowHandler<Row> hnd;
 
     /** Memory tracker for keys and their rows retained for duplicate elimination. */
-    @Nullable private final RowTracker<GroupKey<Row>> seenMemoryTracker;
+    private final @Nullable RowTracker<GroupKey<Row>> seenMemoryTracker;
 
     /** Rows visible to the recursive table scan. */
     private List<Row> cur = Collections.emptyList();
