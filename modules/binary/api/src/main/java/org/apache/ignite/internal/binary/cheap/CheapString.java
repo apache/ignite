@@ -16,7 +16,11 @@
  */
 package org.apache.ignite.internal.binary.cheap;
 
-/** */
+/**
+ * Pointer in array where UTF-8 encoded bytes are stored.
+ * We want to use this "String" whenever result of read will be sent over the wire.
+ * If we're serving local user request regular {@link String} must be created on read.
+ */
 public class CheapString {
     /** */
     public final byte[] arr;

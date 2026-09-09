@@ -41,7 +41,7 @@ public class ClientCacheGetRequest extends ClientCacheKeyRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
-        try(Scope ignored = OperationContext.set(Marshallers.USE_CHEAP_STR, true)) {
+        try (Scope ignored = OperationContext.set(Marshallers.USE_CHEAP_STR, true)) {
             Object val = cache(ctx).get(key());
 
             return new ClientObjectResponse(requestId(), val);
@@ -50,7 +50,7 @@ public class ClientCacheGetRequest extends ClientCacheKeyRequest {
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
-        try(Scope ignored = OperationContext.set(Marshallers.USE_CHEAP_STR, true)) {
+        try (Scope ignored = OperationContext.set(Marshallers.USE_CHEAP_STR, true)) {
             return chainFuture(cache(ctx).getAsync(key()), v -> new ClientObjectResponse(requestId(), v));
         }
     }
