@@ -91,10 +91,8 @@ def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=None, generic_params
                         Defaults to the DEFAULT_GC profile.
     :param generic_params: collector-independent options. Can be list or string.
     """
-    gc_settings = GC_PROFILES[DEFAULT_GC] if gc_settings is None else gc_settings
-
-    if isinstance(gc_settings, str):
-        gc_settings = gc_settings.split()
+    gc_settings = _as_opts_list(GC_PROFILES[DEFAULT_GC] if gc_settings is None else gc_settings, "gc_settings")
+    generic_params = _as_opts_list(generic_params, "generic_params")
 
     gc_dump = ""
     if gc_dump_path:
@@ -109,7 +107,7 @@ def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=None, generic_params
         vm_error_dump = "-XX:ErrorFile=" + vm_error_path
 
     as_string = f"-Xmx{heap_size} -Xms{heap_size} {' '.join(gc_settings)} {gc_dump} " \
-                f"{out_of_mem_dump} {vm_error_dump} {generic_params}".strip()
+                f"{out_of_mem_dump} {vm_error_dump} {' '.join(generic_params)}".strip()
 
     return as_string.split()
 
@@ -151,8 +149,7 @@ def validate_gc_settings(jvm_opts):
     :param jvm_opts: JVM options to check. Can be list or string.
     :raise MultipleGcSelectedError: if more than one collector is enabled.
     """
-    if isinstance(jvm_opts, str):
-        jvm_opts = jvm_opts.split()
+    jvm_opts = _as_opts_list(jvm_opts, "JVM options")
 
     # Last occurrence wins, matching how the JVM itself resolves repeated flags.
     selectors = {}
@@ -199,12 +196,22 @@ def java_version(node):
     return raw_version[0].strip() if raw_version else ''
 
 
+def _as_opts_list(params, name="JVM params"):
+    """
+    Normalizes JVM options to a list: a string is split on whitespace, a list is copied.
+
+    :param params: options as a string or a list.
+    :param name: what to call them in the failure message.
+    :return: options as a list.
+    """
+    assert isinstance(params, (str, list)), f"{name} can be string or list only, got {type(params).__name__}."
+
+    return params.split() if isinstance(params, str) else list(params)
+
+
 def _to_map(params):
     """"""
-    assert isinstance(params, (str, list)), "JVM params an be string or list only."
-
-    if isinstance(params, str):
-        params = params.split()
+    params = _as_opts_list(params)
 
     mapped = {}
 

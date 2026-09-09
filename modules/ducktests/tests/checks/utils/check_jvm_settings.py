@@ -96,6 +96,14 @@ class CheckJVMSettings:
         """
         assert "-XX:+UseSerialGC" in create_jvm_settings(gc_settings=gc_settings)
 
+    @pytest.mark.parametrize('gc_settings', [{"server": "ZGC"}, 42, ("-XX:+UseSerialGC",)])
+    def check_gc_settings_rejects_other_types(self, gc_settings):
+        """
+        Anything else fails at the boundary: a dict would silently join to its keys.
+        """
+        with pytest.raises(AssertionError):
+            create_jvm_settings(gc_settings=gc_settings)
+
     @pytest.mark.parametrize(
         'jvm_opts',
         [
