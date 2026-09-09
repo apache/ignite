@@ -69,8 +69,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** */
     @Test
     public void testSameSignatureNotRegistered() throws Exception {
-        LogListener logChecker = LogListener.matches("Unable to register function 'SAMESIGN'. Other function " +
-            "with the same name and parameters is already registered").build();
+        LogListener logChecker = createUnableRegisterFunctionLogListener("SAMESIGN");
 
         listeningLog.registerListener(logChecker);
 
@@ -96,7 +95,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
-    public void testOverloadedFunctions() {
+    public void testOverloadedFunctions() throws Exception {
+        LogListener sqlEquivalentLogLsnr = createUnableRegisterFunctionLogListener("SQL_EQUIVALENT");
+        LogListener sqlEquivalentTableLogLsnr = createUnableRegisterFunctionLogListener("SQL_EQUIVALENT_TABLE");
+
+        listeningLog.registerAllListeners(sqlEquivalentLogLsnr, sqlEquivalentTableLogLsnr);
+
         client.getOrCreateCache(new CacheConfiguration<Integer, Object>("overloaded-functions")
             .setSqlSchema("UDF")
             .setSqlFunctionClasses(OverloadedFunctionsLibrary.class));
@@ -107,6 +111,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertEquals(2, schema.getFunctions("OVERLOADED_TABLE").size());
         assertEquals(1, schema.getFunctions("SQL_EQUIVALENT").size());
         assertEquals(1, schema.getFunctions("SQL_EQUIVALENT_TABLE").size());
+
+        assertTrue(sqlEquivalentLogLsnr.check(getTestTimeout()));
+        assertTrue(sqlEquivalentTableLogLsnr.check(getTestTimeout()));
 
         assertQuery("SELECT UDF.OVERLOADED(1, 'a')").returns("1a").check();
         assertQuery("SELECT UDF.OVERLOADED('a', 1)").returns("a1").check();
@@ -900,5 +907,11 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         public static Iterable<Collection<?>> sqlEquivalentTable(Integer i) {
             return List.of(List.of(String.valueOf(i)));
         }
+    }
+
+    /** */
+    private static LogListener createUnableRegisterFunctionLogListener(String fun) {
+        return LogListener.matches("Unable to register function '" + fun + "'. Other function " +
+            "with the same name and parameters is already registered").build();
     }
 }
