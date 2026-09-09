@@ -43,8 +43,11 @@ public abstract class AbstractMessageFactoryProvider implements MessageFactoryPr
 
     /** Register a message with a caller-provided {@code id}. */
     protected <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id) {
-        MessageSerializer<T> serializer = loadGenerated(cls, "Serializer", true);
+        register(factory, cls, id, loadGenerated(cls, "Serializer", true));
+    }
 
+    /** Register a message with a caller-provided {@code id} and a serializer the caller built. */
+    protected <T extends Message> void register(IgniteMessageFactory factory, Class<T> cls, short id, MessageSerializer<T> serializer) {
         // A message that marshals a part of its fields itself always gets a generated marshaller (its own call alone
         // is a statement), so its absence is a build problem. For the rest the generator skips statement-free
         // marshallers, so absence legitimately means "nothing to marshal"; the message and its companions ship in the

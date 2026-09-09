@@ -28,7 +28,7 @@ public final class RawField {
     private final byte[] bytes;
 
     /**
-     * @param tag Tag of the field, the id of the feature that gates it.
+     * @param tag Tag that identifies the field within its message.
      * @param bytes Serialized field value.
      */
     public RawField(int tag, byte[] bytes) {
@@ -36,7 +36,7 @@ public final class RawField {
         this.bytes = bytes;
     }
 
-    /** @return Tag of the field, the id of the feature that gates it. */
+    /** @return Tag that identifies the field within its message. */
     public int tag() {
         return tag;
     }

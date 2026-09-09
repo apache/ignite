@@ -99,4 +99,7 @@ public class CoreFeatureRegistry {
      * positional fields of every message.
      */
     public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
+
+    /** */
+    public static final IgniteFeature RU_AWARE_DISTRIBUTED_ATTRIBUTE_FEATURE = new IgniteCoreFeature(2);
 }

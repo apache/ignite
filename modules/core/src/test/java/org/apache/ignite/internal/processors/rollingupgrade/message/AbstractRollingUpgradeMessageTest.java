@@ -30,6 +30,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.MessagesPluginProvider;
@@ -85,14 +89,14 @@ public abstract class AbstractRollingUpgradeMessageTest extends AbstractRollingU
     }
 
     /** */
-    protected <T extends Message> T send(IgniteEx from, IgniteEx to, T msg) throws Exception {
-        AtomicReference<T> got = new AtomicReference<>();
+    protected <T extends Message> Received<T> send(IgniteEx from, IgniteEx to, T msg) throws Exception {
+        AtomicReference<Received<T>> got = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
 
         String topic = msg.getClass().getName();
 
         GridMessageListener lsnr = (nodeId, rcvd, plc) -> {
-            got.set((T)rcvd);
+            got.set(new Received<>((T)rcvd));
 
             latch.countDown();
         };
@@ -114,21 +118,24 @@ public abstract class AbstractRollingUpgradeMessageTest extends AbstractRollingU
     }
 
     /** */
-    protected TestMessage send(IgniteEx from, IgniteEx to, TestMessageType msgType) throws Exception {
+    protected Received<TestDiscoveryMessage> send(IgniteEx from, IgniteEx to, TestMessageType msgType) throws Exception {
         return send(from, to, buildMessage(from, msgType));
     }
 
     /** */
-    protected Map<String, TestDiscoveryMessage> sendOverDiscovery(IgniteEx from, TestDiscoveryMessage msg) throws Exception {
+    protected Map<String, Received<TestDiscoveryMessage>> sendOverDiscovery(
+        IgniteEx from,
+        TestDiscoveryMessage msg
+    ) throws Exception {
         List<Ignite> clusterNodes = Ignition.allGrids();
 
-        Map<String, TestDiscoveryMessage> receivedMsgs = new ConcurrentHashMap<>();
+        Map<String, Received<TestDiscoveryMessage>> receivedMsgs = new ConcurrentHashMap<>();
 
         CountDownLatch latch = new CountDownLatch(clusterNodes.size());
 
         for (Ignite rcv : clusterNodes) {
             ((IgniteEx)rcv).context().discovery().setCustomEventListener(TestDiscoveryMessage.class, (v, n, m) -> {
-                receivedMsgs.put(rcv.name(), m);
+                receivedMsgs.put(rcv.name(), new Received<>(m));
 
                 latch.countDown();
             });
@@ -144,12 +151,48 @@ public abstract class AbstractRollingUpgradeMessageTest extends AbstractRollingU
     }
 
     /** */
-    protected Map<String, TestDiscoveryMessage> sendOverDiscovery(IgniteEx from, TestMessageType msgType) throws Exception {
+    protected Map<String, Received<TestDiscoveryMessage>> sendOverDiscovery(
+        IgniteEx from,
+        TestMessageType msgType
+    ) throws Exception {
         return sendOverDiscovery(from, buildMessage(from, msgType));
     }
 
     /** */
     protected TestDiscoveryMessage buildMessage(IgniteEx node, TestMessageType msgType) throws Exception {
         return msgType.build(nodeComponentVersions(node), ru(node).features()::isActive);
+    }
+
+    /** Message received by a node together with the operation context the node processed it in. */
+    protected static class Received<T extends Message> {
+        /** */
+        private final T msg;
+
+        /** */
+        private final OperationContextSnapshot opCtx;
+
+        /** */
+        private Received(T msg) {
+            this.msg = msg;
+
+            opCtx = OperationContext.createSnapshot();
+        }
+
+        /** */
+        public T message() {
+            return msg;
+        }
+
+        /** */
+        public <V> V attribute(OperationContextAttribute<V> attr) {
+            try (Scope ignored = restoreOperationContext()) {
+                return OperationContext.get(attr);
+            }
+        }
+
+        /** */
+        public Scope restoreOperationContext() {
+            return OperationContext.restoreSnapshot(opCtx);
+        }
     }
 }
