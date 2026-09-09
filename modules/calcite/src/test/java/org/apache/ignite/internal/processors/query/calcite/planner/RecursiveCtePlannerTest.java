@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlBasicVisitor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
@@ -69,6 +76,108 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
             .and(input(0, isInstanceOf(IgniteValues.class)))
             .and(input(1, hasChildThat(isInstanceOf(IgniteRecursiveTableScan.class))))
         );
+
+        assertPlan(sql.replace("WITH RECURSIVE", "WITH"), schema, isInstanceOf(IgniteRepeatUnion.class)
+            .and(input(1, hasChildThat(isInstanceOf(IgniteRecursiveTableScan.class)))));
+    }
+
+    /** The inferred flag must be set before Calcite registers CTE scopes, including nested WITH clauses. */
+    @Test
+    public void testImplicitRecursiveFlags() throws Exception {
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT x.n + 1 FROM numbers x WHERE x.n < 3) SELECT * FROM numbers", true);
+
+        assertRecursiveFlags("WITH seed(n) AS (SELECT 1), numbers(n) AS (SELECT n FROM seed UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE n < 3), result AS (SELECT * FROM numbers) SELECT * FROM result",
+            false, true, false);
+
+        assertRecursiveFlags("SELECT * FROM (WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE n < 3) SELECT * FROM numbers)", true);
+
+        assertRecursiveFlags("WITH \"Numbers\"(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM \"Numbers\" WHERE n < 3) SELECT * FROM \"Numbers\"", true);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM (SELECT * FROM numbers) x WHERE n < 3) SELECT * FROM numbers", true);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT (SELECT n + 1 FROM numbers WHERE n < 3)) SELECT * FROM numbers", true);
+    }
+
+    /** Identifiers in expressions, aliases and qualified table names must not enable recursion. */
+    @Test
+    public void testOrdinaryCteFlags() throws Exception {
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT n FROM numbers) SELECT * FROM numbers", false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT n FROM numbers UNION ALL SELECT 2) " +
+            "SELECT * FROM numbers", false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT numbers FROM (VALUES (2)) x(numbers)) SELECT * FROM numbers", false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT numbers.n FROM (VALUES (2)) numbers(n)) SELECT * FROM numbers", false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n FROM PUBLIC.numbers) SELECT * FROM numbers", false);
+
+        assertRecursiveFlags("WITH \"numbers\"(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n FROM NUMBERS) SELECT * FROM \"numbers\"", false);
+    }
+
+    /** Inner CTEs hide the outer name only where they are visible. */
+    @Test
+    public void testNestedCteFlags() throws Exception {
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT * FROM (WITH numbers(n) AS (SELECT 2) SELECT * FROM numbers)) SELECT * FROM numbers",
+            false, false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT * FROM (WITH numbers(n) AS (SELECT 2), x AS (SELECT * FROM numbers) SELECT * FROM x)) " +
+            "SELECT * FROM numbers", false, false, false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT * FROM (WITH numbers(n) AS (SELECT 2 UNION ALL SELECT n + 1 FROM numbers WHERE n < 3) " +
+            "SELECT * FROM numbers)) SELECT * FROM numbers", false, true);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM (WITH numbers(n) AS (SELECT n FROM numbers WHERE n < 3) " +
+            "SELECT * FROM numbers)) SELECT * FROM numbers", true, false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM (WITH x AS (SELECT n FROM numbers WHERE n < 3), numbers(n) AS (SELECT 9) " +
+            "SELECT * FROM x)) SELECT * FROM numbers", true, false, false);
+
+        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM (WITH numbers(n) AS (SELECT n FROM numbers WHERE n < 2 UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE n < 2) SELECT * FROM numbers)) SELECT * FROM numbers", true, true);
+    }
+
+    /** Validates real SQL and checks flags on parsed WITH items in pre-order. */
+    private void assertRecursiveFlags(String sql, boolean... expected) throws Exception {
+        IgniteSchema schema = createSchema(createTable("NUMBERS", IgniteDistributions.single(), "N", Integer.class));
+
+        try (IgnitePlanner planner = plannerCtx(sql, schema).planner()) {
+            SqlNode node = planner.parse(sql);
+            List<SqlWithItem> items = new ArrayList<>();
+
+            node.accept(new SqlBasicVisitor<Void>() {
+                /** {@inheritDoc} */
+                @Override public Void visit(SqlCall call) {
+                    if (call instanceof SqlWithItem)
+                        items.add((SqlWithItem)call);
+
+                    return super.visit(call);
+                }
+            });
+
+            planner.validate(node);
+
+            assertEquals(sql, expected.length, items.size());
+
+            for (int i = 0; i < expected.length; i++)
+                assertEquals(sql + " [item=" + i + ']', expected[i], items.get(i).recursive.booleanValue());
+        }
     }
 
     /** A replicated source can be read on the coordinator without an exchange. */

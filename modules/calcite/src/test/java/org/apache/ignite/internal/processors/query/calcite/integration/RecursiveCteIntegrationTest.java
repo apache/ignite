@@ -31,6 +31,32 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
     /** Number of invocations of a non-deterministic function. */
     private static final AtomicInteger nonDeterministicCallCnt = new AtomicInteger();
 
+    /** Explicit and inferred recursion must produce the same rows. */
+    @Test
+    public void testOptionalRecursiveKeyword() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "seed(n) AS (SELECT 1), numbers(n) AS (" +
+                "SELECT n FROM seed UNION ALL SELECT n + 1 FROM numbers WHERE n < 3), " +
+                "result AS (SELECT * FROM numbers) SELECT * FROM result")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+
+            assertQuery("SELECT * FROM (WITH " + keyword + "\"Numbers\"(n) AS (" +
+                "SELECT 1 UNION ALL SELECT x.n + 1 FROM \"Numbers\" x WHERE x.n < 3) " +
+                "SELECT * FROM \"Numbers\")")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+
+            assertThrows("WITH " + keyword + "numbers(n) AS (" +
+                "SELECT 1 UNION SELECT n + 1 FROM numbers WHERE n < 3) SELECT * FROM numbers",
+                IgniteSQLException.class, "only UNION ALL is supported");
+        }
+    }
+
     /** */
     @Test
     public void testEmployeeHierarchy() {
@@ -117,6 +143,88 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testRecursiveCteWithMultipleJoinConsumers() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 FROM numbers WHERE n < 3" +
+            ") " +
+            "SELECT l.n, r.n " +
+            "FROM numbers l " +
+            "JOIN numbers r ON l.n = r.n")
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(3, 3)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRecursiveCteWithMultipleUnionConsumers() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 FROM numbers WHERE n < 3" +
+            ") " +
+            "SELECT n FROM numbers " +
+            "UNION ALL " +
+            "SELECT n FROM numbers")
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testSelfReferenceInScalarSubqueryIsRejected() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT (SELECT n + 1 FROM numbers) FROM (VALUES (0))" +
+            ") " +
+            "SELECT n FROM numbers FETCH FIRST 3 ROWS ONLY",
+            IgniteSQLException.class,
+            "self-references inside subqueries are not supported"
+        );
+    }
+
+    /** */
+    @Test
+    public void testSelfReferenceInDerivedTableIsRejected() {
+        assertThrows(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 FROM (SELECT n FROM numbers) WHERE n < 3" +
+            ") " +
+            "SELECT n FROM numbers",
+            IgniteSQLException.class,
+            "self-references inside subqueries are not supported"
+        );
+    }
+
+    /** */
+    @Test
+    public void testRecursiveCteCanBeReadFromScalarSubquery() {
+        assertQuery(
+            "WITH RECURSIVE numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 FROM numbers WHERE n < 3" +
+            ") " +
+            "SELECT (SELECT MAX(n) FROM numbers)"
+        )
+            .returns(3)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testRecursiveCteWithMultipleRecursiveBranches() {
         assertQuery("WITH RECURSIVE numbers(n) AS (" +
                 "SELECT 1 " +
@@ -175,6 +283,28 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(1, 10)
             .returns(2, 11)
             .returns(3, 12)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testNestedRecursiveCteStatesAreIsolated() {
+        assertQuery("WITH RECURSIVE first_numbers(n) AS (" +
+                "SELECT 10 " +
+                "UNION ALL " +
+                "SELECT n + 1 FROM first_numbers WHERE n < 12" +
+            "), second_numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT second_numbers.n + 1 " +
+                "FROM second_numbers " +
+                "JOIN first_numbers ON second_numbers.n + 9 = first_numbers.n " +
+                "WHERE second_numbers.n < 3" +
+            ") " +
+            "SELECT n FROM second_numbers")
+            .returns(1)
+            .returns(2)
+            .returns(3)
             .check();
     }
 

@@ -60,7 +60,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     private final BinaryOutputStream out;
 
     /** Schema. */
-    private final BinaryWriterSchemaHolder schema;
+    private final @Nullable BinaryWriterSchemaHolder schema;
 
     /** */
     private int typeId;
@@ -96,7 +96,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     public BinaryWriterExImpl(
         BinaryContext ctx,
         BinaryOutputStream out,
-        BinaryWriterSchemaHolder schema,
+        @Nullable BinaryWriterSchemaHolder schema,
         BinaryWriterHandles handles,
         boolean failIfUnregistered,
         int typeId
