@@ -112,7 +112,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
             for (Object container : new Object[] {row, Collections.singletonList(val)}) {
                 TableFunctionScan<Object[]> scan = new TableFunctionScan<>(ctx, rowType,
-                    () -> Collections.singletonList(container), ctx.rowHandler().factory(ctx.getTypeFactory(), rowType));
+                    () -> Collections.singletonList(container));
 
                 Object[] res = scan.iterator().next();
 

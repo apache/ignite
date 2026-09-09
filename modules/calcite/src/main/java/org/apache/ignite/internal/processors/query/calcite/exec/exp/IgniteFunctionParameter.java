@@ -34,11 +34,7 @@ final class IgniteFunctionParameter implements FunctionParameter {
     /** Original function parameter. */
     private final FunctionParameter delegate;
 
-    /**
-     * Constructor.
-     *
-     * @param delegate Original function parameter.
-     */
+    /** */
     private IgniteFunctionParameter(FunctionParameter delegate) {
         this.delegate = delegate;
     }

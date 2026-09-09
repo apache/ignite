@@ -50,13 +50,13 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     public TableFunctionScan(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Iterable<?>> dataSupplier,
-        RowFactory<Row> rowFactory
+        Supplier<Iterable<?>> dataSupplier
     ) {
         this.ctx = ctx;
         this.rowType = rowType;
         this.dataSupplier = dataSupplier;
-        this.rowFactory = rowFactory;
+
+        rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
     }
 
     /** {@inheritDoc} */

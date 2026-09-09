@@ -786,9 +786,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         RelDataType rowType = rel.getRowType();
 
-        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
-
-        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(ctx, rowType, dataSupplier, rowFactory));
+        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(ctx, rowType, dataSupplier));
     }
 
     /** {@inheritDoc} */
