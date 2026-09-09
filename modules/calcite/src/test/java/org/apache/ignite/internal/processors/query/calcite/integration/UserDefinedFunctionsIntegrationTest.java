@@ -55,9 +55,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
+import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 
 /**
  * Integration test for user defined functions.
@@ -794,6 +796,88 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .check();
     }
 
+    /**
+     * Regression test: {@code java.time} parameters of a UDF must be mapped to SQL temporal types (not to {@code OTHER}),
+     * so that a dynamic parameter bound to a JDBC value ({@link Date}, {@link Time}, {@link Timestamp}) is converted to the
+     * parameter class, and a value of an incompatible type is rejected by the validator instead of failing with
+     * a {@link ClassCastException} at execution time.
+     */
+    @Test
+    public void testJavaTimeFunctionParametersWithSqlTypeValues() {
+        client.getOrCreateCache(new CacheConfiguration<>("java-time-params")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        assertQuery("SELECT localDateToStr(?)")
+            .withParams(Date.valueOf("2022-02-16"))
+            .returns("2022-02-16")
+            .check();
+
+        assertQuery("SELECT localTimeToStr(?)")
+            .withParams(Time.valueOf("03:04:05"))
+            .returns("03:04:05")
+            .check();
+
+        assertQuery("SELECT localDateTimeToStr(?)")
+            .withParams(Timestamp.valueOf("2023-03-17 04:05:06"))
+            .returns("2023-03-17T04:05:06")
+            .check();
+
+        // Control: the opposite direction already works for java.sql parameters.
+        assertQuery("SELECT sqlDateToStr(?)")
+            .withParams(LocalDate.of(2022, 2, 16))
+            .returns("2022-02-16")
+            .check();
+
+        // Incompatible values must be rejected by the validator.
+        assertThrows("SELECT sqlDateToStr(?)", SqlValidatorException.class,
+            "No match found for function signature SQLDATETOSTR(<NUMERIC>)", 5);
+        assertThrows("SELECT localDateToStr(?)", SqlValidatorException.class,
+            "No match found for function signature LOCALDATETOSTR(<NUMERIC>)", 5);
+        assertThrows("SELECT localTimeToStr(?)", SqlValidatorException.class,
+            "No match found for function signature LOCALTIMETOSTR(<NUMERIC>)", 5);
+        assertThrows("SELECT localDateTimeToStr(?)", SqlValidatorException.class,
+            "No match found for function signature LOCALDATETIMETOSTR(<NUMERIC>)", 5);
+    }
+
+    /**
+     * Regression test: a call of a deterministic UDF with temporal literal arguments must be reduced to a constant at
+     * planning time. The planner executor has no data context, so the arguments conversion must not depend on it.
+     */
+    @Test
+    public void testDeterministicTemporalFunctionReduced() {
+        client.getOrCreateCache(new CacheConfiguration<>("deterministic-temporal")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(DeterministicTemporalFunctionsLibrary.class));
+
+        sql("CREATE TABLE reduce_tbl (id INT PRIMARY KEY, val INT)");
+        sql("INSERT INTO reduce_tbl VALUES (1, 1), (2, 2)");
+
+        // Control: a non-temporal argument is reduced.
+        assertReduced("SELECT id FROM reduce_tbl WHERE detIntToStr(1) = '1'", "DETINTTOSTR");
+
+        assertReduced("SELECT id FROM reduce_tbl WHERE detDateToStr(DATE '2020-01-01') = '2020-01-01'", "DETDATETOSTR");
+        assertReduced("SELECT id FROM reduce_tbl WHERE detTimeToStr(TIME '02:03:04') = '02:03:04'", "DETTIMETOSTR");
+        assertReduced("SELECT id FROM reduce_tbl WHERE detTimestampToStr(TIMESTAMP '2021-01-15 02:03:04') = "
+            + "'2021-01-15 02:03:04.0'", "DETTIMESTAMPTOSTR");
+    }
+
+    /** Checks that the function call is not present in the plan (reduced to a constant) and the query result is correct. */
+    private void assertReduced(String sql, String fnName) {
+        assertQuery(sql)
+            .matches(CoreMatchers.not(containsSubPlan(fnName)))
+            .returns(1)
+            .returns(2)
+            .check();
+    }
+
+
+    /** */
+    @SuppressWarnings("ThrowableNotThrown")
+    private void assertThrows(String sql) {
+        GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
+    }
+
     /** */
     private static java.util.Date[] temporalSubtypeValues() {
         return new java.util.Date[] {
@@ -846,11 +930,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         };
     }
 
-    /** */
-    @SuppressWarnings("ThrowableNotThrown")
-    private void assertThrows(String sql) {
-        GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
-    }
 
     /** */
     public static final class TableFunctionsLibrary {
@@ -1607,6 +1686,59 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             return Collections.singletonList(new Object[] {
                 utilDate, date, time, timestamp, localDate, localTime, localDateTime, duration, period
             });
+        }
+    }
+    /** */
+    public static class JavaTimeParametersFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static String localDateToStr(LocalDate val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String localTimeToStr(LocalTime val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String localDateTimeToStr(LocalDateTime val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String sqlDateToStr(Date val) {
+            return val.toString();
+        }
+    }
+
+    /** */
+    public static class DeterministicTemporalFunctionsLibrary {
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detIntToStr(int val) {
+            return String.valueOf(val);
+        }
+
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detDateToStr(Date val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detTimeToStr(Time val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detTimestampToStr(Timestamp val) {
+            return val.toString();
         }
     }
 }
