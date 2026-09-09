@@ -208,7 +208,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
-            if (reader != null && BinaryUtils.hasSchema(flags)) {
+            if (reader != null && BinaryImplUtils.hasSchema(flags)) {
                 Map<Integer, Object> assignedFldsById;
 
                 if (assignedVals != null) {
