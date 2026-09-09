@@ -40,6 +40,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class ConverterUtils {
@@ -82,11 +83,6 @@ public class ConverterUtils {
     /** Converts from internal representation to JDBC representation used by
      * arguments of user-defined functions. For example, converts date values from
      * {@code int} to {@link java.sql.Date}. */
-    private static Expression fromInternal(Expression operand, Type targetType) {
-        return fromInternal(operand, operand.getType(), targetType);
-    }
-
-    /** */
     private static Expression fromInternal(Expression operand,
         Type fromType, Type targetType) {
         if (operand == ConstantUntypedNull.INSTANCE)
@@ -128,38 +124,19 @@ public class ConverterUtils {
     /** */
     static List<Expression> fromInternal(Class<?>[] targetTypes,
         List<Expression> expressions) {
-        final List<Expression> list = new ArrayList<>();
-        if (targetTypes.length == expressions.size()) {
-            for (int i = 0; i < expressions.size(); i++)
-                list.add(fromInternal(expressions.get(i), targetTypes[i]));
-        }
-        else {
-            int j = 0;
-            for (int i = 0; i < expressions.size(); i++) {
-                Class<?> type;
-                if (!targetTypes[j].isArray()) {
-                    type = targetTypes[j];
-                    j++;
-                }
-                else
-                    type = targetTypes[j].getComponentType();
-
-                list.add(fromInternal(expressions.get(i), type));
-            }
-        }
-        return list;
+        return fromInternal(null, targetTypes, expressions);
     }
 
     /** */
-    static List<Expression> fromInternal(RexToLixTranslator translator,
+    static List<Expression> fromInternal(@Nullable Expression root,
         Class<?>[] targetTypes,
         List<Expression> expressions
     ) {
-        final List<Expression> list = new ArrayList<>();
+        final List<Expression> list = new ArrayList<>(expressions.size());
 
         if (targetTypes.length == expressions.size()) {
             for (int i = 0; i < expressions.size(); i++)
-                list.add(fromInternal(translator, expressions.get(i), targetTypes[i]));
+                list.add(fromInternal(root, expressions.get(i), targetTypes[i]));
         }
         else {
             int j = 0;
@@ -174,7 +151,7 @@ public class ConverterUtils {
                 else
                     targetType = targetTypes[j].getComponentType();
 
-                list.add(fromInternal(translator, expression, targetType));
+                list.add(fromInternal(root, expression, targetType));
             }
         }
 
@@ -182,14 +159,18 @@ public class ConverterUtils {
     }
 
     /** */
-    private static Expression fromInternal(RexToLixTranslator translator, Expression operand, Type targetType) {
+    private static Expression fromInternal(@Nullable Expression root, Expression operand, Type targetType) {
+        // Preserve Calcite conversions when no execution context is available, including temporal conversions.
+        if (root == null)
+            return fromInternal(operand, operand.getType(), targetType);
+
         // Let the Java method call box compatible primitives instead of generating a reference cast.
         if (Types.isAssignableFrom(targetType, operand.getType())
             || Types.isAssignableFrom(targetType, Primitive.box(operand.getType())))
             return operand;
 
         if (!TypeUtils.isConvertableType(targetType))
-            return targetType == BigDecimal.class ? fromInternal(operand, targetType) :
+            return targetType == BigDecimal.class ? fromInternal(operand, operand.getType(), targetType) :
                 convert(operand, operand.getType(), targetType);
 
         if (Primitive.is(operand.getType()))
@@ -198,7 +179,7 @@ public class ConverterUtils {
         Expression converted = Expressions.call(
             TypeUtils.class,
             "fromInternal",
-            translator.getRoot(),
+            root,
             operand,
             Expressions.constant(targetType)
         );
