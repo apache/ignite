@@ -857,22 +857,9 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         assertPageType(pageAddr);
 
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
-        boolean fragmented = isFragmented(pageAddr, dataOff);
 
-        if (!fragmented) {
-            int rowSize = row.size();
-
-            // Different format is used for not fragmented row, can't use writeFragmentData and unify method.
-            writeRowData(pageAddr, dataOff, rowSize, row, false);
-
-            if (!needPayload)
-                return null;
-
-            byte[] modifiedPayload = new byte[rowSize];
-            PageUtils.getBytes(pageAddr, dataOff + PAYLOAD_LEN_SIZE, modifiedPayload, 0, rowSize);
-
-            return new DataPageUpdateResult(rowSize, modifiedPayload, 0L);
-        }
+        // Due to different write formats this method can't be used for non-fragmented rows.
+        assert isFragmented(pageAddr, dataOff);
 
         long nextLink = getNextFragmentLink(pageAddr, dataOff);
         int payloadSize = getPageEntrySize(pageAddr, dataOff, 0);

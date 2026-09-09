@@ -200,16 +200,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             evictionTracker.touchPage(pageId);
 
-            if (updateRes != null && updateRes.modifiedPayload() != null
-                && walEnabled && needWalDeltaRecord(pageId, page, walPlc)) {
-                wal.log(new DataPageUpdateRecord(
-                    cacheId,
-                    pageId,
-                    itemId,
-                    updateRes.modifiedPayload()));
-            }
-
             if (updateRes != null) {
+                if (updateRes.modifiedPayload() != null && walEnabled && needWalDeltaRecord(pageId, page, walPlc)) {
+                    wal.log(new DataPageUpdateRecord(
+                        cacheId,
+                        pageId,
+                        itemId,
+                        updateRes.modifiedPayload()));
+                }
+
                 fragment.modified = !walEnabled || updateRes.modifiedPayload() != null;
                 fragment.nextLink = updateRes.nextLink();
                 fragment.written += updateRes.payloadSize();
@@ -892,12 +891,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long pageId = PageIdUtils.pageId(link);
             int itemId = PageIdUtils.itemId(link);
 
-            if (!allowFragmented) {
+            if (!allowFragmented || size <= pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD) {
                 Boolean updated = write(pageId, updateSignlePageRow, newRow, itemId, null, statHolder);
 
                 assert updated != null; // Can't fail here.
 
-                return updated;
+                if (updated || !allowFragmented)
+                    return updated; // If allow fragmented fallback to fragmented row update.
             }
 
             PartiallyWritten updateRes = write(pageId, updateFragmentedRow, new PartiallyWritten(newRow), itemId,

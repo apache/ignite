@@ -138,6 +138,36 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testUpdateDifferentSizesInMemory() throws Exception {
+        checkUpdateDifferentSizes(false);
+    }
+
+    /** */
+    @Test
+    public void testUpdateDifferentSizesPersistence() throws Exception {
+        checkUpdateDifferentSizes(true);
+    }
+
+    /** */
+    public void checkUpdateDifferentSizes(boolean pds) throws Exception {
+        this.pds = pds;
+
+        IgniteEx ignite = startGrid(0);
+
+        if (pds)
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        int pageSize = ignite.context().cache().context().database().pageSize();
+
+        for (int i = 1000; i < pageSize; i++)
+            checkLinkChange(ignite, cache, i, true, false);
+    }
+
+
+    /** */
+    @Test
     public void testDirtyPagesCountAfterUpdate() throws Exception {
         pds = true;
         int entrySize = 100 * 1024;
@@ -323,15 +353,15 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
         cache = cache.withExpiryPolicy(new CreatedExpiryPolicy(Duration.ONE_DAY));
 
         // In-place update is enabled when TTL is not changed and entry occupies only one page.
-        checkLinkChange(ignite, cache, 100, true);
+        checkLinkChange(ignite, cache, 100, true, false);
 
         // In-place update is disabled when TTL is not changed, but entry occupies more than one page.
-        checkLinkChange(ignite, cache, ignite.context().cache().context().database().pageSize(), false);
+        checkLinkChange(ignite, cache, ignite.context().cache().context().database().pageSize(), false, false);
 
         cache = cache.withExpiryPolicy(new ModifiedExpiryPolicy(Duration.ONE_DAY));
 
         // In-place update is disabled when TTL is changed.
-        checkLinkChange(ignite, cache, 100, false);
+        checkLinkChange(ignite, cache, 100, false, true);
     }
 
     /** */
@@ -339,7 +369,8 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
         IgniteEx ignite,
         IgniteCache<Integer, byte[]> cache,
         int payloadSize,
-        boolean expectInPlaceUpdate
+        boolean expectInPlaceUpdate,
+        boolean ensureTtlChanged
     ) throws IgniteCheckedException {
         int key = 0;
 
@@ -351,9 +382,10 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
 
         long ts = U.currentTimeMillis();
 
-        // Ensure TTL changed.
-        while (ts == U.currentTimeMillis())
-            doSleep(10);
+        if (ensureTtlChanged) {
+            while (ts == U.currentTimeMillis())
+                doSleep(10);
+        }
 
         ThreadLocalRandom.current().nextBytes(payload);
         cache.put(key, payload);
