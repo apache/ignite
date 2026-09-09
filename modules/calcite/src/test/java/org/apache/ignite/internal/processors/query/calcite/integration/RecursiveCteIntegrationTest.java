@@ -51,9 +51,12 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
                 .returns(3)
                 .check();
 
-            assertThrows("WITH " + keyword + "numbers(n) AS (" +
-                "SELECT 1 UNION SELECT n + 1 FROM numbers WHERE n < 3) SELECT * FROM numbers",
-                IgniteSQLException.class, "only UNION ALL is supported");
+            assertQuery("WITH " + keyword + "numbers(n) AS (" +
+                "SELECT 1 UNION SELECT n + 1 FROM numbers WHERE n < 3) SELECT * FROM numbers")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
         }
     }
 

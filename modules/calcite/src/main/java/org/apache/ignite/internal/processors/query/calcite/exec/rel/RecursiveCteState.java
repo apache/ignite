@@ -27,17 +27,18 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.jetbrains.annotations.Nullable;
 
 /** Query-local current and next deltas of a recursive CTE. */
 public class RecursiveCteState<Row> {
     /** Rows seen across all iterations, or null for UNION ALL. */
-    private final Set<GroupKey<Row>> seen;
+    @Nullable private final Set<GroupKey<Row>> seen;
 
     /** Row handler used for SQL grouping keys. */
     private final RowHandler<Row> hnd;
 
     /** Memory tracker for keys and their rows retained for duplicate elimination. */
-    private final RowTracker<GroupKey<Row>> seenMemoryTracker;
+    @Nullable private final RowTracker<GroupKey<Row>> seenMemoryTracker;
 
     /** Rows visible to the recursive table scan. */
     private List<Row> cur = Collections.emptyList();
@@ -55,7 +56,7 @@ public class RecursiveCteState<Row> {
     public RecursiveCteState(ExecutionContext<Row> ctx, boolean all) {
         seen = all ? null : new HashSet<>();
         hnd = ctx.rowHandler();
-        seenMemoryTracker = ctx.createNodeMemoryTracker(MemoryTrackingNode.HASH_MAP_ROW_OVERHEAD);
+        seenMemoryTracker = all ? null : ctx.createNodeMemoryTracker(MemoryTrackingNode.HASH_MAP_ROW_OVERHEAD);
         curMemoryTracker = ctx.createNodeMemoryTracker(GridUnsafe.OBJ_REF_SIZE);
         nextMemoryTracker = ctx.createNodeMemoryTracker(GridUnsafe.OBJ_REF_SIZE);
     }
@@ -108,9 +109,10 @@ public class RecursiveCteState<Row> {
 
         curMemoryTracker.reset();
         nextMemoryTracker.reset();
-        seenMemoryTracker.reset();
 
-        if (seen != null)
+        if (seen != null) {
             seen.clear();
+            seenMemoryTracker.reset();
+        }
     }
 }

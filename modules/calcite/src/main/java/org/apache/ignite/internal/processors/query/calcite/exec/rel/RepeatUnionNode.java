@@ -88,7 +88,8 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
-        assert waiting > 0 && pending > 0;
+        assert waiting > 0 && pending > 0 :
+            "Received a row without outstanding demand [waiting=" + waiting + ", pending=" + pending + ']';
 
         checkState();
 
@@ -189,7 +190,8 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     private void requestSource() throws Exception {
         checkState();
 
-        assert pending == 0;
+        assert pending == 0 : "Cannot request more rows while the source request is pending [waiting=" + waiting +
+                ", pending=" + pending + ']';
 
         source().request(pending = waiting);
     }
