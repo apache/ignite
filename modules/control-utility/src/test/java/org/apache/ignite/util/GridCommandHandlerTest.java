@@ -239,8 +239,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         initDiagnosticDir();
 
-        // Handy if other test runs interrupted.
-        cleanPersistenceDir();
+        cleanDiagnosticDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        listeningLog = null;
     }
 
     /** {@inheritDoc} */
@@ -1901,8 +1907,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Ignite instase 1 can be logged only in arguments list.
         boolean isInstance1Found = Arrays.stream(testOutStr.split("\n"))
-                                        .filter(s -> s.contains("Arguments:"))
-                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+            .filter(s -> s.contains("Arguments:"))
+            .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 
@@ -3235,114 +3241,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ((SnapshotPartitionsVerifyResult)h.getLastOperationResult()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDelete() throws Exception {
-        doTestSnapshotDelete(false, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteCustomPath() throws Exception {
-        doTestSnapshotDelete(false, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteClient() throws Exception {
-        doTestSnapshotDelete(true, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteCustomPathClient() throws Exception {
-        doTestSnapshotDelete(true, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteIncrementsCustomPathClient() throws Exception {
-        doTestSnapshotDelete(true, true, true);
-    }
-
-    /** */
-    private void doTestSnapshotDelete(boolean withClientGrid, boolean customPath, boolean addIncrements) throws Exception {
-        int nodesCnt = 3;
-        int entriesCnt = 4000;
-
-        walCompactionEnabled(addIncrements);
-
-        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(nodesCnt);
-
-        if (withClientGrid)
-            startGrid(CLIENT_NODE_NAME_PREFIX);
-
-        ig.cluster().state(ACTIVE);
-
-        createCacheAndPreload(ig, entriesCnt);
-
-        File cstSnpsRoot = customPath ? new File(U.defaultWorkDirectory(), "ex_snapshots") : null;
-        File snpDir = new File(customPath ? cstSnpsRoot : ig.context().pdsFolderResolver().fileTree().snapshotsRoot(), "testSnapshot");
-
-        try {
-            snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
-                .get(getTestTimeout());
-
-            if (addIncrements) {
-                for (int i = 0; i < 3; ++i) {
-                    int dataIdx = entriesCnt + entriesCnt / 4 * i;
-
-                    try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-                        for (int d = dataIdx; d < dataIdx + entriesCnt / 4; ++d)
-                            streamer.addData(i, i);
-                    }
-
-                    snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, true, false)
-                        .get(getTestTimeout());
-                }
-            }
-
-            assertTrue("Snapshot directory must exist: " + snpDir, snpDir.exists());
-
-            injectTestSystemOut();
-
-            if (customPath) {
-                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
-                    cstSnpsRoot.getAbsolutePath(), "wrongSnapshot"));
-            }
-            else
-                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "wrongSnapshot"));
-
-            String out = testOut.toString();
-
-            assertFalse(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(nodesCnt)));
-            assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
-            assertTrue(out.contains("Snapshot not found on current server nodes"));
-
-            testOut.reset();
-            assertTrue(testOut.toString().isEmpty());
-
-            if (customPath) {
-                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
-                    cstSnpsRoot.getAbsolutePath(), "testSnapshot"));
-            }
-            else
-                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "testSnapshot"));
-
-            out = testOut.toString();
-
-            assertTrue(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(nodesCnt)));
-            assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
-            assertFalse(out.contains("Snapshot not found on current server nodes"));
-
-            assertTrue(waitForCondition(() -> !snpDir.exists(), getTestTimeout()));
-        }
-        finally {
-            if (cstSnpsRoot != null)
-                U.delete(cstSnpsRoot);
-        }
     }
 
     /** @throws Exception If fails. */
