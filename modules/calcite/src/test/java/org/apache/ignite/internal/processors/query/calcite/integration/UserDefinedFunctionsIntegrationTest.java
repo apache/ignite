@@ -17,10 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
@@ -37,11 +46,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
@@ -493,6 +504,258 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testObjectTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("object-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
+
+        Object[] exp = temporalValues();
+
+        assertQuery("SELECT * FROM objectTableValues()")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(exp.length, rows.get(0).size());
+
+                for (int i = 0; i < exp.length; i++) {
+                    Object actual = rows.get(0).get(i);
+
+                    assertEquals("Unexpected value type at index " + i, exp[i].getClass(), actual.getClass());
+                    assertEqualsArraysAware("Unexpected value at index " + i, exp[i], actual);
+                }
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testSerializableTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("serializable-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(SerializableFunctionsLibrary.class));
+
+        assertQuery("SELECT * FROM serializableTableValues()")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(1, rows.get(0).size());
+                assertEquals(Date.class, rows.get(0).get(0).getClass());
+                assertEquals(Date.valueOf("2020-01-01"), rows.get(0).get(0));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testTemporalFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("temporal-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT checkTemporalTypes(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .withParams(temporalValues())
+            .returns(true)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfUtilDateValue()), EXTRACT(DAY FROM udfDateValue()), "
+            + "EXTRACT(HOUR FROM udfTimeValue()), EXTRACT(YEAR FROM udfTimestampValue()), "
+            + "EXTRACT(DAY FROM udfLocalDateValue()), EXTRACT(HOUR FROM udfLocalTimeValue()), "
+            + "EXTRACT(YEAR FROM udfLocalDateTimeValue()), EXTRACT(DAY FROM udfDurationValue()), "
+            + "EXTRACT(HOUR FROM udfDurationValue()), EXTRACT(MINUTE FROM udfDurationValue()), "
+            + "EXTRACT(YEAR FROM udfPeriodValue()), EXTRACT(MONTH FROM udfPeriodValue())")
+            .returns(2020L, 15L, 2L, 2021L, 16L, 3L, 2023L, 1L, 2L, 3L, 1L, 2L)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM util_date), EXTRACT(DAY FROM sql_date), "
+            + "EXTRACT(HOUR FROM sql_time), EXTRACT(YEAR FROM sql_timestamp), "
+            + "EXTRACT(DAY FROM local_date), EXTRACT(HOUR FROM local_time), "
+            + "EXTRACT(YEAR FROM local_timestamp), EXTRACT(DAY FROM duration_value), "
+            + "EXTRACT(HOUR FROM duration_value), EXTRACT(MINUTE FROM duration_value), "
+            + "EXTRACT(YEAR FROM period_value), EXTRACT(MONTH FROM period_value) "
+            + "FROM temporalTable(?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .withParams(temporalValues())
+            .returns(2020L, 15L, 2L, 2021L, 16L, 3L, 2023L, 1L, 2L, 3L, 1L, 2L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testHistoricalTemporalFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("historical-temporal-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class, DeterministicTemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT detDateToStr(DATE '1500-01-02'), "
+            + "detTimestampToStr(TIMESTAMP '1500-01-02 03:04:05')")
+            .returns("1500-01-02", "1500-01-02 03:04:05.0")
+            .check();
+
+        assertQuery("SELECT CAST(udfDateFromString('1500-01-02') AS VARCHAR), "
+            + "EXTRACT(DAY FROM udfDateFromString('1500-01-02'))")
+            .returns("1500-01-02", 2L)
+            .check();
+
+        assertQuery("SELECT CAST(udfTimestampFromString('1500-01-02 03:04:05') AS VARCHAR), "
+            + "EXTRACT(DAY FROM udfTimestampFromString('1500-01-02 03:04:05'))")
+            .returns("1500-01-02 03:04:05", 2L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testTemporalScalarFunctionResultSubtypes() {
+        client.getOrCreateCache(new CacheConfiguration<>("temporal-scalar-result-subtypes")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT udfDateAsUtilDate()")
+            .returns(Timestamp.valueOf("2020-01-01 00:00:00"))
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfDateAsUtilDate()), EXTRACT(HOUR FROM udfDateAsUtilDate())")
+            .returns(2020L, 0L)
+            .check();
+
+        assertQuery("SELECT udfTimeAsUtilDate()")
+            .returns(Timestamp.valueOf("1970-01-01 02:03:04"))
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfTimeAsUtilDate()), EXTRACT(HOUR FROM udfTimeAsUtilDate())")
+            .returns(1970L, 2L)
+            .check();
+
+        assertQuery("SELECT udfTimestampAsUtilDate()")
+            .returns(Timestamp.valueOf("2021-01-15 03:04:05"))
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfTimestampAsUtilDate()), "
+            + "EXTRACT(HOUR FROM udfTimestampAsUtilDate())")
+            .returns(2021L, 3L)
+            .check();
+
+        assertQuery("SELECT udfNullUtilDate()")
+            .returns(NULL_RESULT)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM udfNullUtilDate()), EXTRACT(HOUR FROM udfNullUtilDate())")
+            .returns(null, null)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testTemporalTableFunctionResultSubtypes() {
+        client.getOrCreateCache(new CacheConfiguration<>("temporal-table-result-subtypes")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT d FROM utilDateSubtypeTable()")
+            .returns(Timestamp.valueOf("2020-01-01 00:00:00"))
+            .returns(Timestamp.valueOf("1970-01-01 02:03:04"))
+            .returns(Timestamp.valueOf("2021-01-15 03:04:05"))
+            .returns(NULL_RESULT)
+            .check();
+
+        assertQuery("SELECT EXTRACT(YEAR FROM d), EXTRACT(HOUR FROM d) FROM utilDateSubtypeTable()")
+            .returns(2020L, 0L)
+            .returns(1970L, 2L)
+            .returns(2021L, 3L)
+            .returns(null, null)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testJavaTimeFunctionParametersWithSqlTypeValues() {
+        client.getOrCreateCache(new CacheConfiguration<>("java-time-params")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        assertQuery("SELECT localDateToStr(?)")
+            .withParams(Date.valueOf("2022-02-16"))
+            .returns("2022-02-16")
+            .check();
+
+        assertQuery("SELECT localTimeToStr(?)")
+            .withParams(Time.valueOf("03:04:05"))
+            .returns("03:04:05")
+            .check();
+
+        assertQuery("SELECT localDateTimeToStr(?)")
+            .withParams(Timestamp.valueOf("2023-03-17 04:05:06"))
+            .returns("2023-03-17T04:05:06")
+            .check();
+
+        // Control: the opposite direction already works for java.sql parameters.
+        assertQuery("SELECT sqlDateToStr(?)")
+            .withParams(LocalDate.of(2022, 2, 16))
+            .returns("2022-02-16")
+            .check();
+
+        // Incompatible values must be rejected by the validator.
+        assertThrows("SELECT sqlDateToStr(?)", SqlValidatorException.class,
+            "No match found for function signature SQLDATETOSTR(<NUMERIC>)", 5);
+        assertThrows("SELECT localDateToStr(?)", SqlValidatorException.class,
+            "No match found for function signature LOCALDATETOSTR(<NUMERIC>)", 5);
+        assertThrows("SELECT localTimeToStr(?)", SqlValidatorException.class,
+            "No match found for function signature LOCALTIMETOSTR(<NUMERIC>)", 5);
+        assertThrows("SELECT localDateTimeToStr(?)", SqlValidatorException.class,
+            "No match found for function signature LOCALDATETIMETOSTR(<NUMERIC>)", 5);
+    }
+
+    /** */
+    @Test
+    public void testDeterministicTemporalFunctionReduced() {
+        client.getOrCreateCache(new CacheConfiguration<>("deterministic-temporal")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(DeterministicTemporalFunctionsLibrary.class));
+
+        sql("CREATE TABLE reduce_tbl (id INT PRIMARY KEY, val INT)");
+        sql("INSERT INTO reduce_tbl VALUES (1, 1), (2, 2)");
+
+        // Control: a non-temporal argument is reduced.
+        assertReduced("SELECT id FROM reduce_tbl WHERE detIntToStr(1) = '1'", "DETINTTOSTR");
+
+        assertReduced("SELECT id FROM reduce_tbl WHERE detDateToStr(DATE '2020-01-01') = '2020-01-01'", "DETDATETOSTR");
+        assertReduced("SELECT id FROM reduce_tbl WHERE detTimeToStr(TIME '02:03:04') = '02:03:04'", "DETTIMETOSTR");
+        assertReduced("SELECT id FROM reduce_tbl WHERE detTimestampToStr(TIMESTAMP '2021-01-15 02:03:04') = "
+            + "'2021-01-15 02:03:04.0'", "DETTIMESTAMPTOSTR");
+    }
+
+    /** Checks that the function call is not present in the plan (reduced to a constant) and the query result is correct. */
+    private void assertReduced(String sql, String fnName) {
+        assertQuery(sql)
+            .matches(CoreMatchers.not(QueryChecker.containsSubPlan(fnName)))
+            .returns(1)
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    private static java.util.Date[] temporalSubtypeValues() {
+        return new java.util.Date[] {
+            Date.valueOf("2020-01-01"),
+            Time.valueOf("02:03:04"),
+            Timestamp.valueOf("2021-01-15 03:04:05"),
+            null
+        };
+    }
+
+    /** */
+    private static Object[] temporalValues() {
+        return new Object[] {
+            new java.util.Date(Timestamp.valueOf("2020-01-14 01:02:03").getTime()),
+            Date.valueOf("2021-01-15"),
+            Time.valueOf("02:03:04"),
+            Timestamp.valueOf("2021-01-15 02:03:04"),
+            LocalDate.of(2022, 2, 16),
+            LocalTime.of(3, 4, 5),
+            LocalDateTime.of(2023, 3, 17, 4, 5, 6),
+            Duration.ofDays(1).plusHours(2).plusMinutes(3),
+            Period.of(1, 2, 0)
+        };
+    }
+
+    /** */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
@@ -913,5 +1176,258 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     private static LogListener createUnableRegisterFunctionLogListener(String fun) {
         return LogListener.matches("Unable to register function '" + fun + "'. Other function " +
             "with the same name and parameters is already registered").build();
+    }
+
+    /** */
+    public static class SerializableFunctionsLibrary {
+        /** */
+        @QuerySqlTableFunction(columnTypes = {Serializable.class}, columnNames = {"D"})
+        public static Iterable<Object[]> serializableTableValues() {
+            return Collections.singletonList(new Object[] {Date.valueOf("2020-01-01")});
+        }
+    }
+
+    /** */
+    public static class CustomTypeFunctionsLibrary {
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class
+            },
+            columnNames = {
+                "UTIL_DATE",
+                "SQL_DATE",
+                "SQL_TIME",
+                "SQL_TIMESTAMP",
+                "LOCAL_DATE",
+                "LOCAL_TIME",
+                "LOCAL_TIMESTAMP",
+                "DURATION_VALUE",
+                "PERIOD_VALUE"
+            }
+        )
+        public static Iterable<Object[]> objectTableValues() {
+            return Collections.singletonList(temporalValues());
+        }
+    }
+
+    /** */
+    public static class TemporalFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfDateAsUtilDate() {
+            return Date.valueOf("2020-01-01");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfTimeAsUtilDate() {
+            return Time.valueOf("02:03:04");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfTimestampAsUtilDate() {
+            return Timestamp.valueOf("2021-01-15 03:04:05");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfNullUtilDate() {
+            return null;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {java.util.Date.class}, columnNames = {"D"})
+        public static Iterable<Object[]> utilDateSubtypeTable() {
+            return Arrays.stream(temporalSubtypeValues()).map(val -> new Object[] {val}).collect(Collectors.toList());
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static java.util.Date udfUtilDateValue() {
+            return new java.util.Date(Timestamp.valueOf("2020-01-14 01:02:03").getTime());
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Date udfDateValue() {
+            return Date.valueOf("2021-01-15");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Date udfDateFromString(String val) {
+            return Date.valueOf(val);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Timestamp udfTimestampFromString(String val) {
+            return Timestamp.valueOf(val);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Time udfTimeValue() {
+            return Time.valueOf("02:03:04");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Timestamp udfTimestampValue() {
+            return Timestamp.valueOf("2021-01-15 02:03:04");
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalDate udfLocalDateValue() {
+            return LocalDate.of(2022, 2, 16);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalTime udfLocalTimeValue() {
+            return LocalTime.of(3, 4, 5);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalDateTime udfLocalDateTimeValue() {
+            return LocalDateTime.of(2023, 3, 17, 4, 5, 6);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Duration udfDurationValue() {
+            return Duration.ofDays(1).plusHours(2).plusMinutes(3);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Period udfPeriodValue() {
+            return Period.of(1, 2, 0);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static boolean checkTemporalTypes(
+            java.util.Date utilDate,
+            Date date,
+            Time time,
+            Timestamp timestamp,
+            LocalDate localDate,
+            LocalTime localTime,
+            LocalDateTime localDateTime,
+            Duration duration,
+            Period period
+        ) {
+            return Arrays.equals(temporalValues(), new Object[] {
+                utilDate, date, time, timestamp, localDate, localTime, localDateTime, duration, period
+            });
+        }
+
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {
+                java.util.Date.class,
+                Date.class,
+                Time.class,
+                Timestamp.class,
+                LocalDate.class,
+                LocalTime.class,
+                LocalDateTime.class,
+                Duration.class,
+                Period.class
+            },
+            columnNames = {
+                "UTIL_DATE",
+                "SQL_DATE",
+                "SQL_TIME",
+                "SQL_TIMESTAMP",
+                "LOCAL_DATE",
+                "LOCAL_TIME",
+                "LOCAL_TIMESTAMP",
+                "DURATION_VALUE",
+                "PERIOD_VALUE"
+            }
+        )
+        public static Iterable<Object[]> temporalTable(
+            java.util.Date utilDate,
+            Date date,
+            Time time,
+            Timestamp timestamp,
+            LocalDate localDate,
+            LocalTime localTime,
+            LocalDateTime localDateTime,
+            Duration duration,
+            Period period
+        ) {
+            return Collections.singletonList(new Object[] {
+                utilDate, date, time, timestamp, localDate, localTime, localDateTime, duration, period
+            });
+        }
+    }
+
+    /** */
+    public static class JavaTimeParametersFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static String localDateToStr(LocalDate val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String localTimeToStr(LocalTime val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String localDateTimeToStr(LocalDateTime val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String sqlDateToStr(Date val) {
+            return val.toString();
+        }
+    }
+
+    /** */
+    public static class DeterministicTemporalFunctionsLibrary {
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detIntToStr(int val) {
+            return String.valueOf(val);
+        }
+
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detDateToStr(Date val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detTimeToStr(Time val) {
+            return val.toString();
+        }
+
+        /** */
+        @QuerySqlFunction(deterministic = true)
+        public static String detTimestampToStr(Timestamp val) {
+            return val.toString();
+        }
     }
 }

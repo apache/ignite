@@ -16,37 +16,39 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-import java.lang.reflect.Method;
-import java.util.List;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.FunctionParameter;
-import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
 
-import static java.util.stream.Collectors.toUnmodifiableList;
-
-/** A base for outer java-method functions. */
-abstract class IgniteReflectiveFunctionBase extends ReflectiveFunctionBase implements ImplementableFunction {
+/** Function parameter that exposes its SQL type to validation. */
+class IgniteFunctionParameter implements FunctionParameter {
     /** */
-    protected final CallImplementor implementor;
+    private final FunctionParameter delegate;
 
     /** */
-    private final List<FunctionParameter> params;
-
-    /** */
-    protected IgniteReflectiveFunctionBase(Method method, CallImplementor implementor) {
-        super(method);
-
-        this.implementor = implementor;
-
-        params = super.getParameters().stream().map(IgniteFunctionParameter::new).collect(toUnmodifiableList());
+    IgniteFunctionParameter(FunctionParameter delegate) {
+        this.delegate = delegate;
     }
 
     /** {@inheritDoc} */
-    @Override public List<FunctionParameter> getParameters() {
-        return params;
+    @Override public int getOrdinal() {
+        return delegate.getOrdinal();
     }
 
     /** {@inheritDoc} */
-    @Override public CallImplementor getImplementor() {
-        return implementor;
+    @Override public String getName() {
+        return delegate.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType getType(RelDataTypeFactory typeFactory) {
+        // Normalize UDF metadata without losing Java types used to convert query results.
+        return ((JavaTypeFactory)typeFactory).toSql(delegate.getType(typeFactory));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isOptional() {
+        return delegate.isOptional();
     }
 }

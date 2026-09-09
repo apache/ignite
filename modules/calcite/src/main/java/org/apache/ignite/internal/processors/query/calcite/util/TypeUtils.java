@@ -410,15 +410,15 @@ public class TypeUtils {
      */
     private static long toLong(DataContext ctx, Object val) {
         if (val instanceof LocalDateTime)
-            return toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), timeZone(ctx));
 
         if (val instanceof LocalDate)
-            return toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlDate((LocalDate)val), timeZone(ctx));
 
         if (val instanceof LocalTime)
-            return toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(DateValueUtils.convertToSqlTime((LocalTime)val), timeZone(ctx));
 
-        return toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+        return toLong((java.util.Date)val, timeZone(ctx));
     }
 
     /** */
@@ -514,7 +514,7 @@ public class TypeUtils {
 
     /** */
     private static long fromLocalTs(DataContext ctx, long ts) {
-        TimeZone tz = DataContext.Variable.TIME_ZONE.get(ctx);
+        TimeZone tz = timeZone(ctx);
 
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
         return ts - tz.getOffset(ts - tz.getOffset(ts));
@@ -527,5 +527,12 @@ public class TypeUtils {
         dfltVal = toInternal(ctx, dfltVal);
 
         return rexBuilder.makeLiteral(dfltVal, type, true);
+    }
+
+    /** */
+    private static TimeZone timeZone(DataContext ctx) {
+        TimeZone tz = DataContext.Variable.TIME_ZONE.get(ctx);
+
+        return tz != null ? tz : TimeZone.getDefault();
     }
 }
