@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteRe
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_1_0_0;
+import org.apache.ignite.internal.thread.context.AbstractDistributedAttributeTest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -73,7 +74,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jspecify.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -132,7 +132,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  *   </tr>
  * </table>
  */
-public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest {
+public abstract class AbstractRollingUpgradeTest extends AbstractDistributedAttributeTest {
     /** */
     protected static final String TEST_DEFAULT_VER = "2.19.0";
 

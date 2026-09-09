@@ -115,10 +115,14 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
 
-    /** Messages with no fields. A serializer generation intentionally skipped. */
+    /** */
+    static final String OP_CTX_SNAPSHOT_MESSAGE_CLASS = "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage";
+
+    /** Messages with no fields, or with a hand-written serializer. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
         COMPRESSED_MESSAGE_CLASS,
+        OP_CTX_SNAPSHOT_MESSAGE_CLASS,
         "org.apache.ignite.loadtests.communication.GridTestMessage",
         "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
     };

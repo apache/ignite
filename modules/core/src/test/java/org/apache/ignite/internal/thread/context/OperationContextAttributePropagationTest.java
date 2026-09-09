@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +47,6 @@ import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -67,14 +68,25 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
 import static org.junit.Assume.assumeFalse;
 
 /** */
-public class OperationContextAttributePropagationTest extends GridCommonAbstractTest {
+public class OperationContextAttributePropagationTest extends AbstractDistributedAttributeTest {
     /** */
     public static final LogListener MSG_DELAYED_LSNR = LogListener.builder().andMatches(
         "Delay custom message processing, there are joining nodes"
     ).build();
 
     /** */
+    public static final DistributedAttributeKey PTR_KEY = createTestKey(0);
+
+    /** */
+    public static final DistributedAttributeKey USR_KEY = createTestKey(MAX_ATTRS_CNT - 1);
+
+    /** */
     private volatile Consumer<Integer> discoMsgLsnr;
+
+    /** {@inheritDoc} */
+    @Override protected Collection<DistributedAttributeKey> distributedAttributeKeys() {
+        return Arrays.asList(PTR_KEY, USR_KEY);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -223,7 +235,7 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
 
         assertThrows(
             null,
-            () -> grid(0).context().operationContextDispatcher().registerDistributedAttribute(1, null),
+            () -> grid(0).context().operationContextDispatcher().registerDistributedAttribute(PTR_KEY, null),
             IgniteException.class,
             "Initialization of distributed operation context attributes has already finished"
         );
@@ -348,7 +360,7 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
         }
     }
 
-    /** Prevents {@link ClusterNode#isLocal()} to be negative. */
+    /** */
     private ClusterNode node(Ignite from, Ignite to) {
         return from.cluster().node(((IgniteEx)to).localNode().id());
     }
@@ -404,13 +416,13 @@ public class OperationContextAttributePropagationTest extends GridCommonAbstract
         @Override public void start(PluginContext ctx) {
             kctx = ((IgniteEx)ctx.grid()).context();
 
-            kctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, USR_ATTR);
-            kctx.operationContextDispatcher().registerDistributedAttribute(0, PTR_ATTR);
+            kctx.operationContextDispatcher().registerDistributedAttribute(USR_KEY, USR_ATTR);
+            kctx.operationContextDispatcher().registerDistributedAttribute(PTR_KEY, PTR_ATTR);
 
             assertThrowsAnyCause(
                 log,
                 () -> {
-                    kctx.operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, PTR_ATTR);
+                    kctx.operationContextDispatcher().registerDistributedAttribute(USR_KEY, PTR_ATTR);
                     return null;
 
                 }, IgniteException.class,

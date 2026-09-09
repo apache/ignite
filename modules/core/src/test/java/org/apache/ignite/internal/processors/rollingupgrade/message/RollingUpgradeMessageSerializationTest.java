@@ -20,20 +20,12 @@ package org.apache.ignite.internal.processors.rollingupgrade.message;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.MessagesPluginProvider;
 import org.junit.Test;
 
@@ -45,7 +37,7 @@ import static org.apache.ignite.internal.processors.rollingupgrade.message.TestM
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.F;
 
 /** */
-public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgradeTest {
+public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgradeMessageTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, String ver) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, ver);
@@ -137,10 +129,10 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         IgniteEx newVerCli = startClientGrid(2, "2.20.0");
         IgniteEx oldVerCli = startClientGrid(3, "2.19.0");
 
-        Map<String, TestCoreMessage> receivedMsgs = sendOverDiscovery(grid(1), TestCoreMessage.build());
+        Map<String, Received<TestCoreMessage>> receivedMsgs = sendOverDiscovery(grid(1), TestCoreMessage.build());
 
-        assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCli.name()));
-        assertFields(A, B, C, null, null, null, receivedMsgs.get(oldVerCli.name()));
+        assertReceived(A, B, C, D, E, null, receivedMsgs.get(newVerCli.name()));
+        assertReceived(A, B, C, null, null, null, receivedMsgs.get(oldVerCli.name()));
     }
 
     /** */
@@ -388,10 +380,10 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        Collection<TestCoreMessage> receivedMsgs = sendOverDiscovery(from, TestCoreMessage.build()).values();
+        Collection<Received<TestCoreMessage>> receivedMsgs = sendOverDiscovery(from, TestCoreMessage.build()).values();
 
-        for (TestCoreMessage msg : receivedMsgs)
-            assertFields(expA, expB, expC, expD, expE, expF, msg);
+        for (Received<TestCoreMessage> rcvd : receivedMsgs)
+            assertReceived(expA, expB, expC, expD, expE, expF, rcvd);
     }
 
     /** */
@@ -422,84 +414,23 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        assertFields(expA, expB, expC, expD, expE, expF, send(from, to, msgFactory.get()));
+        assertReceived(expA, expB, expC, expD, expE, expF, send(from, to, msgFactory.get()));
 
-        assertFields(expA, expB, expC, expD, expE, expF, sendOverDiscovery(from, msgFactory.get()).get(to.name()));
+        assertReceived(expA, expB, expC, expD, expE, expF, sendOverDiscovery(from, msgFactory.get()).get(to.name()));
     }
 
     /** */
-    private <T extends Message & TestMessage> T send(IgniteEx from, IgniteEx to, T msg) throws Exception {
-        AtomicReference<T> got = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-
-        String topic = msg.getClass().getName();
-
-        to.context().io().addMessageListener(topic, (nodeId, rcvd, plc) -> {
-            got.set((T)rcvd);
-
-            latch.countDown();
-        });
-
-        ClusterNode rcvNode = from.context().discovery().node(to.localNode().id());
-
-        from.context().io().sendToCustomTopic(rcvNode, topic, msg, GridIoPolicy.PUBLIC_POOL);
-
-        assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        return got.get();
-    }
-
-    /** */
-    private <T extends DiscoveryCustomMessage & TestMessage> Map<String, T> sendOverDiscovery(
-        IgniteEx from,
-        T msg
-    ) throws Exception {
-        List<Ignite> clusterNodes = Ignition.allGrids();
-
-        Map<String, T> receivedMsgs = new ConcurrentHashMap<>();
-
-        CountDownLatch latch = new CountDownLatch(clusterNodes.size());
-
-        for (Ignite rcv : clusterNodes) {
-            String name = rcv.name();
-
-            ((IgniteEx)rcv).context().discovery().setCustomEventListener((Class<T>)msg.getClass(),
-                (v, n, m) -> {
-                    receivedMsgs.put(name, m);
-
-                    latch.countDown();
-                });
-        }
-
-        from.context().discovery().sendCustomEvent(msg);
-
-        assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        receivedMsgs.remove(from.name());
-
-        return receivedMsgs;
-    }
-
-    /** */
-    private void startServerNodes(String firstVer, String secondVer) throws Exception {
-        IgniteEx first = startGrid(0, firstVer);
-
-        if (!firstVer.equals(secondVer))
-            ru(first).enableVersionUpgrade();
-
-        startGrid(1, secondVer);
-    }
-
-    /** */
-    private static void assertFields(
+    private static void assertReceived(
         String expA,
         String expB,
         String expC,
         String expD,
         String expE,
         String expF,
-        TestMessage msg
+        Received<? extends TestMessage> rcvd
     ) {
+        TestMessage msg = rcvd.msg;
+
         assertEquals(expA, msg.fldA());
         assertEquals(expB, msg.fldB());
         assertEquals(expC, msg.fldC());
