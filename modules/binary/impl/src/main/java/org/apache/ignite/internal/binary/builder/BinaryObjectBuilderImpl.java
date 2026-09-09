@@ -249,7 +249,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
                 int idx = 0;
 
                 while (reader.position() < rawPos) {
-                    int fieldId = BinaryUtils.fieldId(reader.reader(), idx++);
+                    int fieldId = BinaryImplUtils.fieldId(reader.reader(), idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
 
@@ -382,7 +382,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
         else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))
             newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
 
-        else if (BinaryUtils.isBinaryEnumArray(newVal))
+        else if (BinaryImplUtils.isBinaryEnumArray(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
         else if (BinaryUtils.isBinaryArray(newVal))
@@ -475,7 +475,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
             int idx = 0;
 
             while (footerPos + fieldIdLen < footerEnd) {
-                int fieldId = BinaryUtils.fieldId(reader.reader(), idx++);
+                int fieldId = BinaryImplUtils.fieldId(reader.reader(), idx++);
 
                 IgniteBiTuple<Integer, Integer> posAndLen =
                     fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);

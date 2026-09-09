@@ -38,7 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -329,172 +328,6 @@ public class BinaryUtils {
             return null;
 
         return FIELD_TYPE_NAMES[typeId];
-    }
-
-    /**
-     * Write value with flag. e.g. writePlainObject(writer, (byte)77) will write two byte: {BYTE, 77}.
-     *
-     * @param writer W
-     * @param val Value.
-     */
-    public static void writePlainObject(BinaryWriterEx writer, Object val) {
-        Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
-
-        if (flag == null)
-            throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
-
-        switch (flag) {
-            case GridBinaryMarshaller.BYTE:
-                writer.writeByte(flag);
-                writer.writeByte((Byte)val);
-
-                break;
-
-            case GridBinaryMarshaller.SHORT:
-                writer.writeByte(flag);
-                writer.writeShort((Short)val);
-
-                break;
-
-            case GridBinaryMarshaller.INT:
-                writer.writeByte(flag);
-                writer.writeInt((Integer)val);
-
-                break;
-
-            case GridBinaryMarshaller.LONG:
-                writer.writeByte(flag);
-                writer.writeLong((Long)val);
-
-                break;
-
-            case GridBinaryMarshaller.FLOAT:
-                writer.writeByte(flag);
-                writer.writeFloat((Float)val);
-
-                break;
-
-            case GridBinaryMarshaller.DOUBLE:
-                writer.writeByte(flag);
-                writer.writeDouble((Double)val);
-
-                break;
-
-            case GridBinaryMarshaller.CHAR:
-                writer.writeByte(flag);
-                writer.writeChar((Character)val);
-
-                break;
-
-            case GridBinaryMarshaller.BOOLEAN:
-                writer.writeByte(flag);
-                writer.writeBoolean((Boolean)val);
-
-                break;
-
-            case GridBinaryMarshaller.DECIMAL:
-                writer.writeDecimal((BigDecimal)val);
-
-                break;
-
-            case GridBinaryMarshaller.STRING:
-                writer.writeString((String)val);
-
-                break;
-
-            case GridBinaryMarshaller.UUID:
-                writer.writeUuid((UUID)val);
-
-                break;
-
-            case GridBinaryMarshaller.DATE:
-                writer.writeDate((Date)val);
-
-                break;
-
-            case GridBinaryMarshaller.TIMESTAMP:
-                writer.writeTimestamp((Timestamp)val);
-
-                break;
-
-            case GridBinaryMarshaller.TIME:
-                writer.writeTime((Time)val);
-
-                break;
-
-            case GridBinaryMarshaller.BYTE_ARR:
-                writer.writeByteArray((byte[])val);
-
-                break;
-
-            case GridBinaryMarshaller.SHORT_ARR:
-                writer.writeShortArray((short[])val);
-
-                break;
-
-            case GridBinaryMarshaller.INT_ARR:
-                writer.writeIntArray((int[])val);
-
-                break;
-
-            case GridBinaryMarshaller.LONG_ARR:
-                writer.writeLongArray((long[])val);
-
-                break;
-
-            case GridBinaryMarshaller.FLOAT_ARR:
-                writer.writeFloatArray((float[])val);
-
-                break;
-
-            case GridBinaryMarshaller.DOUBLE_ARR:
-                writer.writeDoubleArray((double[])val);
-
-                break;
-
-            case GridBinaryMarshaller.CHAR_ARR:
-                writer.writeCharArray((char[])val);
-
-                break;
-
-            case GridBinaryMarshaller.BOOLEAN_ARR:
-                writer.writeBooleanArray((boolean[])val);
-
-                break;
-
-            case GridBinaryMarshaller.DECIMAL_ARR:
-                writer.writeDecimalArray((BigDecimal[])val);
-
-                break;
-
-            case GridBinaryMarshaller.STRING_ARR:
-                writer.writeStringArray((String[])val);
-
-                break;
-
-            case GridBinaryMarshaller.UUID_ARR:
-                writer.writeUuidArray((UUID[])val);
-
-                break;
-
-            case GridBinaryMarshaller.DATE_ARR:
-                writer.writeDateArray((Date[])val);
-
-                break;
-
-            case GridBinaryMarshaller.TIMESTAMP_ARR:
-                writer.writeTimestampArray((Timestamp[])val);
-
-                break;
-
-            case GridBinaryMarshaller.TIME_ARR:
-                writer.writeTimeArray((Time[])val);
-
-                break;
-
-            default:
-                throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
-        }
     }
 
     /**
@@ -2537,14 +2370,6 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@link BinaryEnumArray}.
-     */
-    public static boolean isBinaryEnumArray(Object val) {
-        return val instanceof BinaryEnumArray;
-    }
-
-    /**
-     * @param val Value to check.
      * @return {@code True} if {@code val} instance of binary Enum object.
      */
     public static boolean isBinaryEnumObject(Object val) {
@@ -2573,10 +2398,10 @@ public class BinaryUtils {
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     public static BinaryReaderEx reader(BinaryContext ctx,
-        BinaryInputStream in,
-        ClassLoader ldr,
-        BinaryReaderEx reader,
-        boolean forUnmarshal) {
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        BinaryReaderEx reader,
+                                        boolean forUnmarshal) {
         return reader(ctx, in, ldr, reader.handles(), forUnmarshal);
     }
 
@@ -2590,10 +2415,10 @@ public class BinaryUtils {
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     static BinaryReaderEx reader(BinaryContext ctx,
-                                        BinaryInputStream in,
-                                        ClassLoader ldr,
-                                        @Nullable BinaryReaderHandles hnds,
-                                        boolean forUnmarshal) {
+                                 BinaryInputStream in,
+                                 ClassLoader ldr,
+                                 @Nullable BinaryReaderHandles hnds,
+                                 boolean forUnmarshal) {
         return binariesFactory.reader(ctx, in, ldr, hnds, forUnmarshal);
     }
 
@@ -2607,10 +2432,10 @@ public class BinaryUtils {
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     public static BinaryReaderEx reader(BinaryContext ctx,
-        BinaryInputStream in,
-        ClassLoader ldr,
-        boolean skipHdrCheck,
-        boolean forUnmarshal) {
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        boolean skipHdrCheck,
+                                        boolean forUnmarshal) {
         return reader(ctx, in, ldr, null, skipHdrCheck, forUnmarshal);
     }
 
@@ -2625,11 +2450,11 @@ public class BinaryUtils {
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     static BinaryReaderEx reader(BinaryContext ctx,
-                                        BinaryInputStream in,
-                                        ClassLoader ldr,
-                                        @Nullable BinaryReaderHandles hnds,
-                                        boolean skipHdrCheck,
-                                        boolean forUnmarshal) {
+                                 BinaryInputStream in,
+                                 ClassLoader ldr,
+                                 @Nullable BinaryReaderHandles hnds,
+                                 boolean skipHdrCheck,
+                                 boolean forUnmarshal) {
         return binariesFactory.reader(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
     }
 
@@ -2722,45 +2547,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Check for arrays equality.
-     *
-     * @param a1 Value 1.
-     * @param a2 Value 2.
-     * @return {@code True} if arrays equal.
-     */
-    public static boolean arrayEq(Object a1, Object a2) {
-        if (a1 == a2)
-            return true;
-
-        if (a1 == null || a2 == null)
-            return a1 != null || a2 != null;
-
-        if (a1.getClass() != a2.getClass())
-            return false;
-
-        if (a1 instanceof byte[])
-            return Arrays.equals((byte[])a1, (byte[])a2);
-        else if (a1 instanceof boolean[])
-            return Arrays.equals((boolean[])a1, (boolean[])a2);
-        else if (a1 instanceof short[])
-            return Arrays.equals((short[])a1, (short[])a2);
-        else if (a1 instanceof char[])
-            return Arrays.equals((char[])a1, (char[])a2);
-        else if (a1 instanceof int[])
-            return Arrays.equals((int[])a1, (int[])a2);
-        else if (a1 instanceof long[])
-            return Arrays.equals((long[])a1, (long[])a2);
-        else if (a1 instanceof float[])
-            return Arrays.equals((float[])a1, (float[])a2);
-        else if (a1 instanceof double[])
-            return Arrays.equals((double[])a1, (double[])a2);
-        else if (isBinaryArray(a1))
-            return a1.equals(a2);
-
-        return Arrays.deepEquals((Object[])a1, (Object[])a2);
-    }
-
-    /**
      * @param o Object to detach.
      * @return Detached object.
      */
@@ -2783,16 +2569,6 @@ public class BinaryUtils {
      */
     public static Collection<T2<Integer, int[]>> schemasAndFieldsIds(BinaryMetadata meta) {
         return F.viewReadOnly(meta.schemas(), s -> new T2<>(s.schemaId(), s.fieldIds()));
-    }
-
-    /**
-     * Gets field by its order.
-     *
-     * @param reader Reader.
-     * @param order Order.
-     */
-    public static int fieldId(BinaryReaderEx reader, int order) {
-        return reader.getOrCreateSchema().fieldId(order);
     }
 
     /**
@@ -2828,16 +2604,6 @@ public class BinaryUtils {
             .collect(Collectors.toList());
 
         return new BinaryMetadata(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
-    }
-
-    /** */
-    public static int hashCode(byte[] data, int startPos, int endPos) {
-        int hash = 1;
-
-        for (int i = startPos; i < endPos; i++)
-            hash = 31 * hash + data[i];
-
-        return hash;
     }
 
     /**
