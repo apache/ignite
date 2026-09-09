@@ -1,0 +1,4422 @@
+{
+  "formatVersion" : 1,
+  "messages" : [
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse",
+      "id" : -56,
+      "schema" : [
+        "long reqId",
+        "long updCnt",
+        "java.lang.String err",
+        "byte[] errKeysBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest",
+      "id" : -55,
+      "schema" : [
+        "long reqId",
+        "java.util.List<java.lang.Integer> caches",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int[] qryParts",
+        "int pageSize",
+        "java.lang.String qry",
+        "byte flags",
+        "int timeout",
+        "byte[] paramsBytes",
+        "java.lang.String schemaName",
+        "boolean explicitTimeout",
+        "java.lang.String qryInitiatorId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.QueryTable",
+      "id" : -54,
+      "schema" : [
+        "java.lang.String schema",
+        "java.lang.String tbl"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds",
+      "id" : -35,
+      "schema" : [
+        "int rangeId",
+        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage first",
+        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage last"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange",
+      "id" : -34,
+      "schema" : [
+        "int rangeId",
+        "java.util.List<org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage> rows",
+        "byte flags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest",
+      "id" : -33,
+      "schema" : [
+        "long reqId",
+        "java.util.List<java.lang.Integer> caches",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "java.util.Map<java.util.UUID,int[]> parts",
+        "int[] qryParts",
+        "int pageSize",
+        "java.util.List<org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery> qrys",
+        "byte flags",
+        "java.util.Collection<org.apache.ignite.internal.processors.query.h2.QueryTable> tbls",
+        "int timeout",
+        "byte[] paramsBytes",
+        "java.lang.String schemaName",
+        "java.lang.String qryInitiatorId",
+        "long qryId",
+        "boolean explicitTimeout"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage",
+      "id" : -32,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage> vals"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse",
+      "id" : -31,
+      "schema" : [
+        "java.util.UUID originNodeId",
+        "long qryId",
+        "int segmentId",
+        "int originSegmentId",
+        "int batchLookupId",
+        "java.util.List<org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange> ranges",
+        "byte status",
+        "java.lang.String err"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest",
+      "id" : -30,
+      "schema" : [
+        "java.util.UUID originNodeId",
+        "long qryId",
+        "int originSegmentId",
+        "int segmentId",
+        "int batchLookupId",
+        "java.util.List<org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds> bounds"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2CacheObject",
+      "id" : -22,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.CacheObject obj"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Geometry",
+      "id" : -21,
+      "schema" : [
+        "byte[] b"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Uuid",
+      "id" : -20,
+      "schema" : [
+        "long high",
+        "long low"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2JavaObject",
+      "id" : -19,
+      "schema" : [
+        "byte[] b"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Array",
+      "id" : -18,
+      "schema" : [
+        "java.util.Collection<org.apache.ignite.plugin.extensions.communication.Message> x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2String",
+      "id" : -17,
+      "schema" : [
+        "java.lang.String x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Bytes",
+      "id" : -16,
+      "schema" : [
+        "byte[] b"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Timestamp",
+      "id" : -15,
+      "schema" : [
+        "long date",
+        "long nanos"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Date",
+      "id" : -14,
+      "schema" : [
+        "long date"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Time",
+      "id" : -13,
+      "schema" : [
+        "long nanos"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Float",
+      "id" : -12,
+      "schema" : [
+        "float x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Double",
+      "id" : -11,
+      "schema" : [
+        "double x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Decimal",
+      "id" : -10,
+      "schema" : [
+        "int scale",
+        "byte[] b"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Long",
+      "id" : -9,
+      "schema" : [
+        "long x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Integer",
+      "id" : -8,
+      "schema" : [
+        "int x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Short",
+      "id" : -7,
+      "schema" : [
+        "short x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Byte",
+      "id" : -6,
+      "schema" : [
+        "byte x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Boolean",
+      "id" : -5,
+      "schema" : [
+        "boolean x"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null",
+      "id" : -4,
+      "schema" : [ ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest",
+      "id" : 300,
+      "schema" : [
+        "java.lang.String schema",
+        "java.util.UUID qryId",
+        "long originatingQryId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion ver",
+        "org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription fragmentDesc",
+        "java.lang.String root",
+        "int totalFragmentsCnt",
+        "byte[] paramsBytes",
+        "long timeout",
+        "java.util.Collection<org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry> qryTxEntries",
+        "java.util.Map<java.lang.String,java.lang.String> appAttrs",
+        "boolean keepBinaryMode",
+        "marshalled java.lang.Object[] params value=paramsBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse",
+      "id" : 301,
+      "schema" : [
+        "java.util.UUID qryId",
+        "long fragmentId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage",
+      "id" : 302,
+      "schema" : [
+        "jdkMarshalled",
+        "byte[] errBytes",
+        "java.util.UUID qryId",
+        "long fragmentId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage",
+      "id" : 303,
+      "schema" : [
+        "java.util.UUID qryId",
+        "long fragmentId",
+        "long exchangeId",
+        "int batchId",
+        "boolean last",
+        "java.util.List<org.apache.ignite.internal.processors.query.calcite.message.GenericValueMessage> mRows"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage",
+      "id" : 304,
+      "schema" : [
+        "java.util.UUID qryId",
+        "long fragmentId",
+        "long exchangeId",
+        "int batchId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.QueryInboxCloseMessage",
+      "id" : 305,
+      "schema" : [
+        "java.util.UUID qryId",
+        "long fragmentId",
+        "long exchangeId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.QueryCloseMessage",
+      "id" : 306,
+      "schema" : [
+        "java.util.UUID qryId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.GenericValueMessage",
+      "id" : 307,
+      "schema" : [
+        "byte[] serialized",
+        "marshalled java.lang.Object val value=serialized"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping",
+      "id" : 308,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup> colocationGrps"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup",
+      "id" : 309,
+      "schema" : [
+        "long[] srcIds",
+        "java.util.List<java.util.UUID> nodeIds",
+        "int[] marshalledAssignments"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription",
+      "id" : 310,
+      "schema" : [
+        "long fragmentId",
+        "org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping mapping",
+        "java.util.Map<java.lang.Long,java.util.List<java.util.UUID>> remoteSources",
+        "org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup target"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry",
+      "id" : 311,
+      "schema" : [
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.zk.internal.ZkCommunicationErrorResolveFinishMessage",
+      "id" : 400,
+      "schema" : [
+        "java.util.UUID futId",
+        "long topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.zk.internal.ZkCommunicationErrorResolveStartMessage",
+      "id" : 401,
+      "schema" : [
+        "java.util.UUID id"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.zk.internal.ZkForceNodeFailMessage",
+      "id" : 402,
+      "schema" : [
+        "long nodeInternalId",
+        "java.lang.String warning"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
+      "id" : 403,
+      "schema" : [ ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.zk.internal.ZkDiscoDataBagWrapper",
+      "id" : 404,
+      "schema" : [
+        "java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message> data"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.zk.internal.ZkOperationContextAwareCustomMessage",
+      "id" : 405,
+      "schema" : [
+        "org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage delegate",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.communication.CompressedMessage",
+      "id" : 5000,
+      "schema" : [ ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.util.ErrorMessage",
+      "id" : 5001,
+      "schema" : [
+        "jdkMarshalled",
+        "byte[] errBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage",
+      "id" : 5002,
+      "schema" : [
+        "java.lang.String hostName",
+        "byte[] addrBytes",
+        "int port"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage",
+      "id" : 5003,
+      "schema" : [
+        "java.lang.String hostName",
+        "byte[] addrBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode",
+      "id" : 5004,
+      "schema" : [
+        "java.util.UUID id",
+        "byte[] consistentIdBytes",
+        "byte[] attrsBytes",
+        "java.util.Collection<java.lang.String> addrs",
+        "java.util.Collection<java.lang.String> hostNames",
+        "int discPort",
+        "org.apache.ignite.internal.ClusterMetricsSnapshot clusterMetricsSnapshot",
+        "long order",
+        "long intOrder",
+        "org.apache.ignite.lang.IgniteProductVersion ver",
+        "java.util.UUID clientRouterNodeId",
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet features",
+        "marshalled java.lang.Object consistentId value=consistentIdBytes",
+        "marshalled java.util.Map<java.lang.String,java.lang.Object> attrs value=attrsBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket",
+      "id" : 5005,
+      "schema" : [
+        "java.util.UUID joiningNodeId",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message> joiningNodeData compress",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message> commonData compress",
+        "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message>> nodeSpecificData compress"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.util.GridByteArrayList",
+      "id" : 5006,
+      "schema" : [
+        "byte[] data",
+        "int size"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue",
+      "id" : 5007,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "int cacheId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue",
+      "id" : 5008,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer",
+      "id" : 5009,
+      "schema" : [
+        "long idx",
+        "int fileOff",
+        "int len"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper",
+      "id" : 5010,
+      "schema" : [
+        "byte[] dataBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridTopicMessage",
+      "id" : 5011,
+      "schema" : [
+        "byte[] topicBytes",
+        "int ord"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.util.GridIntList",
+      "id" : 5012,
+      "schema" : [
+        "int[] arr",
+        "int idx"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest",
+      "id" : 5700,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID prevNodeId",
+        "java.lang.String dcId",
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet nodeFeatures"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse",
+      "id" : 5701,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "long order",
+        "boolean prevNodeAliveFlag",
+        "java.util.Collection<org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage> redirectAddrsMsgs",
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet nodeFeatures"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage",
+      "id" : 5702,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode node",
+        "org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket dataPacket"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage",
+      "id" : 5703,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode node",
+        "org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket dataPacket",
+        "java.util.Collection<org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage> pendingMsgs",
+        "java.util.Collection<org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode> top",
+        "java.util.Map<java.lang.Long,java.util.Collection<org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode>> topHist",
+        "long gridStartTime"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage",
+      "id" : 5704,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID nodeId",
+        "org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket clientDiscoData",
+        "byte[] clientNodeAttrsBytes",
+        "marshalled java.util.Map<java.lang.String,java.lang.Object> clientNodeAttrs value=clientNodeAttrsBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage",
+      "id" : 5705,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage",
+      "id" : 5706,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID failedNodeId",
+        "long order",
+        "java.lang.String warning"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage",
+      "id" : 5707,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest",
+      "id" : 5708,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID clientNodeId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse",
+      "id" : 5709,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "boolean clientExists"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest",
+      "id" : 5710,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID nodeToPing"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse",
+      "id" : 5711,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID nodeToPing",
+        "boolean res"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse",
+      "id" : 5712,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.lang.IgniteUuid msgId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage",
+      "id" : 5713,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID routerNodeId",
+        "org.apache.ignite.lang.IgniteUuid lastMsgId",
+        "java.util.Collection<org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage> pendingMsgs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage",
+      "id" : 5714,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.lang.IgniteUuid msgId",
+        "boolean customMsgDiscard"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage",
+      "id" : 5715,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.lang.String err"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage",
+      "id" : 5716,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.Collection<java.lang.String> addrs",
+        "java.util.Collection<java.lang.String> hostNames"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage",
+      "id" : 5717,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "int maxHops",
+        "int curHops"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage",
+      "id" : 5718,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.UUID nodeId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage",
+      "id" : 5719,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage msg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage",
+      "id" : 5720,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage msg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage",
+      "id" : 5900,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.Collection<org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage> creatorNodeAddrsMsgs",
+        "java.util.UUID failedNodeId",
+        "int status"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage",
+      "id" : 6000,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID procId",
+        "int type",
+        "org.apache.ignite.plugin.extensions.communication.Message req",
+        "boolean waitClnRes",
+        "boolean needExchange"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcessRequest",
+      "id" : 6001,
+      "schema" : [
+        "java.util.UUID reqId",
+        "java.lang.String snpName",
+        "java.lang.String snpPath",
+        "java.util.Collection<java.lang.String> grps",
+        "long startTime",
+        "java.util.Set<java.util.UUID> nodes",
+        "boolean fullCheck",
+        "boolean allRestoreHandlers",
+        "int incIdx"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest",
+      "id" : 6002,
+      "schema" : [
+        "java.util.UUID reqId",
+        "java.lang.String snpName",
+        "java.lang.String snpPath",
+        "java.util.Collection<java.lang.String> grps",
+        "long startTime",
+        "java.util.Set<java.util.UUID> nodes",
+        "java.util.UUID opNodeId",
+        "boolean incremental",
+        "int incIdx",
+        "boolean onlyPrimary",
+        "boolean dump",
+        "boolean compress",
+        "boolean encrypt",
+        "boolean configOnly"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequest",
+      "id" : 6003,
+      "schema" : [
+        "java.util.UUID reqId",
+        "org.apache.ignite.internal.util.ErrorMessage err",
+        "java.util.List<java.lang.String> warnings"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreStartRequest",
+      "id" : 6004,
+      "schema" : [
+        "java.util.UUID reqId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponse",
+      "id" : 6005,
+      "schema" : [
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult<org.apache.ignite.plugin.extensions.communication.Message>> hndResults"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult",
+      "id" : 6006,
+      "schema" : [
+        "org.apache.ignite.plugin.extensions.communication.Message data",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse",
+      "id" : 6007,
+      "schema" : [
+        "org.apache.ignite.plugin.extensions.communication.Message result",
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.util.ErrorMessage> errors"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponse",
+      "id" : 6008,
+      "schema" : [
+        "java.util.Map<org.apache.ignite.internal.management.cache.PartitionKey,org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord> res"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse",
+      "id" : 6009,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.cache.StoredCacheData> ccfgs",
+        "java.util.List<org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata> metas"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse",
+      "id" : 6010,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata> metadata"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata",
+      "id" : 6011,
+      "schema" : [
+        "java.util.UUID rqId",
+        "java.lang.String snpName",
+        "java.lang.String consId",
+        "java.lang.String folderName",
+        "boolean comprParts",
+        "int pageSize",
+        "java.util.List<java.lang.Integer> grpIds",
+        "java.util.Set<java.lang.String> bltNodes",
+        "org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer snpRecPtr",
+        "java.util.Map<java.lang.Integer,java.util.Set<java.lang.Integer>> locParts",
+        "byte[] masterKeyDigest",
+        "java.util.List<java.lang.String> warnings",
+        "long snapshotTime",
+        "java.util.Set<java.lang.Integer> comprGrpIds",
+        "boolean hasComprGrps",
+        "boolean onlyPrimary",
+        "boolean dump",
+        "byte[] encKey"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse",
+      "id" : 6012,
+      "schema" : [
+        "java.util.Map<java.lang.String,java.util.Map<org.apache.ignite.internal.management.cache.PartitionKey,org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord>> perMetaResults"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponse",
+      "id" : 6013,
+      "schema" : [
+        "java.util.Map<java.lang.String,java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult<org.apache.ignite.plugin.extensions.communication.Message>>> perMetaResults"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage",
+      "id" : 6014,
+      "schema" : [
+        "java.lang.String id",
+        "java.util.UUID reqId",
+        "java.lang.String snpName",
+        "java.lang.String snpPath",
+        "java.util.Map<java.lang.Integer,int[]> parts"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage",
+      "id" : 6015,
+      "schema" : [
+        "java.lang.String id",
+        "java.lang.String errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult",
+      "id" : 6016,
+      "schema" : [
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord> txHashRes",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord> partHashRes",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> partiallyCommittedTxs",
+        "java.util.Collection<org.apache.ignite.internal.util.ErrorMessage> exceptions"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage",
+      "id" : 6017,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.GridCacheMessage payload",
+        "java.util.UUID id",
+        "java.util.UUID txSnpId",
+        "long topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId",
+      "id" : 6300,
+      "schema" : [
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.lang.IgniteUuid reqId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult",
+      "id" : 6301,
+      "schema" : [
+        "int cnt",
+        "java.util.Collection<org.apache.ignite.internal.util.ErrorMessage> errors"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult",
+      "id" : 6302,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid srvcId",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult> results",
+        "boolean isSvcTopTransitional"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceDeploymentRequest",
+      "id" : 6303,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid srvcId",
+        "org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage cfgMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest",
+      "id" : 6304,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid srvcId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch",
+      "id" : 6305,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId depId",
+        "java.util.Collection<org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult> results"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest",
+      "id" : 6306,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.Collection<org.apache.ignite.internal.processors.service.ServiceChangeAbstractRequest> reqs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch",
+      "id" : 6307,
+      "schema" : [
+        "org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId depId",
+        "java.util.Map<org.apache.ignite.lang.IgniteUuid,org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult> results"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceProcessorCommonDiscoveryData",
+      "id" : 6308,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.service.ServiceInfo> registeredServices"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceProcessorJoinNodeDiscoveryData",
+      "id" : 6309,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.service.ServiceInfo> staticServicesInfo"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceInfo",
+      "id" : 6310,
+      "schema" : [
+        "java.util.UUID originNodeId",
+        "org.apache.ignite.lang.IgniteUuid srvcId",
+        "org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage cfgMsg",
+        "boolean staticCfg",
+        "org.apache.ignite.internal.processors.service.ServiceTopology top"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.ServiceTopology",
+      "id" : 6311,
+      "schema" : [
+        "java.util.Map<java.util.UUID,java.lang.Integer> snapshot",
+        "boolean isTransitional"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage",
+      "id" : 6312,
+      "schema" : [
+        "java.lang.String name",
+        "int totalCnt",
+        "int maxPerNodeCnt",
+        "java.lang.String cacheName",
+        "byte[] affKeyBytes",
+        "boolean isStatisticsEnabled",
+        "int locStartOrder",
+        "java.lang.String srvcClsName",
+        "byte[] srvcBytes",
+        "byte[] nodeFilterBytes",
+        "byte[] interceptorsBytes",
+        "java.lang.String[] platformMtdNames",
+        "marshalled java.lang.Object affKey value=affKeyBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage",
+      "id" : 6500,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID receiverNodeId",
+        "int connIdx"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage",
+      "id" : 6501,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "java.lang.String key",
+        "byte[] valBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage",
+      "id" : 6502,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage",
+      "id" : 6503,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "java.lang.String key",
+        "byte[] valBytes",
+        "byte[] expValBytes",
+        "boolean matches"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage",
+      "id" : 6504,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "boolean updated"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.util.distributed.FullMessage",
+      "id" : 6505,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID processId",
+        "int type",
+        "java.util.Map<java.util.UUID,R> res",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage> err"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.util.distributed.InitMessage",
+      "id" : 6506,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID procId",
+        "int type",
+        "org.apache.ignite.plugin.extensions.communication.Message req",
+        "boolean waitClnRes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage",
+      "id" : 6507,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "java.util.Collection<java.lang.String> caches",
+        "byte flags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage",
+      "id" : 6508,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "int typeId",
+        "boolean duplicated"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage",
+      "id" : 6509,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID origNodeId",
+        "int typeId",
+        "boolean onCoordinator",
+        "java.lang.String errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.WalStateFinishMessage",
+      "id" : 6510,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID opId",
+        "int grpId",
+        "org.apache.ignite.lang.IgniteUuid grpDepId",
+        "boolean changed",
+        "java.lang.String errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.WalStateProposeMessage",
+      "id" : 6511,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID opId",
+        "int grpId",
+        "org.apache.ignite.lang.IgniteUuid grpDepId",
+        "java.util.Map<java.lang.String,org.apache.ignite.lang.IgniteUuid> caches",
+        "boolean enable"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage",
+      "id" : 6512,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "int typeId",
+        "int acceptedVer",
+        "boolean duplicated"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage",
+      "id" : 6513,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID origNodeId",
+        "byte[] metadataBytes",
+        "int typeId",
+        "int pendingVer",
+        "int acceptedVer",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "marshalled org.apache.ignite.internal.binary.BinaryMetadata metadata value=metadataBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage",
+      "id" : 6514,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "long timeout",
+        "boolean isInit"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.UserAcceptedMessage",
+      "id" : 6515,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.lang.IgniteUuid opId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.UserProposedMessage",
+      "id" : 6516,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.internal.processors.authentication.UserManagementOperation op"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage",
+      "id" : 6517,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "org.apache.ignite.cluster.ClusterState state",
+        "boolean transitionRes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage",
+      "id" : 6518,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID routineId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage",
+      "id" : 6519,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID routineId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage",
+      "id" : 6520,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId",
+        "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.util.List<java.util.UUID>>> assignmentChange",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.lang.IgniteUuid> cacheDeploymentIds",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage partsMsg",
+        "boolean exchangeNeeded"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage",
+      "id" : 6521,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.Map<java.lang.Integer,java.lang.Boolean> startedCaches",
+        "java.util.Set<java.lang.Integer> closedCaches"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage",
+      "id" : 6522,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem item"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage",
+      "id" : 6523,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID origNodeId",
+        "org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem mappingItem",
+        "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage.ProposalStatus status",
+        "java.lang.String conflictingClsName"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.ExchangeFailureMessage",
+      "id" : 6524,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.Collection<java.lang.String> cacheNames",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage> exchangeErrors"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessage",
+      "id" : 6525,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "java.util.Collection<java.lang.String> caches",
+        "byte flags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage",
+      "id" : 6526,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest> startReqs",
+        "java.util.Set<java.lang.String> cachesToClose"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch",
+      "id" : 6527,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest> reqs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheClientReconnectDiscoveryData",
+      "id" : 6528,
+      "schema" : [
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheReconnectInfo> clientCaches"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState",
+      "id" : 6529,
+      "schema" : [
+        "java.util.Set<java.lang.Integer> lostParts",
+        "java.util.Set<java.lang.Integer> zeroParts"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheJoinInfo",
+      "id" : 6530,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.StoredCacheData cacheData",
+        "org.apache.ignite.internal.processors.cache.CacheType cacheType",
+        "boolean sql",
+        "long flags",
+        "boolean staticallyConfigured"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheJoinNodeDiscoveryData",
+      "id" : 6531,
+      "schema" : [
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheJoinInfo> caches",
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheJoinInfo> templates",
+        "org.apache.ignite.lang.IgniteUuid cacheDeploymentId",
+        "boolean startCaches",
+        "org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheReconnectInfo",
+      "id" : 6532,
+      "schema" : [
+        "java.lang.String cacheName",
+        "org.apache.ignite.lang.IgniteUuid deploymentId",
+        "boolean nearCache"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData",
+      "id" : 6533,
+      "schema" : [
+        "long clusterBaselineTopVer",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState> grpStates"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.discovery.IoTestDiscoveryMessage",
+      "id" : 6534,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "byte[] payload",
+        "java.util.List<java.util.UUID> path",
+        "long hopSendTsMillis",
+        "java.util.List<java.lang.Long> hopTimesMillis"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.discovery.IoTestDiscoveryAckMessage",
+      "id" : 6535,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.lang.IgniteUuid requestId",
+        "java.util.List<java.util.UUID> path",
+        "java.util.List<java.lang.Long> hopTimesMillis"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.TxInfo",
+      "id" : 10000,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion dhtVer",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.TxEntriesInfo",
+      "id" : 10001,
+      "schema" : [
+        "int cacheId",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.transactions.TxLock",
+      "id" : 10002,
+      "schema" : [
+        "java.util.UUID nearNodeId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId",
+        "long threadId",
+        "byte ownership"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest",
+      "id" : 10003,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "long futId",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> txKeys"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse",
+      "id" : 10004,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "long futId",
+        "org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey[] nearTxKeysArr",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> txKeys",
+        "java.util.List<org.apache.ignite.internal.processors.cache.transactions.TxLock>[] locksArr",
+        "marshalled java.util.Map<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey,java.util.List<org.apache.ignite.internal.processors.cache.transactions.TxLock>> nearTxKeyLocks keys=nearTxKeysArr values=locksArr"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey",
+      "id" : 10005,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "int cacheId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry",
+      "id" : 10006,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder val",
+        "org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder oldVal",
+        "byte[] transformClosBytes",
+        "long ttl",
+        "long conflictExpireTime",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion conflictVer",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion explicitVer",
+        "org.apache.ignite.internal.processors.cache.CacheEntryPredicate[] filters",
+        "byte[] expiryPlcBytes",
+        "byte flags",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion serReadVer",
+        "marshalled java.util.Collection<org.apache.ignite.internal.util.typedef.T2<javax.cache.processor.EntryProcessor<java.lang.Object,java.lang.Object,java.lang.Object>,java.lang.Object[]>> entryProcessorsCol value=transformClosBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder",
+      "id" : 10007,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "org.apache.ignite.internal.processors.cache.GridCacheOperation op",
+        "boolean hasWriteVal"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest",
+      "id" : 10008,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer",
+        "int txNum",
+        "boolean sys",
+        "boolean nearTxCheck"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse",
+      "id" : 10009,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "boolean success"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest",
+      "id" : 10010,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "long threadId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion commitVer",
+        "boolean invalidate",
+        "boolean commit",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion baseVer",
+        "byte plc",
+        "int taskNameHash",
+        "byte flags",
+        "org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse",
+      "id" : 10011,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "int part"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest",
+      "id" : 10012,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "long threadId",
+        "org.apache.ignite.transactions.TransactionConcurrency concurrency",
+        "org.apache.ignite.transactions.TransactionIsolation isolation",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer",
+        "long timeout",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry> reads",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry> writes",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> dhtVerKeys",
+        "int txSize",
+        "java.util.Map<java.util.UUID,java.util.Collection<java.util.UUID>> txNodes",
+        "byte plc",
+        "byte flags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse",
+      "id" : 10013,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "int part"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest",
+      "id" : 10014,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "long threadId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion commitVer",
+        "boolean invalidate",
+        "boolean commit",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion baseVer",
+        "byte plc",
+        "int taskNameHash",
+        "byte flags",
+        "org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode",
+        "java.util.UUID nearNodeId",
+        "int miniId",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage> updCntrs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse",
+      "id" : 10015,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "int part",
+        "int miniId",
+        "org.apache.ignite.internal.util.ErrorMessage checkCommittedErrMsg",
+        "org.apache.ignite.internal.processors.cache.GridCacheReturn retVal",
+        "boolean checkCommitted"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest",
+      "id" : 10016,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "long threadId",
+        "org.apache.ignite.transactions.TransactionConcurrency concurrency",
+        "org.apache.ignite.transactions.TransactionIsolation isolation",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer",
+        "long timeout",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry> reads",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry> writes",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> dhtVerKeys",
+        "int txSize",
+        "java.util.Map<java.util.UUID,java.util.Collection<java.util.UUID>> txNodes",
+        "byte plc",
+        "byte flags",
+        "java.util.UUID nearNodeId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "int miniId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "java.util.BitSet invalidateNearEntries",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry> nearWrites",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> ownedKeys",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> ownedVals",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage> updCntrs",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer",
+        "int taskNameHash",
+        "java.util.BitSet preloadKeys",
+        "boolean skipCompletedVers",
+        "java.lang.String txLbl",
+        "marshalled java.util.Map<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey,org.apache.ignite.internal.processors.cache.version.GridCacheVersion> owned keys=ownedKeys values=ownedVals"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse",
+      "id" : 10017,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "int part",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> nearEvicted",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "int miniId",
+        "java.util.Map<java.lang.Integer,int[]> invalidParts",
+        "java.util.List<org.apache.ignite.internal.processors.cache.GridCacheEntryInfo> preloadEntries"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest",
+      "id" : 10018,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "long threadId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion commitVer",
+        "boolean invalidate",
+        "boolean commit",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion baseVer",
+        "byte plc",
+        "int taskNameHash",
+        "byte flags",
+        "org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode",
+        "int miniId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse",
+      "id" : 10019,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "int part",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "int miniId",
+        "long nearThreadId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest",
+      "id" : 10020,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "long threadId",
+        "org.apache.ignite.transactions.TransactionConcurrency concurrency",
+        "org.apache.ignite.transactions.TransactionIsolation isolation",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer",
+        "long timeout",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry> reads",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry> writes",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> dhtVerKeys",
+        "int txSize",
+        "java.util.Map<java.util.UUID,java.util.Collection<java.util.UUID>> txNodes",
+        "byte plc",
+        "byte flags",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "int miniId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int taskNameHash",
+        "byte flags",
+        "java.lang.String txLbl"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse",
+      "id" : 10021,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "int part",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> pending",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "int miniId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion dhtVer",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue> ownedVals",
+        "org.apache.ignite.internal.processors.cache.GridCacheReturn retVal",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey> filterFailedKeys",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion clientRemapVer",
+        "boolean onePhaseCommit"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest",
+      "id" : 10022,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "java.util.UUID nodeId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer",
+        "long threadId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "long timeout",
+        "boolean isInTx",
+        "boolean isInvalidate",
+        "boolean isRead",
+        "org.apache.ignite.transactions.TransactionIsolation isolation",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "boolean[] retVals",
+        "int txSize",
+        "byte flags",
+        "java.util.BitSet invalidateEntries",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int taskNameHash",
+        "java.util.BitSet preloadKeys",
+        "long accessTtl",
+        "java.lang.String txLbl"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse",
+      "id" : 10023,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> vals",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "java.util.Collection<java.lang.Integer> invalidParts",
+        "java.util.List<org.apache.ignite.internal.processors.cache.GridCacheEntryInfo> preloadEntries"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest",
+      "id" : 10024,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "boolean forSavepoint",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> nearKeys"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest",
+      "id" : 10025,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "java.util.UUID nodeId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer",
+        "long threadId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "long timeout",
+        "boolean isInTx",
+        "boolean isInvalidate",
+        "boolean isRead",
+        "org.apache.ignite.transactions.TransactionIsolation isolation",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "boolean[] retVals",
+        "int txSize",
+        "byte flags",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int miniId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion[] dhtVers",
+        "int taskNameHash",
+        "long createTtl",
+        "long accessTtl",
+        "byte flags",
+        "java.lang.String txLbl",
+        "long waitTimeout"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse",
+      "id" : 10026,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> vals",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> pending",
+        "int miniId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion[] dhtVers",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion[] mappedVers",
+        "boolean[] filterRes",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion clientRemapVer",
+        "boolean compatibleRemapVer",
+        "boolean lockAcquired"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest",
+      "id" : 10027,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "boolean forSavepoint"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest",
+      "id" : 10028,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "java.util.UUID nodeId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer",
+        "long threadId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "long timeout",
+        "boolean isInTx",
+        "boolean isInvalidate",
+        "boolean isRead",
+        "org.apache.ignite.transactions.TransactionIsolation isolation",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "boolean[] retVals",
+        "int txSize",
+        "byte flags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse",
+      "id" : 10029,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> committedVers",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> rolledbackVers",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> vals"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest",
+      "id" : 10030,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> vers"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.TransactionAttributesAwareRequest",
+      "id" : 10031,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest payload",
+        "java.util.Map<java.lang.String,java.lang.String> appAttrs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest",
+      "id" : 10300,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse",
+      "id" : 10301,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> missedKeys",
+        "java.util.List<org.apache.ignite.internal.processors.cache.GridCacheEntryInfo> infos"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse",
+      "id" : 10302,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.util.GridLongList futIds"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest",
+      "id" : 10303,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int taskNameHash",
+        "java.util.UUID nearNodeId",
+        "long nearFutId",
+        "byte flags",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> vals",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> prevVals",
+        "java.util.List<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> conflictVers",
+        "org.apache.ignite.internal.util.GridLongList ttls",
+        "org.apache.ignite.internal.util.GridLongList conflictExpireTimes",
+        "org.apache.ignite.internal.util.GridLongList nearTtls",
+        "org.apache.ignite.internal.util.GridLongList nearExpireTimes",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> nearKeys",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> nearVals",
+        "java.util.List<java.lang.Integer> obsoleteIndexes",
+        "org.apache.ignite.internal.util.GridLongList updateCntrs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse",
+      "id" : 10304,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors errs",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> nearEvicted",
+        "int partId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest",
+      "id" : 10305,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.internal.processors.cache.GridCacheOperation op",
+        "org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode",
+        "int taskNameHash",
+        "short flags",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> vals",
+        "java.util.List<byte[]> entryProcessorsBytes",
+        "java.util.List<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> conflictVers",
+        "org.apache.ignite.internal.util.GridLongList conflictTtls",
+        "org.apache.ignite.internal.util.GridLongList conflictExpireTimes",
+        "java.util.List<byte[]> invokeArgsBytes",
+        "byte[] expiryPlcBytes",
+        "org.apache.ignite.internal.processors.cache.CacheEntryPredicate[] filter",
+        "marshalled java.util.List<java.lang.Object> entryProcessors value=entryProcessorsBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest",
+      "id" : 10306,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int taskNameHash",
+        "java.util.UUID nearNodeId",
+        "long nearFutId",
+        "byte flags",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "org.apache.ignite.internal.processors.cache.CacheObject prevVal",
+        "long updateCntr"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse",
+      "id" : 10307,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors errs",
+        "org.apache.ignite.internal.processors.cache.GridCacheReturn ret",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion remapTopVer",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates nearUpdates",
+        "int partId",
+        "java.util.List<java.util.UUID> mapping"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest",
+      "id" : 10308,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.internal.processors.cache.GridCacheOperation op",
+        "org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode",
+        "int taskNameHash",
+        "short flags",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject val"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest",
+      "id" : 10309,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.internal.processors.cache.GridCacheOperation op",
+        "org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode",
+        "int taskNameHash",
+        "short flags",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "java.util.List<byte[]> invokeArgsBytes",
+        "byte[] entryProcBytes",
+        "marshalled javax.cache.processor.EntryProcessor<java.lang.Object,java.lang.Object,java.lang.Object> entryProc value=entryProcBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest",
+      "id" : 10310,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.internal.processors.cache.GridCacheOperation op",
+        "org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode",
+        "int taskNameHash",
+        "short flags",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "org.apache.ignite.internal.processors.cache.CacheEntryPredicate[] filter"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicCheckUpdateRequest",
+      "id" : 10311,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "int partId",
+        "long futId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates",
+      "id" : 10312,
+      "schema" : [
+        "java.util.List<java.lang.Integer> nearValsIdxs",
+        "java.util.List<java.lang.Integer> nearSkipIdxs",
+        "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject> nearVals",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearVer",
+        "org.apache.ignite.internal.util.GridLongList nearTtls",
+        "org.apache.ignite.internal.util.GridLongList nearExpireTimes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest",
+      "id" : 10313,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "java.util.Collection<java.lang.Boolean> readersFlags",
+        "byte flags",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int taskNameHash",
+        "long createTtl",
+        "long accessTtl",
+        "java.lang.String txLbl",
+        "marshalled java.util.Map<org.apache.ignite.internal.processors.cache.KeyCacheObject,java.lang.Boolean> keyMap keys=keys values=readersFlags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse",
+      "id" : 10314,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.lang.IgniteUuid futId",
+        "org.apache.ignite.lang.IgniteUuid miniId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.GridCacheEntryInfo> entries",
+        "java.util.Collection<java.lang.Integer> invalidParts",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest",
+      "id" : 10315,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "byte flags",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int taskNameHash",
+        "long createTtl",
+        "long accessTtl",
+        "java.lang.String txLbl"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse",
+      "id" : 10316,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long futId",
+        "org.apache.ignite.plugin.extensions.communication.Message res",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "byte flags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse",
+      "id" : 10317,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "int partId",
+        "long futId",
+        "java.util.UUID primaryId",
+        "byte flags",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors errs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest",
+      "id" : 10318,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> keys",
+        "java.util.List<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> vers",
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> nearKeys",
+        "java.util.List<org.apache.ignite.internal.processors.cache.version.GridCacheVersion> nearVers",
+        "long ttl",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.GridCacheReturn",
+      "id" : 10319,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.CacheObject cacheObj",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult> invokeResCol",
+        "boolean success",
+        "boolean invokeRes",
+        "int cacheId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.GridCacheEntryInfo",
+      "id" : 10320,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "long ttl",
+        "long expireTimeDelta",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult",
+      "id" : 10321,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject res",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry",
+      "id" : 10322,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject val",
+        "long ttl",
+        "long expireTime",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheEvictionEntry",
+      "id" : 10323,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver",
+        "boolean near"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter",
+      "id" : 10324,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.CacheEntryPredicateType type",
+        "org.apache.ignite.internal.processors.cache.CacheObject val"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.GridContinuousMessage",
+      "id" : 10325,
+      "schema" : [
+        "org.apache.ignite.internal.processors.continuous.GridContinuousMessageType type",
+        "java.util.UUID routineId",
+        "java.util.Collection<org.apache.ignite.plugin.extensions.communication.Message> msgs",
+        "byte[] dataBytes",
+        "org.apache.ignite.lang.IgniteUuid futId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage",
+      "id" : 10326,
+      "schema" : [
+        "java.util.UUID routineId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap cntrsMap"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors",
+      "id" : 10327,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject> failedKeys",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage",
+      "id" : 10328,
+      "schema" : [
+        "java.lang.String latchId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "boolean isFinal"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicApplicationAttributesAwareRequest",
+      "id" : 10329,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest payload",
+        "java.util.Map<java.lang.String,java.lang.String> appAttrs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.StartRequestData",
+      "id" : 10330,
+      "schema" : [
+        "byte[] nodeFilterBytes",
+        "java.lang.String clsName",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd",
+        "int bufSize",
+        "long interval",
+        "boolean autoUnsubscribe",
+        "boolean keepBinary"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage",
+      "id" : 10331,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID routineId",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage> errs",
+        "java.util.Map<java.lang.Integer,java.lang.Long> updateCntrs",
+        "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,java.lang.Long>> updateCntrsPerNode"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage",
+      "id" : 10332,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID routineId",
+        "org.apache.ignite.internal.processors.continuous.StartRequestData startReqData",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage> errs",
+        "java.util.Map<java.lang.Integer,java.lang.Long> updateCntrs",
+        "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,java.lang.Long>> updateCntrsPerNode",
+        "org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage.Mode mode"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.StoredCacheData",
+      "id" : 10333,
+      "schema" : [
+        "jdkMarshalled",
+        "byte[] ccfgBytes",
+        "byte[] qryEntitiesBytes",
+        "boolean sql",
+        "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheConfigurationEnrichment",
+        "org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted grpKeyEncrypted",
+        "marshalled java.util.Collection<org.apache.ignite.cache.QueryEntity> qryEntities value=qryEntitiesBytes",
+        "marshalled org.apache.ignite.configuration.CacheConfiguration<?,?> ccfg value=ccfgBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheNodeCommonDiscoveryData",
+      "id" : 10334,
+      "schema" : [
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheData> caches",
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheData> templates",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.CacheGroupData> cacheGrps",
+        "java.util.Map<java.lang.String,java.util.Map<java.util.UUID,java.lang.Boolean>> clientNodesMap",
+        "org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheData",
+      "id" : 10335,
+      "schema" : [
+        "byte[] cacheCfgBytes",
+        "int grpId",
+        "org.apache.ignite.internal.processors.cache.CacheType cacheType",
+        "org.apache.ignite.lang.IgniteUuid deploymentId",
+        "java.util.Collection<org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage> entitiesMsgs",
+        "java.util.UUID rcvdFrom",
+        "boolean staticCfg",
+        "boolean sql",
+        "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheCfgEnrichment",
+        "marshalled org.apache.ignite.configuration.CacheConfiguration cacheCfg value=cacheCfgBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheGroupData",
+      "id" : 10336,
+      "schema" : [
+        "int grpId",
+        "java.lang.String grpName",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion startTopVer",
+        "java.util.UUID rcvdFrom",
+        "org.apache.ignite.lang.IgniteUuid deploymentId",
+        "byte[] cacheCfgBytes",
+        "java.util.Map<java.lang.String,java.lang.Integer> caches",
+        "boolean persistenceEnabled",
+        "boolean walEnabled",
+        "java.util.List<org.apache.ignite.internal.processors.cache.WalStateProposeMessage> walChangeReqs",
+        "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheCfgEnrichment",
+        "marshalled org.apache.ignite.configuration.CacheConfiguration<?,?> cacheCfg value=cacheCfgBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest",
+      "id" : 10600,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int grpId",
+        "byte flags",
+        "long futId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse",
+      "id" : 10601,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int grpId",
+        "long futId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "java.util.List<java.util.List<java.util.UUID>> affAssignmentIds",
+        "java.util.List<java.util.List<java.util.UUID>> idealAffAssignment",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap partMap compress",
+        "org.apache.ignite.internal.util.ErrorMessage affAssignmentErrMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage",
+      "id" : 10602,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.util.GridLongList> assigns",
+        "java.util.List<org.apache.ignite.internal.util.GridLongList> idealAssigns",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.util.GridLongList> assignsDiff"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.ExchangeInfo",
+      "id" : 10603,
+      "schema" : [
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage",
+      "id" : 10604,
+      "schema" : [
+        "int cacheId",
+        "byte[] data",
+        "int size"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap",
+      "id" : 10605,
+      "schema" : [
+        "int[] partIds",
+        "long[] initialUpdCntrs",
+        "long[] updCntrs",
+        "int curIdx"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap",
+      "id" : 10606,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap historical",
+        "java.util.Set<java.lang.Integer> full"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap",
+      "id" : 10607,
+      "schema" : [
+        "long[] initUpdCntrs",
+        "long[] updCntrs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair",
+      "id" : 10608,
+      "schema" : [
+        "int grpId",
+        "int partId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.util.GridPartitionStateMap",
+      "id" : 10609,
+      "schema" : [
+        "java.util.BitSet states",
+        "int size"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap",
+      "id" : 10610,
+      "schema" : [
+        "java.util.UUID nodeId",
+        "long updateSeq",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion top",
+        "org.apache.ignite.internal.util.GridPartitionStateMap map",
+        "int moving"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap",
+      "id" : 10611,
+      "schema" : [
+        "java.util.UUID nodeId",
+        "long nodeOrder",
+        "long updateSeq",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap> map"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId",
+      "id" : 10612,
+      "schema" : [
+        "java.util.UUID nodeId",
+        "int evt",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest",
+      "id" : 10613,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid sesId",
+        "java.lang.String key",
+        "java.lang.String cpSpi"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage",
+      "id" : 10614,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int grpId",
+        "long rebalanceId",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap parts",
+        "long timeout",
+        "int workerId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage",
+      "id" : 10615,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int grpId",
+        "long rebalanceId",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "java.util.Map<java.lang.Integer,java.lang.Long> last",
+        "java.util.Collection<java.lang.Integer> missed",
+        "java.util.Map<java.lang.Integer,java.util.List<org.apache.ignite.internal.processors.cache.GridCacheEntryInfo>> infos",
+        "int msgSize",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage",
+      "id" : 10616,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion lastVer",
+        "byte flags",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap> locParts compress",
+        "java.util.Map<java.lang.Integer,java.lang.Integer> dupPartsData",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap> partCntrs compress",
+        "java.util.Map<java.util.UUID,java.util.Map<org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair,java.lang.Long>> partHistSuppliers compress",
+        "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,java.util.Set<java.lang.Integer>>> partsToReload compress",
+        "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.lang.Long>> partsSizes",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage> errMsgs compress",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion resTopVer",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage> joinedNodeAff",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage> idealAffDiff",
+        "byte flags",
+        "java.util.Map<java.lang.Integer,int[]> lostParts"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage",
+      "id" : 10617,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion lastVer",
+        "byte flags",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap> parts compress",
+        "java.util.Map<java.lang.Integer,java.lang.Integer> dupPartsData",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap> partCntrs compress",
+        "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.lang.Long>> partsSizes compress",
+        "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.lang.Long>> partHistCntrs compress",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "boolean client",
+        "java.util.Collection<java.lang.Integer> grpsAffReq",
+        "long exchangeStartTime",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage finishMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest",
+      "id" : 10618,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion lastVer",
+        "byte flags",
+        "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId restoreExchId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.management.cache.PartitionKey",
+      "id" : 10619,
+      "schema" : [
+        "int grpId",
+        "java.lang.String grpName",
+        "int partId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation",
+      "id" : 10900,
+      "schema" : [
+        "java.util.UUID opId",
+        "java.lang.String cacheName",
+        "java.lang.String schemaName",
+        "java.lang.String tblName",
+        "java.util.List<org.apache.ignite.internal.processors.query.QueryField> cols",
+        "boolean ifTblExists",
+        "boolean ifNotExists"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation",
+      "id" : 10901,
+      "schema" : [
+        "java.util.UUID opId",
+        "java.lang.String cacheName",
+        "java.lang.String schemaName",
+        "java.lang.String tblName",
+        "org.apache.ignite.internal.cache.query.QueryIndexMessage idxMsg",
+        "boolean ifNotExists",
+        "int parallel"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation",
+      "id" : 10902,
+      "schema" : [
+        "java.util.UUID opId",
+        "java.lang.String cacheName",
+        "java.lang.String schemaName",
+        "java.lang.String idxName",
+        "boolean ifExists"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation",
+      "id" : 10903,
+      "schema" : [
+        "java.util.UUID opId",
+        "java.lang.String cacheName",
+        "java.lang.String schemaName",
+        "java.lang.String tblName",
+        "java.util.List<java.lang.String> cols",
+        "boolean ifTblExists",
+        "boolean ifExists"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation",
+      "id" : 10904,
+      "schema" : [
+        "java.util.UUID opId",
+        "java.lang.String cacheName",
+        "java.lang.String schemaName",
+        "java.util.Collection<org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage> entitiesMsgs",
+        "int qryParallelism",
+        "boolean sqlEscape"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage",
+      "id" : 10905,
+      "schema" : [
+        "java.util.UUID opId",
+        "int errCode",
+        "java.lang.String errMsg",
+        "boolean nop"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage",
+      "id" : 10906,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation op",
+        "java.lang.String errMsg",
+        "int errCode",
+        "org.apache.ignite.lang.IgniteUuid depId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage",
+      "id" : 10907,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation op",
+        "java.lang.String errMsg",
+        "int errCode",
+        "boolean nop"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.QueryField",
+      "id" : 10908,
+      "schema" : [
+        "java.lang.String name",
+        "java.lang.String alias",
+        "java.lang.String typeName",
+        "boolean nullable",
+        "int precision",
+        "int scale"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.cache.query.QueryIndexMessage",
+      "id" : 10909,
+      "schema" : [
+        "java.lang.String name",
+        "java.util.LinkedHashMap<java.lang.String,java.lang.Boolean> fields",
+        "org.apache.ignite.cache.QueryIndexType type",
+        "int inlineSize"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery",
+      "id" : 10910,
+      "schema" : [
+        "java.lang.String qry",
+        "int[] paramIdxs",
+        "java.util.UUID node"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest",
+      "id" : 10911,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "long id",
+        "java.lang.String cacheName",
+        "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType type",
+        "java.lang.String clause",
+        "byte[] idxQryDescBytes",
+        "int limit",
+        "java.lang.String clsName",
+        "byte[] keyValFilterBytes",
+        "byte[] rdcBytes",
+        "byte[] transBytes",
+        "byte[] argsBytes",
+        "int pageSize",
+        "boolean incBackups",
+        "boolean cancel",
+        "boolean incMeta",
+        "boolean all",
+        "boolean keepBinary",
+        "int taskHash",
+        "int part",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "java.util.Collection<org.apache.ignite.internal.processors.cache.KeyCacheObject> skipKeys",
+        "byte flags",
+        "marshalled java.lang.Object[] args value=argsBytes",
+        "marshalled org.apache.ignite.internal.processors.cache.query.IndexQueryDesc idxQryDesc value=idxQryDescBytes",
+        "marshalled org.apache.ignite.lang.IgniteBiPredicate<java.lang.Object,java.lang.Object> keyValFilter value=keyValFilterBytes",
+        "marshalled org.apache.ignite.lang.IgniteClosure<?,?> trans value=transBytes",
+        "marshalled org.apache.ignite.lang.IgniteReducer<java.lang.Object,java.lang.Object> rdc value=rdcBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse",
+      "id" : 10912,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "boolean finished",
+        "long reqId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "boolean fields",
+        "org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta idxQryMetadata",
+        "java.util.Collection<byte[]> dataBytes",
+        "marshalled java.util.Collection<java.lang.Object> data value=dataBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest",
+      "id" : 10913,
+      "schema" : [
+        "long qryReqId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse",
+      "id" : 10914,
+      "schema" : [
+        "long qryReqId",
+        "java.lang.String errMsg",
+        "byte failCode"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest",
+      "id" : 10915,
+      "schema" : [
+        "long qryReqId",
+        "int segmentId",
+        "int qry",
+        "int pageSize",
+        "byte flags"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse",
+      "id" : 10916,
+      "schema" : [
+        "long qryReqId",
+        "int segmentId",
+        "int qry",
+        "int page",
+        "int allRows",
+        "int cols",
+        "java.util.Collection<org.apache.ignite.plugin.extensions.communication.Message> vals",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion retry",
+        "java.lang.String retryCause",
+        "boolean last"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest",
+      "id" : 10917,
+      "schema" : [
+        "long reqId",
+        "long nodeQryId",
+        "boolean asyncRes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse",
+      "id" : 10918,
+      "schema" : [
+        "java.lang.String errMsg",
+        "long reqId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition",
+      "id" : 10919,
+      "schema" : [
+        "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType idxType",
+        "boolean asc",
+        "int precision"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings",
+      "id" : 10920,
+      "schema" : [
+        "boolean inlineObjHash",
+        "boolean inlineObjSupported",
+        "boolean strOptimizedCompare",
+        "boolean binaryUnsigned"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta",
+      "id" : 10921,
+      "schema" : [
+        "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings keyTypeSettings",
+        "java.util.LinkedHashMap<java.lang.String,org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition> keyDefs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage",
+      "id" : 10922,
+      "schema" : [
+        "java.lang.String schema",
+        "java.lang.String obj",
+        "java.util.List<java.lang.String> colNames"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage",
+      "id" : 10923,
+      "schema" : [
+        "int scale",
+        "byte[] b"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData",
+      "id" : 10924,
+      "schema" : [
+        "org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage key",
+        "long rowsCnt",
+        "org.apache.ignite.internal.processors.query.stat.StatisticsType type",
+        "int partId",
+        "long updCnt",
+        "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData> data"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData",
+      "id" : 10925,
+      "schema" : [
+        "org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage min",
+        "org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage max",
+        "long nulls",
+        "long distinct",
+        "long total",
+        "int size",
+        "byte[] rawData",
+        "long ver",
+        "long createdAt"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest",
+      "id" : 10926,
+      "schema" : [
+        "java.util.UUID reqId",
+        "org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage key",
+        "org.apache.ignite.internal.processors.query.stat.StatisticsType type",
+        "java.util.Map<java.lang.String,java.lang.Long> versions",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse",
+      "id" : 10927,
+      "schema" : [
+        "java.util.UUID reqId",
+        "org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData data"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck",
+      "id" : 10928,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "int cacheId",
+        "java.util.UUID routineId",
+        "java.util.Map<java.lang.Integer,java.lang.Long> updateCntrs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxSalvageMessage",
+      "id" : 10929,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry",
+      "id" : 10930,
+      "schema" : [
+        "javax.cache.event.EventType evtType",
+        "byte flags",
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject newVal",
+        "org.apache.ignite.internal.processors.cache.CacheObject oldVal",
+        "int cacheId",
+        "int part",
+        "long updateCntr",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "long filteredCnt"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.message.QueryInlineSizesDataBagItem",
+      "id" : 10931,
+      "schema" : [
+        "java.util.Map<java.lang.String,java.lang.Integer> sizes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.message.QueryProposalsDataBagItem",
+      "id" : 10932,
+      "schema" : [
+        "java.util.LinkedHashMap<java.util.UUID,org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage> activeProposals"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage",
+      "id" : 10933,
+      "schema" : [
+        "java.lang.String keyType",
+        "java.lang.String valType",
+        "java.lang.String keyFieldName",
+        "java.lang.String valFieldName",
+        "java.util.LinkedHashMap<java.lang.String,java.lang.String> fields",
+        "java.lang.String[] keyFields",
+        "java.util.Map<java.lang.String,java.lang.String> aliases",
+        "java.util.Collection<org.apache.ignite.internal.cache.query.QueryIndexMessage> idxs",
+        "java.lang.String tableName",
+        "java.util.Set<java.lang.String> notNullFields",
+        "byte[] dfltFieldValuesBytes",
+        "java.util.Map<java.lang.String,java.lang.Integer> fieldsPrecision",
+        "java.util.Map<java.lang.String,java.lang.Integer> fieldsScale",
+        "marshalled java.util.Map<java.lang.String,java.lang.Object> dfltFieldValues value=dfltFieldValuesBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage",
+      "id" : 10934,
+      "schema" : [
+        "java.lang.String keyType",
+        "java.lang.String valType",
+        "java.lang.String keyFieldName",
+        "java.lang.String valFieldName",
+        "java.util.LinkedHashMap<java.lang.String,java.lang.String> fields",
+        "java.lang.String[] keyFields",
+        "java.util.Map<java.lang.String,java.lang.String> aliases",
+        "java.util.Collection<org.apache.ignite.internal.cache.query.QueryIndexMessage> idxs",
+        "java.lang.String tableName",
+        "java.util.Set<java.lang.String> notNullFields",
+        "byte[] dfltFieldValuesBytes",
+        "java.util.Map<java.lang.String,java.lang.Integer> fieldsPrecision",
+        "java.util.Map<java.lang.String,java.lang.Integer> fieldsScale",
+        "boolean preserveKeysOrder",
+        "boolean implicitPk",
+        "boolean fillAbsentPKsWithDefaults",
+        "int pkInlineSize",
+        "int affKeyInlineSize",
+        "boolean sql",
+        "marshalled java.util.Map<java.lang.String,java.lang.Object> dfltFieldValues value=dfltFieldValuesBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo",
+      "id" : 10935,
+      "schema" : [
+        "java.util.UUID srcNodeId",
+        "java.util.UUID routineId",
+        "org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd",
+        "byte[] nodeFilter",
+        "int bufSize",
+        "long interval",
+        "boolean autoUnsubscribe"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.ContinuousRoutinesJoiningNodeDiscoveryData",
+      "id" : 10936,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo> startedRoutines"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject",
+      "id" : 10937,
+      "schema" : [
+        "byte[] bytes",
+        "java.lang.String clsName",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler",
+      "id" : 10938,
+      "schema" : [
+        "java.lang.String cacheName",
+        "byte[] topicBytes",
+        "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject rmtFilterDep",
+        "byte[] rmtFilterBytes",
+        "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject rmtFilterFactoryDep",
+        "byte[] rmtFilterFactoryBytes",
+        "byte types",
+        "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject rmtTransFactoryDep",
+        "byte[] rmtTransFactoryBytes",
+        "boolean internal",
+        "boolean notifyExisting",
+        "boolean oldValRequired",
+        "boolean sync",
+        "boolean ignoreExpired",
+        "int taskHash",
+        "boolean keepBinary",
+        "marshalled java.lang.Object topic value=topicBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridEventConsumeHandler",
+      "id" : 10939,
+      "schema" : [
+        "byte[] filterBytes",
+        "java.lang.String clsName",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "int[] types"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridMessageListenHandler",
+      "id" : 10940,
+      "schema" : [
+        "byte[] topicBytes",
+        "byte[] predBytes",
+        "java.lang.String clsName",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage predDepInfo"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo",
+      "id" : 10941,
+      "schema" : [
+        "java.util.UUID nodeId",
+        "byte[] prjPredBytes",
+        "org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd",
+        "int bufSize",
+        "long interval",
+        "boolean autoUnsubscribe",
+        "marshalled org.apache.ignite.lang.IgnitePredicate<org.apache.ignite.cluster.ClusterNode> prjPred value=prjPredBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem",
+      "id" : 10942,
+      "schema" : [
+        "java.util.UUID routineId",
+        "byte[] prjPredBytes",
+        "org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd",
+        "int bufSize",
+        "long interval",
+        "boolean autoUnsubscribe",
+        "marshalled org.apache.ignite.lang.IgnitePredicate<org.apache.ignite.cluster.ClusterNode> prjPred value=prjPredBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData",
+      "id" : 10943,
+      "schema" : [
+        "java.util.UUID nodeId",
+        "java.util.Collection<org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem> items",
+        "java.util.Map<java.util.UUID,java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo>> clientInfos"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.continuous.ContinuousRoutinesCommonDiscoveryData",
+      "id" : 10944,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo> startedRoutines"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridJobCancelRequest",
+      "id" : 11200,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid sessionId",
+        "org.apache.ignite.lang.IgniteUuid jobId",
+        "boolean system"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridJobExecuteRequest",
+      "id" : 11201,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid sesId",
+        "org.apache.ignite.lang.IgniteUuid jobId",
+        "byte[] jobBytes",
+        "long startTaskTime",
+        "long timeout",
+        "java.lang.String taskName",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "java.lang.String taskClsName",
+        "byte[] sesAttrsBytes",
+        "byte[] jobAttrsBytes",
+        "java.lang.String cpSpi",
+        "org.apache.ignite.lang.IgniteUuid[] siblingJobsIds",
+        "boolean forceLocDep",
+        "boolean sesFullSup",
+        "boolean internal",
+        "java.util.Collection<java.util.UUID> top",
+        "byte[] topPredBytes",
+        "int[] cacheIds",
+        "int part",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "java.lang.String execName",
+        "marshalled java.util.Map<? extends java.io.Serializable,? extends java.io.Serializable> jobAttrs value=jobAttrsBytes",
+        "marshalled java.util.Map<java.lang.Object,java.lang.Object> sesAttrs value=sesAttrsBytes",
+        "marshalled org.apache.ignite.compute.ComputeJob job value=jobBytes",
+        "marshalled org.apache.ignite.lang.IgnitePredicate<org.apache.ignite.cluster.ClusterNode> topPred value=topPredBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridJobExecuteResponse",
+      "id" : 11202,
+      "schema" : [
+        "java.util.UUID nodeId",
+        "org.apache.ignite.lang.IgniteUuid sesId",
+        "org.apache.ignite.lang.IgniteUuid jobId",
+        "byte[] gridExBytes",
+        "byte[] resBytes",
+        "byte[] jobAttrsBytes",
+        "boolean isCancelled",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion retry",
+        "marshalled java.lang.Object res value=resBytes",
+        "marshalled java.util.Map<java.lang.Object,java.lang.Object> jobAttrs value=jobAttrsBytes",
+        "marshalled org.apache.ignite.IgniteException gridEx value=gridExBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridJobSiblingsRequest",
+      "id" : 11203,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid sesId",
+        "long topicId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridJobSiblingsResponse",
+      "id" : 11204,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid[] siblingJobsIds"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridTaskCancelRequest",
+      "id" : 11205,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid sesId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.GridTaskSessionRequest",
+      "id" : 11206,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid sesId",
+        "org.apache.ignite.lang.IgniteUuid jobId",
+        "byte[] attrsBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest",
+      "id" : 11207,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid taskId",
+        "long topicId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse",
+      "id" : 11208,
+      "schema" : [
+        "byte[] resBytes",
+        "boolean finished",
+        "boolean found",
+        "java.lang.String err",
+        "marshalled java.lang.Object res value=resBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.collision.jobstealing.JobStealingRequest",
+      "id" : 11209,
+      "schema" : [
+        "int delta"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.util.distributed.SingleNodeMessage",
+      "id" : 11210,
+      "schema" : [
+        "jdkMarshalled",
+        "java.util.UUID processId",
+        "int type",
+        "org.apache.ignite.plugin.extensions.communication.Message resp",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage",
+      "id" : 11500,
+      "schema" : [
+        "java.util.UUID nodeId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage",
+      "id" : 11501,
+      "schema" : [
+        "java.util.UUID nodeId",
+        "long rcvCnt",
+        "long connectCnt",
+        "int connIdx"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
+      "id" : 11502,
+      "schema" : [ ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.communication.GridIoMessage",
+      "id" : 11503,
+      "schema" : [
+        "byte plc",
+        "org.apache.ignite.internal.GridTopicMessage topicMsg nio",
+        "boolean ordered",
+        "long timeout",
+        "boolean skipOnTimeout",
+        "org.apache.ignite.plugin.extensions.communication.Message msg",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.communication.IgniteIoTestMessage",
+      "id" : 11504,
+      "schema" : [
+        "long id",
+        "boolean processInNioThread",
+        "boolean req",
+        "byte[] payload",
+        "long reqSndTsMillis",
+        "long reqRcvTsMillis",
+        "long resSndTsMillis",
+        "long resRcvTsMillis"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.communication.GridIoUserMessage",
+      "id" : 11505,
+      "schema" : [
+        "byte[] bodyBytes",
+        "byte[] topicBytes",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "java.lang.String depClsName"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage",
+      "id" : 11506,
+      "schema" : [
+        "long rcvCnt"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage",
+      "id" : 11507,
+      "schema" : [
+        "int connIdx"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.communication.SessionChannelMessage",
+      "id" : 11508,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid sesId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult",
+      "id" : 11700,
+      "schema" : [
+        "boolean streamerWarning"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry",
+      "id" : 11701,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cache.KeyCacheObject key",
+        "org.apache.ignite.internal.processors.cache.CacheObject val"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest",
+      "id" : 11702,
+      "schema" : [
+        "long reqId",
+        "org.apache.ignite.lang.IgniteUuid resTopicId",
+        "java.lang.String cacheName",
+        "org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage updaterMsg",
+        "java.util.Collection<org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry> entries",
+        "boolean ignoreDepOwnership",
+        "boolean skipStore",
+        "boolean keepBinary",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "java.lang.String sampleClsName",
+        "boolean forceLocDep",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer",
+        "int partId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse",
+      "id" : 11703,
+      "schema" : [
+        "long reqId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage",
+      "id" : 11704,
+      "schema" : [
+        "byte[] rcvrBytes",
+        "org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater builtIn",
+        "marshalled org.apache.ignite.stream.StreamReceiver<?,?> rcvr value=rcvrBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.CacheMetricsMessage",
+      "id" : 11900,
+      "schema" : [
+        "long cacheGets",
+        "long cachePuts",
+        "long entryProcessorPuts",
+        "long entryProcessorReadOnlyInvocations",
+        "float entryProcessorAverageInvocationTime",
+        "long entryProcessorInvocations",
+        "long entryProcessorRemovals",
+        "long entryProcessorMisses",
+        "long entryProcessorHits",
+        "float entryProcessorMissPercentage",
+        "float entryProcessorHitPercentage",
+        "float entryProcessorMaxInvocationTime",
+        "float entryProcessorMinInvocationTime",
+        "long cacheHits",
+        "long cacheMisses",
+        "long cacheTxCommits",
+        "long cacheTxRollbacks",
+        "long cacheEvictions",
+        "long cacheRemovals",
+        "float averagePutTime",
+        "float averageGetTime",
+        "float averageRemoveTime",
+        "float averageTxCommitTime",
+        "float averageTxRollbackTime",
+        "java.lang.String cacheName",
+        "long offHeapGets",
+        "long offHeapPuts",
+        "long offHeapRemoves",
+        "long offHeapEvicts",
+        "long offHeapHits",
+        "long offHeapMisses",
+        "long offHeapEntriesCnt",
+        "long heapEntriesCnt",
+        "long offHeapPrimaryEntriesCnt",
+        "long offHeapBackupEntriesCnt",
+        "long offHeapAllocatedSize",
+        "int size",
+        "long cacheSize",
+        "int keySize",
+        "boolean empty",
+        "int dhtEvictQueueCurrSize",
+        "int txThreadMapSize",
+        "int txXidMapSize",
+        "int txCommitQueueSize",
+        "int txPrepareQueueSize",
+        "int txStartVerCountsSize",
+        "int txCommittedVersionsSize",
+        "int txRolledbackVersionsSize",
+        "int txDhtThreadMapSize",
+        "int txDhtXidMapSize",
+        "int txDhtCommitQueueSize",
+        "int txDhtPrepareQueueSize",
+        "int txDhtStartVerCountsSize",
+        "int txDhtCommittedVersionsSize",
+        "int txDhtRolledbackVersionsSize",
+        "boolean writeBehindEnabled",
+        "int writeBehindFlushSize",
+        "int writeBehindFlushThreadCnt",
+        "long writeBehindFlushFreq",
+        "int writeBehindStoreBatchSize",
+        "int writeBehindTotalCriticalOverflowCnt",
+        "int writeBehindCriticalOverflowCnt",
+        "int writeBehindErrorRetryCnt",
+        "int writeBehindBufSize",
+        "int totalPartitionsCnt",
+        "int rebalancingPartitionsCnt",
+        "long rebalancedKeys",
+        "long estimatedRebalancingKeys",
+        "long keysToRebalanceLeft",
+        "long rebalancingKeysRate",
+        "long rebalancingBytesRate",
+        "long rebalanceStartTime",
+        "long rebalanceFinishTime",
+        "long rebalanceClearingPartitionsLeft",
+        "java.lang.String keyType",
+        "java.lang.String valType",
+        "boolean storeByVal",
+        "boolean statisticsEnabled",
+        "boolean managementEnabled",
+        "boolean readThrough",
+        "boolean writeThrough",
+        "boolean validForReading",
+        "boolean validForWriting",
+        "java.lang.String txKeyCollisions",
+        "boolean idxRebuildInProgress",
+        "long idxRebuildKeyProcessed",
+        "int idxBuildPartitionsLeftCount"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.ClusterMetricsSnapshot",
+      "id" : 11901,
+      "schema" : [
+        "int maxActiveJobs",
+        "int curActiveJobs",
+        "float avgActiveJobs",
+        "int maxWaitingJobs",
+        "int curWaitingJobs",
+        "float avgWaitingJobs",
+        "int maxRejectedJobs",
+        "int curRejectedJobs",
+        "float avgRejectedJobs",
+        "int maxCancelledJobs",
+        "int curCancelledJobs",
+        "float avgCancelledJobs",
+        "int totalRejectedJobs",
+        "int totalCancelledJobs",
+        "int totalExecutedJobs",
+        "long maxJobWaitTime",
+        "long curJobWaitTime",
+        "double avgJobWaitTime",
+        "long maxJobExecTime",
+        "long curJobExecTime",
+        "double avgJobExecTime",
+        "int totalExecTasks",
+        "long totalIdleTime",
+        "long curIdleTime",
+        "int totalCpus",
+        "double curCpuLoad",
+        "double avgCpuLoad",
+        "double curGcCpuLoad",
+        "long heapInit",
+        "long heapUsed",
+        "long heapCommitted",
+        "long heapMax",
+        "long heapTotal",
+        "long nonHeapInit",
+        "long nonHeapUsed",
+        "long nonHeapCommitted",
+        "long nonHeapMax",
+        "long nonHeapTotal",
+        "long upTime",
+        "long startTime",
+        "long nodeStartTime",
+        "int threadCnt",
+        "int peakThreadCnt",
+        "long startedThreadCnt",
+        "int daemonThreadCnt",
+        "long lastDataVer",
+        "int sentMsgsCnt",
+        "long sentBytesCnt",
+        "int rcvdMsgsCnt",
+        "long rcvdBytesCnt",
+        "int outMesQueueSize",
+        "int totalNodes",
+        "long totalJobsExecTime",
+        "long curPmeDuration"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage",
+      "id" : 11902,
+      "schema" : [
+        "org.apache.ignite.internal.ClusterMetricsSnapshot nodeMetricsMsg",
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cluster.CacheMetricsMessage> cachesMetricsMsgs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage",
+      "id" : 11903,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage singleNodeMetricsMsg",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage> allNodesMetrics"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage",
+      "id" : 11904,
+      "schema" : [
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.ClusterMetricsSnapshot> nodesMetricsMsgs"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage",
+      "id" : 11905,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "java.util.Map<java.util.UUID,org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs",
+        "java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage> serversFullMetricsMsgs",
+        "java.util.Set<java.util.UUID> clientNodeIds"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage",
+      "id" : 11906,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.internal.ClusterMetricsSnapshot metricsMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.User",
+      "id" : 12000,
+      "schema" : [
+        "java.lang.String name",
+        "java.lang.String hashedPasswd"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.UserManagementOperation",
+      "id" : 12001,
+      "schema" : [
+        "org.apache.ignite.internal.processors.authentication.User usr",
+        "org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType type",
+        "org.apache.ignite.lang.IgniteUuid id"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage",
+      "id" : 12002,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid opId",
+        "java.lang.String errorMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage",
+      "id" : 12003,
+      "schema" : [
+        "java.lang.String name",
+        "java.lang.String passwd",
+        "org.apache.ignite.lang.IgniteUuid id"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage",
+      "id" : 12004,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.lang.String errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage",
+      "id" : 12005,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID verifierNodeId",
+        "long topVer",
+        "int flags",
+        "java.util.Set<java.util.UUID> failedNodes",
+        "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp",
+        "org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage creatorAddrMsg",
+        "java.util.UUID targetNodeId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem",
+      "id" : 12006,
+      "schema" : [
+        "java.util.ArrayList<org.apache.ignite.internal.processors.authentication.User> usrs",
+        "java.util.ArrayList<org.apache.ignite.internal.processors.authentication.UserManagementOperation> activeOps"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.plugin.security.SecurityBasicPermissionSet",
+      "id" : 12007,
+      "schema" : [
+        "java.util.Map<java.lang.String,java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission>> cachePermissions",
+        "java.util.Map<java.lang.String,java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission>> taskPermissions",
+        "java.util.Map<java.lang.String,java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission>> srvcPermissions",
+        "java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission> sysPermissions",
+        "boolean dfltAllowAll"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage",
+      "id" : 12200,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid clsLdrId",
+        "org.apache.ignite.configuration.DeploymentMode depMode",
+        "java.lang.String userVer",
+        "java.util.Map<java.util.UUID,org.apache.ignite.lang.IgniteUuid> participants"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.deployment.GridDeploymentRequest",
+      "id" : 12201,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid resTopicId",
+        "java.lang.String rsrcName",
+        "org.apache.ignite.lang.IgniteUuid ldrId",
+        "java.util.Collection<java.util.UUID> nodeIds"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.deployment.GridDeploymentResponse",
+      "id" : 12202,
+      "schema" : [
+        "boolean success",
+        "java.lang.String errMsg",
+        "org.apache.ignite.internal.util.GridByteArrayList byteSrc"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage",
+      "id" : 12203,
+      "schema" : [
+        "byte platformId",
+        "int typeId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage",
+      "id" : 12204,
+      "schema" : [
+        "byte platformId",
+        "int typeId",
+        "java.lang.String clsName"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage",
+      "id" : 12205,
+      "schema" : [
+        "int typeId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage",
+      "id" : 12206,
+      "schema" : [
+        "int typeId",
+        "org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo metaVerInfo"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem",
+      "id" : 12207,
+      "schema" : [
+        "byte platformId",
+        "int typeId",
+        "java.lang.String clsName"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo",
+      "id" : 12208,
+      "schema" : [
+        "jdkMarshalled",
+        "byte[] metadataBytes",
+        "int pendingVer",
+        "int acceptedVer",
+        "marshalled org.apache.ignite.internal.binary.BinaryMetadata metadata value=metadataBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.binary.CacheBinaryDataBagItem",
+      "id" : 12209,
+      "schema" : [
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo> meta"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.marshaller.MappedName",
+      "id" : 12210,
+      "schema" : [
+        "java.lang.String clsName",
+        "boolean accepted"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.marshaller.MarshallerDataBagItem",
+      "id" : 12211,
+      "schema" : [
+        "java.util.List<java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.marshaller.MappedName>> mappings"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest",
+      "id" : 12400,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "int keyCnt"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse",
+      "id" : 12401,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.Collection<byte[]> encKeys",
+        "byte[] masterKeyDigest"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest",
+      "id" : 12402,
+      "schema" : [
+        "java.util.UUID reqId",
+        "int[] grpIds",
+        "byte[][] keys",
+        "byte[] keyIds",
+        "byte[] masterKeyDigest"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest",
+      "id" : 12403,
+      "schema" : [
+        "java.util.UUID reqId",
+        "byte[] encKeyName",
+        "byte[] digest"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted",
+      "id" : 12404,
+      "schema" : [
+        "int id",
+        "byte[] key"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys",
+      "id" : 12405,
+      "schema" : [
+        "java.util.Map<java.lang.Integer,byte[]> knownKeys",
+        "java.util.Map<java.lang.Integer,byte[]> newKeys",
+        "byte[] masterKeyDigest",
+        "java.util.Map<java.lang.Integer,java.util.List<org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted>> knownKeysWithIds"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem",
+      "id" : 12406,
+      "schema" : [
+        "java.util.Map<java.lang.Integer,org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted> knownKeys"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.eventstorage.GridEventStorageRequest",
+      "id" : 13000,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid resTopicId",
+        "byte[] filterBytes",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "java.lang.String filterClsName",
+        "marshalled org.apache.ignite.lang.IgnitePredicate<?> filter value=filterBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse",
+      "id" : 13001,
+      "schema" : [
+        "byte[] evtsBytes",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg",
+        "marshalled java.util.Collection<org.apache.ignite.events.Event> evts value=evtsBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage",
+      "id" : 13002,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteUuid id",
+        "java.util.UUID reqId",
+        "java.util.UUID initiatingNodeId",
+        "org.apache.ignite.cluster.ClusterState state",
+        "java.util.List<org.apache.ignite.internal.processors.cache.StoredCacheData> storedCfgs",
+        "byte[] baselineTopologyBytes",
+        "boolean forceChangeBaselineTopology",
+        "boolean forceDeactivation",
+        "marshalled org.apache.ignite.internal.processors.cluster.BaselineTopology baselineTopology value=baselineTopologyBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse",
+      "id" : 13003,
+      "schema" : [
+        "long msgId",
+        "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo",
+        "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer",
+        "java.util.UUID reqId",
+        "org.apache.ignite.internal.util.ErrorMessage errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.IgniteDiagnosticRequest",
+      "id" : 13004,
+      "schema" : [
+        "long futId",
+        "java.util.UUID nodeId",
+        "java.util.Set<org.apache.ignite.internal.IgniteDiagnosticRequest.DiagnosticBaseInfo> infos"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.IgniteDiagnosticResponse",
+      "id" : 13005,
+      "schema" : [
+        "long futId",
+        "java.lang.String respInfo"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.WalStateAckMessage",
+      "id" : 13006,
+      "schema" : [
+        "java.util.UUID opId",
+        "boolean affNode",
+        "boolean changed",
+        "java.lang.String errMsg"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment",
+      "id" : 13007,
+      "schema" : [
+        "java.util.Map<java.lang.String,byte[]> enrichFields",
+        "java.util.Map<java.lang.String,java.lang.String> fieldClassNames"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest",
+      "id" : 13008,
+      "schema" : [
+        "java.util.UUID reqId",
+        "org.apache.ignite.lang.IgniteUuid deploymentId",
+        "java.lang.String cacheName",
+        "byte[] cfgBytes",
+        "org.apache.ignite.internal.processors.cache.CacheType cacheType",
+        "java.util.UUID initiatingNodeId",
+        "byte[] nearCfgBytes",
+        "boolean clientStartOnly",
+        "boolean stop",
+        "boolean restart",
+        "boolean finalizePartitionCounters",
+        "org.apache.ignite.lang.IgniteUuid restartId",
+        "boolean disabledAfterStart",
+        "boolean destroy",
+        "boolean sql",
+        "boolean failIfExists",
+        "boolean template",
+        "boolean resetLostPartitions",
+        "byte[] schemaBytes",
+        "byte[] encKey",
+        "int encKeyId",
+        "byte[] masterKeyDigest",
+        "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheCfgEnrichment",
+        "marshalled org.apache.ignite.configuration.CacheConfiguration<?,?> startCfg value=cfgBytes",
+        "marshalled org.apache.ignite.configuration.NearCacheConfiguration<?,?> nearCacheCfg value=nearCfgBytes",
+        "marshalled org.apache.ignite.internal.processors.query.QuerySchema schema value=schemaBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord",
+      "id" : 13009,
+      "schema" : [
+        "jdkMarshalled",
+        "org.apache.ignite.internal.management.cache.PartitionKey partKey",
+        "boolean isPrimary",
+        "byte[] consistentIdBytes",
+        "int partHash",
+        "int partVerHash",
+        "byte[] updateCntrBytes",
+        "long size",
+        "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord.PartitionState partitionState",
+        "int cfKeys",
+        "int noCfKeys",
+        "int binKeys",
+        "int regKeys",
+        "boolean hasExpiringEntries",
+        "marshalled java.lang.Object consistentId value=consistentIdBytes",
+        "marshalled java.lang.Object updateCntr value=updateCntrBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord",
+      "id" : 13010,
+      "schema" : [
+        "jdkMarshalled",
+        "byte[] locConsistentIdBytes",
+        "byte[] rmtConsistentIdBytes",
+        "int txHash",
+        "marshalled java.lang.Object locConsistentId value=locConsistentIdBytes",
+        "marshalled java.lang.Object rmtConsistentId value=rmtConsistentIdBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.ClusterIdAndTag",
+      "id" : 13011,
+      "schema" : [
+        "java.util.UUID id",
+        "java.lang.String tag"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem",
+      "id" : 13012,
+      "schema" : [
+        "boolean notifierEnabled"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.plugin.PluginsDataBagItem",
+      "id" : 13013,
+      "schema" : [
+        "byte[] dataBytes",
+        "marshalled java.util.Map<java.lang.String,java.io.Serializable> data value=dataBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem",
+      "id" : 13014,
+      "schema" : [
+        "int[] enabledEvts"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.BaselineStateAndHistoryData",
+      "id" : 13015,
+      "schema" : [
+        "org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState globalState",
+        "org.apache.ignite.internal.processors.cluster.BaselineTopologyHistory recentHistory"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.BaselineTopologyHistory",
+      "id" : 13016,
+      "schema" : [
+        "java.util.List<org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem> hist"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem",
+      "id" : 13017,
+      "schema" : [
+        "int id",
+        "java.util.List<java.lang.Long> branchingHistory"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState",
+      "id" : 13018,
+      "schema" : [
+        "org.apache.ignite.cluster.ClusterState state",
+        "long lastStateChangeTime",
+        "byte[] baselineTopBytes",
+        "java.util.UUID transitionReqId",
+        "org.apache.ignite.cluster.ClusterState prevClusterState",
+        "java.util.Set<java.util.UUID> transitionNodes",
+        "marshalled org.apache.ignite.internal.processors.cluster.BaselineTopology baselineTop value=baselineTopBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage",
+      "id" : 13019,
+      "schema" : [
+        "java.lang.String[] keys",
+        "byte[][] valBytes"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageJoiningNodeData",
+      "id" : 13020,
+      "schema" : [
+        "int bltId",
+        "long dVerId",
+        "long dVerHash",
+        "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[] hist"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageClusterNodeData",
+      "id" : 13021,
+      "schema" : [
+        "long dVerId",
+        "long dVerHash",
+        "java.lang.String[] fullDataKeys",
+        "byte[][] fullDataValsBytes",
+        "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[] hist",
+        "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[] updates"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage",
+      "id" : 13400,
+      "schema" : [
+        "org.apache.ignite.plugin.extensions.communication.Message[] attrs",
+        "byte idBitmap"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.security.SecurityContextWrapper",
+      "id" : 13401,
+      "schema" : [
+        "java.util.UUID subjId"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet",
+      "id" : 13600,
+      "schema" : [
+        "int rangeStartInclusive",
+        "int rangeEndInclusive",
+        "org.apache.ignite.internal.util.GridIntList sparseSuffix"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet",
+      "id" : 13601,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteProductVersion ver",
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet features"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet",
+      "id" : 13602,
+      "schema" : [
+        "org.apache.ignite.lang.IgniteProductVersion ver",
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet features",
+        "java.lang.String compName"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData",
+      "id" : 13603,
+      "schema" : [
+        "boolean isVersionUpgradeEnabled",
+        "java.util.UUID curFinalizeProcId",
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet activeFeatures",
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet prevActiveFeatures"
+      ]
+    },
+    {
+      "class" : "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet",
+      "id" : 13604,
+      "schema" : [
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet[] features"
+      ]
+    }
+  ],
+  "providers" : [
+    "org.apache.ignite.internal.CoreMessagesProvider",
+    "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory",
+    "org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory",
+    "org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory"
+  ]
+}
