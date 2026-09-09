@@ -21,27 +21,68 @@ import java.io.File;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeTrue;
 
-/** Test for the "`--snapshot delete` command". */
-public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerClusterPerMethodAbstractTest {
-    /** */
-    protected @Nullable ListeningTestLogger listeningLog;
+/** Test for the command '--snapshot delete'. */
+@RunWith(Parameterized.class)
+public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbstractTest {
+    /** Value: -1 - do not use, 1 - server node, 0 - client node. */
+    @Parameter(1)
+    public int extraNodeIsServer = -1;
 
     /** */
-    protected boolean separateWorkDir;
+    @Parameter(2)
+    public boolean addIncrements;
+
+    /** */
+    @Parameter(3)
+    public boolean changeBaseline;
+
+    /** */
+    @Parameter(4)
+    public boolean customPath;
+
+    /** */
+    @Parameter(5)
+    public boolean separatedWorkDir;
+
+    /** */
+    @Parameters(name = "client={0},useExtraNode={1},inc={2},chBaseln={3},cstSnpPath={4},ownWorkDir={5}")
+    public static Collection<?> parameters() {
+        return GridTestUtils.cartesianProduct(
+            commandHandlers(),
+            F.asList(-1, 1, 0), // Use extra node (do not use at all, server node, client node);
+            F.asList(false, true), // Add increments to the test snapshot;
+            F.asList(false, true), // Change baseline;
+            F.asList(false, true), // Use custom snapshot path;
+            F.asList(true, false) // Separated (own) work directory.
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -65,10 +106,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerClus
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (listeningLog != null)
-            cfg.setGridLogger(listeningLog);
-
-        if (separateWorkDir)
+        if (separatedWorkDir)
             cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
 
         return cfg;
@@ -77,125 +115,14 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testSnapshotDelete() throws Exception {
-        doTestSnapshotDelete(null, false, false, false, false);
-    }
+        // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
+        // work directories are set.
+        assumeTrue(!customPath || !separatedWorkDir);
 
-    /** */
-    @Test
-    public void testSnapshotDeleteAddServer() throws Exception {
-        doTestSnapshotDelete(true, false, false, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteAddClient() throws Exception {
-        doTestSnapshotDelete(false, false, false, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteAddServerAddIncrementals() throws Exception {
-        doTestSnapshotDelete(true, false, true, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteChangeBaseline() throws Exception {
-        doTestSnapshotDelete(null, false, false, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteAddServerChangeBaseline() throws Exception {
-        doTestSnapshotDelete(true, false, false, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteAddServerIncrementalsChangeBaseline() throws Exception {
-        doTestSnapshotDelete(true, false, false, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteAddClientChangeBaseline() throws Exception {
-        doTestSnapshotDelete(false, false, false, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteAddClientChangeBaselineIncrementals() throws Exception {
-        doTestSnapshotDelete(false, false, true, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSetCustomPath() throws Exception {
-        doTestSnapshotDelete(null, true, false, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSetCustomPathAddClient() throws Exception {
-        doTestSnapshotDelete(false, true, false, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteIncrementsSetCustomPathAddClient() throws Exception {
-        doTestSnapshotDelete(false, true, true, false, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSetCustomPathAddClientChangeBaseline() throws Exception {
-        doTestSnapshotDelete(false, true, false, true, false);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSameWorkDirectory() throws Exception {
-        doTestSnapshotDelete(null, false, false, false, true);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSameWorkDirectoryAddServer() throws Exception {
-        doTestSnapshotDelete(true, false, false, false, true);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSameWorkDirectoryAddClient() throws Exception {
-        doTestSnapshotDelete(false, false, false, false, true);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSameWorkDirectoryAddServerChangeBaseline() throws Exception {
-        doTestSnapshotDelete(true, false, false, true, true);
-    }
-
-    /** */
-    @Test
-    public void testSnapshotDeleteSameWorkDirectoryAddServerChangeBaselineSetCustomPath() throws Exception {
-        doTestSnapshotDelete(true, true, false, true, true);
-    }
-
-    /** */
-    private void doTestSnapshotDelete(
-        @Nullable Boolean extraNodeIsServer,
-        boolean customPath,
-        boolean addIncrements,
-        boolean changeBaseline,
-        boolean sameWorkDir
-    ) throws Exception {
         int entriesCnt = 4000;
         int initNodes = 3;
 
         walCompactionEnabled(addIncrements);
-
-        separateWorkDir = !sameWorkDir;
 
         IgniteEx ig = (IgniteEx)startGridsMultiThreaded(initNodes);
 
@@ -248,9 +175,9 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerClus
         }
 
         // Optionally adds extra server or client node.
-        if (Boolean.TRUE.equals(extraNodeIsServer))
+        if (extraNodeIsServer == 1)
             startGrid(initNodes);
-        else if (Boolean.FALSE.equals(extraNodeIsServer))
+        else if (extraNodeIsServer == 0)
             startGrid(CLIENT_NODE_NAME_PREFIX);
 
         injectTestSystemOut();
@@ -281,20 +208,20 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerClus
 
         out = testOut.toString();
 
-        if (sameWorkDir) {
+        if (separatedWorkDir) {
+            // When the nodes use own separated work dirictory, we expect a strict result.
+            assertTrue(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(initNodes)));
+
+            if (extraNodeIsServer == 1)
+                assertTrue(out.contains("the following nodes didn't find any snapshot data, nothing to delete [cnt=1]:"));
+            else if (extraNodeIsServer == 0)
+                assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
+        }
+        else {
             // When nodes use a shared work dirictory, there is a race for the delete operation. One node can get faster
             // than anothers and remove snasphot completely quickly. The others might not find snapshot files. We can be
             // only sure that at least one node removes snapshot.
             assertTrue(out.contains("Snapshot removed on the following nodes [cnt="));
-        }
-        else {
-            // When the nodes use own separated work dirictory, we expect a strict result.
-            assertTrue(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(initNodes)));
-
-            if (Boolean.FALSE.equals(extraNodeIsServer))
-                assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
-            else if (Boolean.TRUE.equals(extraNodeIsServer))
-                assertTrue(out.contains("the following nodes didn't find any snapshot data, nothing to delete [cnt=1]:"));
         }
 
         assertFalse(out.contains("Snapshot not found on current server nodes"));

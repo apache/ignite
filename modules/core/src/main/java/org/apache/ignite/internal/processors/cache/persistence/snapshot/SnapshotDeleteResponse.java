@@ -52,7 +52,7 @@ public class SnapshotDeleteResponse implements Message {
         PARTLY_DELETED,
 
         /** Snapshot not found. */
-        NO_FOUND
+        NOT_FOUND
     }
 
     /** {@inheritDoc} */

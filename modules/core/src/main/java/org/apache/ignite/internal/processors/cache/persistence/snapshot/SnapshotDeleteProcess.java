@@ -168,7 +168,7 @@ public class SnapshotDeleteProcess {
                 if (log.isInfoEnabled())
                     log.info("Snapshot not found to delete, req=" + req);
 
-                res = SnapshotDeleteResponse.SnapshotDeleteStatus.NO_FOUND;
+                res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
             }
 
             return new GridFinishedFuture<>(new SnapshotDeleteResponse(res));
@@ -209,7 +209,7 @@ public class SnapshotDeleteProcess {
             results.forEach((nodeId, nodeRes) -> {
                 if (nodeRes.res != null) {
                     switch (nodeRes.res) {
-                        case NO_FOUND:
+                        case NOT_FOUND:
                             emptyNodes.add(nodeId);
                             break;
                         case DELETED:
