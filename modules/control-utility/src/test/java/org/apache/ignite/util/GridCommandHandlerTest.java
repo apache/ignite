@@ -3240,70 +3240,108 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     @Test
     public void testSnapshotDelete() throws Exception {
-        String snpName = "snapshot_03032024";
-
-        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(3);
-        ig.cluster().state(ACTIVE);
-
-        createCacheAndPreload(ig, 100);
-
-        snp(ig).createSnapshot(snpName).get(getTestTimeout());
-
-        File snpDir = new File(ig.context().pdsFolderResolver().fileTree().snapshotsRoot(), snpName);
-
-        assertTrue("Snapshot directory must exist: " + snpDir, snpDir.exists());
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", snpName));
-
-        assertTrue(waitForCondition(() -> !snpDir.exists(), getTestTimeout()));
+        doTestSnapshotDelete(false, false, false);
     }
 
     /** */
     @Test
-    public void testSnapshotDeleteMissing() throws Exception {
-        IgniteEx ig = startGrid(0);
-        ig.cluster().state(ACTIVE);
-
-        createCacheAndPreload(ig, 100);
-
-        injectTestSystemOut();
-
-        TestCommandHandler h = newCommandHandler();
-
-        // Deleting a non-existent snapshot is a no-op and must complete successfully.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "delete", "snapshot_MISSING"));
+    public void testSnapshotDeleteCustomPath() throws Exception {
+        doTestSnapshotDelete(false, true, false);
     }
 
-    /** @throws Exception If fails. */
+    /** */
     @Test
-    public void testSnapshotDeleteCustomDir() throws Exception {
-        String snpName = "snapshot_04042024";
-        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots_delete", true);
+    public void testSnapshotDeleteClient() throws Exception {
+        doTestSnapshotDelete(true, false, false);
+    }
+
+    /** */
+    @Test
+    public void testSnapshotDeleteCustomPathClient() throws Exception {
+        doTestSnapshotDelete(true, true, false);
+    }
+
+    /** */
+    @Test
+    public void testSnapshotDeleteIncrementsCustomPathClient() throws Exception {
+        doTestSnapshotDelete(true, true, true);
+    }
+
+    /** */
+    private void doTestSnapshotDelete(boolean withClientGrid, boolean customPath, boolean addIncrements) throws Exception {
+        int nodesCnt = 3;
+        int entriesCnt = 4000;
+
+        walCompactionEnabled(addIncrements);
+
+        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(nodesCnt);
+
+        if (withClientGrid)
+            startGrid(CLIENT_NODE_NAME_PREFIX);
+
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, entriesCnt);
+
+        File cstSnpsRoot = customPath ? new File(U.defaultWorkDirectory(), "ex_snapshots") : null;
+        File snpDir = new File(customPath ? cstSnpsRoot : ig.context().pdsFolderResolver().fileTree().snapshotsRoot(), "testSnapshot");
 
         try {
-            assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
+            snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
+                .get(getTestTimeout());
 
-            IgniteEx ig = startGrid(0);
-            ig.cluster().state(ACTIVE);
+            if (addIncrements) {
+                for (int i = 0; i < 3; ++i) {
+                    int dataIdx = entriesCnt + entriesCnt / 4 * i;
 
-            createCacheAndPreload(ig, 100);
+                    try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+                        for (int d = dataIdx; d < dataIdx + entriesCnt / 4; ++d)
+                            streamer.addData(i, i);
+                    }
 
-            assertEquals(EXIT_CODE_OK,
-                execute("--snapshot", "create", snpName, "--sync", "--dest", snpDir.getAbsolutePath()));
+                    snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, true, false)
+                        .get(getTestTimeout());
+                }
+            }
 
-            File snpLocDir = new File(snpDir, snpName);
+            assertTrue("Snapshot directory must exist: " + snpDir, snpDir.exists());
 
-            assertTrue("Snapshot directory must exist: " + snpLocDir, snpLocDir.exists());
+            injectTestSystemOut();
 
-            assertEquals(EXIT_CODE_OK,
-                execute("--snapshot", "delete", snpName, "--dest", snpDir.getAbsolutePath()));
+            if (customPath) {
+                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
+                    cstSnpsRoot.getAbsolutePath(), "wrongSnapshot"));
+            }
+            else
+                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "wrongSnapshot"));
 
-            assertTrue(waitForCondition(() -> !snpLocDir.exists(), getTestTimeout()));
+            String out = testOut.toString();
+
+            assertFalse(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(nodesCnt)));
+            assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
+            assertTrue(out.contains("Snapshot not found on current server nodes"));
+
+            testOut.reset();
+            assertTrue(testOut.toString().isEmpty());
+
+            if (customPath) {
+                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
+                    cstSnpsRoot.getAbsolutePath(), "testSnapshot"));
+            }
+            else
+                assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "testSnapshot"));
+
+            out = testOut.toString();
+
+            assertTrue(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(nodesCnt)));
+            assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
+            assertFalse(out.contains("Snapshot not found on current server nodes"));
+
+            assertTrue(waitForCondition(() -> !snpDir.exists(), getTestTimeout()));
         }
         finally {
-            U.delete(snpDir);
+            if (cstSnpsRoot != null)
+                U.delete(cstSnpsRoot);
         }
     }
 

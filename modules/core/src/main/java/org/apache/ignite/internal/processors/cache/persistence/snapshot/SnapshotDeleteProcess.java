@@ -118,8 +118,8 @@ public class SnapshotDeleteProcess {
                 " Node is stopping [req=" + req + ']'));
         }
 
-        if (kctx.clientNode())
-            return new GridFinishedFuture<>(new SnapshotDeleteResponse(-1));
+        if (kctx.cluster().get().localNode().isClient())
+            return new GridFinishedFuture<>(new SnapshotDeleteResponse(null));
 
         kctx.security().authorize(ADMIN_SNAPSHOT);
 
@@ -148,22 +148,37 @@ public class SnapshotDeleteProcess {
         }
 
         try {
-            var foundFlag = new AtomicBoolean();
+            AtomicBoolean foundFlag = new AtomicBoolean();
 
             boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
 
-            if (deleted && log.isInfoEnabled())
-                log.info("Snapshot successfully deleted, req=" + req);
-            else if (!deleted)
-                log.warning("Snapshot deleted not completely, req=" + req);
+            SnapshotDeleteResponse.SnapshotDeleteStatus res;
 
-            return new GridFinishedFuture<>(new SnapshotDeleteResponse(deleted ? 0 : 1));
+            if (foundFlag.get()) {
+                if (deleted && log.isInfoEnabled())
+                    log.info("Snapshot successfully deleted, req=" + req);
+                else if (!deleted)
+                    log.warning("Snapshot deleted not completely, req=" + req);
+
+                res = deleted
+                    ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
+                    : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+            }
+            else {
+                if (log.isInfoEnabled())
+                    log.info("Snapshot not found to delete, req=" + req);
+
+                res = SnapshotDeleteResponse.SnapshotDeleteStatus.NO_FOUND;
+            }
+
+            return new GridFinishedFuture<>(new SnapshotDeleteResponse(res));
         }
         catch (Throwable t) {
             log.error("An error occured during snapshot deletion, req=" + req, t);
 
             return new GridFinishedFuture<>(t);
-        } finally {
+        }
+        finally {
             requests.remove(req.reqId);
         }
     }
@@ -192,19 +207,21 @@ public class SnapshotDeleteProcess {
             var emptyNodes = new ArrayList<UUID>(results.size());
 
             results.forEach((nodeId, nodeRes) -> {
-                switch (nodeRes.deleted) {
-                    case -1:
-                        emptyNodes.add(nodeId);
-                        break;
-                    case 0:
-                        completedNodes.add(nodeId);
-                        break;
-                    case 1:
-                        uncompletedNodes.add(nodeId);
-                        break;
-                    default:
-                        throw new IgniteIllegalStateException("Unknown snapshot deletion node result [nodeRes" + nodeRes +
-                            ", nodeId=" + nodeId + ']');
+                if (nodeRes.res != null) {
+                    switch (nodeRes.res) {
+                        case NO_FOUND:
+                            emptyNodes.add(nodeId);
+                            break;
+                        case DELETED:
+                            completedNodes.add(nodeId);
+                            break;
+                        case PARTLY_DELETED:
+                            uncompletedNodes.add(nodeId);
+                            break;
+                        default:
+                            throw new IgniteIllegalStateException("Unknown snapshot deletion node result, [nodeRes=" +
+                                nodeRes + ", nodeId=" + nodeId + ']');
+                    }
                 }
             });
 

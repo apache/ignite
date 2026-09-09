@@ -21,6 +21,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Single-node result of the snapshot deletion distributed process.
@@ -28,24 +29,30 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * @see SnapshotDeleteProcess
  */
 public class SnapshotDeleteResponse implements Message {
-    /** The result. If {@code -1}, if node isn't a server node. {@code 0} if the snapshot was completely
-     * removed on the node. {@code 1}, if snapshot was removed on the node not completely. */
+    /** {@code null} for client node. */
     @Order(0)
-    byte deleted;
+    @Nullable SnapshotDeleteStatus res;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteResponse() {
         // No-op.
     }
 
-    /**
-     * @param deleted If {@code -1}, if node isn't a server node. {@code 1} if the snapshot was completely
-     * removed on the node. {@code 0}, if snapshot was removed on the node not completely.
-     */
-    SnapshotDeleteResponse(int deleted) {
-        assert deleted >= -1 && deleted < 2;
+    /** {@code null} for client node. */
+    SnapshotDeleteResponse(@Nullable SnapshotDeleteStatus res) {
+        this.res = res;
+    }
 
-        this.deleted = (byte)deleted;
+    /** */
+    public enum SnapshotDeleteStatus {
+        /** Snapshot found and completely deleted. */
+        DELETED,
+
+        /** Snapshot found but some files or directories might not be deleted (locked). */
+        PARTLY_DELETED,
+
+        /** Snapshot not found. */
+        NO_FOUND
     }
 
     /** {@inheritDoc} */

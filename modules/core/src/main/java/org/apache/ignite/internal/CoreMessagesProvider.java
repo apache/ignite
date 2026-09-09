@@ -162,8 +162,8 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcessRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
