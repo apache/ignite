@@ -74,7 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveCteState;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveTableScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RepeatUnionNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageNode;
@@ -621,7 +621,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteRecursiveTableScan rel) {
-        return new ScanNode<>(ctx, rel.getRowType(), ctx.recursiveCteState(rel.stateId()).current());
+        return new RecursiveTableScanNode<>(ctx, rel.getRowType());
     }
 
     /** {@inheritDoc} */
@@ -646,10 +646,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteRepeatUnion rel) {
-        RecursiveCteState<Row> state = ctx.recursiveCteState(rel.stateId());
-        RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), state, rel.iterationLimit());
+        RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), rel.iterationLimit());
 
-        state.clear();
         node.register(F.asList(visit(rel.getLeft()), visit(rel.getRight())));
 
         return node;
