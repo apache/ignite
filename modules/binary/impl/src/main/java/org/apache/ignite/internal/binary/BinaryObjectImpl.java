@@ -345,7 +345,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Override public boolean isFlagSet(short flag) {
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        return BinaryUtils.isFlagSet(flags, flag);
+        return BinaryImplUtils.isFlagSet(flags, flag);
     }
 
     /** {@inheritDoc} */
@@ -406,7 +406,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Override public int footerStartOffset() {
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        if (!BinaryUtils.hasSchema(flags))
+        if (!BinaryImplUtils.hasSchema(flags))
             return start + length();
 
         return start + BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
@@ -424,16 +424,16 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldIdLen = BinaryImplUtils.isCompactFooter(flags) ? 0 : BinaryImplUtils.FIELD_ID_LEN;
+        int fieldOffLen = BinaryImplUtils.fieldOffsetLength(flags);
 
         int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffLen == BinaryUtils.OFFSET_1)
+        if (fieldOffLen == BinaryImplUtils.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffLen == BinaryUtils.OFFSET_2)
+        else if (fieldOffLen == BinaryImplUtils.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
@@ -570,16 +570,16 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldIdLen = BinaryImplUtils.isCompactFooter(flags) ? 0 : BinaryImplUtils.FIELD_ID_LEN;
+        int fieldOffsetLen = BinaryImplUtils.fieldOffsetLength(flags);
 
         int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+        if (fieldOffsetLen == BinaryImplUtils.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+        else if (fieldOffsetLen == BinaryImplUtils.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
@@ -728,7 +728,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Override public boolean hasSchema() {
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        return BinaryUtils.hasSchema(flags);
+        return BinaryImplUtils.hasSchema(flags);
     }
 
     /** {@inheritDoc} */

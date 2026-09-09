@@ -134,7 +134,7 @@ class BinaryWriterSchemaHolder {
                     out.unsafeWriteInt(data[curIdx++]);
                 }
 
-                res = BinaryUtils.OFFSET_4;
+                res = BinaryImplUtils.OFFSET_4;
             }
         }
 

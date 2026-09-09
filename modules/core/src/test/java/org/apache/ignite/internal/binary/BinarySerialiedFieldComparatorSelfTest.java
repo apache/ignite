@@ -504,7 +504,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
             : BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldOffLen = BinaryImplUtils.fieldOffsetLength(flags);
 
         int orderBase = start + schemaOff + fieldIdLen;
         int orderMultiplier = fieldIdLen + fieldOffLen;
