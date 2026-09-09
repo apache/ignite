@@ -2394,23 +2394,6 @@ public class BinaryUtils {
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
-     * @param reader BinaryReaderEx.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
-     */
-    public static BinaryReaderEx reader(BinaryContext ctx,
-                                        BinaryInputStream in,
-                                        ClassLoader ldr,
-                                        BinaryReaderEx reader,
-                                        boolean forUnmarshal) {
-        return reader(ctx, in, ldr, reader.handles(), forUnmarshal);
-    }
-
-    /**
-     * Creates reader instance.
-     *
-     * @param ctx Context.
-     * @param in Input stream.
-     * @param ldr Class loader.
      * @param hnds Context.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */

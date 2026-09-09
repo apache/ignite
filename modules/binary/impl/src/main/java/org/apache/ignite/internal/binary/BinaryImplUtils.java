@@ -21,6 +21,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -498,5 +499,22 @@ public class BinaryImplUtils {
             hash = 31 * hash + data[i];
 
         return hash;
+    }
+
+    /**
+     * Creates reader instance.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param reader BinaryReaderEx.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     */
+    public static BinaryReaderEx reader(BinaryContext ctx,
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        BinaryReaderEx reader,
+                                        boolean forUnmarshal) {
+        return BinaryUtils.binariesFactory.reader(ctx, in, ldr, reader.handles(), forUnmarshal);
     }
 }
