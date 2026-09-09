@@ -45,6 +45,7 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.FLAG_COMPACT_FOOTER;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /**
@@ -346,6 +347,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
         return BinaryImplUtils.isFlagSet(flags, flag);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCompactFooter() {
+        return isFlagSet(FLAG_COMPACT_FOOTER);
     }
 
     /** {@inheritDoc} */

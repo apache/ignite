@@ -141,4 +141,9 @@ public interface BinaryObjectEx extends BinaryObject {
     public default boolean hasCircularReferences() {
         return false;
     }
+
+    /** @return {@code true} if binary object has compact footer. */
+    public default boolean isCompactFooter() {
+        return false;
+    }
 }

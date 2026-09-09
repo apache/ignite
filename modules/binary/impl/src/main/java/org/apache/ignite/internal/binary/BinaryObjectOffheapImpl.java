@@ -43,6 +43,7 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.FLAG_COMPACT_FOOTER;
 
 /**
  *  Binary object implementation over offheap memory
@@ -176,6 +177,11 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
         return BinaryImplUtils.isFlagSet(flags, flag);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCompactFooter() {
+        return isFlagSet(FLAG_COMPACT_FOOTER);
     }
 
     /** {@inheritDoc} */

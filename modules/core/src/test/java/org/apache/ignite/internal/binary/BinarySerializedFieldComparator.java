@@ -94,12 +94,12 @@ class BinarySerializedFieldComparator {
         else {
             int pos = orderBase + order * orderMultiplier;
 
-            if (fieldOffLen == BinaryUtils.OFFSET_1) {
+            if (fieldOffLen == BinaryImplUtils.OFFSET_1) {
                 byte val = offheap() ? BinaryPrimitives.readByte(ptr, pos) : BinaryPrimitives.readByte(arr, pos);
 
                 curFieldPos = startOff + ((int)val & 0xFF);
             }
-            else if (fieldOffLen == BinaryUtils.OFFSET_2) {
+            else if (fieldOffLen == BinaryImplUtils.OFFSET_2) {
                 short val = offheap() ? BinaryPrimitives.readShort(ptr, pos) : BinaryPrimitives.readShort(arr, pos);
 
                 curFieldPos = startOff + ((int)val & 0xFFFF);
