@@ -32,14 +32,14 @@ import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 
 /** Infers an omitted RECURSIVE keyword before the validator registers WITH scopes. */
-final class RecursiveCteRewriter {
+class RecursiveCteRewriter {
     /** FROM operators whose first operand is a table reference. */
     private static final Set<SqlKind> FROM_WRAPPERS = EnumSet.of(
         SqlKind.AS, SqlKind.TABLE_REF, SqlKind.EXTEND, SqlKind.SNAPSHOT, SqlKind.TABLESAMPLE,
         SqlKind.LATERAL, SqlKind.PIVOT, SqlKind.UNPIVOT, SqlKind.MATCH_RECOGNIZE
     );
 
-    /** Utility class. */
+    /** */
     private RecursiveCteRewriter() {
         // No-op.
     }
