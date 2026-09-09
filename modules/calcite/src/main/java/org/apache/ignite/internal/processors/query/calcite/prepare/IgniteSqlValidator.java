@@ -510,6 +510,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         node = super.performUnconditionalRewrites(node, underFrom);
 
+        if (node instanceof SqlWithItem)
+            RecursiveCteRewriter.inferRecursion((SqlWithItem)node);
+
         if (config() instanceof Config && ((Config)config()).sqlNodeRewriter() != null)
             node = ((Config)config()).sqlNodeRewriter().rewrite(this, node);
 

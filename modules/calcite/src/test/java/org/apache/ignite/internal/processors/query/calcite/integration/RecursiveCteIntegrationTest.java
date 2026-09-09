@@ -31,6 +31,32 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
     /** Number of invocations of a non-deterministic function. */
     private static final AtomicInteger nonDeterministicCallCnt = new AtomicInteger();
 
+    /** Explicit and inferred recursion must produce the same rows. */
+    @Test
+    public void testOptionalRecursiveKeyword() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "seed(n) AS (SELECT 1), numbers(n) AS (" +
+                "SELECT n FROM seed UNION ALL SELECT n + 1 FROM numbers WHERE n < 3), " +
+                "result AS (SELECT * FROM numbers) SELECT * FROM result")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+
+            assertQuery("SELECT * FROM (WITH " + keyword + "\"Numbers\"(n) AS (" +
+                "SELECT 1 UNION ALL SELECT x.n + 1 FROM \"Numbers\" x WHERE x.n < 3) " +
+                "SELECT * FROM \"Numbers\")")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+
+            assertThrows("WITH " + keyword + "numbers(n) AS (" +
+                "SELECT 1 UNION SELECT n + 1 FROM numbers WHERE n < 3) SELECT * FROM numbers",
+                IgniteSQLException.class, "only UNION ALL is supported");
+        }
+    }
+
     /** */
     @Test
     public void testEmployeeHierarchy() {
