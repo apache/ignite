@@ -161,7 +161,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     }
 
     /** */
-    protected void stopGridAndChangeBaseline(int nodeIdx) {
+    protected void stopGridAndAwaitPme(int nodeIdx) {
         stopGrid(nodeIdx);
 
         try {
@@ -300,17 +300,17 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         log.info("Stoppping server 0 node");
-        stopGridAndChangeBaseline(0);
+        stopGridAndAwaitPme(0);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         log.info("Stopping server 2 node");
-        stopGridAndChangeBaseline(2);
+        stopGridAndAwaitPme(2);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         log.info("Stopping server 3 node");
-        stopGridAndChangeBaseline(3);
+        stopGridAndAwaitPme(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
