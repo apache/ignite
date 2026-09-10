@@ -148,38 +148,51 @@ public class SnapshotDeleteProcess {
                     "started, req=" + req));
             }
 
-            AtomicBoolean foundFlag = new AtomicBoolean();
+            GridFutureAdapter<SnapshotDeleteResponse> reqLocFut = new GridFutureAdapter<>();
 
-            boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
+            kctx.pools().getSnapshotExecutorService().submit(() -> {
+                try {
+                    AtomicBoolean foundFlag = new AtomicBoolean();
 
-            SnapshotDeleteResponse.SnapshotDeleteStatus res;
+                    boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
 
-            if (foundFlag.get()) {
-                if (deleted && log.isInfoEnabled())
-                    log.info("Snapshot successfully deleted, req=" + req);
-                else if (!deleted)
-                    log.warning("Snapshot deleted not completely, req=" + req);
+                    SnapshotDeleteResponse.SnapshotDeleteStatus res;
 
-                res = deleted
-                    ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
-                    : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
-            }
-            else {
-                if (log.isInfoEnabled())
-                    log.info("Snapshot not found to delete, req=" + req);
+                    if (foundFlag.get()) {
+                        if (deleted && log.isInfoEnabled())
+                            log.info("Snapshot successfully deleted, req=" + req);
+                        else if (!deleted)
+                            log.warning("Snapshot deleted not completely, req=" + req);
 
-                res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
-            }
+                        res = deleted
+                            ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
+                            : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+                    }
+                    else {
+                        if (log.isInfoEnabled())
+                            log.info("Snapshot not found to delete, req=" + req);
 
-            return new GridFinishedFuture<>(new SnapshotDeleteResponse(res));
+                        res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
+                    }
+
+                    reqLocFut.onDone(new SnapshotDeleteResponse(res));
+                }
+                finally {
+                    requests.remove(req.snpName);
+                }
+            });
+
+            if (log.isInfoEnabled())
+                log.info("Deletion of snapshot initialized, req=" + req);
+
+            return reqLocFut;
         }
         catch (Throwable t) {
-            log.error("An error occured during snapshot deletion, req=" + req, t);
+            requests.remove(req.snpName);
+
+            log.warning("An error occured during snapshot deletion, req=" + req, t);
 
             return new GridFinishedFuture<>(t);
-        }
-        finally {
-            requests.remove(req.snpName);
         }
     }
 

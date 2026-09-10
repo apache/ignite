@@ -58,7 +58,6 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -100,6 +99,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -119,7 +119,6 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -150,6 +149,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     @Parameterized.Parameter(2)
     public int snpThrdPoolSz;
+
+    /** */
+    private @Nullable AbstractTestPluginProvider pluginProvider;
 
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, snpThrdPoolSz={2}")
@@ -1204,42 +1206,14 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         );
     }
 
-    /** Tests that concurrent snapshot check is declined when the same snapshot is being deleted. */
+    /** */
     @Test
-    public void testConcurrentSnapshotDeleteOperation() throws Exception {
-        prepareGridsAndSnapshot(4, 3, 1, false);
-
-        var commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
-
-        commSpi1.blockMessages((bode, msg) -> msg instanceof SingleNodeMessage<?> msg0
-            && msg0.type() == DELETE_SNAPSHOT.ordinal());
-
-        var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
-
-        assertTrue(commSpi1.waitForBlocked(1, getTestTimeout()));
-
-        try {
-            snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get();
-
-            throw new IllegalStateException("Exception is not thrown.");
-        }
-        catch (Exception e) {
-            if (!e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME))
-                && !e.getMessage().contains("Snapshot does not exists"))
-                throw new IllegalStateException("Unexpected exception: " + e.getMessage(), e);
-        }
-
-        commSpi1.stopBlock();
-
-        var delRes = delFut.get(getTestTimeout());
-
-        assertFalse(delRes.completedNodes.isEmpty());
-
-        assertThrowsAnyCause(
-            null,
+    public void testConcurrentSnapshotDeleteAndCheckOperations() throws Exception {
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> prepareGridsAndSnapshot(4, 3, 1, false),
             () -> snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get(),
-            IllegalArgumentException.class,
-            "Snapshot does not exists "
+            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)),
+            true
         );
     }
 

@@ -102,7 +102,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -126,6 +125,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** Any node failed. */
     private boolean failed;
+
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -622,35 +622,16 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testConcurrentSnapshotDeleteOperation() throws Exception {
-        startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
-
-        var commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
-
-        commSpi1.blockMessages((bode, msg) -> msg instanceof SingleNodeMessage<?> msg0
-            && msg0.type() == DELETE_SNAPSHOT.ordinal());
-
-        var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
-
-        assertTrue(commSpi1.waitForBlocked(1, getTestTimeout()));
-
-        try {
-            snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
-
-            // No-op: snapshot successfuly deleted;
-        }
-        catch (Exception e) {
-            if (!e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME))
-                && !e.getMessage().contains("Snapshot with given name already exists"))
-                throw new IllegalStateException("Unexpected exception: " + e.getMessage(), e);
-        }
-
-        commSpi1.stopBlock();
-
-        var delRes = delFut.get(getTestTimeout());
-
-        assertFalse(delRes.completedNodes.isEmpty());
+                snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
+            },
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get(),
+            e -> e.getMessage().contains("Snapshot with given name already exists"),
+            false
+        );
     }
 
     /** @throws Exception If fails. */
