@@ -33,8 +33,14 @@ SAFEPOINT_LOGS_ENABLED = "safepoint_log_enabled"
 
 class IgniteTestContext(TestContext):
     def __init__(self, test_context):
-        super().__init__()
-        self.__dict__.update(**test_context.__dict__)
+        super().__init__(**test_context.__dict__)
+
+        # TestContext.__init__ sets up its own state (normalized `file`, a copy of `cluster_use_metadata`,
+        # a fresh ServiceRegistry) - keep it, and only carry over the attributes it does not know about,
+        # for example the ones added by a fork's context class.
+        for name, value in test_context.__dict__.items():
+            if name not in self.__dict__:
+                setattr(self, name, value)
 
     @property
     def available_cluster_size(self):
