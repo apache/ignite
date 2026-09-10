@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisConnec
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisDelCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisExistsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisExpireCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisClientCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisDbSizeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisFlushCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisAppendCommandHandler;
@@ -40,8 +41,6 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedi
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisMSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetRangeCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisClientCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisClientCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisStrlenCommandHandler;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
