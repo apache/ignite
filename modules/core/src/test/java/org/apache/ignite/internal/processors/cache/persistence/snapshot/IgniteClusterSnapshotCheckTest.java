@@ -1207,8 +1207,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Tests that concurrent snapshot check is declined when the same snapshot is being deleted. */
     @Test
     public void testCuncurrentSnapshotDeleteOperation() throws Exception {
-        listeningLog = new ListeningTestLogger(log);
-
         prepareGridsAndSnapshot(4, 3, 1, false);
 
         var commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();

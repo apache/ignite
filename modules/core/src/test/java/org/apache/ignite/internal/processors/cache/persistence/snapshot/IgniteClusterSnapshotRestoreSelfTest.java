@@ -77,6 +77,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -331,6 +332,43 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         fut.get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /** Tests that snapshot restore is declined when the same snapshot is being deleted. */
+    @Test
+    public void testCuncurrentSnapshotDeleteOperation() throws Exception {
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+
+        var commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
+
+        commSpi1.blockMessages((bode, msg) -> msg instanceof SingleNodeMessage<?> msg0
+            && msg0.type() == DELETE_SNAPSHOT.ordinal());
+
+        var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+
+        try {
+            snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null).get();
+
+            throw new IllegalStateException("Exception is not thrown.");
+        }
+        catch (Exception e) {
+            if (!e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME))
+                && !e.getMessage().contains("Snapshot does not exists"))
+                throw new IllegalStateException("Unexpected exception: " + e.getMessage(), e);
+        }
+
+        commSpi1.stopBlock();
+
+        var delRes = delFut.get(getTestTimeout());
+
+        assertFalse(delRes.completedNodes.isEmpty());
+
+        assertThrowsAnyCause(
+            null,
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null).get(),
+            IllegalArgumentException.class,
+            "Snapshot does not exists "
+        );
     }
 
     /**
