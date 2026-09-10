@@ -191,7 +191,7 @@ In most cases, statement syntax is compliant with the old SQL engine. But there 
 
 === Recursive CTEs
 
-The Calcite-based SQL engine supports recursive common table expressions (CTEs) that use `WITH RECURSIVE` and `UNION ALL`.
+The Calcite-based SQL engine supports recursive common table expressions (CTEs) that use `WITH RECURSIVE` and `UNION ALL` or `UNION DISTINCT`.
 Recursive CTEs can be used to express hierarchical traversals, graph-style parent-child walks, and sequence generation queries.
 
 [source,sql]
@@ -213,7 +213,7 @@ ORDER BY depth, id;
 ----
 
 The recursive part can reference the recursive CTE more than once and can contain multiple recursive branches.
-`UNION DISTINCT` recursive CTEs are not supported.
+`UNION DISTINCT` removes duplicate rows from the seed rows and across recursive iterations.
 
 Recursive CTE execution keeps the recursive delta on the query coordinator.
 The delta memory is included into the Calcite query memory quota. See <<memory-quotas>> for details about memory quota configuration.
