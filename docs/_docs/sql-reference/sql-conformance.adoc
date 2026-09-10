@@ -162,7 +162,7 @@ Ignite does not support the following sub-feature:
 
 `E071–06` Table operators in subqueries
 
-The H2-based SQL engine does not support non-recursive `WITH` clauses. The Calcite-based SQL engine supports recursive CTEs with `WITH RECURSIVE` and `UNION ALL` or `UNION DISTINCT`; see link:SQL/sql-calcite#recursive-ctes[Recursive CTEs, window=_blank].
+The H2-based SQL engine does not support non-recursive `WITH` clauses. The Calcite-based SQL engine supports recursive CTEs with the standard `WITH RECURSIVE` syntax and also supports omitting `RECURSIVE` as an Ignite compatibility extension; see link:SQL/sql-calcite#recursive-ctes[Recursive CTEs, window=_blank].
 
 | E081 Basic Privileges
 | Ignite does not support the following sub-feature:

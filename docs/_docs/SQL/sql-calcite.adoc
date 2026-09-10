@@ -191,8 +191,12 @@ In most cases, statement syntax is compliant with the old SQL engine. But there 
 
 === Recursive CTEs
 
-The Calcite-based SQL engine supports recursive common table expressions (CTEs) that use `WITH RECURSIVE` and `UNION ALL` or `UNION DISTINCT`.
+The Calcite-based SQL engine supports recursive common table expressions (CTEs) with the standard `WITH RECURSIVE` syntax.
+As an Ignite compatibility extension, the engine can also infer recursion when the `RECURSIVE` keyword is omitted and the recursive term directly references its own CTE.
+Both forms support `UNION ALL` and `UNION` or `UNION DISTINCT`.
 Recursive CTEs can be used to express hierarchical traversals, graph-style parent-child walks, and sequence generation queries.
+
+In the following example, you can omit the `RECURSIVE` keyword without changing the result.
 
 [source,sql]
 ----
@@ -212,7 +216,8 @@ FROM employee_hierarchy
 ORDER BY depth, id;
 ----
 
-The recursive part can reference the recursive CTE more than once and can contain multiple recursive branches.
+The recursive part can directly reference the recursive CTE more than once and can contain multiple recursive branches.
+A self-reference nested in a scalar or derived-table subquery is not supported.
 `UNION DISTINCT` removes duplicate rows from the seed rows and across recursive iterations.
 
 Recursive CTE execution keeps the recursive delta on the query coordinator.
