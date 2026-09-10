@@ -21,7 +21,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -30,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -93,21 +101,38 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testNodeNotSupportingSnapshotDeleteFeature() throws Exception {
-        startGrid(0);
-
+        // Creates empty feature set unsupporting the snapshot deletion if required.
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
-                return "TestPluginProvider";
+                return "Test Ignite features provider";
             }
 
-            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
-                if()
+            @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
+                if (!cls.equals(DiscoveryNodeValidationProcessor.class))
+                    return null;
+
+                boolean doNotSupport = ctx.igniteConfiguration().getIgniteInstanceName().equals(getTestIgniteInstanceName(1));
+
+                return (T)new RollingUpgradeProcessor(
+                    ((IgniteEx)ctx.grid()).context(),
+                    doNotSupport ? new IgniteCoreFeatureSet(IgniteVersionUtils.VER, new IgniteFeatureSet()) : IgniteCoreFeatureSet.local()
+                ) {
+                    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode joiningNode) {
+                        // Simulates started rolling updrade allowing node with other features join cluster.
+                        return null;
+                    }
+                };
             }
         };
 
-        pluginProvider = null;
+        startGridsMultiThreaded(3);
 
-        startGrid(2);
+        assertThrowsAnyCause(
+            null,
+            () -> snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
+            IgniteIllegalStateException.class,
+            "Node " + grid(1).localNode().id() + " doesn't support snapshot deletion"
+        );
     }
 
     /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */
