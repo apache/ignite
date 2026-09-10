@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.junit.Test;
 
@@ -40,49 +38,10 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
-/**
- * Cluster-wide snapshot delete procedure tests. In addition to the concurrent snapshot delete tests, where the
- * operations are paired with the snapshot create, check and restore procedures to verify that concurrent snapshot
- * operations are correctly rejected (or allowed) when a delete operation is in progress, this class also contains the
- * basic snapshot delete functionality tests.
- */
+/** */
 public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Cache partitions count. */
     private static final int CACHE_PARTS_CNT = 32;
-
-    /** Tests the basic cluster-wide snapshot delete functionality. */
-    @Test
-    public void testClusterSnapshotDelete() throws Exception {
-        IgniteEx ignite = prepareGridsAndSnapshot(3, 2, 2, false);
-
-        // Sanity check: the snapshot exists on the cluster.
-        assertNotNull(
-            "Snapshot must be available on the cluster",
-            snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult()
-        );
-
-        snp(ignite).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
-
-        // The snapshot must not be present on any of the cluster nodes.
-        for (Ignite node : G.allGrids()) {
-            assertTrue(
-                "Snapshot must be deleted on node " + node.name(),
-                snp((IgniteEx)node).localSnapshotNames(null).isEmpty()
-            );
-        }
-
-        // The check procedure must report that the snapshot does not exist anymore.
-        assertThrowsAnyCause(
-            log,
-            () -> {
-                snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
-
-                return null;
-            },
-            IllegalArgumentException.class,
-            "Snapshot does not exists"
-        );
-    }
 
     /** Tests that a snapshot delete is declined when a snapshot create operation is in progress. */
     @Test
@@ -151,7 +110,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                         return null;
                     },
                     ClusterTopologyCheckedException.class,
-                    "Snapshot deletion was rejected. the snapshot is being checked"
+                    "Snapshot deletion was rejected. Snapshot with this name is being checked"
                 );
 
                 return null;

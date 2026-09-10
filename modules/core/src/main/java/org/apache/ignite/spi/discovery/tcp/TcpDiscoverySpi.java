@@ -57,7 +57,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
@@ -74,7 +73,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -463,10 +461,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     @GridToStringExclude
     protected IgniteSpiContext spiCtx;
 
-    /** Discovery messages factory. */
-    @GridToStringExclude
-    private MessageFactory msgFactory;
-
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
 
@@ -600,8 +594,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setAddressResolver(ignite.configuration().getAddressResolver());
 
             marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
-
-            msgFactory = ((IgniteEx)ignite).context().messageFactory();
         }
     }
 
@@ -1122,11 +1114,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         locNodeVer = ver;
     }
 
-    /** @return Discovery messages factory. */
-    public MessageFactory messageFactory() {
-        return msgFactory;
-    }
-
     /**
      * Gets ID of the local node.
      *
@@ -1624,7 +1611,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-        TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, this);
+        TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(ignite.context(), sock);
 
         write(ses, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
@@ -1949,8 +1936,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         Collection<InetSocketAddress> addrs;
 
         long timeout = isClientMode() && impl.getSpiState().equalsIgnoreCase("connected")
-            ? netTimeout
-            : joinTimeout;
+                ? netTimeout
+                : joinTimeout;
 
         // Get consistent addresses collection.
         while (true) {
@@ -1961,16 +1948,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to get registered addresses from IP finder " +
-                    "(retrying every " + getReconnectDelay() + "ms;" +
-                    " change 'reconnectDelay' to configure the frequency of retries) " +
-                    "[maxTimeout=" + timeout + "]", true);
+                        "(retrying every " + getReconnectDelay() + "ms;" +
+                        " change 'reconnectDelay' to configure the frequency of retries) " +
+                        "[maxTimeout=" + timeout + "]", true);
             }
 
             try {
                 if (timeout > 0 && U.millisSinceNanos(resolutionStartNanos) > timeout) {
                     LT.warn(log, "Unable to get registered addresses from IP finder, timeout is reached " +
-                        "(consider increasing 'joinTimeout' for join process or 'netTimeout' for reconnection) " +
-                        "[joinTimeout=" + joinTimeout + ", netTimeout=" + netTimeout + "]");
+                            "(consider increasing 'joinTimeout' for join process or 'netTimeout' for reconnection) " +
+                            "[joinTimeout=" + joinTimeout + ", netTimeout=" + netTimeout + "]");
 
                     addrs = res;
                     break;
@@ -1991,7 +1978,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                     continue;
 
                 InetSocketAddress resolved = addr.isUnresolved() ?
-                    new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
+                        new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
 
                 if (locNodeAddrs == null || !locNodeAddrs.contains(resolved))
                     res.add(resolved);
@@ -2131,11 +2118,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
         }
         catch (IgniteCheckedException e) {
-            if (ignite() instanceof IgniteEx) {
-                FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                failure.process(new FailureContext(CRITICAL_ERROR, e));
-            }
+            ignite.context().failure().process(new FailureContext(CRITICAL_ERROR, e));
 
             throw new IgniteException(e);
         }
@@ -2557,12 +2540,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                        "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
-                            "failureDetectionTimeout=" + failureDetectionTimeout() :
-                        "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
-                    ", rmtAddr=" + ses.socket().getRemoteSocketAddress() +
-                    ", rmtPort=" + ses.socket().getPort() +
-                    ", sockTimeout=" + sockTimeout + ']');
+                            "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
+                                    "failureDetectionTimeout=" + failureDetectionTimeout() :
+                            "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
+                        ", rmtAddr=" + ses.socket().getRemoteSocketAddress() +
+                        ", rmtPort=" + ses.socket().getPort() +
+                        ", sockTimeout=" + sockTimeout + ']');
             }
         }
 

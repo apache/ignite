@@ -851,6 +851,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "re-encryption process is not finished yet."));
         }
 
+        if (cctx.snapshotMgr().isSnapshotDeleting(req.snapshotName())) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Snapshot " +
+                "'%s' is being deleted.".formatted(req.snapshotName())));
+        }
+
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
         Collection<Integer> comprGrpIds = F.view(grpIds, i -> {
             CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(i);
@@ -2111,12 +2116,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (isRestoring()) {
                     throw new IgniteException(
                         "Snapshot operation has been rejected. Cache group restore operation is currently in progress."
-                    );
-                }
-
-                if (isSnapshotDeleting(name)) {
-                    throw new IgniteException(
-                        "Snapshot operation has been rejected. Snapshot delete operation is currently in progress."
                     );
                 }
 

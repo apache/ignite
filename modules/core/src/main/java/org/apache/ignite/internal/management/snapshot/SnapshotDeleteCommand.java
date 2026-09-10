@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Delete snapshot and all its increments from the cluster";
+        return "Delete snapshot and all its increments from all the online server nodes.";
     }
 
     /** {@inheritDoc} */
@@ -58,7 +58,6 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
             found = true;
 
             printer.accept("Snapshot removed on the following nodes " + nodeIdsStrLst(res.completedNodes()));
-
             printer.accept("");
         }
 

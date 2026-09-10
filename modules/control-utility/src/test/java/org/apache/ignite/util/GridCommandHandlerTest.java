@@ -1907,8 +1907,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Ignite instase 1 can be logged only in arguments list.
         boolean isInstance1Found = Arrays.stream(testOutStr.split("\n"))
-            .filter(s -> s.contains("Arguments:"))
-            .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+                                        .filter(s -> s.contains("Arguments:"))
+                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
 

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,10 +58,10 @@ public class SnapshotDeleteProcess {
     private volatile boolean interrupted;
 
     /** Cluster-wide operation futures per request id on certain node. */
-    private final Map<UUID, GridFutureAdapter<SnapshotDeleteProcessResult>> clusterOpFuts = new ConcurrentHashMap<>();
+    private final Map<UUID, T2<String, GridFutureAdapter<SnapshotDeleteProcessResult>>> clusterOpFuts = new ConcurrentHashMap<>();
 
-    /** Process requests per id on eah baseline node. */
-    private final Map<UUID, SnapshotDeleteRequest> requests = new ConcurrentHashMap<>();
+    /** Process requests per snapshot name on each server node. */
+    private final Map<String, SnapshotDeleteRequest> requests = new ConcurrentHashMap<>();
 
     /** The distributed process. */
     private final DistributedProcess<SnapshotDeleteRequest, SnapshotDeleteResponse> distrProc;
@@ -95,7 +96,7 @@ public class SnapshotDeleteProcess {
                 if (interrupted || kctx.isStopping())
                     throw new NodeStoppingException("Failed to start snapshot delete process: node is stopping.");
 
-                clusterOpFuts.put(reqId, clusterOpFut);
+                clusterOpFuts.put(reqId, new T2<>(snpName, clusterOpFut));
             }
 
             SnapshotDeleteRequest req = new SnapshotDeleteRequest(reqId, snpName, snpPath);
@@ -115,7 +116,7 @@ public class SnapshotDeleteProcess {
     private IgniteInternalFuture<SnapshotDeleteResponse> deletePhase(UUID ignored, SnapshotDeleteRequest req) {
         if (kctx.isStopping()) {
             return new GridFinishedFuture<>(new NodeStoppingException(OP_REJECT_MSG +
-                " Node is stopping [req=" + req + ']'));
+                " Node is stopping, req=" + req));
         }
 
         if (kctx.cluster().get().localNode().isClient())
@@ -128,26 +129,26 @@ public class SnapshotDeleteProcess {
         var curCreateRq = snpMgr.currentCreateRequest();
 
         if (curCreateRq != null && curCreateRq.snpName.equals(req.snpName)) {
-            return new GridFinishedFuture<>(new IllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being created [req=" + req + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
+                " Snapshot with this name is being created, req=" + req));
         }
 
         if (snpMgr.isRestoring(req.snpName)) {
-            return new GridFinishedFuture<>(new IllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being restored [req=" + req + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
+                " Snapshot with this name is being restored, req=" + req));
         }
 
         if (snpMgr.isSnapshotChecking(req.snpName)) {
-            return new GridFinishedFuture<>(new IllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being checked [req=" + req + ']'));
-        }
-
-        if (requests.putIfAbsent(req.reqId, req) != null) {
-            return new GridFinishedFuture<>(new IllegalStateException("Deletion of the snapshot has already started [req="
-                + req + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
+                " Snapshot with this name is being checked, req=" + req));
         }
 
         try {
+            if (requests.putIfAbsent(req.snpName, req) != null) {
+                return new GridFinishedFuture<>(new IgniteIllegalStateException("Deletion of the snapshot has already " +
+                    "started, req=" + req));
+            }
+
             AtomicBoolean foundFlag = new AtomicBoolean();
 
             boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
@@ -179,16 +180,20 @@ public class SnapshotDeleteProcess {
             return new GridFinishedFuture<>(t);
         }
         finally {
-            requests.remove(req.reqId);
+            requests.remove(req.snpName);
         }
     }
 
     /** Coordinator finish: aggregate node results and complete the user future. */
     private void reducePhase(UUID reqId, Map<UUID, SnapshotDeleteResponse> results, Map<UUID, Throwable> errors) {
-        var clusterOpFut = clusterOpFuts.get(reqId);
+        var clusterOpFutPair = clusterOpFuts.get(reqId);
 
-        if (clusterOpFut == null)
+        if (clusterOpFutPair == null)
             return;
+
+        var clusterOpFut = clusterOpFutPair.get2();
+
+        assert clusterOpFut != null;
 
         try {
             var errP = F.isEmpty(errors) ? null : F.first(errors.entrySet());
@@ -237,7 +242,20 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    public boolean isSnapshotDeleting(String name) {
+    public boolean isSnapshotDeleting(String snpName) {
+        if (requests.get(snpName) != null)
+            return true;
+
+        if (!clusterOpFuts.isEmpty()) {
+            for (var e : clusterOpFuts.entrySet()) {
+                var clusterOpFutPair = e.getValue();
+                var snpName0 = clusterOpFutPair.get1();
+
+                if (snpName.equals(snpName0))
+                    return true;
+            }
+        }
+
         return false;
     }
 
@@ -250,8 +268,8 @@ public class SnapshotDeleteProcess {
             interrupted = true;
         }
 
-        clusterOpFuts.forEach((reqId, fut) -> fut.onDone(err));
+        clusterOpFuts.forEach((reqId, futPair) -> futPair.get2().onDone(err));
 
-        clusterOpFuts.clear();;
+        clusterOpFuts.clear();
     }
 }
