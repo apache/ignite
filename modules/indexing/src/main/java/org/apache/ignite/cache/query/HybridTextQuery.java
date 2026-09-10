@@ -1,7 +1,9 @@
 package org.apache.ignite.cache.query;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.jetbrains.annotations.Nullable;
 
 
 /**
@@ -22,6 +24,8 @@ public final class HybridTextQuery<K, V> extends TextQuery<K, V> {
     /** Query vector. */
     private float[] vector;
 
+    private byte[] bytesVector;
+
     /** Number of nearest neighbors. */
     private int k;
 
@@ -33,6 +37,28 @@ public final class HybridTextQuery<K, V> extends TextQuery<K, V> {
 
     /** Weight for vector portion in WEIGHTED_SUM strategy. */
     private float vectorWeight = 0.5f;
+
+    /**
+     * Constructs query for the given search string.
+     *
+     * @param type Type.
+     * @param txt Search string.
+     */
+    public HybridTextQuery(String type, String txt) {
+        super(type,txt);
+        setText(txt);
+    }
+
+
+    /**
+     * Create scan query with filter.
+     *
+     * @param filter Filter. If {@code null} then all entries will be returned.
+     */
+    public HybridTextQuery(String type, String txt,@Nullable IgniteBiPredicate<K, V> filter) {
+        super(type, txt);
+        setFitler(filter);
+    }
 
     /**
      * Constructs a pure text search query.
@@ -60,6 +86,13 @@ public final class HybridTextQuery<K, V> extends TextQuery<K, V> {
         this.k = k;
     }
 
+    public HybridTextQuery(String type, String txt, String vectorFieldName, float[] vector, int k) {
+        super(type,txt);
+        this.vectorFieldName = vectorFieldName;
+        this.vector = vector;
+        this.k = k;
+    }
+
     /**
      * Sets the vector field and query vector for hybrid search.
      *
@@ -71,6 +104,13 @@ public final class HybridTextQuery<K, V> extends TextQuery<K, V> {
     public HybridTextQuery<K, V> setVectorQuery(String vectorFieldName, float[] vector, int k) {
         this.vectorFieldName = vectorFieldName;
         this.vector = vector;
+        this.k = k;
+        return this;
+    }
+
+    public HybridTextQuery<K, V> setVectorQuery(String vectorFieldName, byte[] vector, int k) {
+        this.vectorFieldName = vectorFieldName;
+        this.bytesVector = vector;
         this.k = k;
         return this;
     }
@@ -123,6 +163,13 @@ public final class HybridTextQuery<K, V> extends TextQuery<K, V> {
     }
 
     /**
+     * @return Query vector.
+     */
+    public byte[] getBytesVector() {
+        return bytesVector;
+    }
+
+    /**
      * @return Number of nearest neighbors.
      */
     public int getK() {
@@ -132,7 +179,7 @@ public final class HybridTextQuery<K, V> extends TextQuery<K, V> {
     /**
      * @return Distance metric.
      */
-    public VectorSimilarityFunction getDistanceMetric() {
+    public VectorSimilarityFunction getSimilarityFunction() {
         return similarityFunction;
     }
 

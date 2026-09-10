@@ -4,84 +4,45 @@ package org.apache.ignite.cache;
  * and the EPL 1.0 (http://h2database.com/html/license.html).
  * Initial Developer: H2 Group
  */
-import java.io.IOException;
-import java.io.Reader;
-import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.H2TableEngine;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneDirectory;
-import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
-import org.apache.ignite.internal.util.GridAtomicLong;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PointRangeQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.*;
+import org.apache.lucene.util.BytesRef;
 import org.h2.api.Trigger;
 import org.h2.message.DbException;
-import org.h2.store.fs.FileUtils;
 import org.h2.tools.SimpleResultSet;
 import org.h2.util.IOUtils;
 import org.h2.util.JdbcUtils;
-
 import org.h2.util.StringUtils;
-import org.h2.util.Utils;
 import org.h2.value.DataType;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.sql.*;
+import java.util.*;
+
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
-
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.BytesRef;
 
 
 
@@ -130,9 +91,6 @@ public class FullTextLucene {
      * The hit score.
      */
     public static final String SCORE_FIELD_NAME = "_SCORE";
-   
-
-   
     private static final String TRIGGER_PREFIX = "FTL_";
     private static final String SCHEMA = "\"FTL\"";
    
@@ -251,7 +209,7 @@ public class FullTextLucene {
 
     
     /**
-     * Create cache type metadata for {@link index}.
+     * Create cache type metadata for {@link FullTextIndex}.
      *
      * @return Cache type metadata.
      */
@@ -1199,18 +1157,14 @@ public class FullTextLucene {
             	}
             	else if(fieldVal instanceof Collection) {
             		Collection<?> terms = (Collection<?>) fieldVal;
-            		Iterator<?>  it = terms.iterator();
-            		while(it.hasNext()) {
-            			Object item= it.next();
-            			if(item!=null)
-            				buildDocumentField(doc,idxdFields[i],idxdTypes[i],item);
-            		}
+                    for (Object item : terms) {
+                        if (item != null)
+                            buildDocumentField(doc, idxdFields[i], idxdTypes[i], item);
+                    }
             	}
             	else{
-            		// column names that start with _
- 	                // must be escaped to avoid conflicts
+            		// column names that start with _ must be escaped to avoid conflicts
  	                // with internal field names (_DATA, _QUERY, _modified)
-            		
             		buildDocumentField(doc,idxdFields[i],idxdTypes[i],fieldVal);
             	}
 
@@ -1316,7 +1270,7 @@ public class FullTextLucene {
 				doc.add(row);
 			} 
 			else if (obj instanceof float[]) {
-                if(idxdType.vectorDimension()>0) {
+                if(idxdType.vectorDimension()>0 || idxdType.tokenized()) {
                     row = new KnnFloatVectorField(idxdField, (float[]) obj, idxdType.vectorSimilarityFunction());
                     doc.add(row);
                 }
@@ -1326,7 +1280,7 @@ public class FullTextLucene {
                 }
 			}
 			else if (obj instanceof double[]) {
-                if(idxdType.vectorDimension()>0) {
+                if(idxdType.vectorDimension()>0 || idxdType.tokenized()) {
                     row = new KnnFloatVectorField(idxdField, doubleToFloat((double[]) obj), idxdType.vectorSimilarityFunction());
                     doc.add(row);
                 }

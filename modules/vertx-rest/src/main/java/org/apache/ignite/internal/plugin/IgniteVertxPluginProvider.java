@@ -50,7 +50,6 @@ import io.vertx.spi.cluster.ignite.IgniteClusterManager;
 public class IgniteVertxPluginProvider implements PluginProvider<PluginConfiguration> {
 
 	private static volatile int counter = 0;
-
 	private IgniteVertxPlugin plugin;
 	private VertxOptions options = new VertxOptions();
 
@@ -95,12 +94,14 @@ public class IgniteVertxPluginProvider implements PluginProvider<PluginConfigura
 
 		this.log = ctx.log(this.getClass());
 		this.instanceName = igniteCfg.getIgniteInstanceName();
-
-		// IgniteClusterManager clusterManager = new IgniteClusterManager(ctx.grid());
-		// options.setClusterManager(clusterManager);
-		options.setHAEnabled(false);
-		options.setHAGroup(this.instanceName);
+		if(this.instanceName!=null && this.instanceName.startsWith("vertx-")) {
+			IgniteClusterManager clusterManager = new IgniteClusterManager(ctx.grid());
+			options.setClusterManager(clusterManager);
+			options.setHAEnabled(true);
+			options.setHAGroup(this.instanceName);
+		}
 		options.setEventLoopPoolSize(igniteCfg.getSystemThreadPoolSize());
+		options.setWorkerPoolSize(igniteCfg.getSystemThreadPoolSize()*2);
 		
 		this.plugin = new IgniteVertxPlugin(options,log,instanceName);
 	}

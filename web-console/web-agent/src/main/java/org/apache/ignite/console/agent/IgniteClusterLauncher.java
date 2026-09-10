@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -118,18 +119,16 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         this.timeout = timeout;
     }
     
-    public static IgniteConfiguration mergeIgniteConfiguration(IgniteConfiguration cfg, IgniteConfiguration from)
-            throws IgniteCheckedException {
+    public static IgniteConfiguration mergeIgniteConfiguration(IgniteConfiguration cfg, IgniteConfiguration from){
     	if(from!=null && cfg!=from) {
     		BeanMerger.mergeBeans(from,cfg);
     	}
         return cfg;
     }
     
-    public static IgniteConfiguration singleIgniteConfiguration(IgniteConfiguration cfg, IgniteConfiguration preCfg)
-            throws IgniteCheckedException {
+    public static IgniteConfiguration singleIgniteConfiguration(IgniteConfiguration cfg, IgniteConfiguration preCfg) {
     	
-    	cfg = IgniteClusterLauncher.mergeIgniteConfiguration(cfg,preCfg);
+    	cfg = mergeIgniteConfiguration(cfg,preCfg);
         
         if(cfg.getLocalHost()==null) {
         	cfg.setLocalHost("127.0.0.1");
@@ -144,26 +143,29 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         
         if(cfg.getBinaryConfiguration()==null) {
         	BinaryConfiguration binConf = new BinaryConfiguration();
+			binConf.setNameMapper(new BinaryBasicNameMapper());
         	binConf.setTypeConfigurations(new ArrayList<>());
         	cfg.setBinaryConfiguration(binConf);
         }
-        
-        // Custom ClusterSerializable
-        BinaryTypeConfiguration jsonBinCfg = new BinaryTypeConfiguration();
-        jsonBinCfg.setTypeName(JsonObject.class.getName());
-        jsonBinCfg.setSerializer(new JsonBinarySerializer());
 
-		BinaryTypeConfiguration arrayBinCfg = new BinaryTypeConfiguration();
-		arrayBinCfg.setTypeName(JsonArray.class.getName());
-		arrayBinCfg.setSerializer(new JsonBinarySerializer());
-        
         if(cfg.getBinaryConfiguration().getTypeConfigurations()==null) {
         	cfg.getBinaryConfiguration().setTypeConfigurations(new ArrayList<>());
         }
-        
-        // add@byron
-        cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
-		cfg.getBinaryConfiguration().getTypeConfigurations().add(arrayBinCfg);
+
+		if(cfg.getBinaryConfiguration().getTypeConfigurations().isEmpty()) {
+			// add@byron
+			// Custom ClusterSerializable
+			BinaryTypeConfiguration jsonBinCfg = new BinaryTypeConfiguration();
+			jsonBinCfg.setTypeName(JsonObject.class.getName());
+			jsonBinCfg.setSerializer(new JsonBinarySerializer());
+
+			BinaryTypeConfiguration arrayBinCfg = new BinaryTypeConfiguration();
+			arrayBinCfg.setTypeName(JsonArray.class.getName());
+			arrayBinCfg.setSerializer(new JsonBinarySerializer());
+
+			cfg.getBinaryConfiguration().getTypeConfigurations().add(jsonBinCfg);
+			cfg.getBinaryConfiguration().getTypeConfigurations().add(arrayBinCfg);
+		}
         
         // Configure discovery SPI.
         if(cfg.getDiscoverySpi()==null) {

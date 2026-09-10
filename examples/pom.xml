@@ -154,6 +154,11 @@
             <artifactId>commons-io</artifactId>
             <version>2.22.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>jieba-lucene-plugin</artifactId>
+            <version>9.12.3</version>
+        </dependency>
     </dependencies>
 
     <properties>

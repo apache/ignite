@@ -9,6 +9,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.h2.util.Utils;
 
@@ -30,8 +31,6 @@ public class LuceneConfiguration implements PluginConfiguration {
 	
 	boolean persistenceEnabled = true; // cache是否开启了持久化
 
-	
-
 	// default index analyzer
 	private Analyzer indexAnalyzer;
 
@@ -39,7 +38,9 @@ public class LuceneConfiguration implements PluginConfiguration {
 	private Analyzer queryAnalyzer;
 
 	// default Vector Similarity Function
-	private VectorSimilarityFunction similarityFunction = VectorSimilarityFunction.COSINE;
+	private VectorSimilarityFunction vectorSimilarityFunction = VectorSimilarityFunction.COSINE;
+
+	private VectorEncoding vectorEncoding = VectorEncoding.FLOAT32;
 
 	private int dimensions = 1024;
 		
@@ -130,12 +131,12 @@ public class LuceneConfiguration implements PluginConfiguration {
 		this.fieldAnalyzerMap = fieldAnalyzerMap;
 	}
 
-	public VectorSimilarityFunction getSimilarityFunction() {
-		return similarityFunction;
+	public VectorSimilarityFunction getVectorSimilarityFunction() {
+		return vectorSimilarityFunction;
 	}
 
-	public void setSimilarityFunction(VectorSimilarityFunction similarityFunction) {
-		this.similarityFunction = similarityFunction;
+	public void setVectorSimilarityFunction(VectorSimilarityFunction similarityFunction) {
+		this.vectorSimilarityFunction = similarityFunction;
 	}
 
 	public int getDimensions() {
@@ -144,5 +145,14 @@ public class LuceneConfiguration implements PluginConfiguration {
 
 	public void setDimensions(int dimensions) {
 		this.dimensions = dimensions;
+	}
+
+
+	public VectorEncoding getVectorEncoding() {
+		return vectorEncoding;
+	}
+
+	public void setVectorEncoding(VectorEncoding vectorEncoding) {
+		this.vectorEncoding = vectorEncoding;
 	}
 }

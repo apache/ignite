@@ -107,7 +107,6 @@ public class GridLuceneIndex implements AutoCloseable {
 	private void init() {
 		QueryIndexDescriptorImpl qtextIdx = ((QueryIndexDescriptorImpl) type.textIndex());
 		if (qtextIdx!=null) {
-		
 			Map<String,FieldType> fields = indexAccess.init(type);
 			idxdFields = new String[fields.size() + 1];
 			idxdTypes = new FieldType[fields.size() + 1];
@@ -115,7 +114,8 @@ public class GridLuceneIndex implements AutoCloseable {
 			for(Map.Entry<String,FieldType> ft: fields.entrySet()) {
 				idxdFields[i] = ft.getKey();
 				idxdTypes[i++] = ft.getValue();
-			}			
+			}
+
 		} else {
 			assert type.valueTextIndex() || type.valueClass() == String.class;
 
@@ -124,7 +124,7 @@ public class GridLuceneIndex implements AutoCloseable {
 		}
 
 		idxdFields[idxdFields.length - 1] = VAL_STR_FIELD_NAME;
-		idxdTypes[idxdTypes.length - 1] = indexAccess.config.isStoreValue()? TextField.TYPE_STORED:TextField.TYPE_NOT_STORED;
+		idxdTypes[idxdTypes.length - 1] = indexAccess.config.isStoreValue()? TextField.TYPE_STORED : TextField.TYPE_NOT_STORED;
 	}
     /**
      * @return Cache object context.
@@ -174,7 +174,6 @@ public class GridLuceneIndex implements AutoCloseable {
             Object fieldVal = type.value(idxdFields[i], key, val);
             row[i] = fieldVal;
         }
-
         
         BytesRef keyByteRef = new BytesRef(k.valueBytes(coctx));
 
@@ -260,7 +259,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), Long.MAX_VALUE);
 
                 BooleanQuery.Builder query = new BooleanQuery.Builder()
-                        .add(parser.parse(qry.getText(), "_all"), BooleanClause.Occur.MUST)
+                        .add(parser.parse(qry.getText(), VAL_STR_FIELD_NAME), BooleanClause.Occur.MUST)
                         .add(filter, BooleanClause.Occur.FILTER);
 
                 if (qry.getSorted() != null) {
@@ -279,20 +278,28 @@ public class GridLuceneIndex implements AutoCloseable {
             List<ScoreDoc> mergedResults = textScoreDocs;
             if(qry instanceof HybridTextQuery){
                 HybridTextQuery<K, V> hqry = (HybridTextQuery)qry;
-                Query vectorQuery = new KnnFloatVectorQuery(hqry.getVectorFieldName(), hqry.getVector(), hqry.getK());
-                TopDocs vectorResults = searcher.search(vectorQuery, hqry.getK());
-                List<ScoreDoc> vectorScoreDocs = Arrays.asList(vectorResults.scoreDocs);
-                // Merge results based on strategy
-                mergedResults = mergeResults(
-                        searcher,
-                        textScoreDocs,
-                        vectorScoreDocs,
-                        hqry
-                );
+                Query vectorQuery = null;
+                if(hqry.getVector()!=null)
+                    vectorQuery = new KnnFloatVectorQuery(hqry.getVectorFieldName(), hqry.getVector(), hqry.getK());
+                else if(hqry.getBytesVector()!=null)
+                    vectorQuery = new KnnByteVectorQuery(hqry.getVectorFieldName(), hqry.getBytesVector(), hqry.getK());
 
-                // Limit results
-                if (mergedResults.size() > limit) {
-                    mergedResults = mergedResults.subList(0, limit);
+                if(vectorQuery!=null) {
+
+                    TopDocs vectorResults = searcher.search(vectorQuery, hqry.getK());
+                    List<ScoreDoc> vectorScoreDocs = Arrays.asList(vectorResults.scoreDocs);
+                    // Merge results based on strategy
+                    mergedResults = mergeResults(
+                            searcher,
+                            textScoreDocs,
+                            vectorScoreDocs,
+                            hqry
+                    );
+
+                    // Limit results
+                    if (mergedResults.size() > limit) {
+                        mergedResults = mergedResults.subList(0, limit);
+                    }
                 }
             }
 
@@ -371,7 +378,7 @@ public class GridLuceneIndex implements AutoCloseable {
             List<ScoreDoc> textResults,
             List<ScoreDoc> vectorResults,
             HybridTextQuery<K, V> qry
-    ) throws IOException {
+    )  {
         float vectorWeight = qry.getVectorWeight();
         float textWeight = 1.0f - vectorWeight;
 

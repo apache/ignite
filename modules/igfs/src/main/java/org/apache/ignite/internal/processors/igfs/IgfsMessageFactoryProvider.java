@@ -21,9 +21,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.internal.processors.igfs.client.*;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.*;
 import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.*;
 

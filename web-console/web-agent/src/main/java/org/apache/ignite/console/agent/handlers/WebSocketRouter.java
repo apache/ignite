@@ -471,6 +471,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
             String[] parts = evt.getRequestId().split("-");
             isLastNode = 1+Integer.parseInt(parts[parts.length - 2]);
         }
+
         String clusterId = json.getString("id");
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(clusterId.equals(DEMO_CLUSTER_ID) || DEMO_CLUSTER_NAME.equals(clusterName)) {
@@ -484,10 +485,10 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
 		
         try {
             String work = U.workDirectory(null, null);
-            String configPath = work+"/config/";
             if(isDemo){
-                configPath = work + "/demo-config/";
+                work = new File(U.getIgniteHome(), "work-demo").getCanonicalPath();
             }
+            String configPath = work+"/config/";
             boolean success = IgniteClusterLauncher.saveBlobToFile(json,configPath,messages);
             if(success){
                 if(json.containsKey("crudui")) {
@@ -516,7 +517,6 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
 			// 不是演示环境
 			if(!isDemo) {
 				// 如果包含hosts，ports则远程启动节点。
-				
 				File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");
 				File configFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-config.xml");
 				
@@ -582,7 +582,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
 	        	}
 	        	else {
                     stat.put("status", "started");
-	        		stat.put("message","Demo Ignite already started.");
+	        		stat.put("message","Demo Ignite already started. Only allow one cluster to start in Demo mode!");
 	        	}
 	        	return stat;
 			}			
@@ -606,13 +606,14 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
         boolean isLastNode = evt.getRequestId().endsWith("-lastNode");
+        String id = json.getString("id");
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(json.getBoolean("demo",false)) {
         	AgentClusterDemo.stop();
+            IgniteClusterLauncher.stopIgnite(clusterName,id);
     	}
         else {
-        	String id = json.getString("id");
-        	
+
         	File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");
 			
 			if(isLastNode && startIniFile.exists()) {

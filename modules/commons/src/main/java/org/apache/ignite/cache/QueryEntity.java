@@ -34,6 +34,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.cache.query.annotations.QueryVectorField;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityClassProperty;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
@@ -645,7 +646,6 @@ public class QueryEntity implements Serializable {
 
                 if (sqlAnn != null || txtAnn != null) {
                     QueryEntityClassProperty prop = new QueryEntityClassProperty(field);
-
                     prop.parent(parent);
 
                     // Add parent property before its possible nested properties so that
@@ -655,6 +655,20 @@ public class QueryEntity implements Serializable {
                     type.addProperty(prop, sqlAnn, key, true);
 
                     processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
+                }
+                else{
+                    // add@byron
+                    QueryVectorField vecAnn = field.getAnnotation(QueryVectorField.class);
+                    if (vecAnn !=null){
+                        QueryEntityClassProperty prop = new QueryEntityClassProperty(field);
+                        prop.parent(parent);
+                        if(vecAnn.name()!=null){
+                            prop.alias(vecAnn.name());
+                        }
+                        type.addProperty(prop, null, key, true);
+                        type.addFieldToTextIndex(prop.fullName());
+                    }
+                    // end@
                 }
             }
         }

@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.console.agent.IgniteClusterLauncher;
 import org.apache.ignite.console.agent.ServiceDeployment;
 import org.apache.ignite.console.agent.handlers.DemoClusterHandler;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -67,12 +69,6 @@ public class AgentClusterDemo {
     private static final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** */
-    private static final int WAL_SEGMENTS = 5;
-
-    /** WAL file segment size, 16MBytes. */
-    private static final int WAL_SEGMENT_SZ = 16 * 1024 * 1024;
-
-    /** */
     private static volatile String demoUrl;
 
     /**
@@ -83,31 +79,51 @@ public class AgentClusterDemo {
      * @param client If {@code true} then start client node.
      * @return IgniteConfiguration
      */
-    private static IgniteConfiguration igniteConfiguration(IgniteConfiguration cfg, int basePort, int gridIdx, boolean client)
-        throws IgniteCheckedException {        
-
-        cfg.setGridLogger(new Slf4jLogger());
+    private static IgniteConfiguration igniteConfiguration(IgniteConfiguration cfg, int basePort, int gridIdx, boolean client) {
 
         cfg.setIgniteInstanceName(DemoClusterHandler.DEMO_CLUSTER_NAME);
-        cfg.setLocalHost("127.0.0.1");
-        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-        
 
-        File workDir = new File(U.workDirectory(null, null), "demo-work");
+        if(cfg.getLocalHost()==null)
+            cfg.setLocalHost("127.0.0.1");
 
+        if(cfg.getEncryptionSpi()==null)
+            cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+
+        File workDir = new File(U.getIgniteHome(), "work-demo");
         cfg.setWorkDirectory(workDir.getAbsolutePath());
 
-        int[] evts = new int[EVTS_DISCOVERY.length];
+        if(cfg.getIncludeEventTypes()==null) {
+            int[] evts = new int[EVTS_DISCOVERY.length];
 
-        System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
-        
+            System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
 
-        cfg.setIncludeEventTypes(evts);
+            cfg.setIncludeEventTypes(evts);
+        }
+
+        if(cfg.getDataStorageConfiguration()==null){
+            DataStorageConfiguration dsf = new DataStorageConfiguration();
+            dsf.setWalMode(WALMode.NONE);
+            cfg.setDataStorageConfiguration(dsf);
+        }
 
         cfg.getConnectorConfiguration().setPort(basePort + gridIdx);
         cfg.getConnectorConfiguration().setJettyPath("http://0.0.0.0:"+(basePort + 10 + gridIdx));
 
-        if(cfg.getCommunicationSpi()!=null) {
+        if(cfg.getCommunicationSpi()==null) {
+
+            TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+
+            commSpi.setMessageQueueLimit(10);
+
+            int commPort = basePort + 30;
+
+            commSpi.setLocalPort(commPort);
+
+            cfg.setCommunicationSpi(commSpi);
+        }
+
+        // Configure discovery SPI.
+        if(cfg.getDiscoverySpi()==null) {
             TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
             int discoPort = basePort + 20;
@@ -121,40 +137,10 @@ public class AgentClusterDemo {
             discoSpi.setIpFinder(ipFinder);
 
             cfg.setDiscoverySpi(discoSpi);
-
-            TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-            commSpi.setMessageQueueLimit(10);
-
-            int commPort = basePort + 30;
-
-            commSpi.setLocalPort(commPort);
-
-            cfg.setCommunicationSpi(commSpi);
         }
 
         cfg.setGridLogger(new Slf4jLogger(log));
         cfg.setMetricsLogFrequency(0);
-
-        DataRegionConfiguration dataRegCfg = new DataRegionConfiguration();
-        dataRegCfg.setName("demo");
-        dataRegCfg.setMetricsEnabled(true);
-        dataRegCfg.setMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
-        dataRegCfg.setPersistenceEnabled(false);
-        dataRegCfg.setLazyMemoryAllocation(true);
-
-        DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
-            dataStorageCfg.setMetricsEnabled(true);
-        
-        dataStorageCfg.setStoragePath("data");
-        dataStorageCfg.setDefaultDataRegionConfiguration(dataRegCfg);
-        dataStorageCfg.setSystemRegionMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
-
-        dataStorageCfg.setWalMode(LOG_ONLY);
-        dataStorageCfg.setWalSegments(WAL_SEGMENTS);
-        dataStorageCfg.setWalSegmentSize(WAL_SEGMENT_SZ);
-
-        cfg.setDataStorageConfiguration(dataStorageCfg);
 
         cfg.setClientMode(client);
 
@@ -239,14 +225,14 @@ public class AgentClusterDemo {
             try {
                 igniteConfiguration(cfg, port, idx, false);
 
-                if (lastNode>0) {
-                    U.delete(Paths.get(cfg.getWorkDirectory()));
-
+                if(cfg.getDataStorageConfiguration().getStoragePath()!=null){
                     U.resolveWorkDirectory(
-                        cfg.getWorkDirectory(),
-                        cfg.getDataStorageConfiguration().getStoragePath(),
-                        true
-                    );          
+                            cfg.getWorkDirectory(),
+                            cfg.getDataStorageConfiguration().getStoragePath(),
+                            true
+                    );
+                }
+                if (lastNode>0) {
                     cfg.setConsistentId(cfg.getIgniteInstanceName()+"_"+ idx);
                 }
                 else {                	

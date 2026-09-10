@@ -516,7 +516,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings("unchecked")
     private QueryResult<K, V> executeQuery(CacheQuery<?> qry,
-        IgniteClosure transformer, boolean loc, @Nullable String taskName, Object rcpt)
+        IgniteClosure transformer, boolean loc, @Nullable String taskName, Object rcpt,Object[] args)
         throws IgniteCheckedException {
         if (qry.type() == null) {
             assert !loc;
@@ -571,11 +571,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     //add@byron use TextQuery insteads text string
-                    TextQuery<K, V> tq = new TextQuery<K, V>(qry.queryClassName(),qry.clause());
-                    tq.setPageSize(qry.pageSize());
-                    tq.setLocal(qry.forceLocal());
-                    tq.setFitler(qry.scanFilter());
-					tq.setLimit(qry.limit());
+                    TextQuery<K, V> tq = null;
+                    if(args!=null && args[0] instanceof TextQuery) {
+                        tq = (TextQuery) args[0];
+                    }else{
+                        tq = new TextQuery<K, V>(qry.queryClassName(),qry.clause());
+                        tq.setPageSize(qry.pageSize());
+                        tq.setLocal(qry.forceLocal());
+                        tq.setFitler(qry.scanFilter());
+                        tq.setLimit(qry.limit());
+                    }
+
                     iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry), qry.limit());
 					//end@
                     break;
@@ -826,7 +832,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 GridCacheQueryType type;
 
                 res = loc
-                    ? executeQuery(qry, qryInfo.transformer(), loc, taskName, recipient(qryInfo.senderId(), qryInfo.requestId()))
+                    ? executeQuery(qry, qryInfo.transformer(), loc, taskName, recipient(qryInfo.senderId(), qryInfo.requestId()),qryInfo.arguments())
                     : queryResult(qryInfo, taskName);
 
                 if (res == null)
@@ -921,9 +927,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         if (type == TEXT && readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
                         	if (key0 == null)
-                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
+                               key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false, null);
                         	if (val0 == null)
-                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
+                               val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false, null);
 
                             cctx.gridEvents().record(new CacheQueryReadEvent<>(
                                 cctx.localNode(),
@@ -1256,7 +1262,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (exec) {
             try {
                 fut.onDone(executeQuery(qryInfo.query(), qryInfo.transformer(), false,
-                    taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
+                    taskName, recipient(qryInfo.senderId(), qryInfo.requestId()),qryInfo.arguments()));
             }
             catch (Throwable e) {
                 fut.onDone(e);

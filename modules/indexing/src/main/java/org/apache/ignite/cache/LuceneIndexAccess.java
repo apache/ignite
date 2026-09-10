@@ -153,7 +153,6 @@ public class LuceneIndexAccess {
 		try{        		
 			QueryIndex qtextIdx = ((QueryIndexDescriptorImpl)type.textIndex()).getQueryIndex();
 			Collection<String> vectorFields = Collections.emptyList();
-			VectorSimilarityFunction vectorSimilarityFunction = VectorSimilarityFunction.COSINE;
             if(qtextIdx instanceof FullTextQueryIndex){
 				FullTextQueryIndex textIdx = (FullTextQueryIndex)qtextIdx;
 				if(textIdx.getAnalyzer()!=null)
@@ -164,24 +163,15 @@ public class LuceneIndexAccess {
             }
 			else if(qtextIdx instanceof VectorQueryIndex){
 				VectorQueryIndex textIdx = (VectorQueryIndex)qtextIdx;
-				String similarity = textIdx.getSimilarity();
-				if(similarity!=null) {
-					if(similarity.equals("euclidean ")) {
-						vectorSimilarityFunction = VectorSimilarityFunction.EUCLIDEAN;
-					}
-					else if(similarity.equals("cosine")) {
-						vectorSimilarityFunction = VectorSimilarityFunction.COSINE;
-					}
-					else if(similarity.equals("dotProduct")) {
-						vectorSimilarityFunction = VectorSimilarityFunction.DOT_PRODUCT;
-					}
-					else if(similarity.equals("innerProduct")) {
-						vectorSimilarityFunction = VectorSimilarityFunction.MAXIMUM_INNER_PRODUCT;
-					}
-					this.config.setSimilarityFunction(vectorSimilarityFunction);
+				if(textIdx.getSimilarity()!=null) {
+					this.config.setVectorSimilarityFunction(textIdx.getSimilarity());
 				}
-				if(textIdx.getDimensions()!=0)
+				if(textIdx.getEncoding()!=null) {
+					this.config.setVectorEncoding(textIdx.getEncoding());
+				}
+				if(textIdx.getDimensions()>0) {
 					this.config.setDimensions(textIdx.getDimensions());
+				}
 
 				vectorFields = textIdx.getFieldNames();
 
@@ -193,7 +183,7 @@ public class LuceneIndexAccess {
         		for(String field: type.textIndex().fields()) {
 					if(vectorFields.contains(field)){
 						FieldType fieldType = new FieldType();
-						fieldType.setVectorAttributes(this.config.getDimensions(), VectorEncoding.FLOAT32, vectorSimilarityFunction);
+						fieldType.setVectorAttributes(this.config.getDimensions(), this.config.getVectorEncoding(), this.config.getVectorSimilarityFunction());
 						fieldType.freeze();
 						fields.put(field,fieldType);
 					}
@@ -207,17 +197,20 @@ public class LuceneIndexAccess {
         		}
             }
 			// find vector index from @QueryVectorField
-			if(type.valueClass()!=null && !BinaryObject.class.isAssignableFrom(type.valueClass())) {
-				discoverVectorFields(type.valueClass(), fields);
+			if(type.valueTypeName()!=null) {
+				Class valueClass = Class.forName(type.valueTypeName());
+				if(!BinaryObject.class.isAssignableFrom(valueClass))
+					discoverVectorFields(valueClass, fields);
 			}
         	
-    	}
-    	catch(BeansException e){
+    	} catch(BeansException e){
     		e.printStackTrace();
     		ctx.grid().log().error(e.getMessage(),e);
-    	}
-		
-		return fields;
+    	} catch (ClassNotFoundException e) {
+			ctx.grid().log().error(e.getMessage(),e);
+        }
+
+        return fields;
 	}
 
 	/**
@@ -227,9 +220,19 @@ public class LuceneIndexAccess {
 		for (java.lang.reflect.Field field : valueCls.getDeclaredFields()) {
 			QueryVectorField vecAnn = field.getAnnotation(QueryVectorField.class);
 			if (vecAnn != null && vecAnn.indexed()) {
-				String fieldName = vecAnn.name().isEmpty() ? field.getName() : vecAnn.name();
+				String fieldName = vecAnn.name().isEmpty() ? field.getName().toUpperCase() : vecAnn.name();
 				FieldType fieldType = new FieldType();
-				fieldType.setVectorAttributes(vecAnn.dimension(), vecAnn.dataType(), vecAnn.similarity());
+				VectorSimilarityFunction similarity = VectorSimilarityFunction.valueOf(vecAnn.similarity());
+				VectorEncoding dataType = VectorEncoding.FLOAT32;
+				if(field.getType()==byte[].class){
+					dataType = VectorEncoding.BYTE;
+				}
+				else if (!field.getType().isArray() || field.getType().getComponentType() != float.class && field.getType().getComponentType() != double.class) {
+					throw new IllegalStateException(
+							"Field " + field.getName() + " has @QueryVectorField but is not float[]"
+					);
+				}
+				fieldType.setVectorAttributes(vecAnn.dimension(), dataType, similarity);
 				fieldType.freeze();
 				fields.put(fieldName,fieldType);
 			}

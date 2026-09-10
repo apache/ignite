@@ -78,7 +78,6 @@ public class RestExecutor implements AutoCloseable {
 
     /**
      * @param res represents a HTTP response.
-     * @param in Returns an {@link InputStream} providing the response content bytes.
      * @return Result of REST request.
      * @throws IOException If failed to parse REST result.
      */

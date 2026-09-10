@@ -186,7 +186,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
-            this.setShared(true);
+            this.setShared(false);
         	String root = getFolderRoot();
         	String instanceName = this.ignite.name();
         	if (instanceName == null || instanceName.isEmpty())
@@ -338,7 +338,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             if(this.httpClient!=null) {
                 // 清除历史注册数据
                 String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/clear";
-                HttpRequest request = HttpRequest.newBuilder()
+                HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
                         .uri(URI.create(url))
                         .header("Authorization", "token " + accountToken)
                         .DELETE()
@@ -402,7 +402,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
                 UUID nodeId = ignite.cluster().localNode().id();
             	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId+"/"+NODE_JOINED;
             	
-            	HttpRequest request = HttpRequest.newBuilder()
+            	HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
             			         .uri(URI.create(url))
             			         .header("Authorization", "token " + accountToken)
             			         .PUT(BodyPublishers.ofString(st.toString()))
@@ -442,7 +442,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
             	String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/to/node-left";
             	
-            	HttpRequest request = HttpRequest.newBuilder()
+            	HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
             			         .uri(URI.create(url))
             			         .header("Authorization", "token " + accountToken)
             			         .PUT(BodyPublishers.ofString(addresses.toString()))

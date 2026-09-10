@@ -109,8 +109,8 @@ public class DemoCachesLoadService implements Service {
             cacheCountry(), cacheDepartment(), cacheEmployee(), cacheCar(), cacheParking()
         ));
 
-        populateCacheEmployee();
-        populateCacheCar();
+        //populateCacheEmployee();
+        //populateCacheCar();
 
         cachePool = AgentDemoUtils.newScheduledThreadPool(2, "demo-sql-load-cache-tasks");
     }

@@ -881,7 +881,7 @@ public class QueryUtils {
         StringBuilder fullName = new StringBuilder();
 
         for (String prop : path) {
-            if (fullName.length() != 0)
+            if (!fullName.isEmpty())
                 fullName.append('.');
 
             fullName.append(prop);
@@ -990,7 +990,7 @@ public class QueryUtils {
         StringBuilder fullName = new StringBuilder();
 
         for (String prop : path) {
-            if (fullName.length() != 0)
+            if (!fullName.isEmpty())
                 fullName.append('.');
 
             fullName.append(prop);
