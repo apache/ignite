@@ -24,10 +24,10 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -97,7 +97,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
             if (srvrFullMetrics == null)
                 srvrFullMetrics = new NodeFullMetricsMessage();
 
-            srvrFullMetrics.nodeMetricsMessage(new NodeMetricsMessage(newMetrics));
+            srvrFullMetrics.nodeMetricsMessage(new ClusterMetricsSnapshot(newMetrics));
 
             return srvrFullMetrics;
         });
@@ -157,7 +157,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
                 clientsMetricsMsg.nodesMetricsMessages(new HashMap<>());
             }
 
-            clientsMetricsMsg.nodesMetricsMessages().put(clientNodeId, new NodeMetricsMessage(clientMetrics));
+            clientsMetricsMsg.nodesMetricsMessages().put(clientNodeId, new ClusterMetricsSnapshot(clientMetrics));
 
             return clientsMetricsMsg;
         });

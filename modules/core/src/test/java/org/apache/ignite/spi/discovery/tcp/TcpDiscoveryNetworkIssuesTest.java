@@ -191,21 +191,22 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         IgniteEx ig1 = startGrid(NODE_1_NAME);
 
         specialSpi = new TcpDiscoverySpi() {
-            @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
-                if (netBroken.get() && sock.getPort() == NODE_3_PORT)
+            @Override protected int readReceipt(TcpDiscoveryIoSession ses, long timeout) throws IOException {
+                if (netBroken.get() && ses.socket().getPort() == NODE_3_PORT)
                     throw new SocketTimeoutException("Read timed out");
 
-                return super.readReceipt(sock, timeout);
+                return super.readReceipt(ses, timeout);
             }
 
-            @Override protected Socket openSocket(
+            @Override protected TcpDiscoveryIoSession openSession(
+                Socket sock,
                 InetSocketAddress sockAddr,
                 IgniteSpiOperationTimeoutHelper timeoutHelper
             ) throws IOException, IgniteCheckedException {
                 if (netBroken.get() && sockAddr.getPort() == NODE_4_PORT)
                     throw new SocketTimeoutException("connect timed out");
 
-                return super.openSocket(sockAddr, timeoutHelper);
+                return super.openSession(sock, sockAddr, timeoutHelper);
             }
         };
 
@@ -593,16 +594,10 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         private final AtomicReference<Collection<InetSocketAddress>> simulatedPrevNodeAddr = new AtomicReference<>();
 
         /** {@inheritDoc} */
-        @Override protected void initializeImpl() {
-            if (impl != null)
-                return;
-
-            super.initializeImpl();
-
-            // To make the test stable, we want a loopback paddress of the previous node responds first.
+        @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+            // To make the test stable, we want a loopback address of the previous node responds first.
             // We don't need a concurrent ping execution.
-            if (impl instanceof ServerImpl)
-                impl = new ServerImpl(this, 1, DFLT_RMT_DC_PING_POOL_SIZE);
+            return new ServerImpl(this, 1, DFLT_RMT_DC_PING_POOL_SIZE);
         }
 
         /** */
@@ -621,16 +616,15 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (dropMsg(sock))
+            if (dropMsg(ses.socket()))
                 return;
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /** {@inheritDoc} */
@@ -652,16 +646,15 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (dropMsg(sock))
+            if (dropMsg(ses.socket()))
                 return;
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /**

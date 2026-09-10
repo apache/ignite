@@ -48,7 +48,6 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -2238,10 +2237,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             @Override public boolean isSystemType(String typeName) {
                 return false;
-            }
-
-            @Override public IgnitePredicate<String> classNameFilter() {
-                return null;
             }
 
             @Override public JdkMarshaller jdkMarshaller() {

@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
 
 /** */
-public class QueryBatchMessage implements ExecutionContextAware {
+public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
     UUID qryId;
@@ -61,7 +62,10 @@ public class QueryBatchMessage implements ExecutionContextAware {
         this.batchId = batchId;
         this.last = last;
 
-        mRows = rows.stream().map(o -> o == null ? null : new GenericValueMessage(o)).collect(Collectors.toList());
+        mRows = new ArrayList<>(rows.size());
+
+        for (Object row : rows)
+            mRows.add(row == null ? null : new GenericValueMessage(row));
     }
 
     /** {@inheritDoc} */
@@ -99,6 +103,11 @@ public class QueryBatchMessage implements ExecutionContextAware {
      * @return Rows.
      */
     public List<Object> rows() {
-        return mRows.stream().map(GenericValueMessage::value).collect(Collectors.toList());
+        List<Object> rows = new ArrayList<>(mRows.size());
+
+        for (GenericValueMessage mRow : mRows)
+            rows.add(mRow == null ? null : mRow.value());
+
+        return rows;
     }
 }

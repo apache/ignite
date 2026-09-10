@@ -135,6 +135,7 @@ abstract class BinaryMemoryAllocator {
                     if (this.maxMsgSize < halfSize)
                         this.data = new byte[halfSize];
 
+                    this.maxMsgSize = 0;
                     lastCheckNanos = nowNanos;
                 }
             }

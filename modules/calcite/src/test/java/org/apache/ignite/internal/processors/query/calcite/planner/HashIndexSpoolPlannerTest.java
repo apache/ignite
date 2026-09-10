@@ -22,6 +22,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -234,7 +235,7 @@ public class HashIndexSpoolPlannerTest extends AbstractPlannerTest {
      */
     @Test
     public void testCorrelatedFilterSplit() throws Exception {
-        TestTable tbl = createTable("TBL", IgniteDistributions.random(), "ID", Integer.class);
+        TestTable tbl = createTable("TBL", IgniteDistributions.random(), "ID", SqlTypeName.INTEGER);
         IgniteSchema publicSchema = createSchema(tbl);
 
         String sql = "SELECT (SELECT id FROM tbl AS t2 WHERE t2.id < 50 AND t2.id = t1.id) FROM tbl AS t1";

@@ -24,7 +24,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 
@@ -52,8 +53,8 @@ final class GridUriDeploymentSpringParser {
      * @param log Logger
      * @return Grid wrapper for the input stream.
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown if incoming input stream could not be
-     *      read or parsed by {@code Spring} {@link XmlBeanFactory}.
-     * @see XmlBeanFactory
+     *      read or parsed by {@code Spring} {@link DefaultListableBeanFactory}.
+     * @see DefaultListableBeanFactory
      */
     static GridUriDeploymentSpringDocument parseTasksDocument(InputStream in, IgniteLogger log) throws
         IgniteSpiException {
@@ -65,7 +66,8 @@ final class GridUriDeploymentSpringParser {
         try {
             U.copy(in, out);
 
-            XmlBeanFactory factory = new XmlBeanFactory(new ByteArrayResource(out.toByteArray()));
+            DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+            new XmlBeanDefinitionReader(factory).loadBeanDefinitions(new ByteArrayResource(out.toByteArray()));
 
             return new GridUriDeploymentSpringDocument(factory);
         }

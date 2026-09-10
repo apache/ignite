@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -33,6 +35,16 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
+
+    /**
+     * Views over {@link #data}. The byte order is pinned instead of following the host, so that the bytes a node puts
+     * on the wire do not depend on the architecture it runs on. Item fields are not naturally aligned, which the plain
+     * {@code get}/{@code set} access modes used here allow.
+     */
+    private static final VarHandle INT_VIEW = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
+
+    /** */
+    private static final VarHandle LONG_VIEW = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
 
     /** */
     @Order(0)
@@ -87,9 +99,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE;
-
-        return GridUnsafe.getInt(data, off);
+        return (int)INT_VIEW.get(data, idx * ITEM_SIZE);
     }
 
     /**
@@ -100,9 +110,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 4;
-
-        return GridUnsafe.getLong(data, off);
+        return (long)LONG_VIEW.get(data, idx * ITEM_SIZE + 4);
     }
 
     /**
@@ -113,9 +121,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + (long)idx * ITEM_SIZE + 12;
-
-        return GridUnsafe.getLong(data, off);
+        return (long)LONG_VIEW.get(data, idx * ITEM_SIZE + 12);
     }
 
     /**
@@ -128,11 +134,11 @@ public class PartitionUpdateCountersMessage implements Message {
     public void add(int part, long init, long updatesCnt) {
         ensureSpace(size + 1);
 
-        long off = GridUnsafe.BYTE_ARR_OFF + (long)size++ * ITEM_SIZE;
+        int off = size++ * ITEM_SIZE;
 
-        GridUnsafe.putInt(data, off, part); off += 4;
-        GridUnsafe.putLong(data, off, init); off += 8;
-        GridUnsafe.putLong(data, off, updatesCnt);
+        INT_VIEW.set(data, off, part);
+        LONG_VIEW.set(data, off + 4, init);
+        LONG_VIEW.set(data, off + 12, updatesCnt);
     }
 
     /** Optimizes the memory used after adding counters with {@link #add(int, long, long)}. */
@@ -170,8 +176,9 @@ public class PartitionUpdateCountersMessage implements Message {
     private void ensureSpace(int newSize) {
         int req = newSize * ITEM_SIZE;
 
+        // Growth alone may fall short of the request: 1.33 of a one-item array is still less than two items.
         if (data.length < req)
-            data = Arrays.copyOf(data, (int)(data.length * 1.33f));
+            data = Arrays.copyOf(data, Math.max(req, (int)(data.length * 1.33f)));
     }
 
     /** {@inheritDoc} */

@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     /** ID of the failed node. */
     @Order(0)
     UUID failedNodeId;

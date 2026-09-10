@@ -21,22 +21,22 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Information about partitions of a single node. <br>
+ * Information about partitions of a single node. Sent in response to {@link GridDhtPartitionsSingleRequest} and during
+ * processing partitions exchange future. <br>
+ * Has to be completelly restored after receiving from another node.
  *
- * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
+ * @see #afterReceive()
  */
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** Local partitions. */
@@ -290,10 +290,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         this.exchangeStartTime = exchangeStartTime;
     }
 
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
+    /** Properly unwraps the partitions after receiving from another node. */
+    public void afterReceive() {
         if (dupPartsData != null) {
             assert parts != null;
 
@@ -314,7 +312,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             }
         }
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

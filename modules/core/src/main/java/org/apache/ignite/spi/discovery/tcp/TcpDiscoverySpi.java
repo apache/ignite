@@ -17,9 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.StreamCorruptedException;
 import java.net.InetAddress;
@@ -54,12 +52,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -72,7 +72,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -97,8 +97,8 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -350,9 +350,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected long connRecoveryTimeout = DFLT_CONNECTION_RECOVERY_TIMEOUT;
 
     /** Grid discovery listener. */
+    @GridToStringExclude
     protected volatile DiscoverySpiListener lsnr;
 
     /** Data exchange. */
+    @GridToStringExclude
     protected DiscoverySpiDataExchange exchange;
 
     /** Metrics provider. */
@@ -383,6 +385,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private Marshaller marsh;
 
     /** Statistics. */
+    @GridToStringExclude
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Local port which node uses. */
@@ -443,7 +446,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected IgniteLogger log;
 
     /** */
-    protected TcpDiscoveryImpl impl;
+    TcpDiscoveryImpl impl;
 
     /** */
     private boolean clientReconnectDisabled;
@@ -455,10 +458,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
+    @GridToStringExclude
     protected IgniteSpiContext spiCtx;
-
-    /** Discovery messages factory. */
-    private MessageFactory msgFactory;
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
@@ -513,16 +514,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ((ServerImpl)impl).getNode0(id);
 
         return getNode(id);
-    }
-
-    /**
-     * @return TCP discovery nodes ring.
-     */
-    @Nullable public TcpDiscoveryNodesRing discoveryRing() {
-        if (impl instanceof ServerImpl)
-            return ((ServerImpl)impl).ring();
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -603,8 +594,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             setAddressResolver(ignite.configuration().getAddressResolver());
 
             marsh = ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller();
-
-            msgFactory = ((IgniteEx)ignite).context().messageFactory();
         }
     }
 
@@ -1125,11 +1114,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         locNodeVer = ver;
     }
 
-    /** @return Discovery messages factory. */
-    public MessageFactory messageFactory() {
-        return msgFactory;
-    }
-
     /**
      * Gets ID of the local node.
      *
@@ -1201,7 +1185,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             srvPort,
             metricsProvider,
             locNodeVer,
-            consistentId());
+            consistentId(),
+            ignite.context().localNodeFeatures());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1275,7 +1260,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         // Do not give own loopback to avoid requesting current node.
         if (!node.equals(locNode))
-            addrs.removeIf(addr -> addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr));
+            addrs.removeIf(addr -> addr.getAddress() == null ||
+                (addr.getAddress().isLoopbackAddress() && locNode.socketAddresses().contains(addr)));
 
         addrs.sort(U.inetAddressesComparator(sameHost));
 
@@ -1574,58 +1560,62 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * @param sockAddr Remote address.
+     * @param rmtAddr Remote address.
      * @param timeoutHelper Timeout helper.
-     * @return Opened socket.
+     * @return Session bound to the connected socket.
      * @throws IOException If failed.
      * @throws IgniteSpiOperationTimeoutException In case of timeout.
      * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected Socket openSocket(
-        InetSocketAddress sockAddr,
+    protected TcpDiscoveryIoSession openSession(
+        InetSocketAddress rmtAddr,
         IgniteSpiOperationTimeoutHelper timeoutHelper
     ) throws IOException, IgniteSpiOperationTimeoutException, IgniteCheckedException {
-        return openSocket(createSocket(), sockAddr, timeoutHelper);
+        Socket sock = createSocket();
+
+        try {
+            return openSession(sock, rmtAddr, timeoutHelper);
+        }
+        catch (IOException | IgniteCheckedException | IgniteException e) {
+            U.closeQuiet(sock);
+
+            throw e;
+        }
     }
 
     /**
      * Connects to remote address sending {@code U.IGNITE_HEADER} when connection is established.
      *
-     * @param sock Socket bound to a local host address.
+     * @param sock Socket bound to a local host address, not connected yet.
      * @param remAddr Remote address.
      * @param timeoutHelper Timeout helper.
-     * @return Connected socket.
+     * @return Session bound to the connected socket.
      * @throws IOException If failed.
      * @throws IgniteSpiOperationTimeoutException In case of timeout.
      * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected Socket openSocket(
+    protected TcpDiscoveryIoSession openSession(
         Socket sock,
         InetSocketAddress remAddr,
         IgniteSpiOperationTimeoutHelper timeoutHelper
     ) throws IOException, IgniteSpiOperationTimeoutException, IgniteCheckedException {
+        assert sock != null;
         assert remAddr != null;
 
-        try {
-            InetSocketAddress resolved = remAddr.isUnresolved() ?
-                new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
+        InetSocketAddress resolved = remAddr.isUnresolved() ?
+            new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
 
-            InetAddress addr = resolved.getAddress();
+        InetAddress addr = resolved.getAddress();
 
-            assert addr != null;
+        assert addr != null;
 
-            sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
+        sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-            writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
+        TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(ignite.context(), sock);
 
-            return sock;
-        }
-        catch (IOException | IgniteCheckedException e) {
-            if (sock != null)
-                U.closeQuiet(sock);
+        write(ses, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-            throw e;
-        }
+        return ses;
     }
 
     /**
@@ -1633,11 +1623,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * before, on SSL handshake, and doesn't accept new messages. In a such case it's possible to check the original error
      * by reading the socket input stream.
      *
-     * @param sock Socket to check.
+     * @param ses Session to check.
      * @param writeErr Error on writing a message to the socket.
      * @return {@code SSLException} in case of SSL error, or {@code null} otherwise.
      */
-    private @Nullable SSLException checkSslException(Socket sock, Exception writeErr) {
+    private @Nullable SSLException checkSslException(TcpDiscoveryIoSession ses, Exception writeErr) {
         if (!sslEnable)
             return null;
 
@@ -1649,7 +1639,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         try {
             // Set timeout to 1ms, in this case of closed socket it should return fast.
             if (X.hasCause(writeErr, SocketException.class))
-                readReceipt(sock, 1);
+                readReceipt(ses, 1);
         }
         catch (SSLException sslErr) {
             return sslErr;
@@ -1690,34 +1680,57 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
     }
 
+    /** */
+    void validateRemoteFeatures(IgniteNodeFeatureSet rmtFeatures) throws IgniteCheckedException {
+        if (rmtFeatures == null) {
+            throw new UnsupportedNodeVersionException(
+                "Failed to obtain remote node features. The remote node may be running an unsupported Ignite version," +
+                    " which may result in unexpected handshake message serialization");
+        }
+
+        for (IgniteComponentFeatureSet rmtCmpFeatures : rmtFeatures.values()) {
+            IgniteComponentFeatureSet locCmpFeatures = locNode.features().componentFeatures(rmtCmpFeatures.componentName());
+
+            if (locCmpFeatures == null)
+                continue;
+
+            int c = locCmpFeatures.version().compareTo(rmtCmpFeatures.version());
+
+            if (c == 0)
+                continue;
+
+            IgniteComponentFeatureSet src = c > 0 ? rmtCmpFeatures : locCmpFeatures;
+            IgniteComponentFeatureSet target = c > 0 ? locCmpFeatures : rmtCmpFeatures;
+
+            if (!src.isUpgradableTo(target)) {
+                throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
+                    " [locComponents=" + locNode.features() +
+                    ", rmtComponents=" + rmtFeatures + ']');
+            }
+        }
+    }
+
     /**
-     * Writes message to the socket.
+     * Writes raw data to the session socket.
      *
-     * @param sock Socket.
-     * @param msg Message.
+     * @param ses IO session.
      * @param data Raw data to write.
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected void writeToSocket(
-        Socket sock,
-        @Nullable TcpDiscoveryAbstractMessage msg,
+    protected void write(
+        TcpDiscoveryIoSession ses,
         byte[] data,
         long timeout
     ) throws IOException, IgniteCheckedException {
-        assert sock != null;
         assert data != null;
 
-        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
-            OutputStream out = sock.getOutputStream();
-
-            out.write(data);
-
-            out.flush();
+        try (SocketTimeoutObject ignored = startTimer(ses, timeout)) {
+            ses.write(data);
         }
         catch (IOException e) {
-            SSLException sslEx = checkSslException(sock, e);
+            SSLException sslEx = checkSslException(ses, e);
 
             throw sslEx == null ? e : sslEx;
         }
@@ -1759,48 +1772,37 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         TcpDiscoveryAbstractMessage msg,
         long timeout
     ) throws IOException, IgniteCheckedException {
-        Socket sock = ses.socket();
-
-        assert sock != null;
         assert msg != null;
 
-        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
+        try (SocketTimeoutObject ignored = startTimer(ses, timeout)) {
             ses.writeMessage(msg);
         }
         catch (IgniteCheckedException e) {
-            SSLException sslEx = checkSslException(sock, e);
+            SSLException sslEx = checkSslException(ses, e);
 
             throw sslEx == null ? e : new IgniteCheckedException(sslEx);
         }
     }
 
     /**
-     * Writes response to the socket.
+     * Writes response to the session socket.
      *
-     * @param msg Received message.
-     * @param sock Socket.
+     * @param ses IO session.
      * @param res Integer response.
      * @param timeout Socket timeout.
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If node is not yet initialized or is stopping.
      */
-    protected void writeToSocket(
-        TcpDiscoveryAbstractMessage msg,
-        Socket sock,
+    protected void writeReceipt(
+        TcpDiscoveryIoSession ses,
         int res,
         long timeout
     ) throws IOException, IgniteCheckedException {
-        assert sock != null;
-
-        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
-            OutputStream out = sock.getOutputStream();
-
-            out.write(res);
-
-            out.flush();
+        try (SocketTimeoutObject ignored = startTimer(ses, timeout)) {
+            ses.write(res);
         }
         catch (IOException e) {
-            SSLException sslEx = checkSslException(sock, e);
+            SSLException sslEx = checkSslException(ses, e);
 
             throw (sslEx == null) ? e : sslEx;
         }
@@ -1815,23 +1817,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IOException If IO failed or read timed out.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    protected <T> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException, IgniteCheckedException {
-        Socket sock = ses.socket();
-
-        assert sock != null;
-
-        int oldTimeout = sock.getSoTimeout();
-
+    protected <T extends Message> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException, IgniteCheckedException {
         try {
-            sock.setSoTimeout((int)timeout);
-
-            return ses.readMessage();
+            return ses.readMessage(timeout);
         }
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
                 LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
                     "long GC pauses on remote node) [curTimeout=" + timeout +
-                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
+                    ", rmtAddr=" + ses.socket().getRemoteSocketAddress() +
+                    ", rmtPort=" + ses.socket().getPort() + ']');
 
             StreamCorruptedException streamCorruptedCause = X.cause(e, StreamCorruptedException.class);
 
@@ -1849,59 +1844,79 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 if (msg != null && sslMsgPattern.matcher(msg).matches())
                     streamCorruptedCause.initCause(new SSLException("Detected SSL alert in StreamCorruptedException"));
             }
+
+            if (X.hasCause(e, ClassNotFoundException.class)) {
+                LT.error(log, e, "Failed to read message due to an unknown class to unmarshal received. Unable to " +
+                    "process the Discovery protocol. Stopping the Discovery SPI and invoking the failure handler. " +
+                    "RmtAddr=" + ses.socket().getRemoteSocketAddress() + ", rmtPort=" + ses.socket().getPort() + ']');
+
+                ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                // Prevents following cycling attempts to reconnect and logs flooding.
+                spiStop();
+            }
+
             throw e;
-        }
-        finally {
-            // Quietly restore timeout.
-            try {
-                sock.setSoTimeout(oldTimeout);
-            }
-            catch (SocketException ignored) {
-                // No-op.
-            }
         }
     }
 
     /**
-     * Reads message delivery receipt from the socket.
+     * Reads and verifies the {@code U.IGNITE_HEADER} with which an incoming connection is expected to start.
+     * See {@link #openSession(Socket, InetSocketAddress, IgniteSpiOperationTimeoutHelper)} for writing this prefix.
      *
-     * @param sock Socket.
+     * <p>If the {@code U.IGNITE_HEADER} is not received within the specified timeout or its value is unexpected, the
+     * IO session remains open and its handling is left to the caller.</p>
+     *
+     * @param ses IO session.
+     * @param timeout Operation timeout.
+     * @return {@code true} if the Ignite header was successfully read within the specified timeout, {@code false} otherwise.
+     * @throws IOException If an I/O error occurs or the read times out.
+     */
+    protected boolean readMagicHeader(TcpDiscoveryIoSession ses, long timeout) throws IOException {
+        byte[] buf = new byte[U.IGNITE_HEADER.length];
+
+        if (ses.read(buf, timeout) < buf.length) {
+            LT.warn(log, "Failed to read magic header (too few bytes received) " +
+                "[rmtAddr=" + ses.socket().getRemoteSocketAddress() +
+                ", locAddr=" + ses.socket().getLocalSocketAddress() + ']');
+
+            return false;
+        }
+
+        if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
+            LT.warn(log, "Unknown connection detected (possible reasons: an incompatible Ignite node or " +
+                "other software connecting to this Ignite port" +
+                (!isSslEnabled() ? ", or missing SSL configuration on remote node" : "") +
+                ") [rmtAddr=" + ses.socket().getRemoteSocketAddress() +
+                ", locAddr=" + ses.socket().getLocalSocketAddress() +
+                ", rcvdHdr=" + U.byteArray2HexString(buf) + ']', true);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Reads message delivery receipt from the session socket.
+     *
+     * @param ses IO session.
      * @param timeout Socket timeout for this operation.
      * @return Receipt.
      * @throws IOException If IO failed or read timed out.
      */
-    protected int readReceipt(Socket sock, long timeout) throws IOException {
-        assert sock != null;
-
-        int oldTimeout = sock.getSoTimeout();
-
+    protected int readReceipt(TcpDiscoveryIoSession ses, long timeout) throws IOException {
         try {
-            sock.setSoTimeout((int)timeout);
-
-            int res = sock.getInputStream().read();
-
-            if (res == -1)
-                throw new EOFException();
-
-            return res;
+            return ses.read(timeout);
         }
         catch (SocketTimeoutException e) {
             LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
                 "configuration property). Will retry to send message with increased timeout " +
-                "[currentTimeout=" + timeout + ", rmtAddr=" + sock.getRemoteSocketAddress() +
-                ", rmtPort=" + sock.getPort() + ']');
+                "[currentTimeout=" + timeout + ", rmtAddr=" + ses.socket().getRemoteSocketAddress() +
+                ", rmtPort=" + ses.socket().getPort() + ']');
 
             throw e;
-        }
-        finally {
-            // Quietly restore timeout.
-            try {
-                sock.setSoTimeout(oldTimeout);
-            }
-            catch (SocketException ignored) {
-                // No-op.
-            }
         }
     }
 
@@ -2074,21 +2089,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
-        //create data bag, pass it to exchange.collect
         DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
 
         exchange.collect(dataBag);
 
-        //marshall collected bag into packet, return packet
         if (dataPacket.joiningNodeId().equals(locNode.id()))
             dataPacket.addJoiningNodeData(dataBag);
         else
-            dataPacket.marshalGridNodeData(
-                dataBag,
-                locNode.id(),
-                marshaller(),
-                ignite.configuration().getNetworkCompressionLevel(),
-                log);
+            dataPacket.addNodeData(dataBag, locNode.id());
 
         return dataPacket;
     }
@@ -2103,22 +2111,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        if (dataPacket.joiningNodeId().equals(locNode.id())) {
-            try {
-                dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
-            }
-            catch (IgniteCheckedException e) {
-                if (ignite() instanceof IgniteEx) {
-                    FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
-
-                    failure.process(new FailureContext(CRITICAL_ERROR, e));
-                }
-
-                throw new IgniteException(e);
-            }
+        try {
+            if (dataPacket.joiningNodeId().equals(locNode.id()))
+                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
+            else
+                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
         }
-        else
-            dataBag = dataPacket.bagWithJoiningNodeData();
+        catch (IgniteCheckedException e) {
+            ignite.context().failure().process(new FailureContext(CRITICAL_ERROR, e));
+
+            throw new IgniteException(e);
+        }
 
         exchange.onExchange(dataBag);
     }
@@ -2132,10 +2135,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         impl.spiStart(igniteInstanceName);
     }
 
-    /**
-     *
-     */
-    protected void initializeImpl() {
+    /** */
+    private void initializeImpl() {
         if (impl != null)
             return;
 
@@ -2161,7 +2162,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (sockTimeout == 0)
                 sockTimeout = DFLT_SOCK_TIMEOUT;
 
-            impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE);
+            impl = createServerTcpDiscoveryImplementation();
         }
 
         metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
@@ -2242,6 +2243,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         cfgNodeId = ignite.configuration().getNodeId();
+    }
+
+    /** */
+    TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+        return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, DFLT_RMT_DC_PING_POOL_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -2469,9 +2475,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** Starts a timer for a socket operation. */
-    private SocketTimeoutObject startTimer(Socket sock, long timeout) throws IgniteCheckedException {
+    private SocketTimeoutObject startTimer(TcpDiscoveryIoSession ses, long timeout) throws IgniteCheckedException {
         try {
-            SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
+            SocketTimeoutObject obj = new SocketTimeoutObject(ses, U.currentTimeMillis() + timeout);
 
             addTimeoutObject(obj);
 
@@ -2483,6 +2489,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
+     * Tries to restore the node's {@link IgniteProductVersion#stage()} field, since it is transient and is not
+     * automatically restored after Cluster Node deserialization.
+     */
+    protected void restoreRemoteNodeVersion(TcpDiscoveryNode rmtNode) {
+        if (locNodeVer.equals(rmtNode.version()))
+            rmtNode.version(locNodeVer);
+    }
+
+    /**
      * Socket timeout object.
      */
     private class SocketTimeoutObject implements IgniteSpiTimeoutObject, AutoCloseable {
@@ -2490,7 +2505,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         private final IgniteUuid id = IgniteUuid.randomUuid();
 
         /** */
-        private final Socket sock;
+        private final TcpDiscoveryIoSession ses;
 
         /** */
         private final long endTime;
@@ -2499,14 +2514,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         private final AtomicBoolean done = new AtomicBoolean();
 
         /**
-         * @param sock Socket.
+         * @param ses IO session.
          * @param endTime End time.
          */
-        SocketTimeoutObject(Socket sock, long endTime) {
-            assert sock != null;
+        SocketTimeoutObject(TcpDiscoveryIoSession ses, long endTime) {
+            assert ses != null;
             assert endTime > 0;
 
-            this.sock = sock;
+            this.ses = ses;
             this.endTime = endTime;
         }
 
@@ -2520,15 +2535,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (done.compareAndSet(false, true)) {
-                // Close socket - timeout occurred.
-                U.closeQuiet(sock);
+                // Close session - timeout occurred.
+                ses.close();
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
                             "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
                                     "failureDetectionTimeout=" + failureDetectionTimeout() :
                             "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
-                        ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
+                        ", rmtAddr=" + ses.socket().getRemoteSocketAddress() +
+                        ", rmtPort=" + ses.socket().getPort() +
                         ", sockTimeout=" + sockTimeout + ']');
             }
         }

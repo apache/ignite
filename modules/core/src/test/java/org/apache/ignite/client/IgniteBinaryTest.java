@@ -140,6 +140,29 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Tests that binary type field order is preserved when metadata is read by a thin client. */
+    @Test
+    public void testBinaryTypeFieldOrder() throws Exception {
+        String typeName = "OrderedType";
+        String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
+
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
+            BinaryObjectBuilder builder = ignite.binary().builder(typeName);
+
+            for (String fieldName : fieldNames)
+                builder.setField(fieldName, 0);
+
+            BinaryType serverType = builder.build().type();
+            Object[] serverFieldNames = serverType.fieldNames().toArray();
+
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+                BinaryType clientType = client.binary().type(serverType.typeId());
+
+                assertArrayEquals(serverFieldNames, clientType.fieldNames().toArray());
+            }
+        }
+    }
+
     /**
      * Tests that {@code org.apache.ignite.cache.CacheInterceptor#onBeforePut(javax.cache.Cache.Entry, java.lang.Object)}
      * throws correct exception in case while cache operations are called from thin client. Only BinaryObject`s are

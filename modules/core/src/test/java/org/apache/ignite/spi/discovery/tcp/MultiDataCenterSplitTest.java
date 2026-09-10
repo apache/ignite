@@ -338,15 +338,8 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void initializeImpl() {
-            if (impl != null)
-                return;
-
-            super.initializeImpl();
-
-            // In theory, might be a ClientImpl.
-            if (impl instanceof ServerImpl)
-                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, pingPoolSize);
+        @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+            return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, pingPoolSize);
         }
 
         /** {@inheritDoc} */
@@ -358,11 +351,10 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, @Nullable TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException, IgniteCheckedException {
-            tryToBlock(sock, data, timeout);
+        @Override protected void write(TcpDiscoveryIoSession ses, byte[] data, long timeout) throws IOException, IgniteCheckedException {
+            tryToBlock(ses.socket(), data, timeout);
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** */

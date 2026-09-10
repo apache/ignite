@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
+package org.apache.ignite.snippets.services;
 
 import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.ServiceCallContext;

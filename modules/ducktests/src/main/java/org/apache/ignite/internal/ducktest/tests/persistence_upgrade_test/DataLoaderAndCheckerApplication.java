@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.ducktest.tests.dto.IndexedDataRecord;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -40,16 +38,16 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
         markInitialized();
         waitForActivation();
 
-        CacheConfiguration<Integer, CustomObject> cacheCfg = new CacheConfiguration<>("cache");
+        CacheConfiguration<Integer, IndexedDataRecord> cacheCfg = new CacheConfiguration<>("cache");
 
         cacheCfg.setBackups(backups);
 
-        IgniteCache<Integer, CustomObject> cache = ignite.getOrCreateCache(cacheCfg);
+        IgniteCache<Integer, IndexedDataRecord> cache = ignite.getOrCreateCache(cacheCfg);
 
         log.info(check ? "Checking..." : " Preparing...");
 
         for (int i = 0; i < entryCnt; i++) {
-            CustomObject obj = new CustomObject(i);
+            IndexedDataRecord obj = new IndexedDataRecord(i);
 
             if (!check)
                 cache.put(i, obj);
@@ -64,62 +62,4 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
 
         markFinished();
     }
-
-    /**
-     *
-     */
-    private static class CustomObject {
-        /** String value. */
-        private final String sVal;
-
-        /** Integer value. */
-        private final Integer iVal;
-
-        /** Boolean value. */
-        private final Boolean bVal;
-
-        /** char value. */
-        private final char cVal;
-
-        /** Integer array value. */
-        private final Integer[] iArVal;
-
-        /** Integer List. */
-        private final List<Integer> iLiVal;
-
-        /**
-         * @param idx Index.
-         */
-        public CustomObject(int idx) {
-            sVal = String.valueOf(idx);
-            iVal = idx;
-            bVal = idx % 2 == 0;
-            cVal = sVal.charAt(0);
-            iArVal = new Integer[] {idx, idx * 2, idx * idx};
-            iLiVal = Arrays.asList(iArVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            CustomObject obj = (CustomObject)o;
-            return cVal == obj.cVal
-                && Objects.equals(sVal, obj.sVal)
-                && Objects.equals(iVal, obj.iVal)
-                && Objects.equals(bVal, obj.bVal)
-                && Arrays.equals(iArVal, obj.iArVal)
-                && Objects.equals(iLiVal, obj.iLiVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = Objects.hash(sVal, iVal, bVal, cVal, iLiVal);
-            result = 31 * result + Arrays.hashCode(iArVal);
-            return result;
-        }
-    }
-
 }

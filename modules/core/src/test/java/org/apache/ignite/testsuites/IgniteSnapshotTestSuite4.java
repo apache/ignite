@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Ign
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpFilterTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSelf2Test;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSeveralDiskTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteConcurrentCacheDumpTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -50,5 +51,6 @@ public class IgniteSnapshotTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, IgniteConcurrentCacheDumpTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpFilterTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, BufferedFileIOTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpSeveralDiskTest.class, ignoredTests);
     }
 }

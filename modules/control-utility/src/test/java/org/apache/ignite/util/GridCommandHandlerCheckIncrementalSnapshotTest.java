@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -223,7 +224,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         load(xid -> {
             if (skipTxRec == null) {
                 skipTxRec = (consId, rec) ->
-                    grid(0).localNode().consistentId().equals(consId) && xid.equals(rec.nearXidVersion().asIgniteUuid());
+                    grid(0).localNode().consistentId().equals(consId) && xid.equals(BinaryUtils.asIgniteUuid(rec.nearXidVersion()));
             }
         });
 
@@ -248,7 +249,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         load(xid -> {
             if (skipTxRec == null) {
                 skipTxRec = (consId, rec) ->
-                    grid(0).localNode().consistentId().equals(consId) && xid.equals(rec.nearXidVersion().asIgniteUuid());
+                    grid(0).localNode().consistentId().equals(consId) && xid.equals(BinaryUtils.asIgniteUuid(rec.nearXidVersion()));
             }
         });
 
@@ -308,7 +309,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
             if (skipDataRec == null) {
                 skipDataRec = (consId, rec) ->
                     grid(0).localNode().consistentId().equals(consId)
-                        && xid.equals(rec.writeEntries().get(0).nearXidVersion().asIgniteUuid());
+                        && xid.equals(BinaryUtils.asIgniteUuid(rec.writeEntries().get(0).nearXidVersion()));
             }
         });
 
@@ -325,14 +326,14 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
             if (skipDataRec == null) {
                 skipDataRec = (consId, rec) ->
                     grid(0).localNode().consistentId().equals(consId)
-                        && xid.equals(rec.writeEntries().get(0).nearXidVersion().asIgniteUuid());
+                        && xid.equals(BinaryUtils.asIgniteUuid(rec.writeEntries().get(0).nearXidVersion()));
 
                 return;
             }
 
             if (skipTxRec == null) {
                 skipTxRec = (consId, rec) ->
-                    grid(0).localNode().consistentId().equals(consId) && xid.equals(rec.nearXidVersion().asIgniteUuid());
+                    grid(0).localNode().consistentId().equals(consId) && xid.equals(BinaryUtils.asIgniteUuid(rec.nearXidVersion()));
             }
         });
 

@@ -3260,12 +3260,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** */
     private void restoreLostPartitions(CacheGroupRecoveryState grpState) {
-        grpState.lostParititons().forEach(this::registerLostPartition);
+        grpState.lostPartitions().forEach(this::registerLostPartition);
     }
 
     /** */
     private void detectPartitionLossDuringInactivity(CacheGroupRecoveryState grpState) {
-        Set<Integer> recoveryZeroParts = grpState.zeroUpdateCounterParititons();
+        Set<Integer> recoveryZeroParts = grpState.zeroUpdateCounterPartitions();
 
         Set<Integer> detectedLostParts = new HashSet<>();
 

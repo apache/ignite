@@ -21,13 +21,17 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
+
+import static java.time.ZoneOffset.UTC;
 
 /**
  * Represents node version.
@@ -40,6 +44,9 @@ import org.jetbrains.annotations.NotNull;
 public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Ignite version build time format.  */
+    public static final DateTimeFormatter BUILD_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(UTC);
 
     /** Size of the {@link #revHash }*/
     public static final int REV_HASH_SIZE = 20;
@@ -162,10 +169,21 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     }
 
     /**
+     * Gets build time.
+     *
+     * @return Build time.
+     */
+    public Instant buildTime() {
+        return Instant.ofEpochSecond(revTs);
+    }
+
+    /**
      * Gets release date.
      *
      * @return Release date.
+     * @deprecated Use {@link #buildTime()} instead.
      */
+    @Deprecated
     public Date releaseDate() {
         return new Date(revTs * 1000);
     }
@@ -267,13 +285,25 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revTs * 1000);
+        String ts = BUILD_TIME_FORMAT.format(buildTime());
 
         String hash = CommonUtils.byteArray2HexString(revHash).toLowerCase();
 
         hash = hash.length() > 8 ? hash.substring(0, 8) : hash;
 
-        return major + "." + minor + "." + maintenance + "#" + revTsStr + "-sha1:" + hash;
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(major)
+            .append(".").append(minor)
+            .append(".").append(maintenance);
+
+        if (!F.isEmpty(stage))
+            sb.append("-").append(stage);
+
+        sb.append("#").append(ts)
+            .append("-sha1:").append(hash);
+
+        return sb.toString();
     }
 
     /**

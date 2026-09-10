@@ -68,6 +68,10 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     @Order(6)
     boolean compatibleRemapVer;
 
+    /** {@code True} if requested locks were acquired. */
+    @Order(7)
+    boolean lockAcquired = true;
+
     /**
      * Empty constructor.
      */
@@ -122,6 +126,20 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     /** @return Flag, indicating whether remap version is compatible with current version. */
     public boolean compatibleRemapVersion() {
         return compatibleRemapVer;
+    }
+
+    /**
+     * @return {@code True} if requested locks were acquired.
+     */
+    public boolean lockAcquired() {
+        return lockAcquired;
+    }
+
+    /**
+     * @param lockAcquired {@code True} if requested locks were acquired.
+     */
+    public void lockAcquired(boolean lockAcquired) {
+        this.lockAcquired = lockAcquired;
     }
 
     /**

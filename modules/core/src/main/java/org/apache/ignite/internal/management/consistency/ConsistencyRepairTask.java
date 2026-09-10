@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -102,8 +102,12 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
         @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
+            ExecutorService execSrvc = ignite.context().pools().getIdleVerifyExecutorService();
+
+            // Consisnency Repair and Idle Verify are usually companion tasks. Thay share the same thread pool currently
+            // allocated by Idle Verify.
             Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partitions())
-                .mapToObj(p -> F.t(p, IgniteForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
+                .mapToObj(p -> F.t(p, execSrvc.submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
                         return F.t(t.get1(), t.get2().get());
@@ -126,7 +130,7 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
 
             makeResult(res, false, resStr, CONSISTENCY_VIOLATIONS_FOUND);
 
-            return resStr.length() == 0 ? null : resStr.toString();
+            return resStr.isEmpty() ? null : resStr.toString();
         }
 
         /**

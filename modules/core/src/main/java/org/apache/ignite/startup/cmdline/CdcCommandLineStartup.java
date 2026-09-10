@@ -26,8 +26,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.internal.IgniteKernal.NL;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
 
 /**
@@ -57,7 +57,7 @@ public class CdcCommandLineStartup {
                       "   /  _/ ___/ |/ /  _/_  __/ __/   / ___/ _ \\/ ___/" + NL +
                       "  _/ // (7 7    // /  / / / _/    / /__/ // / /__  " + NL +
                       " /___/\\___/_/|_/___/ /_/ /___/    \\___/____/\\___/");
-            X.println("Ignite Change Data Capture Command Line Startup, ver. " + ACK_VER_STR);
+            X.println("Ignite Change Data Capture Command Line Startup, ver. " + VER);
             X.println(COPYRIGHT);
             X.println();
         }

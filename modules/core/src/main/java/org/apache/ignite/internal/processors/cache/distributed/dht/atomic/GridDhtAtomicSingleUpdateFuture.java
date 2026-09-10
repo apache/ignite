@@ -91,6 +91,7 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 topVer,
                 updateReq.taskNameHash(),
                 updateReq.keepBinary(),
+                updateReq.keepBinaryInInterceptor(),
                 updateReq.skipStore(),
                 readRepairRecovery);
         }
@@ -102,10 +103,9 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 writeVer,
                 topVer,
                 updateReq.taskNameHash(),
-                null,
                 updateReq.keepBinary(),
+                updateReq.keepBinaryInInterceptor(),
                 updateReq.skipStore(),
-                false,
                 readRepairRecovery);
         }
     }

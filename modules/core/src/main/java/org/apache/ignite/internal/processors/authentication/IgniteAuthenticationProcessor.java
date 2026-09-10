@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -141,7 +140,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private UserManagementOperationFinishedMessage curOpFinishMsg;
 
     /** Initial users map and operations received from coordinator on the node joined to the cluster. */
-    private InitialUsersData initUsrs;
+    private AuthentificationDataBagItem initUsrs;
 
     /** I/O message listener. */
     private GridMessageListener ioLsnr;
@@ -403,7 +402,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         synchronized (mux) {
             if (!dataBag.commonDataCollectedFor(AUTH_PROC.ordinal())) {
-                InitialUsersData d = new InitialUsersData(users.values(), activeOps.values());
+                AuthentificationDataBagItem d = new AuthentificationDataBagItem(users.values(), activeOps.values());
 
                 if (log.isDebugEnabled())
                     log.debug("Collected initial users data: " + d);
@@ -430,7 +429,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        initUsrs = (InitialUsersData)data.commonData();
+        initUsrs = data.commonData();
     }
 
     /** {@inheritDoc} */
@@ -999,36 +998,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * Initial data is collected on coordinator to send to join node.
-     */
-    private static final class InitialUsersData implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Users. */
-        @GridToStringInclude
-        private final ArrayList<User> usrs;
-
-        /** Active user operations. */
-        @GridToStringInclude
-        private final ArrayList<UserManagementOperation> activeOps;
-
-        /**
-         * @param usrs Users.
-         * @param ops Active operations on cluster.
-         */
-        InitialUsersData(Collection<User> usrs, Collection<UserManagementOperation> ops) {
-            this.usrs = new ArrayList<>(usrs);
-            activeOps = new ArrayList<>(ops);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(InitialUsersData.class, this);
-        }
-    }
-
-    /**i
      *
      */
     private final class UserProposedListener implements CustomEventListener<UserProposedMessage> {
@@ -1333,7 +1302,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        @Override protected void body() {
             if (ctx.clientNode())
                 return;
 

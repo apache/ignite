@@ -25,8 +25,8 @@ import java.util.Properties;
  * Ignite properties holder.
  */
 public class IgniteProperties {
-    /** Properties file path. */
-    private static final String FILE_PATH = "ignite.properties";
+    /** Build info file path. */
+    private static final String FILE_PATH = "ignite-build-info.properties";
 
     /** Properties. */
     private static final Properties PROPS;

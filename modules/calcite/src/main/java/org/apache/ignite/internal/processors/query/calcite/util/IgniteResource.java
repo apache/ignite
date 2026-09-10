@@ -36,13 +36,12 @@ public interface IgniteResource {
     Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
 
     /** */
-    @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
-    Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
+    @Resources.BaseMessage("Cannot modify system column \"{0}\".")
+    Resources.ExInst<SqlValidatorException> cannotModifySystemColumn(String field);
 
     /** */
-    @Resources.BaseMessage("Illegal value of {0}. The value must be positive and less than Integer.MAX_VALUE " +
-        "(" + Integer.MAX_VALUE + ")." )
-    Resources.ExInst<SqlValidatorException> correctIntegerLimit(String a0);
+    @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
+    Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
 
     /** */
     @Resources.BaseMessage("Option ''{0}'' has already been defined")
@@ -84,4 +83,24 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Operator ''CAST'' supports only the parameters: value and target type.")
     Resources.ExInst<SqlValidatorException> invalidCastParameters();
+
+    /** */
+    @Resources.BaseMessage("Illegal value of {0}. The value must be non-negative and less than or equal to " + Long.MAX_VALUE)
+    Resources.ExInst<SqlValidatorException> illegalFetchLimit(String a0);
+
+    /** */
+    @Resources.BaseMessage("Incorrect type of a dynamic parameter. Expected <{0}> but got <{1}>")
+    Resources.ExInst<SqlValidatorException> incorrectDynamicParameterType(String expected, String actual);
+
+    /** */
+    @Resources.BaseMessage("WAIT value must be a positive integer, but was: {0}")
+    Resources.ExInst<SqlValidatorException> illegalWaitTimeout(String value);
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE requires a PESSIMISTIC transaction")
+    Resources.ExInst<SqlValidatorException> selectForUpdateRequiresPessimisticTx();
+
+    /** */
+    @Resources.BaseMessage("SELECT FOR UPDATE: could not acquire lock")
+    Resources.ExInst<SqlValidatorException> selectForUpdateLockFailed();
 }

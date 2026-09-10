@@ -371,7 +371,14 @@ namespace Apache.Ignite.Core.Tests
                 {
                     Endpoints = new[] { "127.0.0.1:47500" + (maxPort == null ? null : (".." + maxPort)) }
                 },
-                SocketTimeout = TimeSpan.FromSeconds(0.3)
+                SocketTimeout = TimeSpan.FromSeconds(0.3),
+                // If the finder port is squatted at bind time (e.g. lingering teardown of the previous
+                // fixture), the node binds the next port and the default infinite join retries the finder
+                // address forever, eating the whole suite execution timeout: fail the test fast instead.
+                // MaxAckTimeout caps the exponential handshake backoff, otherwise a single retry sweep
+                // takes up to 20 minutes and JoinTimeout, checked between sweeps, never gets a chance.
+                JoinTimeout = TimeSpan.FromMinutes(2),
+                MaxAckTimeout = TimeSpan.FromSeconds(10)
             };
         }
 

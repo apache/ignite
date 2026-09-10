@@ -1890,15 +1890,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param exp Expected.
      * @param act Actual.
      */
-    protected static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
+    public static <K, V> void assertEqualsMaps(Map<K, V> exp, Map<K, V> act) {
         if (exp.size() != act.size())
             fail("Maps are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
 
         for (Map.Entry<K, V> e : exp.entrySet()) {
             if (!act.containsKey(e.getKey()))
                 fail("Maps are not equal (missing key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
-            else if (!Objects.equals(e.getValue(), act.get(e.getKey())))
-                fail("Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act);
+
+            assertEqualsArraysAware(
+                "Maps are not equal (key " + e.getKey() + "):\nExpected:\t" + exp + "\nActual:\t" + act,
+                e.getValue(),
+                act.get(e.getKey())
+            );
         }
     }
 
@@ -2469,8 +2473,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
             !ignite.configuration().isClientMode()).map(ignite ->
-            new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
-                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+                new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
+                    ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
 
         for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
             if (cntr.get2() == null)
@@ -2502,8 +2506,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         long reserved) throws AssertionFailedError {
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
             !ignite.configuration().isClientMode()).map(ignite ->
-            new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
-                ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+                new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
+                    ignite.affinity(cacheName).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
 
         for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
             if (cntr.get2() == null)

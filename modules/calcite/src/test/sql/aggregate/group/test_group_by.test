@@ -137,7 +137,8 @@ SELECT 1 AS i, SUM(t.i) FROM integers t GROUP BY t.i ORDER BY 2;
 query IR
 SELECT 1 AS i, SUM(i) FROM integers GROUP BY i ORDER BY 2;
 ----
-1	8.000000
+1	2.000000
+1	6.000000
 
 # refer to the same alias twice
 query IR

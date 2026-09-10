@@ -1,0 +1,258 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Multi Data Center Deployment
+
+== Overview
+
+Ignite can run a single cluster across multiple data centers.
+In this mode, every server node is assigned a data center ID.
+Ignite uses this ID to group nodes by data center, reduce cross-data-center traffic when possible,
+choose local data copies for reads, and validate cache topology during data center failures.
+
+[NOTE]
+====
+Multi data center support is an experimental feature.
+APIs and behavior can change in later releases.
+====
+
+The feature is based on the following components:
+
+* `IGNITE_DATA_CENTER_ID` - system property or user attribute that assigns a node to a data center.
+* `ClusterNode#dataCenterId()` - node API that exposes the configured data center ID.
+* `MdcTopologyValidator` - cache topology validator that can block updates when not enough data centers are visible.
+* `MdcAffinityBackupFilter` - affinity backup filter that spreads partition copies evenly across data centers.
+* Thin client data center awareness - routing that prefers nodes from the client's data center.
+
+== Configuring Data Center ID
+
+Set the same data center ID on all server nodes located in the same data center.
+Nodes from different data centers must use different IDs.
+
+You can set the ID with the `IGNITE_DATA_CENTER_ID` system property:
+
+[source,shell]
+----
+bin/ignite.sh -J-DIGNITE_DATA_CENTER_ID=DC1
+----
+
+You can also set the same value as a user attribute in `IgniteConfiguration`:
+
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+cfg.setUserAttributes(Collections.singletonMap(
+    IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "DC1"));
+----
+
+Server nodes in the same cluster must be configured consistently:
+
+* If one server node has a data center ID, all server nodes must have a data center ID.
+* Server nodes without a data center ID cannot join a cluster where server nodes have data center IDs.
+* Server nodes with a data center ID cannot join a cluster where server nodes do not have data center IDs.
+* Client nodes can join with or without a data center ID.
+
+== Discovery
+
+`TcpDiscoverySpi` uses data center IDs to keep nodes from the same data center close to each other in
+the discovery ring.
+When a data center becomes unavailable, discovery can check remote data centers in parallel and close the ring
+through the local data center if the remote data center does not respond.
+
+Client nodes also use the data center ID during discovery.
+If a client has a data center ID, it tries to connect through a server node from the same data center.
+If no server node from the same data center is available, the client connects through any available server node.
+
+== Cache Topology Validation
+
+Use `MdcTopologyValidator` to protect caches from updates when the visible topology does not contain enough data centers.
+The validator ignores client nodes and checks only server nodes.
+
+The validator supports two modes:
+
+* Majority-based validation - for an odd number of data centers, specify the full set of data centers.
+Updates are allowed only when the visible topology contains a majority of the configured data centers.
+* Main data center validation - for an even number of data centers, specify the main data center.
+Updates are allowed while the main data center is visible.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.CacheConfiguration">
+    <property name="name" value="accounts"/>
+    <property name="topologyValidator">
+        <bean class="org.apache.ignite.topology.MdcTopologyValidator">
+            <property name="datacenters">
+                <set>
+                    <value>DC1</value>
+                    <value>DC2</value>
+                    <value>DC3</value>
+                </set>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+MdcTopologyValidator validator = new MdcTopologyValidator();
+
+validator.setDatacenters(Set.of("DC1", "DC2", "DC3"));
+
+CacheConfiguration<Integer, Account> cacheCfg =
+    new CacheConfiguration<Integer, Account>("accounts")
+        .setTopologyValidator(validator);
+----
+--
+
+For an even number of data centers, configure a main data center:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.CacheConfiguration">
+    <property name="name" value="accounts"/>
+    <property name="topologyValidator">
+        <bean class="org.apache.ignite.topology.MdcTopologyValidator">
+            <property name="mainDatacenter" value="DC1"/>
+        </bean>
+    </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+MdcTopologyValidator validator = new MdcTopologyValidator();
+
+validator.setMainDatacenter("DC1");
+
+CacheConfiguration<Integer, Account> cacheCfg =
+    new CacheConfiguration<Integer, Account>("accounts")
+        .setTopologyValidator(validator);
+----
+--
+
+The validator configuration is checked when the cache is created.
+The following configurations are invalid:
+
+* Neither `datacenters` nor `mainDatacenter` is specified.
+* `datacenters` is specified as an empty set.
+* `mainDatacenter` is specified together with an odd number of data centers.
+
+== Placing Backup Copies Across Data Centers
+
+Use `MdcAffinityBackupFilter` with `RendezvousAffinityFunction` to distribute partition copies across data centers.
+The filter ensures that each partition has the same number of copies in each data center.
+
+For example, a cache with `backups=3` has four partition copies: one primary and three backups.
+In a two-data-center cluster, `MdcAffinityBackupFilter(2, 3)` places two copies in each data center.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.CacheConfiguration">
+    <property name="name" value="accounts"/>
+    <property name="backups" value="3"/>
+    <property name="affinity">
+        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+            <property name="affinityBackupFilter">
+                <bean class="org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter">
+                    <constructor-arg value="2"/>
+                    <constructor-arg value="3"/>
+                </bean>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+CacheConfiguration<Integer, Account> cacheCfg =
+    new CacheConfiguration<Integer, Account>("accounts")
+        .setBackups(3)
+        .setAffinity(new RendezvousAffinityFunction()
+            .setAffinityBackupFilter(new MdcAffinityBackupFilter(2, 3)));
+----
+--
+
+`MdcAffinityBackupFilter` has the following requirements:
+
+* The number of data centers must be at least 2.
+* `(backups + 1)` must be evenly divisible by the number of data centers.
+* All server nodes must have a data center ID.
+
+If these requirements are not met, the filter either rejects the configuration or cannot place copies predictably.
+
+For other backup placement strategies, see link:configuring-caches/configuring-backups#affinity-backup-filters[Affinity Backup Filters].
+
+== Reading from Local Data Center
+
+When `CacheConfiguration#readFromBackup` is `true`, Ignite can read from a backup copy instead of the primary copy.
+In a multi data center topology, this allows Ignite to use a backup located in the same data center as the
+requester when such a backup is available.
+
+The Java thin client also uses the data center ID for partition awareness.
+Set the client's data center ID with the `IGNITE_DATA_CENTER_ID` system property or in
+`ClientConfiguration#setUserAttributes(...)`.
+If both are configured, the system property takes precedence.
+For partition-aware read operations, the client sends requests to a node from its own data center when the cache has
+`readFromBackup=true`, its write synchronization mode is not `PRIMARY_SYNC`, and the local data center has a
+partition copy.
+Writes are still routed to the primary node.
+
+[source,java]
+----
+ClientConfiguration cfg = new ClientConfiguration()
+    .setAddresses("dc1-node1:10800", "dc1-node2:10800", "dc2-node1:10800")
+    .setUserAttributes(Collections.singletonMap(
+        IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "DC1"));
+----
+
+The same value can be set with the JVM system property:
+
+[source,shell]
+----
+java -DIGNITE_DATA_CENTER_ID=DC1 ...
+----
+
+If no nodes are available in the client's data center, the client uses other available nodes.
+
+== Rebalancing
+
+During rebalancing, Ignite prefers nodes from the same data center when such suppliers are available.
+If the required partition data cannot be obtained from the same data center, Ignite can rebalance from a
+remote data center.
+This behavior applies to both full and historical rebalance.
+
+== Monitoring
+
+Use the `NODES` system view to check the data center IDs of cluster nodes, and the `CLIENT_CONNECTIONS` view to check
+the data center IDs of thin-client connections. This makes it easy to spot clients with a wrong or missing ID.
+
+For Java thin clients, the `IGNITE_DATA_CENTER_ID` system property takes precedence over the user attribute of the same
+name.
+
+For a client node, the `io.discovery.ClientRouterNodeId` metric identifies the server node used as the discovery router.

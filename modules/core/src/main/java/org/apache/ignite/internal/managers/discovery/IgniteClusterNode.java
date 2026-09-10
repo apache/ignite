@@ -22,11 +22,19 @@ import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 
 /**
  *
  */
 public interface IgniteClusterNode extends ClusterNode {
+    /**
+     * Gets the set of Ignite features supported by this node.
+     *
+     * @return Ignite Node Feature set.
+     */
+    public IgniteNodeFeatureSet features();
+
     /**
      * Sets consistent globally unique node ID which survives node restarts.
      *

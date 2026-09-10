@@ -39,10 +39,12 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
+
 /**
  * BaselineTopology represents a set of "database nodes" - nodes responsible for holding persistent-enabled caches
  * and persisting their information to durable storage.
- *
+ * <p/>
  * Two major features BaselineTopology allows are:
  * <ol>
  *     <li>Protection from conflicting updates.</li>
@@ -61,10 +63,10 @@ import org.jetbrains.annotations.Nullable;
  *         [A,B]  [C]
  *           |     |
  *      (2)updates to both parts
- *
+ * <p/>
  *      After independent updates applied to both parts of cluster at point(2) node C should not be allowed to join
  *      [A,B] part.
- *
+ * <p/>
  *      The following algorithm makes sure node C will never join [A,B] part back:
  *      <ol>
  *          <li>
@@ -95,10 +97,10 @@ import org.jetbrains.annotations.Nullable;
  *     <li>
  *         When BaselineTopology is set (e.g. on first activation) or recreated (e.g. with set-baseline command)
  *         its ID on all nodes is incremented by one.
- *
+ * <p/>
  *         So when cluster receives a join request with BaselineTopology it firstly compares joining node BlT ID with
  *         local BlT ID.
- *
+ * <p/>
  *         If joining node has a BaselineTopology with ID greater than one in cluster it means that BlT was changed
  *         more times there; therefore new node is not allowed to join the cluster.
  *     </li>
@@ -107,27 +109,27 @@ import org.jetbrains.annotations.Nullable;
  *         Instead current set of online nodes from BaselineTopology is used to update {@link BaselineTopology#branchingPntHash}
  *         property of current BaselineTopology.
  *         Old value of the property is moved to {@link BaselineTopology#branchingHist} list.
- *
+ * <p/>
  *         If joining node and local BlT IDs are the same then cluster takes <b>branchingPntHash</b> of joining node
  *         and verifies that its local <b>branchingHist</b> contains that hash.
- *
+ * <p/>
  *         If joining node hash is not presented in cluster branching history list
  *         it means that joining node was activated independently of currently running cluster;
  *         therefore new node is not allowed to join the cluster.
- *
+ * <p/>
  *         If joining node hash is presented in the history, that it is safe to let the node join the cluster.
  *     </li>
  *     <li>
  *         When BaselineTopology is recreated (e.g. with set-baseline command) previous BaselineTopology is moved
  *         to BaselineHistory (consult source code of {@link GridClusterStateProcessor} for more details).
- *
+ * <p/>
  *         If cluster sees that joining node BlT ID is less than cluster BlT ID it looks up for BaselineHistory item
  *         for new node ID.
  *         Having this BaselineHistory item cluster verifies that branching history of the item contains
  *         branching point hash of joining node
  *         (similar check as in the case above with only difference that joining node BlT is compared against
  *         BaselineHistory item instead of BaselineTopology).
- *
+ * <p/>
  *         If new node branching point hash is found in the history than node is allowed to join;
  *         otherwise it is rejected.
  *     </li>
@@ -172,7 +174,7 @@ public class BaselineTopology implements Serializable {
     private final List<Long> branchingHist;
 
     /**
-     * @param nodeMap Map of node consistent ID to it's attributes.
+     * @param nodeMap Map of node consistent ID to its attributes.
      */
     private BaselineTopology(Map<Object, Map<String, Object>> nodeMap, int id) {
         this.id = id;
@@ -272,6 +274,20 @@ public class BaselineTopology implements Serializable {
      */
     public Map<String, Object> attributes(Object consId) {
         return nodeMap.get(consId);
+    }
+
+    /**
+     * Calculates number of datacenters presented in current baseline.
+     *
+     * @return Number of datacenters presented in the baseline or {@code -1} if unknown.
+     */
+    public int numberOfDatacenters() {
+        Collection<Map<String, Object>> allNodesAttrs = nodeMap.values();
+
+        if (!allNodesAttrs.isEmpty() && allNodesAttrs.iterator().next().get(ATTR_DATA_CENTER_ID) != null)
+            return (int)allNodesAttrs.stream().map(m -> m.get(ATTR_DATA_CENTER_ID)).distinct().count();
+
+        return -1;
     }
 
     /**

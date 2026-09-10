@@ -98,6 +98,18 @@ public class GridIntListSelfTest {
     }
 
     /** */
+    @Test
+    public void testCopyOfRange() {
+        assertEquals(asList(), asList(1).copyOfRange(0, 0));
+        assertEquals(asList(1), asList(1).copyOfRange(0, 1));
+        assertEquals(asList(), asList(1, 2).copyOfRange(1, 1));
+        assertEquals(asList(1), asList(1, 2).copyOfRange(0, 1));
+        assertEquals(asList(2), asList(1, 2).copyOfRange(1, 2));
+        assertEquals(asList(2, 3), asList(1, 2, 3).copyOfRange(1, 3));
+        assertEquals(asList(1, 2), asList(1, 2, 3).copyOfRange(0, 2));
+    }
+
+    /** */
     private GridIntList asList(int... vals) {
         return new GridIntList(vals);
     }

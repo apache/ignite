@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.cache.RemoveAllDeadlockTest;
+import org.apache.ignite.configuration.IgniteConfigurationTest;
 import org.apache.ignite.events.ClusterActivationStartedEventTest;
 import org.apache.ignite.failure.ExchangeTaskHandlerWaitingForTasksTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
@@ -227,6 +228,8 @@ import org.junit.runners.Suite;
 
     FreeListCutTailDifferentGcTest.class,
     MdcCacheReadRequestsRoutingTest.class,
+
+    IgniteConfigurationTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }

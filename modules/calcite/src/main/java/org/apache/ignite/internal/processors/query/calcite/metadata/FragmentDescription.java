@@ -24,7 +24,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Query fragment description. <br>
+ * Has to be prepared to send to another node and restored after receiving from another node.
+ *
+ * @see #preparedToSend()
+ * @see #received()
+ */
 public class FragmentDescription implements Message {
     /** */
     @Order(0)
@@ -42,6 +48,9 @@ public class FragmentDescription implements Message {
     @Order(3)
     @Nullable ColocationGroup target;
 
+    /** Transient flag of {@link #received()}-once-invoked. */
+    boolean received;
+
     /** */
     public FragmentDescription() {
         // No-op.
@@ -56,6 +65,30 @@ public class FragmentDescription implements Message {
 
         if (target != null)
             this.target = target.explicitMapping();
+    }
+
+    /** Prepares this fragment description to send to another node. */
+    public FragmentDescription preparedToSend() {
+        if (target != null)
+            target.prepareToSend();
+
+        mapping.colocationGrps.forEach(ColocationGroup::prepareToSend);
+
+        return this;
+    }
+
+    /** Properly unwraps fragment description after receiving from another node. */
+    public FragmentDescription received() {
+        if (!received) {
+            if (target != null)
+                target.afterReceive();
+
+            mapping.colocationGrps.forEach(ColocationGroup::afterReceive);
+
+            received = true;
+        }
+
+        return this;
     }
 
     /** */

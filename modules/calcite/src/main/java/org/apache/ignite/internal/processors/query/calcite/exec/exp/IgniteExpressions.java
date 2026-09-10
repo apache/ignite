@@ -32,13 +32,13 @@ public class IgniteExpressions {
     /** Make binary expression with arithmetic operations override. */
     public static Expression makeBinary(ExpressionType binaryType, Expression left, Expression right) {
         switch (binaryType) {
-            case Add:
+            case Add, AddChecked:
                 return addExact(left, right);
-            case Subtract:
+            case Subtract, SubtractChecked:
                 return subtractExact(left, right);
-            case Multiply:
+            case Multiply, MultiplyChecked:
                 return multiplyExact(left, right);
-            case Divide:
+            case Divide, DivideChecked:
                 return divideExact(left, right);
             default:
                 return Expressions.makeBinary(binaryType, left, right);

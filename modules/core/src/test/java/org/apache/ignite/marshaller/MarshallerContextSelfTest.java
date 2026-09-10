@@ -266,7 +266,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
     /** */
     private @NotNull MarshallerContextImpl marshallerContext() throws IgniteCheckedException {
-        MarshallerContextImpl mctx = new MarshallerContextImpl(null, null);
+        MarshallerContextImpl mctx = new MarshallerContextImpl(null);
 
         mctx.setMarshallerMappingFileStoreDir(sharedFileTree().marshaller());
         mctx.onMarshallerProcessorStarted(ctx, null);

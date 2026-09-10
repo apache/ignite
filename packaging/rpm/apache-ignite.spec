@@ -19,7 +19,7 @@ Group:            Development/System
 License:          ASF 2.0
 URL:              https://ignite.apache.org/
 Source:           %{name}-%{version}-bin.zip
-Requires:         java-11, chkconfig
+Requires:         java-17, chkconfig
 Requires(pre):    shadow-utils
 Provides:         %{name}
 AutoReq:          no

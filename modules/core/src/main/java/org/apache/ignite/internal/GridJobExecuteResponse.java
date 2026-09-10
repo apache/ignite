@@ -19,24 +19,17 @@ package org.apache.ignite.internal;
 
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse implements Message {
+public class GridJobExecuteResponse implements DeferredUnmarshalMessage {
     /** */
     @Order(0)
     UUID nodeId;
@@ -49,27 +42,32 @@ public class GridJobExecuteResponse implements Message {
     @Order(2)
     IgniteUuid jobId;
 
-    /** Job result exception call holder. */
+    /** */
+    @GridToStringExclude
+    @Marshalled("gridExBytes")
+    @Nullable IgniteException gridEx;
+
+    /** */
     @Order(3)
     @Nullable byte[] gridExBytes;
 
     /** */
-    private IgniteException gridEx;
+    @GridToStringExclude
+    @Marshalled("resBytes")
+    @Nullable Object res;
 
-    /** Job result serialization call holder. */
+    /** */
     @Order(4)
     @Nullable byte[] resBytes;
 
     /** */
-    private @Nullable Object res;
+    @GridToStringExclude
+    @Marshalled("jobAttrsBytes")
+    Map<Object, Object> jobAttrs;
 
     /** */
-    /** Job attributes serialization call holder. */
     @Order(5)
     byte[] jobAttrsBytes;
-
-    /** */
-    private Map<Object, Object> jobAttrs;
 
     /** */
     @Order(6)
@@ -144,21 +142,9 @@ public class GridJobExecuteResponse implements Message {
         return res;
     }
 
-    /**
-     * @return Job exception.
-     */
+    /** @return Job exception. */
     @Nullable public IgniteException exception() {
         return gridEx;
-    }
-
-    /** */
-    public void exceptionBytes(@Nullable byte[] gridExBytes) {
-        this.gridExBytes = gridExBytes;
-    }
-
-    /** */
-    public @Nullable byte[] exceptionBytes() {
-        return gridExBytes;
     }
 
     /**
@@ -211,100 +197,10 @@ public class GridJobExecuteResponse implements Message {
         return retry;
     }
 
-    /**
-     * Serializes user data to byte[] with provided marshaller.
-     * Erases non-marshalled data like {@link #getJobAttributes()} or {@link #getJobResult()}.
-     */
-    public void marshallUserData(Marshaller marsh, @Nullable IgniteLogger log) throws IgniteCheckedException {
-        if (res != null) {
-            try {
-                resBytes = U.marshal(marsh, res);
-            }
-            catch (IgniteCheckedException e) {
-                resBytes = null;
-
-                String msg = "Failed to serialize job response [nodeId=" + nodeId +
-                    ", ses=" + sesId + ", jobId=" + jobId +
-                    ", resCls=" + (res == null ? null : res.getClass()) + ']';
-
-                wrapSerializationError(e, msg, log);
-            }
-
-            res = null;
-        }
-
-        if (!F.isEmpty(jobAttrs)) {
-            try {
-                jobAttrsBytes = U.marshal(marsh, jobAttrs);
-            }
-            catch (IgniteCheckedException e) {
-                jobAttrsBytes = null;
-
-                String msg = "Failed to serialize job attributes [nodeId=" + nodeId +
-                    ", ses=" + sesId + ", jobId=" + jobId +
-                    ", attrs=" + jobAttrs + ']';
-
-                wrapSerializationError(e, msg, log);
-            }
-
-            jobAttrs = null;
-        }
-
-        if (gridEx != null) {
-            try {
-                gridExBytes = U.marshal(marsh, gridEx);
-            }
-            catch (IgniteCheckedException e) {
-                String msg = "Failed to serialize job exception [nodeId=" + nodeId +
-                    ", ses=" + sesId + ", jobId=" + jobId +
-                    ", msg=\"" + e.getMessage() + "\"]";
-
-                gridEx = new IgniteException(msg);
-
-                U.error(log, msg, e);
-
-                gridExBytes = U.marshal(marsh, gridEx);
-            }
-
-            gridEx = null;
-        }
+    /** @return A copy carrying {@code err} and no payload. */
+    public GridJobExecuteResponse withError(IgniteException err) {
+        return new GridJobExecuteResponse(nodeId, sesId, jobId, err, null, null, isCancelled, retry);
     }
-
-    /**
-     * Deserializes user data from byte[] with provided marshaller and class loader.
-     * Erases marshalled data like {@link #jobAttrubutesBytes()} or {@link #jobResultBytes()}.
-     */
-    public void unmarshallUserData(Marshaller marshaller, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (jobAttrsBytes != null) {
-            jobAttrs = U.unmarshal(marshaller, jobAttrsBytes, clsLdr);
-
-            jobAttrsBytes = null;
-        }
-
-        if (resBytes != null) {
-            res = U.unmarshal(marshaller, resBytes, clsLdr);
-
-            resBytes = null;
-        }
-
-        if (gridExBytes != null) {
-            gridEx = U.unmarshal(marshaller, gridExBytes, clsLdr);
-
-            gridExBytes = null;
-        }
-    }
-
-    /** */
-    private void wrapSerializationError(IgniteCheckedException e, String msg, @Nullable IgniteLogger log) {
-        if (gridEx != null)
-            gridEx.addSuppressed(e);
-        else
-            gridEx = U.convertException(e);
-
-        if (log != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
-            U.error(log, msg, e);
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

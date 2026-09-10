@@ -24,7 +24,7 @@ applications for Linux and macOS, as well as Windows.
 *Requirements:*
 
 * https://www.microsoft.com/net/download/[.NET Core SDK 2.0+, window=_blank]
-* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 11+, window=_blank] (macOS requires JDK, otherwise JRE works)
+* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 17+, window=_blank] (macOS requires JDK, otherwise JRE works)
 
 *Running Examples*
 https://ignite.apache.org/download.cgi#binaries[Binary distribution, window=_blank] includes .NET Core examples:

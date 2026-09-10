@@ -28,7 +28,7 @@ public class IgniteIoTestSendRandomBenchmark extends IgniteIoTestAbstractBenchma
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ClusterNode node = targetNodes.get(nextRandom(targetNodes.size()));
 
-        ignite.sendIoTest(node, null, false).get();
+        ignite.context().io().ioTest().sendIoTest(node, null, false).get();
 
         return true;
     }

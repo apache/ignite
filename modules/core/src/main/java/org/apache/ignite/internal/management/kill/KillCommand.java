@@ -24,6 +24,7 @@ public class KillCommand extends CommandRegistryImpl {
     /** */
     public KillCommand() {
         super(
+            new KillAllCommand(),
             new KillComputeCommand(),
             new KillServiceCommand(),
             new KillTransactionCommand(),

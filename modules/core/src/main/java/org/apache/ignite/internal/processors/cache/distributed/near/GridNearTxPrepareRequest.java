@@ -113,7 +113,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         AffinityTopologyVersion topVer,
         GridNearTxLocal tx,
         long timeout,
-        Collection<IgniteTxEntry> reads,
+        @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
@@ -127,14 +127,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean allowWaitTopFut,
         boolean recovery
     ) {
-        super(tx,
-            timeout,
-            reads,
-            writes,
-            txNodes,
-            retVal,
-            last,
-            onePhaseCommit);
+        super(tx, timeout, reads, writes, txNodes, retVal, last, onePhaseCommit);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;
@@ -265,11 +258,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         return cp;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean transferExpiryPolicy() {
-        return true;
-    }
-
     /**
      * Sets flag mask.
      *
@@ -292,7 +280,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return U.safeAbs(version().hashCode());
     }
 

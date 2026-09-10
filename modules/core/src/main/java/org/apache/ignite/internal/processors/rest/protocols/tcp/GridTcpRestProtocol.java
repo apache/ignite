@@ -27,7 +27,6 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
@@ -46,8 +46,6 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
@@ -87,7 +85,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
-        GridNioParser parser = new GridTcpRestParser(false, ctx.marshallerContext().jdkMarshaller());
+        GridNioParser parser = new GridTcpRestParser(false);
 
         try {
             host = resolveRestTcpHost(ctx.config());
@@ -148,15 +146,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         marshMap.put(GridClientOptimizedMarshaller.ID, optMarsh);
         marshMap.put(GridClientZipOptimizedMarshaller.ID, new GridClientZipOptimizedMarshaller(optMarsh, providers));
-
-        try {
-            IgnitePredicate<String> clsFilter = MarshallerUtils.classNameFilter(getClass().getClassLoader());
-
-            marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller(clsFilter));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
 
         lsnr.marshallers(marshMap);
     }
@@ -208,13 +198,15 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             GridNioFilter[] filters;
 
+            MetricRegistryImpl mreg = ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME);
+
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(
+                GridNioSslFilter sslFilter = U.sslFilter(
                     sslCtx,
                     cfg.isDirectBuffer(),
                     ByteOrder.nativeOrder(),
                     log,
-                    ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME));
+                    mreg);
 
                 sslFilter.directMode(false);
 
@@ -232,7 +224,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             else
                 filters = new GridNioFilter[] { codec };
 
-            srv = GridNioServer.<GridClientMessage>builder()
+            GridNioServer.Builder<GridClientMessage> builder = GridNioServer.<GridClientMessage>builder()
                 .address(hostAddr)
                 .port(port)
                 .listener(lsnr)
@@ -247,9 +239,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .socketReceiveBufferSize(cfg.getReceiveBufferSize())
                 .sendQueueLimit(cfg.getSendQueueLimit())
                 .filters(filters)
-                .directMode(false)
-                .metricRegistry(ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME))
-                .build();
+                .directMode(false);
+
+            srv = U.setNioServerMetrics(builder, mreg).build();
+
+            U.registerNioServerMetrics(srv, filters, mreg);
 
             srv.idleTimeout(cfg.getIdleTimeout());
 

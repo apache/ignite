@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.calcite.plan.Context;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract query context.
@@ -32,7 +33,7 @@ public class AbstractQueryContext implements Context {
     }
 
     /** {@inheritDoc} */
-    @Override public <C> C unwrap(Class<C> aCls) {
+    @Override public <C> @Nullable C unwrap(Class<C> aCls) {
         if (aCls == getClass())
             return aCls.cast(this);
 

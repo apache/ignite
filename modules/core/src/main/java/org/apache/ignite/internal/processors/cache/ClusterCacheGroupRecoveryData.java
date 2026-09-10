@@ -24,19 +24,23 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ClusterCacheGroupRecoveryData implements Externalizable {
+public class ClusterCacheGroupRecoveryData implements Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long clusterBaselineTopologyVersion;
+    @Order(0)
+    long clusterBaselineTopVer;
 
     /** */
-    private Map<Integer, CacheGroupRecoveryState> grpStates;
+    @Order(1)
+    Map<Integer, CacheGroupRecoveryState> grpStates;
 
     /** */
     public ClusterCacheGroupRecoveryData() {
@@ -44,14 +48,14 @@ public class ClusterCacheGroupRecoveryData implements Externalizable {
     }
 
     /** */
-    public ClusterCacheGroupRecoveryData(long clusterBaselineTopologyVersion, Collection<CacheGroupContext> grps) {
-        this.clusterBaselineTopologyVersion = clusterBaselineTopologyVersion;
-        this.grpStates = grps.stream().collect(Collectors.toMap(CacheGroupContext::groupId, CacheGroupRecoveryState::new));
+    public ClusterCacheGroupRecoveryData(long clusterBaselineTopVer, Collection<CacheGroupContext> grps) {
+        this.clusterBaselineTopVer = clusterBaselineTopVer;
+        grpStates = grps.stream().collect(Collectors.toMap(CacheGroupContext::groupId, CacheGroupRecoveryState::new));
     }
 
     /** */
     public boolean isMoreRelevantThan(ClusterCacheGroupRecoveryData data) {
-        return clusterBaselineTopologyVersion > data.clusterBaselineTopologyVersion;
+        return clusterBaselineTopVer > data.clusterBaselineTopVer;
     }
 
     /** */
@@ -61,13 +65,13 @@ public class ClusterCacheGroupRecoveryData implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(clusterBaselineTopologyVersion);
+        out.writeLong(clusterBaselineTopVer);
         U.writeMap(out, grpStates);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        clusterBaselineTopologyVersion = in.readLong();
+        clusterBaselineTopVer = in.readLong();
         grpStates = U.readHashMap(in);
     }
 }

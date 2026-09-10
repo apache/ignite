@@ -82,7 +82,10 @@ public interface GridComponent {
         PERFORMANCE_STAT_PROC,
 
         /** Event storage manager. */
-        EVENT_MGR;
+        EVENT_MGR,
+
+        /** Rolling upgrade processor. */
+        ROLLING_UPGRADE_PROC;
 
         /** Cached values array. */
         public static final DiscoveryDataExchangeType[] VALUES = values();

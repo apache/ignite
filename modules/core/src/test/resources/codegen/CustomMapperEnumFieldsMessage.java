@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -24,6 +25,10 @@ public class CustomMapperEnumFieldsMessage implements Message {
     @Order(0)
     @CustomMapper("org.apache.ignite.internal.TransactionIsolationEnumMapper")
     TransactionIsolation txMode;
+
+    @Order(1)
+    @CustomMapper("org.apache.ignite.internal.TransactionIsolationEnumMapper")
+    Collection<Collection<TransactionIsolation>> isolations;
 
     public short directType() {
         return 0;

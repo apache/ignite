@@ -36,26 +36,6 @@
 
     <profiles>
         <profile>
-            <id>java-11+</id>
-            <activation>
-                <jdk>[11,15)</jdk>
-            </activation>
-            <properties>
-                <src.javaspecific.dir>src/main/java11</src.javaspecific.dir>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>java-15+</id>
-            <activation>
-                <jdk>[15,)</jdk>
-            </activation>
-            <properties>
-                <src.javaspecific.dir>src/main/java15</src.javaspecific.dir>
-            </properties>
-        </profile>
-
-        <profile>
             <!--
             This profile is used to provide a check that all tests are defined in at least one suite.
             Here we provide a custom surefire test provider to collect info about tests and suites.
@@ -103,26 +83,6 @@
         </resources>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${build.helper.maven.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>add-source</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${src.javaspecific.dir}</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>${maven.deploy.plugin.version}</version>
@@ -165,13 +125,13 @@
         <dependency>
             <groupId>org.apache.ant</groupId>
             <artifactId>ant</artifactId>
-            <version>1.10.13</version>
+            <version>1.10.17</version>
         </dependency>
 
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.13.1</version>
             <scope>compile</scope>
         </dependency>
 

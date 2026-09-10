@@ -85,6 +85,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     /** */
     private final BaseQueryContext ctx;
 
+    /** Original query context. */
+    private final QueryContext qryCtx;
+
     /** */
     private final long plannerTimeout;
 
@@ -130,6 +133,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         );
 
         this.sql = sql;
+        this.qryCtx = qryCtx;
         this.params = params;
 
         startTs = U.currentTimeMillis();
@@ -185,6 +189,39 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     /** */
     public BaseQueryContext context() {
         return ctx;
+    }
+
+    /**
+     * Creates a query for a repeated execution of the same plan.
+     *
+     * <p>The new query preserves the complete context of this query, including the user transaction,
+     * and uses only the remaining part of the original query timeout.
+     */
+    public RootQuery<RowT> retryQuery() {
+        long remainingTime = remainingTime();
+
+        if (remainingTime == 0) {
+            throw new IgniteSQLException(
+                "The query was cancelled due to timeout",
+                IgniteQueryErrorCode.QUERY_CANCELED,
+                new QueryCancelledException());
+        }
+
+        return new RootQuery<>(
+            sql,
+            ctx.schema(),
+            params,
+            QueryContext.of(cancel, qryCtx),
+            ctx.isLocal(),
+            ctx.isForcedJoinOrder(),
+            ctx.partitions(),
+            exch,
+            unregister,
+            log,
+            plannerTimeout,
+            remainingTime,
+            initiatorId
+        );
     }
 
     /** */

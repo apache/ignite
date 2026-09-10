@@ -384,7 +384,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
                 }
             }, producerCnt, "producer-thread");
 
-            long endTime = System.currentTimeMillis() + 60 * 1000L;
+            long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60 * 1000, 10_000);
 
             while (System.currentTimeMillis() < endTime && ex.get() == null) {
                 while (restartBarrier.getNumberWaiting() != producerCnt && ex.get() == null)
@@ -487,7 +487,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
 
             Random rnd = new Random();
 
-            long endTime = System.currentTimeMillis() + 60 * 1000L;
+            long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60 * 1000, 10_000);
 
             while (System.currentTimeMillis() < endTime && ex.get() == null) {
                 try {
@@ -591,7 +591,7 @@ public class SegmentedRingByteBufferTest extends GridCommonAbstractTest {
 
             Random rnd = new Random();
 
-            long endTime = System.currentTimeMillis() + 60 * 1000L;
+            long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60 * 1000, 10_000);
 
             while (System.currentTimeMillis() < endTime && ex.get() == null) {
                 try {

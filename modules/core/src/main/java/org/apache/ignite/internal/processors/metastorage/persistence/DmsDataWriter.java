@@ -140,29 +140,29 @@ public class DmsDataWriter extends IgniteAsyncObjectHandler<RunnableFuture<?>> {
     }
 
     /** */
-    public void addUpdateTask(DistributedMetaStorageClusterNodeData fullNodeData) {
-        assert fullNodeData.fullData != null;
-        assert fullNodeData.hist != null;
-
+    public void addUpdateTask(
+        DistributedMetaStorageVersion ver,
+        DistributedMetaStorageHistoryItem[] hist,
+        String[] newDataKeys,
+        byte[][] newDataVals
+    ) {
         addToQueue(newDmsTask(() -> {
             metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);
 
             doCleanup();
 
-            for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
-                metastorage.writeRaw(localKey(item.key), item.valBytes);
+            for (int i = 0; i < newDataKeys.length; ++i)
+                metastorage.writeRaw(localKey(newDataKeys[i]), newDataVals[i]);
 
-            for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
-                DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
+            for (int i = 0, len = hist.length; i < len; i++) {
+                long histItemVer = ver.id() + i - (len - 1);
 
-                long histItemVer = fullNodeData.ver.id() + i - (len - 1);
-
-                metastorage.write(historyItemKey(histItemVer), histItem);
+                metastorage.write(historyItemKey(histItemVer), hist[i]);
             }
 
-            metastorage.write(versionKey(), fullNodeData.ver);
+            metastorage.write(versionKey(), ver);
 
-            workerDmsVer = fullNodeData.ver;
+            workerDmsVer = ver;
 
             metastorage.remove(cleanupGuardKey());
         }));

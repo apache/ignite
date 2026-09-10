@@ -16,3 +16,4 @@
 -r requirements.txt
 pytest==6.2.5
 flake8==6.1.0
+tox

@@ -274,7 +274,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         List<Integer> primaryKeys = primaryKeys(prim.cache(DEFAULT_CACHE_NAME), 10_000);
 
-        long stop = U.currentTimeMillis() + 30_000;
+        long stop = U.currentTimeMillis() + GridTestUtils.SF.applyLB(30_000, 10_000);
 
         Random r = new Random();
 
@@ -326,7 +326,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertFalse(backups.contains(prim));
 
-        long stop = U.currentTimeMillis() + 30_000;
+        long stop = U.currentTimeMillis() + GridTestUtils.SF.applyLB(30_000, 10_000);
 
         long seed = System.nanoTime();
 
@@ -390,7 +390,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertFalse(backups.contains(prim));
 
-        long stop = U.currentTimeMillis() + 30_000;
+        long stop = U.currentTimeMillis() + GridTestUtils.SF.applyLB(30_000, 10_000);
 
         long seed = System.nanoTime();
 

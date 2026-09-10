@@ -52,7 +52,6 @@ public class InetSocketAddressMessage extends InetAddressMessage {
         return port;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(InetSocketAddressMessage.class, this);

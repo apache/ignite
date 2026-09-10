@@ -200,7 +200,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return U.safeAbs(version().hashCode());
     }
 

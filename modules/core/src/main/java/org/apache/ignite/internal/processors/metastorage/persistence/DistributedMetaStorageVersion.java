@@ -67,7 +67,7 @@ public final class DistributedMetaStorageVersion extends IgniteDataTransferObjec
      * @param id Id.
      * @param hash Hash.
      */
-    private DistributedMetaStorageVersion(long id, long hash) {
+    DistributedMetaStorageVersion(long id, long hash) {
         this.id = id;
         this.hash = hash;
     }

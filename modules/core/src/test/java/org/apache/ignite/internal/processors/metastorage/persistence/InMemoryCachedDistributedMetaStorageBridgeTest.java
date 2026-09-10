@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.junit.Before;
@@ -33,12 +34,14 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriter.DUMMY_VALUE;
 import static org.apache.ignite.testframework.junits.common.GridCommonAbstractTest.TEST_JDK_MARSHALLER;
+import static org.apache.ignite.testframework.junits.common.GridCommonAbstractTest.assertEqualsMaps;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class InMemoryCachedDistributedMetaStorageBridgeTest {
@@ -101,13 +104,13 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
         bridge.write("key2", valBytes2);
         bridge.write("key1", valBytes1);
 
-        DistributedMetaStorageKeyValuePair[] exp = {
-            new DistributedMetaStorageKeyValuePair("key1", valBytes1),
-            new DistributedMetaStorageKeyValuePair("key2", valBytes2),
-            new DistributedMetaStorageKeyValuePair("key3", valBytes3)
-        };
+        Map<String, byte[]> exp = Map.of(
+            "key1", valBytes1,
+            "key2", valBytes2,
+            "key3", valBytes3
+        );
 
-        assertArrayEquals(exp, bridge.localFullData());
+        assertEqualsMaps(exp, bridge.localFullData());
     }
 
     /** */
@@ -117,9 +120,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
 
         bridge.writeFullNodeData(new DistributedMetaStorageClusterNodeData(
             DistributedMetaStorageVersion.INITIAL_VERSION,
-            new DistributedMetaStorageKeyValuePair[] {
-                new DistributedMetaStorageKeyValuePair("newKey", marshaller.marshal("newVal"))
-            },
+            Map.of("newKey", marshaller.marshal("newVal")),
             DistributedMetaStorageHistoryItem.EMPTY_ARRAY,
             null
         ));
@@ -140,7 +141,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
 
         bridge.readInitialData(metastorage);
 
-        assertArrayEquals(DistributedMetaStorageKeyValuePair.EMPTY_ARRAY, bridge.localFullData());
+        assertTrue(bridge.localFullData().isEmpty());
     }
 
     /** */
@@ -156,7 +157,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
 
         bridge.readInitialData(metastorage);
 
-        assertEquals(1, bridge.localFullData().length);
+        assertEquals(1, bridge.localFullData().size());
 
         assertEquals("val1", bridge.read("key1"));
     }
@@ -175,7 +176,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
 
         bridge.readInitialData(metastorage);
 
-        assertEquals(1, bridge.localFullData().length);
+        assertEquals(1, bridge.localFullData().size());
 
         assertEquals("val1", bridge.read("key1"));
     }
@@ -195,7 +196,7 @@ public class InMemoryCachedDistributedMetaStorageBridgeTest {
 
         bridge.readInitialData(metastorage);
 
-        assertEquals(1, bridge.localFullData().length);
+        assertEquals(1, bridge.localFullData().size());
 
         assertEquals("val1", bridge.read("key1"));
     }

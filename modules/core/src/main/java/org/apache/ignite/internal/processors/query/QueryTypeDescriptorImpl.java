@@ -34,6 +34,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -405,13 +406,17 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
-     * Chedk if particular field exists.
+     * Checks whether the specified field is registered or is a system field.
      *
-     * @param field Field.
-     * @return {@code True} if exists.
+     * <p>Registered fields are matched case-sensitively; system fields ({@code _KEY}, {@code _VAL}, and {@code _VER})
+     * are matched case-insensitively.
+     *
+     * @param field Field name to check.
+     * @return {@code true} if the field exists; otherwise {@code false}.
      */
     public boolean hasField(String field) {
-        return props.containsKey(field) || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(field);
+        return props.containsKey(field)
+            || QueryUtils.isSystemFieldNameIgnoreCase(field);
     }
 
     /**
@@ -796,7 +801,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
         }
         else if (cacheObjects.typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
-            final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+            final Class<?> cls = ClassLoaderUtils.classForNameWithPrimitives(((BinaryObject)val).type().typeName());
 
             return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
         }

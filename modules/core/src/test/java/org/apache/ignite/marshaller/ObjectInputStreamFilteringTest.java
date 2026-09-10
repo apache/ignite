@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller;
 import java.util.HashMap;
 import java.util.Map;
 import javax.management.BadAttributeValueExpException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
@@ -28,14 +27,11 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 
 /** */
 public class ObjectInputStreamFilteringTest extends GridCommonAbstractTest {
@@ -101,29 +97,6 @@ public class ObjectInputStreamFilteringTest extends GridCommonAbstractTest {
                 ClientConnectionException.class);
 
             assertTrue(logLsnr.check());
-        }
-    }
-
-    /** */
-    @Test
-    public void testMultipleIgniteInstancesWithDifferentBlackLists() throws Exception {
-        startGrid(0);
-
-        String blackListPath = U.resolveIgnitePath("modules/core/src/test/config/class_list_exploit_included.txt").getPath();
-
-        System.setProperty(IGNITE_MARSHALLER_BLACKLIST, blackListPath);
-
-        try {
-            GridTestUtils.assertThrowsAnyCause(
-                log,
-                () -> startGrid(1),
-                IgniteCheckedException.class,
-                "Failed to autoconfigure Ignite Object Input Filter for the current JVM because it was already set" +
-                    " by another Ignite instance which is running in the same JVM"
-            );
-        }
-        finally {
-            System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
         }
     }
 

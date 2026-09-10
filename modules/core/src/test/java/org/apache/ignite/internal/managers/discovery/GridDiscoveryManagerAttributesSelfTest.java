@@ -23,13 +23,11 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -46,9 +44,6 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
     /** */
     private static boolean p2pEnabled;
 
-    /** Security enabled. */
-    private static boolean secEnabled;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -56,9 +51,6 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
-
-        if (secEnabled)
-            cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
 
         return cfg;
     }
@@ -227,91 +219,6 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
         }
         finally {
             stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSecurityCompatibilityEnabled() throws Exception {
-        secEnabled = true;
-
-        try {
-            doTestSecurityCompatibilityEnabled(true, null, true);
-            doTestSecurityCompatibilityEnabled(true, false, true);
-            doTestSecurityCompatibilityEnabled(false, true, true);
-            doTestSecurityCompatibilityEnabled(null, true, true);
-
-            doTestSecurityCompatibilityEnabled(null, null, false);
-            doTestSecurityCompatibilityEnabled(null, false, false);
-            doTestSecurityCompatibilityEnabled(false, false, false);
-            doTestSecurityCompatibilityEnabled(false, null, false);
-            doTestSecurityCompatibilityEnabled(true, true, false);
-        }
-        finally {
-            secEnabled = false;
-        }
-    }
-
-    /**
-     * @param first Service compatibility enabled flag for first node.
-     * @param second Service compatibility enabled flag for second node.
-     * @param fail Fail flag.
-     * @throws Exception If failed.
-     */
-    private void doTestSecurityCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
-        doTestCompatibilityEnabled(IGNITE_SECURITY_COMPATIBILITY_MODE, first, second, fail);
-    }
-
-    /**
-     * @param prop System property.
-     * @param first Service compatibility enabled flag for first node.
-     * @param second Service compatibility enabled flag for second node.
-     * @param fail Fail flag.
-     * @throws Exception If failed.
-     */
-    private void doTestCompatibilityEnabled(String prop, Object first, Object second, boolean fail) throws Exception {
-        String backup = System.getProperty(prop);
-        try {
-            if (first != null)
-                System.setProperty(prop, String.valueOf(first));
-            else
-                System.clearProperty(prop);
-
-            IgniteEx ignite = startGrid(0);
-
-            checkIsClientFlag(ignite);
-
-            // Ignore if disabled security plugin used.
-            if (IGNITE_SECURITY_COMPATIBILITY_MODE.equals(prop) && !ignite.context().security().enabled())
-                return;
-
-            if (second != null)
-                System.setProperty(prop, String.valueOf(second));
-            else
-                System.clearProperty(prop);
-
-            try {
-                IgniteEx g = startClientGrid(1);
-
-                checkIsClientFlag(g);
-
-                if (fail)
-                    fail("Node must not join");
-            }
-            catch (Exception e) {
-                if (!fail)
-                    fail("Node must join: " + e.getMessage());
-            }
-        }
-        finally {
-            stopAllGrids();
-
-            if (backup != null)
-                System.setProperty(prop, backup);
-            else
-                System.clearProperty(prop);
         }
     }
 

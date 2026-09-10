@@ -1,0 +1,246 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.query.continuous;
+
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.cache.Cache;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+
+/**
+ * Tests interaction between local continuous queries created with {@link ContinuousQuery#setLocal(boolean)} set to
+ * {@code true} and transaction rollback counter cleanup.
+ */
+@RunWith(Parameterized.class)
+public class LocalContinuousQueryWithNodeFailureTest extends GridCommonAbstractTest {
+    /** */
+    private static final int NODE_CNT = 3;
+
+    /** */
+    private static final int TX_THREADS = 10;
+
+    /** */
+    private static final int KEYS_PER_TX = 10;
+
+    /** */
+    @Parameterized.Parameter
+    public CacheMode cacheMode;
+
+    /** */
+    @Parameterized.Parameters(name = "cacheMode={0}")
+    public static Object[] params() {
+        return new Object[] {REPLICATED, PARTITIONED};
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setCacheMode(cacheMode)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        if (cacheMode == PARTITIONED)
+            cacheCfg.setBackups(NODE_CNT - 1);
+
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)))
+            .setFailureHandler(new StopNodeFailureHandler())
+            .setCacheConfiguration(cacheCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        super.afterTest();
+    }
+
+    /**
+     * Checks that local and distributed continuous queries behave correctly when transaction rollback closes
+     * partition update counter gaps after a node failure.
+     */
+    @Test
+    public void testTransactionalCache() throws Exception {
+        startGrids(NODE_CNT).cluster().state(ClusterState.ACTIVE);
+
+        awaitPartitionMapExchange();
+
+        AtomicBoolean stopTxLoad = new AtomicBoolean();
+        AtomicBoolean nodeFailed = new AtomicBoolean();
+
+        AtomicInteger updatesDistrBeforeFail = new AtomicInteger();
+        AtomicInteger updatesLocBeforeFail = new AtomicInteger();
+
+        AtomicInteger updatesDistrAfterFail = new AtomicInteger();
+        AtomicInteger updatesLocAfterFail = new AtomicInteger();
+
+        IgniteCache<Object, Object> cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        IgniteInternalFuture<?> txLoadFut = launchTxLoad(grid(1), cache1, stopTxLoad);
+
+        try (
+            QueryCursor<Cache.Entry<Object, Object>> locCur = cache0.query(
+                buildContinuousQuery(true, nodeFailed, updatesLocBeforeFail, updatesLocAfterFail));
+
+            QueryCursor<Cache.Entry<Object, Object>> distrCur = cache0.query(
+                buildContinuousQuery(false, nodeFailed, updatesDistrBeforeFail, updatesDistrAfterFail))
+        ) {
+            assertTrue(
+                String.format("Failed to receive expected updates before node failure [locUpdates=%s, distrUpdates=%s]",
+                    updatesLocBeforeFail.get(), updatesDistrBeforeFail.get()),
+                waitForCondition(() -> updatesLocBeforeFail.get() > 0 && updatesDistrBeforeFail.get() > 0,
+                    getTestTimeout() / 2)
+            );
+
+            failNode(NODE_CNT - 1);
+
+            waitForTopology(NODE_CNT - 1);
+
+            nodeFailed.set(true);
+
+            assertTrue(
+                String.format("Failed to receive expected updates after node failure [locUpdates=%s, distrUpdates=%s]",
+                    updatesLocAfterFail.get(), updatesDistrAfterFail.get()),
+                waitForCondition(() -> updatesLocAfterFail.get() > 0 && updatesDistrAfterFail.get() > 0,
+                    getTestTimeout() / 2)
+            );
+
+            for (int i : IntStream.range(0, NODE_CNT - 1).toArray()) {
+                IgniteEx grid = grid(i);
+
+                assertFalse("Grid " + i + " is stopping", grid.context().isStopping());
+                assertNull("Failure context is not null for grid " + i, grid.context().failure().failureContext());
+            }
+        }
+        finally {
+            stopTxLoad.set(true);
+
+            txLoadFut.get();
+        }
+    }
+
+    /** */
+    private IgniteInternalFuture<?> launchTxLoad(
+        IgniteEx grid,
+        IgniteCache<Object, Object> cache,
+        AtomicBoolean stopTxLoad
+    ) {
+        return GridTestUtils.runMultiThreadedAsync(() -> {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            while (!stopTxLoad.get()) {
+                try (
+                    Transaction tx = grid.transactions().txStart(
+                        TransactionConcurrency.PESSIMISTIC,
+                        TransactionIsolation.REPEATABLE_READ)
+                ) {
+                    Map<Integer, Object> vals = rnd.ints()
+                        .limit(KEYS_PER_TX)
+                        .boxed()
+                        .collect(Collectors.toMap(
+                            Function.identity(),
+                            Function.identity(),
+                            (a, b) -> a,
+                            TreeMap::new
+                        ));
+
+                    cache.putAll(vals);
+
+                    tx.commit();
+                }
+                catch (Exception ignore) {
+                    // No-op.
+                }
+            }
+        }, TX_THREADS, "test-tx");
+    }
+
+    /** */
+    private ContinuousQuery<Object, Object> buildContinuousQuery(
+        boolean locOnly,
+        AtomicBoolean nodeFailed,
+        AtomicInteger cntrBeforeFail,
+        AtomicInteger cntrAfterFail
+    ) {
+        return new ContinuousQuery<>()
+            .setLocal(locOnly)
+            .setLocalListener(new CacheEntryUpdatedListener<>() {
+                @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
+                    for (Object ignored : iterable) {
+                        if (!nodeFailed.get())
+                            cntrBeforeFail.incrementAndGet();
+                        else
+                            cntrAfterFail.incrementAndGet();
+                    }
+
+                    doSleep(1);
+                }
+            });
+    }
+
+    /** */
+    private void failNode(int lastNodeIdx) {
+        ((TcpDiscoverySpi)grid(lastNodeIdx).configuration().getDiscoverySpi()).simulateNodeFailure();
+    }
+}

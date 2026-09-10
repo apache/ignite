@@ -19,25 +19,23 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache start/stop request.
  */
-public class DynamicCacheChangeRequest implements MarshallableMessage, Serializable {
+public class DynamicCacheChangeRequest implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +54,8 @@ public class DynamicCacheChangeRequest implements MarshallableMessage, Serializa
 
     /** Cache start configuration. */
     @GridToStringExclude
-    private CacheConfiguration<?, ?> startCfg;
+    @Marshalled("cfgBytes")
+    CacheConfiguration<?, ?> startCfg;
 
     /** Bytes of {@link #startCfg}. */
     @Order(3)
@@ -72,7 +71,8 @@ public class DynamicCacheChangeRequest implements MarshallableMessage, Serializa
 
     /** Near cache configuration. */
     @GridToStringExclude
-    private NearCacheConfiguration<?, ?> nearCacheCfg;
+    @Marshalled("nearCfgBytes")
+    NearCacheConfiguration<?, ?> nearCacheCfg;
 
     /** Bytes of {@link #nearCacheCfg}. */
     @Order(6)
@@ -123,6 +123,7 @@ public class DynamicCacheChangeRequest implements MarshallableMessage, Serializa
     boolean resetLostPartitions;
 
     /** Dynamic schema. */
+    @Marshalled("schemaBytes")
     QuerySchema schema;
 
     /** Bytes of {@link #schema}. */
@@ -164,32 +165,6 @@ public class DynamicCacheChangeRequest implements MarshallableMessage, Serializa
         this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        cfgBytes = U.marshal(marsh, startCfg);
-
-        if (nearCacheCfg != null)
-            nearCfgBytes = U.marshal(marsh, nearCacheCfg);
-
-        if (schema != null)
-            schemaBytes = U.marshal(marsh, schema);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        startCfg = U.unmarshal(marsh, cfgBytes, clsLdr);
-
-        if (nearCfgBytes != null)
-            nearCacheCfg = U.unmarshal(marsh, nearCfgBytes, clsLdr);
-
-        if (schemaBytes != null)
-            schema = U.unmarshal(marsh, schemaBytes, clsLdr);
-
-        cfgBytes = null;
-        nearCfgBytes = null;
-        schemaBytes = null;
     }
 
     /**

@@ -365,7 +365,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+        SqlValidator validator = createSqlValidator(catalogReader);
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
@@ -423,10 +423,19 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return w.toString();
     }
 
+    /** Returns whether the SELECT changes row cardinality using aggregation. */
+    @SuppressWarnings("deprecation")
+    public boolean isAggregate(SqlSelect select, @Nullable SqlNodeList orderList) {
+        SqlValidator validator = validator();
+
+        return validator.isAggregate(select)
+            || (orderList != null && validator.isAggregate(orderList));
+    }
+
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+            validator = createSqlValidator();
 
         return validator;
     }
@@ -797,5 +806,22 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             super.checkCancel();
         }
+    }
+
+    /** */
+    private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
+        return new IgniteSqlValidator(
+            operatorTbl,
+            catalogReader,
+            typeFactory,
+            validatorCfg,
+            ctx.parameters(),
+            ctx.unwrap(IgniteSqlSemantics.class)
+        );
+    }
+
+    /** */
+    private SqlValidator createSqlValidator() {
+        return createSqlValidator(catalogReader);
     }
 }

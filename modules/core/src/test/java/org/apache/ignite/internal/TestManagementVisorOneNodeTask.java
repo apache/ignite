@@ -26,12 +26,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<String, Object> {
+public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<Object, Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorValidOneNodeJob job(String arg) {
+    @Override protected VisorValidOneNodeJob job(Object arg) {
         return new VisorValidOneNodeJob(arg, debug);
     }
 
@@ -43,7 +43,7 @@ public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<String, Obj
     /**
      * Valid Management one node visor job.
      */
-    private static class VisorValidOneNodeJob extends VisorJob<String, Object> {
+    private static class VisorValidOneNodeJob extends VisorJob<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -51,12 +51,12 @@ public class TestManagementVisorOneNodeTask extends VisorOneNodeTask<String, Obj
          * @param arg Argument.
          * @param debug Debug flag.
          */
-        protected VisorValidOneNodeJob(String arg, boolean debug) {
+        protected VisorValidOneNodeJob(Object arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Object run(String arg) {
+        @Override protected Object run(Object arg) {
             return null;
         }
     }

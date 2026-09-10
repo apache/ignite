@@ -231,6 +231,30 @@ while (rs.next()) {
 }
 ----
 
+=== BLOB and CLOB Values
+
+The JDBC Thin driver supports standard `java.sql.Blob` and `java.sql.Clob` objects for binary and character values.
+Store BLOB data in SQL `BINARY` columns and CLOB data in SQL `VARCHAR` columns.
+
+[NOTE]
+====
+BLOB and CLOB support in the JDBC Thin driver is available since Apache Ignite 2.17.
+CLOB values are intentionally stored in SQL `VARCHAR` columns, and BLOB values are stored in SQL `BINARY` columns.
+====
+
+You can create values with `Connection.createBlob()` and `Connection.createClob()`, bind them with `PreparedStatement.setBlob()` and `PreparedStatement.setClob()`, and read them with `ResultSet.getBlob()` and `ResultSet.getClob()`.
+
+[source,java]
+----
+include::{javaFile}[tags=blob-clob, indent=0]
+----
+
+BLOB values also support binary stream APIs, including `PreparedStatement.setBlob(int, InputStream)`, `PreparedStatement.setBlob(int, InputStream, long)`, `PreparedStatement.setBinaryStream()`, `ResultSet.getBinaryStream()`, and `Blob.getBinaryStream()`.
+When a stream length is provided, it must be non-negative and must match the actual number of bytes read from the stream.
+
+CLOB values are supported through `Clob` object methods such as `setString()`, `getSubString()`, and `getCharacterStream()`.
+Reader-based CLOB setter APIs, such as `PreparedStatement.setClob(int, Reader)`, and direct `ResultSet.getCharacterStream()` calls are not supported.
+
 === Partition Awareness [[partition-awareness]]
 
 Partition awareness is a feature that makes the JDBC driver "aware" of the partition distribution in the cluster.

@@ -20,20 +20,15 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
-public class QueryStartRequest implements MarshallableMessage, CalciteContextMarshallableMessage, ExecutionContextAware {
+/** Message sent to remote nodes to start a query fragment execution. */
+public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;
@@ -63,7 +58,8 @@ public class QueryStartRequest implements MarshallableMessage, CalciteContextMar
     int totalFragmentsCnt;
 
     /** */
-    private @Nullable Object[] params;
+    @Marshalled("paramsBytes")
+    @Nullable Object[] params;
 
     /** */
     @Order(7)
@@ -107,7 +103,7 @@ public class QueryStartRequest implements MarshallableMessage, CalciteContextMar
         this.schema = schema;
         this.root = root;
         this.ver = ver;
-        this.fragmentDesc = fragmentDesc;
+        this.fragmentDesc = fragmentDesc.preparedToSend();
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
@@ -150,7 +146,7 @@ public class QueryStartRequest implements MarshallableMessage, CalciteContextMar
      * @return Fragment description.
      */
     public FragmentDescription fragmentDescription() {
-        return fragmentDesc;
+        return fragmentDesc.received();
     }
 
     /**
@@ -214,33 +210,4 @@ public class QueryStartRequest implements MarshallableMessage, CalciteContextMar
         return keepBinaryMode;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        if (paramsBytes == null && params != null)
-            paramsBytes = U.marshal(marsh, params);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (qryTxEntries != null) {
-            for (QueryTxEntry e : qryTxEntries)
-                e.prepareMarshal(ctx);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (params == null && paramsBytes != null)
-            params = U.unmarshal(marsh, paramsBytes, clsLdr);
-
-        paramsBytes = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (qryTxEntries != null) {
-            for (QueryTxEntry e : qryTxEntries)
-                e.finishUnmarshal(ctx, clsLdr);
-        }
-    }
 }

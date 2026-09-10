@@ -20,44 +20,34 @@ package org.apache.ignite.internal.util;
  * Class extracted for fields from GridUnsafe to be absolutely independent with current and future static block
  * initialization effects.
  */
-class FeatureChecker {
-    /** Required Options to Run on Java 11. */
-    public static final String JAVA_11_OPTIONS = "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
-        "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED\n" +
-        "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
-        "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
-        "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
-        "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
-        "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
-        "--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED\n" +
-        "--illegal-access=permit";
-
-    /** Required Options to Run on Java 15 and higher. */
-    public static final String JAVA_15_OPTIONS =
-        "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED\n" +
-        "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED\n" +
-        "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED\n" +
-        "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED\n" +
-        "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED\n" +
-        "--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED\n" +
-        "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED\n" +
-        "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.io=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.nio=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.util=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.net=ALL-UNNAMED\"" +
-        "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.lang=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED\n" +
-        "--add-opens=java.base/java.math=ALL-UNNAMED\n" +
-        "--add-opens=java.sql/java.sql=ALL-UNNAMED";
+public class FeatureChecker {
+    /** Required Options to Run on Java 17 and higher. */
+    public static final String JAVA_17_OPTIONS = """
+        --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+        --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+        --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+        --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+        --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+        --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+        --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+        --add-opens=java.base/java.io=ALL-UNNAMED
+        --add-opens=java.base/java.nio=ALL-UNNAMED
+        --add-opens=java.base/java.util=ALL-UNNAMED
+        --add-opens=java.base/java.net=ALL-UNNAMED
+        --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+        --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+        --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+        --add-opens=java.base/java.lang=ALL-UNNAMED
+        --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+        --add-opens=java.base/java.math=ALL-UNNAMED
+        --add-opens=java.sql/java.sql=ALL-UNNAMED
+        --add-opens=java.base/java.time=ALL-UNNAMED
+        """;
 
     /** Java version specific warning to be added in case access failed */
     public static final String JAVA_VER_SPECIFIC_WARN =
         "\nPlease add the following parameters to JVM startup settings and restart the application: {parameters: " +
-            JAVA_11_OPTIONS +
-            "\n}" +
-            "\nSee https://ignite.apache.org/docs/latest/quick-start/java#running-ignite-with-java-11-or-later for more information.";
+            JAVA_17_OPTIONS + "}" +
+            "\nSee https://ignite.apache.org/docs/latest/quick-start/java#running-ignite-with-java-17-or-later for more information.";
 }

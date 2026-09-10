@@ -19,8 +19,8 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
     /** */
     @Order(0)
-    NodeMetricsMessage metricsMsg;
+    ClusterMetricsSnapshot metricsMsg;
 
     /** Constructor for {@link MessageFactory}. */
     public TcpDiscoveryClientMetricsUpdateMessage() {
@@ -48,7 +48,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics) {
         super(creatorNodeId);
 
-        metricsMsg = new NodeMetricsMessage(metrics);
+        metricsMsg = new ClusterMetricsSnapshot(metrics);
     }
 
     /**
@@ -56,7 +56,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
      *
      * @return Metrics holder message.
      */
-    public NodeMetricsMessage metricsMessage() {
+    public ClusterMetricsSnapshot metricsMessage() {
         return metricsMsg;
     }
 

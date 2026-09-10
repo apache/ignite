@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Serializable;
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.plugin.PluginsDataBagItem;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
@@ -115,10 +115,10 @@ public class GridPluginComponent implements GridComponent {
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node,
         JoiningNodeDiscoveryData discoData) {
         try {
-            Map<String, Serializable> map = discoData.joiningNodeData();
+            PluginsDataBagItem pluginsItem = discoData.joiningNodeData();
 
-            if (map != null)
-                plugin.validateNewNode(node, map.get(plugin.name()));
+            if (pluginsItem != null && !F.isEmpty(pluginsItem.data()))
+                plugin.validateNewNode(node, pluginsItem.data().get(plugin.name()));
             else
                 plugin.validateNewNode(node, null);
 

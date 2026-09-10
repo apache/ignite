@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -238,26 +237,17 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
     /** {@link TcpDiscoverySpi} which doesn't itsring to current DC. */
     private class NoRingClosingTcpDiscoverySpi extends TestTcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void initializeImpl() {
-            if (impl != null)
-                return;
-
-            super.initializeImpl();
-
-            // In theory, might be a ClientImpl.
-            if (impl instanceof ServerImpl) {
-                impl = new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, 0) {
-                    @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
-                        return new ServerImpl.RingMessageWorker(impl.log) {
-                            @Override protected ServerImpl.CrossRingMessageSendState createConnectionRecoveryState(
-                                TcpDiscoveryNode n) {
-                                // Do not start remote DC ping.
-                                return new ServerImpl.CrossRingMessageSendState();
-                            }
-                        };
-                    }
-                };
-            }
+        @Override TcpDiscoveryImpl createServerTcpDiscoveryImplementation() {
+            return new ServerImpl(this, DFLT_UTLITY_POOL_SIZE, 0) {
+                @Override protected ServerImpl.RingMessageWorker createMessageWorker() {
+                    return new ServerImpl.RingMessageWorker(log) {
+                        @Override protected ServerImpl.CrossRingMessageSendState createConnectionRecoveryState(TcpDiscoveryNode n) {
+                            // Do not start remote DC ping.
+                            return new ServerImpl.CrossRingMessageSendState();
+                        }
+                    };
+                }
+            };
         }
     }
 
@@ -277,14 +267,13 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
      */
     private class DyingDiscoverySpi extends NoRingClosingTcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(sock, msg, data, timeout);
+                super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -295,14 +284,13 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(msg, sock, res, timeout);
+                super.writeReceipt(ses, res, timeout);
         }
     }
 

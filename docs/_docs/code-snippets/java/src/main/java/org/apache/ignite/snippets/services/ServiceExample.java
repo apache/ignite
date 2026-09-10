@@ -23,7 +23,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.junit.Test;
+import org.apache.ignite.services.ServiceCallContext;
+import org.junit.jupiter.api.Test;
 
 public class ServiceExample {
 

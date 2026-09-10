@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
@@ -269,20 +271,34 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        // {@code sql} can contain more than one query.
-        List<FieldsQueryCursor<List<?>>> allCurs = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
+        Transaction tx = ignite.transactions().tx();
+        QueryContext ctx = tx == null
+            ? queryContext()
+            : QueryContext.of(queryContext(), ((TransactionProxyImpl<?, ?>)tx).tx().xidVersion());
 
-        if (allCurs.size() > 1) {
-            log.warning("The query statement '" + sql + "' contains " + allCurs.size() + " actual queries. " +
-                "All the cursors are fetched, but only the last result is returned.");
+        if (tx != null)
+            tx.suspend();
+
+        try {
+            // {@code sql} can contain more than one query.
+            List<FieldsQueryCursor<List<?>>> allCurs = queryProcessor(ignite).query(ctx, "PUBLIC", sql, params);
+
+            if (allCurs.size() > 1) {
+                log.warning("The query statement '" + sql + "' contains " + allCurs.size() + " actual queries. " +
+                    "All the cursors are fetched, but only the last result is returned.");
+            }
+
+            List<List<?>> res = Collections.emptyList();
+
+            for (FieldsQueryCursor<List<?>> cur : allCurs)
+                res = cur.getAll();
+
+            return res;
         }
-
-        List<List<?>> res = Collections.emptyList();
-
-        for (FieldsQueryCursor<List<?>> cur : allCurs)
-            res = cur.getAll();
-
-        return res;
+        finally {
+            if (tx != null)
+                tx.resume();
+        }
     }
 
     /** */

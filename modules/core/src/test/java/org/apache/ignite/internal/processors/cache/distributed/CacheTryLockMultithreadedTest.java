@@ -17,27 +17,57 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
     /** */
-    private static final int SRVS = 2;
+    private static final int SRVS = 3;
+
+    /** */
+    @Parameterized.Parameter
+    public CacheMode cacheMode;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public int backups;
+
+    /** */
+    @Parameterized.Parameters(name = "cacheMode={0}, backups={1}")
+    public static List<Object[]> parameters() {
+        return F.asList(
+            new Object[] {REPLICATED, 0},
+            new Object[] {PARTITIONED, 0},
+            new Object[] {PARTITIONED, 1}
+        );
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -47,7 +77,8 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setCacheMode(REPLICATED);
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setBackups(backups);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -55,12 +86,17 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         startGridsMultiThreaded(SRVS);
 
         startClientGrid(SRVS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -74,7 +110,7 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
-        final long stopTime = System.currentTimeMillis() + 30_000;
+        final long stopTime = System.currentTimeMillis() + 15_000;
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -92,5 +128,46 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
                 return null;
             }
         }, 20, "lock-thread");
+    }
+
+    /** */
+    @Test
+    public void testCancelRequestOnTimeout() throws Exception {
+        IgniteEx node = grid(1);
+
+        IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
+
+        List<Integer> keys = primaryKeys(cache, 100);
+
+        for (Integer key : keys)
+            cache.put(key, key);
+
+        long stopTime = U.currentTimeMillis() + 10_000;
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (U.currentTimeMillis() < stopTime) {
+                Integer key = keys.get(ThreadLocalRandom.current().nextInt(keys.size()));
+
+                Lock lock = cache.lock(key);
+
+                boolean locked = false;
+
+                try {
+                    locked = lock.tryLock(10, TimeUnit.MILLISECONDS);
+
+                    if (locked)
+                        doSleep(20);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+                finally {
+                    if (locked)
+                        lock.unlock();
+                }
+            }
+        }, 16, "lock-thread");
+
+        fut.get(getTestTimeout());
     }
 }

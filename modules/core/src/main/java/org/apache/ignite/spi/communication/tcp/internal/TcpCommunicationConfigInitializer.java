@@ -28,9 +28,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,9 +71,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     /** Connection policy. */
     protected ConnectionPolicy connPlc = new FirstConnectionPolicy();
 
-    /** Tracing. */
-    protected Tracing tracing;
-
     /**
      * Sets address resolver.
      *
@@ -113,7 +107,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
         if (ignite != null) { // null when service is destroying.
             setAddressResolver(ignite.configuration().getAddressResolver());
             setLocalAddress(ignite.configuration().getLocalHost());
-            tracing = ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().tracing() : new NoopTracing();
         }
     }
 

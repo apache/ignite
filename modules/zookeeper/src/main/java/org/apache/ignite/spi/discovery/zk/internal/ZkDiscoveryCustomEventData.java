@@ -40,7 +40,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     /** Message (can be marshalled as part of ZkDiscoveryCustomEventData or stored in separate znode. */
     byte[] msgBytes;
 
-    /** Unmarshalled message. */
+    /** Unmarshalled custom message holder. Can be wrapped with {@link ZkOperationContextAwareCustomMessage}. */
     transient DiscoverySpiCustomMessage resolvedMsg;
 
     /**
@@ -71,13 +71,13 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     }
 
     /** */
-    public void prepareMarshal(DiscoveryMessageParser parser) {
+    public void marshal(DiscoveryMessageParser parser) {
         if (resolvedMsg != null)
             msgBytes = parser.marshalZip(resolvedMsg);
     }
 
     /** */
-    public void finishUnmarshal(DiscoveryMessageParser parser) {
+    public void unmarshal(DiscoveryMessageParser parser) {
         if (msgBytes != null)
             resolvedMsg = parser.unmarshalZip(msgBytes);
     }

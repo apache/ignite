@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -38,7 +39,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -427,7 +426,19 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteEx ig = startGrid(4);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        // Register the listener via node configuration so it is active before the node joins and starts rebalancing:
+        // otherwise EVT_CACHE_REBALANCE_STOPPED may fire before localListen() and the latch would never be released.
+        IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(4)));
+
+        cfg.setLocalEventListeners(Collections.singletonMap(evt -> {
+            latch.countDown();
+
+            return false;
+        }, new int[] {EventType.EVT_CACHE_REBALANCE_STOPPED}));
+
+        IgniteEx ig = startGrid(cfg);
 
         GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
@@ -438,16 +449,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 }
             }
         });
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        ig.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                latch.countDown();
-
-                return false;
-            }
-        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         latch.await();
 

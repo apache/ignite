@@ -73,7 +73,9 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(TableScan rel, RelMetadataQuery mq) {
-        return rel.getTable().unwrap(IgniteTable.class).distribution();
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+
+        return tbl == null ? TraitUtils.distribution(rel.getTraitSet()) : tbl.distribution();
     }
 
     /**

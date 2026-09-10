@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
@@ -26,10 +30,17 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexDynamicParam;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.immutables.value.Value;
 
 /**
@@ -74,13 +85,15 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
                     sort.fetch));
             }
             else {
+                boolean pushLimit = canPushLimit(sort);
+
                 RelNode igniteSort = new IgniteSort(
                     cluster,
                     cluster.traitSetOf(IgniteConvention.INSTANCE).replace(sort.getCollation()),
                     convert(sort.getInput(), cluster.traitSetOf(IgniteConvention.INSTANCE)),
                     sort.getCollation(),
-                    sort.offset,
-                    sort.fetch,
+                    pushLimit ? sort.offset : null,
+                    pushLimit ? sort.fetch : null,
                     false
                 );
 
@@ -100,5 +113,60 @@ public class SortConverterRule extends RelRule<SortConverterRule.Config> {
 
             call.transformTo(new IgniteSort(cluster, outTraits, input, sort.getCollation(), false));
         }
+    }
+
+    /** Returns {@code true} if FETCH can be safely pushed to the sort. */
+    private static boolean canPushLimit(Sort sort) {
+        RexNode fetch = sort.fetch;
+
+        // A non-deterministic FETCH must be evaluated only once by the outer IgniteLimit.
+        if (!RexUtil.isDeterministic(fetch))
+            return false;
+
+        if (!RexUtil.isConstant(fetch))
+            return false;
+
+        // Dynamic parameters are constant within an execution and have the same value on every fragment.
+        if (containsDynamicParameter(fetch))
+            return true;
+
+        List<RexNode> reducedFetch = new ArrayList<>(1);
+
+        RexUtils.executor(sort.getCluster()).reduce(sort.getCluster().getRexBuilder(),
+            Collections.singletonList(fetch), reducedFetch);
+
+        if (!(reducedFetch.get(0) instanceof RexLiteral))
+            return false;
+
+        BigDecimal fetchVal = ((RexLiteral)reducedFetch.get(0)).getValueAs(BigDecimal.class);
+
+        if (fetchVal == null)
+            return false;
+
+        // SortNode does not accept zero FETCH; the outer IgniteLimit handles it.
+        IgniteSqlSemantics sem = sort.getCluster().getPlanner().getContext().unwrap(IgniteSqlSemantics.class);
+
+        try {
+            return IgniteSqlSemantics.convertPaginationValueToLong(fetchVal, sem) > 0;
+        }
+        catch (ArithmeticException ignored) {
+            // The outer IgniteLimit will report invalid FETCH during execution.
+            return false;
+        }
+    }
+
+    /** Returns {@code true} if the expression contains a dynamic parameter. */
+    private static boolean containsDynamicParameter(RexNode node) {
+        if (node instanceof RexDynamicParam)
+            return true;
+
+        if (node instanceof RexCall) {
+            for (RexNode operand : ((RexCall)node).getOperands()) {
+                if (containsDynamicParameter(operand))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

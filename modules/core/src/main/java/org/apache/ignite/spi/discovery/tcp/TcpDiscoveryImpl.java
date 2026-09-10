@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -36,13 +35,12 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
-import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -88,6 +86,9 @@ abstract class TcpDiscoveryImpl {
 
     /** */
     protected final TcpDiscoverySpi spi;
+
+    /** */
+    protected final GridKernalContext ctx;
 
     /** */
     protected final IgniteLogger log;
@@ -136,8 +137,8 @@ abstract class TcpDiscoveryImpl {
         }
     };
 
-    /** Tracing. */
-    protected Tracing tracing;
+    /** Distributed operation context dispatcher. */
+    protected final OperationContextDispatcher operationCtxDispatcher;
 
     /**
      * @param spi Adapter.
@@ -147,10 +148,9 @@ abstract class TcpDiscoveryImpl {
 
         log = spi.log;
 
-        if (spi.ignite() instanceof IgniteEx)
-            tracing = ((IgniteEx)spi.ignite()).context().tracing();
-        else
-            tracing = new NoopTracing();
+        ctx = ((IgniteEx)spi.ignite()).context();
+
+        operationCtxDispatcher = ctx.operationContextDispatcher();
     }
 
     /**
@@ -412,7 +412,7 @@ abstract class TcpDiscoveryImpl {
         for (Map.Entry<UUID, NodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
             UUID srvrId = e.getKey();
             Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();
-            NodeMetricsMessage srvrMetricsMsg = e.getValue().nodeMetricsMessage();
+            ClusterMetricsSnapshot srvrMetricsMsg = e.getValue().nodeMetricsMessage();
 
             assert srvrMetricsMsg != null;
 
@@ -462,16 +462,6 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
-    }
-
-    /**
-     * Instantiates IO session for exchanging discovery messages with remote node.
-     *
-     * @param sock Socket to remote node.
-     * @return IO session for writing and reading {@link TcpDiscoveryAbstractMessage}.
-     */
-    TcpDiscoveryIoSession createSession(Socket sock) {
-        return new TcpDiscoveryIoSession(sock, spi);
     }
 
     /**

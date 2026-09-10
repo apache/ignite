@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
@@ -152,6 +153,67 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
         "memory block is released. This will help to recognize cases when already released memory is accessed")
     public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
+
+    /** Human-readable ID of a data center where the node is running. */
+    @IgniteExperimental
+    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
+        type = String.class)
+    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
+
+    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
+
+    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
+
+    /**
+     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
+     * current JVM it is running in.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(
+        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
+            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
+            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
+            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
+            " serialization mechanisms",
+        defaults = "true"
+    )
+    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
+
+    /**
+     * Enables default selected keys set to be used inside {@code GridNioServer}.
+     * <p>
+     * Default value is {@code false}. Should be switched to {@code true} if there are
+     * any problems in communication layer.
+     */
+    @SystemProperty("Enables default selected keys set to be used inside GridNioServer " +
+        "which lead to some extra garbage generation when processing selected keys. " +
+        "Should be switched to true if there are any problems in communication layer")
+    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
+
+    /** Default IO balance period. */
+    public static final int DFLT_IO_BALANCE_PERIOD = 5000;
+
+    /** */
+    @SystemProperty(value = "IO balance period in milliseconds", type = Long.class,
+        defaults = "" + DFLT_IO_BALANCE_PERIOD)
+    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
+
+    /** Default timeout for TCP client recovery descriptor reservation. */
+    public static final int DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT = 5_000;
+
+    /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
+        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
 
     /**
      * @param enumCls Enum type.

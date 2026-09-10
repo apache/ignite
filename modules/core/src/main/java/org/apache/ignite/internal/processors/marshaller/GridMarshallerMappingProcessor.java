@@ -326,34 +326,32 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        dataBag.addJoiningNodeData(MARSHALLER_PROC.ordinal(), new MarshallerMappingsData(marshallerCtx.getCachedMappings()));
+        dataBag.addJoiningNodeData(MARSHALLER_PROC.ordinal(), new MarshallerDataBagItem(marshallerCtx.getCachedMappings()));
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
-            dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
+            dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(),
+                new MarshallerDataBagItem(marshallerCtx.getCachedMappings()));
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        MarshallerMappingsData mappingsData = data.joiningNodeData();
-
-        processIncomingMappings(mappingsData.mappings);
+        processIncomingMappings(data.joiningNodeData());
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>)data.commonData();
-
-        processIncomingMappings(mappings);
+        processIncomingMappings(data.commonData());
     }
 
     /**
-     * @param mappings Incoming marshaller mappings.
+     * @param marshallerItem Incoming marshaller mappings wrapper.
      */
-    private void processIncomingMappings(List<Map<Integer, MappedName>> mappings) {
-        marshallerCtx.onMappingDataReceived(log, mappings);
+    private void processIncomingMappings(@Nullable MarshallerDataBagItem marshallerItem) {
+        if (marshallerItem != null)
+            marshallerCtx.onMappingDataReceived(log, marshallerItem.mappings());
     }
 
     /** {@inheritDoc} */

@@ -138,6 +138,13 @@
             <artifactId>guava</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>${xstream.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

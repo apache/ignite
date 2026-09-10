@@ -63,8 +63,8 @@ class BaselineTests(IgniteTest):
 
         # Set baseline using topology version.
         new_node = self.__start_ignite_nodes(ignite_version, 1, join_cluster=servers)
-        _, version, _ = control_utility.cluster_state()
-        control_utility.set_baseline(version)
+        cluster_state = control_utility.cluster_state()
+        control_utility.set_baseline(cluster_state.topology_version)
         blt_size += 1
 
         baseline = control_utility.baseline()
@@ -125,15 +125,15 @@ class BaselineTests(IgniteTest):
 
         control_utility.activate()
 
-        state, _, _ = control_utility.cluster_state()
+        cluster_state = control_utility.cluster_state()
 
-        assert state.lower() == 'active', 'Unexpected state %s' % state
+        assert cluster_state.state.lower() == 'active', 'Unexpected state %s' % cluster_state.state
 
         control_utility.deactivate()
 
-        state, _, _ = control_utility.cluster_state()
+        cluster_state = control_utility.cluster_state()
 
-        assert state.lower() == 'inactive', 'Unexpected state %s' % state
+        assert cluster_state.state.lower() == 'inactive', 'Unexpected state %s' % cluster_state.state
 
     @cluster(num_nodes=NUM_NODES)
     @ignore_if(lambda version, globals: version < V_2_8_0)

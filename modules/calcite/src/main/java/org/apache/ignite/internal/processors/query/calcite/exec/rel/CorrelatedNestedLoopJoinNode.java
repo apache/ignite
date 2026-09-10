@@ -282,6 +282,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 break;
 
             case END:
+                requested = 0;
+
                 downstream().end();
                 break;
 
@@ -338,8 +340,11 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
             state = State.END;
 
-            if (requested > 0)
+            if (requested > 0) {
+                requested = 0;
+
                 downstream().end();
+            }
         }
         else {
             prepareCorrelations();
@@ -469,8 +474,9 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 state = State.END;
 
-                if (requested > 0)
-                    downstream().end();
+                requested = 0;
+
+                downstream().end();
 
                 return;
             }

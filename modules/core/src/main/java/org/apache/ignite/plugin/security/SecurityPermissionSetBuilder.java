@@ -19,15 +19,13 @@ package org.apache.ignite.plugin.security;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
 
 /**
  * Provides a convenient way to create a permission set.
@@ -53,16 +51,16 @@ import static java.util.Collections.unmodifiableSet;
  */
 public class SecurityPermissionSetBuilder {
     /** Cache permissions.*/
-    private Map<String, Collection<SecurityPermission>> cachePerms = new HashMap<>();
+    private Map<String, EnumSet<SecurityPermission>> cachePerms = new HashMap<>();
 
     /** Task permissions.*/
-    private Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
+    private Map<String, EnumSet<SecurityPermission>> taskPerms = new HashMap<>();
 
     /** Service permissions.*/
-    private Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
+    private Map<String, EnumSet<SecurityPermission>> srvcPerms = new HashMap<>();
 
     /** System permissions.*/
-    private Set<SecurityPermission> sysPerms = new HashSet<>();
+    private EnumSet<SecurityPermission> sysPerms = EnumSet.noneOf(SecurityPermission.class);
 
     /** Default allow all.*/
     private boolean dfltAllowAll;
@@ -214,7 +212,7 @@ public class SecurityPermissionSetBuilder {
      * @param perms Permission.
      */
     private void append(
-        Map<String, Collection<SecurityPermission>> permsMap,
+        Map<String, EnumSet<SecurityPermission>> permsMap,
         String name,
         Collection<SecurityPermission> perms
     ) {
@@ -222,12 +220,8 @@ public class SecurityPermissionSetBuilder {
         assert name != null;
         assert perms != null;
 
-        Collection<SecurityPermission> col = permsMap.get(name);
-
-        if (col == null)
-            permsMap.put(name, perms);
-        else
-            col.addAll(perms);
+        permsMap.computeIfAbsent(name, n -> EnumSet.noneOf(SecurityPermission.class))
+            .addAll(perms);
     }
 
     /**
@@ -242,7 +236,7 @@ public class SecurityPermissionSetBuilder {
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
         permSet.setServicePermissions(unmodifiableMap(srvcPerms));
-        permSet.setSystemPermissions(unmodifiableSet(sysPerms));
+        permSet.setSystemPermissions(EnumSet.copyOf(sysPerms));
 
         return permSet;
     }

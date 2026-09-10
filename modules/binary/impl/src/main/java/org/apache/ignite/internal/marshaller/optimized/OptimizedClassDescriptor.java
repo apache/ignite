@@ -102,10 +102,7 @@ class OptimizedClassDescriptor {
     private final MarshallerContext ctx;
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
-
-    /** ID mapper. */
-    private final OptimizedMarshallerIdMapper mapper;
+    private final ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap;
 
     /** Class name. */
     private final String name;
@@ -129,7 +126,7 @@ class OptimizedClassDescriptor {
     private boolean isSerial;
 
     /** Excluded flag. */
-    private boolean excluded;
+    private final boolean excluded;
 
     /** {@code True} if descriptor is for {@link Class}. */
     private boolean isCls;
@@ -174,22 +171,19 @@ class OptimizedClassDescriptor {
      * @param clsMap Class descriptors by class map.
      * @param cls Class.
      * @param ctx Context.
-     * @param mapper ID mapper.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     OptimizedClassDescriptor(Class<?> cls,
         int typeId,
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
+        ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx)
         throws IOException {
         this(
             cls,
             typeId,
             clsMap,
             ctx,
-            mapper,
             MarshallerExclusions.isExcluded(cls)
         );
     }
@@ -201,22 +195,19 @@ class OptimizedClassDescriptor {
      * @param clsMap Class descriptors by class map.
      * @param cls Class.
      * @param ctx Context.
-     * @param mapper ID mapper.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     OptimizedClassDescriptor(Class<?> cls,
         int typeId,
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        ConcurrentMap<Class<?>, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
         boolean excluded)
         throws IOException {
         this.cls = cls;
         this.typeId = typeId;
         this.clsMap = clsMap;
         this.ctx = ctx;
-        this.mapper = mapper;
 
         name = cls.getName();
 
@@ -725,8 +716,7 @@ class OptimizedClassDescriptor {
                 OptimizedClassDescriptor compDesc = OptimizedMarshallerUtils.classDescriptor(clsMap,
                     obj.getClass().getComponentType(),
                     Marshallers.USE_CACHE.get(),
-                    ctx,
-                    mapper);
+                    ctx);
 
                 compDesc.writeTypeData(out);
 
@@ -786,7 +776,7 @@ class OptimizedClassDescriptor {
 
             case CLS:
                 OptimizedClassDescriptor clsDesc = OptimizedMarshallerUtils.classDescriptor(
-                    clsMap, (Class<?>)obj, Marshallers.USE_CACHE.get(), ctx, mapper);
+                    clsMap, (Class<?>)obj, Marshallers.USE_CACHE.get(), ctx);
 
                 clsDesc.writeTypeData(out);
 
@@ -797,7 +787,7 @@ class OptimizedClassDescriptor {
 
                 for (Class<?> intf : proxyIntfs) {
                     OptimizedClassDescriptor intfDesc = OptimizedMarshallerUtils.classDescriptor(
-                        clsMap, intf, Marshallers.USE_CACHE.get(), ctx, mapper);
+                        clsMap, intf, Marshallers.USE_CACHE.get(), ctx);
 
                     intfDesc.writeTypeData(out);
                 }

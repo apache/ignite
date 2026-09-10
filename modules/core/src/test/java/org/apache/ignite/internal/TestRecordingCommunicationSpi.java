@@ -32,9 +32,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -123,7 +120,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                     ignite.log().info("Block message [node=" + node.id() + ", order=" + node.order() +
                         ", msg=" + ioMsg.message() + ']');
 
-                    blockedMsgs.add(new BlockedMessageDescriptor(node, ioMsg, MTC.span()));
+                    blockedMsgs.add(new BlockedMessageDescriptor(node, ioMsg));
 
                     notifyAll();
 
@@ -355,7 +352,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                     continue;
 
                 if (sndMsgs) {
-                    try (TraceSurroundings ignored = MTC.supportContinual(blockedMsg.span())) {
+                    try {
                         ignite.log().info("Send blocked message " + blockedMsg);
 
                         super.sendMessage(blockedMsg.destinationNode(), blockedMsg.ioMessage());
@@ -436,16 +433,12 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         /** Blocked message. */
         private final GridIoMessage msg;
 
-        /** Span in which context sending must be done. */
-        private final Span span;
-
         /**
          *
          */
-        public BlockedMessageDescriptor(ClusterNode destNode, GridIoMessage msg, Span span) {
+        public BlockedMessageDescriptor(ClusterNode destNode, GridIoMessage msg) {
             this.destNode = destNode;
             this.msg = msg;
-            this.span = span;
         }
 
         /**
@@ -460,13 +453,6 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
          */
         public GridIoMessage ioMessage() {
             return msg;
-        }
-
-        /**
-         * @return Span in which context sending must be done.
-         */
-        public Span span() {
-            return span;
         }
 
         /** {@inheritDoc} */

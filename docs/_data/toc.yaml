@@ -77,6 +77,8 @@
       url: clustering/discovery-in-the-cloud
     - title: Network Configuration
       url: clustering/network-configuration
+    - title: Multi Data Center Deployment
+      url: clustering/multi-data-center
     - title: Connecting Client Nodes 
       url: clustering/connect-client-nodes
     - title: Baseline Topology
@@ -238,6 +240,8 @@
       url: sql-reference/operational-commands
     - title: Aggregate functions
       url: sql-reference/aggregate-functions
+    - title: Window Functions
+      url: sql-reference/window-functions
     - title: Numeric Functions
       url: sql-reference/numeric-functions
     - title: String Functions
@@ -448,8 +452,6 @@
       url: monitoring-metrics/system-views
     - title: Performance Statistics
       url: monitoring-metrics/performance-statistics
-    - title: Tracing
-      url: monitoring-metrics/tracing
 - title: Working with Events
   items:
     - title: Enabling and Listenting to Events

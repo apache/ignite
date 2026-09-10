@@ -49,6 +49,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -84,6 +85,7 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -314,6 +316,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     private String igniteWorkDir;
 
     /** MBean server. */
+    @GridToStringExclude
     private MBeanServer mbeanSrv;
 
     /** Local node ID. */
@@ -398,6 +401,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     private LoadBalancingSpi[] loadBalancingSpi;
 
     /** Indexing SPI. */
+    @GridToStringExclude
     private IndexingSpi indexingSpi;
 
     /** Address resolver. */
@@ -411,9 +415,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
 
     /** System view exporter SPI. */
     private SystemViewExporterSpi[] sysViewExporterSpi;
-
-    /** Tracing SPI. */
-    private TracingSpi tracingSpi;
 
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
@@ -613,7 +614,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         encryptionSpi = cfg.getEncryptionSpi();
         metricExporterSpi = cfg.getMetricExporterSpi();
         sysViewExporterSpi = cfg.getSystemViewExporterSpi();
-        tracingSpi = cfg.getTracingSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -2426,9 +2426,13 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
      *
      * @param tracingSpi Fully configured instance of {@link TracingSpi}.
      * @return {@code this} for chaining.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     public IgniteConfiguration setTracingSpi(TracingSpi tracingSpi) {
-        this.tracingSpi = tracingSpi;
+        U.warn(log, "Configured Tracing SPI is ignored. The Ignite Tracing is deprecated and subject to removal in a " +
+            " future release. Ignite Tracing has been retired in favor of Ignite Performance Statistics and Ignite Metrics.");
 
         return this;
     }
@@ -2437,9 +2441,11 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
      * Gets fully configured tracing SPI implementation.
      *
      * @return Tracing SPI implementation.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
     public TracingSpi getTracingSpi() {
-        return tracingSpi;
+        return NoopTracingSpi.INSTANCE;
     }
 
     /**

@@ -120,13 +120,13 @@ public interface CacheObject {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+    public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException;
+    public void marshal(CacheObjectValueContext ctx) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if postWriteHashCode call required, {@code false} otherwise.

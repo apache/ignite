@@ -118,7 +118,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
         for (Ignite grid : G.allGrids()) {
             DistributedProcess<TestIntegerMessage, TestIntegerMessage> dp = new DistributedProcess<>(((IgniteEx)grid).context(),
                 TEST_PROCESS,
-                req -> {
+                (uuid, req) -> {
                     IgniteInternalFuture<TestIntegerMessage> fut = runAsync(() -> {
                         try {
                             nodeLeftLatch.await();

@@ -53,6 +53,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.management.consistency.ConsistencyRepairCommandArg;
 import org.apache.ignite.internal.management.consistency.ConsistencyRepairTask;
 import org.apache.ignite.internal.management.consistency.ConsistencyTaskResult;
@@ -675,7 +676,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         for (int n = 1; n < nodes(); n++) {
             TestRecordingCommunicationSpi.spi(grid(n)).blockMessages((node, msg) ->
                 msg instanceof GridNearTxPrepareResponse
-                    && ((GridNearTxPrepareResponse)msg).version().asIgniteUuid().equals(exclTxId.get()));
+                    && BinaryUtils.asIgniteUuid(((GridNearTxPrepareResponse)msg).version()).equals(exclTxId.get()));
         }
 
         msgBlkSet.countDown();

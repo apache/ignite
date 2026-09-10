@@ -29,6 +29,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -44,10 +45,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -55,7 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * DataStreamerImpl.addData(Collection) vs DataStreamerImpl.addData(Key, Value).
  */
 @BenchmarkMode(Mode.AverageTime)
-@Fork(value = 1, jvmArgsAppend = {"-Xms1g", "-Xmx3g", "-server", "-XX:+AggressiveOpts", "-XX:MaxMetaspaceSize=256m"})
+@Fork(1)
 @Measurement(iterations = 11)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
@@ -209,11 +206,10 @@ public class JmhStreamerAddDataBenchmark {
      *
      * @param args Args.
      */
-    public static void main(String[] args) throws RunnerException {
-        final Options options = new OptionsBuilder()
-            .include(JmhStreamerAddDataBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+    public static void main(String[] args) throws Exception {
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhStreamerAddDataBenchmark.class.getSimpleName())
+            .jvmArguments("-Xms1g", "-Xmx3g", "-server", "-XX:MaxMetaspaceSize=256m")
+            .run();
     }
 }

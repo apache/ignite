@@ -22,6 +22,18 @@ from contextlib import contextmanager
 from ducktape.cluster.remoteaccount import LogMonitor
 
 
+class IgniteLogMonitor(LogMonitor):
+    """
+    Extends ducktape's LogMonitor with a one-shot presence check.
+    """
+    def found(self, pattern):
+        """
+        Check once whether the pattern is present in the log after the initial
+        offset recorded when the monitor was created.
+        """
+        return self.acct.ssh("tail -c +%d %s | grep '%s'" % (self.offset + 1, self.log, pattern), allow_fail=True) == 0
+
+
 @contextmanager
 def monitor_log(node, log, from_the_beginning=False):
     """
@@ -38,4 +50,4 @@ def monitor_log(node, log, from_the_beginning=False):
         offset = 0 if from_the_beginning else int(node.account.ssh_output("wc -c %s" % log).split()[0])
     except Exception:
         offset = 0
-    yield LogMonitor(node.account, log, offset)
+    yield IgniteLogMonitor(node.account, log, offset)

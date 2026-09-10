@@ -64,7 +64,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public final int partition() {
+    @Override public final int stripeIdx() {
         return part;
     }
 

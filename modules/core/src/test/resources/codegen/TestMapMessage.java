@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
@@ -102,6 +104,9 @@ public class TestMapMessage implements Message {
 
     @Order(24)
     Map<GridLongList, Map<UUID, List<Double>>> gridlistDoubleMapUuidMap;
+
+    @Order(25)
+    Map<KeyCacheObject, Map<UUID, List<CacheObject>>> gridCacheObjectMap;
 
     public short directType() {
         return 0;

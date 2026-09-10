@@ -164,7 +164,9 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
     /** */
     public ImmutableList<RelCollation> collations(TableScan scan,
         RelMetadataQuery mq) {
-        return ImmutableList.copyOf(table(scan.getTable()));
+        List<RelCollation> collations = table(scan.getTable());
+
+        return collations == null ? ImmutableList.of() : ImmutableList.copyOf(collations);
     }
 
     /** */

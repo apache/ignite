@@ -29,9 +29,17 @@ public class IgniteProductVersionEx extends IgniteProductVersion {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public void version(byte major, byte minor, byte maintenance) {
+    public void major(byte major) {
         this.major = major;
+    }
+
+    /** */
+    public void minor(byte minor) {
         this.minor = minor;
+    }
+
+    /** */
+    public void maintenance(byte maintenance) {
         this.maintenance = maintenance;
     }
 

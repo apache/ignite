@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -351,7 +352,7 @@ public class TxTask
 
                 infos.add(new TxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(),
                     locTx.concurrency(), locTx.timeout(), lb, mappings, locTx.state(), size,
-                    locTx.nearXidVersion().asIgniteUuid(), locTx.masterNodeIds(), locTx.topologyVersionSnapshot(),
+                    BinaryUtils.asIgniteUuid(locTx.nearXidVersion()), locTx.masterNodeIds(), locTx.topologyVersionSnapshot(),
                     verboseInfo));
 
                 if (arg.kill())
@@ -367,9 +368,9 @@ public class TxTask
 
                 if (completed != null) {
                     if (Boolean.TRUE.equals(completed))
-                        infos.add(new TxInfo(infoArg.gridCacheVersion().asIgniteUuid(), COMMITTED));
+                        infos.add(new TxInfo(BinaryUtils.asIgniteUuid(infoArg.gridCacheVersion()), COMMITTED));
                     else if (Boolean.FALSE.equals(completed))
-                        infos.add(new TxInfo(infoArg.gridCacheVersion().asIgniteUuid(), ROLLED_BACK));
+                        infos.add(new TxInfo(BinaryUtils.asIgniteUuid(infoArg.gridCacheVersion()), ROLLED_BACK));
                 }
             }
 

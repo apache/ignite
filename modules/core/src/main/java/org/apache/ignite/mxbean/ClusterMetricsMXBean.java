@@ -27,239 +27,239 @@ import org.apache.ignite.cluster.ClusterMetrics;
 @MXBeanDescription("MBean that provides access to aggregated cluster metrics.")
 public interface ClusterMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Last update time of this node metrics.")
-    public long getLastUpdateTime();
+    @MXBeanDescription("Last update time of this node metrics.")
+    @Override public long getLastUpdateTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Maximum number of jobs that ever ran concurrently on this node.")
-    public int getMaximumActiveJobs();
+    @MXBeanDescription("Maximum number of jobs that ever ran concurrently on this node.")
+    @Override public int getMaximumActiveJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Number of currently active jobs concurrently executing on the node.")
-    public int getCurrentActiveJobs();
+    @MXBeanDescription("Number of currently active jobs concurrently executing on the node.")
+    @Override public int getCurrentActiveJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average number of active jobs concurrently executing on the node.")
-    public float getAverageActiveJobs();
+    @MXBeanDescription("Average number of active jobs concurrently executing on the node.")
+    @Override public float getAverageActiveJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Maximum number of waiting jobs this node had.")
-    public int getMaximumWaitingJobs();
+    @MXBeanDescription("Maximum number of waiting jobs this node had.")
+    @Override public int getMaximumWaitingJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Number of queued jobs currently waiting to be executed.")
-    public int getCurrentWaitingJobs();
+    @MXBeanDescription("Number of queued jobs currently waiting to be executed.")
+    @Override public int getCurrentWaitingJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average number of waiting jobs this node had queued.")
-    public float getAverageWaitingJobs();
+    @MXBeanDescription("Average number of waiting jobs this node had queued.")
+    @Override public float getAverageWaitingJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Maximum number of jobs rejected at once during a single collision resolution operation.")
-    public int getMaximumRejectedJobs();
+    @MXBeanDescription("Maximum number of jobs rejected at once during a single collision resolution operation.")
+    @Override public int getMaximumRejectedJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Number of jobs rejected after more recent collision resolution operation.")
-    public int getCurrentRejectedJobs();
+    @MXBeanDescription("Number of jobs rejected after more recent collision resolution operation.")
+    @Override public int getCurrentRejectedJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average number of jobs this node rejects during collision resolution operations.")
-    public float getAverageRejectedJobs();
+    @MXBeanDescription("Average number of jobs this node rejects during collision resolution operations.")
+    @Override public float getAverageRejectedJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription(
+    @MXBeanDescription(
         "Total number of jobs this node rejects during collision resolution operations since node startup.")
-    public int getTotalRejectedJobs();
+    @Override public int getTotalRejectedJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Maximum number of cancelled jobs this node ever had running concurrently.")
-    public int getMaximumCancelledJobs();
+    @MXBeanDescription("Maximum number of cancelled jobs this node ever had running concurrently.")
+    @Override public int getMaximumCancelledJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Number of cancelled jobs that are still running.")
-    public int getCurrentCancelledJobs();
+    @MXBeanDescription("Number of cancelled jobs that are still running.")
+    @Override public int getCurrentCancelledJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average number of cancelled jobs this node ever had running concurrently.")
-    public float getAverageCancelledJobs();
+    @MXBeanDescription("Average number of cancelled jobs this node ever had running concurrently.")
+    @Override public float getAverageCancelledJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total number of cancelled jobs since node startup.")
-    public int getTotalCancelledJobs();
+    @MXBeanDescription("Total number of cancelled jobs since node startup.")
+    @Override public int getTotalCancelledJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total number of jobs handled by the node.")
-    public int getTotalExecutedJobs();
+    @MXBeanDescription("Total number of jobs handled by the node.")
+    @Override public int getTotalExecutedJobs();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total time all finished jobs takes to execute on the node.")
-    public long getTotalJobsExecutionTime();
+    @MXBeanDescription("Total time all finished jobs takes to execute on the node.")
+    @Override public long getTotalJobsExecutionTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Maximum time a job ever spent waiting in a queue to be executed.")
-    public long getMaximumJobWaitTime();
+    @MXBeanDescription("Maximum time a job ever spent waiting in a queue to be executed.")
+    @Override public long getMaximumJobWaitTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Current wait time of oldest job.")
-    public long getCurrentJobWaitTime();
+    @MXBeanDescription("Current wait time of oldest job.")
+    @Override public long getCurrentJobWaitTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average time jobs spend waiting in the queue to be executed.")
-    public double getAverageJobWaitTime();
+    @MXBeanDescription("Average time jobs spend waiting in the queue to be executed.")
+    @Override public double getAverageJobWaitTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Time it took to execute the longest job on the node.")
-    public long getMaximumJobExecuteTime();
+    @MXBeanDescription("Time it took to execute the longest job on the node.")
+    @Override public long getMaximumJobExecuteTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Longest time a current job has been executing for.")
-    public long getCurrentJobExecuteTime();
+    @MXBeanDescription("Longest time a current job has been executing for.")
+    @Override public long getCurrentJobExecuteTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average time a job takes to execute on the node.")
-    public double getAverageJobExecuteTime();
+    @MXBeanDescription("Average time a job takes to execute on the node.")
+    @Override public double getAverageJobExecuteTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total number of tasks handled by the node.")
-    public int getTotalExecutedTasks();
+    @MXBeanDescription("Total number of tasks handled by the node.")
+    @Override public int getTotalExecutedTasks();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total time this node spent executing jobs.")
-    public long getTotalBusyTime();
+    @MXBeanDescription("Total time this node spent executing jobs.")
+    @Override public long getTotalBusyTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total time this node spent idling (not executing any jobs).")
-    public long getTotalIdleTime();
+    @MXBeanDescription("Total time this node spent idling (not executing any jobs).")
+    @Override public long getTotalIdleTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Time this node spend idling since executing last job.")
-    public long getCurrentIdleTime();
+    @MXBeanDescription("Time this node spend idling since executing last job.")
+    @Override public long getCurrentIdleTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Percentage of time this node is busy executing jobs vs. idling.")
-    public float getBusyTimePercentage();
+    @MXBeanDescription("Percentage of time this node is busy executing jobs vs. idling.")
+    @Override public float getBusyTimePercentage();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Percentage of time this node is idling vs. executing jobs.")
-    public float getIdleTimePercentage();
+    @MXBeanDescription("Percentage of time this node is idling vs. executing jobs.")
+    @Override public float getIdleTimePercentage();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The number of CPUs available to the Java Virtual Machine.")
-    public int getTotalCpus();
+    @MXBeanDescription("The number of CPUs available to the Java Virtual Machine.")
+    @Override public int getTotalCpus();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The system load average; or a negative value if not available.")
-    public double getCurrentCpuLoad();
+    @MXBeanDescription("The system load average; or a negative value if not available.")
+    @Override public double getCurrentCpuLoad();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average of CPU load values over all metrics kept in the history.")
-    public double getAverageCpuLoad();
+    @MXBeanDescription("Average of CPU load values over all metrics kept in the history.")
+    @Override public double getAverageCpuLoad();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Average time spent in GC since the last update.")
-    public double getCurrentGcCpuLoad();
+    @MXBeanDescription("Average time spent in GC since the last update.")
+    @Override public double getCurrentGcCpuLoad();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The initial size of memory in bytes; -1 if undefined.")
-    public long getHeapMemoryInitialized();
+    @MXBeanDescription("The initial size of memory in bytes; -1 if undefined.")
+    @Override public long getHeapMemoryInitialized();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Current heap size that is used for object allocation.")
-    public long getHeapMemoryUsed();
+    @MXBeanDescription("Current heap size that is used for object allocation.")
+    @Override public long getHeapMemoryUsed();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The amount of committed memory in bytes.")
-    public long getHeapMemoryCommitted();
+    @MXBeanDescription("The amount of committed memory in bytes.")
+    @Override public long getHeapMemoryCommitted();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The maximum amount of memory in bytes; -1 if undefined.")
-    public long getHeapMemoryMaximum();
+    @MXBeanDescription("The maximum amount of memory in bytes; -1 if undefined.")
+    @Override public long getHeapMemoryMaximum();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The total amount of memory in bytes; -1 if undefined.")
-    public long getHeapMemoryTotal();
+    @MXBeanDescription("The total amount of memory in bytes; -1 if undefined.")
+    @Override public long getHeapMemoryTotal();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The initial size of memory in bytes; -1 if undefined.")
-    public long getNonHeapMemoryInitialized();
+    @MXBeanDescription("The initial size of memory in bytes; -1 if undefined.")
+    @Override public long getNonHeapMemoryInitialized();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Current non-heap memory size that is used by Java VM.")
-    public long getNonHeapMemoryUsed();
+    @MXBeanDescription("Current non-heap memory size that is used by Java VM.")
+    @Override public long getNonHeapMemoryUsed();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Amount of non-heap memory in bytes that is committed for the JVM to use.")
-    public long getNonHeapMemoryCommitted();
+    @MXBeanDescription("Amount of non-heap memory in bytes that is committed for the JVM to use.")
+    @Override public long getNonHeapMemoryCommitted();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Maximum amount of non-heap memory in bytes that can " +
+    @MXBeanDescription("Maximum amount of non-heap memory in bytes that can " +
         "be used for memory management. -1 if undefined.")
-    public long getNonHeapMemoryMaximum();
+    @Override public long getNonHeapMemoryMaximum();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total amount of non-heap memory in bytes that can " +
+    @MXBeanDescription("Total amount of non-heap memory in bytes that can " +
         "be used for memory management. -1 if undefined.")
-    public long getNonHeapMemoryTotal();
+    @Override public long getNonHeapMemoryTotal();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Uptime of the JVM in milliseconds.")
-    public long getUpTime();
+    @MXBeanDescription("Uptime of the JVM in milliseconds.")
+    @Override public long getUpTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Start time of the JVM in milliseconds.")
-    public long getStartTime();
+    @MXBeanDescription("Start time of the JVM in milliseconds.")
+    @Override public long getStartTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Current number of live threads.")
-    public int getCurrentThreadCount();
+    @MXBeanDescription("Current number of live threads.")
+    @Override public int getCurrentThreadCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The peak live thread count.")
-    public int getMaximumThreadCount();
+    @MXBeanDescription("The peak live thread count.")
+    @Override public int getMaximumThreadCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("The total number of threads started.")
-    public long getTotalStartedThreadCount();
+    @MXBeanDescription("The total number of threads started.")
+    @Override public long getTotalStartedThreadCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Current number of live daemon threads.")
-    public int getCurrentDaemonThreadCount();
+    @MXBeanDescription("Current number of live daemon threads.")
+    @Override public int getCurrentDaemonThreadCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Last data version.")
-    public long getLastDataVersion();
+    @MXBeanDescription("Last data version.")
+    @Override public long getLastDataVersion();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Sent messages count.")
-    public int getSentMessagesCount();
+    @MXBeanDescription("Sent messages count.")
+    @Override public int getSentMessagesCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Sent bytes count.")
-    public long getSentBytesCount();
+    @MXBeanDescription("Sent bytes count.")
+    @Override public long getSentBytesCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Received messages count.")
-    public int getReceivedMessagesCount();
+    @MXBeanDescription("Received messages count.")
+    @Override public int getReceivedMessagesCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Received bytes count.")
-    public long getReceivedBytesCount();
+    @MXBeanDescription("Received bytes count.")
+    @Override public long getReceivedBytesCount();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Outbound messages queue size.")
-    public int getOutboundMessagesQueueSize();
+    @MXBeanDescription("Outbound messages queue size.")
+    @Override public int getOutboundMessagesQueueSize();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Start time of the grid node in milliseconds.")
-    public long getNodeStartTime();
+    @MXBeanDescription("Start time of the grid node in milliseconds.")
+    @Override public long getNodeStartTime();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Total number of nodes.")
-    public int getTotalNodes();
+    @MXBeanDescription("Total number of nodes.")
+    @Override public int getTotalNodes();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Current PME duration in milliseconds.")
-    public long getCurrentPmeDuration();
+    @MXBeanDescription("Current PME duration in milliseconds.")
+    @Override public long getCurrentPmeDuration();
 
     /**
      * Get count of total baseline nodes.

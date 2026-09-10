@@ -789,7 +789,10 @@ public interface Ignite extends AutoCloseable {
      *     <li>List all pairs of tracing configuration coordinates and tracing configuration parameters.</li>
      * </ul>
      * @return {@link TracingConfigurationManager} instance.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     public @NotNull TracingConfigurationManager tracingConfiguration();
 
     /**

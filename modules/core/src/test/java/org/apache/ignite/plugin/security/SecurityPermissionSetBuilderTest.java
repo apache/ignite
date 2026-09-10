@@ -17,13 +17,11 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -52,25 +50,25 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
     public void testPermissionBuilder() {
         SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
 
-        Map<String, Collection<SecurityPermission>> permCache = new HashMap<>();
-        permCache.put("cache1", permissions(CACHE_PUT, CACHE_REMOVE, CACHE_CREATE));
-        permCache.put("cache2", permissions(CACHE_READ, CACHE_DESTROY));
+        Map<String, EnumSet<SecurityPermission>> permCache = new HashMap<>();
+        permCache.put("cache1", EnumSet.of(CACHE_PUT, CACHE_REMOVE, CACHE_CREATE));
+        permCache.put("cache2", EnumSet.of(CACHE_READ, CACHE_DESTROY));
 
         exp.setCachePermissions(permCache);
 
-        Map<String, Collection<SecurityPermission>> permTask = new HashMap<>();
-        permTask.put("task1", permissions(TASK_CANCEL));
-        permTask.put("task2", permissions(TASK_EXECUTE));
+        Map<String, EnumSet<SecurityPermission>> permTask = new HashMap<>();
+        permTask.put("task1", EnumSet.of(TASK_CANCEL));
+        permTask.put("task2", EnumSet.of(TASK_EXECUTE));
 
         exp.setTaskPermissions(permTask);
 
-        Map<String, Collection<SecurityPermission>> permSrvc = new HashMap<>();
-        permSrvc.put("service1", permissions(SERVICE_DEPLOY));
-        permSrvc.put("service2", permissions(SERVICE_INVOKE));
+        Map<String, EnumSet<SecurityPermission>> permSrvc = new HashMap<>();
+        permSrvc.put("service1", EnumSet.of(SERVICE_DEPLOY));
+        permSrvc.put("service2", EnumSet.of(SERVICE_INVOKE));
 
         exp.setServicePermissions(permSrvc);
 
-        exp.setSystemPermissions(permissions(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY));
+        exp.setSystemPermissions(EnumSet.of(ADMIN_VIEW, EVENTS_ENABLE, JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY));
 
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
 
@@ -137,17 +135,5 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         assertEquals(exp.servicePermissions(), actual.servicePermissions());
         assertEquals(exp.systemPermissions(), actual.systemPermissions());
         assertEquals(exp.defaultAllowAll(), actual.defaultAllowAll());
-    }
-
-    /**
-     * @param perms Permissions.
-     * @return Collection.
-     */
-    private static Collection<SecurityPermission> permissions(SecurityPermission... perms) {
-        Collection<SecurityPermission> col = U.newHashSet(perms.length);
-
-        Collections.addAll(col, perms);
-
-        return col;
     }
 }

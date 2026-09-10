@@ -628,8 +628,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
             for (GridCacheEntryInfo info : infos) {
                 try {
-                    info.unmarshalValue(cctx, cctx.deploy().globalLoader());
-
                     // Entries available locally in DHT should not be loaded into near cache for reading.
                     if (!cctx.affinity().keyLocalNode(info.key(), cctx.affinity().affinityTopologyVersion())) {
                         GridNearCacheEntry entry = savedEntries.get(info.key());

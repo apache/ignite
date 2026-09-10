@@ -32,7 +32,7 @@ public class GridTestMessage implements Message {
 
     /** */
     public static final MessageFactoryProvider GRID_TEST_MESSAGE_FACTORY = f -> f.register(
-        GridTestMessage.DIRECT_TYPE, GridTestMessage::new, new GridTestMessageSerializer());
+        GridTestMessage.DIRECT_TYPE, new GridTestMessageSerializer());
 
     /** */
     @Order(0)

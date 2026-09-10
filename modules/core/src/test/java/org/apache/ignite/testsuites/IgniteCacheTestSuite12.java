@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheRemo
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryConcurrentTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryWithConcurrentRollbackTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxSavepointItTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointNearCacheVisibilityTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxSavepointParameterizedTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithKeyContentionSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -113,6 +114,7 @@ public class IgniteCacheTestSuite12 {
         GridTestUtils.addTestIfNeeded(suite, DelayedOwningDuringExchangeTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxSavepointItTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxSavepointNearCacheVisibilityTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxSavepointParameterizedTest.class, ignoredTests);
 
         return suite;

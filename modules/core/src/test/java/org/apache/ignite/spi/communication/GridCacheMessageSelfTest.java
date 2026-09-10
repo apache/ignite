@@ -231,11 +231,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, factory -> {
-                factory.register(TestMessage.DIRECT_TYPE, TestMessage::new, new TestMessageSerializer());
-                factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new, new GridTestMessageSerializer());
-                factory.register(TestMessage1.DIRECT_TYPE, TestMessage1::new, new TestMessage1Serializer());
-                factory.register(TestMessage2.DIRECT_TYPE, TestMessage2::new, new TestMessage2Serializer());
-                factory.register(TestBadMessage.DIRECT_TYPE, TestBadMessage::new, new TestBadMessageSerializer());
+                factory.register(TestMessage.DIRECT_TYPE, new TestMessageSerializer());
+                factory.register(GridTestMessage.DIRECT_TYPE, new GridTestMessageSerializer());
+                factory.register(TestMessage1.DIRECT_TYPE, new TestMessage1Serializer());
+                factory.register(TestMessage2.DIRECT_TYPE, new TestMessage2Serializer());
+                factory.register(TestBadMessage.DIRECT_TYPE, new TestBadMessageSerializer());
             });
         }
     }

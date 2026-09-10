@@ -53,11 +53,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
 
-        try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
-            IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
-
-            serializer.writeExternal(this, dtout);
-        }
+        writeIgniteDataTransferObject(out);
     }
 
     /** {@inheritDoc} */
@@ -68,6 +64,20 @@ public abstract class IgniteDataTransferObject implements Externalizable {
             throw new IOException("Unexpected IgniteDataTransferObject header " +
                 "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
 
+        readIgniteDataTransferObject(in);
+    }
+
+    /** */
+    protected void writeIgniteDataTransferObject(ObjectOutput out) throws IOException {
+        try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
+            IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
+
+            serializer.writeExternal(this, dtout);
+        }
+    }
+
+    /** */
+    protected void readIgniteDataTransferObject(ObjectInput in) throws IOException, ClassNotFoundException {
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 

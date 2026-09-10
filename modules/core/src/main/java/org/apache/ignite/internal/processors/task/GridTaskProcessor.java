@@ -65,6 +65,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -473,8 +474,13 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         assert ctx.security().enabled();
 
+        IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
+
+        if (tasksMetaCache == null)
+            return null;
+
         try {
-            return taskMetaCache().localPeek(
+            return tasksMetaCache.localPeek(
                 new GridTaskNameHashKey(taskNameHash), null);
         }
         catch (IgniteCheckedException e) {
@@ -1177,7 +1183,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        // No-op.
+        tasksMetaCache = null;
     }
 
     /**
@@ -1611,7 +1617,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         if (taskName != null) {
             try {
-                return U.forName(taskName, U.gridClassLoader());
+                return ClassLoaderUtils.forName(taskName);
             }
             catch (ClassNotFoundException ignored) {
                 // No-op.

@@ -995,13 +995,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             assert info.ttl() == TTL_ETERNAL : info.ttl();
 
-            batch.add(new DataRowCacheAware(info.key(),
-                info.value(),
-                info.version(),
-                part.id(),
-                info.expireTime(),
-                info.cacheId(),
-                grp.storeCacheIdInDataPage()));
+            try {
+                batch.add(new DataRowCacheAware(info.key(),
+                    info.value(),
+                    info.version(),
+                    part.id(),
+                    info.expireTime(), info.cacheId(), grp.storeCacheIdInDataPage()));
+            }
+            catch (IllegalStateException th) {
+                if (ctx.cacheContext(info.cacheId()) != null)
+                    throw th; // Not a removed-cache race — propagate.
+
+                // Ignoring removed cache entries.
+            }
 
             if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK || !infos.hasNext()) {
                 ctx.database().checkpointReadLock();

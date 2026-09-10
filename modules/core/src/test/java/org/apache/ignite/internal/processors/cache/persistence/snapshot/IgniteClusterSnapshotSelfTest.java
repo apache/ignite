@@ -849,81 +849,99 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotMetrics() throws Exception {
-        String newSnapshotName = SNAPSHOT_NAME + "_new";
         CountDownLatch deltaApply = new CountDownLatch(1);
         CountDownLatch deltaBlock = new CountDownLatch(1);
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        MetricRegistry mreg0 = ignite.context().metric().registry(SNAPSHOT_METRICS);
-
-        LongMetric startTime = mreg0.findMetric("LastSnapshotStartTime");
-        LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
-        ObjectGauge<String> snpName = mreg0.findMetric("LastSnapshotName");
-        ObjectGauge<String> errMsg = mreg0.findMetric("LastSnapshotErrorMessage");
-        ObjectGauge<List<String>> snpList = mreg0.findMetric("LocalSnapshotNames");
+        startClientGrid();
 
         // Snapshot process will be blocked when delta partition files processing starts.
         snp(ignite).localSnapshotSenderFactory(
             blockingLocalSnapshotSender(ignite, deltaApply, deltaBlock));
 
-        assertEquals("Snapshot start time must be undefined prior to snapshot operation started.",
-            0, startTime.value());
-        assertEquals("Snapshot end time must be undefined to snapshot operation started.",
-            0, endTime.value());
-        assertTrue("Snapshot name must not exist prior to snapshot operation started.", snpName.value().isEmpty());
-        assertTrue("Snapshot error message must null prior to snapshot operation started.", errMsg.value().isEmpty());
-        assertTrue("Snapshots on local node must not exist", snpList.value().isEmpty());
+        for (Ignite g : G.allGrids()) {
+            MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
+
+            LongMetric startTime = mreg.findMetric("LastSnapshotStartTime");
+            LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+            ObjectGauge<String> snpName = mreg.findMetric("LastSnapshotName");
+            ObjectGauge<String> errMsg = mreg.findMetric("LastSnapshotErrorMessage");
+            ObjectGauge<List<String>> snpList = mreg.findMetric("LocalSnapshotNames");
+
+            if (g.cluster().localNode().isClient()) {
+                assertNull("Snapshot start time must not be created on a client node.", startTime);
+                assertNull("Snapshot end time must not be created on a client node.", endTime);
+                assertNull("Snapshot name must not be created on a client node.", snpName);
+                assertNull("Snapshot error message must not be created on a client node.", errMsg);
+                assertNull("Snapshot local names must not be created on a client node.", snpList);
+
+                continue;
+            }
+
+            assertEquals("Snapshot start time must be undefined prior to snapshot operation started.",
+                0, startTime.value());
+            assertEquals("Snapshot end time must be undefined to snapshot operation started.",
+                0, endTime.value());
+            assertTrue("Snapshot name must not exist prior to snapshot operation started.", snpName.value().isEmpty());
+            assertTrue("Snapshot error message must null prior to snapshot operation started.", errMsg.value().isEmpty());
+            assertTrue("Snapshots on local node must not exist", snpList.value().isEmpty());
+        }
 
         long cutoffStartTime = U.currentTimeMillis();
 
-        IgniteFuture<Void> fut0 = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
-        U.await(deltaApply);
+        for (Ignite g : G.allGrids()) {
+            MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
 
-        assertTrue("Snapshot start time must be set prior to snapshot operation started " +
-            "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']',
-            startTime.value() >= cutoffStartTime);
-        assertEquals("Snapshot end time must be zero prior to snapshot operation started.",
-            0, endTime.value());
-        assertEquals("Snapshot name must be set prior to snapshot operation started.",
-            SNAPSHOT_NAME, snpName.value());
-        assertTrue("Snapshot error message must null prior to snapshot operation started.",
-            errMsg.value().isEmpty());
+            LongMetric startTime = mreg.findMetric("LastSnapshotStartTime");
+            LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+            ObjectGauge<String> snpName = mreg.findMetric("LastSnapshotName");
+            ObjectGauge<String> errMsg = mreg.findMetric("LastSnapshotErrorMessage");
 
-        IgniteFuture<Void> fut1 = snp(grid(1)).createSnapshot(newSnapshotName, null, false, onlyPrimary);
+            if (g.cluster().localNode().isClient()) {
+                assertNull("Snapshot start time must not be created on a client node.", startTime);
+                assertNull("Snapshot end time must not be created on a client node.", endTime);
+                assertNull("Snapshot name must not be created on a client node.", snpName);
+                assertNull("Snapshot error message must not be created on a client node.", errMsg);
 
-        assertThrowsWithCause((Callable<Object>)fut1::get, IgniteException.class);
+                continue;
+            }
 
-        MetricRegistry mreg1 = grid(1).context().metric().registry(SNAPSHOT_METRICS);
+            assertTrue("Snapshot start time must be set prior to snapshot operation started " +
+                    "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']',
+                waitForCondition(() -> startTime.value() >= cutoffStartTime, getTestTimeout(), 30));
 
-        LongMetric startTime1 = mreg1.findMetric("LastSnapshotStartTime");
-        LongMetric endTime1 = mreg1.findMetric("LastSnapshotEndTime");
-        ObjectGauge<String> snpName1 = mreg1.findMetric("LastSnapshotName");
-        ObjectGauge<String> errMsg1 = mreg1.findMetric("LastSnapshotErrorMessage");
+            assertTrue("Snapshot end time must be zero prior to snapshot operation started.",
+                waitForCondition(() -> 0 == endTime.value(), 30));
 
-        assertTrue("Snapshot start time must be greater than zero for finished snapshot.",
-            startTime1.value() > 0);
-        assertEquals("Snapshot end time must zero for failed on start snapshots.",
-            0, endTime1.value());
-        assertEquals("Snapshot name must be set when snapshot operation already finished.",
-            newSnapshotName, snpName1.value());
-        assertNotNull("Concurrent snapshot operation must failed.",
-            errMsg1.value());
+            assertEquals("Snapshot name must be set prior to snapshot operation started.",
+                SNAPSHOT_NAME, snpName.value());
+
+            assertTrue("Snapshot error message must null prior to snapshot operation started.",
+                errMsg.value().isEmpty());
+        }
 
         deltaBlock.countDown();
 
-        fut0.get();
+        fut.get();
 
-        assertTrue("Snapshot start time must be greater than zero for finished snapshot.",
-            startTime.value() > 0);
-        assertTrue("Snapshot end time must be greater than zero for finished snapshot.",
-            endTime.value() > 0);
-        assertEquals("Snapshot name must be set when snapshot operation already finished.",
-            SNAPSHOT_NAME, snpName.value());
-        assertTrue("Concurrent snapshot operation must finished successfully.",
-            errMsg.value().isEmpty());
-        assertEquals("Only the first snapshot must be created and stored on disk.",
-            Collections.singletonList(SNAPSHOT_NAME), snpList.value());
+        for (Ignite g : G.allGrids()) {
+            MetricRegistry mreg = ((IgniteEx)g).context().metric().registry(SNAPSHOT_METRICS);
+
+            LongMetric startTime = mreg.findMetric("LastSnapshotStartTime");
+            LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+
+            if (g.cluster().localNode().isClient()) {
+                assertNull("Snapshot start time must not be created on a client node.", startTime);
+                assertNull("Snapshot end time must not be created on a client node.", endTime);
+
+                continue;
+            }
+
+            assertTrue(waitForCondition(() -> endTime.value() != 0L && startTime.value() != 0 && endTime.value() > startTime.value(),
+                getTestTimeout()));
+        }
     }
 
     /** @throws Exception If fails. */

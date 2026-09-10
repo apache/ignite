@@ -61,9 +61,6 @@
               files="[\\/]internal[\\/]client[\\/]"/>
 
     <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
-              files="[\\/]io[\\/]opencensus[\\/]"/>
-
-    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
               files="[\\/]test[\\/]|[\\/]tests[\\/]||[\\/]testframework[\\/]"/>
 
     <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"

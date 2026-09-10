@@ -57,6 +57,7 @@ public class DiscoveryDataDeserializationFailureHanderTest extends GridCommonAbs
     @Test
     public void testFailureHander() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
+
         failureHnd = new TestFailureHandler(latch);
 
         Ignite node1 = startGrid(1);

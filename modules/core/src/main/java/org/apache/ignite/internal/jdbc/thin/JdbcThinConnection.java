@@ -85,6 +85,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -125,7 +126,6 @@ import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFut
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -2422,12 +2422,15 @@ public class JdbcThinConnection implements Connection {
         /** */
         private final Set<String> sysTypes = new HashSet<>();
 
+        /** JDK marshaller. */
+        private final JdkMarshaller jdkMarsh = Marshallers.jdk();
+
         /**
          * Default constructor.
          */
         public JdbcMarshallerContext() {
             try {
-                processSystemClasses(U.gridClassLoader(), null, sysTypes::add);
+                processSystemClasses(sysTypes::add);
             }
             catch (IOException e) {
                 throw new IgniteException("Unable to initialize marshaller context", e);
@@ -2481,7 +2484,7 @@ public class JdbcThinConnection implements Connection {
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 
-            return U.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr, null);
+            return ClassLoaderUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr);
         }
 
         /** {@inheritDoc} */
@@ -2536,13 +2539,8 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** {@inheritDoc} */
-        @Override public IgnitePredicate<String> classNameFilter() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return Marshallers.jdk();
+            return jdkMarsh;
         }
     }
 

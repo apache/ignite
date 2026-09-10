@@ -20,14 +20,17 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
-/** */
-public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
+/**
+ * Diagnostic info block that dumps the state of cache entries for the given keys. Requested when a transaction
+ * lock future waits for a remote node's response for too long.
+ */
+public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo implements CacheIdAware {
     /** */
     @Order(0)
     int cacheId;
@@ -52,7 +55,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
         this.keys = new HashSet<>(keys);
     }
 
-
     /** {@inheritDoc} */
     @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
         sb.append(U.nl());
@@ -63,16 +65,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
             sb.append("Failed to find cache with id: ").append(cacheId);
 
             return;
-        }
-
-        try {
-            for (KeyCacheObject key : keys)
-                key.finishUnmarshal(cctx.cacheObjectContext(), null);
-        }
-        catch (IgniteCheckedException e) {
-            ctx.cluster().diagnosticLog().error("Failed to unmarshal key: " + e, e);
-
-            sb.append("Failed to unmarshal key: ").append(e).append(U.nl());
         }
 
         sb.append("Cache entries [cacheId=").append(cacheId)
@@ -110,5 +102,10 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(getClass(), cacheId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return cacheId;
     }
 }

@@ -29,8 +29,8 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.beans.factory.support.AbstractBeanFactory;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -43,7 +43,8 @@ public class GarHelloWorldTask extends ComputeTaskSplitAdapter<String, String> {
     /** {@inheritDoc} */
     @Override public Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteException {
         // Create Spring context.
-        AbstractBeanFactory fac = new XmlBeanFactory(
+        DefaultListableBeanFactory fac = new DefaultListableBeanFactory();
+        new XmlBeanDefinitionReader(fac).loadBeanDefinitions(
             new ClassPathResource("org/apache/ignite/spi/deployment/uri/tasks/gar-spring-bean.xml", getClass().getClassLoader()));
 
         fac.setBeanClassLoader(getClass().getClassLoader());

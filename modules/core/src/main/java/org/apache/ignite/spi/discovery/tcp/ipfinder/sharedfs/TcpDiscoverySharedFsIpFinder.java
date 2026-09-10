@@ -185,8 +185,13 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
         initFolder();
 
         Collection<InetSocketAddress> addrs = new LinkedList<>();
+        String[] fileNames = folder.list();
 
-        for (String fileName : folder.list()) {
+        if (fileNames == null)
+            throw new IgniteSpiException("Failed to list files in shared FS directory: " + folder
+                + ". Verify that the directory exists and the shared filesystem is accessible.");
+
+        for (String fileName : fileNames) {
             StringTokenizer st = new StringTokenizer(fileName, DELIM);
 
             if (st.countTokens() != 2)

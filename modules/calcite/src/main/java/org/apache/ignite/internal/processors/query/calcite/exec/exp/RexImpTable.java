@@ -78,16 +78,21 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import static java.util.Objects.requireNonNull;
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
+import static org.apache.calcite.linq4j.tree.ExpressionType.AddChecked;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Divide;
+import static org.apache.calcite.linq4j.tree.ExpressionType.DivideChecked;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Equal;
 import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThan;
 import static org.apache.calcite.linq4j.tree.ExpressionType.GreaterThanOrEqual;
 import static org.apache.calcite.linq4j.tree.ExpressionType.LessThan;
 import static org.apache.calcite.linq4j.tree.ExpressionType.LessThanOrEqual;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Multiply;
+import static org.apache.calcite.linq4j.tree.ExpressionType.MultiplyChecked;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Negate;
+import static org.apache.calcite.linq4j.tree.ExpressionType.NegateChecked;
 import static org.apache.calcite.linq4j.tree.ExpressionType.NotEqual;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Subtract;
+import static org.apache.calcite.linq4j.tree.ExpressionType.SubtractChecked;
 import static org.apache.calcite.linq4j.tree.ExpressionType.UnaryPlus;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.ACOSH;
 import static org.apache.calcite.sql.fun.SqlLibraryOperators.ASINH;
@@ -162,6 +167,7 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CBRT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CEIL;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHAR_LENGTH;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHECKED_DIVIDE;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHECKED_DIVIDE_INTEGER;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHECKED_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHECKED_MULTIPLY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.CHECKED_PLUS;
@@ -344,6 +350,13 @@ public class RexImpTable {
         defineUnary(UNARY_MINUS, Negate, NullPolicy.STRICT,
             BuiltInMethod.BIG_DECIMAL_NEGATE.getMethodName());
         defineUnary(UNARY_PLUS, UnaryPlus, NullPolicy.STRICT, null);
+        // checked arithmetic
+        defineBinary(CHECKED_PLUS, AddChecked, NullPolicy.STRICT, "checkedPlus");
+        defineBinary(CHECKED_MINUS, SubtractChecked, NullPolicy.STRICT, "checkedMinus");
+        defineBinary(CHECKED_MULTIPLY, MultiplyChecked, NullPolicy.STRICT, "checkedMultiply");
+        defineBinary(CHECKED_DIVIDE, DivideChecked, NullPolicy.STRICT, "checkedDivide");
+        defineBinary(CHECKED_DIVIDE_INTEGER, DivideChecked, NullPolicy.STRICT, "checkedDivide");
+        defineUnary(CHECKED_UNARY_MINUS, NegateChecked, NullPolicy.STRICT, "checkedUnaryMinus");
 
         defineMethod(MOD, "mod", NullPolicy.STRICT);
         defineMethod(EXP, "exp", NullPolicy.STRICT);
@@ -1227,7 +1240,7 @@ public class RexImpTable {
         @Override Expression implementSafe(
             final RexToLixTranslator translator,
             final RexCall call,
-            final List<Expression> argValueList) {
+            List<Expression> argValueList) {
             // neither nullable:
             //   return x OP y
             // x nullable
@@ -1243,7 +1256,7 @@ public class RexImpTable {
             // If one or both operands have ANY type, use the late-binding backup
             // method.
             if (anyAnyOperands(call))
-                return callBackupMethodAnyType(translator, call, argValueList);
+                return callBackupMethodAnyType(argValueList);
 
             final Type type0 = argValueList.get(0).getType();
             final Type type1 = argValueList.get(1).getType();
@@ -1272,10 +1285,6 @@ public class RexImpTable {
                     argValueList);
             }
 
-            // For checked arithmetic call the method.
-            if (CHECKED_OPERATORS.contains(op))
-                return Expressions.call(SqlFunctions.class, backupMethodName, argValueList);
-
             return IgniteExpressions.makeBinary(expressionType,
                 argValueList.get(0), argValueList.get(1));
         }
@@ -1290,8 +1299,7 @@ public class RexImpTable {
         }
 
         /** */
-        private Expression callBackupMethodAnyType(RexToLixTranslator translator,
-            RexCall call, List<Expression> expressions) {
+        private Expression callBackupMethodAnyType(List<Expression> expressions) {
             final String backupMethodNameForAnyType =
                 backupMethodName + METHOD_POSTFIX_FOR_ANY_TYPE;
 
@@ -1343,6 +1351,8 @@ public class RexImpTable {
             if (expressionType == ExpressionType.Negate && argVal.type == BigDecimal.class
                 && null != backupMethodName)
                 e = Expressions.call(argVal, backupMethodName);
+            else if (expressionType == NegateChecked && null != backupMethodName)
+                e = Expressions.call(SqlFunctions.class, backupMethodName, argValueList);
             else
                 e = IgniteExpressions.makeUnary(expressionType, argVal);
 
@@ -1565,9 +1575,12 @@ public class RexImpTable {
             assert call.getOperands().size() == 1;
             final RelDataType srcType = call.getOperands().get(0).getType();
 
-            // Short-circuit if no cast is required
             RexNode arg = call.getOperands().get(0);
-            if (call.getType().equals(srcType)) {
+
+            // Short-circuit if no cast is required
+            if (call.getType().equals(srcType)
+                // However, do not elide casts to decimal types, they perform bounds checking
+                && srcType.getSqlTypeName() != SqlTypeName.DECIMAL) {
                 // No cast required, omit cast
                 return argValueList.get(0);
             }
@@ -1588,10 +1601,10 @@ public class RexImpTable {
         private RelDataType nullifyType(JavaTypeFactory typeFactory,
             final RelDataType type, final boolean nullable) {
             if (type instanceof RelDataTypeFactoryImpl.JavaType) {
-                final Primitive primitive = Primitive.ofBox(
-                    ((RelDataTypeFactoryImpl.JavaType)type).getJavaClass());
-                if (primitive != null)
-                    return typeFactory.createJavaType(primitive.primitiveClass);
+                Class<?> javaCls = ((RelDataTypeFactoryImpl.JavaType)type).getJavaClass();
+                final Class<?> primitive = Primitive.unbox(javaCls);
+                if (primitive != javaCls)
+                    return typeFactory.createJavaType(primitive);
             }
             return typeFactory.createTypeWithNullability(type, nullable);
         }

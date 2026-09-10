@@ -43,6 +43,7 @@ import org.apache.ignite.internal.client.thin.ServiceAwarenessTest;
 import org.apache.ignite.internal.client.thin.ServicesBinaryArraysTests;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.client.thin.ThinClientEnpointsDiscoveryTest;
+import org.apache.ignite.internal.client.thin.ThinClientHandshakeTimeoutTest;
 import org.apache.ignite.internal.client.thin.ThinClientNonTransactionalOperationsInTxTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessBalancingTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessDiscoveryTest;
@@ -75,6 +76,7 @@ import org.junit.runners.Suite;
     SslParametersTest.class,
     ConnectionTest.class,
     ConnectToStartingNodeTest.class,
+    ThinClientHandshakeTimeoutTest.class,
     AsyncChannelTest.class,
     ComputeTaskTest.class,
     ClusterApiTest.class,

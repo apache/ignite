@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import jakarta.transaction.TransactionManager;
 import javax.cache.configuration.Factory;
-import javax.transaction.TransactionManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.jta.CacheTmLookup;
@@ -142,8 +142,8 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testLifecycleAware() throws Exception {
-        // No-op, see anothre tests.
+    @Override public void testLifecycleAware() {
+        // No-op, see other tests.
     }
 
     /** */

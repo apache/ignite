@@ -48,8 +48,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
@@ -62,8 +60,6 @@ import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
-import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
-import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_PARSE;
 
 /**
  * Parser module. Splits incoming request into a series of parsed results.
@@ -133,13 +129,11 @@ public class QueryParser {
      * @return Parsing result that contains Parsed leading query and remaining sql script.
      */
     public QueryParserResult parse(String schemaName, SqlFieldsQuery qry, boolean lazy, boolean remainingAllowed) {
-        try (TraceSurroundings ignored = MTC.support(idx.kernalContext().tracing().create(SQL_QRY_PARSE, MTC.span()))) {
-            QueryParserResult res = parse0(schemaName, qry, lazy, remainingAllowed);
+        QueryParserResult res = parse0(schemaName, qry, lazy, remainingAllowed);
 
-            checkQueryType(qry, res.isSelect());
+        checkQueryType(qry, res.isSelect());
 
-            return res;
-        }
+        return res;
     }
 
     /**
@@ -196,8 +190,6 @@ public class QueryParser {
         if (cached != null) {
             metricsHolder.countCacheHit();
 
-            MTC.span().addTag(SQL_PARSER_CACHE_HIT, () -> "true");
-
             return new QueryParserResult(
                 qryDesc,
                 queryParameters(qry, lazy),
@@ -210,8 +202,6 @@ public class QueryParser {
         }
 
         metricsHolder.countCacheMiss();
-
-        MTC.span().addTag(SQL_PARSER_CACHE_HIT, () -> "false");
 
         // Try parsing as native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);

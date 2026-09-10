@@ -18,14 +18,11 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.consistency.inmem.AtomicReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.inmem.ExplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.inmem.ImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.inmem.ReplicatedExplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.inmem.ReplicatedImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.inmem.SingleBackupExplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.inmem.SingleBackupImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsAtomicReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsExplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsImplicitTransactionalReadRepairTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -37,19 +34,16 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     // Inmem
     AtomicReadRepairTest.class,
-    ExplicitTransactionalReadRepairTest.class,
     ImplicitTransactionalReadRepairTest.class,
 
     // PDS
     PdsAtomicReadRepairTest.class,
-    PdsExplicitTransactionalReadRepairTest.class,
     PdsImplicitTransactionalReadRepairTest.class,
 
     // Special (inmem)
     ReplicatedExplicitTransactionalReadRepairTest.class,
     ReplicatedImplicitTransactionalReadRepairTest.class,
     SingleBackupExplicitTransactionalReadRepairTest.class,
-    SingleBackupImplicitTransactionalReadRepairTest.class,
 })
 public class IgniteCacheConsistencySelfTestSuite {
 }

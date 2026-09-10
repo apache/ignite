@@ -98,6 +98,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        stopAllGrids();
+
         if (poolToShutdownAfterTest != null)
             poolToShutdownAfterTest.shutdownNow();
 
@@ -923,9 +925,8 @@ public class OperationContextAttributesTest extends GridCommonAbstractTest {
 
         /** */
         static void assertAllCreatedChecksPassed() throws Exception {
-            for (AttributeValueChecker check : CHECKS) {
+            for (AttributeValueChecker check : CHECKS)
                 check.get(5_000, MILLISECONDS);
-            }
         }
 
         /** */

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Map;
@@ -254,6 +256,35 @@ public class GridBinaryMarshaller {
             writer.marshal(obj);
 
             return writer.array();
+        }
+    }
+
+    /**
+     * Marshals the object directly into the given stream, without allocating a trimmed copy of the whole result.
+     *
+     * @param obj Object to marshal.
+     * @param out Output stream.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void marshal(@Nullable Object obj, OutputStream out, boolean failIfUnregistered) throws BinaryObjectException {
+        try {
+            if (obj == null) {
+                out.write(NULL);
+
+                return;
+            }
+
+            try (BinaryWriterEx writer = BinaryUtils.writer(ctx, failIfUnregistered, UNREGISTERED_TYPE_ID)) {
+                writer.marshal(obj);
+
+                BinaryOutputStream s = writer.out();
+
+                out.write(s.array(), 0, s.position());
+            }
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException("Failed to marshal the object: " + obj, e);
         }
     }
 

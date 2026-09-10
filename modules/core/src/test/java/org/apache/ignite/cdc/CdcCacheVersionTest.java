@@ -416,7 +416,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 KeyCacheObject key = new KeyCacheObjectImpl(i, null, intCache.affinity().partition(i));
                 CacheObject val = new CacheObjectImpl(createUser(i), null);
 
-                val.prepareMarshal(intCache.context().cacheObjectContext());
+                val.marshal(intCache.context().cacheObjectContext());
 
                 drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID)));
             }

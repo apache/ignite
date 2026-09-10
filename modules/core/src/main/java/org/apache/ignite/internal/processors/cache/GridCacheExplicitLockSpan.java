@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -210,6 +212,20 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
         try {
             return cands.isEmpty();
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /**
+     * @return Lock candidates.
+     */
+    public Collection<GridCacheMvccCandidate> candidates() {
+        lock();
+
+        try {
+            return new ArrayList<>(F.flatCollections(cands.values()));
         }
         finally {
             unlock();

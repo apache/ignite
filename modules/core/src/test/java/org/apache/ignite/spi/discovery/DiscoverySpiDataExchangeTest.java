@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -224,6 +225,11 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
             delegate.resolveCommunicationFailure(node, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MessageFactoryProvider messageFactoryProvider() {
+            return delegate.messageFactoryProvider();
         }
 
         /** Delegated discovery data exchange. */

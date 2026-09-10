@@ -234,10 +234,13 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
                 /** */
                 private Callable<String> c = new Callable<String>() {
+                    /** */
                     @TestAnnotation
                     private String cStr;
 
+                    /** */
                     private Runnable r = new Runnable() {
+                        /** */
                         @TestAnnotation
                         private String rStr;
 
@@ -403,7 +406,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             // Should not be null if task has been completed successfully (meaning all resources have been injected).
-            Assert.notNull(g.compute().execute(TestTask.class, null));
+            Assert.notNull(g.compute().execute(TestTask.class, null), "must not be null");
         }
         finally {
             stopGrid();

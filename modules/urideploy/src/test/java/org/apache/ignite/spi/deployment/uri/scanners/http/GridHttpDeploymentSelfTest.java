@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.Test;
 
 /**
@@ -86,7 +87,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
 
         ResourceHandler hnd = new ResourceHandler();
 
-        hnd.setDirectoriesListed(true);
+        hnd.setDirAllowed(true);
 
         String garPathTmp = GridTestProperties.getProperty("urideployment.path.tmp");
 
@@ -100,7 +101,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
 
         rsrcBase = resourseBaseDir.getPath();
 
-        hnd.setResourceBase(rsrcBase);
+        hnd.setBaseResource(ResourceFactory.root().newResource(rsrcBase));
 
         srv.setHandler(hnd);
 

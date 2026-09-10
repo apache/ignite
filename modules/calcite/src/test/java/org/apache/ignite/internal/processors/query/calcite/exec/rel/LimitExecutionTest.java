@@ -52,6 +52,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
     /** Tests Sort node can limit its output when fetch param is set. */
     @Test
     public void testSortLimit() {
+        checkLimitSort(0, 0);
         checkLimitSort(0, 1);
         checkLimitSort(1, 0);
         checkLimitSort(1, 1);
@@ -78,10 +79,10 @@ public class LimitExecutionTest extends AbstractExecutionTest {
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
 
-        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, () -> offset,
-            fetch == 0 ? null : () -> fetch);
+        SortNode<Object[]> sortNode = new SortNode<>(ctx, rowType, F::compareArrays, offset,
+            fetch == 0 ? SortNode.FETCH_DEFAULT : fetch);
 
-        List<Object[]> data = IntStream.range(0, SourceNode.IN_BUFFER_SIZE + fetch + offset).boxed()
+        List<Object[]> data = IntStream.range(0, IN_BUFFER_SIZE + fetch + offset).boxed()
             .map(i -> new Object[] {i}).collect(Collectors.toList());
         Collections.shuffle(data);
 
@@ -109,7 +110,7 @@ public class LimitExecutionTest extends AbstractExecutionTest {
         RelDataType rowType = TypeUtils.createRowType(tf, int.class);
 
         RootNode<Object[]> rootNode = new RootNode<>(ctx, rowType);
-        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, () -> offset, fetch == 0 ? null : () -> fetch);
+        LimitNode<Object[]> limitNode = new LimitNode<>(ctx, rowType, offset, fetch == 0 ? LimitNode.FETCH_DEFAULT : fetch);
         SourceNode srcNode = new SourceNode(ctx, rowType);
 
         rootNode.register(limitNode);

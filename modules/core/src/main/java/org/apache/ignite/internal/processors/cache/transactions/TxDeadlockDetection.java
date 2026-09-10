@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -276,7 +277,7 @@ public class TxDeadlockDetection {
          * @param keys Keys.
          * @param txLocks Tx locks.
          */
-        private void map(@Nullable Set<IgniteTxKey> keys, Map<IgniteTxKey, List<TxLock>> txLocks) {
+        private void map(@Nullable Collection<IgniteTxKey> keys, Map<IgniteTxKey, List<TxLock>> txLocks) {
             mapTxKeys(keys, txLocks);
 
             UUID nodeId = nodesQueue.pollFirst();
@@ -329,7 +330,7 @@ public class TxDeadlockDetection {
          * @param txLocks Tx locks.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        private void mapTxKeys(@Nullable Set<IgniteTxKey> txKeys, Map<IgniteTxKey, List<TxLock>> txLocks) {
+        private void mapTxKeys(@Nullable Collection<IgniteTxKey> txKeys, Map<IgniteTxKey, List<TxLock>> txLocks) {
             for (Map.Entry<IgniteTxKey, List<TxLock>> e : txLocks.entrySet()) {
                 List<TxLock> locks = e.getValue();
 

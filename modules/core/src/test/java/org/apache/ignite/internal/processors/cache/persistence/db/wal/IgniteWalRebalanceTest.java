@@ -116,6 +116,16 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
 
+    /**
+     * Minimal delay in seconds to wait before starting a new cluster incarnation so that its
+     * cache version offset (derived from the grid start time with 1-second precision, see
+     * GridCacheVersionManager#onLocalJoin) exceeds the offset of the previous incarnation,
+     * keeping cache versions monotonic across incarnations. The new incarnation writes at a
+     * lower topology version (2) than the previous one reached (4 or 3), so the offset must
+     * exceed the previous one by at least 3 seconds; 5 is a safe margin.
+     */
+    private static final int TOP_VER_OFFSET_WAIT_SECS = 5;
+
     /** Block message predicate to set to Communication SPI in node configuration. */
     private IgniteBiPredicate<ClusterNode, Message> blockMsgPred;
 
@@ -318,7 +328,14 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
+        long prevGridStart = crd.context().discovery().gridStartTime();
+
         stopAllGrids();
+
+        // Wait for the new incarnation to satisfy the delay required for cache version
+        // monotonicity across incarnations (see TOP_VER_OFFSET_WAIT_SECS).
+        GridTestUtils.waitForCondition(() -> (System.currentTimeMillis() - prevGridStart) / 1000 >= TOP_VER_OFFSET_WAIT_SECS,
+            getTestTimeout());
 
         IgniteEx ig0 = startGrids(2);
 
@@ -413,7 +430,14 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
+        long prevGridStart = crd.context().discovery().gridStartTime();
+
         stopAllGrids();
+
+        // Wait for the new incarnation to satisfy the delay required for cache version
+        // monotonicity across incarnations (see TOP_VER_OFFSET_WAIT_SECS).
+        GridTestUtils.waitForCondition(() -> (System.currentTimeMillis() - prevGridStart) / 1000 >= TOP_VER_OFFSET_WAIT_SECS,
+            getTestTimeout());
 
         // Rewrite data with globally disabled WAL.
         crd = startGrids(2);
@@ -496,12 +520,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        stopAllGrids();
+        stopGrid(1);
+        stopGrid(2);
 
         // Rewrite data to trigger further rebalance.
-        IgniteEx supplierNode = startGrid(0);
-
-        supplierNode.cluster().state(ACTIVE);
+        IgniteEx supplierNode = grid(0);
 
         IgniteCache<Object, Object> cache = supplierNode.cache(CACHE_NAME);
 
@@ -532,12 +555,15 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             getTestTimeout()
         );
 
+        // Hold the demand until the WAL read is armed to fail, so the error fires mid-rebalance.
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
+
+        spi.waitForBlocked();
+
         // Inject I/O factory which can throw exception during WAL read on supplier node.
         FailingIOFactory ioFactory = injectFailingIOFactory(supplierNode);
 
         // Resume rebalance process.
-        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)demanderNode.configuration().getCommunicationSpi();
-
         spi.stopBlock();
 
         // Wait till rebalance will be failed and cancelled.

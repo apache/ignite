@@ -147,7 +147,7 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
         }, 1, "touch");
 
         IgniteInternalFuture<?> cpFut = runMultiThreadedAsync(() -> {
-            for (int i = 0; i < 1_000; i++) {
+            for (int i = 0; i < GridTestUtils.SF.applyLB(1_000, 200); i++) {
                 try {
                     forceCheckpoint(F.asList(grid(0), grid(1)));
                 }

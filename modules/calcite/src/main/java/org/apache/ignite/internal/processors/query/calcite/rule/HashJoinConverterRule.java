@@ -24,12 +24,12 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 
 /** Hash join converter rule. */
 public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
@@ -45,7 +45,7 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     @Override public boolean matchesJoin(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
 
-        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(join);
+        JoinInfo joinInfo = join.analyzeCondition();
 
         return !joinInfo.pairs().isEmpty();
     }

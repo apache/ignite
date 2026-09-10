@@ -133,6 +133,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean skipReadThrough = opCtx != null && opCtx.skipReadThrough();
+        boolean keepBinaryInInterceptor = opCtx != null && opCtx.keepBinaryInInterceptor();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
@@ -145,6 +146,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore,
                         skipReadThrough,
+                        keepBinaryInInterceptor,
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -287,6 +289,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(
         Collection<KeyCacheObject> keys,
         long timeout,
+        long waitTimeout,
         IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
@@ -303,10 +306,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             isRead,
             retval,
             timeout,
+            waitTimeout,
             createTtl,
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
+            opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
@@ -504,6 +509,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             return;
 
         try {
+            GridCacheVersion obsoleteVer = forSavepoint ? nextVersion() : null;
+
             int keyCnt = -1;
 
             Map<ClusterNode, GridNearUnlockRequest> map = null;
@@ -553,6 +560,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 // Remove candidate from local node first.
                                 if (entry.removeLock(cand.version())) {
+                                    if (forSavepoint)
+                                        evictNearEntry(entry, obsoleteVer, cand.topologyVersion());
+
                                     if (primary.isLocal()) {
                                         dht.removeLocks(
                                             primary.id(),

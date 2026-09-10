@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlan
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedSubqueryPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.DataTypesPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.DynamicParametersPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashJoinPlannerTest;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.PlanExecution
 import org.apache.ignite.internal.processors.query.calcite.planner.PlanSplitterTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTimeoutTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.ProjectFilterScanMergePlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.RecursiveCtePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.RexSimplificationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SerializationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SetOpPlannerTest;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPla
 import org.apache.ignite.internal.processors.query.calcite.planner.UncollectPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UserDefinedViewsPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.WindowPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
 import org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchQueryPlannerTest;
 import org.junit.runner.RunWith;
@@ -90,11 +93,14 @@ import org.junit.runners.Suite;
     InlineIndexScanPlannerTest.class,
     UserDefinedViewsPlannerTest.class,
     RexSimplificationPlannerTest.class,
+    RecursiveCtePlannerTest.class,
     SerializationPlannerTest.class,
     UncollectPlannerTest.class,
+    WindowPlannerTest.class,
     AbstractPlannerUtilityTest.class,
 
     HintsTestSuite.class,
+    DynamicParametersPlannerTest.class,
     TpchQueryPlannerTest.class
 })
 public class PlannerTestSuite {

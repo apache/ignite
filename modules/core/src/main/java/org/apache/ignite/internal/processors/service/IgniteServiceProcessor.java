@@ -389,7 +389,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         if (data.commonData() == null)
             return;
 
-        ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
+        ServiceProcessorCommonDiscoveryData clusterData = data.commonData();
 
         for (ServiceInfo desc : clusterData.registeredServices()) {
             try {
@@ -1805,7 +1805,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                     LazyServiceConfiguration cfg = ((ServiceDeploymentRequest)req).configuration();
 
                     if (ctx.security().enabled())
-                        err = checkPermissions(((ServiceDeploymentRequest)req).configuration().getName(), SERVICE_DEPLOY);
+                        err = checkPermissions(cfg.getName(), SERVICE_DEPLOY);
 
                     if (err == null) {
                         try {

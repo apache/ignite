@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 
 /**
  * Special field set iterator based on database result set.
@@ -39,7 +38,6 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @param data Data.
      * @param pageSize Page size.
      * @param conn Connection.
-     * @param tracing Tracing processor.
      * @throws IgniteCheckedException If failed.
      */
     public H2FieldsIterator(
@@ -48,11 +46,10 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         int pageSize,
         IgniteLogger log,
         IgniteH2Indexing h2,
-        H2QueryInfo qryInfo,
-        Tracing tracing
+        H2QueryInfo qryInfo
     )
         throws IgniteCheckedException {
-        super(data, pageSize, log, h2, qryInfo, tracing);
+        super(data, pageSize, log, h2, qryInfo);
 
         assert conn != null;
 

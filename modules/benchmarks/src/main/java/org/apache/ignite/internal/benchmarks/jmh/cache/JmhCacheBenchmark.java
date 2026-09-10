@@ -127,9 +127,8 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
             .jvmArguments(
                 "-Xms4g",
                 "-Xmx4g",
-                "-XX:+UnlockCommercialFeatures",
                 "-XX:+FlightRecorder",
-                "-XX:StartFlightRecording=delay=30s,dumponexit=true,settings=alloc,filename=" + output + ".jfr",
+                "-XX:StartFlightRecording=delay=30s,dumponexit=true,settings=profile,filename=" + output + ".jfr",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 2),

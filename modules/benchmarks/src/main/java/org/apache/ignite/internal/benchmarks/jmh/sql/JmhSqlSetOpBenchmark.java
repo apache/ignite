@@ -19,11 +19,9 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.profile.GCProfiler;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Benchmark set op SQL queries.
@@ -70,11 +68,9 @@ public class JmhSqlSetOpBenchmark extends JmhSqlAbstractBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhSqlSetOpBenchmark.class.getSimpleName())
-            .addProfiler(GCProfiler.class)
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhSqlSetOpBenchmark.class.getSimpleName())
+            .profilers(GCProfiler.class)
+            .run();
     }
 }

@@ -71,8 +71,8 @@ import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
@@ -207,7 +207,7 @@ public class CommandHandler {
 
         Thread.currentThread().setName("session=" + ses);
 
-        logger.info("Control utility [ver. " + ACK_VER_STR + "]");
+        logger.info("Control utility [ver. " + VER + "]");
         logger.info(COPYRIGHT);
         logger.info("User: " + System.getProperty("user.name"));
         logger.info("Time: " + startTime.format(formatter));

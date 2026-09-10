@@ -20,9 +20,7 @@ package org.apache.ignite.internal.benchmarks.jmh.sql;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 
 /**
  * Benchmark replicated scan SQL queries.
@@ -41,10 +39,8 @@ public class JmhSqlScanReplicatedBenchmark extends JmhSqlScanBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(JmhSqlScanReplicatedBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhSqlScanReplicatedBenchmark.class.getSimpleName())
+            .run();
     }
 }

@@ -30,8 +30,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -140,7 +140,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Class<?> getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException {
-            return U.forName(clsNamesByTypeId.get(typeId), ldr);
+            return ClassLoaderUtils.forName(clsNamesByTypeId.get(typeId), ldr);
         }
 
         /** {@inheritDoc} */
@@ -151,11 +151,6 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean isSystemType(String typeName) {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgnitePredicate<String> classNameFilter() {
-            return null;
         }
 
         /** {@inheritDoc} */

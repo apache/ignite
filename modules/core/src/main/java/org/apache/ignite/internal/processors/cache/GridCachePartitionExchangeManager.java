@@ -105,8 +105,6 @@ import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
@@ -164,7 +162,6 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
-import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
@@ -389,6 +386,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
+                    msg.afterReceive();
+
                     GridDhtPartitionExchangeId exchangeId = msg.exchangeId();
 
                     if (exchangeId != null) {
@@ -426,6 +425,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
+                    msg.received();
+
                     if (msg.exchangeId() == null) {
                         GridDhtPartitionsExchangeFuture curExchange = lastTopologyFuture();
 
@@ -643,27 +644,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             // Event callback - without this callback future will never complete.
             exchFut.onEvent(exchId, evt, cache);
-
-            Span span = cctx.kernalContext().tracing().create(EXCHANGE_FUTURE, evt.span());
-
-            if (exchId != null) {
-                GridDhtPartitionExchangeId exchIdf = exchId;
-
-                span.addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> evt.eventNode().id().toString());
-                span.addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
-                    () -> evt.eventNode().consistentId().toString());
-                span.addTag(SpanTags.tag(SpanTags.EVENT, SpanTags.TYPE), () -> String.valueOf(evt.type()));
-                span.addTag(SpanTags.tag(SpanTags.EXCHANGE, SpanTags.ID), () -> String.valueOf(exchIdf.toString()));
-                span.addTag(SpanTags.tag(SpanTags.INITIAL, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR),
-                    () -> String.valueOf(exchIdf.topologyVersion().topologyVersion()));
-                span.addTag(SpanTags.tag(SpanTags.INITIAL, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR),
-                    () -> String.valueOf(exchIdf.topologyVersion().minorTopologyVersion()));
-            }
-
-            span.addTag(SpanTags.NODE_ID, () -> cctx.localNodeId().toString());
-            span.addLog(() -> "Created");
-
-            exchFut.span(span);
 
             // Start exchange process.
             addFuture(exchFut);
@@ -1072,11 +1052,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     *
      * @param topVer Topology version.
-     * @return Last topology version before the provided one when affinity was modified.
+     * @return Last topology version before the provided one when affinity was modified or {@link AffinityTopologyVersion#NONE}
+     * if {@code topVer} is null.
      */
     public AffinityTopologyVersion lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
+        if (topVer == null)
+            return NONE;
+
         if (topVer.topologyVersion() <= 0)
             return topVer;
 
@@ -1333,27 +1316,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Creates partitions full message for all cache groups.
-     *
-     * @param exchId Non-null exchange ID if message is created for exchange.
-     * @param lastVer Last version.
-     * @param partHistSuppliers Partition history suppliers map.
-     * @param partsToReload Partitions to reload map.
-     * @return Message.
-     */
-    public GridDhtPartitionsFullMessage createPartitionsFullMessage(
-        @Nullable final GridDhtPartitionExchangeId exchId,
-        @Nullable GridCacheVersion lastVer,
-        Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers,
-        @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload
-    ) {
-        Collection<CacheGroupContext> grps = cctx.cache().cacheGroups();
-
-        return createPartitionsFullMessage(exchId, lastVer, partHistSuppliers, partsToReload, grps);
-    }
-
-    /**
-     * Creates partitions full message for selected cache groups.
+     * Creates partitions full message for selected cache groups and prepares it to send to another node.
      *
      * @param exchId Non-null exchange ID if message is created for exchange.
      * @param lastVer Last version.
@@ -1427,6 +1390,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         if (!partsSizes.isEmpty())
             m.partitionSizes(partsSizes);
+
+        m.prepareToSend();
 
         return m;
     }

@@ -25,7 +25,15 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Specifies to which traces, specific configuration will be applied. In other words it's a sort of tracing
  * configuration locator.
+ *
+ * <p><b>WARNING:</b> This class MUST NOT be removed without considering PDS backward compatibility. Instances of this
+ * class were stored in the distributed MetaStorage under the {@code "tr.config"} key. Since distributed MetaStorage values
+ * can be written to the PDS, removing this class may prevent existing PDS from being deserialized.</p>
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public class TracingConfigurationCoordinates implements Serializable {
 
     /** */
@@ -56,14 +64,20 @@ public class TracingConfigurationCoordinates implements Serializable {
 
     /**
      * @return {@link Scope} of a trace's root span to which some specific tracing configuration will be applied.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     @NotNull public Scope scope() {
         return scope;
     }
 
     /**
      * @return Label of a traced operation, to which some specific tracing configuration will be applied.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     @Nullable public String label() {
         return lb;
     }
@@ -100,7 +114,10 @@ public class TracingConfigurationCoordinates implements Serializable {
 
     /**
      * {@code TracingConfigurationCoordinates} builder.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     @SuppressWarnings("PublicInnerClass") public static class Builder {
         /** Counterpart of {@code TracingConfigurationCoordinator}'s scope. */
         private final Scope scope;
@@ -113,7 +130,10 @@ public class TracingConfigurationCoordinates implements Serializable {
          *
          * @param scope Mandatory scope attribute.
          * @throws IllegalArgumentException if null scope is specified.
+         * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+         * retired in favor of Ignite Performance Statistics and Ignite Metrics.
          */
+        @Deprecated(forRemoval = true)
         public Builder(Scope scope) {
             if (scope == null)
                 throw new IllegalArgumentException("Null scope is not valid for tracing coordinates.");
@@ -126,7 +146,10 @@ public class TracingConfigurationCoordinates implements Serializable {
          *
          * @param lb Label of traced operation. It's an optional attribute.
          * @return Current {@code TracingConfigurationCoordinates} instance.
+         * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+         * retired in favor of Ignite Performance Statistics and Ignite Metrics.
          */
+        @Deprecated(forRemoval = true)
         public @NotNull Builder withLabel(@Nullable String lb) {
             this.lb = lb;
 
@@ -137,7 +160,10 @@ public class TracingConfigurationCoordinates implements Serializable {
          * Builder's build() method.
          *
          * @return {@code TracingConfigurationCoordinates} instance.
+         * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+         * retired in favor of Ignite Performance Statistics and Ignite Metrics.
          */
+        @Deprecated(forRemoval = true)
         public TracingConfigurationCoordinates build() {
             return new TracingConfigurationCoordinates(scope, lb);
         }

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.CommonUtils;
+
 /**
  * Client listener command request.
  */
 public interface ClientListenerRequest {
     /** Handshake request. */
-    public static final int HANDSHAKE = 1;
+    public static final int HANDSHAKE = CommonUtils.HANDSHAKE;
 
     /**
      * @return Request ID.

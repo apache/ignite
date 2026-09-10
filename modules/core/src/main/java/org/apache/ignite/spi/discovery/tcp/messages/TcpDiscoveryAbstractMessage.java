@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,6 +42,9 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
 
     /** */
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
+
+    /** */
+    protected static final int OP_CTX_ATTACHED_FLAG_POS = 3;
 
     /** */
     protected static final int FORCE_FAIL_FLAG_POS = 4;
@@ -76,6 +80,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
     @Order(4)
     Set<UUID> failedNodes;
 
+    /** Operation context snapshot message. */
+    @GridToStringInclude
+    @Order(5)
+    public @Nullable OperationContextSnapshotMessage opCtxSnp;
+
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
      */
@@ -100,6 +109,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
         verifierNodeId = msg.verifierNodeId;
         topVer = msg.topVer;
         flags = msg.flags;
+        opCtxSnp = msg.opCtxSnp;
     }
 
     /**
@@ -224,6 +234,15 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
      */
     public void force(boolean force) {
         setFlag(FORCE_FAIL_FLAG_POS, force);
+    }
+
+    /** @param opCtxSnp Operation context snapshot.  */
+    public void attachOperationContextSnapshot(@Nullable OperationContextSnapshotMessage opCtxSnp) {
+        if (!getFlag(OP_CTX_ATTACHED_FLAG_POS)) {
+            this.opCtxSnp = opCtxSnp;
+
+            setFlag(OP_CTX_ATTACHED_FLAG_POS, true);
+        }
     }
 
     /**

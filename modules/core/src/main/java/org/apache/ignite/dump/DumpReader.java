@@ -64,8 +64,8 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 
@@ -206,7 +206,7 @@ public class DumpReader implements Runnable {
 
     /** */
     private void ackAsciiLogo() {
-        String ver = "ver. " + ACK_VER_STR;
+        String ver = "ver. " + VER;
 
         if (log.isInfoEnabled()) {
             log.info(NL + NL +

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -64,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -121,9 +121,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /** */
     private final IgniteLogger log;
-
-    /** */
-    private final Marshaller marsh;
 
     /** */
     private final GridJobSessionImpl ses;
@@ -244,8 +241,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.job = job;
 
         log = U.logger(ctx, logRef, this);
-
-        marsh = ctx.marshaller();
 
         UUID locNodeId = ctx.discovery().localNode().id();
 
@@ -887,8 +882,36 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
 
-                            if (!loc)
-                                jobRes.marshallUserData(marsh, log);
+                            if (!loc) {
+                                try {
+                                    CommunicationMarshalling.marshal(jobRes, ctx, null);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    String ids = "[nodeId=" + sndNode.id() + ", ses=" + ses.getId() +
+                                        ", jobId=" + ses.getJobId() + ']';
+
+                                    logError("Failed to serialize job response " + ids, e);
+
+                                    // Drop the payload, keeping the job exception when there is one.
+                                    jobRes = jobRes.withError(jobRes.exception() != null
+                                        ? jobRes.exception()
+                                        : U.convertException(e));
+
+                                    try {
+                                        CommunicationMarshalling.marshal(jobRes, ctx, null);
+                                    }
+                                    catch (IgniteCheckedException e0) {
+                                        // Then the exception itself is what could not be written.
+                                        String errMsg = "Failed to serialize job exception " + ids;
+
+                                        logError(errMsg, e0);
+
+                                        jobRes = jobRes.withError(new IgniteException(errMsg));
+
+                                        CommunicationMarshalling.marshal(jobRes, ctx, null);
+                                    }
+                                }
+                            }
 
                             long timeout = ses.getEndTime() - U.currentTimeMillis();
 

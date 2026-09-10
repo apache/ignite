@@ -17,21 +17,20 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.lang.reflect.Method;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.communication.GridIoSecurityAwareMessage;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityContext;
+import org.apache.ignite.internal.processors.security.impl.TestSecuritySubject;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  * Unit test for {@link IgniteSecurityProcessor}.
@@ -60,14 +59,7 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
     @Test
     public void testThrowIllegalStateExceptionIfNodeNotFoundInDiscoCache() throws Exception {
         IgniteEx srv = startGridAllowAll("srv");
-
         IgniteEx cli = startClientAllowAll("cli");
-
-        Method getSpiMethod = GridManagerAdapter.class.getDeclaredMethod("getSpi");
-
-        getSpiMethod.setAccessible(true);
-
-        TcpCommunicationSpi spi = (TcpCommunicationSpi)getSpiMethod.invoke(cli.context().io());
 
         LogListener logPattern = LogListener
             .matches(s -> s.contains("Failed to obtain a security context."))
@@ -76,15 +68,11 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
 
         listeningLog.registerListener(logPattern);
 
-        spi.sendMessage(srv.localNode(), new GridIoSecurityAwareMessage(
-            UUID.randomUUID(),
-            PUBLIC_POOL,
-            TOPIC_CACHE,
-            new IgniteDiagnosticRequest(),
-            false,
-            0,
-            false
-        ));
+        TestSecurityContext unknownCtx = new TestSecurityContext(new TestSecuritySubject().setId(UUID.randomUUID()));
+
+        try (Scope ignored = cli.context().security().withContext(unknownCtx)) {
+            cli.context().io().sendToGridTopic(srv.localNode().id(), TOPIC_CACHE, new IgniteDiagnosticRequest(), SYSTEM_POOL);
+        }
 
         GridTestUtils.waitForCondition(logPattern::check, getTestTimeout());
     }

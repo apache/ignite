@@ -31,9 +31,9 @@ Ignite was tested on:
 
 include::includes/prereqs.adoc[]
 
-== Running Ignite with Java 11 or later
+== Running Ignite with Java 17 or later
 
-include::includes/java9.adoc[]
+include::includes/java.adoc[]
 
 
 == Using Binary Distribution
@@ -208,7 +208,7 @@ The following modules are available:
 
 |ignite-jcl |Support for the Jakarta Common Logging (JCL) framework.
 
-|ignite-jta |Integration of Ignite transactions with JTA.
+|ignite-jta |Integration of Ignite transactions with JTA. Starting with Apache Ignite 2.19, custom JTA integration code must use Jakarta Transaction API classes, such as `jakarta.transaction.TransactionManager`.
 
 |ignite-kafka | Ignite Kafka Streamer provides capability to stream data from Kafka to Ignite caches.
 

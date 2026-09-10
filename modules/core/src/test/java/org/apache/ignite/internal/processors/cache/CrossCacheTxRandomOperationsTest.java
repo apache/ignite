@@ -34,6 +34,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -263,7 +264,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
             boolean checkData = fullSync && !optimistic;
 
-            long stopTime = System.currentTimeMillis() + 10_000;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(10_000, 2_000);
 
             for (int i = 0; i < 10_000; i++) {
                 if (i % 100 == 0) {

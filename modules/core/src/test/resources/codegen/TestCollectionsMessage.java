@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
@@ -102,6 +103,9 @@ public class TestCollectionsMessage implements Message {
 
     @Order(24)
     Set<BitSet> bitSetSet;
+
+    @Order(25)
+    Set<CacheObject> cacheObjectSet;
 
     public short directType() {
         return 0;

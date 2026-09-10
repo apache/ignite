@@ -394,8 +394,8 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         private volatile boolean rebuiltIndexes;
 
         /** {@inheritDoc} */
-        @Override @Nullable
-        public IgniteInternalFuture<?> rebuild(
+        @Nullable
+        @Override public IgniteInternalFuture<?> rebuild(
             GridCacheContext cctx,
             boolean force,
             IndexRebuildCancelToken cancelTok

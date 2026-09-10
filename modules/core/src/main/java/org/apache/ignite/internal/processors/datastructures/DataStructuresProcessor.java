@@ -75,6 +75,7 @@ import org.apache.ignite.internal.systemview.QueueViewWalker;
 import org.apache.ignite.internal.systemview.ReentrantLockViewWalker;
 import org.apache.ignite.internal.systemview.SemaphoreViewWalker;
 import org.apache.ignite.internal.systemview.SetViewWalker;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -137,13 +138,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public static final String VOLATILE_GRP_NAME = DEFAULT_VOLATILE_DS_GROUP_NAME + "@" + VOLATILE_DATA_REGION_NAME;
 
     /** */
-    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+    public static final String DEFAULT_DS_GROUP_NAME = CommonUtils.DEFAULT_DS_GROUP_NAME;
 
     /** */
     private static final String DS_CACHE_NAME_PREFIX = "datastructures_";
 
     /** Atomics system cache name. */
-    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+    public static final String ATOMICS_CACHE_NAME = CommonUtils.ATOMICS_CACHE_NAME;
 
     /** */
     public static final String QUEUES_VIEW = metricName("ds", "queues");

@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -41,7 +40,7 @@ public class RecoveryLastReceivedMessage implements Message {
     /**
      * Message body size in bytes. In worst case it uses 10 bytes for serialization.
      *
-     * @see DirectByteBufferStream#writeLong(long).
+     * @see org.apache.ignite.internal.direct.stream.DirectByteBufferStream#writeLong(long).
      */
     private static final int MESSAGE_SIZE = 10;
 

@@ -31,13 +31,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -47,6 +48,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.jackson.IgniteBinaryObjectJsonDeserializer;
 import org.apache.ignite.internal.jackson.IgniteObjectMapper;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -72,8 +74,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -93,7 +93,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 /**
  * Jetty REST handler. The following URL format is supported: {@code /ignite?cmd=cmdName&param1=abc&param2=123}
  */
-public class GridJettyRestHandler extends AbstractHandler {
+public class GridJettyRestHandler extends HttpServlet {
     /** */
     public static final String IGNITE_CMD_PATH = "/ignite";
 
@@ -270,16 +270,13 @@ public class GridJettyRestHandler extends AbstractHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void handle(String target, Request req, HttpServletRequest srvReq, HttpServletResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
+    @Override protected void service(HttpServletRequest srvReq, HttpServletResponse res) {
+        String target = srvReq.getRequestURI();
 
-        if (!target.startsWith(IGNITE_CMD_PATH))
-            return;
+        if (log.isDebugEnabled())
+            log.debug("Handling request [target=" + target + ", srvReq=" + srvReq + ']');
 
         processRequest(target, srvReq, res);
-
-        req.setHandled(true);
     }
 
     /**
@@ -1030,7 +1027,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 }
 
                 // Creating an object of the specified type, if its class is available.
-                Class<?> cls = U.classForName(type, null);
+                Class<?> cls = ClassLoaderUtils.classForName(type);
 
                 if (cls != null)
                     return jsonMapper.readValue(str, cls);

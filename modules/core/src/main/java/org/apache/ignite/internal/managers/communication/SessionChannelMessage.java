@@ -53,10 +53,8 @@ public class SessionChannelMessage implements Message {
         return sesId;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SessionChannelMessage.class, this);
     }
-
 }
