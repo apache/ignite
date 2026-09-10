@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.database.FreeListCutTailDifferentGc
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
+import org.apache.ignite.internal.processors.failure.FailureProcessorMetricsTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorThreadDumpThrottlingTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageClassloadingTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
@@ -164,6 +165,7 @@ import org.junit.runners.Suite;
     OomFailureHandlerTest.class,
     TransactionIntegrityWithSystemWorkerDeathTest.class,
     FailureProcessorLoggingTest.class,
+    FailureProcessorMetricsTest.class,
     FailureProcessorThreadDumpThrottlingTest.class,
     ExchangeTaskHandlerWaitingForTasksTest.class,
 
