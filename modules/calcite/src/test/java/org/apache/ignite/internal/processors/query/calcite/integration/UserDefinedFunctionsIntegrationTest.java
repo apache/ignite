@@ -704,6 +704,17 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testJavaTimeFunctionParametersAfterTableQuery() {
+        sql("CREATE TABLE type_warmup(i INT)");
+
+        // Resolving the table's hidden columns caches Ignite OTHER before Calcite infers UDF parameter types.
+        sql("SELECT * FROM type_warmup");
+
+        testJavaTimeFunctionParametersWithSqlTypeValues();
+    }
+
+    /** */
+    @Test
     public void testDeterministicTemporalFunctionReduced() {
         client.getOrCreateCache(new CacheConfiguration<>("deterministic-temporal")
             .setSqlSchema("PUBLIC")
