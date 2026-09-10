@@ -59,6 +59,7 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     /** */
     public static final String RSRC_DIR = "./src/test/resources/" + TPCH;
 
+    /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<String> params() throws IOException {
         return Files.list(Path.of(RSRC_DIR))
