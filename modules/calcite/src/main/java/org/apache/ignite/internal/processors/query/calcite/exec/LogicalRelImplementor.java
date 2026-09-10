@@ -74,6 +74,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveTableScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RepeatUnionNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanTableRowNode;
@@ -85,7 +87,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlPaginationPolicy;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -101,8 +103,10 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -616,6 +620,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteRecursiveTableScan rel) {
+        return new RecursiveTableScanNode<>(ctx, rel.getRowType());
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteValues rel) {
         List<RexLiteral> vals = Commons.flat(Commons.cast(rel.getTuples()));
 
@@ -631,6 +640,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         List<Node<Row>> inputs = Commons.transform(rel.getInputs(), this::visit);
 
         node.register(inputs);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteRepeatUnion rel) {
+        RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), rel.all, rel.iterationLimit());
+
+        node.register(F.asList(visit(rel.getLeft()), visit(rel.getRight())));
 
         return node;
     }
@@ -1094,8 +1112,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             if (paramAsDecimal.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + op);
 
-            IgniteSqlPaginationPolicy pagPlc = ctx.unwrap(IgniteSqlPaginationPolicy.class);
-            return IgniteSqlPaginationPolicy.convertToLongExact(paramAsDecimal, pagPlc);
+            IgniteSqlSemantics sem = ctx.unwrap(IgniteSqlSemantics.class);
+            return IgniteSqlSemantics.convertPaginationValueToLong(paramAsDecimal, sem);
         }
         catch (RuntimeException ex) {
             throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),

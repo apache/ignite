@@ -20,7 +20,6 @@ package org.apache.ignite.internal.managers.communication;
 import java.lang.reflect.Array;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallableMessage;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
@@ -93,7 +92,7 @@ public class IgniteMessageFactoryImpl<M extends Message, CM extends GridCacheMes
         try {
             Message msg = serializer.createMessage();
 
-            if (marshaller == null && (msg instanceof MarshallableMessage || msg instanceof SelfMarshallingMessage)) {
+            if (marshaller == null && (msg instanceof MarshallableMessage)) {
                 throw new IgniteException("Failed to register a message: it marshals fields of its own but no" +
                     " marshaller is provided [directType=" + directType +
                     ", cls=" + msg.getClass().getName() + ']');

@@ -495,9 +495,9 @@ public class ConverterUtils {
      * Handles decimal type specifically with explicit type conversion.
      */
     private static Expression convertAssignableType(Expression argument, Type targetType) {
-        if (targetType != BigDecimal.class)
+        if (targetType != BigDecimal.class || !Types.needTypeCast(argument.getType(), targetType))
             return argument;
 
-        return convert(argument, targetType);
+        return convertToDecimal(argument, Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL));
     }
 }

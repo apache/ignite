@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -36,6 +35,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
@@ -86,6 +86,9 @@ abstract class TcpDiscoveryImpl {
 
     /** */
     protected final TcpDiscoverySpi spi;
+
+    /** */
+    protected final GridKernalContext ctx;
 
     /** */
     protected final IgniteLogger log;
@@ -145,7 +148,9 @@ abstract class TcpDiscoveryImpl {
 
         log = spi.log;
 
-        operationCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
+        ctx = ((IgniteEx)spi.ignite()).context();
+
+        operationCtxDispatcher = ctx.operationContextDispatcher();
     }
 
     /**
@@ -457,16 +462,6 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
-    }
-
-    /**
-     * Instantiates IO session for exchanging discovery messages with remote node.
-     *
-     * @param sock Socket to remote node.
-     * @return IO session for writing and reading {@link TcpDiscoveryAbstractMessage}.
-     */
-    TcpDiscoveryIoSession createSession(Socket sock) {
-        return new TcpDiscoveryIoSession(sock, spi);
     }
 
     /**

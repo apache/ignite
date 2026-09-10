@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.JoinInteg
 import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KeyClassChangeIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LitmusCheckIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalDateTimeSupportTest;
@@ -69,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngi
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RecursiveCteIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.ResultSetSizeMetricsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ScalarInIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SelectByKeyFieldTest;
@@ -198,6 +198,7 @@ import org.junit.runners.Suite;
     SystemColumnsScanTest.class,
     BulkOperationDeadlockIntegrationTest.class,
     SelectForUpdateIntegrationTest.class,
+    ResultSetSizeMetricsTest.class,
     LitmusCheckIntegrationTest.class,
 })
 public class IntegrationTestSuite {

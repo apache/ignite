@@ -52,6 +52,7 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
+import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -115,7 +116,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     private final RelDataType nullType;
 
     /** */
-    private final @Nullable IgniteSqlPaginationPolicy pagPlc;
+    private final @Nullable IgniteSqlSemantics sqlSem;
 
     /**
      * Creates a validator.
@@ -125,7 +126,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param typeFactory Type factory.
      * @param cfg Config.
      * @param parameters Dynamic parameters.
-     * @param pagPlc Pagination policy.
+     * @param sqlSem SQL semantics.
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
@@ -133,12 +134,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         IgniteTypeFactory typeFactory,
         SqlValidator.Config cfg,
         @Nullable Object[] parameters,
-        @Nullable IgniteSqlPaginationPolicy pagPlc
+        @Nullable IgniteSqlSemantics sqlSem
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
-        this.pagPlc = pagPlc;
+        this.sqlSem = sqlSem;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
@@ -153,6 +154,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             validateInsertTargets(insert);
 
         super.validateInsert(insert);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateWithItem(SqlWithItem withItem) {
+        super.validateWithItem(withItem);
+
+        RecursiveCteValidator.validate(this, withItem);
     }
 
     /**
@@ -390,7 +398,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (val.signum() < 0)
                 throw new IllegalArgumentException("Negative value for " + nodeName);
 
-            IgniteSqlPaginationPolicy.convertToLongExact(val, pagPlc);
+            IgniteSqlSemantics.convertPaginationValueToLong(val, sqlSem);
         }
         catch (RuntimeException e) {
             throw newValidationError(n, IgniteResource.INSTANCE.illegalFetchLimit(nodeName));
@@ -501,6 +509,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         node = super.performUnconditionalRewrites(node, underFrom);
+
+        if (node instanceof SqlWithItem)
+            RecursiveCteRewriter.inferRecursion((SqlWithItem)node);
 
         if (config() instanceof Config && ((Config)config()).sqlNodeRewriter() != null)
             node = ((Config)config()).sqlNodeRewriter().rewrite(this, node);

@@ -89,8 +89,8 @@
         <failureaccess.version>1.0.3</failureaccess.version>
         <grpc-context.version>1.81.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
-        <hamcrest.version>2.2</hamcrest.version>
-        <jackson.version>2.21.5</jackson.version>
+        <hamcrest.version>3.0</hamcrest.version>
+        <jackson.version>2.22.2</jackson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <javassist.version>3.28.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
@@ -112,12 +112,13 @@
         <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
+        <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.8.9</maven.model.version>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
-        <postgres.connector.version>42.7.3</postgres.connector.version>
+        <postgres.connector.version>42.7.13</postgres.connector.version>
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.8</snappy.version>
         <spring.version>6.2.19</spring.version>
@@ -547,6 +548,12 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${maven.clean.plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -723,6 +730,7 @@
 
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven.dependency.plugin.version}</version>
                 <executions>
                     <execution>
                         <id>copy-libs</id>
@@ -1054,6 +1062,7 @@
                     <plugin><!-- generates dependencies licenses -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-remote-resources-plugin</artifactId>
+                        <version>${maven.remote.resources.version}</version>
                         <executions>
                             <execution>
                                 <id>ignite-dependencies</id>
