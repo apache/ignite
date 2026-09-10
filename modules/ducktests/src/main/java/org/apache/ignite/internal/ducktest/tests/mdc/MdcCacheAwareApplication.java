@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ducktest.tests.mdc;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -29,9 +30,11 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.tests.dto.IndexedDataRecord;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.topology.MdcTopologyValidator;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
@@ -50,8 +53,10 @@ import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
  * <ul>
  *     <li>{@code cacheName} - cache name;</li>
  *     <li>{@code backups} - number of backups; {@code (backups + 1)} must be divisible by {@code dcsNum};</li>
+ *     <li>{@code topologyValidator} - whether to set the cache level {@link MdcTopologyValidator}, default
+ *         {@code true};</li>
  *     <li>{@code mainDc} - main data center for the topology validator (2 DC mode); required, and must be
- *         non-empty, unless {@code datacenters} is given;</li>
+ *         non-empty, unless {@code datacenters} is given or the cache level validator is disabled;</li>
  *     <li>{@code datacenters} - full DC set for majority-based validation (odd DC count mode),
  *         takes precedence over {@code mainDc};</li>
  *     <li>{@code dcsNum} - number of data centers, default 2;</li>
@@ -81,6 +86,9 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
 
     /** */
     protected static final int DFLT_PARTITIONS = 512;
+
+    /** The cache level topology validator is set unless the parameters say otherwise. */
+    protected static final boolean DFLT_CACHE_TOP_VALIDATOR = true;
 
     /** */
     protected static final CacheAtomicityMode DFLT_ATOMICITY_MODE = ATOMIC;
@@ -129,6 +137,51 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
 
         int dcsNum = jNode.path("dcsNum").asInt(DFLT_DCS_NUM);
 
+        RendezvousAffinityFunction affinity = new RendezvousAffinityFunction().setPartitions(partitions);
+
+        IgniteBiPredicate<ClusterNode, List<ClusterNode>> backupFilter = backupFilter(jNode, dcsNum, backups);
+
+        if (backupFilter != null)
+            affinity.setAffinityBackupFilter(backupFilter);
+
+        CacheConfiguration<Integer, V> cacheCfg = new CacheConfiguration<Integer, V>()
+            .setName(cacheName)
+            .setCacheMode(cacheMode)
+            .setAtomicityMode(atomicity)
+            .setWriteSynchronizationMode(writeSync)
+            .setBackups(backups)
+            .setReadFromBackup(readFromBackup)
+            .setAffinity(affinity);
+
+        if (jNode.path("topologyValidator").asBoolean(DFLT_CACHE_TOP_VALIDATOR))
+            cacheCfg.setTopologyValidator(mdcTopologyValidator(jNode));
+        else
+            log.info("Cache level topology validator is disabled [cache=" + cacheName + "]");
+
+        return cacheCfg;
+    }
+
+    /**
+     * The affinity backup filter the cache is configured with. A {@link RendezvousAffinityFunction}
+     * holds exactly one, so an override replaces the MDC filter rather than complementing it - which
+     * is the point: a fork that spreads the copies by something finer than the data center (a cell,
+     * an availability zone) says so here instead of repeating the rest of the cache configuration.
+     *
+     * @param jNode Parameters.
+     * @param dcsNum Number of data centers.
+     * @param backups Number of backups.
+     * @return Affinity backup filter to set, or {@code null} for plain rendezvous affinity.
+     */
+    protected IgniteBiPredicate<ClusterNode, List<ClusterNode>> backupFilter(JsonNode jNode, int dcsNum,
+        int backups) {
+        return new MdcAffinityBackupFilter(dcsNum, backups);
+    }
+
+    /**
+     * @param jNode Parameters.
+     * @return Cache level topology validator compiled from the application parameters.
+     */
+    private MdcTopologyValidator mdcTopologyValidator(JsonNode jNode) {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
         if (jNode.hasNonNull("datacenters")) {
@@ -147,17 +200,7 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
             topValidator.setMainDatacenter(mainDc);
         }
 
-        return new CacheConfiguration<Integer, V>()
-            .setName(cacheName)
-            .setTopologyValidator(topValidator)
-            .setCacheMode(cacheMode)
-            .setAtomicityMode(atomicity)
-            .setWriteSynchronizationMode(writeSync)
-            .setBackups(backups)
-            .setReadFromBackup(readFromBackup)
-            .setAffinity(new RendezvousAffinityFunction()
-                .setPartitions(partitions)
-                .setAffinityBackupFilter(new MdcAffinityBackupFilter(dcsNum, backups)));
+        return topValidator;
     }
 
     /**
