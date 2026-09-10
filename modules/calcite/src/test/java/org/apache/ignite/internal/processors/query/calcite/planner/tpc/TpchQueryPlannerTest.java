@@ -96,7 +96,6 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     public void testQuery() {
         String actualPlan = sql(grid(0), "EXPLAIN PLAN FOR " + loadFromResource(qryId + ".sql")).get(0).get(0).toString();
 
-        // RelWriterImpl uses PrintWriter#println, so the actual plan has platform line separators; normalize them.
         actualPlan = HASH_PATTERN.matcher(ID_PATTERN.matcher(actualPlan.replace("\r\n", "\n"))
             .replaceAll(", id = {id}"))
             .replaceAll(", hash={hash}");
