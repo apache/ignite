@@ -1,5 +1,3 @@
--- noinspection SqlDialectInspectionForFile
--- noinspection SqlNoDataSourceInspectionForFile
 -- using default substitutions
 -- $ID$
 -- TPC-H/TPC-R Small-Quantity-Order Revenue Query (Q17)

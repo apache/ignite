@@ -1,6 +1,3 @@
--- noinspection SqlDialectInspectionForFile
--- noinspection SqlNoDataSourceInspectionForFile
-
 -- -- This variant replaces the CASE statement from the Functional Query Definition with equivalent DECODE() syntax
 
 SELECT
