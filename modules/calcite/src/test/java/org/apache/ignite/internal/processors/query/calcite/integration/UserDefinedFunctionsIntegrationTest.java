@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
@@ -715,6 +716,120 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testHistoricalJavaTimeFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("historical-java-time-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        checkJavaTimeFunctions("1500-01-02", "03:04:05");
+        checkJavaTimeFunctions("1582-10-04", "12:34:56");
+        checkJavaTimeFunctions("1582-10-15", "12:34:56");
+        checkJavaTimeFunctions("1969-12-31", "23:59:59");
+    }
+
+    /** */
+    @Test
+    public void testJavaTimeFunctionResultsAsJdbcValues() {
+        client.getOrCreateCache(new CacheConfiguration<>("java-time-jdbc-results")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        for (String ts : new String[] {
+            "0001-01-01 00:00:00", "1500-01-02 03:04:05.123", "1582-10-04 23:59:59.999",
+            "1582-10-15 00:00:00", "1969-12-31 23:59:59.999", "1970-01-01 00:00:00", "2021-03-14 12:30:00.123"
+        }) {
+            LocalDateTime locTs = LocalDateTime.parse(ts.replace(' ', 'T'));
+            String date = locTs.toLocalDate().toString();
+            Date sqlDate = Date.valueOf(date);
+            Timestamp sqlTs = Timestamp.valueOf(ts);
+
+            // Check the JDBC values returned to the client, without converting them to strings inside SQL.
+            assertQuery("SELECT localDateFromStr('" + date + "'), localDateTimeFromStr('" + locTs + "')")
+                .returns(sqlDate, sqlTs)
+                .check();
+
+            assertQuery("SELECT d, ts FROM javaTimeValuesTable('" + date + "', '"
+                + locTs.toLocalTime() + "', '" + locTs + "')")
+                .returns(sqlDate, sqlTs)
+                .check();
+
+            // The same JDBC values must retain their calendar fields when passed back to SQL.
+            assertQuery("SELECT localDateToStr(?), localDateTimeToStr(?)")
+                .withParams(sqlDate, sqlTs)
+                .returns(date, locTs.toString())
+                .check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testJavaTimeFunctionsDuringDstTransition() {
+        client.getOrCreateCache(new CacheConfiguration<>("dst-java-time-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        // Initialize Calcite's cached default time zone before changing the JVM default.
+        checkJavaTimeFunctions("2021-01-01", "12:00:00");
+
+        TimeZone oldTz = TimeZone.getDefault();
+
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+
+            checkJavaTimeFunctions("2021-03-14", "02:30:00");
+            checkJavaTimeFunctions("2021-11-07", "01:30:00");
+
+            TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Apia"));
+
+            // This local date was skipped when the time zone moved across the date line.
+            checkJavaTimeFunctions("2011-12-30", "12:34:56");
+        }
+        finally {
+            TimeZone.setDefault(oldTz);
+        }
+    }
+
+    /** Checks Java time parameters and results independently, so opposite conversion errors cannot cancel out. */
+    private void checkJavaTimeFunctions(String date, String time) {
+        LocalDate locDate = LocalDate.parse(date);
+        LocalTime locTime = LocalTime.parse(time);
+        LocalDateTime locTs = LocalDateTime.of(locDate, locTime);
+        String ts = date + ' ' + time;
+        String literals = "DATE '" + date + "', TIME '" + time + "', TIMESTAMP '" + ts + '\'';
+
+        assertQuery("SELECT localDateToStr(DATE '" + date + "'), localTimeToStr(TIME '" + time + "'), "
+            + "localDateTimeToStr(TIMESTAMP '" + ts + "')")
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT localDateToStr(?), localTimeToStr(?), localDateTimeToStr(?)")
+            .withParams(locDate, locTime, locTs)
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT CAST(localDateFromStr('" + date + "') AS VARCHAR), "
+            + "CAST(localTimeFromStr('" + time + "') AS VARCHAR), "
+            + "CAST(localDateTimeFromStr('" + locTs + "') AS VARCHAR)")
+            .returns(date, time, ts)
+            .check();
+
+        assertQuery("SELECT * FROM javaTimeStringsTable(" + literals + ')')
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT * FROM javaTimeStringsTable(?, ?, ?)")
+            .withParams(locDate, locTime, locTs)
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT CAST(d AS VARCHAR), CAST(t AS VARCHAR), CAST(ts AS VARCHAR) "
+            + "FROM javaTimeValuesTable('" + date + "', '" + time + "', '" + locTs + "')")
+            .returns(date, time, ts)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testDeterministicTemporalFunctionReduced() {
         client.getOrCreateCache(new CacheConfiguration<>("deterministic-temporal")
             .setSqlSchema("PUBLIC")
@@ -1390,6 +1505,41 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     public static class JavaTimeParametersFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static LocalDate localDateFromStr(String val) {
+            return LocalDate.parse(val);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalTime localTimeFromStr(String val) {
+            return LocalTime.parse(val);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalDateTime localDateTimeFromStr(String val) {
+            return LocalDateTime.parse(val);
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {String.class, String.class, String.class}, columnNames = {"D", "T", "TS"})
+        public static Iterable<Object[]> javaTimeStringsTable(LocalDate date, LocalTime time, LocalDateTime ts) {
+            return Collections.singletonList(new Object[] {date.toString(), time.toString(), ts.toString()});
+        }
+
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {LocalDate.class, LocalTime.class, LocalDateTime.class},
+            columnNames = {"D", "T", "TS"}
+        )
+        public static Iterable<Object[]> javaTimeValuesTable(String date, String time, String ts) {
+            return Collections.singletonList(new Object[] {
+                LocalDate.parse(date), LocalTime.parse(time), LocalDateTime.parse(ts)
+            });
+        }
+
         /** */
         @QuerySqlFunction
         public static String localDateToStr(LocalDate val) {

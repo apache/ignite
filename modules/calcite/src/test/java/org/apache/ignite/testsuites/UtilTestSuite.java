@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlocki
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryTasksQueueTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherTypeTest;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtilsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -41,6 +42,7 @@ import org.junit.runners.Suite;
     QueryBlockingTaskExecutorTest.class,
     QueryTasksQueueTest.class,
     OtherTypeTest.class,
+    TypeUtilsTest.class,
 })
 public class UtilTestSuite {
 }
