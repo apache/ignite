@@ -28,6 +28,8 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -86,6 +88,26 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         // Handy
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testNodeNotSupportingSnapshotDeleteFeature() throws Exception {
+        startGrid(0);
+
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestPluginProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if()
+            }
+        };
+
+        pluginProvider = null;
+
+        startGrid(2);
     }
 
     /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */
