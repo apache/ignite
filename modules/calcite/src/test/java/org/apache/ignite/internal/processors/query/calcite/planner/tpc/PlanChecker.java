@@ -46,16 +46,19 @@ public class PlanChecker extends Suite {
     /** */
     public static final String RSRC_DIR = "./src/test/resources/";
 
+    /** Tests repeat count. */
+    private static final int REPEAT_CNT = 2;
+
     /**
      * Only called reflectively. Do not use programmatically.
      */
     public PlanChecker(Class<?> klass) throws Throwable {
-        super(klass, createRunnersForParameters(new TestClass(klass)).collect(Collectors.toList()));
+        super(klass, createRunnersForParameters(new TestClass(klass)));
     }
 
     /** */
-    private static Stream<Runner> createRunnersForParameters(TestClass testClass) throws IOException {
-        return Files.list(Path.of(RSRC_DIR, sqlTestName(testClass.getJavaClass())))
+    private static List<Runner> createRunnersForParameters(TestClass testClass) throws IOException {
+        Stream<BlockJUnit4ClassRunnerWithParameters> ret = Files.list(Path.of(RSRC_DIR, sqlTestName(testClass.getJavaClass())))
             .filter(p -> p.toString().endsWith(".sql") && !p.toString().endsWith("ddl.sql"))
             .sorted()
             .map(p -> {
@@ -70,6 +73,14 @@ public class PlanChecker extends Suite {
                     throw new RuntimeException(e);
                 }
             });
+
+        List<Runner> tests = ret.collect(Collectors.toList());
+        List<Runner> finalTests = new ArrayList<>(tests);
+
+        for (int i = 0; i < REPEAT_CNT; ++i)
+            finalTests.addAll(tests);
+
+        return finalTests;
     }
 
     /** {@inheritDoc} */

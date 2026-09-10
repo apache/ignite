@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import com.google.common.io.CharStreams;
 import org.apache.calcite.plan.RelOptUtil;
@@ -34,6 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest;
@@ -41,7 +43,9 @@ import org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanCheck
 import org.apache.ignite.internal.processors.query.calcite.planner.tpc.PlanChecker.BeforePlansTest;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
@@ -82,11 +86,20 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
 
         TpchHelper.createTables(srv);
 
-/*
         TpchHelper.fillTables(srv, 0.01);
 
         TpchHelper.collectSqlStatistics(srv);
-*/
+    }
+
+    /** {@inheritDoc} */
+    @After
+    @Override public void tearDown() throws Throwable {
+        super.tearDown();
+
+        CalciteQueryProcessor qryProc = (CalciteQueryProcessor)Commons.lookupComponent(
+            (srv).context(), QueryEngine.class);
+
+        qryProc.queryPlanCache().clear();
     }
 
     /** Run once, after all queries check. */
@@ -133,7 +146,8 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
             "igniteSchemas"
         );
 
-        PlanningContext ctx = plannerCtx(loadFromResource(sqlTestName(getClass()) + "/" + qryId + ".sql"), schemas.values(), null);
+        PlanningContext ctx = plannerCtx(loadFromResource(sqlTestName(getClass()) + "/" + qryId + ".sql"),
+            schemas.values(), null, List.of(), List.of(), null);
 
         return new PlanTemplate(RelOptUtil.toString(physicalPlan(ctx), SqlExplainLevel.ALL_ATTRIBUTES)).template;
     }

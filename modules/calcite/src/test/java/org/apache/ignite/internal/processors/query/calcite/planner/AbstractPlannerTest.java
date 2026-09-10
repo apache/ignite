@@ -225,7 +225,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private PlanningContext plannerCtx(
+    protected PlanningContext plannerCtx(
         String sql,
         Collection<IgniteSchema> schemas,
         @Nullable RelOptListener planLsnr,

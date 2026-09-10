@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.planner.tpc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -31,8 +29,16 @@ import java.util.stream.Stream;
  * <ul>
  *     <li>{@code ", id = 123} replaced with the {@code ", id = {id}}</li>
  *     <li>{@code ", hash=123} replaced with the {@code ", hash={hash}}</li>
- *     <li>{@code "{INDEX_CASE:IDX1,IDX2}} expands to the plans where {INDEX_CASE....} replaced with each of the index from list.</li>
- *     <li>{@code "{ONEOF}} start and finish with the {@code {ONEOF}} tag. Cases separated with the line "=====".
+ *     <li>{@code {ONEOF}} start and finish with the {@code {ONEOF}} tag. Cases separated with the line =====, i.e.:
+ *     <pre name="code" class="bash">
+ *     {ONEOF}
+ *       expected_string1
+ *       =====
+ *       expected_string2
+ *       =====
+ *       expected_string3
+ *     {ONEOF}
+ * </pre>
  *     Creates as many plans as there are cases.
  *     </li>
  * </ul>
@@ -49,7 +55,8 @@ public class PlanTemplate {
 
     /** */
     public PlanTemplate(String template) {
-        this.template = HASH_PATTERN.matcher(ID_PATTERN.matcher(template)
+        // RelWriterImpl uses PrintWriter#println, so the actual plan has platform line separators; normalize them.
+        this.template = HASH_PATTERN.matcher(ID_PATTERN.matcher(template.replace("\r\n", "\n"))
             .replaceAll(", id = {id}"))
             .replaceAll(", hash={hash}");
     }
@@ -60,36 +67,7 @@ public class PlanTemplate {
      */
     public boolean match(String actualPlan) {
         return expandOneOf(template)
-            .flatMap(PlanTemplate::expandIndexCase)
             .anyMatch(possiblePlan -> possiblePlan.equals(actualPlan));
-    }
-
-    /** Expands plans. Replace {INDEX_CASE} tag with the possible indexes. */
-    private static Stream<String> expandIndexCase(String plan) {
-        List<String> res = new ArrayList<>();
-
-        res.add(plan);
-
-        while (true) {
-            String idxCaseStart = "{INDEX_CASE:";
-
-            if (res.get(0).contains(idxCaseStart)) {
-                res = res.stream().flatMap(p -> {
-                    int start = p.indexOf(idxCaseStart);
-                    int end = p.indexOf('}', start);
-
-                    assert start != -1 && end != -1;
-
-                    String[] idxs = p.substring(start + idxCaseStart.length(), end).split(",");
-
-                    return Arrays.stream(idxs).map(idx -> p.substring(0, start) + idx + p.substring(end + 1));
-                }).collect(Collectors.toList());
-            }
-            else
-                break;
-        }
-
-        return res.stream();
     }
 
     /** Expands plans. Replace {ONEOF} tag with the possible cases. */
