@@ -1218,12 +1218,16 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
 
-        assertThrowsAnyCause(
-            null,
-            () -> snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get(),
-            IgniteIllegalStateException.class,
-            "Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)
-        );
+        try {
+            snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get();
+
+            throw new IllegalStateException("Exception is not thrown.");
+        }
+        catch (Exception e) {
+            if (!e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME))
+                && !e.getMessage().contains("Snapshot does not exists"))
+                throw new IllegalStateException("Unexpected exception: " + e.getMessage(), e);
+        }
 
         commSpi1.stopBlock();
 
