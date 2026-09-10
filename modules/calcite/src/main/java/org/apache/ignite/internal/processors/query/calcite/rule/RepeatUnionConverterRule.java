@@ -53,10 +53,6 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
         if (table == null || !RecursiveCteUtils.isTransient(table))
             throw unsupported("a transient table is required");
 
-        // TODO: IGNITE-29012 Support recursive CTE with UNION DISTINCT.
-        if (!rel.all)
-            throw unsupported("only UNION ALL is supported");
-
         int iterationLimit = planner.getContext().unwrap(PlanningContext.class).recursiveCteIterationLimit();
 
         RelNode seed = unwrapSpool(rel.getSeedRel(), "seed");
@@ -71,6 +67,7 @@ public class RepeatUnionConverterRule extends AbstractIgniteConverterRule<Logica
             traits,
             convert(seed, traits),
             convert(iterative, traits),
+            rel.all,
             iterationLimit
         );
     }
