@@ -101,7 +101,7 @@
         <jetty.version>12.1.10</jetty.version>
         <jetty-jakarta-servlet-api.version>6.1.0</jetty-jakarta-servlet-api.version>
         <jmh.version>1.37</jmh.version>
-        <jna.version>4.5.2</jna.version>
+        <jna.version>5.19.1</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
