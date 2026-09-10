@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.beforeStart.NodeStateBeforeStartCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.server.GridClientInfoCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeClusterStateCommandHandler;
@@ -557,6 +558,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             addHandler(new MemoryMetricsCommandHandler(ctx));
             addHandler(new NodeStateBeforeStartCommandHandler(ctx));
             addHandler(new GridProbeCommandHandler(ctx));
+            addHandler(new GridClientInfoCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -955,6 +957,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case REMOVE_USER:
             case UPDATE_USER:
             case PROBE:
+            case CLIENT:
                 break;
 
             default:

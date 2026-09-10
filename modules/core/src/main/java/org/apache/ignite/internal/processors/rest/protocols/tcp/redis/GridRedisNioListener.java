@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedi
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisMSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisSetRangeCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisClientCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisClientCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.string.GridRedisStrlenCommandHandler;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -92,6 +94,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         // server commands.
         addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisFlushCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisClientCommandHandler(log, hnd, ctx));
     }
 
     /**
