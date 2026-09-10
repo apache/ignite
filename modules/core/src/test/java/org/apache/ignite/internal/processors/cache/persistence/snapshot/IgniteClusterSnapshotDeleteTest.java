@@ -17,254 +17,151 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Collection;
 import java.util.function.Supplier;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
 public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
-    /** Cache partitions count. */
-    private static final int CACHE_PARTS_CNT = 32;
+    /** {@inheritDoc} */
+    @Override public void afterTestSnapshot() throws Exception {
+        super.afterTestSnapshot();
 
-    /** Tests that a snapshot delete is declined when a snapshot create operation is in progress. */
-    @Test
-    public void testSnapshotDeleteWhenCreateInProgress() throws Exception {
-        prepareGridsAndSnapshot(3, 2, 2, false);
+        G.allGrids();
 
-        doTestConcurrentSnpDeleteOperation(
-            () -> snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary),
-            START_SNAPSHOT,
-            () -> {
-                assertThrowsAnyCause(
-                    log,
-                    () -> {
-                        snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
-
-                        return null;
-                    },
-                    ClusterTopologyCheckedException.class,
-                    "Snapshot deletion was rejected. a snapshot operation is in progress"
-                );
-
-                return null;
-            }
-        );
+        cleanPersistenceDir();
     }
 
-    /** Tests that a snapshot create is declined when a snapshot delete operation is in progress. */
-    @Test
-    public void testSnapshotCreateWhenDeleteInProgress() throws Exception {
-        prepareGridsAndSnapshot(3, 2, 2, false);
-
-        doTestConcurrentSnpDeleteOperation(
-            () -> snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null),
-            DELETE_SNAPSHOT,
-            () -> {
-                assertThrowsAnyCause(
-                    log,
-                    () -> {
-                        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
-
-                        return null;
-                    },
-                    IgniteException.class,
-                    "Snapshot delete operation is currently in progress"
-                );
-
-                return null;
-            }
-        );
-    }
-
-    /** Tests that a snapshot delete is declined when a snapshot check operation is in progress. */
+    /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */
     @Test
     public void testSnapshotDeleteWhenCheckInProgress() throws Exception {
-        prepareGridsAndSnapshot(3, 2, 2, false);
-
-        doTestConcurrentSnpDeleteOperation(
-            () -> new IgniteFutureImpl<>(snp(grid(0)).checkSnapshot(SNAPSHOT_NAME, null)),
-            CHECK_SNAPSHOT_METAS,
-            () -> {
-                assertThrowsAnyCause(
-                    log,
-                    () -> {
-                        snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
-
-                        return null;
-                    },
-                    ClusterTopologyCheckedException.class,
-                    "Snapshot deletion was rejected. Snapshot with this name is being checked"
-                );
-
-                return null;
-            }
+        doTestConcurrentSnapshotDelete(
+            F.asList(CHECK_SNAPSHOT_METAS, CHECK_SNAPSHOT_PARTS),
+            null,
+            () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null)),
+            "Snapshot with this name is being checked",
+            true
         );
     }
 
-    /** Tests that a snapshot check is not declined when a snapshot delete operation is in progress. */
+    /** Tests that a snapshot deletion is declined when a snapshot create operation is in progress. */
     @Test
-    public void testSnapshotCheckWhenDeleteInProgress() throws Exception {
-        prepareGridsAndSnapshot(3, 2, 2, false);
-
-        doTestConcurrentSnpDeleteOperation(
-            () -> snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null),
-            DELETE_SNAPSHOT,
-            () -> {
-                new IgniteFutureImpl<>(snp(grid(1)).checkSnapshot(SNAPSHOT_NAME, null)).get(getTestTimeout());
-
-                return null;
-            }
+    public void testSnapshotDeleteWhenCreateInProgress() throws Exception {
+        doTestConcurrentSnapshotDelete(
+            F.asList(START_SNAPSHOT, END_SNAPSHOT),
+            () -> snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME),
+            "Snapshot with this name is being created",
+            false
         );
     }
 
-    /** Tests that a snapshot delete is declined when a snapshot restore operation is in progress. */
+    /** Tests that a snapshot deletion is declined when a snapshot restore begins. */
+    @Test
+    public void testSnapshotDeleteWhenRestoreBegins() throws Exception {
+        doTestConcurrentSnapshotDelete(
+            F.asList(CHECK_SNAPSHOT_METAS, CHECK_SNAPSHOT_PARTS),
+            () -> {
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                try {
+                    awaitPartitionMapExchange();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException("Interrupted.", e);
+                }
+            },
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null),
+            "Snapshot with this name is being checked",
+            true
+        );
+    }
+
+    /** Tests that a snapshot deletion is declined when a snapshot restore is in progress. */
     @Test
     public void testSnapshotDeleteWhenRestoreInProgress() throws Exception {
-        prepareGridsAndSnapshot(3, 2, 2, true);
-
-        doTestConcurrentSnpDeleteOperation(
-            () -> snp(grid(0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true),
+        var restoreMsgs = F.asList(
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
+            RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
+            RESTORE_CACHE_GROUP_SNAPSHOT_START
+        );
+
+        doTestConcurrentSnapshotDelete(
+            restoreMsgs,
             () -> {
-                assertThrowsAnyCause(
-                    log,
-                    () -> {
-                        snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
 
-                        return null;
-                    },
-                    ClusterTopologyCheckedException.class,
-                    "Snapshot deletion was rejected. the snapshot is being restored"
-                );
-
-                return null;
-            }
+                try {
+                    awaitPartitionMapExchange();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException("Interrupted.", e);
+                }
+            },
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null),
+            "Snapshot with this name is being restored",
+            true
         );
     }
 
-    /** Tests that a snapshot restore is declined when a snapshot delete operation is in progress. */
-    @Test
-    public void testSnapshotRestoreWhenDeleteInProgress() throws Exception {
-        prepareGridsAndSnapshot(3, 2, 2, true);
-
-        doTestConcurrentSnpDeleteOperation(
-            () -> snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null),
-            DELETE_SNAPSHOT,
-            () -> {
-                assertThrowsAnyCause(
-                    log,
-                    () -> {
-                        snp(grid(0)).restoreSnapshot(SNAPSHOT_NAME, null, null, 0, true).get(getTestTimeout());
-
-                        return null;
-                    },
-                    IgniteException.class,
-                    "A snapshot delete operation is in progress"
-                );
-
-                return null;
-            }
-        );
-    }
-
-    /**
-     * Tests the concurrent snapshot delete procedure against another snapshot operation.
-     *
-     * <p>The {@code originatorOp} is blocked on the coordinator discovery, so it is kept in-progress while the
-     * {@code trierStep} is executed and its conflict behavior is asserted.
-     *
-     * @param originatorOp First snapshot operation on the coordinator node to keep in-progress.
-     * @param firstDelay First distributed process full message of {@code originatorOp} to delay on the coordinator
-     *                   to launch {@code trierStep}.
-     * @param trierStep Second concurrent snapshot operation with asserted result.
-     */
-    private void doTestConcurrentSnpDeleteOperation(
-        Supplier<IgniteFuture<?>> originatorOp,
-        DistributedProcess.DistributedProcessType firstDelay,
-        Callable<?> trierStep
+    /** */
+    protected void doTestConcurrentSnapshotDelete(
+        Collection<DistributedProcess.DistributedProcessType> msgsToWatch,
+        @Nullable Runnable prepareIteration,
+        Supplier<IgniteFuture<?>> firstOp,
+        String concurrentMsgErr,
+        boolean precreateSnp
     ) throws Exception {
-        try {
-            AtomicBoolean firstDelayed = new AtomicBoolean();
+        if (precreateSnp)
+            startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false, true);
+        else
+            startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i);
 
-            // Block only the first matching message so the originator operation stays in-progress.
-            discoSpi(grid(0)).block(
-                msg -> msg instanceof FullMessage
-                    && ((FullMessage<?>)msg).type() == firstDelay.ordinal()
-                    && firstDelayed.compareAndSet(false, true));
+        TestRecordingCommunicationSpi commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
 
-            IgniteFuture<?> fut = originatorOp.get();
+        for (var nodeResMsgType : msgsToWatch) {
+            if (prepareIteration != null)
+                prepareIteration.run();
 
-            discoSpi(grid(0)).waitBlocked(getTestTimeout());
+            commSpi1.blockMessages((node, msg) ->
+                msg instanceof SingleNodeMessage<?> msg0 && msg0.type() == nodeResMsgType.ordinal());
 
-            if (trierStep != null)
-                trierStep.call();
+            var checkFut = firstOp.get();
 
-            discoSpi(grid(0)).unblock();
+            commSpi1.waitForBlocked(1, getTestTimeout());
 
-            fut.get(getTestTimeout());
+            assertThrowsAnyCause(
+                null,
+                () -> {
+                    snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+                    return null;
+                },
+                IgniteIllegalStateException.class,
+                concurrentMsgErr
+            );
+
+            commSpi1.stopBlock();
+
+            checkFut.get(getTestTimeout());
         }
-        finally {
-            discoSpi(grid(0)).unblock();
-
-            awaitPartitionMapExchange();
-        }
-    }
-
-    /**
-     * @param servers Number of server nodes.
-     * @param baseLineCnt Number of baseline nodes.
-     * @param clients Number of client nodes.
-     * @param removeTheCache If {@code true}, the cache is destroyed after the snapshot is created (restore scenario).
-     * @return The last started (server) grid, which the snapshot was created on.
-     */
-    private IgniteEx prepareGridsAndSnapshot(int servers, int baseLineCnt, int clients, boolean removeTheCache) throws Exception {
-        assert baseLineCnt > 0 && baseLineCnt <= servers;
-
-        IgniteEx ignite = null;
-
-        for (int i = 0; i < servers + clients; ++i) {
-            IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
-
-            if (i >= servers)
-                cfg.setClientMode(true);
-
-            ignite = startGrid(cfg);
-
-            if (i == baseLineCnt - 1) {
-                ignite.cluster().state(ACTIVE);
-
-                ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
-            }
-        }
-
-        try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            // Ensure all the partitions are created: several records per partition.
-            for (int i = 0; i < CACHE_PARTS_CNT * 4; ++i)
-                ds.addData(i, i);
-        }
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        if (removeTheCache)
-            ignite.destroyCache(DEFAULT_CACHE_NAME);
-
-        return ignite;
     }
 }
