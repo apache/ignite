@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.processors.query.calcite.planner.tpc.Pl
 /**
  * Abstract test class to ensure a planner generates expected plan for TPC queries.
  */
-public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
+public abstract class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     /** Set to {@code true} to write plan files, instead of checking. */
     private static final boolean UPDATE_PLAN = false;
 
@@ -69,7 +69,7 @@ public class AbstractTpcQueryPlannerTest extends AbstractPlannerTest {
     /** Run once, before all queries check. */
     @BeforePlansTest
     public static void startAll(Class<?> testClass) throws Exception {
-        AbstractTpcQueryPlannerTest mock = new AbstractTpcQueryPlannerTest();
+        AbstractTpcQueryPlannerTest mock = (AbstractTpcQueryPlannerTest)testClass.getConstructor().newInstance();
 
         mock.beforeFirstTest();
 
