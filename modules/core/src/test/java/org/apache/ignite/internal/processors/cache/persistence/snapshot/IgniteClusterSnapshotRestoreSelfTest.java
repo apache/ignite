@@ -336,7 +336,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
     /** Tests that snapshot restore is declined when the same snapshot is being deleted. */
     @Test
-    public void testCuncurrentSnapshotDeleteOperation() throws Exception {
+    public void testConcurrentSnapshotDeleteOperation() throws Exception {
         startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
 
         var commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
@@ -345,6 +345,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             && msg0.type() == DELETE_SNAPSHOT.ordinal());
 
         var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(commSpi1.waitForBlocked(1, getTestTimeout()));
 
         try {
             snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null).get();

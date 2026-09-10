@@ -1206,7 +1206,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Tests that concurrent snapshot check is declined when the same snapshot is being deleted. */
     @Test
-    public void testCuncurrentSnapshotDeleteOperation() throws Exception {
+    public void testConcurrentSnapshotDeleteOperation() throws Exception {
         prepareGridsAndSnapshot(4, 3, 1, false);
 
         var commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
@@ -1215,6 +1215,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             && msg0.type() == DELETE_SNAPSHOT.ordinal());
 
         var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(commSpi1.waitForBlocked(1, getTestTimeout()));
 
         try {
             snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get();
