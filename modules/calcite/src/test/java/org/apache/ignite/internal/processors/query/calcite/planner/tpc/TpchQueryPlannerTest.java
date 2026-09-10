@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -33,6 +34,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -57,12 +59,12 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     public static final String TPCH = "tpch";
 
     /** */
-    public static final String RSRC_DIR = "./src/test/resources/" + TPCH;
+    public static final String RSRC_DIR = "modules/calcite/src/test/resources/" + TPCH;
 
     /** */
     @Parameterized.Parameters(name = "queryId={0}")
     public static Collection<String> params() throws IOException {
-        return Files.list(Path.of(RSRC_DIR))
+        return Files.list(FileSystems.getDefault().getPath(U.resolveIgnitePath(RSRC_DIR).getPath()))
             .map(p -> p.getFileName().toString())
             .filter(p -> p.endsWith(".sql") && !p.endsWith("ddl.sql"))
             .map(p -> p.replace(".sql", ""))
@@ -112,7 +114,7 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
 
     /** */
     private void updatePlan(String newPlan) {
-        Path targetDir = Path.of(RSRC_DIR);
+        Path targetDir = FileSystems.getDefault().getPath(U.resolveIgnitePath(RSRC_DIR).getPath());
 
         // A targetDirectory must be specified by hand when expected plans are generated.
         if (targetDir == null) {
