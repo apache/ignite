@@ -24,6 +24,29 @@ from ignitetest.services.utils.decorators import memoize
 from ignitetest.services.utils.jvm_utils import java_version, java_major_version
 
 
+def metric_registry_pattern(group, name):
+    """
+    Builds the MBean name pattern of a single metric registry.
+
+    The JMX metric exporter splits a registry name at its FIRST dot and makes the head the
+    MBean group and the tail its name: ``cache.myCache`` becomes ``group=cache`` plus
+    ``name=myCache``, ``io.dataregion.default`` becomes ``group=io`` plus
+    ``name="dataregion.default"``.
+
+    Three details of that naming decide what the pattern has to look like. The name is quoted
+    only when it is not purely alphanumeric - ``name="my-cache"`` but ``name=myCache`` - hence
+    the optional quotes. The properties of an MBean name are ordered alphabetically, so the
+    group always comes before the name but never right next to it. And ``name`` sorts last of
+    them all, so the pattern ends at the end of the line - without that anchor a registry whose
+    name is a PREFIX of another one would match the wrong bean.
+
+    :param group: Registry root, i.e. everything before the first dot.
+    :param name: The rest of the registry name.
+    :return: Pattern to pass to :meth:`JmxClient.find_mbean`.
+    """
+    return rf'.*group={group},.*name="?{name}"?\s*$'
+
+
 def ignite_jmx_mixin(node, service):
     """
     Dynamically mixin JMX attributes to Ignite service node.
@@ -52,6 +75,23 @@ class JmxMBean:
         :return: Attribute value.
         """
         return self.client.mbean_attribute(self.name, attr)
+
+    def value(self, attr):
+        """
+        Reads a single valued attribute - which is what a metric read almost always wants,
+        as opposed to the raw line iterator the attribute access itself returns.
+
+        :param attr: Attribute name.
+        :return: Attribute value, whitespace stripped.
+        """
+        return next(self.client.mbean_attribute(self.name, attr)).strip()
+
+    def bool_value(self, attr):
+        """
+        :param attr: Attribute name.
+        :return: Attribute value as a boolean; anything but "true" is False.
+        """
+        return self.value(attr).lower() == "true"
 
     def run(self, operation, params):
         """"
@@ -188,6 +228,11 @@ class DiscoveryInfo:
 class IgniteJmxMixin:
     """
     Mixin to IgniteService node, exposing useful properties, obtained from JMX.
+
+    The accessors here are memoized per node, and a JmxClient holds the pid it was built for,
+    so a node that has been RESTARTED since needs a client of its own rather than these -
+    compare IgniteAwareService.await_rebalance(). MBean names themselves survive a restart:
+    they carry neither pid nor jvm id.
     """
     @memoize
     def jmx_client(self):
@@ -202,17 +247,15 @@ class IgniteJmxMixin:
         """
         :return: Local node id.
         """
-        return next(self.kernal_mbean().LocalNodeId).strip()
+        return self.kernal_mbean().value("LocalNodeId")
 
     def discovery_info(self):
         """
         :return: DiscoveryInfo instance.
         """
         disco_mbean = self.disco_mbean()
-        crd = next(disco_mbean.Coordinator).strip()
-        local = next(disco_mbean.LocalNodeFormatted).strip()
 
-        return DiscoveryInfo(crd, local)
+        return DiscoveryInfo(disco_mbean.value("Coordinator"), disco_mbean.value("LocalNodeFormatted"))
 
     def kernal_mbean(self):
         """
@@ -221,11 +264,27 @@ class IgniteJmxMixin:
         return self.jmx_client().find_mbean('.*group=Kernal.*name=IgniteKernal')
 
     @memoize
+    def cache_mbean(self, cache_name):
+        """
+        :param cache_name: Cache name.
+        :return: MBean of one cache's metrics.
+        """
+        return self.jmx_client().find_mbean(metric_registry_pattern('cache', cache_name))
+
+    @memoize
+    def cache_group_mbean(self, cache_group):
+        """
+        :param cache_group: Cache group name.
+        :return: MBean of one cache group's metrics, the rebalance ones among them.
+        """
+        return self.jmx_client().find_mbean(metric_registry_pattern('cacheGroups', cache_group))
+
+    @memoize
     def disco_mbean(self):
         """
         :return: DiscoverySpi MBean.
         """
-        disco_spi = next(self.kernal_mbean().DiscoverySpiFormatted).strip()
+        disco_spi = self.kernal_mbean().value("DiscoverySpiFormatted")
 
         if 'ZookeeperDiscoverySpi' in disco_spi:
             return self.jmx_client().find_mbean('.*group=SPIs.*name=ZookeeperDiscoverySpi')
