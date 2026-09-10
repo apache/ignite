@@ -102,7 +102,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
 
     /** */
     @Test
-    public void testMGetReverseOrder() t{
+    public void testMGetReverseOrder() {
         testMGetOrder(false);
     }
 
