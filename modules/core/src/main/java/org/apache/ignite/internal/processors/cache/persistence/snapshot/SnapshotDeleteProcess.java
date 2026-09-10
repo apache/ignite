@@ -113,7 +113,7 @@ public class SnapshotDeleteProcess {
         return new IgniteFutureImpl<>(clusterOpFut);
     }
 
-    /** Local phase: delete the snapshot directory on a node. */
+    /** */
     private IgniteInternalFuture<SnapshotDeleteResponse> deletePhase(UUID ignored, SnapshotDeleteRequest req) {
         if (kctx.isStopping()) {
             return new GridFinishedFuture<>(new NodeStoppingException(OP_REJECT_MSG +
@@ -204,7 +204,7 @@ public class SnapshotDeleteProcess {
         }
     }
 
-    /** Coordinator finish: aggregate node results and complete the user future. */
+    /** */
     private void reducePhase(UUID reqId, Map<UUID, SnapshotDeleteResponse> results, Map<UUID, Throwable> errors) {
         var clusterOpFut = clusterOpFuts.get(reqId);
 

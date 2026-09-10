@@ -21,14 +21,22 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** */
+/**
+ * Snapshot deletion command.
+ *
+ * @see SupportedFeatureRegistry#SNAPSHOT_DELETE_FEATURE
+ * @see SnapshotDeleteProcess
+ */
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Delete snapshot and all its increments from all the online server nodes.";
+        return "Deletes snapshot and all its increments from all the online server nodes.";
     }
 
     /** {@inheritDoc} */
@@ -82,7 +90,12 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "Warning: this will delete snapshot '" + arg.snapshotName() + "' and all its increments " +
-            "from all online server nodes. This operation is irreversible.";
+        return "This will delete snapshot '" + arg.snapshotName() +
+            "' and all its increments from all online server nodes." +
+            U.nl() + U.nl() +
+            "WARNING: the snapshot integrity, initial topology and correctness aren't checked." +
+            " Snapshot parts on offline server nodes aren't deleted." +
+            U.nl() + U.nl() +
+            "The operation is irreversible.";
     }
 }

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
-/** Result of snapshot delete process. */
+/** Result of {@link SnapshotDeleteProcess}. */
 public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

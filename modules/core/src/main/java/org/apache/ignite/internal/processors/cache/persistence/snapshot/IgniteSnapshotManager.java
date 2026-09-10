@@ -735,18 +735,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
         AtomicBoolean res = new AtomicBoolean(true);
 
-        sft.allStorages().forEach(f -> deleteWithIndicators(f, res, existsFlag));
+        sft.allStorages().forEach(f -> deleteWithExistence(f, res, existsFlag));
 
-        deleteWithIndicators(sft.binaryMeta(), res, existsFlag);
-        deleteWithIndicators(sft.binaryMetaRoot(), res, existsFlag);
-        deleteWithIndicators(sft.marshaller(), res, existsFlag);
-        deleteWithIndicators(sft.root(), res, existsFlag);
+        deleteWithExistence(sft.binaryMeta(), res, existsFlag);
+        deleteWithExistence(sft.binaryMetaRoot(), res, existsFlag);
+        deleteWithExistence(sft.marshaller(), res, existsFlag);
+        deleteWithExistence(sft.root(), res, existsFlag);
 
         return res.get();
     }
 
     /** */
-    void deleteWithIndicators(@Nullable File f, AtomicBoolean onlyFailRes, @Nullable AtomicBoolean existsFlag) {
+    void deleteWithExistence(@Nullable File f, AtomicBoolean onlyFailRes, @Nullable AtomicBoolean existsFlag) {
         if (f == null)
             return;
 
