@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import com.google.common.io.CharStreams;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -46,6 +46,12 @@ import org.junit.runners.Parameterized;
 public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     /** Set to {@code true} to write plan files, instead of checking. */
     private static final boolean UPDATE_PLAN = false;
+
+    /** */
+    private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
+
+    /** */
+    private static final Pattern HASH_PATTERN = Pattern.compile(", hash=-?\\d+]");
 
     /** */
     public static final String TPCH = "tpch";
@@ -80,28 +86,20 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        IgniteConfiguration cfg = getConfiguration("server");
-
-        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true));
-
         TpchHelper.createTables(grid(0));
-
         TpchHelper.fillTables(grid(0), 0.01);
-
         TpchHelper.collectSqlStatistics(grid(0));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** Test single query. */
     @Test
     public void testQuery() {
-        String actualPlan = queryPlan();
+        String actualPlan = sql(grid(0), "EXPLAIN PLAN FOR " + loadFromResource(qryId + ".sql")).get(0).get(0).toString();
+
+        // RelWriterImpl uses PrintWriter#println, so the actual plan has platform line separators; normalize them.
+        actualPlan = HASH_PATTERN.matcher(ID_PATTERN.matcher(actualPlan.replace("\r\n", "\n"))
+            .replaceAll(", id = {id}"))
+            .replaceAll(", hash={hash}");
 
         if (UPDATE_PLAN) {
             updatePlan(actualPlan);
@@ -109,24 +107,7 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
             return;
         }
 
-        PlanTemplate pt = new PlanTemplate(loadFromResource(qryId + ".plan"));
-
-        if (!pt.match(actualPlan)) {
-            // This assertion will print nice diff in IDE that will help to investigate.
-            // Test will fail anyway.
-            assertEquals(pt.template, actualPlan);
-
-            assert false : "Should not happen";
-        }
-    }
-
-    /** */
-    private String queryPlan() {
-        List<List<?>> res = sql(grid(0), "EXPLAIN PLAN FOR " + loadFromResource(qryId + ".sql"));
-
-        assertEquals(1, res.size());
-
-        return new PlanTemplate(res.get(0).get(0).toString()).template;
+        assertEquals(loadFromResource(qryId + ".plan"), actualPlan);
     }
 
     /** */
