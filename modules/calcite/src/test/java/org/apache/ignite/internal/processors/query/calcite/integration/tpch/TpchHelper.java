@@ -148,9 +148,7 @@ public class TpchHelper {
      * @param queryId Query identifier.
      */
     public static String getQuery(int queryId) {
-        String path = queryId == 15
-            ? String.format("q%d.sql", queryId)
-            : String.format("/tpch/q%d.sql", queryId);
+        String path = String.format("/tpch/q%d.sql", queryId);
 
         try (InputStream inputStream = TpchHelper.class.getResourceAsStream(path)) {
             if (inputStream == null)
