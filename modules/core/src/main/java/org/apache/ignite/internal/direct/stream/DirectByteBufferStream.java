@@ -33,6 +33,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -926,11 +927,12 @@ public class DirectByteBufferStream {
     /**
      * @param msg Message.
      * @param writer Writer.
+     * @param ctx Serialization context.
      */
-    public void writeMessage(Message msg, MessageWriter writer) {
+    public void writeMessage(Message msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (msg != null) {
             if (buf.hasRemaining())
-                nestedWrite(writer, () -> MessageSerialization.writeTo(msgFactory, msg, writer));
+                nestedWrite(writer, () -> MessageSerialization.writeTo(msgFactory, msg, writer, ctx));
             else
                 lastFinished = false;
         }
@@ -942,8 +944,9 @@ public class DirectByteBufferStream {
      * @param arr Array.
      * @param type Type.
      * @param writer Writer.
+     * @param ctx Serialization context.
      */
-    public <T> void writeObjectArray(T[] arr, MessageArrayType type, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, MessageArrayType type, MessageWriter writer, MessageSerializationContext ctx) {
         if (arr != null) {
             int len = arr.length;
 
@@ -960,7 +963,7 @@ public class DirectByteBufferStream {
                 if (arrCur == NULL)
                     arrCur = arr[arrPos++];
 
-                write(type.valueType(), arrCur, writer);
+                write(type.valueType(), arrCur, writer, ctx);
 
                 if (!lastFinished)
                     return;
@@ -978,11 +981,12 @@ public class DirectByteBufferStream {
      * @param col Collection.
      * @param type Type.
      * @param writer Writer.
+     * @param ctx Serialization context.
      */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionType type, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, MessageCollectionType type, MessageWriter writer, MessageSerializationContext ctx) {
         if (col != null) {
             if (col instanceof List && col instanceof RandomAccess)
-                writeRandomAccessList((List<T>)col, type, writer);
+                writeRandomAccessList((List<T>)col, type, writer, ctx);
             else {
                 if (it == null) {
                     writeInt(col.size());
@@ -997,7 +1001,7 @@ public class DirectByteBufferStream {
                     if (cur == NULL)
                         cur = it.next();
 
-                    write(type.valueType(), cur, writer);
+                    write(type.valueType(), cur, writer, ctx);
 
                     if (!lastFinished)
                         return;
@@ -1016,8 +1020,14 @@ public class DirectByteBufferStream {
      * @param list List.
      * @param type Type.
      * @param writer Writer.
+     * @param ctx Serialization context.
      */
-    private <T> void writeRandomAccessList(List<T> list, MessageCollectionType type, MessageWriter writer) {
+    private <T> void writeRandomAccessList(
+        List<T> list,
+        MessageCollectionType type,
+        MessageWriter writer,
+        MessageSerializationContext ctx
+    ) {
         assert list instanceof RandomAccess;
 
         int size = list.size();
@@ -1035,7 +1045,7 @@ public class DirectByteBufferStream {
             if (arrCur == NULL)
                 arrCur = list.get(arrPos++);
 
-            write(type.valueType(), arrCur, writer);
+            write(type.valueType(), arrCur, writer, ctx);
 
             if (!lastFinished)
                 return;
@@ -1050,8 +1060,9 @@ public class DirectByteBufferStream {
      * @param map Map.
      * @param type Type.
      * @param writer Writer.
+     * @param ctx Serialization context.
      */
-    public <K, V> void writeMap(Map<K, V> map, MessageMapType type, MessageWriter writer) {
+    public <K, V> void writeMap(Map<K, V> map, MessageMapType type, MessageWriter writer, MessageSerializationContext ctx) {
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -1071,7 +1082,7 @@ public class DirectByteBufferStream {
                 e = (Map.Entry<K, V>)mapCur;
 
                 if (!keyDone) {
-                    write(type.keyType(), e.getKey(), writer);
+                    write(type.keyType(), e.getKey(), writer, ctx);
 
                     if (!lastFinished)
                         return;
@@ -1079,7 +1090,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(type.valueType(), e.getValue(), writer);
+                write(type.valueType(), e.getValue(), writer, ctx);
 
                 if (!lastFinished)
                     return;
@@ -1555,9 +1566,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @return Message.
      */
-    public <T extends Message> T readMessage(MessageReader reader) {
+    public <T extends Message> T readMessage(MessageReader reader, MessageSerializationContext ctx) {
         if (!msgTypeDone) {
             if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
                 lastFinished = false;
@@ -1576,7 +1588,7 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeNestedRead();
 
-                lastFinished = MessageSerialization.readFrom(msgFactory, msg, reader);
+                lastFinished = MessageSerialization.readFrom(msgFactory, msg, reader, ctx);
             }
             finally {
                 reader.afterNestedRead(lastFinished);
@@ -1600,9 +1612,10 @@ public class DirectByteBufferStream {
     /**
      * @param type Item type.
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @return Array.
      */
-    public <T> T[] readObjectArray(MessageArrayType type, MessageReader reader) {
+    public <T> T[] readObjectArray(MessageArrayType type, MessageReader reader, MessageSerializationContext ctx) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1617,7 +1630,7 @@ public class DirectByteBufferStream {
                 objArr = type.clazz() != null ? (Object[])Array.newInstance(type.clazz(), readSize) : new Object[readSize];
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(type.valueType(), reader);
+                Object item = read(type.valueType(), reader, ctx);
 
                 if (!lastFinished)
                     return null;
@@ -1644,9 +1657,10 @@ public class DirectByteBufferStream {
      *
      * @param type Item type.
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @return {@link ArrayList}, {@link HashSet} or {@link EnumSet}.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageReader reader) {
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageReader reader, MessageSerializationContext ctx) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1661,7 +1675,7 @@ public class DirectByteBufferStream {
                 col = newCollection(type);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(type.valueType(), reader);
+                Object item = read(type.valueType(), reader, ctx);
 
                 if (!lastFinished)
                     return null;
@@ -1696,9 +1710,10 @@ public class DirectByteBufferStream {
     /**
      * @param type Value type.
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageMapType type, MessageReader reader) {
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, MessageReader reader, MessageSerializationContext ctx) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1714,7 +1729,7 @@ public class DirectByteBufferStream {
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = read(type.keyType(), reader);
+                    Object key = read(type.keyType(), reader, ctx);
 
                     if (!lastFinished)
                         return null;
@@ -1723,7 +1738,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = read(type.valueType(), reader);
+                Object val = read(type.valueType(), reader, ctx);
 
                 if (!lastFinished)
                     return null;
@@ -2003,8 +2018,9 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param val Value.
      * @param writer Writer.
+     * @param ctx Serialization context.
      */
-    protected <K, V> void write(MessageType type, Object val, MessageWriter writer) {
+    protected <K, V> void write(MessageType type, Object val, MessageWriter writer, MessageSerializationContext ctx) {
         switch (type.type()) {
             case BYTE:
                 writeByte((Byte)val);
@@ -2132,17 +2148,17 @@ public class DirectByteBufferStream {
                 break;
 
             case MAP:
-                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type));
+                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type, ctx));
 
                 break;
 
             case COLLECTION:
-                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type));
+                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type, ctx));
 
                 break;
 
             case ARRAY:
-                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type));
+                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type, ctx));
 
                 break;
 
@@ -2152,7 +2168,7 @@ public class DirectByteBufferStream {
                 break;
 
             case MSG:
-                writeMessage((Message)val, writer);
+                writeMessage((Message)val, writer, ctx);
 
                 break;
 
@@ -2176,9 +2192,10 @@ public class DirectByteBufferStream {
     /**
      * @param type Type.
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @return Value.
      */
-    protected Object read(MessageType type, MessageReader reader) {
+    protected Object read(MessageType type, MessageReader reader, MessageSerializationContext ctx) {
         switch (type.type()) {
             case BYTE:
                 return readByte();
@@ -2256,19 +2273,19 @@ public class DirectByteBufferStream {
                 return readGridLongList();
 
             case MAP:
-                return nestedRead(reader, () -> reader.readMap((MessageMapType)type));
+                return nestedRead(reader, () -> reader.readMap((MessageMapType)type, ctx));
 
             case COLLECTION:
-                return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type));
+                return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type, ctx));
 
             case ARRAY:
-                return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type));
+                return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type, ctx));
 
             case ENUM:
                 return ((MessageEnumType)type).decode(readByte());
 
             case MSG:
-                return readMessage(reader);
+                return readMessage(reader, ctx);
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);

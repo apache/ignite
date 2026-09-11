@@ -35,10 +35,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.direct.IgniteMessageSerializationContext;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.X;
@@ -47,6 +49,8 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryMessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,8 +70,8 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     /** Default size of buffer used for buffering socket in/out. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 8192;
 
-    /** Size for an intermediate buffer for serializing discovery messages. */
-    private static final int MSG_BUFFER_SIZE = 100;
+    /** Size of the intermediate buffer a message is deserialized through. */
+    private static final int READ_BUFFER_SIZE = 100;
 
     /** */
     private final GridKernalContext ctx;
@@ -82,10 +86,13 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     private final Socket sock;
 
     /** */
-    private final DirectMessageWriter msgWriter;
+    private final TcpDiscoveryMessageSerializer msgSer;
 
     /** */
     private final DirectMessageReader msgReader;
+
+    /** */
+    private final ByteBuffer readBuf;
 
     /** Buffered socket output stream. */
     private final OutputStream out;
@@ -94,10 +101,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     private final CompositeInputStream in;
 
     /** */
-    private final ByteBuffer readBuf;
-
-    /** */
-    private final ByteBuffer writeBuf;
+    private volatile MessageSerializationContext serCtx = MessageSerializationContext.UNNEGOTIATED;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.
@@ -112,11 +116,10 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
         this.msgFactory = ctx.messageFactory();
         this.log = ctx.log(getClass());
 
-        readBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
-        writeBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
-
-        msgWriter = new DirectMessageWriter(msgFactory);
+        readBuf = ByteBuffer.allocate(READ_BUFFER_SIZE);
         msgReader = new DirectMessageReader(msgFactory, null);
+
+        msgSer = new TcpDiscoveryMessageSerializer(ctx);
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
@@ -130,15 +133,25 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
         }
     }
 
+    /** */
+    void applyMessageSerializationContext(@Nullable IgniteNodeFeatureSet rmtFeatures) throws UnsupportedNodeVersionException {
+        serCtx = IgniteMessageSerializationContext.buildForPeers(ctx.localNodeFeatures(), rmtFeatures);
+    }
+
+    /** @return Serialization context the two nodes of this session agreed on. */
+    public MessageSerializationContext serializationContext() {
+        return serCtx;
+    }
+
     /**
      * Writes a discovery message to the underlying socket output stream.
      *
      * @param msg Message to send to the remote node.
      * @throws IgniteCheckedException If serialization fails.
      */
-    void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    synchronized void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         try {
-            serializeMessage((Message)msg, out);
+            msgSer.writeTo(msg, out, serCtx);
 
             out.flush();
         }
@@ -210,7 +223,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
                 readBuf.limit(read);
 
-                finished = MessageSerialization.readFrom(msgFactory, msg, msgReader);
+                finished = MessageSerialization.readFrom(msgFactory, msg, msgReader, serCtx);
 
                 // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
@@ -263,38 +276,12 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     }
 
     /**
-     * Serializes a discovery message into given output stream.
-     *
-     * @param m Discovery message to serialize.
-     * @param out Output stream to write serialized message.
-     * @throws IOException If serialization fails.
-     */
-    void serializeMessage(Message m, OutputStream out) throws IOException, IgniteCheckedException {
-        DiscoveryMarshalling.marshal(m, ctx, null);
-
-        msgWriter.reset();
-        msgWriter.setBuffer(writeBuf);
-
-        boolean finished;
-
-        do {
-            // Should be cleared before first operation.
-            writeBuf.clear();
-
-            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter);
-
-            out.write(writeBuf.array(), 0, writeBuf.position());
-        }
-        while (!finished);
-    }
-
-    /**
      * Writes raw data to the underlying socket output stream.
      *
      * @param data Raw data to write.
      * @throws IOException If failed.
      */
-    void write(byte[] data) throws IOException {
+    synchronized void write(byte[] data) throws IOException {
         out.write(data);
 
         out.flush();
@@ -306,7 +293,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
      * @param b Integer response.
      * @throws IOException If failed.
      */
-    void write(int b) throws IOException {
+    synchronized void write(int b) throws IOException {
         out.write(b);
 
         out.flush();
