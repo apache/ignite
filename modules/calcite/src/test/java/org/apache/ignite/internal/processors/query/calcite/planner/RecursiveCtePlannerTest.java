@@ -26,6 +26,9 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
+import org.apache.calcite.tools.ValidationException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -37,6 +40,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** Planner tests for recursive common table expressions. */
@@ -96,11 +100,15 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
 
         assertRecursiveFlags("WITH \"Numbers\"(n) AS (SELECT 1 UNION ALL " +
             "SELECT n + 1 FROM \"Numbers\" WHERE n < 3) SELECT * FROM \"Numbers\"", true);
+    }
 
-        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+    /** Subquery self-references are inferred as recursive, but rejected during validation. */
+    @Test
+    public void testUnsupportedSubqueryRecursiveFlags() throws Exception {
+        assertUnsupportedRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
             "SELECT n + 1 FROM (SELECT * FROM numbers) x WHERE n < 3) SELECT * FROM numbers", true);
 
-        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+        assertUnsupportedRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
             "SELECT (SELECT n + 1 FROM numbers WHERE n < 3)) SELECT * FROM numbers", true);
     }
 
@@ -139,22 +147,36 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
         assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
             "SELECT * FROM (WITH numbers(n) AS (SELECT 2 UNION ALL SELECT n + 1 FROM numbers WHERE n < 3) " +
             "SELECT * FROM numbers)) SELECT * FROM numbers", false, true);
+    }
 
-        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+    /** References to an outer recursive CTE from nested WITH queries are inferred, but unsupported. */
+    @Test
+    public void testUnsupportedNestedCteFlags() throws Exception {
+        assertUnsupportedRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
             "SELECT n + 1 FROM (WITH numbers(n) AS (SELECT n FROM numbers WHERE n < 3) " +
             "SELECT * FROM numbers)) SELECT * FROM numbers", true, false);
 
-        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+        assertUnsupportedRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
             "SELECT n + 1 FROM (WITH x AS (SELECT n FROM numbers WHERE n < 3), numbers(n) AS (SELECT 9) " +
             "SELECT * FROM x)) SELECT * FROM numbers", true, false, false);
 
-        assertRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
+        assertUnsupportedRecursiveFlags("WITH numbers(n) AS (SELECT 1 UNION ALL " +
             "SELECT n + 1 FROM (WITH numbers(n) AS (SELECT n FROM numbers WHERE n < 2 UNION ALL " +
             "SELECT n + 1 FROM numbers WHERE n < 2) SELECT * FROM numbers)) SELECT * FROM numbers", true, true);
     }
 
     /** Validates real SQL and checks flags on parsed WITH items in pre-order. */
     private void assertRecursiveFlags(String sql, boolean... expected) throws Exception {
+        assertRecursiveFlags(sql, expected, false);
+    }
+
+    /** Checks the inferred flags and the validation error for unsupported recursive references. */
+    private void assertUnsupportedRecursiveFlags(String sql, boolean... expected) throws Exception {
+        assertRecursiveFlags(sql, expected, true);
+    }
+
+    /** Checks the validation outcome and flags on parsed WITH items in pre-order. */
+    private void assertRecursiveFlags(String sql, boolean[] expected, boolean unsupported) throws Exception {
         IgniteSchema schema = createSchema(createTable("NUMBERS", IgniteDistributions.single(), "N", Integer.class));
 
         try (IgnitePlanner planner = plannerCtx(sql, schema).planner()) {
@@ -171,12 +193,34 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
                 }
             });
 
-            planner.validate(node);
+            if (unsupported) {
+                ValidationException err = (ValidationException)GridTestUtils.assertThrows(log,
+                    () -> planner.validate(node), ValidationException.class,
+                    "Unsupported recursive CTE: self-references inside subqueries are not supported");
+
+                assertTrue(sql, err.getCause() instanceof IgniteSQLException);
+                assertEquals(sql, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+                    ((IgniteSQLException)err.getCause()).statusCode());
+            }
+            else
+                planner.validate(node);
 
             assertEquals(sql, expected.length, items.size());
 
             for (int i = 0; i < expected.length; i++)
                 assertEquals(sql + " [item=" + i + ']', expected[i], items.get(i).recursive.booleanValue());
+        }
+    }
+
+    /** DISTINCT semantics survive conversion and plan serialization. */
+    @Test
+    public void testRecursiveDistinctPlan() throws Exception {
+        for (String union : new String[] {"UNION", "UNION DISTINCT"}) {
+            assertPlan("WITH RECURSIVE numbers(n) AS (SELECT 1 " + union +
+                " SELECT n FROM numbers) SELECT n FROM numbers",
+                new IgniteSchema(DEFAULT_SCHEMA), isInstanceOf(IgniteRepeatUnion.class)
+                    .and(rel -> !rel.all)
+                    .and(hasDistribution(IgniteDistributions.single())));
         }
     }
 
