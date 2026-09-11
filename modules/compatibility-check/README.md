@@ -1,10 +1,11 @@
 # Message table
 
-Exports registered message IDs, classes and fields to `table.json`.
+Exports registered message IDs, classes and fields to `table.xml`.
 Fields, including inherited fields and CLASS-retained annotations, are read from
 compiled classes through the JDK compiler API. No node or intermediate manifest is needed.
-Each field occupies one JSON array line: type, name and serialization annotations.
-Array position defines field order; field indexes and declaring classes are omitted.
+XML is written using the JDK StAX API without an external XML library.
+Each field occupies one `field` element: type, name and serialization annotations.
+Element position defines field order; field indexes and declaring classes are omitted.
 
 Coverage: core, indexing, Calcite and ZooKeeper providers. Unregistered classes and
 third-party providers are out of scope. For `CompressedMessage`, only registration
@@ -26,8 +27,8 @@ java --add-opens=java.base/java.nio=ALL-UNNAMED \
     --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
     -cp "modules/compatibility-check/target/classes:$(cat modules/compatibility-check/target/runtime-classpath.txt)" \
     org.apache.ignite.tools.compatibility.messages.MessageTable \
-    modules/compatibility-check/target/table.json
+    modules/compatibility-check/target/table.xml
 ```
 
 The only argument is the output file path. To update the checked-in table, use
-`modules/compatibility-check/src/main/resources/messages/table.json` instead.
+`modules/compatibility-check/src/main/resources/messages/table.xml` instead.

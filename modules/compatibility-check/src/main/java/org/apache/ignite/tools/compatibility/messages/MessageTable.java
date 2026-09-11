@@ -17,35 +17,29 @@
 
 package org.apache.ignite.tools.compatibility.messages;
 
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamWriter;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
 
 /** Exports the actual production registrations and their compiled field descriptions. */
 public final class MessageTable {
-    /** JSON codec; also used by other Ignite modules. */
-    private static final ObjectMapper JSON = new ObjectMapper();
-
     /** No instances. */
     private MessageTable() {
         // No-op.
     }
 
     /**
-     * Exports the registered messages to a JSON file.
+     * Exports the registered messages to a XML file.
      *
      * @param args Output file path.
      * @throws Exception If the build is incomplete or the inputs cannot be read.
@@ -62,7 +56,7 @@ public final class MessageTable {
     }
 
     /**
-     * @return Canonical JSON table.
+     * @return Canonical XML table.
      * @throws Exception If any registered message cannot be described.
      */
     static String generate() throws Exception {
@@ -72,27 +66,65 @@ public final class MessageTable {
             new CalciteMessageFactory(),
             new ZkMessageFactory()
         };
-        var factory = new IgniteMessageFactoryImpl<>(providers);
+
+        IgniteMessageFactoryImpl<?, ?> factory = new IgniteMessageFactoryImpl<>(providers);
         short[] ids = factory.registeredDirectTypes();
 
         Arrays.sort(ids);
 
-        List<Map<String, Object>> msgs = new ArrayList<>();
+        StringWriter out = new StringWriter();
+        XMLStreamWriter xml = XMLOutputFactory.newDefaultFactory().createXMLStreamWriter(out);
 
         try (MessageSchema schemas = new MessageSchema()) {
-            for (short id : ids) {
-                var msg = factory.create(id);
-                String cls = msg.getClass().getName();
+            xml.writeStartDocument("UTF-8", "1.0");
+            xml.writeCharacters("\n");
+            xml.writeStartElement("messageTable");
+            xml.writeAttribute("formatVersion", "1");
+            xml.writeCharacters("\n  ");
+            xml.writeStartElement("providers");
 
-                List<String> schema = schemas.read(msg.getClass());
-
-                msgs.add(new TreeMap<>(Map.of("id", (int)id, "class", cls, "schema", schema)));
+            for (MessageFactoryProvider provider : providers) {
+                xml.writeCharacters("\n    ");
+                xml.writeStartElement("provider");
+                xml.writeCharacters(provider.getClass().getName());
+                xml.writeEndElement();
             }
+
+            xml.writeCharacters("\n  ");
+            xml.writeEndElement();
+            xml.writeCharacters("\n  ");
+            xml.writeStartElement("messages");
+
+            for (short id : ids) {
+                Message msg = factory.create(id);
+
+                xml.writeCharacters("\n    ");
+                xml.writeStartElement("message");
+                xml.writeAttribute("id", Short.toString(id));
+                xml.writeAttribute("class", msg.getClass().getName());
+
+                for (String field : schemas.read(msg.getClass())) {
+                    xml.writeCharacters("\n      ");
+                    xml.writeStartElement("field");
+                    xml.writeCharacters(field);
+                    xml.writeEndElement();
+                }
+
+                xml.writeCharacters("\n    ");
+                xml.writeEndElement();
+            }
+
+            xml.writeCharacters("\n  ");
+            xml.writeEndElement();
+            xml.writeCharacters("\n");
+            xml.writeEndElement();
+            xml.writeCharacters("\n");
+            xml.writeEndDocument();
+        }
+        finally {
+            xml.close();
         }
 
-        return JSON.writer(new DefaultPrettyPrinter().withArrayIndenter(new DefaultIndenter("  ", "\n"))).writeValueAsString(
-            new TreeMap<>(Map.of("formatVersion", 1, "providers",
-                Arrays.stream(providers).map(p -> p.getClass().getName()).toList(), "messages", msgs))) + "\n";
+        return out.toString();
     }
-
 }

@@ -17,16 +17,19 @@
 
 package org.apache.ignite.tools.compatibility.messages;
 
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /** Tests message table generation. */
@@ -39,24 +42,55 @@ public class MessageTableTest {
         String table = MessageTable.generate();
 
         assertEquals(table, MessageTable.generate());
-        assertTrue(table.contains("\"long reqId\""));
+        Document doc = DocumentBuilderFactory.newDefaultInstance().newDocumentBuilder()
+            .parse(new InputSource(new StringReader(table)));
 
-        var json = new ObjectMapper().readTree(table);
+        assertEquals("messageTable", doc.getDocumentElement().getTagName());
+        assertEquals("1", doc.getDocumentElement().getAttribute("formatVersion"));
 
-        for (var msg : json.get("messages")) {
-            if (msg.get("id").asInt() == 5000)
-                assertEquals(new ObjectMapper().valueToTree(List.of()), msg.get("schema"));
-        }
-
-        assertEquals(new ObjectMapper().valueToTree(List.of(
+        String[] providers = {
             "org.apache.ignite.internal.CoreMessagesProvider",
             "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory",
             "org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory",
             "org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory"
-        )), json.get("providers"));
-        assertNull(json.get("modules"));
+        };
 
-        Path out = tmp.getRoot().toPath().resolve("result/table.json");
+        NodeList providerNodes = doc.getElementsByTagName("provider");
+
+        assertEquals(providers.length, providerNodes.getLength());
+
+        for (int i = 0; i < providers.length; i++)
+            assertEquals(providers[i], providerNodes.item(i).getTextContent());
+
+        NodeList msgs = doc.getElementsByTagName("message");
+        boolean compressedFound = false;
+        int prevId = Integer.MIN_VALUE;
+
+        for (int i = 0; i < msgs.getLength(); i++) {
+            Element msg = (Element)msgs.item(i);
+            int id = Integer.parseInt(msg.getAttribute("id"));
+
+            assertTrue(id > prevId);
+            prevId = id;
+
+            if (id == 5000) {
+                compressedFound = true;
+                assertEquals("org.apache.ignite.internal.managers.communication.CompressedMessage",
+                    msg.getAttribute("class"));
+                assertEquals(0, msg.getElementsByTagName("field").getLength());
+            }
+        }
+
+        assertTrue(compressedFound);
+        assertTrue(table.contains("<field>long reqId</field>"));
+        assertTrue(table.contains("&lt;"));
+
+        Document expected = DocumentBuilderFactory.newDefaultInstance().newDocumentBuilder()
+            .parse(Path.of("src/main/resources/messages/table.xml").toFile());
+
+        assertTrue(expected.isEqualNode(doc));
+
+        Path out = tmp.getRoot().toPath().resolve("result/table.xml");
 
         MessageTable.main(new String[] {out.toString()});
         assertEquals(table, Files.readString(out));

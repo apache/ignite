@@ -34,6 +34,9 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
+import javax.tools.DiagnosticListener;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import com.sun.source.util.JavacTask;
@@ -54,17 +57,24 @@ final class MessageSchema implements AutoCloseable {
 
     /** Creates a reader for the same classpath as the registration providers. */
     MessageSchema() {
-        var compiler = ToolProvider.getSystemJavaCompiler();
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
         if (compiler == null)
             throw new IllegalStateException("A full JDK is required to read message fields");
 
-        files = compiler.getStandardFileManager(null, Locale.ROOT, null);
-        task = (JavacTask)compiler.getTask(null, files, diagnostic -> {
+        String classpath = System.getProperty("surefire.test.class.path", System.getProperty("java.class.path"));
+
+        List<String> options = List.of("-proc:none", "-classpath", classpath);
+
+        DiagnosticListener<JavaFileObject> errHnd = diagnostic -> {
             if (diagnostic.getKind() == Diagnostic.Kind.ERROR)
                 throw new IllegalStateException(diagnostic.toString());
-        }, List.of("-proc:none", "-classpath",
-            System.getProperty("surefire.test.class.path", System.getProperty("java.class.path"))), null, List.of());
+        };
+
+        files = compiler.getStandardFileManager(null, Locale.ROOT, null);
+
+        // Read compiled classes from the classpath without compiling sources or running annotation processors.
+        task = (JavacTask)compiler.getTask(null, files, errHnd, options, null, List.of());
     }
 
     /** Returns a canonical field description, including inherited fields and marshalling annotations. */

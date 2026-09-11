@@ -1,0 +1,2946 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messageTable formatVersion="1">
+  <providers>
+    <provider>org.apache.ignite.internal.CoreMessagesProvider</provider>
+    <provider>org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory</provider>
+    <provider>org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory</provider>
+    <provider>org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory</provider>
+  </providers>
+  <messages>
+    <message id="-56" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse">
+      <field>long reqId</field>
+      <field>long updCnt</field>
+      <field>java.lang.String err</field>
+      <field>byte[] errKeysBytes</field>
+    </message>
+    <message id="-55" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest">
+      <field>long reqId</field>
+      <field>java.util.List&lt;java.lang.Integer&gt; caches</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int[] qryParts</field>
+      <field>int pageSize</field>
+      <field>java.lang.String qry</field>
+      <field>byte flags</field>
+      <field>int timeout</field>
+      <field>byte[] paramsBytes</field>
+      <field>java.lang.String schemaName</field>
+      <field>boolean explicitTimeout</field>
+      <field>java.lang.String qryInitiatorId</field>
+    </message>
+    <message id="-54" class="org.apache.ignite.internal.processors.query.h2.QueryTable">
+      <field>java.lang.String schema</field>
+      <field>java.lang.String tbl</field>
+    </message>
+    <message id="-35" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds">
+      <field>int rangeId</field>
+      <field>org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage first</field>
+      <field>org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage last</field>
+    </message>
+    <message id="-34" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange">
+      <field>int rangeId</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage&gt; rows</field>
+      <field>byte flags</field>
+    </message>
+    <message id="-33" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest">
+      <field>long reqId</field>
+      <field>java.util.List&lt;java.lang.Integer&gt; caches</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>java.util.Map&lt;java.util.UUID,int[]&gt; parts</field>
+      <field>int[] qryParts</field>
+      <field>int pageSize</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery&gt; qrys</field>
+      <field>byte flags</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.query.h2.QueryTable&gt; tbls</field>
+      <field>int timeout</field>
+      <field>byte[] paramsBytes</field>
+      <field>java.lang.String schemaName</field>
+      <field>java.lang.String qryInitiatorId</field>
+      <field>long qryId</field>
+      <field>boolean explicitTimeout</field>
+    </message>
+    <message id="-32" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage&gt; vals</field>
+    </message>
+    <message id="-31" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse">
+      <field>java.util.UUID originNodeId</field>
+      <field>long qryId</field>
+      <field>int segmentId</field>
+      <field>int originSegmentId</field>
+      <field>int batchLookupId</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange&gt; ranges</field>
+      <field>byte status</field>
+      <field>java.lang.String err</field>
+    </message>
+    <message id="-30" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest">
+      <field>java.util.UUID originNodeId</field>
+      <field>long qryId</field>
+      <field>int originSegmentId</field>
+      <field>int segmentId</field>
+      <field>int batchLookupId</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds&gt; bounds</field>
+    </message>
+    <message id="-22" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2CacheObject">
+      <field>org.apache.ignite.internal.processors.cache.CacheObject obj</field>
+    </message>
+    <message id="-21" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Geometry">
+      <field>byte[] b</field>
+    </message>
+    <message id="-20" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Uuid">
+      <field>long high</field>
+      <field>long low</field>
+    </message>
+    <message id="-19" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2JavaObject">
+      <field>byte[] b</field>
+    </message>
+    <message id="-18" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Array">
+      <field>java.util.Collection&lt;org.apache.ignite.plugin.extensions.communication.Message&gt; x</field>
+    </message>
+    <message id="-17" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2String">
+      <field>java.lang.String x</field>
+    </message>
+    <message id="-16" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Bytes">
+      <field>byte[] b</field>
+    </message>
+    <message id="-15" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Timestamp">
+      <field>long date</field>
+      <field>long nanos</field>
+    </message>
+    <message id="-14" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Date">
+      <field>long date</field>
+    </message>
+    <message id="-13" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Time">
+      <field>long nanos</field>
+    </message>
+    <message id="-12" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Float">
+      <field>float x</field>
+    </message>
+    <message id="-11" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Double">
+      <field>double x</field>
+    </message>
+    <message id="-10" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Decimal">
+      <field>int scale</field>
+      <field>byte[] b</field>
+    </message>
+    <message id="-9" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Long">
+      <field>long x</field>
+    </message>
+    <message id="-8" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Integer">
+      <field>int x</field>
+    </message>
+    <message id="-7" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Short">
+      <field>short x</field>
+    </message>
+    <message id="-6" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Byte">
+      <field>byte x</field>
+    </message>
+    <message id="-5" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Boolean">
+      <field>boolean x</field>
+    </message>
+    <message id="-4" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null">
+    </message>
+    <message id="300" class="org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest">
+      <field>java.lang.String schema</field>
+      <field>java.util.UUID qryId</field>
+      <field>long originatingQryId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion ver</field>
+      <field>org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription fragmentDesc</field>
+      <field>java.lang.String root</field>
+      <field>int totalFragmentsCnt</field>
+      <field>byte[] paramsBytes</field>
+      <field>long timeout</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry&gt; qryTxEntries</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.String&gt; appAttrs</field>
+      <field>boolean keepBinaryMode</field>
+      <field>marshalled java.lang.Object[] params value=paramsBytes</field>
+    </message>
+    <message id="301" class="org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse">
+      <field>java.util.UUID qryId</field>
+      <field>long fragmentId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="302" class="org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage">
+      <field>jdkMarshalled</field>
+      <field>byte[] errBytes</field>
+      <field>java.util.UUID qryId</field>
+      <field>long fragmentId</field>
+    </message>
+    <message id="303" class="org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage">
+      <field>java.util.UUID qryId</field>
+      <field>long fragmentId</field>
+      <field>long exchangeId</field>
+      <field>int batchId</field>
+      <field>boolean last</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.query.calcite.message.GenericValueMessage&gt; mRows</field>
+    </message>
+    <message id="304" class="org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage">
+      <field>java.util.UUID qryId</field>
+      <field>long fragmentId</field>
+      <field>long exchangeId</field>
+      <field>int batchId</field>
+    </message>
+    <message id="305" class="org.apache.ignite.internal.processors.query.calcite.message.QueryInboxCloseMessage">
+      <field>java.util.UUID qryId</field>
+      <field>long fragmentId</field>
+      <field>long exchangeId</field>
+    </message>
+    <message id="306" class="org.apache.ignite.internal.processors.query.calcite.message.QueryCloseMessage">
+      <field>java.util.UUID qryId</field>
+    </message>
+    <message id="307" class="org.apache.ignite.internal.processors.query.calcite.message.GenericValueMessage">
+      <field>byte[] serialized</field>
+      <field>marshalled java.lang.Object val value=serialized</field>
+    </message>
+    <message id="308" class="org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup&gt; colocationGrps</field>
+    </message>
+    <message id="309" class="org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup">
+      <field>long[] srcIds</field>
+      <field>java.util.List&lt;java.util.UUID&gt; nodeIds</field>
+      <field>int[] marshalledAssignments</field>
+    </message>
+    <message id="310" class="org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription">
+      <field>long fragmentId</field>
+      <field>org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping mapping</field>
+      <field>java.util.Map&lt;java.lang.Long,java.util.List&lt;java.util.UUID&gt;&gt; remoteSources</field>
+      <field>org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup target</field>
+    </message>
+    <message id="311" class="org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry">
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+    </message>
+    <message id="400" class="org.apache.ignite.spi.discovery.zk.internal.ZkCommunicationErrorResolveFinishMessage">
+      <field>java.util.UUID futId</field>
+      <field>long topVer</field>
+    </message>
+    <message id="401" class="org.apache.ignite.spi.discovery.zk.internal.ZkCommunicationErrorResolveStartMessage">
+      <field>java.util.UUID id</field>
+    </message>
+    <message id="402" class="org.apache.ignite.spi.discovery.zk.internal.ZkForceNodeFailMessage">
+      <field>long nodeInternalId</field>
+      <field>java.lang.String warning</field>
+    </message>
+    <message id="403" class="org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage">
+    </message>
+    <message id="404" class="org.apache.ignite.spi.discovery.zk.internal.ZkDiscoDataBagWrapper">
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message&gt; data</field>
+    </message>
+    <message id="405" class="org.apache.ignite.spi.discovery.zk.internal.ZkOperationContextAwareCustomMessage">
+      <field>org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage delegate</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+    </message>
+    <message id="5000" class="org.apache.ignite.internal.managers.communication.CompressedMessage">
+    </message>
+    <message id="5001" class="org.apache.ignite.internal.util.ErrorMessage">
+      <field>jdkMarshalled</field>
+      <field>byte[] errBytes</field>
+    </message>
+    <message id="5002" class="org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage">
+      <field>java.lang.String hostName</field>
+      <field>byte[] addrBytes</field>
+      <field>int port</field>
+    </message>
+    <message id="5003" class="org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage">
+      <field>java.lang.String hostName</field>
+      <field>byte[] addrBytes</field>
+    </message>
+    <message id="5004" class="org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode">
+      <field>java.util.UUID id</field>
+      <field>byte[] consistentIdBytes</field>
+      <field>byte[] attrsBytes</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; addrs</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; hostNames</field>
+      <field>int discPort</field>
+      <field>org.apache.ignite.internal.ClusterMetricsSnapshot clusterMetricsSnapshot</field>
+      <field>long order</field>
+      <field>long intOrder</field>
+      <field>org.apache.ignite.lang.IgniteProductVersion ver</field>
+      <field>java.util.UUID clientRouterNodeId</field>
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet features</field>
+      <field>marshalled java.lang.Object consistentId value=consistentIdBytes</field>
+      <field>marshalled java.util.Map&lt;java.lang.String,java.lang.Object&gt; attrs value=attrsBytes</field>
+    </message>
+    <message id="5005" class="org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket">
+      <field>java.util.UUID joiningNodeId</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message&gt; joiningNodeData compress</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message&gt; commonData compress</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message&gt;&gt; nodeSpecificData compress</field>
+    </message>
+    <message id="5006" class="org.apache.ignite.internal.util.GridByteArrayList">
+      <field>byte[] data</field>
+      <field>int size</field>
+    </message>
+    <message id="5007" class="org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue">
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>int cacheId</field>
+    </message>
+    <message id="5008" class="org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue">
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+    </message>
+    <message id="5009" class="org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer">
+      <field>long idx</field>
+      <field>int fileOff</field>
+      <field>int len</field>
+    </message>
+    <message id="5010" class="org.apache.ignite.spi.discovery.SerializableDataBagItemWrapper">
+      <field>byte[] dataBytes</field>
+    </message>
+    <message id="5011" class="org.apache.ignite.internal.GridTopicMessage">
+      <field>byte[] topicBytes</field>
+      <field>int ord</field>
+    </message>
+    <message id="5012" class="org.apache.ignite.internal.util.GridIntList">
+      <field>int[] arr</field>
+      <field>int idx</field>
+    </message>
+    <message id="5700" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID prevNodeId</field>
+      <field>java.lang.String dcId</field>
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet nodeFeatures</field>
+    </message>
+    <message id="5701" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>long order</field>
+      <field>boolean prevNodeAliveFlag</field>
+      <field>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage&gt; redirectAddrsMsgs</field>
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet nodeFeatures</field>
+    </message>
+    <message id="5702" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode node</field>
+      <field>org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket dataPacket</field>
+    </message>
+    <message id="5703" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode node</field>
+      <field>org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket dataPacket</field>
+      <field>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage&gt; pendingMsgs</field>
+      <field>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode&gt; top</field>
+      <field>java.util.Map&lt;java.lang.Long,java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode&gt;&gt; topHist</field>
+      <field>long gridStartTime</field>
+    </message>
+    <message id="5704" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID nodeId</field>
+      <field>org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket clientDiscoData</field>
+      <field>byte[] clientNodeAttrsBytes</field>
+      <field>marshalled java.util.Map&lt;java.lang.String,java.lang.Object&gt; clientNodeAttrs value=clientNodeAttrsBytes</field>
+    </message>
+    <message id="5705" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+    </message>
+    <message id="5706" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID failedNodeId</field>
+      <field>long order</field>
+      <field>java.lang.String warning</field>
+    </message>
+    <message id="5707" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+    </message>
+    <message id="5708" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID clientNodeId</field>
+    </message>
+    <message id="5709" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>boolean clientExists</field>
+    </message>
+    <message id="5710" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID nodeToPing</field>
+    </message>
+    <message id="5711" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID nodeToPing</field>
+      <field>boolean res</field>
+    </message>
+    <message id="5712" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.lang.IgniteUuid msgId</field>
+    </message>
+    <message id="5713" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID routerNodeId</field>
+      <field>org.apache.ignite.lang.IgniteUuid lastMsgId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage&gt; pendingMsgs</field>
+    </message>
+    <message id="5714" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.lang.IgniteUuid msgId</field>
+      <field>boolean customMsgDiscard</field>
+    </message>
+    <message id="5715" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.lang.String err</field>
+    </message>
+    <message id="5716" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; addrs</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; hostNames</field>
+    </message>
+    <message id="5717" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>int maxHops</field>
+      <field>int curHops</field>
+    </message>
+    <message id="5718" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.UUID nodeId</field>
+    </message>
+    <message id="5719" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage msg</field>
+    </message>
+    <message id="5720" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage msg</field>
+    </message>
+    <message id="5900" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage&gt; creatorNodeAddrsMsgs</field>
+      <field>java.util.UUID failedNodeId</field>
+      <field>int status</field>
+    </message>
+    <message id="6000" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID procId</field>
+      <field>int type</field>
+      <field>org.apache.ignite.plugin.extensions.communication.Message req</field>
+      <field>boolean waitClnRes</field>
+      <field>boolean needExchange</field>
+    </message>
+    <message id="6001" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcessRequest">
+      <field>java.util.UUID reqId</field>
+      <field>java.lang.String snpName</field>
+      <field>java.lang.String snpPath</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; grps</field>
+      <field>long startTime</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; nodes</field>
+      <field>boolean fullCheck</field>
+      <field>boolean allRestoreHandlers</field>
+      <field>int incIdx</field>
+    </message>
+    <message id="6002" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest">
+      <field>java.util.UUID reqId</field>
+      <field>java.lang.String snpName</field>
+      <field>java.lang.String snpPath</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; grps</field>
+      <field>long startTime</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; nodes</field>
+      <field>java.util.UUID opNodeId</field>
+      <field>boolean incremental</field>
+      <field>int incIdx</field>
+      <field>boolean onlyPrimary</field>
+      <field>boolean dump</field>
+      <field>boolean compress</field>
+      <field>boolean encrypt</field>
+      <field>boolean configOnly</field>
+    </message>
+    <message id="6003" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequest">
+      <field>java.util.UUID reqId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage err</field>
+      <field>java.util.List&lt;java.lang.String&gt; warnings</field>
+    </message>
+    <message id="6004" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreStartRequest">
+      <field>java.util.UUID reqId</field>
+    </message>
+    <message id="6005" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponse">
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult&lt;org.apache.ignite.plugin.extensions.communication.Message&gt;&gt; hndResults</field>
+    </message>
+    <message id="6006" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult">
+      <field>org.apache.ignite.plugin.extensions.communication.Message data</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="6007" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse">
+      <field>org.apache.ignite.plugin.extensions.communication.Message result</field>
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.util.ErrorMessage&gt; errors</field>
+    </message>
+    <message id="6008" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponse">
+      <field>java.util.Map&lt;org.apache.ignite.internal.management.cache.PartitionKey,org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord&gt; res</field>
+    </message>
+    <message id="6009" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.StoredCacheData&gt; ccfgs</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata&gt; metas</field>
+    </message>
+    <message id="6010" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataResponse">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata&gt; metadata</field>
+    </message>
+    <message id="6011" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata">
+      <field>java.util.UUID rqId</field>
+      <field>java.lang.String snpName</field>
+      <field>java.lang.String consId</field>
+      <field>java.lang.String folderName</field>
+      <field>boolean comprParts</field>
+      <field>int pageSize</field>
+      <field>java.util.List&lt;java.lang.Integer&gt; grpIds</field>
+      <field>java.util.Set&lt;java.lang.String&gt; bltNodes</field>
+      <field>org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer snpRecPtr</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.util.Set&lt;java.lang.Integer&gt;&gt; locParts</field>
+      <field>byte[] masterKeyDigest</field>
+      <field>java.util.List&lt;java.lang.String&gt; warnings</field>
+      <field>long snapshotTime</field>
+      <field>java.util.Set&lt;java.lang.Integer&gt; comprGrpIds</field>
+      <field>boolean hasComprGrps</field>
+      <field>boolean onlyPrimary</field>
+      <field>boolean dump</field>
+      <field>byte[] encKey</field>
+    </message>
+    <message id="6012" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse">
+      <field>java.util.Map&lt;java.lang.String,java.util.Map&lt;org.apache.ignite.internal.management.cache.PartitionKey,org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord&gt;&gt; perMetaResults</field>
+    </message>
+    <message id="6013" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckHandlersResponse">
+      <field>java.util.Map&lt;java.lang.String,java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult&lt;org.apache.ignite.plugin.extensions.communication.Message&gt;&gt;&gt; perMetaResults</field>
+    </message>
+    <message id="6014" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage">
+      <field>java.lang.String id</field>
+      <field>java.util.UUID reqId</field>
+      <field>java.lang.String snpName</field>
+      <field>java.lang.String snpPath</field>
+      <field>java.util.Map&lt;java.lang.Integer,int[]&gt; parts</field>
+    </message>
+    <message id="6015" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage">
+      <field>java.lang.String id</field>
+      <field>java.lang.String errMsg</field>
+    </message>
+    <message id="6016" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult">
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord&gt; txHashRes</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord&gt; partHashRes</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; partiallyCommittedTxs</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.util.ErrorMessage&gt; exceptions</field>
+    </message>
+    <message id="6017" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheMessage payload</field>
+      <field>java.util.UUID id</field>
+      <field>java.util.UUID txSnpId</field>
+      <field>long topVer</field>
+    </message>
+    <message id="6300" class="org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId">
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.lang.IgniteUuid reqId</field>
+    </message>
+    <message id="6301" class="org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult">
+      <field>int cnt</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.util.ErrorMessage&gt; errors</field>
+    </message>
+    <message id="6302" class="org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult">
+      <field>org.apache.ignite.lang.IgniteUuid srvcId</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult&gt; results</field>
+      <field>boolean isSvcTopTransitional</field>
+    </message>
+    <message id="6303" class="org.apache.ignite.internal.processors.service.ServiceDeploymentRequest">
+      <field>org.apache.ignite.lang.IgniteUuid srvcId</field>
+      <field>org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage cfgMsg</field>
+    </message>
+    <message id="6304" class="org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest">
+      <field>org.apache.ignite.lang.IgniteUuid srvcId</field>
+    </message>
+    <message id="6305" class="org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId depId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult&gt; results</field>
+    </message>
+    <message id="6306" class="org.apache.ignite.internal.processors.service.ServiceChangeBatchRequest">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.service.ServiceChangeAbstractRequest&gt; reqs</field>
+    </message>
+    <message id="6307" class="org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch">
+      <field>org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId depId</field>
+      <field>java.util.Map&lt;org.apache.ignite.lang.IgniteUuid,org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult&gt; results</field>
+    </message>
+    <message id="6308" class="org.apache.ignite.internal.processors.service.ServiceProcessorCommonDiscoveryData">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.service.ServiceInfo&gt; registeredServices</field>
+    </message>
+    <message id="6309" class="org.apache.ignite.internal.processors.service.ServiceProcessorJoinNodeDiscoveryData">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.service.ServiceInfo&gt; staticServicesInfo</field>
+    </message>
+    <message id="6310" class="org.apache.ignite.internal.processors.service.ServiceInfo">
+      <field>java.util.UUID originNodeId</field>
+      <field>org.apache.ignite.lang.IgniteUuid srvcId</field>
+      <field>org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage cfgMsg</field>
+      <field>boolean staticCfg</field>
+      <field>org.apache.ignite.internal.processors.service.ServiceTopology top</field>
+    </message>
+    <message id="6311" class="org.apache.ignite.internal.processors.service.ServiceTopology">
+      <field>java.util.Map&lt;java.util.UUID,java.lang.Integer&gt; snapshot</field>
+      <field>boolean isTransitional</field>
+    </message>
+    <message id="6312" class="org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage">
+      <field>java.lang.String name</field>
+      <field>int totalCnt</field>
+      <field>int maxPerNodeCnt</field>
+      <field>java.lang.String cacheName</field>
+      <field>byte[] affKeyBytes</field>
+      <field>boolean isStatisticsEnabled</field>
+      <field>int locStartOrder</field>
+      <field>java.lang.String srvcClsName</field>
+      <field>byte[] srvcBytes</field>
+      <field>byte[] nodeFilterBytes</field>
+      <field>byte[] interceptorsBytes</field>
+      <field>java.lang.String[] platformMtdNames</field>
+      <field>marshalled java.lang.Object affKey value=affKeyBytes</field>
+    </message>
+    <message id="6500" class="org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID receiverNodeId</field>
+      <field>int connIdx</field>
+    </message>
+    <message id="6501" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>java.lang.String key</field>
+      <field>byte[] valBytes</field>
+    </message>
+    <message id="6502" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUpdateAckMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+    </message>
+    <message id="6503" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>java.lang.String key</field>
+      <field>byte[] valBytes</field>
+      <field>byte[] expValBytes</field>
+      <field>boolean matches</field>
+    </message>
+    <message id="6504" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>boolean updated</field>
+    </message>
+    <message id="6505" class="org.apache.ignite.internal.util.distributed.FullMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID processId</field>
+      <field>int type</field>
+      <field>java.util.Map&lt;java.util.UUID,R&gt; res</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt; err</field>
+    </message>
+    <message id="6506" class="org.apache.ignite.internal.util.distributed.InitMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID procId</field>
+      <field>int type</field>
+      <field>org.apache.ignite.plugin.extensions.communication.Message req</field>
+      <field>boolean waitClnRes</field>
+    </message>
+    <message id="6507" class="org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; caches</field>
+      <field>byte flags</field>
+    </message>
+    <message id="6508" class="org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>int typeId</field>
+      <field>boolean duplicated</field>
+    </message>
+    <message id="6509" class="org.apache.ignite.internal.processors.cache.binary.MetadataRemoveProposedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID origNodeId</field>
+      <field>int typeId</field>
+      <field>boolean onCoordinator</field>
+      <field>java.lang.String errMsg</field>
+    </message>
+    <message id="6510" class="org.apache.ignite.internal.processors.cache.WalStateFinishMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID opId</field>
+      <field>int grpId</field>
+      <field>org.apache.ignite.lang.IgniteUuid grpDepId</field>
+      <field>boolean changed</field>
+      <field>java.lang.String errMsg</field>
+    </message>
+    <message id="6511" class="org.apache.ignite.internal.processors.cache.WalStateProposeMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID opId</field>
+      <field>int grpId</field>
+      <field>org.apache.ignite.lang.IgniteUuid grpDepId</field>
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.lang.IgniteUuid&gt; caches</field>
+      <field>boolean enable</field>
+    </message>
+    <message id="6512" class="org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>int typeId</field>
+      <field>int acceptedVer</field>
+      <field>boolean duplicated</field>
+    </message>
+    <message id="6513" class="org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID origNodeId</field>
+      <field>byte[] metadataBytes</field>
+      <field>int typeId</field>
+      <field>int pendingVer</field>
+      <field>int acceptedVer</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>marshalled org.apache.ignite.internal.binary.BinaryMetadata metadata value=metadataBytes</field>
+    </message>
+    <message id="6514" class="org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>long timeout</field>
+      <field>boolean isInit</field>
+    </message>
+    <message id="6515" class="org.apache.ignite.internal.processors.authentication.UserAcceptedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.lang.IgniteUuid opId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="6516" class="org.apache.ignite.internal.processors.authentication.UserProposedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.internal.processors.authentication.UserManagementOperation op</field>
+    </message>
+    <message id="6517" class="org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>org.apache.ignite.cluster.ClusterState state</field>
+      <field>boolean transitionRes</field>
+    </message>
+    <message id="6518" class="org.apache.ignite.internal.processors.continuous.StopRoutineAckDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID routineId</field>
+    </message>
+    <message id="6519" class="org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID routineId</field>
+    </message>
+    <message id="6520" class="org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.util.List&lt;java.util.UUID&gt;&gt;&gt; assignmentChange</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.lang.IgniteUuid&gt; cacheDeploymentIds</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage partsMsg</field>
+      <field>boolean exchangeNeeded</field>
+    </message>
+    <message id="6521" class="org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.lang.Boolean&gt; startedCaches</field>
+      <field>java.util.Set&lt;java.lang.Integer&gt; closedCaches</field>
+    </message>
+    <message id="6522" class="org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem item</field>
+    </message>
+    <message id="6523" class="org.apache.ignite.internal.processors.marshaller.MappingProposedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID origNodeId</field>
+      <field>org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem mappingItem</field>
+      <field>org.apache.ignite.internal.processors.marshaller.MappingProposedMessage.ProposalStatus status</field>
+      <field>java.lang.String conflictingClsName</field>
+    </message>
+    <message id="6524" class="org.apache.ignite.internal.processors.cache.ExchangeFailureMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; cacheNames</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt; exchangeErrors</field>
+    </message>
+    <message id="6525" class="org.apache.ignite.internal.processors.cache.CacheStatisticsClearMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>java.util.Collection&lt;java.lang.String&gt; caches</field>
+      <field>byte flags</field>
+    </message>
+    <message id="6526" class="org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest&gt; startReqs</field>
+      <field>java.util.Set&lt;java.lang.String&gt; cachesToClose</field>
+    </message>
+    <message id="6527" class="org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest&gt; reqs</field>
+    </message>
+    <message id="6528" class="org.apache.ignite.internal.processors.cache.CacheClientReconnectDiscoveryData">
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.CacheReconnectInfo&gt; clientCaches</field>
+    </message>
+    <message id="6529" class="org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState">
+      <field>java.util.Set&lt;java.lang.Integer&gt; lostParts</field>
+      <field>java.util.Set&lt;java.lang.Integer&gt; zeroParts</field>
+    </message>
+    <message id="6530" class="org.apache.ignite.internal.processors.cache.CacheJoinInfo">
+      <field>org.apache.ignite.internal.processors.cache.StoredCacheData cacheData</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheType cacheType</field>
+      <field>boolean sql</field>
+      <field>long flags</field>
+      <field>boolean staticallyConfigured</field>
+    </message>
+    <message id="6531" class="org.apache.ignite.internal.processors.cache.CacheJoinNodeDiscoveryData">
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.CacheJoinInfo&gt; caches</field>
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.CacheJoinInfo&gt; templates</field>
+      <field>org.apache.ignite.lang.IgniteUuid cacheDeploymentId</field>
+      <field>boolean startCaches</field>
+      <field>org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData</field>
+    </message>
+    <message id="6532" class="org.apache.ignite.internal.processors.cache.CacheReconnectInfo">
+      <field>java.lang.String cacheName</field>
+      <field>org.apache.ignite.lang.IgniteUuid deploymentId</field>
+      <field>boolean nearCache</field>
+    </message>
+    <message id="6533" class="org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData">
+      <field>long clusterBaselineTopVer</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState&gt; grpStates</field>
+    </message>
+    <message id="6534" class="org.apache.ignite.internal.managers.discovery.IoTestDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>byte[] payload</field>
+      <field>java.util.List&lt;java.util.UUID&gt; path</field>
+      <field>long hopSendTsMillis</field>
+      <field>java.util.List&lt;java.lang.Long&gt; hopTimesMillis</field>
+    </message>
+    <message id="6535" class="org.apache.ignite.internal.managers.discovery.IoTestDiscoveryAckMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.lang.IgniteUuid requestId</field>
+      <field>java.util.List&lt;java.util.UUID&gt; path</field>
+      <field>java.util.List&lt;java.lang.Long&gt; hopTimesMillis</field>
+    </message>
+    <message id="10000" class="org.apache.ignite.internal.TxInfo">
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion dhtVer</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearVer</field>
+    </message>
+    <message id="10001" class="org.apache.ignite.internal.TxEntriesInfo">
+      <field>int cacheId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+    </message>
+    <message id="10002" class="org.apache.ignite.internal.processors.cache.transactions.TxLock">
+      <field>java.util.UUID nearNodeId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId</field>
+      <field>long threadId</field>
+      <field>byte ownership</field>
+    </message>
+    <message id="10003" class="org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>long futId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; txKeys</field>
+    </message>
+    <message id="10004" class="org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey[] nearTxKeysArr</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; txKeys</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.transactions.TxLock&gt;[] locksArr</field>
+      <field>marshalled java.util.Map&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey,java.util.List&lt;org.apache.ignite.internal.processors.cache.transactions.TxLock&gt;&gt; nearTxKeyLocks keys=nearTxKeysArr values=locksArr</field>
+    </message>
+    <message id="10005" class="org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey">
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>int cacheId</field>
+    </message>
+    <message id="10006" class="org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry">
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder val</field>
+      <field>org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder oldVal</field>
+      <field>byte[] transformClosBytes</field>
+      <field>long ttl</field>
+      <field>long conflictExpireTime</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion conflictVer</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion explicitVer</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheEntryPredicate[] filters</field>
+      <field>byte[] expiryPlcBytes</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion serReadVer</field>
+      <field>marshalled java.util.Collection&lt;org.apache.ignite.internal.util.typedef.T2&lt;javax.cache.processor.EntryProcessor&lt;java.lang.Object,java.lang.Object,java.lang.Object&gt;,java.lang.Object[]&gt;&gt; entryProcessorsCol value=transformClosBytes</field>
+    </message>
+    <message id="10007" class="org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder">
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheOperation op</field>
+      <field>boolean hasWriteVal</field>
+    </message>
+    <message id="10008" class="org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer</field>
+      <field>int txNum</field>
+      <field>boolean sys</field>
+      <field>boolean nearTxCheck</field>
+    </message>
+    <message id="10009" class="org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>boolean success</field>
+    </message>
+    <message id="10010" class="org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion commitVer</field>
+      <field>boolean invalidate</field>
+      <field>boolean commit</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion baseVer</field>
+      <field>byte plc</field>
+      <field>int taskNameHash</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode</field>
+    </message>
+    <message id="10011" class="org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>int part</field>
+    </message>
+    <message id="10012" class="org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.transactions.TransactionConcurrency concurrency</field>
+      <field>org.apache.ignite.transactions.TransactionIsolation isolation</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer</field>
+      <field>long timeout</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt; reads</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt; writes</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; dhtVerKeys</field>
+      <field>int txSize</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Collection&lt;java.util.UUID&gt;&gt; txNodes</field>
+      <field>byte plc</field>
+      <field>byte flags</field>
+    </message>
+    <message id="10013" class="org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>int part</field>
+    </message>
+    <message id="10014" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion commitVer</field>
+      <field>boolean invalidate</field>
+      <field>boolean commit</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion baseVer</field>
+      <field>byte plc</field>
+      <field>int taskNameHash</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode</field>
+      <field>java.util.UUID nearNodeId</field>
+      <field>int miniId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage&gt; updCntrs</field>
+    </message>
+    <message id="10015" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>int part</field>
+      <field>int miniId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage checkCommittedErrMsg</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheReturn retVal</field>
+      <field>boolean checkCommitted</field>
+    </message>
+    <message id="10016" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.transactions.TransactionConcurrency concurrency</field>
+      <field>org.apache.ignite.transactions.TransactionIsolation isolation</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer</field>
+      <field>long timeout</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt; reads</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt; writes</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; dhtVerKeys</field>
+      <field>int txSize</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Collection&lt;java.util.UUID&gt;&gt; txNodes</field>
+      <field>byte plc</field>
+      <field>byte flags</field>
+      <field>java.util.UUID nearNodeId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>int miniId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>java.util.BitSet invalidateNearEntries</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt; nearWrites</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; ownedKeys</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; ownedVals</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage&gt; updCntrs</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer</field>
+      <field>int taskNameHash</field>
+      <field>java.util.BitSet preloadKeys</field>
+      <field>boolean skipCompletedVers</field>
+      <field>java.lang.String txLbl</field>
+      <field>marshalled java.util.Map&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey,org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; owned keys=ownedKeys values=ownedVals</field>
+    </message>
+    <message id="10017" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>int part</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; nearEvicted</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>int miniId</field>
+      <field>java.util.Map&lt;java.lang.Integer,int[]&gt; invalidParts</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt; preloadEntries</field>
+    </message>
+    <message id="10018" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion commitVer</field>
+      <field>boolean invalidate</field>
+      <field>boolean commit</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion baseVer</field>
+      <field>byte plc</field>
+      <field>int taskNameHash</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode</field>
+      <field>int miniId</field>
+    </message>
+    <message id="10019" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion txId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>int part</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>int miniId</field>
+      <field>long nearThreadId</field>
+    </message>
+    <message id="10020" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.transactions.TransactionConcurrency concurrency</field>
+      <field>org.apache.ignite.transactions.TransactionIsolation isolation</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer</field>
+      <field>long timeout</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt; reads</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt; writes</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; dhtVerKeys</field>
+      <field>int txSize</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Collection&lt;java.util.UUID&gt;&gt; txNodes</field>
+      <field>byte plc</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>int miniId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int taskNameHash</field>
+      <field>byte flags</field>
+      <field>java.lang.String txLbl</field>
+    </message>
+    <message id="10021" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>int part</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; pending</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>int miniId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion dhtVer</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue&gt; ownedVals</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheReturn retVal</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt; filterFailedKeys</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion clientRemapVer</field>
+      <field>boolean onePhaseCommit</field>
+    </message>
+    <message id="10022" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>java.util.UUID nodeId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>long timeout</field>
+      <field>boolean isInTx</field>
+      <field>boolean isInvalidate</field>
+      <field>boolean isRead</field>
+      <field>org.apache.ignite.transactions.TransactionIsolation isolation</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>boolean[] retVals</field>
+      <field>int txSize</field>
+      <field>byte flags</field>
+      <field>java.util.BitSet invalidateEntries</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int taskNameHash</field>
+      <field>java.util.BitSet preloadKeys</field>
+      <field>long accessTtl</field>
+      <field>java.lang.String txLbl</field>
+    </message>
+    <message id="10023" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; vals</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>java.util.Collection&lt;java.lang.Integer&gt; invalidParts</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt; preloadEntries</field>
+    </message>
+    <message id="10024" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>boolean forSavepoint</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; nearKeys</field>
+    </message>
+    <message id="10025" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>java.util.UUID nodeId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>long timeout</field>
+      <field>boolean isInTx</field>
+      <field>boolean isInvalidate</field>
+      <field>boolean isRead</field>
+      <field>org.apache.ignite.transactions.TransactionIsolation isolation</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>boolean[] retVals</field>
+      <field>int txSize</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int miniId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion[] dhtVers</field>
+      <field>int taskNameHash</field>
+      <field>long createTtl</field>
+      <field>long accessTtl</field>
+      <field>byte flags</field>
+      <field>java.lang.String txLbl</field>
+      <field>long waitTimeout</field>
+    </message>
+    <message id="10026" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; vals</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; pending</field>
+      <field>int miniId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion[] dhtVers</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion[] mappedVers</field>
+      <field>boolean[] filterRes</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion clientRemapVer</field>
+      <field>boolean compatibleRemapVer</field>
+      <field>boolean lockAcquired</field>
+    </message>
+    <message id="10027" class="org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>boolean forSavepoint</field>
+    </message>
+    <message id="10028" class="org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>java.util.UUID nodeId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearXidVer</field>
+      <field>long threadId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>long timeout</field>
+      <field>boolean isInTx</field>
+      <field>boolean isInvalidate</field>
+      <field>boolean isRead</field>
+      <field>org.apache.ignite.transactions.TransactionIsolation isolation</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>boolean[] retVals</field>
+      <field>int txSize</field>
+      <field>byte flags</field>
+    </message>
+    <message id="10029" class="org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; committedVers</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; rolledbackVers</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; vals</field>
+    </message>
+    <message id="10030" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; vers</field>
+    </message>
+    <message id="10031" class="org.apache.ignite.internal.processors.cache.distributed.dht.TransactionAttributesAwareRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest payload</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.String&gt; appAttrs</field>
+    </message>
+    <message id="10300" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+    </message>
+    <message id="10301" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; missedKeys</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt; infos</field>
+    </message>
+    <message id="10302" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.util.GridLongList futIds</field>
+    </message>
+    <message id="10303" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int taskNameHash</field>
+      <field>java.util.UUID nearNodeId</field>
+      <field>long nearFutId</field>
+      <field>byte flags</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; vals</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; prevVals</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; conflictVers</field>
+      <field>org.apache.ignite.internal.util.GridLongList ttls</field>
+      <field>org.apache.ignite.internal.util.GridLongList conflictExpireTimes</field>
+      <field>org.apache.ignite.internal.util.GridLongList nearTtls</field>
+      <field>org.apache.ignite.internal.util.GridLongList nearExpireTimes</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; nearKeys</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; nearVals</field>
+      <field>java.util.List&lt;java.lang.Integer&gt; obsoleteIndexes</field>
+      <field>org.apache.ignite.internal.util.GridLongList updateCntrs</field>
+    </message>
+    <message id="10304" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors errs</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; nearEvicted</field>
+      <field>int partId</field>
+    </message>
+    <message id="10305" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheOperation op</field>
+      <field>org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode</field>
+      <field>int taskNameHash</field>
+      <field>short flags</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; vals</field>
+      <field>java.util.List&lt;byte[]&gt; entryProcessorsBytes</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; conflictVers</field>
+      <field>org.apache.ignite.internal.util.GridLongList conflictTtls</field>
+      <field>org.apache.ignite.internal.util.GridLongList conflictExpireTimes</field>
+      <field>java.util.List&lt;byte[]&gt; invokeArgsBytes</field>
+      <field>byte[] expiryPlcBytes</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheEntryPredicate[] filter</field>
+      <field>marshalled java.util.List&lt;java.lang.Object&gt; entryProcessors value=entryProcessorsBytes</field>
+    </message>
+    <message id="10306" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion writeVer</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int taskNameHash</field>
+      <field>java.util.UUID nearNodeId</field>
+      <field>long nearFutId</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject prevVal</field>
+      <field>long updateCntr</field>
+    </message>
+    <message id="10307" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors errs</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheReturn ret</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion remapTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates nearUpdates</field>
+      <field>int partId</field>
+      <field>java.util.List&lt;java.util.UUID&gt; mapping</field>
+    </message>
+    <message id="10308" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheOperation op</field>
+      <field>org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode</field>
+      <field>int taskNameHash</field>
+      <field>short flags</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+    </message>
+    <message id="10309" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheOperation op</field>
+      <field>org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode</field>
+      <field>int taskNameHash</field>
+      <field>short flags</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>java.util.List&lt;byte[]&gt; invokeArgsBytes</field>
+      <field>byte[] entryProcBytes</field>
+      <field>marshalled javax.cache.processor.EntryProcessor&lt;java.lang.Object,java.lang.Object,java.lang.Object&gt; entryProc value=entryProcBytes</field>
+    </message>
+    <message id="10310" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.internal.processors.cache.GridCacheOperation op</field>
+      <field>org.apache.ignite.cache.CacheWriteSynchronizationMode syncMode</field>
+      <field>int taskNameHash</field>
+      <field>short flags</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheEntryPredicate[] filter</field>
+    </message>
+    <message id="10311" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicCheckUpdateRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>int partId</field>
+      <field>long futId</field>
+    </message>
+    <message id="10312" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates">
+      <field>java.util.List&lt;java.lang.Integer&gt; nearValsIdxs</field>
+      <field>java.util.List&lt;java.lang.Integer&gt; nearSkipIdxs</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt; nearVals</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion nearVer</field>
+      <field>org.apache.ignite.internal.util.GridLongList nearTtls</field>
+      <field>org.apache.ignite.internal.util.GridLongList nearExpireTimes</field>
+    </message>
+    <message id="10313" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>java.util.Collection&lt;java.lang.Boolean&gt; readersFlags</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int taskNameHash</field>
+      <field>long createTtl</field>
+      <field>long accessTtl</field>
+      <field>java.lang.String txLbl</field>
+      <field>marshalled java.util.Map&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject,java.lang.Boolean&gt; keyMap keys=keys values=readersFlags</field>
+    </message>
+    <message id="10314" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+      <field>org.apache.ignite.lang.IgniteUuid miniId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt; entries</field>
+      <field>java.util.Collection&lt;java.lang.Integer&gt; invalidParts</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="10315" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int taskNameHash</field>
+      <field>long createTtl</field>
+      <field>long accessTtl</field>
+      <field>java.lang.String txLbl</field>
+    </message>
+    <message id="10316" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.plugin.extensions.communication.Message res</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>byte flags</field>
+    </message>
+    <message id="10317" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>int partId</field>
+      <field>long futId</field>
+      <field>java.util.UUID primaryId</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors errs</field>
+    </message>
+    <message id="10318" class="org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; keys</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; vers</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; nearKeys</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt; nearVers</field>
+      <field>long ttl</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+    </message>
+    <message id="10319" class="org.apache.ignite.internal.processors.cache.GridCacheReturn">
+      <field>org.apache.ignite.internal.processors.cache.CacheObject cacheObj</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult&gt; invokeResCol</field>
+      <field>boolean success</field>
+      <field>boolean invokeRes</field>
+      <field>int cacheId</field>
+    </message>
+    <message id="10320" class="org.apache.ignite.internal.processors.cache.GridCacheEntryInfo">
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>long ttl</field>
+      <field>long expireTimeDelta</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+    </message>
+    <message id="10321" class="org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult">
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject res</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="10322" class="org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry">
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+      <field>long ttl</field>
+      <field>long expireTime</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+    </message>
+    <message id="10323" class="org.apache.ignite.internal.processors.cache.CacheEvictionEntry">
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+      <field>boolean near</field>
+    </message>
+    <message id="10324" class="org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter">
+      <field>org.apache.ignite.internal.processors.cache.CacheEntryPredicateType type</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+    </message>
+    <message id="10325" class="org.apache.ignite.internal.processors.continuous.GridContinuousMessage">
+      <field>org.apache.ignite.internal.processors.continuous.GridContinuousMessageType type</field>
+      <field>java.util.UUID routineId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.plugin.extensions.communication.Message&gt; msgs</field>
+      <field>byte[] dataBytes</field>
+      <field>org.apache.ignite.lang.IgniteUuid futId</field>
+    </message>
+    <message id="10326" class="org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage">
+      <field>java.util.UUID routineId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap cntrsMap</field>
+    </message>
+    <message id="10327" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; failedKeys</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="10328" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage">
+      <field>java.lang.String latchId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>boolean isFinal</field>
+    </message>
+    <message id="10329" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicApplicationAttributesAwareRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest payload</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.String&gt; appAttrs</field>
+    </message>
+    <message id="10330" class="org.apache.ignite.internal.processors.continuous.StartRequestData">
+      <field>byte[] nodeFilterBytes</field>
+      <field>java.lang.String clsName</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd</field>
+      <field>int bufSize</field>
+      <field>long interval</field>
+      <field>boolean autoUnsubscribe</field>
+      <field>boolean keepBinary</field>
+    </message>
+    <message id="10331" class="org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID routineId</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt; errs</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt; updateCntrs</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt; updateCntrsPerNode</field>
+    </message>
+    <message id="10332" class="org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID routineId</field>
+      <field>org.apache.ignite.internal.processors.continuous.StartRequestData startReqData</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt; errs</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt; updateCntrs</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt; updateCntrsPerNode</field>
+      <field>org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage.Mode mode</field>
+    </message>
+    <message id="10333" class="org.apache.ignite.internal.processors.cache.StoredCacheData">
+      <field>jdkMarshalled</field>
+      <field>byte[] ccfgBytes</field>
+      <field>byte[] qryEntitiesBytes</field>
+      <field>boolean sql</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheConfigurationEnrichment</field>
+      <field>org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted grpKeyEncrypted</field>
+      <field>marshalled java.util.Collection&lt;org.apache.ignite.cache.QueryEntity&gt; qryEntities value=qryEntitiesBytes</field>
+      <field>marshalled org.apache.ignite.configuration.CacheConfiguration&lt;?,?&gt; ccfg value=ccfgBytes</field>
+    </message>
+    <message id="10334" class="org.apache.ignite.internal.processors.cache.CacheNodeCommonDiscoveryData">
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.CacheData&gt; caches</field>
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.CacheData&gt; templates</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.CacheGroupData&gt; cacheGrps</field>
+      <field>java.util.Map&lt;java.lang.String,java.util.Map&lt;java.util.UUID,java.lang.Boolean&gt;&gt; clientNodesMap</field>
+      <field>org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData</field>
+    </message>
+    <message id="10335" class="org.apache.ignite.internal.processors.cache.CacheData">
+      <field>byte[] cacheCfgBytes</field>
+      <field>int grpId</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheType cacheType</field>
+      <field>org.apache.ignite.lang.IgniteUuid deploymentId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage&gt; entitiesMsgs</field>
+      <field>java.util.UUID rcvdFrom</field>
+      <field>boolean staticCfg</field>
+      <field>boolean sql</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheCfgEnrichment</field>
+      <field>marshalled org.apache.ignite.configuration.CacheConfiguration cacheCfg value=cacheCfgBytes</field>
+    </message>
+    <message id="10336" class="org.apache.ignite.internal.processors.cache.CacheGroupData">
+      <field>int grpId</field>
+      <field>java.lang.String grpName</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion startTopVer</field>
+      <field>java.util.UUID rcvdFrom</field>
+      <field>org.apache.ignite.lang.IgniteUuid deploymentId</field>
+      <field>byte[] cacheCfgBytes</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.Integer&gt; caches</field>
+      <field>boolean persistenceEnabled</field>
+      <field>boolean walEnabled</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.WalStateProposeMessage&gt; walChangeReqs</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheCfgEnrichment</field>
+      <field>marshalled org.apache.ignite.configuration.CacheConfiguration&lt;?,?&gt; cacheCfg value=cacheCfgBytes</field>
+    </message>
+    <message id="10600" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int grpId</field>
+      <field>byte flags</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+    </message>
+    <message id="10601" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int grpId</field>
+      <field>long futId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>java.util.List&lt;java.util.List&lt;java.util.UUID&gt;&gt; affAssignmentIds</field>
+      <field>java.util.List&lt;java.util.List&lt;java.util.UUID&gt;&gt; idealAffAssignment</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap partMap compress</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage affAssignmentErrMsg</field>
+    </message>
+    <message id="10602" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage">
+      <field>java.util.List&lt;org.apache.ignite.internal.util.GridLongList&gt; assigns</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.util.GridLongList&gt; idealAssigns</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.util.GridLongList&gt; assignsDiff</field>
+    </message>
+    <message id="10603" class="org.apache.ignite.internal.ExchangeInfo">
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+    </message>
+    <message id="10604" class="org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage">
+      <field>int cacheId</field>
+      <field>byte[] data</field>
+      <field>int size</field>
+    </message>
+    <message id="10605" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap">
+      <field>int[] partIds</field>
+      <field>long[] initialUpdCntrs</field>
+      <field>long[] updCntrs</field>
+      <field>int curIdx</field>
+    </message>
+    <message id="10606" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap">
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap historical</field>
+      <field>java.util.Set&lt;java.lang.Integer&gt; full</field>
+    </message>
+    <message id="10607" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap">
+      <field>long[] initUpdCntrs</field>
+      <field>long[] updCntrs</field>
+    </message>
+    <message id="10608" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair">
+      <field>int grpId</field>
+      <field>int partId</field>
+    </message>
+    <message id="10609" class="org.apache.ignite.internal.util.GridPartitionStateMap">
+      <field>java.util.BitSet states</field>
+      <field>int size</field>
+    </message>
+    <message id="10610" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap">
+      <field>java.util.UUID nodeId</field>
+      <field>long updateSeq</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion top</field>
+      <field>org.apache.ignite.internal.util.GridPartitionStateMap map</field>
+      <field>int moving</field>
+    </message>
+    <message id="10611" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap">
+      <field>java.util.UUID nodeId</field>
+      <field>long nodeOrder</field>
+      <field>long updateSeq</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap&gt; map</field>
+    </message>
+    <message id="10612" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId">
+      <field>java.util.UUID nodeId</field>
+      <field>int evt</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+    </message>
+    <message id="10613" class="org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest">
+      <field>org.apache.ignite.lang.IgniteUuid sesId</field>
+      <field>java.lang.String key</field>
+      <field>java.lang.String cpSpi</field>
+    </message>
+    <message id="10614" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int grpId</field>
+      <field>long rebalanceId</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap parts</field>
+      <field>long timeout</field>
+      <field>int workerId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+    </message>
+    <message id="10615" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int grpId</field>
+      <field>long rebalanceId</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt; last</field>
+      <field>java.util.Collection&lt;java.lang.Integer&gt; missed</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt;&gt; infos</field>
+      <field>int msgSize</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="10616" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion lastVer</field>
+      <field>byte flags</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap&gt; locParts compress</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.lang.Integer&gt; dupPartsData</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap&gt; partCntrs compress</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Map&lt;org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair,java.lang.Long&gt;&gt; partHistSuppliers compress</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,java.util.Set&lt;java.lang.Integer&gt;&gt;&gt; partsToReload compress</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt; partsSizes</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt; errMsgs compress</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion resTopVer</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage&gt; joinedNodeAff</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage&gt; idealAffDiff</field>
+      <field>byte flags</field>
+      <field>java.util.Map&lt;java.lang.Integer,int[]&gt; lostParts</field>
+    </message>
+    <message id="10617" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion lastVer</field>
+      <field>byte flags</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap&gt; parts compress</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.lang.Integer&gt; dupPartsData</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap&gt; partCntrs compress</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt; partsSizes compress</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt; partHistCntrs compress</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>boolean client</field>
+      <field>java.util.Collection&lt;java.lang.Integer&gt; grpsAffReq</field>
+      <field>long exchangeStartTime</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage finishMsg</field>
+    </message>
+    <message id="10618" class="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId exchId</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion lastVer</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId restoreExchId</field>
+    </message>
+    <message id="10619" class="org.apache.ignite.internal.management.cache.PartitionKey">
+      <field>int grpId</field>
+      <field>java.lang.String grpName</field>
+      <field>int partId</field>
+    </message>
+    <message id="10900" class="org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation">
+      <field>java.util.UUID opId</field>
+      <field>java.lang.String cacheName</field>
+      <field>java.lang.String schemaName</field>
+      <field>java.lang.String tblName</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.query.QueryField&gt; cols</field>
+      <field>boolean ifTblExists</field>
+      <field>boolean ifNotExists</field>
+    </message>
+    <message id="10901" class="org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation">
+      <field>java.util.UUID opId</field>
+      <field>java.lang.String cacheName</field>
+      <field>java.lang.String schemaName</field>
+      <field>java.lang.String tblName</field>
+      <field>org.apache.ignite.internal.cache.query.QueryIndexMessage idxMsg</field>
+      <field>boolean ifNotExists</field>
+      <field>int parallel</field>
+    </message>
+    <message id="10902" class="org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation">
+      <field>java.util.UUID opId</field>
+      <field>java.lang.String cacheName</field>
+      <field>java.lang.String schemaName</field>
+      <field>java.lang.String idxName</field>
+      <field>boolean ifExists</field>
+    </message>
+    <message id="10903" class="org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation">
+      <field>java.util.UUID opId</field>
+      <field>java.lang.String cacheName</field>
+      <field>java.lang.String schemaName</field>
+      <field>java.lang.String tblName</field>
+      <field>java.util.List&lt;java.lang.String&gt; cols</field>
+      <field>boolean ifTblExists</field>
+      <field>boolean ifExists</field>
+    </message>
+    <message id="10904" class="org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation">
+      <field>java.util.UUID opId</field>
+      <field>java.lang.String cacheName</field>
+      <field>java.lang.String schemaName</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage&gt; entitiesMsgs</field>
+      <field>int qryParallelism</field>
+      <field>boolean sqlEscape</field>
+    </message>
+    <message id="10905" class="org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage">
+      <field>java.util.UUID opId</field>
+      <field>int errCode</field>
+      <field>java.lang.String errMsg</field>
+      <field>boolean nop</field>
+    </message>
+    <message id="10906" class="org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation op</field>
+      <field>java.lang.String errMsg</field>
+      <field>int errCode</field>
+      <field>org.apache.ignite.lang.IgniteUuid depId</field>
+    </message>
+    <message id="10907" class="org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation op</field>
+      <field>java.lang.String errMsg</field>
+      <field>int errCode</field>
+      <field>boolean nop</field>
+    </message>
+    <message id="10908" class="org.apache.ignite.internal.processors.query.QueryField">
+      <field>java.lang.String name</field>
+      <field>java.lang.String alias</field>
+      <field>java.lang.String typeName</field>
+      <field>boolean nullable</field>
+      <field>int precision</field>
+      <field>int scale</field>
+    </message>
+    <message id="10909" class="org.apache.ignite.internal.cache.query.QueryIndexMessage">
+      <field>java.lang.String name</field>
+      <field>java.util.LinkedHashMap&lt;java.lang.String,java.lang.Boolean&gt; fields</field>
+      <field>org.apache.ignite.cache.QueryIndexType type</field>
+      <field>int inlineSize</field>
+    </message>
+    <message id="10910" class="org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery">
+      <field>java.lang.String qry</field>
+      <field>int[] paramIdxs</field>
+      <field>java.util.UUID node</field>
+    </message>
+    <message id="10911" class="org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>long id</field>
+      <field>java.lang.String cacheName</field>
+      <field>org.apache.ignite.internal.processors.cache.query.GridCacheQueryType type</field>
+      <field>java.lang.String clause</field>
+      <field>byte[] idxQryDescBytes</field>
+      <field>int limit</field>
+      <field>java.lang.String clsName</field>
+      <field>byte[] keyValFilterBytes</field>
+      <field>byte[] rdcBytes</field>
+      <field>byte[] transBytes</field>
+      <field>byte[] argsBytes</field>
+      <field>int pageSize</field>
+      <field>boolean incBackups</field>
+      <field>boolean cancel</field>
+      <field>boolean incMeta</field>
+      <field>boolean all</field>
+      <field>boolean keepBinary</field>
+      <field>int taskHash</field>
+      <field>int part</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt; skipKeys</field>
+      <field>byte flags</field>
+      <field>marshalled java.lang.Object[] args value=argsBytes</field>
+      <field>marshalled org.apache.ignite.internal.processors.cache.query.IndexQueryDesc idxQryDesc value=idxQryDescBytes</field>
+      <field>marshalled org.apache.ignite.lang.IgniteBiPredicate&lt;java.lang.Object,java.lang.Object&gt; keyValFilter value=keyValFilterBytes</field>
+      <field>marshalled org.apache.ignite.lang.IgniteClosure&lt;?,?&gt; trans value=transBytes</field>
+      <field>marshalled org.apache.ignite.lang.IgniteReducer&lt;java.lang.Object,java.lang.Object&gt; rdc value=rdcBytes</field>
+    </message>
+    <message id="10912" class="org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>boolean finished</field>
+      <field>long reqId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>boolean fields</field>
+      <field>org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta idxQryMetadata</field>
+      <field>java.util.Collection&lt;byte[]&gt; dataBytes</field>
+      <field>marshalled java.util.Collection&lt;java.lang.Object&gt; data value=dataBytes</field>
+    </message>
+    <message id="10913" class="org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest">
+      <field>long qryReqId</field>
+    </message>
+    <message id="10914" class="org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse">
+      <field>long qryReqId</field>
+      <field>java.lang.String errMsg</field>
+      <field>byte failCode</field>
+    </message>
+    <message id="10915" class="org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest">
+      <field>long qryReqId</field>
+      <field>int segmentId</field>
+      <field>int qry</field>
+      <field>int pageSize</field>
+      <field>byte flags</field>
+    </message>
+    <message id="10916" class="org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse">
+      <field>long qryReqId</field>
+      <field>int segmentId</field>
+      <field>int qry</field>
+      <field>int page</field>
+      <field>int allRows</field>
+      <field>int cols</field>
+      <field>java.util.Collection&lt;org.apache.ignite.plugin.extensions.communication.Message&gt; vals</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion retry</field>
+      <field>java.lang.String retryCause</field>
+      <field>boolean last</field>
+    </message>
+    <message id="10917" class="org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest">
+      <field>long reqId</field>
+      <field>long nodeQryId</field>
+      <field>boolean asyncRes</field>
+    </message>
+    <message id="10918" class="org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse">
+      <field>java.lang.String errMsg</field>
+      <field>long reqId</field>
+    </message>
+    <message id="10919" class="org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition">
+      <field>org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType idxType</field>
+      <field>boolean asc</field>
+      <field>int precision</field>
+    </message>
+    <message id="10920" class="org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings">
+      <field>boolean inlineObjHash</field>
+      <field>boolean inlineObjSupported</field>
+      <field>boolean strOptimizedCompare</field>
+      <field>boolean binaryUnsigned</field>
+    </message>
+    <message id="10921" class="org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta">
+      <field>org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings keyTypeSettings</field>
+      <field>java.util.LinkedHashMap&lt;java.lang.String,org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition&gt; keyDefs</field>
+    </message>
+    <message id="10922" class="org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage">
+      <field>java.lang.String schema</field>
+      <field>java.lang.String obj</field>
+      <field>java.util.List&lt;java.lang.String&gt; colNames</field>
+    </message>
+    <message id="10923" class="org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage">
+      <field>int scale</field>
+      <field>byte[] b</field>
+    </message>
+    <message id="10924" class="org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData">
+      <field>org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage key</field>
+      <field>long rowsCnt</field>
+      <field>org.apache.ignite.internal.processors.query.stat.StatisticsType type</field>
+      <field>int partId</field>
+      <field>long updCnt</field>
+      <field>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData&gt; data</field>
+    </message>
+    <message id="10925" class="org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData">
+      <field>org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage min</field>
+      <field>org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage max</field>
+      <field>long nulls</field>
+      <field>long distinct</field>
+      <field>long total</field>
+      <field>int size</field>
+      <field>byte[] rawData</field>
+      <field>long ver</field>
+      <field>long createdAt</field>
+    </message>
+    <message id="10926" class="org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest">
+      <field>java.util.UUID reqId</field>
+      <field>org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage key</field>
+      <field>org.apache.ignite.internal.processors.query.stat.StatisticsType type</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.Long&gt; versions</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+    </message>
+    <message id="10927" class="org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse">
+      <field>java.util.UUID reqId</field>
+      <field>org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData data</field>
+    </message>
+    <message id="10928" class="org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>int cacheId</field>
+      <field>java.util.UUID routineId</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt; updateCntrs</field>
+    </message>
+    <message id="10929" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxSalvageMessage">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>org.apache.ignite.internal.processors.cache.version.GridCacheVersion ver</field>
+    </message>
+    <message id="10930" class="org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry">
+      <field>javax.cache.event.EventType evtType</field>
+      <field>byte flags</field>
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject newVal</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject oldVal</field>
+      <field>int cacheId</field>
+      <field>int part</field>
+      <field>long updateCntr</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>long filteredCnt</field>
+    </message>
+    <message id="10931" class="org.apache.ignite.internal.processors.query.schema.message.QueryInlineSizesDataBagItem">
+      <field>java.util.Map&lt;java.lang.String,java.lang.Integer&gt; sizes</field>
+    </message>
+    <message id="10932" class="org.apache.ignite.internal.processors.query.schema.message.QueryProposalsDataBagItem">
+      <field>java.util.LinkedHashMap&lt;java.util.UUID,org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage&gt; activeProposals</field>
+    </message>
+    <message id="10933" class="org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage">
+      <field>java.lang.String keyType</field>
+      <field>java.lang.String valType</field>
+      <field>java.lang.String keyFieldName</field>
+      <field>java.lang.String valFieldName</field>
+      <field>java.util.LinkedHashMap&lt;java.lang.String,java.lang.String&gt; fields</field>
+      <field>java.lang.String[] keyFields</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.String&gt; aliases</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.cache.query.QueryIndexMessage&gt; idxs</field>
+      <field>java.lang.String tableName</field>
+      <field>java.util.Set&lt;java.lang.String&gt; notNullFields</field>
+      <field>byte[] dfltFieldValuesBytes</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.Integer&gt; fieldsPrecision</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.Integer&gt; fieldsScale</field>
+      <field>marshalled java.util.Map&lt;java.lang.String,java.lang.Object&gt; dfltFieldValues value=dfltFieldValuesBytes</field>
+    </message>
+    <message id="10934" class="org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage">
+      <field>java.lang.String keyType</field>
+      <field>java.lang.String valType</field>
+      <field>java.lang.String keyFieldName</field>
+      <field>java.lang.String valFieldName</field>
+      <field>java.util.LinkedHashMap&lt;java.lang.String,java.lang.String&gt; fields</field>
+      <field>java.lang.String[] keyFields</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.String&gt; aliases</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.cache.query.QueryIndexMessage&gt; idxs</field>
+      <field>java.lang.String tableName</field>
+      <field>java.util.Set&lt;java.lang.String&gt; notNullFields</field>
+      <field>byte[] dfltFieldValuesBytes</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.Integer&gt; fieldsPrecision</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.Integer&gt; fieldsScale</field>
+      <field>boolean preserveKeysOrder</field>
+      <field>boolean implicitPk</field>
+      <field>boolean fillAbsentPKsWithDefaults</field>
+      <field>int pkInlineSize</field>
+      <field>int affKeyInlineSize</field>
+      <field>boolean sql</field>
+      <field>marshalled java.util.Map&lt;java.lang.String,java.lang.Object&gt; dfltFieldValues value=dfltFieldValuesBytes</field>
+    </message>
+    <message id="10935" class="org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo">
+      <field>java.util.UUID srcNodeId</field>
+      <field>java.util.UUID routineId</field>
+      <field>org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd</field>
+      <field>byte[] nodeFilter</field>
+      <field>int bufSize</field>
+      <field>long interval</field>
+      <field>boolean autoUnsubscribe</field>
+    </message>
+    <message id="10936" class="org.apache.ignite.internal.processors.continuous.ContinuousRoutinesJoiningNodeDiscoveryData">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo&gt; startedRoutines</field>
+    </message>
+    <message id="10937" class="org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject">
+      <field>byte[] bytes</field>
+      <field>java.lang.String clsName</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+    </message>
+    <message id="10938" class="org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler">
+      <field>java.lang.String cacheName</field>
+      <field>byte[] topicBytes</field>
+      <field>org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject rmtFilterDep</field>
+      <field>byte[] rmtFilterBytes</field>
+      <field>org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject rmtFilterFactoryDep</field>
+      <field>byte[] rmtFilterFactoryBytes</field>
+      <field>byte types</field>
+      <field>org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject rmtTransFactoryDep</field>
+      <field>byte[] rmtTransFactoryBytes</field>
+      <field>boolean internal</field>
+      <field>boolean notifyExisting</field>
+      <field>boolean oldValRequired</field>
+      <field>boolean sync</field>
+      <field>boolean ignoreExpired</field>
+      <field>int taskHash</field>
+      <field>boolean keepBinary</field>
+      <field>marshalled java.lang.Object topic value=topicBytes</field>
+    </message>
+    <message id="10939" class="org.apache.ignite.internal.GridEventConsumeHandler">
+      <field>byte[] filterBytes</field>
+      <field>java.lang.String clsName</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>int[] types</field>
+    </message>
+    <message id="10940" class="org.apache.ignite.internal.GridMessageListenHandler">
+      <field>byte[] topicBytes</field>
+      <field>byte[] predBytes</field>
+      <field>java.lang.String clsName</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage predDepInfo</field>
+    </message>
+    <message id="10941" class="org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo">
+      <field>java.util.UUID nodeId</field>
+      <field>byte[] prjPredBytes</field>
+      <field>org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd</field>
+      <field>int bufSize</field>
+      <field>long interval</field>
+      <field>boolean autoUnsubscribe</field>
+      <field>marshalled org.apache.ignite.lang.IgnitePredicate&lt;org.apache.ignite.cluster.ClusterNode&gt; prjPred value=prjPredBytes</field>
+    </message>
+    <message id="10942" class="org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem">
+      <field>java.util.UUID routineId</field>
+      <field>byte[] prjPredBytes</field>
+      <field>org.apache.ignite.internal.processors.continuous.GridContinuousHandler hnd</field>
+      <field>int bufSize</field>
+      <field>long interval</field>
+      <field>boolean autoUnsubscribe</field>
+      <field>marshalled org.apache.ignite.lang.IgnitePredicate&lt;org.apache.ignite.cluster.ClusterNode&gt; prjPred value=prjPredBytes</field>
+    </message>
+    <message id="10943" class="org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData">
+      <field>java.util.UUID nodeId</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem&gt; items</field>
+      <field>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo&gt;&gt; clientInfos</field>
+    </message>
+    <message id="10944" class="org.apache.ignite.internal.processors.continuous.ContinuousRoutinesCommonDiscoveryData">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo&gt; startedRoutines</field>
+    </message>
+    <message id="11200" class="org.apache.ignite.internal.GridJobCancelRequest">
+      <field>org.apache.ignite.lang.IgniteUuid sessionId</field>
+      <field>org.apache.ignite.lang.IgniteUuid jobId</field>
+      <field>boolean system</field>
+    </message>
+    <message id="11201" class="org.apache.ignite.internal.GridJobExecuteRequest">
+      <field>org.apache.ignite.lang.IgniteUuid sesId</field>
+      <field>org.apache.ignite.lang.IgniteUuid jobId</field>
+      <field>byte[] jobBytes</field>
+      <field>long startTaskTime</field>
+      <field>long timeout</field>
+      <field>java.lang.String taskName</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>java.lang.String taskClsName</field>
+      <field>byte[] sesAttrsBytes</field>
+      <field>byte[] jobAttrsBytes</field>
+      <field>java.lang.String cpSpi</field>
+      <field>org.apache.ignite.lang.IgniteUuid[] siblingJobsIds</field>
+      <field>boolean forceLocDep</field>
+      <field>boolean sesFullSup</field>
+      <field>boolean internal</field>
+      <field>java.util.Collection&lt;java.util.UUID&gt; top</field>
+      <field>byte[] topPredBytes</field>
+      <field>int[] cacheIds</field>
+      <field>int part</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>java.lang.String execName</field>
+      <field>marshalled java.util.Map&lt;? extends java.io.Serializable,? extends java.io.Serializable&gt; jobAttrs value=jobAttrsBytes</field>
+      <field>marshalled java.util.Map&lt;java.lang.Object,java.lang.Object&gt; sesAttrs value=sesAttrsBytes</field>
+      <field>marshalled org.apache.ignite.compute.ComputeJob job value=jobBytes</field>
+      <field>marshalled org.apache.ignite.lang.IgnitePredicate&lt;org.apache.ignite.cluster.ClusterNode&gt; topPred value=topPredBytes</field>
+    </message>
+    <message id="11202" class="org.apache.ignite.internal.GridJobExecuteResponse">
+      <field>java.util.UUID nodeId</field>
+      <field>org.apache.ignite.lang.IgniteUuid sesId</field>
+      <field>org.apache.ignite.lang.IgniteUuid jobId</field>
+      <field>byte[] gridExBytes</field>
+      <field>byte[] resBytes</field>
+      <field>byte[] jobAttrsBytes</field>
+      <field>boolean isCancelled</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion retry</field>
+      <field>marshalled java.lang.Object res value=resBytes</field>
+      <field>marshalled java.util.Map&lt;java.lang.Object,java.lang.Object&gt; jobAttrs value=jobAttrsBytes</field>
+      <field>marshalled org.apache.ignite.IgniteException gridEx value=gridExBytes</field>
+    </message>
+    <message id="11203" class="org.apache.ignite.internal.GridJobSiblingsRequest">
+      <field>org.apache.ignite.lang.IgniteUuid sesId</field>
+      <field>long topicId</field>
+    </message>
+    <message id="11204" class="org.apache.ignite.internal.GridJobSiblingsResponse">
+      <field>org.apache.ignite.lang.IgniteUuid[] siblingJobsIds</field>
+    </message>
+    <message id="11205" class="org.apache.ignite.internal.GridTaskCancelRequest">
+      <field>org.apache.ignite.lang.IgniteUuid sesId</field>
+    </message>
+    <message id="11206" class="org.apache.ignite.internal.GridTaskSessionRequest">
+      <field>org.apache.ignite.lang.IgniteUuid sesId</field>
+      <field>org.apache.ignite.lang.IgniteUuid jobId</field>
+      <field>byte[] attrsBytes</field>
+    </message>
+    <message id="11207" class="org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest">
+      <field>org.apache.ignite.lang.IgniteUuid taskId</field>
+      <field>long topicId</field>
+    </message>
+    <message id="11208" class="org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse">
+      <field>byte[] resBytes</field>
+      <field>boolean finished</field>
+      <field>boolean found</field>
+      <field>java.lang.String err</field>
+      <field>marshalled java.lang.Object res value=resBytes</field>
+    </message>
+    <message id="11209" class="org.apache.ignite.spi.collision.jobstealing.JobStealingRequest">
+      <field>int delta</field>
+    </message>
+    <message id="11210" class="org.apache.ignite.internal.util.distributed.SingleNodeMessage">
+      <field>jdkMarshalled</field>
+      <field>java.util.UUID processId</field>
+      <field>int type</field>
+      <field>org.apache.ignite.plugin.extensions.communication.Message resp</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="11500" class="org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage">
+      <field>java.util.UUID nodeId</field>
+    </message>
+    <message id="11501" class="org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage">
+      <field>java.util.UUID nodeId</field>
+      <field>long rcvCnt</field>
+      <field>long connectCnt</field>
+      <field>int connIdx</field>
+    </message>
+    <message id="11502" class="org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage">
+    </message>
+    <message id="11503" class="org.apache.ignite.internal.managers.communication.GridIoMessage">
+      <field>byte plc</field>
+      <field>org.apache.ignite.internal.GridTopicMessage topicMsg nio</field>
+      <field>boolean ordered</field>
+      <field>long timeout</field>
+      <field>boolean skipOnTimeout</field>
+      <field>org.apache.ignite.plugin.extensions.communication.Message msg</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+    </message>
+    <message id="11504" class="org.apache.ignite.internal.managers.communication.IgniteIoTestMessage">
+      <field>long id</field>
+      <field>boolean processInNioThread</field>
+      <field>boolean req</field>
+      <field>byte[] payload</field>
+      <field>long reqSndTsMillis</field>
+      <field>long reqRcvTsMillis</field>
+      <field>long resSndTsMillis</field>
+      <field>long resRcvTsMillis</field>
+    </message>
+    <message id="11505" class="org.apache.ignite.internal.managers.communication.GridIoUserMessage">
+      <field>byte[] bodyBytes</field>
+      <field>byte[] topicBytes</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>java.lang.String depClsName</field>
+    </message>
+    <message id="11506" class="org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage">
+      <field>long rcvCnt</field>
+    </message>
+    <message id="11507" class="org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage">
+      <field>int connIdx</field>
+    </message>
+    <message id="11508" class="org.apache.ignite.internal.managers.communication.SessionChannelMessage">
+      <field>org.apache.ignite.lang.IgniteUuid sesId</field>
+    </message>
+    <message id="11700" class="org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult">
+      <field>boolean streamerWarning</field>
+    </message>
+    <message id="11701" class="org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry">
+      <field>org.apache.ignite.internal.processors.cache.KeyCacheObject key</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheObject val</field>
+    </message>
+    <message id="11702" class="org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest">
+      <field>long reqId</field>
+      <field>org.apache.ignite.lang.IgniteUuid resTopicId</field>
+      <field>java.lang.String cacheName</field>
+      <field>org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage updaterMsg</field>
+      <field>java.util.Collection&lt;org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry&gt; entries</field>
+      <field>boolean ignoreDepOwnership</field>
+      <field>boolean skipStore</field>
+      <field>boolean keepBinary</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>java.lang.String sampleClsName</field>
+      <field>boolean forceLocDep</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion topVer</field>
+      <field>int partId</field>
+    </message>
+    <message id="11703" class="org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse">
+      <field>long reqId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="11704" class="org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage">
+      <field>byte[] rcvrBytes</field>
+      <field>org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater builtIn</field>
+      <field>marshalled org.apache.ignite.stream.StreamReceiver&lt;?,?&gt; rcvr value=rcvrBytes</field>
+    </message>
+    <message id="11900" class="org.apache.ignite.internal.processors.cluster.CacheMetricsMessage">
+      <field>long cacheGets</field>
+      <field>long cachePuts</field>
+      <field>long entryProcessorPuts</field>
+      <field>long entryProcessorReadOnlyInvocations</field>
+      <field>float entryProcessorAverageInvocationTime</field>
+      <field>long entryProcessorInvocations</field>
+      <field>long entryProcessorRemovals</field>
+      <field>long entryProcessorMisses</field>
+      <field>long entryProcessorHits</field>
+      <field>float entryProcessorMissPercentage</field>
+      <field>float entryProcessorHitPercentage</field>
+      <field>float entryProcessorMaxInvocationTime</field>
+      <field>float entryProcessorMinInvocationTime</field>
+      <field>long cacheHits</field>
+      <field>long cacheMisses</field>
+      <field>long cacheTxCommits</field>
+      <field>long cacheTxRollbacks</field>
+      <field>long cacheEvictions</field>
+      <field>long cacheRemovals</field>
+      <field>float averagePutTime</field>
+      <field>float averageGetTime</field>
+      <field>float averageRemoveTime</field>
+      <field>float averageTxCommitTime</field>
+      <field>float averageTxRollbackTime</field>
+      <field>java.lang.String cacheName</field>
+      <field>long offHeapGets</field>
+      <field>long offHeapPuts</field>
+      <field>long offHeapRemoves</field>
+      <field>long offHeapEvicts</field>
+      <field>long offHeapHits</field>
+      <field>long offHeapMisses</field>
+      <field>long offHeapEntriesCnt</field>
+      <field>long heapEntriesCnt</field>
+      <field>long offHeapPrimaryEntriesCnt</field>
+      <field>long offHeapBackupEntriesCnt</field>
+      <field>long offHeapAllocatedSize</field>
+      <field>int size</field>
+      <field>long cacheSize</field>
+      <field>int keySize</field>
+      <field>boolean empty</field>
+      <field>int dhtEvictQueueCurrSize</field>
+      <field>int txThreadMapSize</field>
+      <field>int txXidMapSize</field>
+      <field>int txCommitQueueSize</field>
+      <field>int txPrepareQueueSize</field>
+      <field>int txStartVerCountsSize</field>
+      <field>int txCommittedVersionsSize</field>
+      <field>int txRolledbackVersionsSize</field>
+      <field>int txDhtThreadMapSize</field>
+      <field>int txDhtXidMapSize</field>
+      <field>int txDhtCommitQueueSize</field>
+      <field>int txDhtPrepareQueueSize</field>
+      <field>int txDhtStartVerCountsSize</field>
+      <field>int txDhtCommittedVersionsSize</field>
+      <field>int txDhtRolledbackVersionsSize</field>
+      <field>boolean writeBehindEnabled</field>
+      <field>int writeBehindFlushSize</field>
+      <field>int writeBehindFlushThreadCnt</field>
+      <field>long writeBehindFlushFreq</field>
+      <field>int writeBehindStoreBatchSize</field>
+      <field>int writeBehindTotalCriticalOverflowCnt</field>
+      <field>int writeBehindCriticalOverflowCnt</field>
+      <field>int writeBehindErrorRetryCnt</field>
+      <field>int writeBehindBufSize</field>
+      <field>int totalPartitionsCnt</field>
+      <field>int rebalancingPartitionsCnt</field>
+      <field>long rebalancedKeys</field>
+      <field>long estimatedRebalancingKeys</field>
+      <field>long keysToRebalanceLeft</field>
+      <field>long rebalancingKeysRate</field>
+      <field>long rebalancingBytesRate</field>
+      <field>long rebalanceStartTime</field>
+      <field>long rebalanceFinishTime</field>
+      <field>long rebalanceClearingPartitionsLeft</field>
+      <field>java.lang.String keyType</field>
+      <field>java.lang.String valType</field>
+      <field>boolean storeByVal</field>
+      <field>boolean statisticsEnabled</field>
+      <field>boolean managementEnabled</field>
+      <field>boolean readThrough</field>
+      <field>boolean writeThrough</field>
+      <field>boolean validForReading</field>
+      <field>boolean validForWriting</field>
+      <field>java.lang.String txKeyCollisions</field>
+      <field>boolean idxRebuildInProgress</field>
+      <field>long idxRebuildKeyProcessed</field>
+      <field>int idxBuildPartitionsLeftCount</field>
+    </message>
+    <message id="11901" class="org.apache.ignite.internal.ClusterMetricsSnapshot">
+      <field>int maxActiveJobs</field>
+      <field>int curActiveJobs</field>
+      <field>float avgActiveJobs</field>
+      <field>int maxWaitingJobs</field>
+      <field>int curWaitingJobs</field>
+      <field>float avgWaitingJobs</field>
+      <field>int maxRejectedJobs</field>
+      <field>int curRejectedJobs</field>
+      <field>float avgRejectedJobs</field>
+      <field>int maxCancelledJobs</field>
+      <field>int curCancelledJobs</field>
+      <field>float avgCancelledJobs</field>
+      <field>int totalRejectedJobs</field>
+      <field>int totalCancelledJobs</field>
+      <field>int totalExecutedJobs</field>
+      <field>long maxJobWaitTime</field>
+      <field>long curJobWaitTime</field>
+      <field>double avgJobWaitTime</field>
+      <field>long maxJobExecTime</field>
+      <field>long curJobExecTime</field>
+      <field>double avgJobExecTime</field>
+      <field>int totalExecTasks</field>
+      <field>long totalIdleTime</field>
+      <field>long curIdleTime</field>
+      <field>int totalCpus</field>
+      <field>double curCpuLoad</field>
+      <field>double avgCpuLoad</field>
+      <field>double curGcCpuLoad</field>
+      <field>long heapInit</field>
+      <field>long heapUsed</field>
+      <field>long heapCommitted</field>
+      <field>long heapMax</field>
+      <field>long heapTotal</field>
+      <field>long nonHeapInit</field>
+      <field>long nonHeapUsed</field>
+      <field>long nonHeapCommitted</field>
+      <field>long nonHeapMax</field>
+      <field>long nonHeapTotal</field>
+      <field>long upTime</field>
+      <field>long startTime</field>
+      <field>long nodeStartTime</field>
+      <field>int threadCnt</field>
+      <field>int peakThreadCnt</field>
+      <field>long startedThreadCnt</field>
+      <field>int daemonThreadCnt</field>
+      <field>long lastDataVer</field>
+      <field>int sentMsgsCnt</field>
+      <field>long sentBytesCnt</field>
+      <field>int rcvdMsgsCnt</field>
+      <field>long rcvdBytesCnt</field>
+      <field>int outMesQueueSize</field>
+      <field>int totalNodes</field>
+      <field>long totalJobsExecTime</field>
+      <field>long curPmeDuration</field>
+    </message>
+    <message id="11902" class="org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage">
+      <field>org.apache.ignite.internal.ClusterMetricsSnapshot nodeMetricsMsg</field>
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cluster.CacheMetricsMessage&gt; cachesMetricsMsgs</field>
+    </message>
+    <message id="11903" class="org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage">
+      <field>org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage singleNodeMetricsMsg</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage&gt; allNodesMetrics</field>
+    </message>
+    <message id="11904" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage">
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.ClusterMetricsSnapshot&gt; nodesMetricsMsgs</field>
+    </message>
+    <message id="11905" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage&gt; connectedClientsMetricsMsgs</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage&gt; serversFullMetricsMsgs</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; clientNodeIds</field>
+    </message>
+    <message id="11906" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.internal.ClusterMetricsSnapshot metricsMsg</field>
+    </message>
+    <message id="12000" class="org.apache.ignite.internal.processors.authentication.User">
+      <field>java.lang.String name</field>
+      <field>java.lang.String hashedPasswd</field>
+    </message>
+    <message id="12001" class="org.apache.ignite.internal.processors.authentication.UserManagementOperation">
+      <field>org.apache.ignite.internal.processors.authentication.User usr</field>
+      <field>org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType type</field>
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+    </message>
+    <message id="12002" class="org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid opId</field>
+      <field>java.lang.String errorMsg</field>
+    </message>
+    <message id="12003" class="org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage">
+      <field>java.lang.String name</field>
+      <field>java.lang.String passwd</field>
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+    </message>
+    <message id="12004" class="org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.lang.String errMsg</field>
+    </message>
+    <message id="12005" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID verifierNodeId</field>
+      <field>long topVer</field>
+      <field>int flags</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; failedNodes</field>
+      <field>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage opCtxSnp</field>
+      <field>org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage creatorAddrMsg</field>
+      <field>java.util.UUID targetNodeId</field>
+    </message>
+    <message id="12006" class="org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem">
+      <field>java.util.ArrayList&lt;org.apache.ignite.internal.processors.authentication.User&gt; usrs</field>
+      <field>java.util.ArrayList&lt;org.apache.ignite.internal.processors.authentication.UserManagementOperation&gt; activeOps</field>
+    </message>
+    <message id="12007" class="org.apache.ignite.plugin.security.SecurityBasicPermissionSet">
+      <field>java.util.Map&lt;java.lang.String,java.util.EnumSet&lt;org.apache.ignite.plugin.security.SecurityPermission&gt;&gt; cachePermissions</field>
+      <field>java.util.Map&lt;java.lang.String,java.util.EnumSet&lt;org.apache.ignite.plugin.security.SecurityPermission&gt;&gt; taskPermissions</field>
+      <field>java.util.Map&lt;java.lang.String,java.util.EnumSet&lt;org.apache.ignite.plugin.security.SecurityPermission&gt;&gt; srvcPermissions</field>
+      <field>java.util.EnumSet&lt;org.apache.ignite.plugin.security.SecurityPermission&gt; sysPermissions</field>
+      <field>boolean dfltAllowAll</field>
+    </message>
+    <message id="12200" class="org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage">
+      <field>org.apache.ignite.lang.IgniteUuid clsLdrId</field>
+      <field>org.apache.ignite.configuration.DeploymentMode depMode</field>
+      <field>java.lang.String userVer</field>
+      <field>java.util.Map&lt;java.util.UUID,org.apache.ignite.lang.IgniteUuid&gt; participants</field>
+    </message>
+    <message id="12201" class="org.apache.ignite.internal.managers.deployment.GridDeploymentRequest">
+      <field>org.apache.ignite.lang.IgniteUuid resTopicId</field>
+      <field>java.lang.String rsrcName</field>
+      <field>org.apache.ignite.lang.IgniteUuid ldrId</field>
+      <field>java.util.Collection&lt;java.util.UUID&gt; nodeIds</field>
+    </message>
+    <message id="12202" class="org.apache.ignite.internal.managers.deployment.GridDeploymentResponse">
+      <field>boolean success</field>
+      <field>java.lang.String errMsg</field>
+      <field>org.apache.ignite.internal.util.GridByteArrayList byteSrc</field>
+    </message>
+    <message id="12203" class="org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage">
+      <field>byte platformId</field>
+      <field>int typeId</field>
+    </message>
+    <message id="12204" class="org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage">
+      <field>byte platformId</field>
+      <field>int typeId</field>
+      <field>java.lang.String clsName</field>
+    </message>
+    <message id="12205" class="org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage">
+      <field>int typeId</field>
+    </message>
+    <message id="12206" class="org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage">
+      <field>int typeId</field>
+      <field>org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo metaVerInfo</field>
+    </message>
+    <message id="12207" class="org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem">
+      <field>byte platformId</field>
+      <field>int typeId</field>
+      <field>java.lang.String clsName</field>
+    </message>
+    <message id="12208" class="org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo">
+      <field>jdkMarshalled</field>
+      <field>byte[] metadataBytes</field>
+      <field>int pendingVer</field>
+      <field>int acceptedVer</field>
+      <field>marshalled org.apache.ignite.internal.binary.BinaryMetadata metadata value=metadataBytes</field>
+    </message>
+    <message id="12209" class="org.apache.ignite.internal.processors.cache.binary.CacheBinaryDataBagItem">
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo&gt; meta</field>
+    </message>
+    <message id="12210" class="org.apache.ignite.internal.processors.marshaller.MappedName">
+      <field>java.lang.String clsName</field>
+      <field>boolean accepted</field>
+    </message>
+    <message id="12211" class="org.apache.ignite.internal.processors.marshaller.MarshallerDataBagItem">
+      <field>java.util.List&lt;java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.marshaller.MappedName&gt;&gt; mappings</field>
+    </message>
+    <message id="12400" class="org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>int keyCnt</field>
+    </message>
+    <message id="12401" class="org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.Collection&lt;byte[]&gt; encKeys</field>
+      <field>byte[] masterKeyDigest</field>
+    </message>
+    <message id="12402" class="org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest">
+      <field>java.util.UUID reqId</field>
+      <field>int[] grpIds</field>
+      <field>byte[][] keys</field>
+      <field>byte[] keyIds</field>
+      <field>byte[] masterKeyDigest</field>
+    </message>
+    <message id="12403" class="org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest">
+      <field>java.util.UUID reqId</field>
+      <field>byte[] encKeyName</field>
+      <field>byte[] digest</field>
+    </message>
+    <message id="12404" class="org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted">
+      <field>int id</field>
+      <field>byte[] key</field>
+    </message>
+    <message id="12405" class="org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys">
+      <field>java.util.Map&lt;java.lang.Integer,byte[]&gt; knownKeys</field>
+      <field>java.util.Map&lt;java.lang.Integer,byte[]&gt; newKeys</field>
+      <field>byte[] masterKeyDigest</field>
+      <field>java.util.Map&lt;java.lang.Integer,java.util.List&lt;org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted&gt;&gt; knownKeysWithIds</field>
+    </message>
+    <message id="12406" class="org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem">
+      <field>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted&gt; knownKeys</field>
+    </message>
+    <message id="13000" class="org.apache.ignite.internal.managers.eventstorage.GridEventStorageRequest">
+      <field>org.apache.ignite.lang.IgniteUuid resTopicId</field>
+      <field>byte[] filterBytes</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>java.lang.String filterClsName</field>
+      <field>marshalled org.apache.ignite.lang.IgnitePredicate&lt;?&gt; filter value=filterBytes</field>
+    </message>
+    <message id="13001" class="org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse">
+      <field>byte[] evtsBytes</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+      <field>marshalled java.util.Collection&lt;org.apache.ignite.events.Event&gt; evts value=evtsBytes</field>
+    </message>
+    <message id="13002" class="org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage">
+      <field>org.apache.ignite.lang.IgniteUuid id</field>
+      <field>java.util.UUID reqId</field>
+      <field>java.util.UUID initiatingNodeId</field>
+      <field>org.apache.ignite.cluster.ClusterState state</field>
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cache.StoredCacheData&gt; storedCfgs</field>
+      <field>byte[] baselineTopologyBytes</field>
+      <field>boolean forceChangeBaselineTopology</field>
+      <field>boolean forceDeactivation</field>
+      <field>marshalled org.apache.ignite.internal.processors.cluster.BaselineTopology baselineTopology value=baselineTopologyBytes</field>
+    </message>
+    <message id="13003" class="org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse">
+      <field>long msgId</field>
+      <field>org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage depInfo</field>
+      <field>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion lastAffChangedTopVer</field>
+      <field>java.util.UUID reqId</field>
+      <field>org.apache.ignite.internal.util.ErrorMessage errMsg</field>
+    </message>
+    <message id="13004" class="org.apache.ignite.internal.IgniteDiagnosticRequest">
+      <field>long futId</field>
+      <field>java.util.UUID nodeId</field>
+      <field>java.util.Set&lt;org.apache.ignite.internal.IgniteDiagnosticRequest.DiagnosticBaseInfo&gt; infos</field>
+    </message>
+    <message id="13005" class="org.apache.ignite.internal.IgniteDiagnosticResponse">
+      <field>long futId</field>
+      <field>java.lang.String respInfo</field>
+    </message>
+    <message id="13006" class="org.apache.ignite.internal.processors.cache.WalStateAckMessage">
+      <field>java.util.UUID opId</field>
+      <field>boolean affNode</field>
+      <field>boolean changed</field>
+      <field>java.lang.String errMsg</field>
+    </message>
+    <message id="13007" class="org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment">
+      <field>java.util.Map&lt;java.lang.String,byte[]&gt; enrichFields</field>
+      <field>java.util.Map&lt;java.lang.String,java.lang.String&gt; fieldClassNames</field>
+    </message>
+    <message id="13008" class="org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest">
+      <field>java.util.UUID reqId</field>
+      <field>org.apache.ignite.lang.IgniteUuid deploymentId</field>
+      <field>java.lang.String cacheName</field>
+      <field>byte[] cfgBytes</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheType cacheType</field>
+      <field>java.util.UUID initiatingNodeId</field>
+      <field>byte[] nearCfgBytes</field>
+      <field>boolean clientStartOnly</field>
+      <field>boolean stop</field>
+      <field>boolean restart</field>
+      <field>boolean finalizePartitionCounters</field>
+      <field>org.apache.ignite.lang.IgniteUuid restartId</field>
+      <field>boolean disabledAfterStart</field>
+      <field>boolean destroy</field>
+      <field>boolean sql</field>
+      <field>boolean failIfExists</field>
+      <field>boolean template</field>
+      <field>boolean resetLostPartitions</field>
+      <field>byte[] schemaBytes</field>
+      <field>byte[] encKey</field>
+      <field>int encKeyId</field>
+      <field>byte[] masterKeyDigest</field>
+      <field>org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment cacheCfgEnrichment</field>
+      <field>marshalled org.apache.ignite.configuration.CacheConfiguration&lt;?,?&gt; startCfg value=cfgBytes</field>
+      <field>marshalled org.apache.ignite.configuration.NearCacheConfiguration&lt;?,?&gt; nearCacheCfg value=nearCfgBytes</field>
+      <field>marshalled org.apache.ignite.internal.processors.query.QuerySchema schema value=schemaBytes</field>
+    </message>
+    <message id="13009" class="org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord">
+      <field>jdkMarshalled</field>
+      <field>org.apache.ignite.internal.management.cache.PartitionKey partKey</field>
+      <field>boolean isPrimary</field>
+      <field>byte[] consistentIdBytes</field>
+      <field>int partHash</field>
+      <field>int partVerHash</field>
+      <field>byte[] updateCntrBytes</field>
+      <field>long size</field>
+      <field>org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord.PartitionState partitionState</field>
+      <field>int cfKeys</field>
+      <field>int noCfKeys</field>
+      <field>int binKeys</field>
+      <field>int regKeys</field>
+      <field>boolean hasExpiringEntries</field>
+      <field>marshalled java.lang.Object consistentId value=consistentIdBytes</field>
+      <field>marshalled java.lang.Object updateCntr value=updateCntrBytes</field>
+    </message>
+    <message id="13010" class="org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord">
+      <field>jdkMarshalled</field>
+      <field>byte[] locConsistentIdBytes</field>
+      <field>byte[] rmtConsistentIdBytes</field>
+      <field>int txHash</field>
+      <field>marshalled java.lang.Object locConsistentId value=locConsistentIdBytes</field>
+      <field>marshalled java.lang.Object rmtConsistentId value=rmtConsistentIdBytes</field>
+    </message>
+    <message id="13011" class="org.apache.ignite.internal.processors.cluster.ClusterIdAndTag">
+      <field>java.util.UUID id</field>
+      <field>java.lang.String tag</field>
+    </message>
+    <message id="13012" class="org.apache.ignite.internal.processors.cluster.ClusterUpdateNotifierDataBagItem">
+      <field>boolean notifierEnabled</field>
+    </message>
+    <message id="13013" class="org.apache.ignite.internal.processors.plugin.PluginsDataBagItem">
+      <field>byte[] dataBytes</field>
+      <field>marshalled java.util.Map&lt;java.lang.String,java.io.Serializable&gt; data value=dataBytes</field>
+    </message>
+    <message id="13014" class="org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem">
+      <field>int[] enabledEvts</field>
+    </message>
+    <message id="13015" class="org.apache.ignite.internal.processors.cluster.BaselineStateAndHistoryData">
+      <field>org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState globalState</field>
+      <field>org.apache.ignite.internal.processors.cluster.BaselineTopologyHistory recentHistory</field>
+    </message>
+    <message id="13016" class="org.apache.ignite.internal.processors.cluster.BaselineTopologyHistory">
+      <field>java.util.List&lt;org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem&gt; hist</field>
+    </message>
+    <message id="13017" class="org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem">
+      <field>int id</field>
+      <field>java.util.List&lt;java.lang.Long&gt; branchingHistory</field>
+    </message>
+    <message id="13018" class="org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState">
+      <field>org.apache.ignite.cluster.ClusterState state</field>
+      <field>long lastStateChangeTime</field>
+      <field>byte[] baselineTopBytes</field>
+      <field>java.util.UUID transitionReqId</field>
+      <field>org.apache.ignite.cluster.ClusterState prevClusterState</field>
+      <field>java.util.Set&lt;java.util.UUID&gt; transitionNodes</field>
+      <field>marshalled org.apache.ignite.internal.processors.cluster.BaselineTopology baselineTop value=baselineTopBytes</field>
+    </message>
+    <message id="13019" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage">
+      <field>java.lang.String[] keys</field>
+      <field>byte[][] valBytes</field>
+    </message>
+    <message id="13020" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageJoiningNodeData">
+      <field>int bltId</field>
+      <field>long dVerId</field>
+      <field>long dVerHash</field>
+      <field>org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[] hist</field>
+    </message>
+    <message id="13021" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageClusterNodeData">
+      <field>long dVerId</field>
+      <field>long dVerHash</field>
+      <field>java.lang.String[] fullDataKeys</field>
+      <field>byte[][] fullDataValsBytes</field>
+      <field>org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[] hist</field>
+      <field>org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[] updates</field>
+    </message>
+    <message id="13400" class="org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage">
+      <field>org.apache.ignite.plugin.extensions.communication.Message[] attrs</field>
+      <field>byte idBitmap</field>
+    </message>
+    <message id="13401" class="org.apache.ignite.internal.processors.security.SecurityContextWrapper">
+      <field>java.util.UUID subjId</field>
+    </message>
+    <message id="13600" class="org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet">
+      <field>int rangeStartInclusive</field>
+      <field>int rangeEndInclusive</field>
+      <field>org.apache.ignite.internal.util.GridIntList sparseSuffix</field>
+    </message>
+    <message id="13601" class="org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet">
+      <field>org.apache.ignite.lang.IgniteProductVersion ver</field>
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet features</field>
+    </message>
+    <message id="13602" class="org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet">
+      <field>org.apache.ignite.lang.IgniteProductVersion ver</field>
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet features</field>
+      <field>java.lang.String compName</field>
+    </message>
+    <message id="13603" class="org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData">
+      <field>boolean isVersionUpgradeEnabled</field>
+      <field>java.util.UUID curFinalizeProcId</field>
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet activeFeatures</field>
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet prevActiveFeatures</field>
+    </message>
+    <message id="13604" class="org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet">
+      <field>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet[] features</field>
+    </message>
+  </messages>
+</messageTable>
