@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.DynamicRecordType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -29,6 +30,7 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlDataTypeSpec;
+import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -37,6 +39,7 @@ import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlOperandMetadata;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
@@ -57,6 +60,34 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     /** Ctor. */
     public IgniteTypeCoercion(RelDataTypeFactory typeFactory, SqlValidator validator) {
         super(typeFactory, validator);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean userDefinedFunctionCoercion(SqlValidatorScope scope, SqlCall call, SqlFunction function) {
+        SqlOperandMetadata metadata = (SqlOperandMetadata)function.getOperandTypeChecker();
+        List<RelDataType> paramTypes = metadata.paramTypes(factory);
+
+        for (int i = 0; i < call.operandCount(); i++) {
+            SqlNode operand = call.operand(i);
+            int paramIdx = i;
+
+            if (operand.getKind() == SqlKind.ARGUMENT_ASSIGNMENT) {
+                SqlCall assignment = (SqlCall)operand;
+
+                paramIdx = metadata.paramNames().indexOf(((SqlIdentifier)assignment.operand(1)).getSimple());
+                operand = assignment.operand(0);
+
+                if (paramIdx < 0)
+                    return false;
+            }
+
+            // Numeric-to-timestamp casts are supported explicitly, but are not temporal UDF arguments.
+            if (SqlTypeUtil.isDatetime(paramTypes.get(paramIdx))
+                && SqlTypeUtil.isNumeric(validator.deriveType(scope, operand)))
+                return false;
+        }
+
+        return super.userDefinedFunctionCoercion(scope, call, function);
     }
 
     /** {@inheritDoc} **/

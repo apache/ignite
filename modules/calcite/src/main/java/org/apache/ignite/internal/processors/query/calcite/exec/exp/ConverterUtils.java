@@ -38,6 +38,8 @@ import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class ConverterUtils {
@@ -123,10 +125,18 @@ public class ConverterUtils {
     /** */
     static List<Expression> fromInternal(Class<?>[] targetTypes,
         List<Expression> expressions) {
-        final List<Expression> list = new ArrayList<>();
+        return fromInternal(null, targetTypes, expressions);
+    }
+
+    /** Converts user-defined function arguments using the execution context when available. */
+    static List<Expression> fromInternal(@Nullable Expression root,
+        Class<?>[] targetTypes,
+        List<Expression> expressions
+    ) {
+        final List<Expression> list = new ArrayList<>(expressions.size());
         if (targetTypes.length == expressions.size()) {
             for (int i = 0; i < expressions.size(); i++)
-                list.add(fromInternal(expressions.get(i), targetTypes[i]));
+                list.add(fromInternal(root, expressions.get(i), targetTypes[i]));
         }
         else {
             int j = 0;
@@ -139,10 +149,30 @@ public class ConverterUtils {
                 else
                     type = targetTypes[j].getComponentType();
 
-                list.add(fromInternal(expressions.get(i), type));
+                list.add(fromInternal(root, expressions.get(i), type));
             }
         }
         return list;
+    }
+
+    /** */
+    private static Expression fromInternal(@Nullable Expression root, Expression operand, Type targetType) {
+        // Preserve Calcite's calendar conversion for JDBC dates and timestamps.
+        Expression converted = fromInternal(operand, targetType);
+
+        if (root == null || converted != operand || !TypeUtils.isConvertableType(targetType))
+            return converted;
+
+        if (Types.isAssignableFrom(targetType, operand.getType()))
+            return operand;
+
+        if (Primitive.is(operand.getType()))
+            operand = Expressions.box(operand);
+
+        return Expressions.convert_(
+            Expressions.call(TypeUtils.class, "fromInternal", root, operand, Expressions.constant(targetType)),
+            targetType
+        );
     }
 
     /** */
