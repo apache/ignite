@@ -37,6 +37,7 @@ from ignitetest.services.network_group.configuration import NetworkGroupStore, C
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, TcpCommunicationSpi
+from ignitetest.services.utils.jmx_utils import JmxClient, metric_registry_pattern
 from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, from_ignite_cluster, \
     from_ignite_services
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
@@ -612,7 +613,7 @@ class MdcCluster:
         node = next(node for svc in self.dc_servers(dc if dc is not None else self.dcs[0])
                     for node in svc.alive_nodes)
 
-        mbean = node.cache_mbean(cache_name)
+        mbean = JmxClient(node).find_mbean(metric_registry_pattern('cache', cache_name))
 
         return {name: mbean.bool_value(name)
                 for name in (MDC_SAFE_AFFINITY_METRIC, MDC_SAFE_DISTRIBUTION_METRIC)}
