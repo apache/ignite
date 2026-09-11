@@ -202,6 +202,30 @@ public interface GridCacheEntryEx {
         boolean evictOffheap) throws IgniteCheckedException;
 
     /**
+     * Same as {@link #evictInternal(GridCacheVersion, CacheEntryPredicate[], boolean)}, but when {@code tryLock} is
+     * {@code true} the entry lock is acquired non-blockingly: the entry is skipped (this method returns {@code false})
+     * whenever its lock is contended or already held by the current thread (the self-hold case), instead of blocking.
+     * Used by size-aware page eviction which may run while the current thread already holds other entry locks, to
+     * avoid a lock-ordering deadlock. The default implementation ignores {@code tryLock} and uses the blocking
+     * variant.
+     *
+     * @param obsoleteVer Version for eviction.
+     * @param filter Optional filter.
+     * @param evictOffheap Evict offheap value flag.
+     * @param tryLock {@code true} to acquire the entry lock non-blockingly (skip contended or self-held entries).
+     * @return {@code True} if entry could be evicted.
+     * @throws IgniteCheckedException In case of error.
+     */
+    default boolean evictInternal(
+        GridCacheVersion obsoleteVer,
+        @Nullable CacheEntryPredicate[] filter,
+        boolean evictOffheap,
+        boolean tryLock
+    ) throws IgniteCheckedException {
+        return evictInternal(obsoleteVer, filter, evictOffheap);
+    }
+
+    /**
      * This method should be called each time entry is marked obsolete
      * other than by calling {@link #markObsolete(GridCacheVersion)}.
      */

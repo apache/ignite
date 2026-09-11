@@ -32,7 +32,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Base for page eviction trackers sharing the data-page eviction logic
+ * ({@link #evictDataPage(int, boolean)}).
  */
 public abstract class PageAbstractEvictionTracker implements PageEvictionTracker {
     /** This number of least significant bits is dropped from timestamp. */
@@ -89,10 +90,13 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /**
      * @param pageIdx Page index.
+     * @param tryLock {@code true} to acquire entry locks non-blockingly, skipping contended or already-held entries
+     *      (e.g. when size-aware eviction runs while the current thread already holds entry locks), avoiding a
+     *      lock-ordering deadlock.
      * @return true if at least one data row has been evicted
      * @throws IgniteCheckedException If failed.
      */
-    final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
+    final boolean evictDataPage(int pageIdx, boolean tryLock) throws IgniteCheckedException {
         long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
 
         long page = pageMem.acquirePage(0, fakePageId);
@@ -144,7 +148,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
                 cacheCtx.cache().entryEx(dataRow.key());
 
-            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
+            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true, tryLock);
         }
 
         return evictionDone;

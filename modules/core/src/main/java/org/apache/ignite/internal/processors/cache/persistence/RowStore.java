@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -132,8 +133,27 @@ public class RowStore {
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRows(Collection<? extends CacheDataRow> rows,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        if (!persistenceEnabled && grp.dataRegion().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
+            // Size-aware pre-reserve for the rebalance batch (single puts get the same guarantee via the per-put
+            // reserve in addRow). Reserving "for each row" collapses to reserving for the largest one (all reserves run
+            // before any insert and only enforce a lower bound on the shared empty-pages counter), so a single reserve
+            // for the max row is equivalent and is what is done here. The reserve evicts non-blockingly even though the
+            // batch path holds no entry locks (blocking would be safe here): the path is shared with single-row
+            // insertion, which runs under an entry lock and must not block.
+            int maxRowSize = 0;
+
+            for (CacheDataRow row : rows) {
+                int rowSize = row.size();
+
+                if (rowSize > maxRowSize)
+                    maxRowSize = rowSize;
+            }
+
+            if (maxRowSize > 0)
+                ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), maxRowSize);
+        }
+
         assert ctx.database().checkpointLockIsHeldByThread();
 
         freeList.insertDataRows(rows, statHolder);
