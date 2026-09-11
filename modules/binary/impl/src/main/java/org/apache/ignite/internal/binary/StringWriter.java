@@ -126,27 +126,23 @@ public final class StringWriter {
     private static int writeLatin1(byte[] val, BinaryOutputStream out) {
         out.unsafeEnsure(Math.addExact(val.length, val.length));
 
-        int utfLen = 0;
+        int start = out.position();
 
         for (int i = 0; i < val.length; i++) {
             byte b = val[i];
 
             if (b >= 0) {
                 out.unsafeWriteByte(b);
-
-                utfLen++;
             }
             else {
                 int c = b & 0b1111_1111;
 
                 out.unsafeWriteByte((byte)(0b1100_0000 | (c >> 6)));
                 out.unsafeWriteByte((byte)(0b1000_0000 | (c & 0b0011_1111)));
-
-                utfLen += 2;
             }
         }
 
-        return utfLen;
+        return out.position() - start;
     }
 
     /**
