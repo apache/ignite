@@ -72,9 +72,6 @@
                         <configuration>
                             <executable>${java.home}/bin/java</executable>
                             <arguments>
-                                <argument>--add-opens=java.base/java.nio=ALL-UNNAMED</argument>
-                                <argument>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</argument>
-                                <argument>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</argument>
                                 <argument>-classpath</argument>
                                 <classpath/>
                                 <argument>org.apache.ignite.tools.compatibility.messages.MessageTable</argument>

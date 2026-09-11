@@ -21,8 +21,12 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamWriter;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory;
@@ -30,6 +34,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMes
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /** Exports the actual production registrations and their compiled field descriptions. */
 public final class MessageTable {
@@ -39,7 +45,7 @@ public final class MessageTable {
     }
 
     /**
-     * Exports the registered messages to a XML file.
+     * Exports the registered messages to an XML file.
      *
      * @param args Output file path.
      * @throws Exception If the build is incomplete or the inputs cannot be read.
@@ -72,81 +78,69 @@ public final class MessageTable {
 
         Arrays.sort(ids);
 
-        StringWriter out = new StringWriter();
-        XMLStreamWriter xml = XMLOutputFactory.newDefaultFactory().createXMLStreamWriter(out);
+        Document doc = DocumentBuilderFactory.newDefaultInstance().newDocumentBuilder().newDocument();
+        Element root = doc.createElement("messageTable");
+
+        doc.appendChild(root);
+        root.setAttribute("formatVersion", "1");
+
+        Element providerList = appendElement(root, "providers");
+
+        for (MessageFactoryProvider provider : providers)
+            appendElement(providerList, "provider").setTextContent(provider.getClass().getName());
+
+        Element msgs = appendElement(root, "messages");
 
         try (MessageSchema schemas = new MessageSchema()) {
-            xml.writeStartDocument("UTF-8", "1.0");
-            xml.writeCharacters("\n");
-            xml.writeStartElement("messageTable");
-            xml.writeAttribute("formatVersion", "1");
-            xml.writeCharacters("\n  ");
-            xml.writeStartElement("providers");
-
-            for (MessageFactoryProvider provider : providers) {
-                xml.writeCharacters("\n    ");
-                xml.writeStartElement("provider");
-                xml.writeCharacters(provider.getClass().getName());
-                xml.writeEndElement();
-            }
-
-            xml.writeCharacters("\n  ");
-            xml.writeEndElement();
-            xml.writeCharacters("\n  ");
-            xml.writeStartElement("messages");
-
             for (short id : ids) {
                 Message msg = factory.create(id);
+                Element msgElement = appendElement(msgs, "message");
 
-                xml.writeCharacters("\n    ");
-                xml.writeStartElement("message");
-                xml.writeAttribute("id", Short.toString(id));
-                xml.writeAttribute("class", msg.getClass().getName());
+                msgElement.setAttribute("id", Short.toString(id));
+                msgElement.setAttribute("class", msg.getClass().getName());
 
                 for (MessageSchema.Field field : schemas.read(msg.getClass())) {
-                    xml.writeCharacters("\n      ");
                     if (field.name().isEmpty()) {
-                        xml.writeEmptyElement(field.serialization());
+                        appendElement(msgElement, field.serialization());
 
                         continue;
                     }
 
-                    xml.writeStartElement("field");
-                    xml.writeCharacters("\n        ");
-                    xml.writeStartElement("type");
-                    xml.writeCharacters(field.type());
-                    xml.writeEndElement();
-                    xml.writeCharacters("\n        ");
-                    xml.writeStartElement("name");
-                    xml.writeCharacters(field.name());
-                    xml.writeEndElement();
+                    Element fieldElement = appendElement(msgElement, "field");
 
-                    if (!field.serialization().isEmpty()) {
-                        xml.writeCharacters("\n        ");
-                        xml.writeStartElement("serialization");
-                        xml.writeCharacters(field.serialization());
-                        xml.writeEndElement();
-                    }
+                    appendElement(fieldElement, "type").setTextContent(field.type());
+                    appendElement(fieldElement, "name").setTextContent(field.name());
 
-                    xml.writeCharacters("\n      ");
-                    xml.writeEndElement();
+                    if (!field.serialization().isEmpty())
+                        appendElement(fieldElement, "serialization").setTextContent(field.serialization());
                 }
-
-                xml.writeCharacters("\n    ");
-                xml.writeEndElement();
             }
+        }
 
-            xml.writeCharacters("\n  ");
-            xml.writeEndElement();
-            xml.writeCharacters("\n");
-            xml.writeEndElement();
-            xml.writeCharacters("\n");
-            xml.writeEndDocument();
-        }
-        finally {
-            xml.close();
-        }
+        Transformer transformer = TransformerFactory.newDefaultInstance().newTransformer();
+
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+
+        StringWriter out = new StringWriter();
+
+        transformer.transform(new DOMSource(doc), new StreamResult(out));
 
         return out.toString();
+    }
+
+    /**
+     * Appends an element to the given parent.
+     *
+     * @param parent Parent element.
+     * @param name Element name.
+     * @return Created element.
+     */
+    private static Element appendElement(Element parent, String name) {
+        Element element = parent.getOwnerDocument().createElement(name);
+
+        parent.appendChild(element);
+
+        return element;
     }
 }

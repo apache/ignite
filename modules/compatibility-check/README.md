@@ -3,7 +3,7 @@
 Exports registered message IDs, classes and fields to `table.xml`.
 Fields, including inherited fields and CLASS-retained annotations, are read from
 compiled classes through the JDK compiler API. No node or intermediate manifest is needed.
-XML is written using the JDK StAX API without an external XML library.
+XML is written using the JDK DOM and Transformer APIs without an external XML library.
 Each `field` contains separate `type` and `name` elements, plus an optional
 `serialization` element for serialization annotations. The message-level
 `jdkMarshalled` marker is a separate element.
