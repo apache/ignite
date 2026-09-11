@@ -1487,7 +1487,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() throws SQLException {
-        return closed || stmt == null || stmt.connection().isClosed();
+        return closed || (stmt != null && stmt.connection().isClosed());
     }
 
     /** {@inheritDoc} */
