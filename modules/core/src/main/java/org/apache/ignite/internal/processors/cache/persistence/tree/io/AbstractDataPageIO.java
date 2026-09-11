@@ -776,7 +776,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
     }
 
     /**
-     * In-place signle-page row update.
+     * In-place single-page row update.
      *
      * @param pageAddr Page address.
      * @param itemId Item ID.

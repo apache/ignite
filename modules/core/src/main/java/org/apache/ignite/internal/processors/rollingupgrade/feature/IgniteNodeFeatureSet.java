@@ -100,6 +100,9 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
 
     /** */
     public boolean contains(IgniteFeature feature) {
+        // Safe to use == because IgniteCoreFeature.componentName() always returns the same
+        // static final String constant. For non-core features this check will fail gracefully
+        // and fall through to the map lookup below.
         //noinspection StringEquality
         if (feature.componentName() == IgniteCoreFeature.COMPONENT_NAME && coreFeatures != null)
             return coreFeatures.contains(feature.id());

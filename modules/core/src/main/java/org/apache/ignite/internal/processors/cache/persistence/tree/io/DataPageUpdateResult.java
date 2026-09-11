@@ -65,7 +65,6 @@ public class DataPageUpdateResult {
         return payloadSize;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataPageUpdateResult.class, this);

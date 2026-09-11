@@ -91,7 +91,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
-    private final PageHandler<T, Boolean> updateSignlePageRow = new UpdateSinglePageRowHandler();
+    private final PageHandler<T, Boolean> updateSinglePageRow = new UpdateSinglePageRowHandler();
 
     /** */
     private final PageHandler<PartiallyWritten, PartiallyWritten> updateFragmentedRow = new UpdateFragmentedRowHandler();
@@ -892,7 +892,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int itemId = PageIdUtils.itemId(link);
 
             if (!allowFragmented || size <= pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD) {
-                Boolean updated = write(pageId, updateSignlePageRow, newRow, itemId, null, statHolder);
+                Boolean updated = write(pageId, updateSinglePageRow, newRow, itemId, null, statHolder);
 
                 assert updated != null; // Can't fail here.
 
@@ -903,11 +903,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PartiallyWritten updateRes = write(pageId, updateFragmentedRow, new PartiallyWritten(newRow), itemId,
                 null, statHolder);
 
+            assert updateRes != null; // Can't fail here.
+
             while (updateRes.written < size) {
                 pageId = PageIdUtils.pageId(updateRes.nextLink);
                 itemId = PageIdUtils.itemId(updateRes.nextLink);
 
                 updateRes = write(pageId, updateFragmentedRow, updateRes, itemId, null, statHolder);
+
+                assert updateRes != null; // Can't fail here.
             }
             statHolder.trackPageRemoveData(size);
             statHolder.trackPageInsertData(size);
@@ -927,7 +931,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throw e;
         }
         catch (Throwable t) {
-            throw new CorruptedFreeListException("Failed to update data newRow", t, grpId);
+            throw new CorruptedFreeListException("Failed to update data row", t, grpId);
         }
     }
 

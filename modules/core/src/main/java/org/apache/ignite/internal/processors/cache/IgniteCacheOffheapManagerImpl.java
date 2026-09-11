@@ -1466,7 +1466,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             // Pending tree stores entries with their original expire time. During expire, entries for deletion
             // are read from pending tree (their links), then entries are initialized (key is read by link) under
-            // pending tree leaf page lock. During updateб when in-place update is disabled, we first insert new entry
+            // pending tree leaf page lock. During update, when in-place update is disabled, we first insert new entry
             // to row store, then remove old entry link from pending tree (this operation acquires pending tree leaf
             // page lock), add new entry link to pending tree, and after that remove old entry from row store.
             // The pending tree leaf page lock ensures entry consistency. If in-place update is enabled, during expire
@@ -1483,7 +1483,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return false;
 
             // Multi-page in-place row update introduces changes to applying WAL delta records, disable it until
-            // feature is not activated accross all the cluster.
+            // feature is activated across all the cluster.
             if (oldLen > updateValSizeThreshold
                 && !grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE))
                 return false;

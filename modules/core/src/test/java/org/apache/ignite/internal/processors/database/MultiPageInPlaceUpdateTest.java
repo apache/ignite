@@ -271,7 +271,7 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
             // - Some pages can produce both page snapshot and delta pages.
             // - Some pages can be untouched.
             for (int j = 0; j < entrySize / pageSize; j++) {
-                payload[ThreadLocalRandom.current().nextInt(entrySize)] = (byte)j;
+                payloads[i][ThreadLocalRandom.current().nextInt(entrySize)] = (byte)j;
                 cache.put(i, payloads[i]);
                 assertEquals(links[i], link(ignite, i));
             }
