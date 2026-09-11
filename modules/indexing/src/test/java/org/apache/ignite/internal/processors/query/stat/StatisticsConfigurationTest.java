@@ -34,7 +34,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -135,14 +134,26 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 3;
+    }
+
     /** */
     protected IgniteEx startGridAndChangeBaseline(int nodeIdx) throws Exception {
         IgniteEx ign = startGrid(nodeIdx);
 
         ign.cluster().state(ClusterState.ACTIVE);
 
-        if (persist)
-            ign.cluster().setBaselineTopology(ign.cluster().topologyVersion());
+        if (persist && nodeIdx == 0) {
+            // Enable baseline auto-adjust with zero timeout so that the baseline
+            // is updated immediately when nodes join or leave. This prevents
+            // partitions from becoming LOST (which would require resetLostPartitions
+            // and cause data loss). With auto-adjust, backups are promoted to
+            // primaries before detectLostPartitions runs in the exchange.
+            ign.cluster().baselineAutoAdjustEnabled(true);
+            ign.cluster().baselineAutoAdjustTimeout(0);
+        }
 
         awaitPartitionMapExchange();
 
@@ -150,16 +161,13 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     }
 
     /** */
-    protected void stopGridAndChangeBaseline(int nodeIdx) {
+    protected void stopGridAndAwaitPme(int nodeIdx) {
         stopGrid(nodeIdx);
-
-        if (persist)
-            F.first(G.allGrids()).cluster().setBaselineTopology(F.first(G.allGrids()).cluster().topologyVersion());
 
         try {
             awaitPartitionMapExchange();
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException ignored) {
             // No-op.
         }
     }
@@ -292,17 +300,17 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         log.info("Stoppping server 0 node");
-        stopGridAndChangeBaseline(0);
+        stopGridAndAwaitPme(0);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         log.info("Stopping server 2 node");
-        stopGridAndChangeBaseline(2);
+        stopGridAndAwaitPme(2);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
         log.info("Stopping server 3 node");
-        stopGridAndChangeBaseline(3);
+        stopGridAndAwaitPme(3);
 
         waitForStats(SCHEMA, "SMALL", TIMEOUT, checkTotalRows, checkColumStats);
 
