@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
@@ -81,64 +82,11 @@ public final class MessageTable {
             xml.writeStartElement("messageTable");
             xml.writeAttribute("formatVersion", "1");
             xml.writeCharacters("\n  ");
-            xml.writeStartElement("providers");
 
-            for (MessageFactoryProvider provider : providers) {
-                xml.writeCharacters("\n    ");
-                xml.writeStartElement("provider");
-                xml.writeCharacters(provider.getClass().getName());
-                xml.writeEndElement();
-            }
+            writeProviders(xml, providers);
 
-            xml.writeCharacters("\n  ");
-            xml.writeEndElement();
-            xml.writeCharacters("\n  ");
-            xml.writeStartElement("messages");
+            writeMessages(xml, ids, factory, schemas);
 
-            for (short id : ids) {
-                Message msg = factory.create(id);
-
-                xml.writeCharacters("\n    ");
-                xml.writeStartElement("message");
-                xml.writeAttribute("id", Short.toString(id));
-                xml.writeAttribute("class", msg.getClass().getName());
-
-                for (MessageSchema.Field field : schemas.read(msg.getClass())) {
-                    xml.writeCharacters("\n      ");
-                    if (field.name().isEmpty()) {
-                        xml.writeEmptyElement(field.serialization());
-
-                        continue;
-                    }
-
-                    xml.writeStartElement("field");
-                    xml.writeCharacters("\n        ");
-                    xml.writeStartElement("type");
-                    xml.writeCharacters(field.type());
-                    xml.writeEndElement();
-                    xml.writeCharacters("\n        ");
-                    xml.writeStartElement("name");
-                    xml.writeCharacters(field.name());
-                    xml.writeEndElement();
-
-                    if (!field.serialization().isEmpty()) {
-                        xml.writeCharacters("\n        ");
-                        xml.writeStartElement("serialization");
-                        xml.writeCharacters(field.serialization());
-                        xml.writeEndElement();
-                    }
-
-                    xml.writeCharacters("\n      ");
-                    xml.writeEndElement();
-                }
-
-                xml.writeCharacters("\n    ");
-                xml.writeEndElement();
-            }
-
-            xml.writeCharacters("\n  ");
-            xml.writeEndElement();
-            xml.writeCharacters("\n");
             xml.writeEndElement();
             xml.writeCharacters("\n");
             xml.writeEndDocument();
@@ -148,5 +96,76 @@ public final class MessageTable {
         }
 
         return out.toString();
+    }
+
+    private static void writeProviders(XMLStreamWriter xml, MessageFactoryProvider[] providers) throws XMLStreamException {
+        xml.writeStartElement("providers");
+
+        for (MessageFactoryProvider provider : providers) {
+            xml.writeCharacters("\n    ");
+            xml.writeStartElement("provider");
+            xml.writeCharacters(provider.getClass().getName());
+            xml.writeEndElement();
+        }
+
+        xml.writeCharacters("\n  ");
+        xml.writeEndElement();
+        xml.writeCharacters("\n  ");
+    }
+
+    private static void writeMessages(XMLStreamWriter xml, short[] ids, IgniteMessageFactoryImpl<?, ?> factory, MessageSchema schemas) throws XMLStreamException {
+        xml.writeStartElement("messages");
+
+        for (short id : ids) {
+            Message msg = factory.create(id);
+
+            writeMessage(id, xml, msg, schemas);
+        }
+
+        xml.writeCharacters("\n  ");
+        xml.writeEndElement();
+        xml.writeCharacters("\n");
+    }
+
+    private static void writeMessage(short id, XMLStreamWriter xml, Message msg, MessageSchema schemas) throws XMLStreamException {
+        xml.writeCharacters("\n    ");
+        xml.writeStartElement("message");
+        xml.writeAttribute("id", Short.toString(id));
+        xml.writeAttribute("class", msg.getClass().getName());
+
+        for (MessageSchema.Field field : schemas.read(msg.getClass())) {
+            xml.writeCharacters("\n      ");
+
+            if (field.name().isEmpty()) {
+                xml.writeEmptyElement(field.serialization());
+
+                continue;
+            }
+
+            xml.writeStartElement("field");
+            xml.writeCharacters("\n        ");
+            xml.writeStartElement("type");
+            xml.writeCharacters(field.type());
+            xml.writeEndElement();
+
+            xml.writeCharacters("\n        ");
+
+            xml.writeStartElement("name");
+            xml.writeCharacters(field.name());
+            xml.writeEndElement();
+
+            if (!field.serialization().isEmpty()) {
+                xml.writeCharacters("\n        ");
+                xml.writeStartElement("serialization");
+                xml.writeCharacters(field.serialization());
+                xml.writeEndElement();
+            }
+
+            xml.writeCharacters("\n      ");
+            xml.writeEndElement();
+        }
+
+        xml.writeCharacters("\n    ");
+        xml.writeEndElement();
     }
 }
