@@ -360,14 +360,14 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 checkConnection(conn);
             }
 
-            String completellyDisabledSuite = "TLS_RSA_WITH_NULL_SHA256";
+            String completelyDisabledSuite = "TLS_DH_anon_WITH_AES_256_CBC_SHA";
 
-            assertFalse(supportedCipherSuites().contains(completellyDisabledSuite));
+            assertFalse(supportedCipherSuites().contains(completelyDisabledSuite));
 
             // Java 17+, the cipher suite TLS_RSA_WITH_NULL_SHA256 is completely disabled by default.
             GridTestUtils.assertThrows(log, () -> {
                 return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                    "&sslCipherSuites=" + completellyDisabledSuite +
+                    "&sslCipherSuites=" + completelyDisabledSuite +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                     "&sslClientCertificateKeyStorePassword=123456" +
                     "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
