@@ -118,7 +118,7 @@
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
-        <postgres.connector.version>42.7.3</postgres.connector.version>
+        <postgres.connector.version>42.7.13</postgres.connector.version>
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.8</snappy.version>
         <spring.version>6.2.19</spring.version>
@@ -929,6 +929,8 @@
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</inputExclude>
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</inputExclude>
                                         <inputExclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</inputExclude>
+                                        <inputExclude>src/test/resources/tpch/*.sql</inputExclude>
+                                        <inputExclude>src/test/resources/tpch/*.plan</inputExclude>
                                     <!--platforms-->
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</inputExclude>
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</inputExclude>

@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.SchemaPlus;
@@ -32,6 +33,7 @@ import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -101,23 +103,13 @@ public class IgniteSchema extends AbstractSchema {
      * @param func SQL function.
      */
     public void addFunction(String name, Function func) {
+        IgniteTypeFactory typeFactory = Commons.typeFactory();
+
         for (Function existingFun : getFunctions(name)) {
-            List<FunctionParameter> params = func.getParameters();
-            List<FunctionParameter> existingParams = existingFun.getParameters();
-
-            if (params.size() != existingParams.size())
-                continue;
-
-            for (int i = 0; i < params.size(); ++i) {
-                FunctionParameter p = params.get(i);
-                FunctionParameter existingP = existingParams.get(i);
-
-                if (!p.getType(Commons.typeFactory()).equalsSansFieldNames(existingP.getType(Commons.typeFactory())))
-                    break;
+            if (sameParameters(func.getParameters(), existingFun.getParameters(), typeFactory)) {
+                throw new IgniteException("Unable to register function '" + name + "'. Other function with the same " +
+                    "name and parameters is already registered in schema '" + schemaName + "'.");
             }
-
-            throw new IgniteException("Unable to register function '" + name + "'. Other function with the same " +
-                "name and parameters is already registered in schema '" + schemaName + "'.");
         }
 
         funcMap.put(name, func);
@@ -162,5 +154,25 @@ public class IgniteSchema extends AbstractSchema {
             && schema.getFunctions(DUAL_TBL_NAME).stream().noneMatch(TableMacro.class::isInstance)) {
             schema.add(DUAL_TBL_NAME, new ViewTableMacroImpl(DUAL_TBL_VIEW, schema, frameworkCfg));
         }
+    }
+
+    /** */
+    private static boolean sameParameters(
+        List<FunctionParameter> params,
+        List<FunctionParameter> existingParams,
+        IgniteTypeFactory typeFactory
+    ) {
+        if (params.size() != existingParams.size())
+            return false;
+
+        for (int i = 0; i < params.size(); ++i) {
+            RelDataType paramType = typeFactory.toSql(params.get(i).getType(typeFactory));
+            RelDataType existingParamType = typeFactory.toSql(existingParams.get(i).getType(typeFactory));
+
+            if (!paramType.equalsSansFieldNamesAndNullability(existingParamType))
+                return false;
+        }
+
+        return true;
     }
 }
