@@ -339,9 +339,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         Set<String> disabledSuites = disabledByDefaultCipherSuites();
         String disabledSuite = disabledSuites.iterator().next();
 
-        System.out.println("Run test with suite: " + disabledSuite);
-
-        System.err.println("!!!: " + disabledSuites);
+        System.out.println("Run test with cipher suite: " + disabledSuite);
 
         setSslCtxFactoryToCli = true;
         supportedCiphers = new String[] {disabledSuite /* Disabled by default */};
@@ -360,7 +358,22 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 checkConnection(conn);
             }
 
-            String completelyDisabledSuite = "TLS_DH_anon_WITH_AES_256_CBC_SHA";
+            /* completely disabled jdk 17+
+            DES (56-bit):
+            TLS_RSA_WITH_DES_CBC_SHA, TLS_DHE_RSA_WITH_DES_CBC_SHA,
+                TLS_DHE_DSS_WITH_DES_CBC_SHA, TLS_ECDHE_ECDSA_WITH_DES_CBC_SHA,
+                TLS_ECDHE_RSA_WITH_DES_CBC_SHA, TLS_ECDHE_PSK_WITH_DES_CBC_SHA,
+                TLS_ECDH_ECDSA_WITH_DES_CBC_SHA, TLS_ECDH_RSA_WITH_DES_CBC_SHA,
+                TLS_ECDH_anon_WITH_DES_CBC_SHA
+
+            3DES/DESede:
+            TLS_RSA_WITH_3DES_EDE_CBC_SHA, TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
+                TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+                TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,
+                TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA*/
+
+            String completelyDisabledSuite = "TLS_RSA_WITH_DES_CBC_SHA";
 
             assertFalse(supportedCipherSuites().contains(completelyDisabledSuite));
 
