@@ -523,3 +523,15 @@ Register name: `sql.queries.user`
 |resultSetSizeHistogram| histogram | Histogram of fetched result set sizes for SQL queries.
 |maxResultSetSize| max value | Maximum fetched result set size for SQL queries.
 |===
+
+== Failure
+
+Failure processor metrics.
+
+Register name: `failure`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name|    Type|    Description
+|IgnoredFailuresCount| long | The number of failures suppressed in accordance with a configured failure handler.
+|===
