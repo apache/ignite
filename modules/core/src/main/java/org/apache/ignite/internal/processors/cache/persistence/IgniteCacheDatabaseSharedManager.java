@@ -147,18 +147,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long EVICTION_BACKOFF_MAX_NANOS = 1_000_000L;
 
     /**
-     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without establishing a new
-     * highest number of empty pages before failing with an out-of-memory. Being time-based (measured from the last
+     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without either an eviction or a
+     * new highest empty-pages count before failing with an out-of-memory. Being time-based (measured from the last
      * progress) rather than a fixed attempt count means a slow-but-progressing eviction is never torn down, while a
      * genuinely stuck eviction (nothing evictable, or contenders that never release their locks) still terminates in
-     * bounded time instead of busy-spinning forever.
-     * <p>
-     * This value also caps the worst-case time the size-aware reserve can hold the caller's entry lock: on the
-     * single-row path the eviction loop runs while the entry being written is locked, so in the pathological case
-     * (region under pressure and every evictable entry locked by a long-running transaction) a put can hold the
-     * entry lock for up to this duration before failing with an out-of-memory.
+     * bounded time instead of busy-spinning forever. The overall cycle is additionally capped by
+     * {@link #EVICTION_MAX_CYCLE_TIME_MILLIS}.
      */
     private static final long EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = 1_000L;
+
+    /**
+     * Hard upper bound (milliseconds) on the total duration of one size-aware eviction cycle, regardless of
+     * per-iteration progress. {@link #EVICTION_NO_PROGRESS_TIMEOUT_MILLIS} bounds the period with no progress, but
+     * eviction that keeps making partial progress (e.g. evicting a contended page's available entries one-by-one
+     * without ever emptying a page, so the empty-pages count never reaches the target) could otherwise extend the
+     * loop indefinitely; this absolute deadline guarantees the cycle still fails with an out-of-memory in bounded
+     * time while the per-progress timeout above allows a genuinely progressing eviction to run to its natural end.
+     * It also caps the worst-case time the reserve can hold the caller's entry lock.
+     */
+    private static final long EVICTION_MAX_CYCLE_TIME_MILLIS = 5 * EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
 
     /** {@code True} to reuse memory on deactive. */
     protected final boolean reuseMemory = IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE);
@@ -1213,10 +1220,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * larger than this pool.
      * <p>
      * Worst case: when called while the entry being written is locked (single-row insertion), the eviction loop can
-     * hold that lock for up to {@link #EVICTION_NO_PROGRESS_TIMEOUT_MILLIS} — only if no evictable entry releases
-     * its lock within that time (e.g. a long-running transaction holding all evictable entries), after which the
-     * call fails with {@link IgniteOutOfMemoryException} (reported as a critical failure to the configured failure
-     * handler).
+     * hold that lock for up to {@link #EVICTION_MAX_CYCLE_TIME_MILLIS} — only if eviction cannot consolidate enough
+     * empty pages within that time (e.g. a long-running transaction holding all evictable entries, or only partial
+     * progress), after which the call fails with {@link IgniteOutOfMemoryException} (reported as a critical failure
+     * to the configured failure handler).
      *
      * @param region Data region to be checked.
      * @param dataRowSize Size of data row to be inserted.
@@ -1321,88 +1328,67 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (requiredPages > totalPages)
             throw outOfMemory(regCfg);
 
-        // The reserve must guarantee that the free list holds `requiredPages` REAL empty pages, not merely that the
-        // region has apparent headroom. Both resources are shared and non-exclusive: emptyDataPages() is just a
-        // snapshot of a common counter, and any concurrent writer can consume these pages before this thread's write.
-        // The two resources differ in how they behave once the region is effectively full (loadedPages == totalPages):
-        // headroom (totalPages - loadedPages) can no longer grow the region - a fresh allocateDataPage would fail with
-        // a raw OOM - whereas empty pages already in the reuse bucket remain reachable through takePage(), and so are
-        // the only resource the fragmented write can then consume. This makes empty pages a necessary condition for
-        // the write to proceed on a full region, not a reservation pinned to this thread. The TOCTOU between this
-        // reserve and the actual write is closed by the lazy re-reserve in AbstractFreeList#writeSinglePage, which
-        // re-runs the reserve on the row remainder before allocating a new page; if the region genuinely cannot fit
-        // the concurrent writes, that path raises a proper OOM rather than corrupting the free list. (Headroom is
-        // trusted in the fast path only while the region is below the eviction threshold, i.e. where contention cannot
-        // exhaust the slack.)
+        // The reserve must guarantee `requiredPages` REAL empty pages, not just apparent headroom. Both are shared and
+        // non-exclusive (emptyDataPages() is a snapshot; any writer can consume them), but once the region is full
+        // (loadedPages == totalPages) headroom can no longer grow it (fresh allocateDataPage -> raw OOM), while empty
+        // pages in the reuse bucket stay reachable via takePage(). So empty pages are the only resource the fragmented
+        // write can consume on a full region. The TOCTOU between this reserve and the actual write is closed by the
+        // lazy re-reserve in AbstractFreeList#writeSinglePage.
         long emptyPages = freeList.emptyDataPages();
 
         long headroom = totalPages - pageMem.loadedPages();
 
         long pagesThreshold = (long)(totalPages * regCfg.getEvictionThreshold());
 
-        // The gate below reuses regCfg.evictionThreshold as a regime boundary, not as "when to start eviction" (that
-        // role belongs to evictionRequired(), which raises the same threshold but stops on emptyPages >= poolSize, so
-        // on a filling region loadedPages routinely exceeds it and no last 10% of page memory is left unused).
-        //
-        // loadedPages() counts every allocated page, including empty ones sitting in the reuse bucket: evicting a page
-        // moves it to that bucket but does not lower loadedPages. So on a filling in-memory region evictionRegime is the
-        // normal steady state once the region has materialized up to its capacity, not a rare anomaly.
-        //
-        // The two regimes:
-        //   - below the threshold: the region still has real slack, so a row fitting into the combined spare space is
-        //     satisfied without eviction - the region grows and live entries (e.g. short-TTL ones before expiry) are
-        //     not evicted just to accumulate empty pages the slack could absorb;
-        //   - at/above the threshold: headroom is no longer trustworthy (concurrent size-aware writers could commit
-        //     the same headroom and both hit capacity mid-write - the TOCTOU case), so only real empty pages already
-        //     in the free list are counted and eviction is driven below.
+        // The gate reuses evictionThreshold as a regime boundary, not as "when to start eviction" (evictionRequired()
+        // does that, stopping on emptyPages >= poolSize; no last 10% of page memory is left unusable). Below the
+        // threshold the region has real slack, so a row fitting into the combined spare space is satisfied without
+        // eviction (live, e.g. short-TTL, entries are not evicted just to accumulate empty pages). At/above it headroom
+        // is no longer trustworthy (concurrent writers could commit the same headroom - TOCTOU), so only real empty
+        // pages are counted and eviction is driven below.
         boolean evictionRegime = pageMem.loadedPages() >= pagesThreshold;
 
-        // Fast path: heuristics to skip eviction when the row is likely satisfiable without it - (a) the free list
-        // already holds enough real empty pages, or (b) the region is below the eviction regime and has enough spare
-        // space to grow into. This is evaluated on a snapshot and is a necessary, not sufficient, condition: under heavy
-        // contention two size-aware writers can both pass it and then both consume the same empty pages. That race is
-        // recovered in AbstractFreeList#writeSinglePage (lazy re-reserve before allocation) and, if the region truly
-        // cannot fit the concurrent writes, surfaces as a proper OOM rather than mid-write corruption.
+        // Fast path: skip eviction when (a) enough real empty pages exist, or (b) below the regime with enough spare
+        // space to grow into. This is a snapshot and only necessary, not sufficient: under contention two writers can
+        // both pass and consume the same pages - recovered by the lazy re-reserve in AbstractFreeList#writeSinglePage.
         if (emptyPages >= requiredPages || (!evictionRegime && emptyPages + headroom >= requiredPages))
             return;
 
         PageEvictionTracker evictionTracker = region.evictionTracker();
 
-        // Evict data pages until the free list holds enough real empty pages. Progress is measured against the count
-        // of empty pages, so pages freed concurrently (e.g. by TTL cleanup) also count. Eviction may run while the
-        // current thread already holds entry locks (single-row insertion), so contended entries are skipped
-        // (non-blocking) rather than blocked on, avoiding a lock-ordering deadlock.
-        //
-        // The guard is time-based (no progress for EVICTION_NO_PROGRESS_TIMEOUT_MILLIS) rather than attempt-count:
-        // a fixed budget could exhaust in milliseconds under contention/lock-holders and turn a slow-but-progressing
-        // eviction into a premature OOM. On each stalled iteration the thread backs off (rather than busy-spinning)
-        // both to save CPU and to let a lock holder run and release it.
+        // Evict until the free list holds enough real empty pages. Progress counts as either an actual eviction this
+        // iteration (evictDataPage returned true) or a new high-water empty-pages count. The count alone is unreliable
+        // under concurrency: writers consume the shared counter as fast as eviction frees pages, so a thread may never
+        // see its high-water exceeded while eviction still makes real global progress - tearing down there would be a
+        // false OOM. Counting the actual eviction prevents that; when eviction genuinely cannot proceed the method
+        // returns false, so the loop still fails with OOM in bounded time.
         long bestEmptyPages = emptyPages;
 
         long lastProgressNanos = System.nanoTime();
 
+        long cycleDeadlineNanos = lastProgressNanos + TimeUnit.MILLISECONDS.toNanos(EVICTION_MAX_CYCLE_TIME_MILLIS);
+
         long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
-        while (bestEmptyPages < requiredPages) {
+        while (freeList.emptyDataPages() < requiredPages) {
             if (region.metrics().onPageEvictionsStarted()) {
                 U.warn(log, "Page-based evictions started." +
                     " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
             }
 
-            // tryLock=true: eviction runs non-blockingly (contended or already-held entries are skipped) because the
-            // size-aware reserve can run while the current thread already holds entry locks (single-row insertion);
-            // blocking here would risk a lock-ordering deadlock.
-            evictionTracker.evictDataPage(true);
+            // tryLock=true: skip contended/self-held entries (the reserve can run while the current thread already
+            // holds entry locks on the single-row path), avoiding a lock-ordering deadlock.
+            boolean evicted = evictionTracker.evictDataPage(true);
 
             region.metrics().updateEvictionRate();
 
             long curEmptyPages = freeList.emptyDataPages();
 
-            // Only an iteration that establishes a new highest empty-pages count counts as progress (drops caused by
-            // concurrent inserts consuming pages do not). As long as there is progress the loop continues; on a
-            // stalled iteration it backs off rather than busy-spinning.
-            if (curEmptyPages > bestEmptyPages) {
-                bestEmptyPages = curEmptyPages;
+            // A new high-water count or an actual eviction re-arms the no-progress timeout; a stalled iteration backs
+            // off rather than busy-spinning.
+            if (evicted || curEmptyPages > bestEmptyPages) {
+                if (curEmptyPages > bestEmptyPages)
+                    bestEmptyPages = curEmptyPages;
 
                 lastProgressNanos = System.nanoTime();
 
@@ -1414,10 +1400,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 backoffNanos = Math.min(backoffNanos << 1, EVICTION_BACKOFF_MAX_NANOS);
             }
 
-            // Fail with OOM only after a sustained period without any progress: this bounds a genuinely stuck eviction
-            // (nothing evictable, or contenders never releasing their locks) without tearing down a slow-but-
-            // progressing one. The region is already under pressure (fast path failed), so OOM is correct here.
-            if (System.nanoTime() - lastProgressNanos > TimeUnit.MILLISECONDS.toNanos(EVICTION_NO_PROGRESS_TIMEOUT_MILLIS))
+            // OOM when there was no eviction/count growth for EVICTION_NO_PROGRESS_TIMEOUT_MILLIS (stuck eviction) or
+            // the whole cycle exceeds EVICTION_MAX_CYCLE_TIME_MILLIS (only partial progress, target never reached).
+            long nowNanos = System.nanoTime();
+
+            long maxNoProgress = TimeUnit.MILLISECONDS.toNanos(EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
+
+            if (nowNanos - lastProgressNanos > maxNoProgress || nowNanos > cycleDeadlineNanos)
                 throw outOfMemory(regCfg);
         }
     }

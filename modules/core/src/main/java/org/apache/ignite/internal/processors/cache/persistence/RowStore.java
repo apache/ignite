@@ -135,20 +135,12 @@ public class RowStore {
      */
     public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled && grp.dataRegion().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
-            // Size-aware pre-reserve for the rebalance batch (regular single puts get the same guarantee via the
-            // per-put reserve in addRow). Reserving "for each row" would collapse to reserving for the largest one:
-            // every reserve runs before any insert and only enforces a lower bound on the shared empty-pages counter,
-            // so the final guarantee is max(row sizes). A single reserve for the largest row is therefore equivalent
-            // and is what is done here.
-            //
-            // The batch insert path (insertDataRows) mirrors writeSinglePage: it runs its own lazy re-reserve on the
-            // trailing fragment when takePage fails, and rethrows IgniteOutOfMemoryException as-is rather than
-            // wrapping it into CorruptedFreeListException (see AbstractFreeList). This pre-reserve here is sized for
-            // the largest row in the batch and runs before any insert, so it bounds the empty-pages counter up front.
-            //
-            // The reserve evicts non-blockingly even though the batch path holds no entry locks (so blocking would be
-            // deadlock-safe and more effective here): the same reserve path is shared with single-row insertion,
-            // which runs under an entry lock and must not block.
+            // Size-aware pre-reserve for the rebalance batch (single puts get the same guarantee via the per-put
+            // reserve in addRow). Reserving "for each row" collapses to reserving for the largest one (all reserves run
+            // before any insert and only enforce a lower bound on the shared empty-pages counter), so a single reserve
+            // for the max row is equivalent and is what is done here. The reserve evicts non-blockingly even though the
+            // batch path holds no entry locks (blocking would be safe here): the path is shared with single-row
+            // insertion, which runs under an entry lock and must not block.
             int maxRowSize = 0;
 
             for (CacheDataRow row : rows) {

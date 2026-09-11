@@ -109,7 +109,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void evictDataPage(boolean tryLock) throws IgniteCheckedException {
+    @Override public boolean evictDataPage(boolean tryLock) throws IgniteCheckedException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         int evictAttemptsCnt = 0;
@@ -161,17 +161,19 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
                 if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
                     LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
 
-                    return;
+                    return false;
                 }
             }
 
             if (evictDataPage(pageIdx(lruTrackingIdx), tryLock))
-                return;
+                return true;
 
             evictAttemptsCnt++;
         }
 
         LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+
+        return false;
     }
 
     /** {@inheritDoc} */
