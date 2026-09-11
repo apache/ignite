@@ -897,7 +897,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 assert updated != null; // Can't fail here.
 
                 if (updated || !allowFragmented)
-                    return updated; // If allow fragmented fallback to fragmented row update.
+                    return updated;
+
+                // Fallback if row is fragmented and allow fragmented.
             }
 
             PartiallyWritten updateRes = write(pageId, updateFragmentedRow, new PartiallyWritten(newRow), itemId,
