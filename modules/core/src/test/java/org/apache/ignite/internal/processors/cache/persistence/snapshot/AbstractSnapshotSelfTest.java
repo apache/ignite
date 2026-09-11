@@ -190,7 +190,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public boolean onlyPrimary;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}")
     public static Collection<Object[]> params() {
         List<Object[]> res = new ArrayList<>();
 

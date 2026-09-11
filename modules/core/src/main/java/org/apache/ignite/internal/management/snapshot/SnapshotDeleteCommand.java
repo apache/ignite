@@ -94,7 +94,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
             "' and all its increments from all online server nodes." +
             U.nl() + U.nl() +
             "WARNING: the snapshot integrity, topology and correctness aren't checked." +
-            " Snapshot daya on offline server nodes aren't deleted." +
+            " Snapshot data on offline server nodes aren't deleted." +
             U.nl() + U.nl() +
             "The operation is irreversible.";
     }

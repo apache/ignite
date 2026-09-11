@@ -47,13 +47,13 @@ import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
-public class IgniteClusterSnapshotDeleteParametrizedTest extends AbstractSnapshotSelfTest {
+public class IgniteClusterSnapshotDeleteConcurrencyTest extends AbstractSnapshotSelfTest {
     /** */
     @Parameter(2)
     public boolean incremental = true;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}, incremental={2}")
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, incremental={2}")
     public static Collection<?> runParams() {
         Collection<Object[]> res = new ArrayList<>();
 
@@ -91,7 +91,7 @@ public class IgniteClusterSnapshotDeleteParametrizedTest extends AbstractSnapsho
     /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */
     @Test
     public void testSnapshotDeleteWhenCheckInProgress() throws Exception {
-        // Incremental snapshots don't support encription.
+        // Incremental snapshots don't support encryption.
         assumeTrue(!incremental || !encryption);
 
         doTestConcurrentSnapshotDelete(
@@ -106,7 +106,7 @@ public class IgniteClusterSnapshotDeleteParametrizedTest extends AbstractSnapsho
     /** Tests that a snapshot deletion is declined when a snapshot create operation is in progress. */
     @Test
     public void testSnapshotDeleteWhenCreateInProgress() throws Exception {
-        // Incremental snapshots don't support encription and only-primary mode.
+        // Incremental snapshots don't support encryption and only-primary mode.
         assumeTrue(!incremental || !(encryption || onlyPrimary));
 
         doTestConcurrentSnapshotDelete(
@@ -126,7 +126,7 @@ public class IgniteClusterSnapshotDeleteParametrizedTest extends AbstractSnapsho
     /** Tests that a snapshot deletion is declined when a snapshot restore begins. */
     @Test
     public void testSnapshotDeleteWhenRestoreBegins() throws Exception {
-        // Incremental snapshots don't support encription.
+        // Incremental snapshots don't support encryption.
         assumeTrue(!incremental || !encryption);
 
         doTestConcurrentSnapshotDelete(
@@ -150,7 +150,7 @@ public class IgniteClusterSnapshotDeleteParametrizedTest extends AbstractSnapsho
     /** Tests that a snapshot deletion is declined when a snapshot restore is in progress. */
     @Test
     public void testSnapshotDeleteWhenRestoreInProgress() throws Exception {
-        // Incremental snapshots don't support encription.
+        // Incremental snapshots don't support encryption.
         assumeTrue(!incremental || !encryption);
 
         var restoreMsgs = F.asList(
@@ -184,9 +184,9 @@ public class IgniteClusterSnapshotDeleteParametrizedTest extends AbstractSnapsho
 
     /**
      * @param firstOp First cluster-wide snapshot operation.
-     * @param msgsToWatch {@link SingleNodeMessage#type()} relating to {@code firstOp} bo block on one node.
+     * @param msgsToWatch {@link SingleNodeMessage#type()} relating to {@code firstOp} to block on one node.
      * @param precreateSnp If {@code true}, creates snapshot after the cluster start.
-     * @param prepareIteration If not {@code null}, is invoked in the beggining of test iteration at each {@code msgsToWatch}.
+     * @param prepareIteration If not {@code null}, is invoked in the beginning of test iteration at each {@code msgsToWatch}.
      * @param concurrentMsgErr Test of failed concurrent to {@code firstOp} delete snapshot operation to watch.
      */
     protected void doTestConcurrentSnapshotDelete(

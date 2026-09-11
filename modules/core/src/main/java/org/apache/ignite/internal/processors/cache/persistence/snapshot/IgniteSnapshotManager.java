@@ -728,7 +728,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param sft Snapshot file tree
-     * @param existsFlag Flag to set {@code} if any snapshot file or directory is found (exists). If {@code null}, ignored.
+     * @param existsFlag Flag to set {@code true} if any snapshot file or directory is found (exists). If {@code null}, ignored.
      * @return {@code True}, if data is found and completely deleted or if no data found;
      *         {@code False}, if data is found but was deleted not completely.
      */
@@ -1503,7 +1503,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * for the snapshot.
      *
      * @param name Snapshot name.
-     * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory is be used.
+     * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory will be used.
      * @return Future which will be completed when the snapshot is deleted on all the baseline nodes.
      */
     public IgniteFuture<SnapshotDeleteProcessResult> deleteSnapshot(String name, @Nullable String snpPath) {

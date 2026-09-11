@@ -29,15 +29,15 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Nodes which found shapshot data and completely removed it. */
+    /** Nodes which found snapshot data and completely removed it. */
     @Order(0)
     @Nullable Collection<UUID> completedNodes;
 
-    /** Nodes which found shapshot data but didn't remove it completely. */
+    /** Nodes which found snapshot data but didn't remove it completely. */
     @Order(1)
     @Nullable Collection<UUID> uncompletedNodes;
 
-    /** Server nodes which didn't found any shapshot data. */
+    /** Server nodes which didn't find any snapshot data. */
     @Order(2)
     @Nullable Collection<UUID> emptyNodes;
 

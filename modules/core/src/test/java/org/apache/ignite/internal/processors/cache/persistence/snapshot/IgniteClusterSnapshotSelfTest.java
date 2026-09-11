@@ -126,7 +126,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** Any node failed. */
     private boolean failed;
 
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setFailureHandler((ignite, ctx) -> failed = true);
@@ -617,7 +616,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Tests that snapshot create detects concurrent deletion, or detects still existing snapshot or sucessfuly
+     * Tests that snapshot create detects concurrent deletion, or detects still existing snapshot or successfully
      * proceeds if snapshot already deleted.
      */
     @Test

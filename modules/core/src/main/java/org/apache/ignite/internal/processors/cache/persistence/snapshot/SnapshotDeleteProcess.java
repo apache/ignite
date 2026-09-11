@@ -116,7 +116,7 @@ public class SnapshotDeleteProcess {
     private IgniteInternalFuture<SnapshotDeleteResponse> deletePhase(UUID ignored, SnapshotDeleteRequest req) {
         if (kctx.isStopping()) {
             return new GridFinishedFuture<>(new NodeStoppingException(OP_REJECT_MSG +
-                " Node is stopping, req=" + req));
+                " Node is stopping [req=" + req + ']'));
         }
 
         if (kctx.cluster().get().localNode().isClient())
@@ -130,28 +130,28 @@ public class SnapshotDeleteProcess {
 
         if (curCreateRq != null && curCreateRq.snpName.equals(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being created, req=" + req));
+                " Snapshot with this name is being created [req=" + req + ']'));
         }
 
         if (snpMgr.isRestoring(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being restored, req=" + req));
+                " Snapshot with this name is being restored [req=" + req + ']'));
         }
 
         if (snpMgr.isSnapshotChecking(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being checked, req=" + req));
+                " Snapshot with this name is being checked [req=" + req + ']'));
         }
 
         if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " Snapshot deletion feature isn't enabled, req=" + req));
+                " The snapshot deletion feature isn't activated yet [req=" + req + ']'));
         }
 
         try {
             if (requests.putIfAbsent(req.snpName, req) != null) {
                 return new GridFinishedFuture<>(new IgniteIllegalStateException("Deletion of the snapshot has already " +
-                    "started, req=" + req));
+                    "started [req=" + req + ']'));
             }
 
             GridFutureAdapter<SnapshotDeleteResponse> reqLocFut = new GridFutureAdapter<>();
@@ -166,9 +166,9 @@ public class SnapshotDeleteProcess {
 
                     if (foundFlag.get()) {
                         if (deleted && log.isInfoEnabled())
-                            log.info("Snapshot successfully deleted, req=" + req);
+                            log.info("Snapshot successfully deleted [req=" + req + ']');
                         else if (!deleted)
-                            log.warning("Snapshot deleted not completely, req=" + req);
+                            log.warning("Snapshot deleted not completely [req=" + req + ']');
 
                         res = deleted
                             ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
@@ -176,7 +176,7 @@ public class SnapshotDeleteProcess {
                     }
                     else {
                         if (log.isInfoEnabled())
-                            log.info("Snapshot not found to delete, req=" + req);
+                            log.info("Snapshot not found to delete [req=" + req + ']');
 
                         res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
                     }
@@ -189,14 +189,14 @@ public class SnapshotDeleteProcess {
             });
 
             if (log.isInfoEnabled())
-                log.info("Deletion of snapshot initialized, req=" + req);
+                log.info("Deletion of snapshot initialized [req=" + req + ']');
 
             return reqLocFut;
         }
         catch (Throwable t) {
             requests.remove(req.snpName);
 
-            log.warning("An error occured during snapshot deletion, req=" + req, t);
+            log.warning("An error occurred during snapshot deletion [req=" + req + ']', t);
 
             return new GridFinishedFuture<>(t);
         }

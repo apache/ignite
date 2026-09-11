@@ -157,7 +157,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         }
 
         // Optionally restarts with the same servers number, but changed baseline. The snapshot is kept on the same
-        // previous nodes independenlty of the baseline.
+        // previous nodes independently of the baseline.
         if (changeBaseline) {
             ig.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
@@ -209,7 +209,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         out = testOut.toString();
 
         if (separatedWorkDir) {
-            // When the nodes use own separated work dirictory, we expect a strict result.
+            // When the nodes use own separated work directory, we expect a strict result.
             assertTrue(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(initNodes)));
 
             if (extraNodeIsServer == 1)
@@ -218,8 +218,8 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
                 assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
         }
         else {
-            // When nodes use a shared work dirictory, there is a race for the delete operation. One node can get faster
-            // than anothers and remove snasphot completely quickly. The others might not find snapshot files. We can be
+            // When nodes use a shared work directory, there is a race for the delete operation. One node can get faster
+            // than others and remove snapshot completely quickly. The others might not find snapshot files. We can be
             // only sure that at least one node removes snapshot.
             assertTrue(out.contains("Snapshot removed on the following nodes [cnt="));
         }
