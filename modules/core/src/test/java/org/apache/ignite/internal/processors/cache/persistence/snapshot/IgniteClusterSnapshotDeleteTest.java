@@ -47,7 +47,7 @@ import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
-public class IgniteClusterSnapshotDeleteConcurrencyTest extends AbstractSnapshotSelfTest {
+public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     @Parameter(2)
     public boolean incremental = true;
@@ -86,6 +86,17 @@ public class IgniteClusterSnapshotDeleteConcurrencyTest extends AbstractSnapshot
 
         // Handy
         cleanPersistenceDir();
+    }
+
+    /** Tests that a concurrent deletion of the same snapshot is declined. */
+    @Test
+    public void testConcurrentDeleteOfTheSameSnapshot() throws Exception {
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false),
+            () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
+            e -> e.getMessage().contains("Deletion of the snapshot has already started"),
+            false
+        );
     }
 
     /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */

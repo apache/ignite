@@ -33,7 +33,7 @@ import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
-public class IgniteClusterSnapshotDeleteRollingUpgardeTest extends AbstractRollingUpgradeTest {
+public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
     private static final int ALL_GRIDS = 4;
 
@@ -74,7 +74,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgardeTest extends AbstractRolli
 
         grid(0).cluster().active(true);
 
-        createCacheAndSnasphot(1);
+        createCacheAndSnapshot(1);
 
         ensureSnapshotDeletionFailed();
 
@@ -101,7 +101,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgardeTest extends AbstractRolli
     }
 
     /** */
-    private void createCacheAndSnasphot(int gridIdx) {
+    private void createCacheAndSnapshot(int gridIdx) {
         int partsCnt = 32;
         int keysCnt = partsCnt * 10;
 

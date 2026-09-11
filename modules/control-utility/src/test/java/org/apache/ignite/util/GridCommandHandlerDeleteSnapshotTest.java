@@ -186,6 +186,9 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         if (customPath) {
             assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
                 cstSnpsRoot.getAbsolutePath(), "wrongSnapshot"));
+
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
+                cstSnpsRoot.getAbsolutePath() + "_wrongPath", "testSnapshot"));
         }
         else
             assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "wrongSnapshot"));

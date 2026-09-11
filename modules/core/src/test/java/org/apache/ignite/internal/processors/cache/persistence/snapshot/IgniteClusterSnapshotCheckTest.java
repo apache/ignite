@@ -99,7 +99,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -149,9 +148,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     @Parameterized.Parameter(2)
     public int snpThrdPoolSz;
-
-    /** */
-    private @Nullable AbstractTestPluginProvider pluginProvider;
 
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, snpThrdPoolSz={2}")

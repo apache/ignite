@@ -746,7 +746,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    void deleteWithExistence(@Nullable File f, AtomicBoolean onlyFailRes, @Nullable AtomicBoolean existsFlag) {
+    private void deleteWithExistence(@Nullable File f, AtomicBoolean onlyFailRes, @Nullable AtomicBoolean existsFlag) {
         if (f == null)
             return;
 
@@ -756,6 +756,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             existsFlag.set(true);
 
         try {
+            // Additionally checks the existence for the case of concurrent deletion.
             if (existed && ((!f.isDirectory() && !U.delete(f)) || (f.isDirectory() && !deleteDirectory(f))) && f.exists())
                 onlyFailRes.set(false);
         }
