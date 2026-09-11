@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientDirectCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetDataCenterNodesRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetStateRequest;
@@ -107,6 +108,7 @@ import org.apache.ignite.internal.processors.platform.client.datastructures.Clie
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveAllRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveRequest;
 import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRetainAllRequest;
+import org.apache.ignite.internal.processors.platform.client.direct.ClientListenerDirectResponse;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
@@ -120,6 +122,9 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartReq
  * Thin client message parser.
  */
 public class ClientMessageParser implements ClientListenerMessageParser {
+    /** */
+    public static boolean USE_DIRECT_READ;
+
     /* General-purpose operations. */
     /** */
     private static final short OP_RESOURCE_CLOSE = 0;
@@ -465,7 +470,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         switch (opCode) {
             case OP_CACHE_GET:
-                return new ClientCacheGetRequest(reader);
+                if (USE_DIRECT_READ)
+                    return new ClientDirectCacheGetRequest(reader);
+                else
+                    return new ClientCacheGetRequest(reader);
 
             case OP_BINARY_TYPE_NAME_GET:
                 return new ClientBinaryTypeNameGetRequest(reader);
@@ -746,6 +754,14 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** {@inheritDoc} */
     @Override public ClientMessage encode(ClientListenerResponse resp) {
         assert resp != null;
+
+        if (resp instanceof ClientListenerDirectResponse) {
+            BinaryOutputStream out = ((ClientListenerDirectResponse)resp).out();
+
+            out.position(0);
+
+            return new ClientMessage(out);
+        }
 
         BinaryOutputStream outStream = BinaryStreams.createPooledOutputStream(32, false);
 

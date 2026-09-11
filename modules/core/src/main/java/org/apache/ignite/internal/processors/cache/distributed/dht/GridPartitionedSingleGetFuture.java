@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -55,6 +56,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientDirectCacheGetRequest;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -71,6 +74,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAP
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.platform.client.cache.ClientDirectCacheGetRequest.FOUND;
+import static org.apache.ignite.internal.processors.platform.client.cache.ClientDirectCacheGetRequest.NOT_FOUND;
 
 /**
  *
@@ -457,28 +462,36 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 if (readNoEntry) {
                     KeyCacheObject key0 = (KeyCacheObject)cctx.cacheObjects().prepareForCache(key, cctx);
 
-                    CacheDataRow row = cctx.offheap().read(cctx, key0);
+                    BinaryWriterEx directWriter = OperationContext.get(ClientDirectCacheGetRequest.DIRECT_WRITER);
 
-                    if (row != null) {
-                        long expireTime = row.expireTime();
+                    if (directWriter != null) {
+                        boolean found = cctx.offheap().readTo(cctx, key0, directWriter);
 
-                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
-                            v = row.value();
+                        setResult(found ? FOUND : NOT_FOUND);
+                    }
+                    else {
+                        CacheDataRow row = cctx.offheap().read(cctx, key0);
 
-                            if (needVer)
-                                ver = row.version();
+                        if (row != null) {
+                            long expireTime = row.expireTime();
 
-                            if (evt) {
-                                cctx.events().readEvent(key,
-                                    null,
-                                    txLbl,
-                                    row.value(),
-                                    taskName,
-                                    !deserializeBinary);
-                            }
+                            if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                                v = row.value();
+
+                                if (needVer)
+                                    ver = row.version();
+
+                                if (evt) {
+                                    cctx.events().readEvent(key,
+                                        null,
+                                        txLbl,
+                                        row.value(),
+                                        taskName,
+                                        !deserializeBinary);
+                                }
+                            } else
+                                skipEntry = false;
                         }
-                        else
-                            skipEntry = false;
                     }
                 }
 
