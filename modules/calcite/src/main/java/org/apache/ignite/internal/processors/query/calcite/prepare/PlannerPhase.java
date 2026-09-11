@@ -62,6 +62,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConve
 import org.apache.ignite.internal.processors.query.calcite.rule.MergeJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.RecursiveTableScanConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.RepeatUnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
@@ -311,6 +313,8 @@ public enum PlannerPhase {
                     //CoreRules.WINDOW_REDUCE_EXPRESSIONS,
 
                     ValuesConverterRule.INSTANCE,
+                    RepeatUnionConverterRule.INSTANCE,
+                    RecursiveTableScanConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
                     IndexCountRule.INSTANCE,

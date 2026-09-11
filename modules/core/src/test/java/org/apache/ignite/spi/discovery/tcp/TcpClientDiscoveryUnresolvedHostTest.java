@@ -66,7 +66,10 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
             //Ignore.
         }
 
-        assertEquals(0, spi.getSockets().size());
+        assertFalse(spi.getSockets().isEmpty());
+
+        for (Socket sock : spi.getSockets())
+            assertTrue(sock.isClosed());
     }
 
     /**
@@ -77,33 +80,23 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
         Set<Socket> sockets = new HashSet<>();
 
         /** {@inheritDoc} */
-        @Override Socket createSocket() throws IOException {
-            Socket sock = super.createSocket();
-
-            sockets.add(sock);
-
-            return sock;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
             Socket sock,
             InetSocketAddress remAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
         ) throws IOException, IgniteCheckedException {
             try {
-                return super.openSocket(sock, remAddr, timeoutHelper);
+                return super.openSession(sock, remAddr, timeoutHelper);
             }
             catch (IgniteSpiOperationTimeoutException | IOException e) {
-                if (sock.isClosed())
-                    sockets.remove(sock);
+                sockets.add(sock);
 
                 throw e;
             }
         }
 
         /**
-         * Gets list of sockets opened by this discovery spi.
+         * Gets sockets of the failed connection attempts.
          *
          * @return List of sockets.
          */

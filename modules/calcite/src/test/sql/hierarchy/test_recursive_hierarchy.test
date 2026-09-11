@@ -1,0 +1,64 @@
+# name: test/sql/hierarchy/test_recursive_hierarchy.test
+# description: Test recursive traversal of parent-child rows
+# group: [hierarchy]
+
+statement ok
+CREATE TABLE nodes (id INTEGER PRIMARY KEY, parent_id INTEGER);
+
+statement ok
+INSERT INTO nodes VALUES (1, NULL), (2, 1), (3, 1), (4, 2), (5, 2), (6, 3), (10, NULL), (11, 10);
+
+# Traverse all trees. The seed has two roots and the recursive term joins a base table.
+query III
+WITH RECURSIVE tree(id, parent_id, depth) AS (
+    SELECT id, parent_id, 0
+    FROM nodes
+    WHERE parent_id IS NULL
+    UNION ALL
+    SELECT n.id, n.parent_id, t.depth + 1
+    FROM nodes n
+    JOIN tree t ON n.parent_id = t.id
+)
+SELECT id, parent_id, depth FROM tree ORDER BY id;
+----
+1	NULL	0
+2	1	1
+3	1	1
+4	2	2
+5	2	2
+6	3	2
+10	NULL	0
+11	10	1
+
+# Start from an ordinary row rather than a root and stop when no next rows exist.
+query III
+WITH RECURSIVE tree(id, parent_id, depth) AS (
+    SELECT id, parent_id, 0
+    FROM nodes
+    WHERE id = 2
+    UNION ALL
+    SELECT n.id, n.parent_id, t.depth + 1
+    FROM nodes n
+    JOIN tree t ON n.parent_id = t.id
+)
+SELECT id, parent_id, depth FROM tree ORDER BY id;
+----
+2	1	0
+4	2	1
+5	2	1
+
+# An empty seed produces an empty result and does not start an iteration.
+query I
+WITH RECURSIVE tree(id) AS (
+    SELECT id
+    FROM nodes
+    WHERE id < 0
+    UNION ALL
+    SELECT n.id
+    FROM nodes n
+    JOIN tree t ON n.parent_id = t.id
+)
+SELECT id FROM tree;
+----
+
+# End of test.

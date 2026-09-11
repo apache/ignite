@@ -1053,9 +1053,9 @@ control.bat --metric sys
 
 Example of the metric output:
 [source, text]
-control.sh --metric sysCurrentThreadCpuTime
+control.sh --metric sys.CurrentThreadCpuTime
 Command [METRIC] started
-Arguments: --metric sys
+Arguments: --metric sys.CurrentThreadCpuTime
 --------------------------------------------------------------------------------
 metric                          value
 sys.CurrentThreadCpuTime        17270000
@@ -1066,7 +1066,7 @@ Example of the metric registry output:
 [source, text]
 control.sh --metric io.dataregion.default
 Command [METRIC] started
-Arguments: --metric sys
+Arguments: --metric io.dataregion.default
 --------------------------------------------------------------------------------
 metric                          value
 io.dataregion.default.TotalAllocatedSize          0

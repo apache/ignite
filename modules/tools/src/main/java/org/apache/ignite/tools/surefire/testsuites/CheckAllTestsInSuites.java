@@ -100,7 +100,10 @@ public class CheckAllTestsInSuites {
         Set<String> suites, Set<String> superClasses) {
         suites.add(suite.getTestClass().getName());
 
-        for (Description desc: suite.getChildren()) {
+        for (Description desc : suite.getChildren()) {
+            if (desc.getTestClass() == null)
+                continue;
+
             if (!isTestClass(desc))
                 processSuite(desc, suitedClasses, suites, superClasses);
             else {
