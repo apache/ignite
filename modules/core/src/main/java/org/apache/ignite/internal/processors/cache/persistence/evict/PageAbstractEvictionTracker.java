@@ -32,7 +32,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Base for page eviction trackers sharing the data-page eviction logic
+ * ({@link #evictDataPage(int, boolean)}).
  */
 public abstract class PageAbstractEvictionTracker implements PageEvictionTracker {
     /** This number of least significant bits is dropped from timestamp. */
@@ -40,13 +41,6 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /** Millis in day. */
     private static final int DAY = 24 * 60 * 60 * 1000;
-
-    /**
-     * Thread-local marker that the current eviction is requested by size-aware eviction, which may run
-     * while the calling thread already holds entry locks. When set, entries whose locks are contended are skipped
-     * (via a non-blocking {@code evictInternal}) instead of blocking, avoiding a lock-ordering deadlock.
-     */
-    private static final ThreadLocal<Boolean> EVICT_NON_BLOCKING = new ThreadLocal<>();
 
     /** Page memory. */
     protected final PageMemoryNoStoreImpl pageMem;
@@ -95,31 +89,14 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     }
 
     /**
-     * Evicts a data page, acquiring entry locks in a non-blocking way so that contended entries are skipped instead
-     * of blocked upon. Used by size-aware eviction which may run while the calling thread already holds
-     * entry locks, to avoid a lock-ordering deadlock.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void evictDataPageNonBlocking() throws IgniteCheckedException {
-        Boolean prev = EVICT_NON_BLOCKING.get();
-
-        EVICT_NON_BLOCKING.set(Boolean.TRUE);
-
-        try {
-            evictDataPage();
-        }
-        finally {
-            EVICT_NON_BLOCKING.set(prev);
-        }
-    }
-
-    /**
      * @param pageIdx Page index.
+     * @param tryLock {@code true} to acquire entry locks non-blockingly, skipping contended or already-held entries
+     *      (e.g. when size-aware eviction runs while the current thread already holds entry locks), avoiding a
+     *      lock-ordering deadlock.
      * @return true if at least one data row has been evicted
      * @throws IgniteCheckedException If failed.
      */
-    final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
+    final boolean evictDataPage(int pageIdx, boolean tryLock) throws IgniteCheckedException {
         long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
 
         long page = pageMem.acquirePage(0, fakePageId);
@@ -162,8 +139,6 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         boolean evictionDone = false;
 
-        boolean nonBlocking = Boolean.TRUE.equals(EVICT_NON_BLOCKING.get());
-
         for (CacheDataRowAdapter dataRow : rowsToEvict) {
             GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(dataRow.cacheId());
 
@@ -173,7 +148,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
                 cacheCtx.cache().entryEx(dataRow.key());
 
-            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true, nonBlocking);
+            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true, tryLock);
         }
 
         return evictionDone;

@@ -39,14 +39,29 @@ public interface PageEvictionTracker extends LifecycleAware {
     public boolean evictionRequired();
 
     /**
-     * Evicts one data page.
+     * Evicts one data page (blocking flavor, equivalent to {@link #evictDataPage(boolean) evictDataPage(false)}).
      * In most cases, all entries will be removed from the page.
      * Method guarantees removing at least one entry from "evicted" data page. Removing all entries may be
      * not possible, as some of them can be used by active transactions.
      *
      * @throws IgniteCheckedException In case of page memory error.
      */
-    public void evictDataPage() throws IgniteCheckedException;
+    public default void evictDataPage() throws IgniteCheckedException {
+        evictDataPage(false);
+    }
+
+    /**
+     * Evicts one data page.
+     * In most cases, all entries will be removed from the page.
+     * Method guarantees removing at least one entry from "evicted" data page. Removing all entries may be
+     * not possible, as some of them can be used by active transactions.
+     *
+     * @param tryLock {@code true} to acquire entry locks non-blockingly, skipping contended or already-held entries
+     *      instead of blocking on them. Used by size-aware eviction that may run while the current thread already
+     *      holds other entry locks, to avoid a lock-ordering deadlock.
+     * @throws IgniteCheckedException In case of page memory error.
+     */
+    public void evictDataPage(boolean tryLock) throws IgniteCheckedException;
 
     /**
      * Call this method when last entry is removed from data page.

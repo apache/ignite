@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gro
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.evict.PageAbstractEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
@@ -1225,8 +1224,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * for putting a new entry, even after eviction.
      * @throws IgniteCheckedException If failed to evict data pages.
      */
-    public void ensureFreeSpaceForInsert(DataRegion region, int dataRowSize)
-        throws IgniteOutOfMemoryException, IgniteCheckedException {
+    public void ensureFreeSpaceForInsert(DataRegion region, int dataRowSize) throws IgniteOutOfMemoryException, IgniteCheckedException {
         if (region == null)
             return;
 
@@ -1250,8 +1248,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRowSize Size of data row to be inserted.
      * @throws IgniteOutOfMemoryException If the region does not have enough free space for the new entry.
      */
-    private void checkOomThreshold(DataRegion region, DataRegionConfiguration regCfg, int dataRowSize)
-        throws IgniteOutOfMemoryException {
+    private void checkOomThreshold(DataRegion region, DataRegionConfiguration regCfg, int dataRowSize) throws IgniteOutOfMemoryException {
         long memorySize = regCfg.getMaxSize();
 
         PageMemory pageMem = region.pageMemory();
@@ -1289,8 +1286,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * makes no progress).
      * @throws IgniteCheckedException If failed to evict data pages.
      */
-    private void ensureFreeSpaceForEviction(DataRegion region, DataRegionConfiguration regCfg, int dataRowSize)
-        throws IgniteOutOfMemoryException, IgniteCheckedException {
+    private void ensureFreeSpaceForEviction(
+        DataRegion region,
+        DataRegionConfiguration regCfg,
+        int dataRowSize
+    ) throws IgniteOutOfMemoryException, IgniteCheckedException {
         PageMemory pageMem = region.pageMemory();
 
         long pageSize = pageMem.pageSize();
@@ -1322,27 +1322,48 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             throw outOfMemory(regCfg);
 
         // The reserve must guarantee that the free list holds `requiredPages` REAL empty pages, not merely that the
-        // region has apparent headroom. Apparent headroom (totalPages - loadedPages) is shared and non-exclusive:
-        // concurrent inserts can both count on it and then both run out of pages mid-write (TOCTOU / raw OOM), since
-        // a fresh allocation cannot grow the region beyond capacity. Once the region is effectively full, real empty
-        // pages already in the free list are the only resource the fragmented write can reliably consume, so the loop
-        // below accumulates them. (Headroom is trusted in the fast path only while the region is below the eviction
-        // threshold, i.e. where contention cannot exhaust the slack.)
+        // region has apparent headroom. Both resources are shared and non-exclusive: emptyDataPages() is just a
+        // snapshot of a common counter, and any concurrent writer can consume these pages before this thread's write.
+        // The two resources differ in how they behave once the region is effectively full (loadedPages == totalPages):
+        // headroom (totalPages - loadedPages) can no longer grow the region - a fresh allocateDataPage would fail with
+        // a raw OOM - whereas empty pages already in the reuse bucket remain reachable through takePage(), and so are
+        // the only resource the fragmented write can then consume. This makes empty pages a necessary condition for
+        // the write to proceed on a full region, not a reservation pinned to this thread. The TOCTOU between this
+        // reserve and the actual write is closed by the lazy re-reserve in AbstractFreeList#writeSinglePage, which
+        // re-runs the reserve on the row remainder before allocating a new page; if the region genuinely cannot fit
+        // the concurrent writes, that path raises a proper OOM rather than corrupting the free list. (Headroom is
+        // trusted in the fast path only while the region is below the eviction threshold, i.e. where contention cannot
+        // exhaust the slack.)
         long emptyPages = freeList.emptyDataPages();
 
         long headroom = totalPages - pageMem.loadedPages();
 
-        // The region is "under pressure" once loaded pages reach the eviction threshold; below it a fresh allocation
-        // can safely grow the region, so a row that fits into the combined spare space is satisfied without eviction
-        // (which would otherwise destroy evictable, e.g. short-TTL, entries just to accumulate empty pages the slack
-        // could have absorbed).
         long pagesThreshold = (long)(totalPages * regCfg.getEvictionThreshold());
 
-        boolean underPressure = pageMem.loadedPages() >= pagesThreshold;
+        // The gate below reuses regCfg.evictionThreshold as a regime boundary, not as "when to start eviction" (that
+        // role belongs to evictionRequired(), which raises the same threshold but stops on emptyPages >= poolSize, so
+        // on a filling region loadedPages routinely exceeds it and no last 10% of page memory is left unused).
+        //
+        // loadedPages() counts every allocated page, including empty ones sitting in the reuse bucket: evicting a page
+        // moves it to that bucket but does not lower loadedPages. So on a filling in-memory region evictionRegime is the
+        // normal steady state once the region has materialized up to its capacity, not a rare anomaly.
+        //
+        // The two regimes:
+        //   - below the threshold: the region still has real slack, so a row fitting into the combined spare space is
+        //     satisfied without eviction - the region grows and live entries (e.g. short-TTL ones before expiry) are
+        //     not evicted just to accumulate empty pages the slack could absorb;
+        //   - at/above the threshold: headroom is no longer trustworthy (concurrent size-aware writers could commit
+        //     the same headroom and both hit capacity mid-write - the TOCTOU case), so only real empty pages already
+        //     in the free list are counted and eviction is driven below.
+        boolean evictionRegime = pageMem.loadedPages() >= pagesThreshold;
 
-        // Fast path: the row is satisfiable without eviction when (a) the free list already holds enough real empty
-        // pages, or (b) the region is not under pressure and has enough spare space to grow into.
-        if (emptyPages >= requiredPages || (!underPressure && emptyPages + headroom >= requiredPages))
+        // Fast path: heuristics to skip eviction when the row is likely satisfiable without it - (a) the free list
+        // already holds enough real empty pages, or (b) the region is below the eviction regime and has enough spare
+        // space to grow into. This is evaluated on a snapshot and is a necessary, not sufficient, condition: under heavy
+        // contention two size-aware writers can both pass it and then both consume the same empty pages. That race is
+        // recovered in AbstractFreeList#writeSinglePage (lazy re-reserve before allocation) and, if the region truly
+        // cannot fit the concurrent writes, surfaces as a proper OOM rather than mid-write corruption.
+        if (emptyPages >= requiredPages || (!evictionRegime && emptyPages + headroom >= requiredPages))
             return;
 
         PageEvictionTracker evictionTracker = region.evictionTracker();
@@ -1363,11 +1384,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
         while (bestEmptyPages < requiredPages) {
-            if (region.metrics().onPageEvictionsStarted())
+            if (region.metrics().onPageEvictionsStarted()) {
                 U.warn(log, "Page-based evictions started." +
                     " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
+            }
 
-            evictDataPageNonBlocking(evictionTracker);
+            // tryLock=true: eviction runs non-blockingly (contended or already-held entries are skipped) because the
+            // size-aware reserve can run while the current thread already holds entry locks (single-row insertion);
+            // blocking here would risk a lock-ordering deadlock.
+            evictionTracker.evictDataPage(true);
 
             region.metrics().updateEvictionRate();
 
@@ -1395,22 +1420,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             if (System.nanoTime() - lastProgressNanos > TimeUnit.MILLISECONDS.toNanos(EVICTION_NO_PROGRESS_TIMEOUT_MILLIS))
                 throw outOfMemory(regCfg);
         }
-    }
-
-    /**
-     * Invokes a single page eviction, acquiring entry locks non-blockingly so that contended entries are skipped.
-     * This is required when eviction runs while the current thread already holds entry locks (size-aware eviction
-     * from a single-row insertion) to avoid a lock-ordering deadlock. {@link NoOpPageEvictionTracker}
-     * (disabled eviction, never reaching this path) falls back to the plain {@code evictDataPage()}.
-     *
-     * @param evictionTracker Page eviction tracker.
-     * @throws IgniteCheckedException If failed to evict a data page.
-     */
-    private void evictDataPageNonBlocking(PageEvictionTracker evictionTracker) throws IgniteCheckedException {
-        if (evictionTracker instanceof PageAbstractEvictionTracker)
-            ((PageAbstractEvictionTracker)evictionTracker).evictDataPageNonBlocking();
-        else
-            evictionTracker.evictDataPage();
     }
 
     /**

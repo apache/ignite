@@ -109,7 +109,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void evictDataPage() throws IgniteCheckedException {
+    @Override public void evictDataPage(boolean tryLock) throws IgniteCheckedException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         int evictAttemptsCnt = 0;
@@ -165,7 +165,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
                 }
             }
 
-            if (evictDataPage(pageIdx(lruTrackingIdx)))
+            if (evictDataPage(pageIdx(lruTrackingIdx), tryLock))
                 return;
 
             evictAttemptsCnt++;

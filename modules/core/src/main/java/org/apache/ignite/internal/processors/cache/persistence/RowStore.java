@@ -135,21 +135,31 @@ public class RowStore {
      */
     public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled && grp.dataRegion().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
-            // Size-aware reserve for each row in the batch (reserving only the largest is insufficient: a later large
-            // row can still exhaust page memory mid-write). The reserve/consume TOCTOU race and the "second large row
-            // in a batch" case are both closed by the lazy re-reserve in AbstractFreeList#writeSinglePage, which
-            // re-runs the reserve on the row remainder when a fragmented write cannot take a page (a raw OOM there
-            // would otherwise be wrapped by insertDataRows into CorruptedFreeListException and reported as corruption).
+            // Size-aware pre-reserve for the rebalance batch (regular single puts get the same guarantee via the
+            // per-put reserve in addRow). Reserving "for each row" would collapse to reserving for the largest one:
+            // every reserve runs before any insert and only enforces a lower bound on the shared empty-pages counter,
+            // so the final guarantee is max(row sizes). A single reserve for the largest row is therefore equivalent
+            // and is what is done here.
+            //
+            // The batch insert path (insertDataRows) mirrors writeSinglePage: it runs its own lazy re-reserve on the
+            // trailing fragment when takePage fails, and rethrows IgniteOutOfMemoryException as-is rather than
+            // wrapping it into CorruptedFreeListException (see AbstractFreeList). This pre-reserve here is sized for
+            // the largest row in the batch and runs before any insert, so it bounds the empty-pages counter up front.
             //
             // The reserve evicts non-blockingly even though the batch path holds no entry locks (so blocking would be
             // deadlock-safe and more effective here): the same reserve path is shared with single-row insertion,
             // which runs under an entry lock and must not block.
+            int maxRowSize = 0;
+
             for (CacheDataRow row : rows) {
                 int rowSize = row.size();
 
-                if (rowSize > 0)
-                    ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), rowSize);
+                if (rowSize > maxRowSize)
+                    maxRowSize = rowSize;
             }
+
+            if (maxRowSize > 0)
+                ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), maxRowSize);
         }
 
         assert ctx.database().checkpointLockIsHeldByThread();

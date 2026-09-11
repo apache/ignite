@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -619,6 +620,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (IgniteCheckedException | Error e) {
             throw e;
         }
+        catch (IgniteOutOfMemoryException e) {
+            // A genuine capacity exhaustion (region cannot grow, eviction cannot help) is reported as OOM/critical
+            // failure by the reserve path; do not mislabel it as free-list corruption.
+            throw e;
+        }
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to insert data row", t, grpId);
         }
@@ -662,6 +668,21 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 long pageId = takePage(row.size() - written, row, statHolder);
 
+                // Symmetric TOCTOU closure to writeSinglePage for the trailing fragment of a row (full-page fragments
+                // go through writeWholePages -> writeSinglePage, which already has this re-reserve). The batch-level
+                // pre-reserve in RowStore.addRows covers only the largest row and runs before any insert, so a
+                // concurrent writer can consume those pages before this remainder is written; if the free list cannot
+                // hand out a page, re-reserve on the remaining size and retry before allocating a brand-new page.
+                // Unlike the single-row path this is not reached from a BPlusTree.invoke closure (the data tree is
+                // updated separately, after the batch), so demand-eviction here is safe; the batch also already runs an
+                // evictionRequired() loop above.
+                if (pageId == 0L) {
+                    if (dbMgr != null)
+                        dbMgr.ensureFreeSpaceForInsert(dataRegion, row.size() - written);
+
+                    pageId = takePage(row.size() - written, row, statHolder);
+                }
+
                 if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
 
@@ -672,6 +693,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 assert written != FAIL_I; // We can't fail here.
             }
+        }
+        catch (IgniteOutOfMemoryException e) {
+            // A genuine capacity exhaustion is reported as OOM/critical failure by the reserve path; do not mislabel
+            // it as free-list corruption.
+            throw e;
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e, grpId);
@@ -717,14 +743,23 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         // before this write) accumulates enough real empty pages but does not pin them to this thread - a concurrent
         // writer can consume them between the reserve and this allocation. When the free list cannot hand out a page,
         // re-reserve on the remaining size and retry before allocating a brand-new page; otherwise the race surfaces
-        // as a raw IgniteOutOfMemoryException (wrapped into CorruptedFreeListException in the batch path).
+        // as a raw IgniteOutOfMemoryException (propagated as-is, not mislabelled as corruption - see insertDataRow /
+        // insertDataRows catch clauses). The same re-reserve is applied in insertDataRows for the trailing fragment
+        // of a batch row.
         //
         // The re-reserve is an inline demand-eviction: reached from the BPlusTree.invoke row-creation closure, it may
-        // re-entrantly remove other entries from the same data tree. That is safe because the closure runs with no
-        // data-tree page locks held (page read lock released before it runs, leaf write lock taken after), and the
-        // outer operation revalidates via the page tag / triangle / removeId protocols. The key being written is
-        // skipped (its entry lock is held, so tryLock fails for it), so there is no self-eviction or lock-ordering
-        // deadlock; like the initial reserve, the re-reserve throws OOM if the row genuinely cannot fit.
+        // re-entrantly remove other entries from the same data tree. The closure runs with no data-tree page locks
+        // held: the search returns (releasing the page read lock) before the closure is invoked, and the leaf write
+        // lock is only taken afterwards, in tryInsert/tryReplace/tryRemoveFromLeaf (see BPlusTree.invokeDown); the
+        // outer operation revalidates via the page tag / triangle / removeId protocols.
+        //
+        // The non-blocking entry tryLock (evictDataPage(true) -> evictInternal(..., tryLock=true)) guarantees
+        // entry-level ordering only: the key being written is skipped (its entry lock is held by this thread, so
+        // tryLock fails for it), and a contended entry is skipped instead of blocked on. It does NOT make the
+        // eviction page-level lock-free: removing a row still takes blocking data-tree (and, for TTL entries,
+        // pending-tree) write locks. A cross-tree data->pending vs pending->data ordering inversion with the TTL
+        // expiration worker is therefore a known residual risk, not excluded by the non-blocking entry lock. Like
+        // the initial reserve, the re-reserve throws OOM if the row genuinely cannot fit.
         AbstractDataPageIO initIo = null;
 
         long pageId = takePage(row.size() - written, row, statHolder);

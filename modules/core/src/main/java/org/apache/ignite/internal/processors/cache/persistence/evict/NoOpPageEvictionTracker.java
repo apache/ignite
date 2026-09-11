@@ -38,7 +38,7 @@ public class NoOpPageEvictionTracker implements PageEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void evictDataPage() {
+    @Override public void evictDataPage(boolean tryLock) {
         // No-op.
     }
 
