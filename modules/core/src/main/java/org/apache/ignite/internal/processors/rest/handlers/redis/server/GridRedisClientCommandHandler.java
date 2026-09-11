@@ -17,44 +17,35 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.redis.server;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
-import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.CLIENT;
 
 /**
  * Redis CLIENT command handler.
+ * <p>
+ * CLIENT is a connection-scoped command container, so it is handled locally, without a REST round trip.
+ * Only the subcommands that carry no cluster-wide state are supported, the rest are answered with an error.
  */
-public class GridRedisClientCommandHandler extends GridRedisRestCommandHandler {
+public class GridRedisClientCommandHandler implements GridRedisCommandHandler {
     /** Supported commands. */
-    private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        CLIENT
-    );
+    private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(CLIENT);
 
-    /**
-     * Handler constructor.
-     *
-     * @param log Logger to use.
-     * @param hnd Rest handler.
-     * @param ctx Kernal context.
-     */
-    public GridRedisClientCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
-        super(log, hnd, ctx);
-    }
+    /** Session metadata key for the name set by CLIENT SETNAME. */
+    private static final int CLIENT_NAME_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Position of the first argument of a CLIENT subcommand. */
+    private static final int ARG_POS = 2;
 
     /** {@inheritDoc} */
     @Override public Collection<GridRedisCommand> supportedCommands() {
@@ -62,20 +53,55 @@ public class GridRedisClientCommandHandler extends GridRedisRestCommandHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
         assert msg != null;
 
-        GridRestCacheRequest restReq = new GridRestCacheRequest();
+        String subCmd = msg.key();
 
-        restReq.clientId(msg.clientId());
-        restReq.command(GridRestCommand.CLIENT);
-        restReq.cacheName(msg.cacheName());
+        if (F.isEmpty(subCmd)) {
+            msg.setResponse(GridRedisProtocolParser.toGenericError(
+                "wrong number of arguments for 'client' command"));
 
-        return restReq;
-    }
+            return new GridFinishedFuture<>(msg);
+        }
 
-    /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return GridRedisProtocolParser.oKString();
+        switch (subCmd.toUpperCase()) {
+            case "SETNAME": {
+                String name = msg.aux(ARG_POS);
+
+                if (name == null || name.indexOf(' ') >= 0 || name.indexOf('\n') >= 0)
+                    msg.setResponse(GridRedisProtocolParser.toGenericError(
+                        "Client names cannot contain spaces, newlines or special characters."));
+                else {
+                    ses.addMeta(CLIENT_NAME_META_KEY, name);
+
+                    msg.setResponse(GridRedisProtocolParser.oKString());
+                }
+
+                break;
+            }
+
+            case "GETNAME": {
+                String name = ses.meta(CLIENT_NAME_META_KEY);
+
+                msg.setResponse(name == null
+                    ? GridRedisProtocolParser.nil()
+                    : GridRedisProtocolParser.toBulkString(name));
+
+                break;
+            }
+
+            case "SETINFO":
+                // The library name and version announced by a driver: accepted and ignored.
+                msg.setResponse(GridRedisProtocolParser.oKString());
+
+                break;
+
+            default:
+                msg.setResponse(GridRedisProtocolParser.toGenericError(
+                    "Unknown subcommand '" + subCmd + "' for 'client' command"));
+        }
+
+        return new GridFinishedFuture<>(msg);
     }
 }

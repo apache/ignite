@@ -93,7 +93,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         // server commands.
         addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisFlushCommandHandler(log, hnd, ctx));
-        addCommandHandler(new GridRedisClientCommandHandler(log, hnd, ctx));
+        addCommandHandler(new GridRedisClientCommandHandler());
     }
 
     /**
