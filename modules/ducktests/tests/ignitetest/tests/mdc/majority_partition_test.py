@@ -63,7 +63,7 @@ class MdcMajorityPartitionTest(IgniteTest):
     """
     @cluster(num_nodes=9)
     @ignite_versions(str(DEV_BRANCH))
-    @parametrize(cross_dc_latency_ms=100, isolated_dc=DC_3)
+    @parametrize(cross_dc_latency_ms=60, isolated_dc=DC_3)
     @parametrize(cross_dc_latency_ms=100, isolated_dc=DC_1)
     def test_minority_dc_isolation(self, ignite_version, cross_dc_latency_ms, isolated_dc):
         """
