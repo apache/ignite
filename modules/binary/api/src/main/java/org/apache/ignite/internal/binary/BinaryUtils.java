@@ -77,10 +77,12 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.binary.cheap.CheapString;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1109,7 +1111,7 @@ public class BinaryUtils {
         // The rest types.
         else if (cls == BigDecimal.class)
             return BinaryWriteMode.DECIMAL;
-        else if (cls == String.class)
+        else if (cls == String.class || cls == CheapString.class)
             return BinaryWriteMode.STRING;
         else if (cls == UUID.class)
             return BinaryWriteMode.UUID;
@@ -1286,10 +1288,32 @@ public class BinaryUtils {
         return new BigDecimal(intVal, scale);
     }
 
+    /** @return Value. */
+    public static Object doReadStringPossiblyCheap(BinaryInputStream in) {
+        if (!OperationContext.get(Marshallers.USE_CHEAP_STR))
+            return doReadString(in);
+
+        if (!in.hasArray()) {
+            byte[] arr = doReadByteArray(in);
+
+            return new CheapString(arr);
+        }
+
+        int strLen = in.readInt();
+        int pos = in.position();
+
+        // String will copy necessary array part for us.
+        CheapString res = new CheapString(in.array(), pos, strLen);
+
+        in.position(pos + strLen);
+
+        return res;
+    }
+
     /**
      * @return Value.
      */
-    static String doReadString(BinaryInputStream in) {
+    public static String doReadString(BinaryInputStream in) {
         if (!in.hasArray()) {
             byte[] arr = doReadByteArray(in);
 
@@ -1915,7 +1939,7 @@ public class BinaryUtils {
                 return doReadDecimal(in);
 
             case GridBinaryMarshaller.STRING:
-                return doReadString(in);
+                return doReadStringPossiblyCheap(in);
 
             case GridBinaryMarshaller.UUID:
                 return doReadUuid(in);
@@ -2051,7 +2075,7 @@ public class BinaryUtils {
                 return reader.readDouble();
 
             case GridBinaryMarshaller.STRING:
-                return doReadString(reader.in());
+                return doReadStringPossiblyCheap(reader.in());
 
             case GridBinaryMarshaller.DECIMAL:
                 return doReadDecimal(reader.in());

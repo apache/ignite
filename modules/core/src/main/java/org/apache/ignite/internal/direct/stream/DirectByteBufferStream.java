@@ -19,6 +19,7 @@ package org.apache.ignite.internal.direct.stream;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -33,6 +34,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.StringWriter;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -733,8 +735,12 @@ public class DirectByteBufferStream {
      */
     public void writeString(String val) {
         if (val != null) {
-            if (curStrBackingArr == null)
-                curStrBackingArr = val.getBytes();
+            if (curStrBackingArr == null) {
+                curStrBackingArr = StringWriter.latin1Value(val);
+
+                if (curStrBackingArr == null || StringWriter.hasNegatives(curStrBackingArr))
+                    curStrBackingArr = val.getBytes(StandardCharsets.UTF_8);
+            }
 
             writeByteArray(curStrBackingArr);
 
@@ -1362,7 +1368,7 @@ public class DirectByteBufferStream {
     public String readString() {
         byte[] arr = readByteArray();
 
-        return arr != null ? new String(arr) : null;
+        return arr != null ? new String(arr, StandardCharsets.UTF_8) : null;
     }
 
     /**

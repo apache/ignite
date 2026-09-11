@@ -23,6 +23,7 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -36,6 +37,9 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_OPTIMIZED_M
 public class Marshallers {
     /** Flag whether class caching should be used by the current thread. */
     public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
+
+    /** */
+    public static final OperationContextAttribute<Boolean> USE_CHEAP_STR = OperationContextAttribute.newInstance(false);
 
     /** Use default {@code serialVersionUID} for {@link Serializable} classes. */
     public static final boolean USE_DFLT_SUID =

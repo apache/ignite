@@ -63,6 +63,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.binary.cheap.CheapString;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -223,6 +224,7 @@ public class BinaryContext {
         registerPredefinedType(Float.class, GridBinaryMarshaller.FLOAT);
         registerPredefinedType(Double.class, GridBinaryMarshaller.DOUBLE);
         registerPredefinedType(String.class, GridBinaryMarshaller.STRING);
+        registerPredefinedType(CheapString.class, GridBinaryMarshaller.STRING);
         registerPredefinedType(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
         registerPredefinedType(Date.class, GridBinaryMarshaller.DATE);
         registerPredefinedType(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);

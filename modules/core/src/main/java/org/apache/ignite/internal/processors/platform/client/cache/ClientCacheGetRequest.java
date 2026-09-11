@@ -22,6 +22,9 @@ import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.marshaller.Marshallers;
 
 /**
  * Cache get request.
@@ -38,13 +41,17 @@ public class ClientCacheGetRequest extends ClientCacheKeyRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+        try (Scope ignored = OperationContext.set(Marshallers.USE_CHEAP_STR, true)) {
+            Object val = cache(ctx).get(key());
 
-        return new ClientObjectResponse(requestId(), val);
+            return new ClientObjectResponse(requestId(), val);
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<ClientResponse> processAsync0(ClientConnectionContext ctx) {
-        return chainFuture(cache(ctx).getAsync(key()), v -> new ClientObjectResponse(requestId(), v));
+        try (Scope ignored = OperationContext.set(Marshallers.USE_CHEAP_STR, true)) {
+            return chainFuture(cache(ctx).getAsync(key()), v -> new ClientObjectResponse(requestId(), v));
+        }
     }
 }
