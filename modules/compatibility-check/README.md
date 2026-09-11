@@ -18,24 +18,20 @@ generate patches or publish CI warnings.
 
 ## Generate
 
-Use JDK 17. Maven generates `target/table.xml` during `process-classes`, including
-when running `test`, `package` or `install`. From the repository root, build the
-required modules first if their current artifacts are not installed:
+Use JDK 17. Enable the `message-table` profile to update
+`modules/compatibility-check/src/main/resources/messages/table.xml` directly.
+Generation runs during `process-classes`, so the profile can be added to the
+regular build command:
 
 ```sh
-./mvnw -pl modules/compatibility-check -am clean install -DskipTests -Dmaven.javadoc.skip=true
+./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,check-licenses,message-table -B -V -T 1C
 ```
 
-With dependencies already installed, regenerate the table with:
+Without the profile, the generation step does not run. Review the XML diff and
+include it in the commit when message definitions change.
+
+After generation, CI can check that the committed table is up to date with:
 
 ```sh
-./mvnw -pl modules/compatibility-check process-classes
-```
-
-The build only writes `modules/compatibility-check/target/table.xml`. To update the
-checked-in table explicitly:
-
-```sh
-cp modules/compatibility-check/target/table.xml \
-    modules/compatibility-check/src/main/resources/messages/table.xml
+git diff --exit-code -- modules/compatibility-check/src/main/resources/messages/table.xml
 ```
