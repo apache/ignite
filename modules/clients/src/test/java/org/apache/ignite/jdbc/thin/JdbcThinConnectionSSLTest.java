@@ -339,6 +339,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         Set<String> disabledSuites = disabledByDefaultCipherSuites();
         String disabledSuite = disabledSuites.iterator().next();
 
+        System.out.println("Run test with suite: " + disabledSuite);
+
+        System.err.println("!!!: " + disabledSuites);
+
         setSslCtxFactoryToCli = true;
         supportedCiphers = new String[] {disabledSuite /* Disabled by default */};
         sslCtxFactory = getTestSslContextFactory();
