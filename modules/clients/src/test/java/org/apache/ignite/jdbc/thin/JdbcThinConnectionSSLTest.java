@@ -433,16 +433,15 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 checkConnection(conn);
             }
 
-            // JDK 17+ removes RC4, DES, 3DES, anon from getSupportedCipherSuites() entirely
-            // (not just disabled by default). All non-anon TLS 1.2 suites are enabled by default.
             // Default ciphers.
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                "&sslClientCertificateKeyStorePassword=123456" +
-                "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
-                "&sslTrustCertificateKeyStorePassword=123456")) {
-                checkConnection(conn);
-            }
+            // Behavior can be different for local and TC runs due to different: java.security settings
+            GridTestUtils.assertThrows(log, () -> {
+                return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&sslClientCertificateKeyStorePassword=123456" +
+                    "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
+                    "&sslTrustCertificateKeyStorePassword=123456");
+            }, SQLException.class, "Failed to SSL connect to server");
         }
         finally {
             stopAllGrids();
