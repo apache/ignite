@@ -105,6 +105,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         if (resetConsistentId)
             cfg.setConsistentId(null);
 
+        if (pluginProvider != null)
+            cfg.setPluginProviders(pluginProvider);
+
         return cfg;
     }
 
@@ -331,6 +334,17 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         fut.get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /** Tests that snapshot restore is declined when the same snapshot is being deleted. */
+    @Test
+    public void testConcurrentSnapshotDeleteAndRestoreOperations() throws Exception {
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE),
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null).get(),
+            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)),
+            true
+        );
     }
 
     /**

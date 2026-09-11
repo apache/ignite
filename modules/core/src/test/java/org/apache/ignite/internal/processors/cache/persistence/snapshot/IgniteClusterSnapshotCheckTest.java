@@ -46,6 +46,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
@@ -1201,6 +1202,17 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         );
     }
 
+    /** */
+    @Test
+    public void testConcurrentSnapshotDeleteAndCheckOperations() throws Exception {
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> prepareGridsAndSnapshot(4, 3, 1, false),
+            () -> snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get(),
+            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)),
+            true
+        );
+    }
+
     /** Tests that concurrent snapshot full check is declined when the same snapshot is being fully restored (checked). */
     @Test
     public void testConcurrentTheSameSnpFullCheckWhenFullyRestoringDeclined() throws Exception {
@@ -1409,8 +1421,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /**
      * Tests concurrent snapshot operations related to the snapshot checking.
      *
-     * @param originatorOp First snapshot operation on an originator node.
-     * @param trierOp Second concurrent snapshot operation on a trier node.
+     * @param firstOp First snapshot operation on an originator node.
+     * @param secondOp Second concurrent snapshot operation on a trier node.
      * @param firstDelay First distributed process full message of {@code originatorOp} to delay on the coordinator
      *                            to launch {@code trierOp}.
      * @param secondDelay Second distributed process full message of {@code originatorOp} to delay on the coordinator
@@ -1422,8 +1434,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @param cleaner If not {@code null}, is executed at the end.
      */
     private void doTestConcurrentSnpCheckOperations(
-        Supplier<IgniteFuture<?>> originatorOp,
-        Supplier<IgniteFuture<?>> trierOp,
+        Supplier<IgniteFuture<?>> firstOp,
+        Supplier<IgniteFuture<?>> secondOp,
         DistributedProcess.DistributedProcessType firstDelay,
         @Nullable DistributedProcess.DistributedProcessType secondDelay,
         boolean expectFailure,
@@ -1440,17 +1452,17 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     && ((FullMessage<?>)msg).type() == firstDelay.ordinal()
                     && (waitForBothFirstDelays || firstDelayed.compareAndSet(false, true)));
 
-            IgniteFuture<?> fut = originatorOp.get();
+            IgniteFuture<?> fut = firstOp.get();
 
             discoSpi(grid(0)).waitBlocked(getTestTimeout());
 
-            IgniteFuture<?> fut2 = trierOp.get();
+            IgniteFuture<?> fut2 = secondOp.get();
 
             if (expectFailure) {
                 assertThrowsAnyCause(
                     log,
                     fut2::get,
-                    IllegalStateException.class,
+                    IgniteIllegalStateException.class,
                     "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
                 );
 
@@ -1473,7 +1485,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 assertThrowsAnyCause(
                     log,
                     fut2::get,
-                    IllegalStateException.class,
+                    IgniteIllegalStateException.class,
                     "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
                 );
 

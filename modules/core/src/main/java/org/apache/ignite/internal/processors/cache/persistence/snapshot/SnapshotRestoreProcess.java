@@ -659,6 +659,9 @@ public class SnapshotRestoreProcess {
             if (snpMgr.isSnapshotCreating())
                 throw new IgniteCheckedException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
+            if (snpMgr.isSnapshotDeleting(req.snapshotName()))
+                throw new IgniteException(OP_REJECT_MSG + "A snapshot '" + req.snapshotName() + "' delete operation is in progress.");
+
             if (ctx.encryption().isMasterKeyChangeInProgress()) {
                 return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Master key changing " +
                     "process is not finished yet."));

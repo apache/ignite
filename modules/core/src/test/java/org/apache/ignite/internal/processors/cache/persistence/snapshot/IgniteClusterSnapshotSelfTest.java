@@ -615,6 +615,24 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
     }
 
+    /**
+     * Tests that snapshot create detects concurrent deletion, or detects still existing snapshot or successfully
+     * proceeds if snapshot already deleted.
+     */
+    @Test
+    public void testConcurrentSnapshotDeleteOperation() throws Exception {
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+                snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
+            },
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get(),
+            e -> e.getMessage().contains("Snapshot with given name already exists"),
+            false
+        );
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCleanedOnLeft() throws Exception {

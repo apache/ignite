@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -491,8 +492,13 @@ public class SnapshotCheckProcess {
         }
 
         if (!ctx.req.requestId().equals(req.requestId())) {
-            return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + req.snapshotName()
-                + "' has already started [ctx=" + ctx + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException("Validation of snapshot '" + req.snapshotName()
+                + "' has already started [req=" + req + ']'));
+        }
+
+        if (kctx.cache().context().snapshotMgr().isSnapshotDeleting(req.snapshotName())) {
+            return new GridFinishedFuture<>(new IgniteIllegalStateException("Snapshot '" + req.snapshotName()
+                + "' is being deleted [req=" + req + ']'));
         }
 
         // Excludes non-baseline initiator.
