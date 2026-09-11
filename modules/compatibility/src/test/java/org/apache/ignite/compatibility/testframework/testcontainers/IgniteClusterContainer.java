@@ -31,13 +31,16 @@ public class IgniteClusterContainer implements Startable {
     private final List<IgniteContainer> containers;
 
     /** Network. */
-    private final Network net;
+    protected final Network net = Network.newNetwork();
 
     /** Image name. */
-    private final String imageName;
+    protected final String imageName;
 
     /** Consistent ID's. */
-    private final List<String> consistentIds;
+    protected final List<String> consistentIds;
+
+    /** Whether the cluster has been started, guarding against a second {@link #start()}. */
+    private boolean started;
 
     /**
      * @param imageName Image name.
@@ -47,29 +50,35 @@ public class IgniteClusterContainer implements Startable {
         this.imageName = imageName;
         this.consistentIds = consistentIds;
 
-        net = Network.newNetwork();
         containers = new ArrayList<>(consistentIds.size());
     }
 
     /**
-     * @param imageName Image name.
-     * @param net Shared test network the container must be attached to.
-     * @param consistentIds Consistent ID's.
+     * Factory hook for the node container. Overrides only receive {@code idx}; the image name, network and
+     * consistent IDs are instance fields (see {@link #imageName}, {@link #net}, {@link #consistentIds}).
+     *
      * @param idx Node index.
      * @return The node container.
      */
-    protected IgniteContainer container(String imageName, Network net, List<String> consistentIds, int idx) throws Exception {
+    protected IgniteContainer container(int idx) throws Exception {
         return new IgniteContainer(imageName, net, "node" + (1 + idx), consistentIds.get(idx), idx);
     }
 
     /** Builds the node containers. */
     protected void initContainers() throws Exception {
         for (int i = 0; i < consistentIds.size(); i++)
-            containers.add(container(imageName, net, consistentIds, i));
+            containers.add(container(i));
     }
 
     /** {@inheritDoc} */
     @Override public void start() {
+        // Idempotent: either the cluster already started successfully, or container creation succeeded
+        // but startup (deepStart/activateCluster) failed on a previous attempt — in both cases the
+        // containers list is already populated and must not be built a second time (duplicate hostnames,
+        // consistent IDs and fixed host ports would make the baseline unreachable).
+        if (started || !containers.isEmpty())
+            return;
+
         try {
             initContainers();
         }
@@ -80,6 +89,8 @@ public class IgniteClusterContainer implements Startable {
         Startables.deepStart(containers).join();
 
         containers.get(0).activateCluster(containers.size());
+
+        started = true;
     }
 
     /** {@inheritDoc} */
