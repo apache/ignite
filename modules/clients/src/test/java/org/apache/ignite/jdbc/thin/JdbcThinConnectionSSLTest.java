@@ -358,20 +358,21 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 checkConnection(conn);
             }
 
-            /* completely disabled jdk 17+
-            DES (56-bit):
-            TLS_RSA_WITH_DES_CBC_SHA, TLS_DHE_RSA_WITH_DES_CBC_SHA,
-                TLS_DHE_DSS_WITH_DES_CBC_SHA, TLS_ECDHE_ECDSA_WITH_DES_CBC_SHA,
-                TLS_ECDHE_RSA_WITH_DES_CBC_SHA, TLS_ECDHE_PSK_WITH_DES_CBC_SHA,
-                TLS_ECDH_ECDSA_WITH_DES_CBC_SHA, TLS_ECDH_RSA_WITH_DES_CBC_SHA,
-                TLS_ECDH_anon_WITH_DES_CBC_SHA
+            //completely disabled jdk 17+
 
-            3DES/DESede:
-            TLS_RSA_WITH_3DES_EDE_CBC_SHA, TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA,
-                TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
-                TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-                TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,
-                TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA*/
+            //DES (56-bit):
+            //TLS_RSA_WITH_DES_CBC_SHA, TLS_DHE_RSA_WITH_DES_CBC_SHA,
+            //    TLS_DHE_DSS_WITH_DES_CBC_SHA, TLS_ECDHE_ECDSA_WITH_DES_CBC_SHA,
+            //    TLS_ECDHE_RSA_WITH_DES_CBC_SHA, TLS_ECDHE_PSK_WITH_DES_CBC_SHA,
+            //    TLS_ECDH_ECDSA_WITH_DES_CBC_SHA, TLS_ECDH_RSA_WITH_DES_CBC_SHA,
+            //    TLS_ECDH_anon_WITH_DES_CBC_SHA
+
+            //3DES/DESede:
+            //TLS_RSA_WITH_3DES_EDE_CBC_SHA, TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA,
+            //    TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA,
+            //    TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
+            //    TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,
+            //    TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA
 
             String completelyDisabledSuite = "TLS_RSA_WITH_DES_CBC_SHA";
 
