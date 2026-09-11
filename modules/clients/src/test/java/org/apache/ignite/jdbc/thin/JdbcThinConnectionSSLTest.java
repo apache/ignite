@@ -23,6 +23,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -333,15 +336,18 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testDisabledCustomCipher() throws Exception {
+        Set<String> disabledSuites = disabledByDefaultCipherSuites();
+        String disabledSuite = disabledSuites.iterator().next();
+
         setSslCtxFactoryToCli = true;
-        supportedCiphers = new String[] {"TLS_RSA_WITH_NULL_SHA256" /* Disabled by default */};
+        supportedCiphers = new String[] {disabledSuite /* Disabled by default */};
         sslCtxFactory = getTestSslContextFactory();
 
         startGrids(1);
         try {
             // Explicit supported ciphers.
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                "&sslCipherSuites=TLS_RSA_WITH_NULL_SHA256" +
+                "&sslCipherSuites=" + disabledSuite +
                 "&sslTrustAll=true" +
                 "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                 "&sslClientCertificateKeyStorePassword=123456" +
@@ -350,9 +356,14 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 checkConnection(conn);
             }
 
-            // Default ciphers.
+            String completellyDisabledSuite = "TLS_RSA_WITH_NULL_SHA256";
+
+            assertFalse(supportedCipherSuites().contains(completellyDisabledSuite));
+
+            // Java 17+, the cipher suite TLS_RSA_WITH_NULL_SHA256 is completely disabled by default.
             GridTestUtils.assertThrows(log, () -> {
                 return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                    "&sslCipherSuites=" + completellyDisabledSuite +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                     "&sslClientCertificateKeyStorePassword=123456" +
                     "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
@@ -372,10 +383,12 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testUnsupportedCustomCipher() throws Exception {
+        String disabledSuite = disabledByDefaultCipherSuites().iterator().next();
+
         setSslCtxFactoryToCli = true;
         supportedCiphers = new String[] {
-            "TLS_RSA_WITH_NULL_SHA256" /* Disabled by default */,
-            "TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA" /* With disabled protocol*/};
+            disabledSuite /* Supported by JDK */,
+            "TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA" /* Anonymous cipher is disabled by default */};
         sslCtxFactory = getTestSslContextFactory();
 
         startGrids(1);
@@ -393,7 +406,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
             // Supported cipher.
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                "&sslCipherSuites=TLS_RSA_WITH_NULL_SHA256" +
+                "&sslCipherSuites=" + disabledSuite +
                 "&sslTrustAll=true" +
                 "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                 "&sslClientCertificateKeyStorePassword=123456" +
@@ -403,14 +416,13 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             }
 
             // Default ciphers.
-            GridTestUtils.assertThrows(log, () -> {
-                return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                    "&sslClientCertificateKeyStorePassword=123456" +
-                    "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
-                    "&sslTrustCertificateKeyStorePassword=123456");
-            }, SQLException.class, "Failed to SSL connect to server");
-
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                "&sslClientCertificateKeyStorePassword=123456" +
+                "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
+                "&sslTrustCertificateKeyStorePassword=123456")) {
+                checkConnection(conn);
+            }
         }
         finally {
             stopAllGrids();
@@ -722,5 +734,33 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         @Override public SSLSocketFactory create() {
             return getTestSslContextFactory().create().getSocketFactory();
         }
+    }
+
+    /** */
+    private Set<String> supportedCipherSuites() throws Exception {
+        // Initialize a standard SSL/TLS context to load all protocols
+        SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(null, null, null);
+        SSLSocketFactory factory = ctx.getSocketFactory();
+
+        // Retrieve all available cipher suites
+        return Set.of(factory.getSupportedCipherSuites());
+    }
+
+    /** */
+    private Set<String> disabledByDefaultCipherSuites() throws Exception {
+        SSLContext ctx = SSLContext.getInstance("TLSv1.2");
+        ctx.init(null, null, null);
+        SSLSocketFactory factory = ctx.getSocketFactory();
+
+        Set<String> dfltCiphersSuites = Set.of(factory.getDefaultCipherSuites());
+        Set<String> supportedCiphersSuites = new HashSet<>(Arrays.stream(factory.getSupportedCipherSuites()).toList());
+
+        // Fulter supported, but NOT in the default active list.
+        supportedCiphersSuites.removeAll(dfltCiphersSuites);
+
+        assertFalse("No one disabled by default suite found", supportedCiphersSuites.isEmpty());
+
+        return supportedCiphersSuites;
     }
 }
