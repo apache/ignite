@@ -25,6 +25,7 @@ from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import ConfigTemplate
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 from ignitetest.services.utils.ignite_spec import envs_to_exports
+from ignitetest.services.utils.jvm_utils import merge_jvm_settings
 from ignitetest.utils.bean import Bean
 
 
@@ -57,7 +58,8 @@ class KafkaToIgniteService(IgniteService):
         self.spec = get_kafka_to_ignite_spec(self.spec.__class__,
                                              kafka.connection_string(), self)
 
-        self.spec.jvm_opts += ["-Dlog4j.configurationFile=file:" + self.log_config_file]
+        self.spec.jvm_opts = merge_jvm_settings(
+            self.spec.jvm_opts, ["-Dlog4j.configurationFile=file:" + self.log_config_file])
 
         self.kafka = kafka
 
@@ -219,7 +221,7 @@ def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
             else:
                 return self.service.script(cmd)
 
-    return KafkaToIgniteSpec(service, service.spec.jvm_opts)
+    return service.spec.rebuild_as(KafkaToIgniteSpec)
 
 
 class KafkaPropertiesTemplate(ConfigTemplate):
