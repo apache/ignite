@@ -763,6 +763,9 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         // Fulter supported, but NOT in the default active list.
         supportedCiphersSuites.removeAll(dfltCiphersSuites);
 
+        // Current TC settings.
+        supportedCiphersSuites.removeIf(s -> s.contains("_anon_"));
+
         assertFalse("No one disabled by default suite found", supportedCiphersSuites.isEmpty());
 
         return supportedCiphersSuites;
