@@ -433,6 +433,8 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 checkConnection(conn);
             }
 
+            // JDK 17+ removes RC4, DES, 3DES, anon from getSupportedCipherSuites() entirely
+            // (not just disabled by default). All non-anon TLS 1.2 suites are enabled by default.
             // Default ciphers.
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
                 "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
