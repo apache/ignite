@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Deletes snapshot and all its increments from all the online server nodes.";
+        return "Deletes snapshot and all its increments from all the online server nodes";
     }
 
     /** {@inheritDoc} */
@@ -93,8 +93,8 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         return "This will delete snapshot '" + arg.snapshotName() +
             "' and all its increments from all online server nodes." +
             U.nl() + U.nl() +
-            "WARNING: the snapshot integrity, initial topology and correctness aren't checked." +
-            " Snapshot parts on offline server nodes aren't deleted." +
+            "WARNING: the snapshot integrity, topology and correctness aren't checked." +
+            " Snapshot daya on offline server nodes aren't deleted." +
             U.nl() + U.nl() +
             "The operation is irreversible.";
     }

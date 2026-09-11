@@ -269,6 +269,13 @@ This utility can do the following commands:
   Get the status of the current snapshot operation:
     control.(sh|bat) --snapshot status
 
+  Deletes snapshot and all its increments from all the online server nodes:
+    control.(sh|bat) --snapshot delete snapshot_name [--src path]
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+      --src path     - Path to the directory where the snapshot is located. If not specified, the default configured snapshot directory will be used.
+
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 
