@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -144,10 +143,9 @@ public class SnapshotDeleteProcess {
                 " Snapshot with this name is being checked, req=" + req));
         }
 
-        for (var node : kctx.cluster().get().forServers().nodes()) {
-            if (!(node instanceof IgniteClusterNode in) || !in.features().contains(SNAPSHOT_DELETE_FEATURE))
-                return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                    " Node " + node.id() + " doesn't support snapshot deletion, req=" + req));
+        if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
+            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
+                " Snapshot deletion feature isn't enabled, req=" + req));
         }
 
         try {
