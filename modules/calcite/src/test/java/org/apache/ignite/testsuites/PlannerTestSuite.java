@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerT
 import org.apache.ignite.internal.processors.query.calcite.planner.UserDefinedViewsPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.WindowPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
+import org.apache.ignite.internal.processors.query.calcite.planner.tpc.TpchQueryPlannerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -101,6 +102,7 @@ import org.junit.runners.Suite;
 
     HintsTestSuite.class,
     DynamicParametersPlannerTest.class,
+    TpchQueryPlannerTest.class,
     JoinRowCountEstimationTest.class,
 })
 public class PlannerTestSuite {
