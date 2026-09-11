@@ -929,6 +929,8 @@
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</inputExclude>
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</inputExclude>
                                         <inputExclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</inputExclude>
+                                        <inputExclude>src/test/resources/tpch/*.sql</inputExclude>
+                                        <inputExclude>src/test/resources/tpch/*.plan</inputExclude>
                                     <!--platforms-->
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</inputExclude>
                                         <inputExclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</inputExclude>

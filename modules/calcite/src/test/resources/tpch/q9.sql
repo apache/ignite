@@ -5,7 +5,7 @@
 -- Approved February 1998
 
 
-select
+select /*+ NO_CNL_JOIN */
     nation,
     o_year,
     sum(amount) as sum_profit
