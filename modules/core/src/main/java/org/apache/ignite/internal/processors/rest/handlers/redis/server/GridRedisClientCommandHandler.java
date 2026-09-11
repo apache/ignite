@@ -76,9 +76,6 @@ public class GridRedisClientCommandHandler extends GridRedisRestCommandHandler {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        if (restRes.getResponse() == null)
-            return GridRedisProtocolParser.toInteger("0");
-
-        return GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse()));
+        return GridRedisProtocolParser.oKString();
     }
 }
