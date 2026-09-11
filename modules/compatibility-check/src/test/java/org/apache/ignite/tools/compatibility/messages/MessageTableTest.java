@@ -82,7 +82,10 @@ public class MessageTableTest {
         }
 
         assertTrue(compressedFound);
-        assertTrue(table.contains("<field>long reqId</field>"));
+        Element firstField = (Element)doc.getElementsByTagName("field").item(0);
+
+        assertEquals("long", firstField.getElementsByTagName("type").item(0).getTextContent());
+        assertEquals("reqId", firstField.getElementsByTagName("name").item(0).getTextContent());
         assertTrue(table.contains("&lt;"));
 
         Document expected = DocumentBuilderFactory.newDefaultInstance().newDocumentBuilder()

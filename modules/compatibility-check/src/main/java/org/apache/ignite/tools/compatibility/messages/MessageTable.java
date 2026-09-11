@@ -103,10 +103,32 @@ public final class MessageTable {
                 xml.writeAttribute("id", Short.toString(id));
                 xml.writeAttribute("class", msg.getClass().getName());
 
-                for (String field : schemas.read(msg.getClass())) {
+                for (MessageSchema.Field field : schemas.read(msg.getClass())) {
                     xml.writeCharacters("\n      ");
+                    if (field.name().isEmpty()) {
+                        xml.writeEmptyElement(field.serialization());
+
+                        continue;
+                    }
+
                     xml.writeStartElement("field");
-                    xml.writeCharacters(field);
+                    xml.writeCharacters("\n        ");
+                    xml.writeStartElement("type");
+                    xml.writeCharacters(field.type());
+                    xml.writeEndElement();
+                    xml.writeCharacters("\n        ");
+                    xml.writeStartElement("name");
+                    xml.writeCharacters(field.name());
+                    xml.writeEndElement();
+
+                    if (!field.serialization().isEmpty()) {
+                        xml.writeCharacters("\n        ");
+                        xml.writeStartElement("serialization");
+                        xml.writeCharacters(field.serialization());
+                        xml.writeEndElement();
+                    }
+
+                    xml.writeCharacters("\n      ");
                     xml.writeEndElement();
                 }
 

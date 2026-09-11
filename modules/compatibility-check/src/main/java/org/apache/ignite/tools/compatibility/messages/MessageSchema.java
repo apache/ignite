@@ -78,7 +78,7 @@ final class MessageSchema implements AutoCloseable {
     }
 
     /** Returns a canonical field description, including inherited fields and marshalling annotations. */
-    List<String> read(Class<?> cls) {
+    List<Field> read(Class<?> cls) {
         TypeElement type = task.getElements().getTypeElement(cls.getCanonicalName());
 
         if (type == null)
@@ -92,12 +92,12 @@ final class MessageSchema implements AutoCloseable {
 
         Collections.reverse(hierarchy);
 
-        List<String> schema = new ArrayList<>();
+        List<Field> schema = new ArrayList<>();
 
         if (hierarchy.stream().anyMatch(t -> t.getAnnotation(JdkMarshalled.class) != null))
-            schema.add("jdkMarshalled");
+            schema.add(new Field("", "", "jdkMarshalled"));
 
-        List<String> marshalledFields = new ArrayList<>();
+        List<Field> marshalledFields = new ArrayList<>();
 
         for (TypeElement t : hierarchy) {
             List<VariableElement> fields = new ArrayList<>(ElementFilter.fieldsIn(t.getEnclosedElements()));
@@ -106,9 +106,9 @@ final class MessageSchema implements AutoCloseable {
                 Marshalled ann = field.getAnnotation(Marshalled.class);
 
                 if (ann != null) {
-                    marshalledFields.add("marshalled " + schemaType(field.asType()) + " " + field.getSimpleName()
-                        + (!ann.value().isEmpty() ? " value=" + ann.value()
-                        : " keys=" + ann.keys() + " values=" + ann.values()));
+                    marshalledFields.add(new Field(schemaType(field.asType()), field.getSimpleName().toString(),
+                        "marshalled" + (!ann.value().isEmpty() ? " value=" + ann.value()
+                        : " keys=" + ann.keys() + " values=" + ann.values())));
                 }
             }
 
@@ -116,27 +116,39 @@ final class MessageSchema implements AutoCloseable {
             fields.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
             for (VariableElement field : fields) {
-                String desc = schemaType(field.asType()) + " " + field.getSimpleName();
+                String serialization = "";
 
                 if (field.getAnnotation(Compress.class) != null)
-                    desc += " compress";
+                    serialization += " compress";
 
                 if (field.getAnnotation(NioField.class) != null)
-                    desc += " nio";
+                    serialization += " nio";
 
                 CustomMapper mapper = field.getAnnotation(CustomMapper.class);
 
                 if (mapper != null)
-                    desc += " customMapper=" + mapper.value();
+                    serialization += " customMapper=" + mapper.value();
 
-                schema.add(desc);
+                schema.add(new Field(schemaType(field.asType()), field.getSimpleName().toString(), serialization.trim()));
             }
         }
 
-        Collections.sort(marshalledFields);
+        marshalledFields.sort(Comparator.comparing(field -> field.type() + " " + field.name()
+            + " " + field.serialization()));
         schema.addAll(marshalledFields);
 
         return schema;
+    }
+
+    /**
+     * Field description. An empty name denotes a message-level serialization marker.
+     *
+     * @param type Field type.
+     * @param name Field name.
+     * @param serialization Serialization annotations.
+     */
+    record Field(String type, String name, String serialization) {
+        // No-op.
     }
 
     /** Returns a fully qualified type name without source-level type annotations. */

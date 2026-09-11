@@ -4,7 +4,9 @@ Exports registered message IDs, classes and fields to `table.xml`.
 Fields, including inherited fields and CLASS-retained annotations, are read from
 compiled classes through the JDK compiler API. No node or intermediate manifest is needed.
 XML is written using the JDK StAX API without an external XML library.
-Each field occupies one `field` element: type, name and serialization annotations.
+Each `field` contains separate `type` and `name` elements, plus an optional
+`serialization` element for serialization annotations. The message-level
+`jdkMarshalled` marker is a separate element.
 Element position defines field order; field indexes and declaring classes are omitted.
 
 Coverage: core, indexing, Calcite and ZooKeeper providers. Unregistered classes and
@@ -16,19 +18,24 @@ generate patches or publish CI warnings.
 
 ## Generate
 
-Use JDK 17 and a clean build to avoid stale classes. From the repository root:
+Use JDK 17. Maven generates `target/table.xml` during `process-classes`, including
+when running `test`, `package` or `install`. From the repository root, build the
+required modules first if their current artifacts are not installed:
 
 ```sh
 ./mvnw -pl modules/compatibility-check -am clean install -DskipTests -Dmaven.javadoc.skip=true
-./mvnw -pl modules/compatibility-check test dependency:build-classpath \
-    -Dmdep.outputFile=target/runtime-classpath.txt -DincludeScope=runtime
-java --add-opens=java.base/java.nio=ALL-UNNAMED \
-    --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
-    --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
-    -cp "modules/compatibility-check/target/classes:$(cat modules/compatibility-check/target/runtime-classpath.txt)" \
-    org.apache.ignite.tools.compatibility.messages.MessageTable \
-    modules/compatibility-check/target/table.xml
 ```
 
-The only argument is the output file path. To update the checked-in table, use
-`modules/compatibility-check/src/main/resources/messages/table.xml` instead.
+With dependencies already installed, regenerate the table with:
+
+```sh
+./mvnw -pl modules/compatibility-check process-classes
+```
+
+The build only writes `modules/compatibility-check/target/table.xml`. To update the
+checked-in table explicitly:
+
+```sh
+cp modules/compatibility-check/target/table.xml \
+    modules/compatibility-check/src/main/resources/messages/table.xml
+```

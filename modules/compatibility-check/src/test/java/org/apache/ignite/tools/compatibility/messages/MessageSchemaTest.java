@@ -38,15 +38,15 @@ public class MessageSchemaTest {
 
         try (MessageSchema reader = new MessageSchema()) {
             assertEquals(List.of(
-                "jdkMarshalled",
-                "int id",
-                "byte[] id compress nio",
-                Mode.class.getCanonicalName() + " mode customMapper=example.Mapper",
-                "marshalled java.util.List<? extends java.lang.String> payload value=id"
+                new MessageSchema.Field("", "", "jdkMarshalled"),
+                new MessageSchema.Field("int", "id", ""),
+                new MessageSchema.Field("byte[]", "id", "compress nio"),
+                new MessageSchema.Field(Mode.class.getCanonicalName(), "mode", "customMapper=example.Mapper"),
+                new MessageSchema.Field("java.util.List<? extends java.lang.String>", "payload", "marshalled value=id")
             ), reader.read(Child.class));
             assertEquals(List.of(), reader.read(Empty.class));
             assertEquals(List.of(), reader.read(Unannotated.class));
-            assertEquals(List.of("int id"), reader.read(InvalidOrder.class));
+            assertEquals(List.of(new MessageSchema.Field("int", "id", "")), reader.read(InvalidOrder.class));
         }
     }
 
