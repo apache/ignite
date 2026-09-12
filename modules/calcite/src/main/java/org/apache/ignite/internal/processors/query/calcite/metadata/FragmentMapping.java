@@ -149,6 +149,23 @@ public class FragmentMapping implements Message {
         return new FragmentMapping(colocationGrps);
     }
 
+    /**
+     * Checks that all given partitioned data sources are collocated, even if they belong to different query fragments.
+     */
+    public static void validateColocation(List<FragmentMapping> mappings, Set<Long> srcIds)
+        throws ColocationMappingException {
+        ColocationGroup res = null;
+
+        for (FragmentMapping mapping : mappings) {
+            for (ColocationGroup grp : mapping.colocationGrps) {
+                if (!grp.hasAssignments() || srcIds.stream().noneMatch(grp::belongs))
+                    continue;
+
+                res = res == null ? grp : res.colocate(grp);
+            }
+        }
+    }
+
     /** */
     public @NotNull ColocationGroup findGroup(long srcId) {
         List<ColocationGroup> grps = colocationGrps.stream()
