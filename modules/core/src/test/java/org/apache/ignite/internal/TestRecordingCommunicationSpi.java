@@ -59,7 +59,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     private List<Object> recordedMsgs = new ArrayList<>();
 
     /** */
-    private List<BlockedMessageDescriptor> blockedMsgs = new ArrayList<>();
+    private final List<BlockedMessageDescriptor> blockedMsgs = new ArrayList<>();
 
     /** */
     private Map<Class<?>, Set<String>> blockCls = new HashMap<>();
@@ -245,6 +245,13 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         synchronized (this) {
             while (recordedMsgs.isEmpty())
                 wait();
+        }
+    }
+
+    /** */
+    public List<BlockedMessageDescriptor> blockedMessages() {
+        synchronized (this) {
+            return new ArrayList<>(blockedMsgs);
         }
     }
 
