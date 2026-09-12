@@ -87,23 +87,24 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
         client.cluster().state(ClusterState.ACTIVE);
 
-        executeSql("CREATE TABLE tbl (id INT PRIMARY KEY, val VARCHAR, val2 VARCHAR) WITH CACHE_NAME=\"test\"");
+        executeSql("CREATE TABLE tbl (id INT, id2 INT, val VARCHAR, val2 VARCHAR, PRIMARY KEY(id, id2)) " +
+            "WITH CACHE_NAME=\"test\",affinity_key=id");
         executeSql("CREATE INDEX idx_id_val ON tbl (id DESC, val)");
         executeSql("CREATE INDEX idx_id_val2 ON tbl (id, val2 DESC)");
 
         for (int i = 0; i < 100; i++)
-            executeSql("INSERT INTO tbl VALUES (?, ?, ?)", i, "val" + i, "val" + i);
+            executeSql("INSERT INTO tbl VALUES (?, ?, ?, ?)", i, i, "val" + i, "val" + i);
 
-        executeSql("CREATE TABLE tbl2 (id INT PRIMARY KEY, val VARCHAR)");
+        executeSql("CREATE TABLE tbl2 (id INT, id2 INT, val VARCHAR, PRIMARY KEY(id, id2)) WITH affinity_key=id");
 
         for (int i = 0; i < 100; i++)
-            executeSql("INSERT INTO tbl2 VALUES (?, ?)", i, "val" + i);
+            executeSql("INSERT INTO tbl2 VALUES (?, ?, ?)", i, i, "val" + i);
     }
 
     /** */
     @Test
     public void testRebuildOnInitiatorNode() throws Exception {
-        String sql = "SELECT * FROM tbl WHERE id = 0 AND val='val0'";
+        String sql = "SELECT id, val, val2 FROM tbl WHERE id = 0 AND val='val0'";
 
         QueryChecker validChecker = assertQuery(grid(0), sql)
             .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL"))
@@ -123,7 +124,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
         // Uncorrelated, filter by indexed field, without projection (idenitity projection).
         for (int i = 0; i < 10; i++) {
-            QueryChecker checker = assertQuery(initNode, "SELECT * FROM tbl WHERE id = ? AND val = ?")
+            QueryChecker checker = assertQuery(initNode, "SELECT id, val, val2 FROM tbl WHERE id = ? AND val = ?")
                 .withParams(i, "val" + i)
                 .matches(CoreMatchers.not(QueryChecker.containsSubPlan("IgniteSort")))
                 .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_ID_VAL"))
@@ -150,7 +151,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         IgniteEx initNode = grid(0);
 
         // Order by part of index collation, without projection.
-        String sql = "SELECT * FROM tbl WHERE id >= 10 and id <= 15 ORDER BY id DESC";
+        String sql = "SELECT id, val, val2 FROM tbl WHERE id >= 10 and id <= 15 ORDER BY id DESC";
 
         QueryChecker checker = assertQuery(initNode, sql)
             .matches(CoreMatchers.not(QueryChecker.containsSubPlan("IndexSpool")))
@@ -192,7 +193,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE INDEX idx_val ON tbl (val DESC)");
 
         try {
-            sql = "SELECT * FROM tbl WHERE val BETWEEN 'val10' AND 'val15' ORDER BY val";
+            sql = "SELECT id, val, val2 FROM tbl WHERE val BETWEEN 'val10' AND 'val15' ORDER BY val";
 
             checker = assertQuery(initNode, sql)
                 .matches(QueryChecker.containsSubPlan("IgniteSort"))

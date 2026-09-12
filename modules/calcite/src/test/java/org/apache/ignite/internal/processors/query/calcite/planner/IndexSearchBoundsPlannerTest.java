@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexLiteral;
@@ -461,6 +463,53 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
         );
     }
 
+    /** Tests row count estimation by bounds scan. */
+    @Test
+    public void testEstimateRowCount() throws Exception {
+        int t1Size = 1_000;
+        int t2Size = 5;
+
+        IgniteSchema schema = createSchema(createTable("T1", t1Size, IgniteDistributions.broadcast(),
+            "ID1", SqlTypeName.INTEGER, "ID2", SqlTypeName.INTEGER, "ID3", SqlTypeName.INTEGER)
+            .addIndex("IDX1", 0)
+            .addIndex("IDX2", 1, 2),
+            createTable("T2", t2Size, IgniteDistributions.broadcast(),
+                "ID1", SqlTypeName.INTEGER, "ID2", SqlTypeName.INTEGER, "ID3", SqlTypeName.INTEGER)
+                .addIndex("IDX1", 0, 1)
+        );
+
+        assertPlan("SELECT * FROM t1 WHERE id1 = ?", schema, isIndexScan("T1", "IDX1")
+            .and(estimatedRowCountBetween(1, 1)));
+
+        assertPlan("SELECT * FROM t1 WHERE id1 in (?, ?, ?)", schema, isIndexScan("T1", "IDX1")
+            .and(estimatedRowCountBetween(3, 3)));
+
+        // Can't estimate row count by bounds containing range.
+        assertPlan("SELECT * FROM t1 WHERE id1 > ?", schema, isIndexScan("T1", "IDX1")
+            .and(estimatedRowCountBetween(2, t1Size)));
+
+        // Index scan on IDX2 for column ID2 is not unique, can't estimate row count by bounds.
+        assertPlan("SELECT * FROM t1 WHERE id2 = ?", schema, isIndexScan("T1", "IDX2")
+            .and(estimatedRowCountBetween(2, t1Size)));
+
+        assertPlan("SELECT * FROM t1 WHERE id2 = ? AND id3 = ?", schema, isIndexScan("T1", "IDX2")
+            .and(estimatedRowCountBetween(1, 1)));
+
+        assertPlan("SELECT * FROM t1 WHERE id2 = ? AND id3 in (?, ?, ?)", schema, isIndexScan("T1", "IDX2")
+            .and(estimatedRowCountBetween(3, 3)));
+
+        assertPlan("SELECT * FROM t1 WHERE id2 in (?, ?, ?) AND id3 in (?, ?, ?)", schema, isIndexScan("T1", "IDX2")
+            .and(estimatedRowCountBetween(9, 9)));
+
+        // Can't estimate row count by bounds containing range.
+        assertPlan("SELECT * FROM t1 WHERE id2 in (?, ?, ?) AND id3 between ? and ?", schema, isIndexScan("T1", "IDX2")
+            .and(estimatedRowCountBetween(10, t1Size)));
+
+        // Row count for small table is limited by estimation by condition.
+        assertPlan("SELECT * FROM t2 WHERE id1 in (?, ?, ?) and id2 in (?, ?, ?)", schema, isIndexScan("T2", "IDX1")
+            .and(estimatedRowCountBetween(0, t2Size)));
+    }
+
     /** */
     private void assertBounds(String sql, Predicate<SearchBounds>... predicates) throws Exception {
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
@@ -515,5 +564,21 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
 
         return Objects.toString(val).equals(Objects.toString(
             bound instanceof RexLiteral ? ((RexLiteral)bound).getValueAs(val.getClass()) : bound));
+    }
+
+    /** */
+    protected <T extends RelNode> Predicate<T> estimatedRowCountBetween(double min, double max) {
+        return node -> {
+            RelMetadataQuery mq = node.getCluster().getMetadataQuery();
+
+            double rowCnt = node.estimateRowCount(mq);
+
+            if (rowCnt >= min && rowCnt <= max)
+                return true;
+
+            lastErrorMsg = "Unexpected estimated row count [node=" + node + ", rowCnt=" + rowCnt + ']';
+
+            return false;
+        };
     }
 }
