@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactoryBase;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.IterableAccumulator;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.NotNull;
 
@@ -163,6 +164,11 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
             Object result = windowFunction.call(accRow, rowIdx, peerIdx, frame);
             return outAdapter.apply(result);
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAggAccumulator() {
+            return false;
+        }
     }
 
     /** */
@@ -235,6 +241,11 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
             }
             frameEnd = end;
             return acc.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAggAccumulator() {
+            return accumulator() instanceof IterableAccumulator<?>;
         }
 
         /** */

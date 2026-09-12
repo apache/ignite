@@ -17,29 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Deque;
-import java.util.function.Supplier;
+import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.WindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.window.BufferingWindowPartition;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.MemoryTrackingNode.DFLT_ROW_OVERHEAD;
+
 /** Window node. */
-public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class BufferingWindowNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** */
     private final Comparator<Row> partCmp;
 
     /** */
-    private final Supplier<WindowPartition<Row>> partFactory;
+    private final BufferingWindowPartition<Row> part;
 
     /** */
     private final RowHandler.RowFactory<Row> rowFactory;
 
     /** */
-    private WindowPartition<Row> part;
+    private List<Row> inBuf;
+
+    /** */
+    private RowTracker<Row> inBufTracker;
 
     /** */
     private int requested;
@@ -51,38 +56,38 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
     private Row prevRow;
 
     /** */
-    private final Deque<Row> outBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
-
-    /** */
     private boolean inLoop;
 
     /** */
-    public WindowNode(
+    public BufferingWindowNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
         Comparator<Row> partCmp,
-        Supplier<WindowPartition<Row>> partFactory,
+        BufferingWindowPartition<Row> part,
         RowHandler.RowFactory<Row> rowFactory
     ) {
-        super(ctx, rowType, DFLT_ROW_OVERHEAD);
+        super(ctx, rowType);
         this.partCmp = partCmp;
-        this.partFactory = partFactory;
+        this.part = part;
         this.rowFactory = rowFactory;
     }
 
     /** {@inheritDoc} */
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 1;
-        assert rowsCnt > 0;
+        assert rowsCnt > 0 && requested == 0;
 
         checkState();
 
         requested = rowsCnt;
 
-        if (waiting == 0 && outBuf.isEmpty())
+        if (inLoop)
+            return;
+
+        if (part.ready() > 0)
+            context().execute(this::flush, this::onError);
+        else if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
-        else if (!inLoop)
-            flush();
     }
 
     /** {@inheritDoc} */
@@ -94,24 +99,29 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         waiting--;
 
-        if (part == null) {
-            part = partFactory.get();
-            part.attachMemoryTracker(nodeMemoryTracker);
-        }
-        else if (prevRow != null && partCmp != null && partCmp.compare(prevRow, row) != 0) {
-            part.evalTo(rowFactory, this::appendToOutBuf);
-            part.reset();
+        if (prevRow != null && partCmp != null && partCmp.compare(prevRow, row) != 0) {
+            part.appendPartition(inBuf, inBufTracker::reset);
+            inBuf = null;
+            inBufTracker = null;
         }
 
-        part.add(row);
+        if (inBuf == null) {
+            inBuf = new ArrayList<>(IN_BUFFER_SIZE);
+            inBufTracker = context().createNodeMemoryTracker(DFLT_ROW_OVERHEAD);
+        }
 
-        if (part.isStreaming())
-            part.evalTo(rowFactory, this::appendToOutBuf);
+        inBuf.add(row);
+        inBufTracker.onRowAdded(row);
 
         prevRow = row;
 
-        if (!inLoop)
+        if (inLoop)
+            return;
+
+        if (part.ready() > 0)
             flush();
+        else if (waiting == 0)
+            context().execute(() -> source().request(waiting = IN_BUFFER_SIZE), this::onError);
     }
 
     /** {@inheritDoc} */
@@ -124,9 +134,11 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
 
         checkState();
 
-        if (part != null) {
-            part.evalTo(rowFactory, this::appendToOutBuf);
-            part.reset();
+        // append partition for remaining rows if any.
+        if (!F.isEmpty(inBuf)) {
+            part.appendPartition(inBuf, inBufTracker::reset);
+            inBuf = null;
+            inBufTracker = null;
         }
 
         flush();
@@ -136,12 +148,22 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
     @Override protected void rewindInternal() {
         requested = 0;
         waiting = 0;
-        if (part != null) {
-            part.reset();
-            part = null;
+        prevRow = null;
+        part.reset();
+        if (inBuf != null) {
+            inBufTracker.reset();
+            inBuf = null;
+            inBufTracker = null;
         }
-        outBuf.clear();
-        nodeMemoryTracker.reset();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void closeInternal() {
+        part.reset();
+        if (inBuf != null)
+            inBufTracker.reset();
+
+        super.closeInternal();
     }
 
     /** {@inheritDoc} */
@@ -153,31 +175,36 @@ public class WindowNode<Row> extends MemoryTrackingNode<Row> implements SingleNo
     }
 
     /** */
-    private void appendToOutBuf(Row row) {
-        outBuf.add(row);
-        nodeMemoryTracker.onRowAdded(row);
-    }
-
-    /** */
     private void flush() throws Exception {
         inLoop = true;
         try {
-            while (requested > 0 && !outBuf.isEmpty()) {
+            int processed = 0;
+            while (requested > 0) {
+                Row result = part.nextRow(rowFactory);
+                if (result == null)
+                    break;
+
                 requested--;
 
-                Row row = outBuf.poll();
-                nodeMemoryTracker.onRowRemoved(row);
-                downstream().push(row);
+                downstream().push(result);
+
+                processed++;
+
+                if (processed == IN_BUFFER_SIZE && requested > 0) {
+                    // Allow others to do their job.
+                    context().execute(this::flush, this::onError);
+                    return;
+                }
             }
         }
         finally {
             inLoop = false;
         }
 
-        if (waiting == 0 && requested > 0 && outBuf.isEmpty())
+        if (waiting == 0 && requested > 0)
             context().execute(() -> source().request(waiting = IN_BUFFER_SIZE), this::onError);
 
-        if (waiting < 0 && requested > 0 && outBuf.isEmpty()) {
+        if (waiting < 0 && requested > 0 && part.ready() == 0) {
             requested = 0;
             downstream().end();
         }
