@@ -75,6 +75,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -101,6 +102,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -136,12 +138,26 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private static final int ASYNC_TIMEOUT = 5000;
 
+    /** Per-test default transaction timeout in ms, {@code 0} to use default. */
+    private long txTimeoutMs;
+
     /** */
     private CacheConfiguration[] ccfgs;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (txTimeoutMs > 0) {
+            TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
+
+            if (txCfg == null)
+                txCfg = new TransactionConfiguration();
+
+            txCfg.setDefaultTxTimeout(txTimeoutMs);
+
+            cfg.setTransactionConfiguration(txCfg);
+        }
 
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);
@@ -3710,6 +3726,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRestartsAndCacheCreateDestroy() throws Exception {
         final int SRVS = 5;
 
+        // Limit default transaction timeout so that implicit transactions of op threads
+        // stuck in partition exchange (awaiting partition release during concurrent cache destroy)
+        // are rolled back instead of hanging the test forever.
+        txTimeoutMs = SF.applyLB(60_000, 20_000);
+
         startGrids(SRVS);
 
         final Ignite clientNode = startClientGrid(SRVS);
@@ -3829,6 +3850,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                     }
                                     catch (Exception e) {
                                         if (X.hasCause(e, CacheStoppedException.class) ||
+                                            X.hasCause(e, TransactionTimeoutException.class) ||
                                             (X.hasCause(e, CacheInvalidStateException.class) &&
                                                 X.hasCause(e, TransactionRollbackException.class))
                                         ) {
@@ -3836,6 +3858,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                             // awaiting new topology version and cancelled with CacheStoppedException cause.
                                             // Cache operation can failed
                                             // if a node was stopped during transaction.
+                                            // Transaction can be timed out while awaiting for
+                                            // partition release during cache destroy.
                                             continue;
                                         }
 
@@ -3861,9 +3885,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                 stop.set(true);
 
-                restartFut.get();
-                cacheFut.get();
-                opFut.get();
+                restartFut.get(SF.applyLB(5 * 60_000, 60_000));
+                cacheFut.get(SF.applyLB(5 * 60_000, 60_000));
+                opFut.get(SF.applyLB(5 * 60_000, 60_000));
 
                 assertNull("Unexpected error during test, see log for details", err.get());
 
@@ -3880,21 +3904,28 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 }
 
                 for (int n = 0; n < SRVS; n++) {
-                    CacheGroupContext grp = cacheGroup(ignite(n), GROUP1);
+                    for (String grpName : Arrays.asList(GROUP1, GROUP2)) {
+                        CacheGroupContext grp = cacheGroup(ignite(n), grpName);
 
-                    assertNotNull(grp);
+                        // Group may be absent on a node if all its caches were
+                        // re-created under another group during this iteration.
+                        if (grp == null)
+                            continue;
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
+                        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                            IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
 
-                        assertTrue(cachesMap.size() <= cacheIds.size());
+                            assertTrue(cachesMap.size() <= cacheIds.size());
 
-                        cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                            cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                        }
                     }
                 }
             }
         }
         finally {
+            txTimeoutMs = 0;
+
             stop.set(true);
         }
     }
