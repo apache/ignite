@@ -28,7 +28,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -52,6 +54,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -312,10 +315,11 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             IgniteTable tbl = (IgniteTable)queryProcessor(client).schemaHolder().schema("PUBLIC").getTable(tblName);
 
             tbl.addIndex(new DelegatingIgniteIndex(tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX)) {
-                @Override public RelCollation collation() {
-                    doSleep(300);
+                @Override public List<SearchBounds> toSearchBounds(RelOptCluster cluster, @Nullable RexNode cond,
+                    @Nullable ImmutableBitSet requiredColumns) {
+                    doSleep(PLANNER_TIMEOUT / 5);
 
-                    return delegate.collation();
+                    return super.toSearchBounds(cluster, cond, requiredColumns);
                 }
             });
 
