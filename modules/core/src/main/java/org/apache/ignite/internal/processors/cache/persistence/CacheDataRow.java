@@ -58,6 +58,11 @@ public interface CacheDataRow extends CacheSearchRow, Storable {
      */
     public void key(KeyCacheObject key);
 
+    /**
+     * @return {@code True} if store cache ID.
+     */
+    public boolean storeCacheId();
+
     /** {@inheritDoc} */
     @Override public default IOVersions<? extends AbstractDataPageIO> ioVersions() {
         return DataPageIO.VERSIONS;

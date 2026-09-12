@@ -93,4 +93,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
 public class SupportedFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
+
+    /** */
+    public static final IgniteFeature MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE = new IgniteCoreFeature(1);
 }

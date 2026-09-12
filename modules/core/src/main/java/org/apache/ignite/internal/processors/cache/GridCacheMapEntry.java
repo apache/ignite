@@ -4355,9 +4355,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private CacheDataRow oldRow;
 
         /** */
-        private boolean oldRowExpiredFlag;
-
-        /** */
         private IgniteTree.OperationType treeOp = IgniteTree.OperationType.PUT;
 
         /**
@@ -4379,13 +4376,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void call(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            this.oldRow = oldRow;
+
             if (oldRow != null) {
                 oldRow.key(entry.key);
 
                 oldRow = checkRowExpired(oldRow);
             }
-
-            this.oldRow = oldRow;
 
             if (predicate != null && !predicate.apply(oldRow)) {
                 treeOp = IgniteTree.OperationType.NOOP;
@@ -4395,7 +4392,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (val != null) {
                 if (newRow == null) {
-                    newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
+                    newRow = entry.cctx.offheap().dataStore(entry.localPartition()).updateRow(
                         entry.cctx,
                         entry.key,
                         val,
@@ -4424,11 +4421,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** {@inheritDoc} */
         @Nullable @Override public CacheDataRow oldRow() {
             return oldRow;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean oldRowExpiredFlag() {
-            return oldRowExpiredFlag;
         }
 
         /**
@@ -4475,8 +4467,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             cctx.continuousQueries().onEntryExpired(entry, entry.key(), expiredVal);
 
             entry.updatePlatformCache(null, null);
-
-            oldRowExpiredFlag = true;
 
             return null;
         }
@@ -4635,11 +4625,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** {@inheritDoc} */
         @Nullable @Override public CacheDataRow oldRow() {
             return oldRow;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean oldRowExpiredFlag() {
-            return oldRowExpiredFlag;
         }
 
         /** {@inheritDoc} */
@@ -4917,7 +4902,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (needUpdate) {
-                newRow = entry.localPartition().dataStore().createRow(
+                newRow = entry.localPartition().dataStore().updateRow(
                     entry.cctx,
                     entry.key,
                     storeLoadedVal,
@@ -5081,7 +5066,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
 
             if (!entry.isNear()) {
-                newRow = entry.localPartition().dataStore().createRow(
+                newRow = entry.localPartition().dataStore().updateRow(
                     entry.cctx,
                     entry.key,
                     updated,
@@ -5090,7 +5075,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     oldRow);
 
                 treeOp = oldRow != null && oldRow.link() == newRow.link() ?
-                    IgniteTree.OperationType.NOOP : IgniteTree.OperationType.PUT;
+                    IgniteTree.OperationType.IN_PLACE : IgniteTree.OperationType.PUT;
             }
             else
                 treeOp = IgniteTree.OperationType.PUT;
