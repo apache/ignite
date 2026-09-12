@@ -309,6 +309,7 @@ Register name: `io.communication`
 |Name|    Type|    Description
 |ActiveSessionsCount|   integer|   Active TCP sessions count.
 |OutboundMessagesQueueSize|   integer| Outbound messages queue size.
+|maxOutboundMessagesQueueSize|   long| Maximum number of outbound messages waiting to be sent during the configured metric interval.
 |SentMessagesCount  | integer| Sent messages count.
 |SentBytesCount | long  |  Sent bytes count.
 |ReceivedBytesCount|  long|    Received bytes count.
@@ -376,7 +377,9 @@ Register name: `io.discovery`
 |CurrentTopologyVersion|   long|   Current topology version.
 |JoinedNodes|   integer|   Joined nodes count.
 |LeftNodes|   integer|   Left nodes count.
+|MaxMsgQueueSize|   long|   Maximum TCP discovery message worker queue size during the configured metric interval.
 |MessageWorkerQueueSize|   integer|   Current message worker queue size.
+|Next|   UUID|   Next node ID in the TCP discovery ring.
 |PendingMessagesRegistered|   integer|   Pending registered messages count.
 |RejectedSslConnectionsCount|   integer|   TCP discovery connections count that were rejected due to the SSL errors.
 |SslEnabled|   boolean|   Indicates whether SSL is enabled.
