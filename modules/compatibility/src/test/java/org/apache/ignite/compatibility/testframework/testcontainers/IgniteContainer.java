@@ -22,7 +22,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -31,9 +33,14 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,6 +66,7 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.shaded.com.github.dockerjava.core.command.ExecStartResultCallback;
 import org.testcontainers.utility.DockerImageName;
 
@@ -89,21 +97,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger(IgniteContainer.class);
 
-    /** Ignite root directory in container. */
-    private static final String ROOT_DIR_PATH = "/opt/ignite/apache-ignite/";
-
-    /** Ignite libs directory in container. */
-    private static final String LIBS_DIR_PATH = ROOT_DIR_PATH + "libs/";
-
-    /** Ignite work directory in container. */
-    private static final String WORK_DIR_PATH = ROOT_DIR_PATH + "work";
-
-    /** Config path in container. */
-    private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config.xml";
-
-    /** Common config path in container. */
-    private static final String COMMON_CFG_PATH = ROOT_DIR_PATH + "config/common-test-config.xml";
-
     /** */
     private static final Pattern CLUSTER_STATE_PATTERN = Pattern.compile("Cluster state: (ACTIVE|INACTIVE)");
 
@@ -116,22 +109,14 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Base host port for the published thin-client port (node index added). */
     private static final int CLIENT_HOST_PORT_BASE = 50800;
 
-    /** Custom classes (with their nested classes) used by node in containers. */
-    private static final List<String> TEST_CLASSES = List.of(
-        ContainerAddressResolver.class.getName(),
-        TestCompatibilityPluginProvider.class.getName(),
-        DisabledRollingUpgradeProcessor.class.getName(),
-        DisabledValidationProcessor.class.getName()
-    );
-
     /** Seconds to wait after SIGTERM before SIGKILL. */
     private static final int SHUTDOWN_TIMEOUT_SEC = 30;
 
-    /** Jar holding {@link #TEST_CLASSES}, injected so the old image can load it. */
-    private static volatile File testClassesJar;
+    /** Jars for distinct {@link #testClasses() test classes} lists, injected so the old image can load them. */
+    private static final Map<List<String>, File> TEST_CLASSES_JARS = new ConcurrentHashMap<>();
 
-    /** Cached tar archive of {@link #TARGET_LIBS_DIR} + test-classes.jar, built once and reused for all containers. */
-    private static volatile Path targetLibsArchive;
+    /** Cached tar archives of {@link #TARGET_LIBS_DIR} + test-classes.jar, keyed by the test classes. */
+    private static final Map<List<String>, Path> TARGET_LIBS_ARCHIVES = new ConcurrentHashMap<>();
 
     /** Cached "uid:gid" of the host user. */
     private static volatile String hostUidGid;
@@ -142,82 +127,116 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Consistent ID. */
     private final String consistentId;
 
-    /** Path to work directory. */
-    private final String workDirPath;
+    /** Node index, used for the fixed published host ports. */
+    private final int idx;
+
+    /** Ignite root directory in container, computed from {@link #rootDirPath()}. */
+    private String rootDir;
+
+    /** Ignite libs directory in container. */
+    private String libsDirPath;
+
+    /** Config path in container. */
+    private String cfgPath;
 
     /**
      * @param imageName Image name.
      * @param net Network.
      * @param hostname Hostname.
      * @param consistentId Consistent ID.
-     * param idx Node index.
+     * @param idx Node index.
      */
     public IgniteContainer(String imageName, Network net, String hostname, String consistentId, int idx) throws Exception {
         super(DockerImageName.parse(imageName));
 
         this.hostname = hostname;
         this.consistentId = consistentId;
-        workDirPath = WORK_DIR_PATH + "/" + hostname;
+        this.idx = idx;
 
-        int discoHostPort = DISCO_HOST_PORT_BASE + idx;
-        int commHostPort = COMM_HOST_PORT_BASE + idx;
-
-        withEnv("CONFIG_URI", "file://" + CFG_PATH);
-        withEnv("IGNITE_QUIET", "false");
-        withEnv("IGNITE_WORK_DIR", workDirPath);
-        withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
-        withEnv("TZ", ZoneId.systemDefault().toString());
-
-        // node.consistent.id pins the node's consistent id (and thus its persistence folder) so the upgraded host
-        // node, started with the same consistent id, inherits this node's persisted data.
-        String jvmOpts = "-Xms512m -Xmx1g -Dnode.consistent.id=" + consistentId;
-
-        // Containers advertise published ports as external addresses via ContainerAddressResolver.
-        // This is needed on all platforms:
-        //   - macOS/Windows: container-internal bridge IPs are not routable from the host
-        //   - Linux: bridge IPs (172.x.x.x) may be blocked by host firewall (nftables/iptables)
-        // Published ports (127.0.0.1:5050x) are always reachable from the host via Docker port forwarding.
-        jvmOpts += " -D" + EXT_ADDR_PROP_PREFIX + TcpDiscoverySpi.DFLT_PORT + "=127.0.0.1:" + discoHostPort
-            + " -D" + EXT_ADDR_PROP_PREFIX + TcpCommunicationSpi.DFLT_PORT + "=127.0.0.1:" + commHostPort;
-
-        withEnv("JVM_OPTS", jvmOpts);
-
-        File locWorkDir = new File(LOCAL_WORK_DIR_PATH);
-
-        if (!locWorkDir.exists())
-            locWorkDir.mkdirs();
-
-        withFileSystemBind(LOCAL_WORK_DIR_PATH, WORK_DIR_PATH, BindMode.READ_WRITE);
-
-        // On Linux, run as the host user so bind-mounted directories (work dir, etc.) are owned by
-        // the host user and can be cleaned up without root. Docker supports numeric UID:GID without
-        // the user existing in the container's /etc/passwd.
-        if (LINUX) {
-            String uidGid = hostUserUidGid();
-
-            LOGGER.info("Running container {} as host user uid/gid: {}", hostname, uidGid);
-
-            withCreateContainerCmdModifier(cmd -> cmd.withUser(uidGid));
-        }
-
-        withCopyFileToContainer(forClasspathResource("docker/common-test-config.xml"), COMMON_CFG_PATH);
-        withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
-        withCopyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), LIBS_DIR_PATH + "test-classes.jar");
-
+        // This constructor must NOT invoke the overridable hooks (rootDirPath(), *ConfigResource(),
+        // testClasses(), waitStrategy()): subclasses initialize their own instance state in their
+        // constructors, which run only after super(...) returns. Everything derived from those hooks
+        // is therefore deferred to configure(), which Testcontainers calls on start() — after every
+        // subclass constructor has finished. Only network membership and the fixed published ports
+        // (which depend solely on constructor parameters) are configured eagerly here.
         withNetwork(net);
         withNetworkAliases(hostname);
 
         withLogConsumer(frame -> System.out.println("[" + consistentId + "] " + frame.getUtf8String().trim()));
 
-        // Always publish fixed host ports so the host JVM node and thin client can reach each container at
-        // 127.0.0.1:<port> via Testcontainers port forwarding. On Linux the bridge-internal IP (172.x) may
-        // be unreachable due to host firewall rules (firewalld/nftables) or Docker-in-VM setups (WSL2,
-        // VirtualBox), so published ports are the only reliable cross-platform approach.
         addFixedExposedPort(CLIENT_HOST_PORT_BASE + idx, ClientConnectorConfiguration.DFLT_PORT);
-        addFixedExposedPort(commHostPort, TcpCommunicationSpi.DFLT_PORT);
-        addFixedExposedPort(discoHostPort, TcpDiscoverySpi.DFLT_PORT);
+        addFixedExposedPort(COMM_HOST_PORT_BASE + idx, TcpCommunicationSpi.DFLT_PORT);
+        addFixedExposedPort(DISCO_HOST_PORT_BASE + idx, TcpDiscoverySpi.DFLT_PORT);
+    }
 
-        waitingFor(Wait.forLogMessage(".*Node started.*", 1).withStartupTimeout(Duration.ofSeconds(600)));
+    /** {@inheritDoc} */
+    @Override protected void configure() {
+        try {
+            // Resolved here, not in the constructor, so that the overridable hooks run only after every
+            // subclass constructor has initialized whatever instance state they may depend on.
+            rootDir = rootDirPath();
+            libsDirPath = rootDir + "libs/";
+            String workDirBase = rootDir + "work";
+            cfgPath = rootDir + "config/test-config.xml";
+
+            int discoHostPort = DISCO_HOST_PORT_BASE + idx;
+            int commHostPort = COMM_HOST_PORT_BASE + idx;
+
+            withEnv("CONFIG_URI", "file://" + cfgPath);
+            // Some entrypoints (e.g. bin/ignite.sh) resolve the config from DEFAULT_CONFIG rather than CONFIG_URI.
+            // Point it at the same config so both entrypoint styles load it; run.sh-based images ignore DEFAULT_CONFIG.
+            withEnv("DEFAULT_CONFIG", cfgPath);
+            withEnv("IGNITE_QUIET", "false");
+            withEnv("IGNITE_WORK_DIR", workDirBase + "/" + hostname);
+            withEnv("IGNITE_LOCAL_HOST", "0.0.0.0");
+            withEnv("TZ", ZoneId.systemDefault().toString());
+
+            // node.consistent.id pins the node's consistent id (and thus its persistence folder) so the upgraded host
+            // node, started with the same consistent id, inherits this node's persisted data.
+            String jvmOpts = "-Xms512m -Xmx1g -Dnode.consistent.id=" + consistentId;
+
+            // Containers advertise published ports as external addresses via ContainerAddressResolver.
+            // This is needed on all platforms:
+            //   - macOS/Windows: container-internal bridge IPs are not routable from the host
+            //   - Linux: bridge IPs (172.x.x.x) may be blocked by host firewall (nftables/iptables)
+            // Published ports (127.0.0.1:5050x) are always reachable from the host via Docker port forwarding.
+            jvmOpts += " -D" + EXT_ADDR_PROP_PREFIX + TcpDiscoverySpi.DFLT_PORT + "=127.0.0.1:" + discoHostPort
+                + " -D" + EXT_ADDR_PROP_PREFIX + TcpCommunicationSpi.DFLT_PORT + "=127.0.0.1:" + commHostPort;
+
+            withEnv("JVM_OPTS", jvmOpts);
+
+            File locWorkDir = new File(LOCAL_WORK_DIR_PATH);
+
+            if (!locWorkDir.exists())
+                locWorkDir.mkdirs();
+
+            withFileSystemBind(LOCAL_WORK_DIR_PATH, workDirBase, BindMode.READ_WRITE);
+
+            // On Linux, run as the host user so bind-mounted directories (work dir, etc.) are owned by
+            // the host user and can be cleaned up without root. Docker supports numeric UID:GID without
+            // the user existing in the container's /etc/passwd.
+            if (LINUX) {
+                String uidGid = hostUserUidGid();
+
+                LOGGER.info("Running container {} as host user uid/gid: {}", hostname, uidGid);
+
+                withCreateContainerCmdModifier(cmd -> cmd.withUser(uidGid));
+            }
+
+            withCopyFileToContainer(forClasspathResource(commonConfigResource()), rootDir + "config/common-test-config.xml");
+            withCopyFileToContainer(forClasspathResource(sourceConfigResource()), cfgPath);
+            withCopyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), libsDirPath + "test-classes.jar");
+
+            waitingFor(waitStrategy());
+        }
+        catch (IOException | InterruptedException e) {
+            throw new IgniteException("Failed to configure container " + hostname, e);
+        }
+    }
+
+    /** @return Wait strategy for the node to become ready. */
+    protected WaitStrategy waitStrategy() {
+        return Wait.forLogMessage(".*Node started.*", 1).withStartupTimeout(Duration.ofSeconds(600));
     }
 
     /** {@inheritDoc} */
@@ -250,7 +269,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
             .withAttachStdout(true)
             .withAttachStderr(true)
             .withCmd("sh", "-c",
-                "rm -rf " + LIBS_DIR_PATH + "* && tar xf " + archivePathInContainer + " -C " + LIBS_DIR_PATH
+                "rm -rf " + libsDirPath + "* && tar xf " + archivePathInContainer + " -C " + libsDirPath
                 + " && rm -f " + archivePathInContainer)
             .exec();
 
@@ -265,7 +284,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         if (!Boolean.TRUE.equals(resp.isRunning()) && resp.getExitCodeLong() != null && resp.getExitCodeLong() != 0)
             throw new IllegalStateException("Failed to clean and extract libs: " + err);
 
-        copyFileToContainer(forClasspathResource("docker/target-test-config.xml"), CFG_PATH);
+        copyFileToContainer(forClasspathResource(targetConfigResource()), cfgPath);
 
         stopGraceful();
 
@@ -359,16 +378,12 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     }
 
     /** */
-    private String execControl(String... cmd) {
-        String[] fullCmd = new String[cmd.length + 1];
-
-        fullCmd[0] = ROOT_DIR_PATH + "bin/control.sh";
-
-        System.arraycopy(cmd, 0, fullCmd, 1, cmd.length);
-
+    protected String execControl(String... cmd) {
         ExecResult result;
 
         try {
+            String[] fullCmd = command(cmd);
+
             LOGGER.info("Running command: {}", Arrays.toString(fullCmd).replace(", ", " "));
 
             result = execInContainer(fullCmd);
@@ -383,77 +398,194 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         return result.getStdout();
     }
 
-    /** @return Jar with {@link #TEST_CLASSES}, built once and reused for all containers. */
-    private static File testClassesJar() throws IOException {
-        File jar = testClassesJar;
+    /**
+     * Builds the {@code control.sh} command line to be executed inside the container.
+     *
+     * @param cmd Control utility arguments (e.g. {@code --set-state ACTIVE --yes}).
+     * @return Full command whose first element is the absolute path to {@code control.sh}, followed by {@code cmd}.
+     */
+    protected String[] command(String... cmd) {
+        String[] fullCmd = new String[cmd.length + 1];
+
+        fullCmd[0] = rootDir + "bin/control.sh";
+
+        System.arraycopy(cmd, 0, fullCmd, 1, cmd.length);
+
+        return fullCmd;
+    }
+
+    /** @return Classpath resource of the common (shared) node config copied into the container. */
+    protected String commonConfigResource() {
+        return "docker/common-test-config.xml";
+    }
+
+    /** @return Classpath resource of the source (pre-upgrade) node config copied into the container. */
+    protected String sourceConfigResource() {
+        return "docker/test-config.xml";
+    }
+
+    /** @return Classpath resource of the node config used on the target (upgraded) side during in-place Docker upgrade. */
+    protected String targetConfigResource() {
+        return "docker/target-test-config.xml";
+    }
+
+    /** @return Ignite root directory inside the container, with a trailing slash. */
+    protected String rootDirPath() {
+        return "/opt/ignite/apache-ignite/";
+    }
+
+    /** @return Custom classes (with their nested classes) used by the node in containers. */
+    protected List<String> testClasses() {
+        return List.of(
+            ContainerAddressResolver.class.getName(),
+            TestCompatibilityPluginProvider.class.getName(),
+            DisabledRollingUpgradeProcessor.class.getName(),
+            DisabledValidationProcessor.class.getName()
+        );
+    }
+
+    /**
+     * @return Jar with the {@link #testClasses() test classes}, built per distinct class list and reused.
+     *      The cache is keyed on the effective {@link #testClasses()} result so subclasses overriding it get
+     *      their own jar instead of silently reusing the one built for the base class.
+     */
+    protected File testClassesJar() throws IOException {
+        // List.copyOf makes an immutable, value-comparable key.
+        List<String> classes = List.copyOf(testClasses());
+
+        File jar = TEST_CLASSES_JARS.get(classes);
 
         if (jar != null)
             return jar;
 
         synchronized (IgniteContainer.class) {
-            if (testClassesJar != null)
-                return testClassesJar;
+            jar = TEST_CLASSES_JARS.get(classes);
+
+            if (jar != null)
+                return jar;
 
             jar = File.createTempFile("test-classes", ".jar");
             jar.deleteOnExit();
 
             try (JarOutputStream out = new JarOutputStream(new FileOutputStream(jar))) {
-                for (String cls : TEST_CLASSES) {
+                for (String cls : classes) {
                     String clsPath = cls.replace('.', '/') + ".class";
 
-                    URL url = IgniteContainer.class.getClassLoader().getResource(clsPath);
-
-                    if (url == null)
-                        throw new IOException("Class not found on classpath: " + clsPath);
-
-                    File dir;
-
-                    try {
-                        dir = new File(url.toURI()).getParentFile();
-                    }
-                    catch (URISyntaxException e) {
-                        throw new IOException(e);
-                    }
-
-                    String pkg = clsPath.substring(0, clsPath.lastIndexOf('/') + 1);
-                    String simple = cls.substring(cls.lastIndexOf('.') + 1);
-
                     // Include the class and its nested classes (e.g. the provider's anonymous $1).
-                    File[] clsFiles = dir.listFiles((d, name) ->
-                        name.equals(simple + ".class") || name.startsWith(simple + '$'));
+                    // Each entry carries the URL already resolved by classResources(), avoiding a second
+                    // getResource() for the same top-level class (which would otherwise be hit twice).
+                    for (ClassResource res : classResources(clsPath)) {
+                        out.putNextEntry(new JarEntry(res.name));
 
-                    if (clsFiles == null)
-                        throw new IOException("Cannot list class directory: " + dir);
-
-                    for (File f : clsFiles) {
-                        out.putNextEntry(new JarEntry(pkg + f.getName()));
-
-                        Files.copy(f.toPath(), out);
+                        try (InputStream in = res.url.openStream()) {
+                            in.transferTo(out);
+                        }
 
                         out.closeEntry();
                     }
                 }
             }
 
-            return testClassesJar = jar;
+            TEST_CLASSES_JARS.put(classes, jar);
+
+            return jar;
+        }
+    }
+
+    /**
+     * Resolves the fully qualified resources (the top-level class plus its nested classes, e.g. {@code Outer$1})
+     * for a class located either on the file system or inside a jar on the classpath. Each returned element pairs
+     * the resource name with its already-resolved URL, so callers do not need to call {@code getResource()} again.
+     *
+     * @param clsPath Resource path of the top-level class (package separator replaced with '/', ending in {@code .class}).
+     * @return Pairs of resource name and resolved URL for the class and its nested classes.
+     */
+    private static Collection<ClassResource> classResources(String clsPath) throws IOException {
+        String pkg = clsPath.substring(0, clsPath.lastIndexOf('/') + 1);
+        String simple = clsPath.substring(clsPath.lastIndexOf('/') + 1, clsPath.length() - ".class".length());
+        String nestedPrefix = pkg + simple + "$";
+
+        ClassLoader cl = IgniteContainer.class.getClassLoader();
+
+        URL url = cl.getResource(clsPath);
+
+        if (url == null)
+            throw new IOException("Class not found on classpath: " + clsPath);
+
+        List<ClassResource> res = new ArrayList<>();
+
+        try {
+            if ("file".equals(url.getProtocol())) {
+                File dir = new File(url.toURI()).getParentFile();
+
+                File[] clsFiles = dir.listFiles((d, name) ->
+                    name.startsWith(simple + '$') && name.endsWith(".class"));
+
+                if (clsFiles == null)
+                    throw new IOException("Cannot list class directory: " + dir);
+
+                res.add(new ClassResource(clsPath, url));
+
+                for (File f : clsFiles)
+                    res.add(new ClassResource(pkg + f.getName(), cl.getResource(pkg + f.getName())));
+            }
+            else if ("jar".equals(url.getProtocol())) {
+                JarURLConnection conn = (JarURLConnection)url.openConnection();
+
+                try (JarFile jar = conn.getJarFile()) {
+                    Enumeration<JarEntry> entries = jar.entries();
+
+                    while (entries.hasMoreElements()) {
+                        String name = entries.nextElement().getName();
+
+                        if (name.equals(clsPath) || (name.startsWith(nestedPrefix) && name.endsWith(".class")))
+                            res.add(new ClassResource(name, cl.getResource(name)));
+                    }
+                }
+            }
+            else
+                throw new IOException("Unsupported class resource protocol: " + url.getProtocol());
+        }
+        catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
+
+        return res;
+    }
+
+    /** A class resource: its name on the classpath paired with the already-resolved URL. */
+    private static final class ClassResource {
+        /** Resource name on the classpath. */
+        final String name;
+
+        /** Resolved URL of the resource. */
+        final URL url;
+
+        /** @param name Resource name on the classpath. */
+        ClassResource(String name, URL url) {
+            this.name = name;
+            this.url = url;
         }
     }
 
     /**
      * Returns a cached tar archive (plain, no gzip) containing all files from {@link #TARGET_LIBS_DIR}
-     * plus the test-classes jar. Built once and reused for all container upgrades.
+     * plus the test-classes jar. Cached per distinct {@link #testClasses()} list, since the archive embeds
+     * {@link #testClassesJar()} whose content depends on it.
      *
      * @return Path to the tar file on the host.
      */
-    private static Path libsArchive() throws IOException {
-        Path archive = targetLibsArchive;
+    protected Path libsArchive() throws IOException {
+        List<String> classes = List.copyOf(testClasses());
+
+        Path archive = TARGET_LIBS_ARCHIVES.get(classes);
 
         if (archive != null)
             return archive;
 
         synchronized (IgniteContainer.class) {
-            if (targetLibsArchive != null)
-                return targetLibsArchive;
+            if (TARGET_LIBS_ARCHIVES.containsKey(classes))
+                return TARGET_LIBS_ARCHIVES.get(classes);
 
             File targetLibsFile = TARGET_LIBS_DIR.toFile();
 
@@ -498,7 +630,9 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
             LOGGER.info("Libs archive built: {} ({} bytes)", archiveFile, archiveFile.length());
 
-            return targetLibsArchive = archiveFile.toPath();
+            TARGET_LIBS_ARCHIVES.put(classes, archiveFile.toPath());
+
+            return archiveFile.toPath();
         }
     }
 
@@ -563,7 +697,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
      * (flush persistence, notify discovery neighbors, close socket connections) so that remaining nodes
      * don't trigger spurious "Failed to check connection to previous node" warnings during teardown.</p>
      */
-    private void stopGraceful() {
+    protected void stopGraceful() {
         if (!isRunning())
             return;
 
@@ -588,12 +722,12 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     }
 
     /** @return Address the host JVM uses to reach this container's {@code port}. */
-    private String address(int port) {
+    protected String address(int port) {
         return getHost() + ":" + getMappedPort(port);
     }
 
     /** @return This container's attachment to the single test Docker network. */
-    private ContainerNetwork network() {
+    protected ContainerNetwork network() {
         return getContainerInfo().getNetworkSettings().getNetworks().values().iterator().next();
     }
 }
