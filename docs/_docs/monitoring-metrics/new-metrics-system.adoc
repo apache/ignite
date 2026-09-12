@@ -15,7 +15,6 @@
 = Metrics System
 
 :javaFile: {javaCodeDir}/ConfiguringMetrics.java
-:table_opts: cols="2,1,4,1",opts="header"
 
 == Overview
 
@@ -40,7 +39,6 @@ Ignite includes the following exporters:
 * OpenCensus
 
 You can create a custom exporter by implementing the javadoc:org.apache.ignite.spi.metric.MetricExporterSpi[] interface.
-
 
 == Metric Registries [[registry]]
 
@@ -78,7 +76,6 @@ tab:C++[unsupported]
 --
 
 The following sections describe the exporters available in Ignite by default.
-
 
 === JMX
 
@@ -130,7 +127,6 @@ For example:
 JVM_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 ----
-
 
 // link:monitoring-metrics/configuring-metrics[Configuring Metrics]
 
@@ -191,7 +187,6 @@ tab:XML[]
 include::code-snippets/xml/metrics.xml[tags=!*;ignite-config;log-exporter, indent=0]
 ----
 
-
 tab:Java[]
 
 If you use programmatic configuration, you can change the print frequency as follows:
@@ -215,7 +210,6 @@ To use the OpenCensus exporter:
 . Add `org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi` to the list of exporters in the node configuration.
 . Configure OpenCensus StatsCollector to export to a specific system. See link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/opencensus/OpenCensusMetricsExporterExample.java[OpenCensusMetricsExporterExample.java] for an example and OpenCensus documentation for additional information.
 
-
 Configuration parameters:
 
 * `filter` - predicate that filters metrics.
@@ -223,9 +217,6 @@ Configuration parameters:
 * `sendInstanceName` - if enabled, a tag with the Ignite instance name is added to each metric.
 * `sendNodeId` - if enabled, a tag with the Ignite node id is added to each metric.
 * `sendConsistentId` - if enabled, a tag with the Ignite node consistent id is added to each metric.
-
-
-
 
 == Histograms
 
@@ -244,7 +235,6 @@ where
 * `{low_bound}` - start of the bound. `0` for the first bound.
 * `{high_bound}` - end of the bound. `inf` for the last bound.
 
-
 Example of the bucket names if the bounds are [10,100]:
 
 * `histogram_0_10` - less than 10.
@@ -254,7 +244,6 @@ Example of the bucket names if the bounds are [10,100]:
 The `SYS.METRICS` system view and the log exporter report the whole histogram as a single value: an array of bucket
 counters, for example `[3, 15, 2]`. Bucket bounds are not exposed there yet, so to see them read the same metric through
 JMX, the OpenCensus exporter, or `control.sh --metric`, where every bucket name carries its bounds.
-
 
 == Common Monitoring Tasks
 === Monitoring the Amount of Data
@@ -267,7 +256,6 @@ The size of the data loaded into a node is available at different levels of aggr
 * The total size of the data the node keeps on disk or in RAM. This amount is the sum of the size of each configured data region (in the simplest case, only the default data region) plus the sizes of the system data regions.
 * The size of a specific link:memory-configuration/data-regions[data region] on that node. The data region size is the sum of the sizes of all cache groups.
 * The size of a specific cache/cache group on that node, including the backup partitions.
-
 
 ==== Allocated Space vs. Actual Size of Data
 
@@ -288,21 +276,17 @@ Use `SizeUsedByData` when you need a more direct estimate of how much data is st
 
 Add up the estimated size of all data regions to get the estimated total amount of data on the node.
 
-
 :allocsize_note: Note that when Native persistence is disabled, this metric shows the total size of the allocated space in RAM.
 
 ==== Monitoring RAM Memory Usage
 The amount of data in RAM can be monitored for each data region through the following metrics:
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
+* `PagesFillFactor` - The average size of data in pages as a ratio of the page size. When Native persistence is enabled, this metric is applicable only to the persistent storage (i.e. pages on disk).
+* `TotalUsedPages` - The number of data pages that are currently in use. When Native persistence is enabled, this metric is applicable only to the persistent storage (i.e. pages on disk).
+* `PhysicalMemoryPages` - The number of the allocated pages in RAM.
+* `PhysicalMemorySize` - The size of the allocated space in RAM in bytes.
 
-| PagesFillFactor| float | The average size of data in pages as a ratio of the page size. When Native persistence is enabled, this metric is applicable only to the persistent storage (i.e. pages on disk). | Node
-| TotalUsedPages | long | The number of data pages that are currently in use. When Native persistence is enabled, this metric is applicable only to the persistent storage (i.e. pages on disk).| Node
-| PhysicalMemoryPages |long | The number of the allocated pages in RAM. | Node
-| PhysicalMemorySize |long |The size of the allocated space in RAM in bytes. | Node
-|===
+The metrics belong to the `io.dataregion.{data_region_name}` register, see link:monitoring-metrics/new-metrics#data-region-io[Data Region IO].
 
 If you have multiple data regions, add up the sizes of all data regions to get the total size of the data on the node.
 
@@ -314,13 +298,11 @@ The total amount of data each node keeps on disk consists of the persistent stor
 ===== Persistent Storage Size
 To monitor the size of the persistent storage on disk, use the following metrics:
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| TotalAllocatedSize | long  | The size of the space allocated on disk for the entire data storage (in bytes). {allocsize_note} | Node
-| WalTotalSize | long | Total size of the WAL files in bytes, including the WAL archive files. | Node
-| WalArchiveSegments | int | The number of WAL segments in the archive.  | Node
-|===
+* `TotalAllocatedSize` - The size of the space allocated on disk for the entire data storage (in bytes). {allocsize_note}
+* `WalTotalSize` - Total size of the WAL files in bytes, including the WAL archive files.
+* `WalArchiveSegments` - The number of WAL segments in the archive.
+
+The metrics belong to the `io.datastorage` register, see link:monitoring-metrics/new-metrics#data-storage[Data Storage].
 
 ===== Data Region Size
 
@@ -328,27 +310,22 @@ Metrics collection for data regions is disabled by default. You can link:monitor
 
 The size of the data region on a node comprises the size of all partitions (including backup partitions) that this node owns for all caches in that data region.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
+* `TotalAllocatedSize` - The size of the space allocated for this data region (in bytes). {allocsize_note}
+* `SizeUsedByData` - The estimated number of bytes occupied by data in this data region, taking into account free space inside non-empty pages.
+* `PagesFillFactor` - The average amount of data in non-empty pages as a ratio of the page size.
+* `TotalUsedPages` - The number of data pages that are currently in use.
+* `PhysicalMemoryPages` - The number of data pages in this data region held in RAM.
+* `PhysicalMemorySize` - The size of the allocated space in RAM in bytes.
 
-| TotalAllocatedSize | long  | The size of the space allocated for this data region (in bytes). {allocsize_note} | Node
-| SizeUsedByData | long | The estimated number of bytes occupied by data in this data region, taking into account free space inside non-empty pages. | Node
-| PagesFillFactor| float | The average amount of data in non-empty pages as a ratio of the page size. | Node
-| TotalUsedPages | long | The number of data pages that are currently in use. | Node
-| PhysicalMemoryPages |long |The number of data pages in this data region held in RAM. | Node
-| PhysicalMemorySize | long |The size of the allocated space in RAM in bytes.| Node
-|===
+The metrics belong to the `io.dataregion.{data_region_name}` register, see link:monitoring-metrics/new-metrics#data-region-io[Data Region IO].
 
 ===== Cache Group Size
 
 If you don't use link:configuring-caches/cache-groups[cache groups], each cache will be its own group.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-|TotalAllocatedSize |long | The amount of space allocated for the cache group on this node. | Node
-|===
+* `TotalAllocatedSize` - The amount of space allocated for the cache group on this node.
+
+The metrics belong to the `cacheGroups.{group_name}` register, see link:monitoring-metrics/new-metrics#cache-groups[Cache Groups].
 
 === Monitoring Checkpointing Operations
 Checkpointing may slow down cluster operations.
@@ -357,13 +334,11 @@ You may also want to monitor the disk performance to see if the slow-down is cau
 
 See link:persistence/persistence-tuning#pages-writes-throttling[Pages Writes Throttling] and link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[Checkpointing Buffer Size] for performance tips.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| DirtyPages  | long | The number of pages in memory that have been changed but not yet synchronized to disk. Those will be written to disk during next checkpoint. | Node
-|LastCheckpointDuration | long | The time in milliseconds it took to create the last checkpoint. | Node
-|CheckpointBufferSize | long | The size of the checkpointing buffer. | Global
-|===
+* `DirtyPages` - The number of pages in memory that have been changed but not yet synchronized to disk. Those will be written to disk during next checkpoint.
+* `LastCheckpointDuration` - The time in milliseconds it took to create the last checkpoint.
+* `CheckpointBufferSize` - The size of the checkpointing buffer.
+
+The metrics belong to the `io.datastorage` register, see link:monitoring-metrics/new-metrics#data-storage[Data Storage].
 
 === Monitoring Rebalancing
 link:data-rebalancing[Rebalancing] is the process of moving partitions between the cluster nodes so that the data is always distributed in a balanced manner. Rebalancing is triggered when a new node joins, or an existing node leaves the cluster.
@@ -371,33 +346,23 @@ link:data-rebalancing[Rebalancing] is the process of moving partitions between t
 If you have multiple caches, they will be rebalanced sequentially.
 There are several metrics that you can use to monitor the progress of the rebalancing process for a specific cache.
 
-In the metric system, link:monitoring-metrics/new-metrics#caches[Cache metrics]:
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-|RebalancingStartTime | long | This metric shows the time when rebalancing of local partitions started for the cache. This metric will return 0 if the local partitions do not participate in the rebalancing. The time is returned in milliseconds. | Node
-| EstimatedRebalancingFinishTime | long | Expected time of completion of the rebalancing process. |  Node
-| KeysToRebalanceLeft | long | The number of keys on the node that remain to be rebalanced.  You can monitor this metric to learn when the rebalancing process finishes.| Node
-|===
+* `RebalancingStartTime` - The time the first partition demand message was sent. If there are no messages to send, the rebalancing time will be undefined. Belongs to the `cacheGroups.{group_name}` register, see link:monitoring-metrics/new-metrics#cache-groups[Cache Groups].
+* `RebalancingKeysRate`, `RebalancingBytesRate`, `EstimatedRebalancingKeys`, `RebalancedKeys` - Rebalancing progress of a cache, see link:monitoring-metrics/new-metrics#caches[Caches].
+* `EstimatedRebalancingFinishTime` and `KeysToRebalanceLeft` - Available only through the `CacheMetrics` Java API (`IgniteCache.metrics()`); the latter equals `EstimatedRebalancingKeys - RebalancedKeys`.
 
 === Monitoring Topology
 Topology refers to the set of nodes in a cluster. There are a number of metrics that expose the information about the topology of the cluster. If the topology changes too frequently or has a size that is different from what you expect, you may want to look into whether there are network problems.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| TotalServerNodes| long  |The number of server nodes in the cluster.| Global
-| TotalClientNodes| long |The number of client nodes in the cluster. | Global
-| TotalBaselineNodes | long | The number of nodes that are registered in the link:clustering/baseline-topology[baseline topology]. When a node goes down, it remains registered in the baseline topology and you need to remove it manually. |  Global
-| ActiveBaselineNodes | long | The number of nodes that are currently active in the baseline topology.  |  Global
-|===
+* `TotalServerNodes` - The number of server nodes in the cluster.
+* `TotalClientNodes` - The number of client nodes in the cluster.
+* `TotalBaselineNodes` - The number of nodes that are registered in the link:clustering/baseline-topology[baseline topology]. When a node goes down, it remains registered in the baseline topology and you need to remove it manually.
+* `ActiveBaselineNodes` - The number of nodes that are currently active in the baseline topology.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| Coordinator | String | The node ID of the current coordinator node.| Global
-| CoordinatorNodeFormatted|String a|
-Detailed information about the coordinator node.
+The metrics belong to the `cluster` register, see link:monitoring-metrics/new-metrics#cluster[Cluster].
+
+* `Coordinator` - The node ID of the current coordinator node (`io.discovery` register, see link:monitoring-metrics/new-metrics#discovery-io[Discovery IO]).
+* `currentCoordinatorFormatted` - Detailed information about the coordinator node (`ignite` register, see link:monitoring-metrics/new-metrics#node[Node]), for example:
+
 ....
 TcpDiscoveryNode [id=e07ad289-ff5b-4a73-b3d4-d323a661b6d4,
 consistentId=fa65ff2b-e7e2-4367-96d9-fd0915529c25,
@@ -408,9 +373,6 @@ order=2, intOrder=2, lastExchangeTime=1568187777249, loc=false,
 ver=8.7.5#20190520-sha1:d159cd7a, isClient=false]
 ....
 
-| Global
-|===
-
 === Monitoring Caches
 
 See the new metric system, link:monitoring-metrics/new-metrics#caches[Cache metrics].
@@ -419,54 +381,51 @@ See the new metric system, link:monitoring-metrics/new-metrics#caches[Cache metr
 
 To get an estimate on how long it takes to rebuild cache indexes, you can use one of the metrics listed below:
 
-. `IsIndexRebuildInProgress` - tells whether indexes are being built or rebuilt at the moment;
+. `IsIndexRebuildInProgress` - tells whether indexes are being rebuilt at the moment;
 . `IndexBuildCountPartitionsLeft` - gives the remaining number of partitions (by cache group) for indexes to rebuild.
 
 Note that the `IndexBuildCountPartitionsLeft` metric allows to estimate only an approximate number of indexes left to rebuild.
 For a more accurate estimate, use the `IndexRebuildKeyProcessed` cache metric:
 
-* Use `isIndexRebuildInProgress` to know whether the indexes are being rebuilt for the cache.
+* Use `IsIndexRebuildInProgress` to know whether the indexes are being rebuilt for the cache.
 
-* Use `IndexRebuildKeysProcessed` to know the number of keys with rebuilt indexes. If the rebuilding is in progress, it gives a number of keys with indexes being rebuilt at the current moment. Otherwise, it gives a total number of the of keys with rebuilt indexes. The values are reset before the start of each rebuilding.
+* Use `IndexRebuildKeyProcessed` to know the number of keys with rebuilt indexes. If the rebuilding is in progress, it gives a number of keys with indexes being rebuilt at the current moment. Otherwise, it gives a total number of the of keys with rebuilt indexes. The values are reset before the start of each rebuilding.
 
 === Monitoring Transactions
 Note that if a transaction spans multiple nodes (i.e., if the keys that are changed as a result of the transaction execution are located on multiple nodes), the counters will increase on each node. For example, the 'TransactionsCommittedNumber' counter will increase on each node where the keys affected by the transaction are stored.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| LockedKeysNumber | long  | The number of keys locked on the node. | Node
-| TransactionsCommittedNumber |long | The number of transactions that have been committed on the node  | Node
-| TransactionsRolledBackNumber | long | The number of transactions that were rolled back. | Node
-| OwnerTransactionsNumber | long |  The number of transactions initiated on the node. | Node
-| TransactionsHoldingLockNumber | long | The number of open transactions that hold a lock on at least one key on the node.| Node
-|===
+* `LockedKeysNumber` - The number of keys locked on the node.
+* `TransactionsCommittedNumber` - The number of transactions that have been committed on the node. Exposed as `txCommits` in the `tx` register.
+* `TransactionsRolledBackNumber` - The number of transactions that were rolled back. Exposed as `txRollbacks` in the `tx` register.
+* `OwnerTransactionsNumber` - The number of transactions initiated on the node.
+* `TransactionsHoldingLockNumber` - The number of open transactions that hold a lock on at least one key on the node.
+
+The metrics belong to the `tx` register, see link:monitoring-metrics/new-metrics#transactions[Transactions].
 
 === Monitoring Snapshots
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| LastSnapshotOperation |  | |
-| LastSnapshotStartTime || |
-| SnapshotInProgress | | |
-|===
+* `LastSnapshotStartTime` - The system time of the last cluster snapshot request start time on this node.
+* `LastSnapshotEndTime` - The system time of the last cluster snapshot request end time on this node.
+* `LastSnapshotName` - The name of last started cluster snapshot request on this node.
+* `LastSnapshotErrorMessage` - The error message of last started cluster snapshot request which fail with an error. This value will be empty if last snapshot request has been completed successfully.
+* `LastRequestId` - The ID of the last started snapshot operation.
+* `LocalSnapshotNames` - The list of names of all snapshots currently saved on the local node with respect to the configured via IgniteConfiguration snapshot working path.
+* `CurrentSnapshotTotalSize` - Estimated size of current cluster snapshot in bytes on this node. The value may grow during snapshot creation.
+* `CurrentSnapshotProcessedSize` - Processed size of current cluster snapshot in bytes on this node.
+
+The metrics belong to the `snapshot` register, see link:monitoring-metrics/new-metrics#snapshot[Snapshot].
 
 === Monitoring Client Connections
 Metrics related to JDBC/ODBC or thin client connections.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| Connections | java.util.List<String> a| A list of strings, each string containing information about a connection:
+* `ActiveSessionsCount`, `thin.ActiveSessions`, `jdbc.ActiveSessions`, `odbc.ActiveSessions` - The number of active connections, total and per client type (`client.connector` register, see link:monitoring-metrics/new-metrics#ignite-thin-client-connector[Ignite Thin Client Connector]).
+* The link:monitoring-metrics/system-views#client_connections[CLIENT_CONNECTIONS] system view lists every connection with its user and addresses.
+* `Connections` - Attribute of the `ClientProcessorMXBean` MBean, not available in the metric registers. A list of strings, each string containing information about a connection:
 
 ....
 JdbcClient [id=4294967297, user=<anonymous>,
 rmtAddr=127.0.0.1:39264, locAddr=127.0.0.1:10800]
 ....
-| Node
-|===
-
 
 === Monitoring Message Queues
 When thread pools queues' are growing, it means that the node cannot keep up with the load, or there was an error while processing messages in the queue.
@@ -476,19 +435,15 @@ Continuous growth of the queue size can lead to OOM errors.
 The queue of outgoing communication messages contains communication messages that are waiting to be sent to other nodes.
 If the size is growing, it means there is a problem.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| OutboundMessagesQueueSize  | int | The size of the queue of outgoing communication messages. | Node
-|===
+* `OutboundMessagesQueueSize` - The size of the queue of outgoing communication messages.
+
+The metrics belong to the `io.communication` register, see link:monitoring-metrics/new-metrics#communication-io[Communication IO].
 
 ==== Discovery Messages Queue
 
 The queue of discovery messages.
 
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| MessageWorkerQueueSize | int | The size of the queue of discovery messages that are waiting to be sent to other nodes. | Node
-|AvgMessageProcessingTime|long| Average message processing time. | Node
-|===
+* `MessageWorkerQueueSize` - The size of the queue of discovery messages that are waiting to be sent to other nodes.
+* `AvgMessageProcessingTime` - Average message processing time. Attribute of the `TcpDiscoverySpiMBean` MBean, not available in the metric registers.
+
+The metrics belong to the `io.discovery` register, see link:monitoring-metrics/new-metrics#discovery-io[Discovery IO].

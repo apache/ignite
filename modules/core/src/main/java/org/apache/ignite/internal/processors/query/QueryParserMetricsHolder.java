@@ -42,8 +42,9 @@ public class QueryParserMetricsHolder {
     public QueryParserMetricsHolder(GridMetricManager metricMgr) {
         MetricRegistryImpl registry = metricMgr.registry(QUERY_PARSER_METRIC_GROUP_NAME);
 
-        qryCacheHits = registry.longAdderMetric("hits", "Count of hits for queries cache");
-        qryCacheMisses = registry.longAdderMetric("misses", "Count of misses for queries cache");
+        qryCacheHits = registry.longAdderMetric("hits",
+            "The number of SQL queries found in the parser cache, which do not require parsing and planning before execution.");
+        qryCacheMisses = registry.longAdderMetric("misses", "The number of SQL queries that were parsed and planned.");
     }
 
     /**

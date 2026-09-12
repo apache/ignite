@@ -518,7 +518,7 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
         mreg.register("StripesActiveStatuses",
             this::stripesActiveStatuses,
             boolean[].class,
-            "Number of active tasks per stripe.");
+            "Active status of each stripe.");
 
         mreg.register("StripesQueueSizes",
             this::stripesQueueSizes,
