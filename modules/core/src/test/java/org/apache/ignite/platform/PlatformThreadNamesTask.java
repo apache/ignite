@@ -20,13 +20,14 @@ package org.apache.ignite.platform;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,14 +50,32 @@ public class PlatformThreadNamesTask extends ComputeTaskAdapter<Object, String[]
      * Job.
      */
     private static class PlatformThreadNamesJob extends ComputeJobAdapter {
+        /** Logger. */
+        @LoggerResource
+        private IgniteLogger log;
+
         /** {@inheritDoc} */
         @Nullable @Override public String[] execute() {
-            Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-            String[] threadNames = new String[threadSet.size()];
+            Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
+            String[] threadNames = new String[allStackTraces.size()];
 
             int i = 0;
-            for (Thread t : threadSet)
+
+            for (Map.Entry<Thread, StackTraceElement[]> entry : allStackTraces.entrySet()) {
+                Thread t = entry.getKey();
+                StackTraceElement[] stack = entry.getValue();
+
                 threadNames[i++] = t.getName();
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("Thread: ").append(t.getName()).append(" (ID: ").append(t.getId()).append(")\n");
+
+                for (StackTraceElement element : stack)
+                    sb.append("\tat ").append(element.toString()).append("\n");
+
+                log.info(sb.toString());
+            }
 
             return threadNames;
         }
