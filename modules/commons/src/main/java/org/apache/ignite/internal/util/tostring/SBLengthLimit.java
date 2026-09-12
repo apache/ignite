@@ -33,45 +33,24 @@ class SBLengthLimit {
     private static final int TAIL_LEN = MAX_TO_STR_LEN / 10 * 2;
 
     /** Length of head part of message. */
-    private static final int HEAD_LEN = MAX_TO_STR_LEN - TAIL_LEN;
-
-    /** */
-    private int len;
-
-    /**
-     * @return Current length.
-     */
-    int length() {
-        return len;
-    }
-
-    /**
-     *
-     */
-    void reset() {
-        len = 0;
-    }
+    static final int HEAD_LEN = MAX_TO_STR_LEN - TAIL_LEN;
 
     /**
      * @param sb String builder.
      * @param writtenLen Written length.
      */
     void onWrite(SBLimitedLength sb, int writtenLen) {
-        len += writtenLen;
-
         if (overflowed(sb) && (sb.getTail() == null || sb.getTail().length() == 0)) {
-            CircularStringBuilder tail = getTail();
-
-            int newSbLen = Math.min(sb.length(), HEAD_LEN + 1);
+            CircularStringBuilder tail = createTail();
+            int newSbLen = Math.min(sb.length(), HEAD_LEN);
             tail.append(sb.impl().substring(newSbLen));
-
             sb.setTail(tail);
-            sb.setLength(newSbLen);
+            sb.impl().setLength(newSbLen);
         }
     }
 
     /** */
-    CircularStringBuilder getTail() {
+    CircularStringBuilder createTail() {
         return new CircularStringBuilder(TAIL_LEN);
     }
 
@@ -79,6 +58,6 @@ class SBLengthLimit {
      * @return {@code True} if reached limit.
      */
     boolean overflowed(SBLimitedLength sb) {
-        return sb.impl().length() > HEAD_LEN;
+        return sb.length() >= HEAD_LEN;
     }
 }
