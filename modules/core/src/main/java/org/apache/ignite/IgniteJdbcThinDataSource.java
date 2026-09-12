@@ -59,7 +59,11 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
         if (!F.isEmpty(pwd))
             props.put("password", pwd);
 
-        return IgniteJdbcThinDriver.register().connect(getUrl(), props);
+        String url = getUrl();
+
+        System.err.println("TEST | JDBC connection URL: " + url);
+
+        return IgniteJdbcThinDriver.register().connect(url, props);
     }
 
     /** {@inheritDoc} */
@@ -193,6 +197,9 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
      */
     public void setUrl(String url) throws SQLException {
         props = new ConnectionPropertiesImpl();
+
+        // TODO: for test purposes
+        assert !props.isPartitionAwareness();
 
         props.setUrl(url);
     }
