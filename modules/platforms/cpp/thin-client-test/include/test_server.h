@@ -160,6 +160,16 @@ public:
     }
 
     /**
+     * Get port that server is listening on.
+     *
+     * @return TCP port.
+     */
+    uint16_t GetPort() const
+    {
+        return acceptor.local_endpoint().port();
+    }
+
+    /**
      * Get specified session.
      * @param idx Index.
      * @return Specified session.
