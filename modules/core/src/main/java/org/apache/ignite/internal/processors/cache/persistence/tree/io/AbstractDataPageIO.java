@@ -586,6 +586,8 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
         assert directCnt > 0 : "itemId=" + itemId + ", directCnt=" + directCnt + ", page=" + printPageLayout(pageAddr, pageSize);
 
+        assert itemId < directCnt : "itemId=" + itemId + ", directCnt=" + directCnt;
+
         if (itemId >= directCnt) { // Need to do indirect lookup.
             int indirectCnt = getIndirectCount(pageAddr);
 
