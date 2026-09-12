@@ -32,6 +32,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -125,8 +126,15 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
             .restoreSnapshot(SNAPSHOT_NAME, "", "");
 
-        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, TIMEOUT));
-        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, TIMEOUT));
+        try {
+            assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, TIMEOUT));
+            assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, TIMEOUT));
+        }
+        catch (AssertionError er) {
+            U.dumpThreads(log);
+
+            throw er;
+        }
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
