@@ -150,34 +150,34 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
             cache.query(new SqlFieldsQuery("INSERT INTO PURE(id, name) VALUES (1, 'val')")).getAll();
-            cache.query(new SqlFieldsQuery("UPDATE PURE SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE PURE SET name = 'updated' WHERE id = 1")).getAll();
             cache.query(new SqlFieldsQuery("DELETE FROM PURE WHERE id = 1")).getAll();
 
             cache.query(new SqlFieldsQuery("INSERT INTO COMPLEX(id, name) VALUES (1, 'val')")).getAll();
-            cache.query(new SqlFieldsQuery("UPDATE COMPLEX SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE COMPLEX SET name = 'updated' WHERE id = 1")).getAll();
             cache.query(new SqlFieldsQuery("DELETE FROM COMPLEX WHERE id = 1")).getAll();
 
             cache.query(new SqlFieldsQuery("INSERT INTO CITY(id, name) VALUES (1, 'val')")).getAll();
-            cache.query(new SqlFieldsQuery("UPDATE CITY SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE CITY SET name = 'updated' WHERE id = 1")).getAll();
             cache.query(new SqlFieldsQuery("DELETE FROM CITY WHERE id = 1")).getAll();
 
             cache.query(new SqlFieldsQuery("INSERT INTO PERSON(id, name, city_id) VALUES (1, 'val', 1)")).getAll();
-            cache.query(new SqlFieldsQuery("UPDATE PERSON SET name = '' WHERE id = 1")).getAll();
+            cache.query(new SqlFieldsQuery("UPDATE PERSON SET name = 'updated' WHERE id = 1")).getAll();
             cache.query(new SqlFieldsQuery("DELETE FROM PERSON WHERE id = 1")).getAll();
 
             tx.commit();
         }
 
         cache.query(new SqlFieldsQuery("INSERT INTO PURE(id, name) VALUES (1, 'val')")).getAll();
-        cache.query(new SqlFieldsQuery("UPDATE PURE SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE PURE SET name = 'updated' WHERE id = 1")).getAll();
         cache.query(new SqlFieldsQuery("DELETE FROM PURE WHERE id = 1")).getAll();
 
         cache.query(new SqlFieldsQuery("INSERT INTO COMPLEX(id, name) VALUES (1, 'val')")).getAll();
-        cache.query(new SqlFieldsQuery("UPDATE COMPLEX SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE COMPLEX SET name = 'updated' WHERE id = 1")).getAll();
         cache.query(new SqlFieldsQuery("DELETE FROM COMPLEX WHERE id = 1")).getAll();
 
         cache.query(new SqlFieldsQuery("INSERT INTO CITY(id, name) VALUES (1, 'val')")).getAll();
-        cache.query(new SqlFieldsQuery("UPDATE CITY SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE CITY SET name = 'updated' WHERE id = 1")).getAll();
         cache.query(new SqlFieldsQuery("DELETE FROM CITY WHERE id = 1")).getAll();
 
         cache.query(new SqlFieldsQuery("INSERT INTO PERSON(id, name, city_id) VALUES (1, 'val', 1)")).getAll();
@@ -185,7 +185,7 @@ public class CacheWithInterceptorIntegrationTest extends GridCommonAbstractTest 
         cache.query(new SqlFieldsQuery("DELETE FROM PERSON WHERE id = 1")).getAll();
 
         cache.query(new SqlFieldsQuery("INSERT INTO PERSON_ATOMIC(id, name, city_id) VALUES (1, 'val', 1)")).getAll();
-        cache.query(new SqlFieldsQuery("UPDATE PERSON_ATOMIC SET name = '' WHERE id = 1")).getAll();
+        cache.query(new SqlFieldsQuery("UPDATE PERSON_ATOMIC SET name = 'updated' WHERE id = 1")).getAll();
         cache.query(new SqlFieldsQuery("DELETE FROM PERSON_ATOMIC WHERE id = 1")).getAll();
     }
 

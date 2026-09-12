@@ -100,7 +100,7 @@ hello
 query TTTTT
 SELECT STRING_AGG('hello', ' '), STRING_AGG('hello', NULL), STRING_AGG(NULL, ' '), STRING_AGG(NULL, NULL), STRING_AGG('', '')
 ----
-hello	hello	NULL	NULL	(empty)
+hello	hello	NULL	NULL	NULL
 
 statement error
 SELECT STRING_AGG()

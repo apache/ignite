@@ -101,7 +101,7 @@ true
 query T
 SELECT 'zebra elephant tiger horse' LIKE ''
 ----
-false
+NULL
 
 query T
 SELECT 'zebra elephant tiger horse' LIKE '%'
@@ -191,7 +191,7 @@ false
 query T
 SELECT 'zebra elephant tiger horse' NOT LIKE ''
 ----
-true
+NULL
 
 query T
 SELECT 'zebra elephant tiger horse' NOT LIKE '%'
@@ -282,4 +282,3 @@ SELECT s FROM strings WHERE s LIKE pat ORDER BY s
 ----
 aaa
 abab
-

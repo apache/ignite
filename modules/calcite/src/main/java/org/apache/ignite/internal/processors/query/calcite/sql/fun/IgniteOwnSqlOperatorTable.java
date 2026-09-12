@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
+import java.util.function.Supplier;
+import org.apache.calcite.plan.Strong;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
@@ -95,6 +97,22 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             null,
             OperandTypes.NILADIC,
             SqlFunctionCategory.SYSTEM);
+
+    /** Converts an empty character expression result to {@code null}. */
+    public static final SqlFunction NULL_IF_EMPTY =
+        new SqlFunction(
+            "$NULL_IF_EMPTY",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.ARG0_FORCE_NULLABLE,
+            null,
+            OperandTypes.CHARACTER,
+            SqlFunctionCategory.SYSTEM
+        ) {
+            /** {@inheritDoc} */
+            @Override public Supplier<Strong.Policy> getStrongPolicyInference() {
+                return () -> Strong.Policy.AS_IS;
+            }
+        };
 
     /**
      * Least of two arguments. Unlike LEAST, which is converted to CASE WHEN THEN END clause, this function

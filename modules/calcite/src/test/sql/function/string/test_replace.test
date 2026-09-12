@@ -45,7 +45,7 @@ INSERT INTO strings VALUES ('Hello', 'World'), ('HuLlD', NULL), ('MotörHead','R
 query T
 select REPLACE(a, 'l', '-') FROM strings ORDER BY 1
 ----
-(empty)
+NULL
 He--o
 HuL-D
 MotörHead
@@ -61,8 +61,8 @@ R--cks
 query T
 select REPLACE(a, 'H', '') FROM strings WHERE b IS NOT NULL ORDER BY a
 ----
-ello
-Motöread
+NULL
+NULL
 
 # test incorrect usage of replace
 statement error
@@ -73,4 +73,3 @@ select REPLACE(1, 2)
 
 statement error
 select REPLACE(1, 2, 3, 4)
-

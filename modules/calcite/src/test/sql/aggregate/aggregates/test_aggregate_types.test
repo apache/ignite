@@ -30,8 +30,8 @@ query TTTT
 SELECT STRING_AGG(s, ' ' ORDER BY s ASC), STRING_AGG(s, '' ORDER BY s ASC), STRING_AGG('', ''), STRING_AGG('hello', ' ') FROM strings
 ----
 hello my world
-hellomyworld
-(empty)
+hello,my,world
+NULL
 hello hello hello hello
 
 # more complex agg (groups)

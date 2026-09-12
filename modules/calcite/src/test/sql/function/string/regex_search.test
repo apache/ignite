@@ -16,7 +16,7 @@ false
 query T
 SELECT 'asdf' ~ ''
 ----
-true
+NULL
 
 # partial matches okay
 query T
@@ -43,12 +43,12 @@ false
 query T
 SELECT '' ~ '.*yu.*'
 ----
-false
+NULL
 
 query T
 SELECT '' ~ '.*'
 ----
-true
+NULL
 
 # NULLs
 query T
@@ -71,7 +71,7 @@ SELECT 'foobarbequebaz' ~ '(bar)(beque)'
 ----
 true
 
-# postgres says throw error on invalid regex
+# Invalid regular expression is validated even when the source is NULL.
 statement error
 SELECT '' ~ '[a-z'
 
@@ -126,4 +126,3 @@ SELECT v ~ 'h.*' FROM test ORDER BY v
 ----
 false
 true
-
