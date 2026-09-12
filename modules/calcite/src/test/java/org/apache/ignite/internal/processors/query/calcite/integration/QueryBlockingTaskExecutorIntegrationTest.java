@@ -61,8 +61,7 @@ public class QueryBlockingTaskExecutorIntegrationTest extends AbstractBasicInteg
 
         assertQuery(sql)
             .withParams("region0")
-            .matches(QueryChecker.containsSubPlan("IgniteMergeJoin"))
-            .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
+            .matches(QueryChecker.matches(".*IgniteMergeJoin.*IgniteExchange\\(distribution=\\[affinity.*"))
             .returns(9500L) // 50 * sum(0 .. 19)
             .check();
 

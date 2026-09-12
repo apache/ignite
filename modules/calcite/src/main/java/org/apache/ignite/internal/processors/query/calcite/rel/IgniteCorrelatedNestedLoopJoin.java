@@ -201,20 +201,10 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
 
-        double leftCnt = mq.getRowCount(getLeft());
+        double rowCnt = mq.getRowCount(this);
 
-        if (Double.isInfinite(leftCnt))
-            return costFactory.makeInfiniteCost();
-
-        double rightCnt = mq.getRowCount(getRight());
-
-        if (Double.isInfinite(rightCnt))
-            return costFactory.makeInfiniteCost();
-
-        double rows = leftCnt * rightCnt;
-
-        return costFactory.makeCost(rows,
-            rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
+        return costFactory.makeCost(rowCnt,
+            rowCnt * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST), 0);
     }
 
     /** {@inheritDoc} */
