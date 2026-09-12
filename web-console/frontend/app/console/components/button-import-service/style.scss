@@ -1,0 +1,10 @@
+
+
+button-import-service {
+    display: inline-block;
+
+    button {
+        // Ensures same height for wrapper element and button
+        vertical-align: top;
+    }
+}

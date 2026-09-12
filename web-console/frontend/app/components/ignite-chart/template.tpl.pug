@@ -1,0 +1,24 @@
+
+
+header
+    div
+        h5 {{ $ctrl.chartTitle }}
+        ignite-chart-series-selector(chart-api='$ctrl.chart')
+        .chart-text(ng-if='$ctrl.chartHeaderText') {{$ctrl.chartHeaderText}}
+
+    div
+        span 
+            span(translate='igniteChartComponent.rangeLabel')
+            button.btn-ignite.btn-ignite--link-success.link-primary(
+                ng-model='$ctrl.currentRange'
+                ng-change='$ctrl.changeXRange($ctrl.currentRange)'
+                bs-options='item as item.label for item in $ctrl.ranges'
+                bs-select
+                protect-from-bs-select-render
+            )
+                span(translate='{{$ctrl.currentRange.label}}')
+
+.ignite-chart-placeholder
+    canvas
+
+ng-transclude

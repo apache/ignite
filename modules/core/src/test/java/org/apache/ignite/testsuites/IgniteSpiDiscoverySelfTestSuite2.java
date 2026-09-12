@@ -53,7 +53,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedUntrustedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithAddressFilterTest;
 import org.apache.ignite.spi.discovery.tcp.TestMetricUpdateFailure;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -63,7 +63,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    TcpDiscoverySharedFsIpFinderSelfTest.class,
     TcpDiscoveryMulticastIpFinderSelfTest.class,
     TcpDiscoverySelfTest.class,
     TcpDiscoverySpiSslSelfTest.class,

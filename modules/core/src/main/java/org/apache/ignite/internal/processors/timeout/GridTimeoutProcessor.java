@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
@@ -77,7 +78,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         timeoutWorker.cancel();
-        U.join(timeoutWorker);
+        // add@byron
+        try {
+        	U.join(timeoutWorker);
+        }
+        catch(IgniteInterruptedCheckedException e) {
+        	log.warning("Timeout processor interrupted.",e);
+        }
 
         if (log.isDebugEnabled())
             log.debug("Timeout processor stopped.");

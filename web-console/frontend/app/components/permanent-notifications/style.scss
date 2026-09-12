@@ -1,0 +1,39 @@
+
+
+permanent-notifications {
+    display: block;
+
+    @import "./../../../public/stylesheets/variables.scss";
+
+    .wch-notification {
+        line-height: 16px;
+        padding: 7px;
+        background: $brand-warning;
+        font-size: 16px;
+        text-align: center;
+
+        a {
+            color: $brand-info;
+        }
+
+        &+.wch-notification {
+            border-top: 1px solid darken($brand-warning, 15%);
+        }
+    }
+
+    .wch-notification.wch-notification--demo {
+        color: white;
+        background: $ignite-brand-success;
+        border: none;
+
+        a {
+            color: white;
+            text-decoration: underline;
+
+            &:hover {
+                color: #ffab40;
+                text-decoration: none;
+            }
+        }
+    }    
+}

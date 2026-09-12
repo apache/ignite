@@ -1,0 +1,17 @@
+
+
+.theme--ignite {
+    .form-field-checkbox {
+        z-index: 2;
+        padding-left: 8px;
+        padding-right: 8px;
+
+        input[type='checkbox'] {
+            margin-right: 8px;
+            vertical-align: -1px;
+        }
+        .tipLabel {
+            vertical-align: -3px;
+        }
+    }    
+}

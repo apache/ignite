@@ -1,0 +1,59 @@
+
+
+cluster-selector {
+    @import "./../../../public/stylesheets/variables.scss";
+
+    position: relative;
+    top: 2px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+	.btn-ignite.btn-ignite--primary,
+    .btn-ignite.btn-ignite--success {
+        border-radius: 9px;
+        min-height: 0;
+
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        line-height: 24px;
+        padding-top: 0;
+        padding-bottom: 0;
+
+        button {
+            font-weight: normal;
+            margin: 0 !important;
+        }
+    }
+
+    .cluster-selector--state {
+        width: 85px;
+    }
+
+    div {
+        margin: 0 10px 0 20px;
+        font-size: 12px;
+    }
+
+    div:last-child {
+        margin-left: 10px;
+        color: #EE2B27;
+    }
+
+    [ignite-icon='info'] {
+        margin-left: 7px;
+        color: $ignite-brand-success;
+    }
+
+    [ignite-icon='lockClosed'], [ignite-icon='lockOpened'] {
+        margin-right: 5px;
+        height: 10px;
+        width: 8px;
+    }
+
+    .bs-select-menu {
+        color: $text-color;
+    }
+}

@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_12_0.dtd">
+
+<Configure>
+  <Ref refid="rewriteHandler">
+
+    <!-- 规则1：添加请求头 -->
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+          <Set name="pattern">*</Set>
+          <Set name="headerName">X-Forwarded-Host</Set>
+          <Set name="headerValue">${jetty.hostname:-localhost}</Set>
+        </New>
+      </Arg>
+    </Call>
+
+    <!--
+      规则2：静态资源不重写（直接放行）
+      注意：这个规则什么都不做，只是匹配静态资源后停止后续规则
+    -->
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.TerminatingRegexRule">
+          <Set name="regex">.*\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|map|json|xml|txt|pdf|doc|docx|xls|xlsx|php)$</Set>
+          <Set name="matchQuery">false</Set>
+        </New>
+      </Arg>
+    </Call>
+
+    <!--
+      规则3：特定静态目录不重写（直接放行）
+    -->
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+          <!-- 匹配静态资源目录 -->
+          <Set name="pattern">/mongoAdmin/static/*</Set>
+          <Set name="replacement">/mongoAdmin/static/</Set>
+        </New>
+      </Arg>
+    </Call>
+
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+          <Set name="pattern">/mongoAdmin/assets/*</Set>
+          <Set name="replacement">/mongoAdmin/assets/</Set>
+        </New>
+      </Arg>
+    </Call>
+
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+          <Set name="pattern">/mongoAdmin</Set>
+          <Set name="replacement">/mongoAdmin/index.php</Set>
+        </New>
+      </Arg>
+    </Call>
+
+    <!--
+      规则4：所有其他请求重写到 index.php
+    -->
+    <Call name="addRule">
+      <Arg>
+        <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
+          <!-- 匹配所有请求 -->
+          <Set name="regex">^/mongoAdmin/([a-zA-Z0-9-_]*)</Set>
+          <Set name="addQueries">true</Set>
+          <Set name="matchQuery">false</Set>
+          <!-- 重写为 index.php，携带原始路径 -->
+          <Set name="replacement">/mongoAdmin/index.php?q=$1</Set>
+        </New>
+      </Arg>
+    </Call>
+
+  </Ref>
+</Configure>

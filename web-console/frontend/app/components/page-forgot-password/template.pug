@@ -1,0 +1,27 @@
+
+
+include /app/helpers/jade/mixins
+
+h3.public-page__title(translate='forgotPassword.pageTitle')
+p(translate='forgotPassword.pageMessage')
+form(name='$ctrl.form' novalidate ng-submit='$ctrl.remindPassword()')
+    +form-field__email({
+        label: 'Email:',
+        model: '$ctrl.data.email',
+        name: '"email"',
+        placeholder: '{{::"forgotPassword.emailInput.placeholder"|translate}}',
+        required: true
+    })(
+        ng-model-options='{allowInvalid: true}'
+        autocomplete='email'
+        ignite-auto-focus
+        tabindex='0'
+    )
+        +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+    footer.form-footer
+        a(ui-sref='signin' translate='forgotPassword.backToSignInLinkLabel')
+        button.btn-ignite.btn-ignite--primary(
+            tabindex='1'
+            type='submit'
+            translate='forgotPassword.formActionButtonLabel'
+        )

@@ -1,0 +1,25 @@
+
+
+mixin btn-group(disabled, options, tip)
+    .btn-group.panel-tip-container&attributes(attributes)
+        button.btn.btn-primary(
+            ng-click=`${options[0].click}`
+
+            data-ng-disabled=disabled && `${disabled}`
+
+            bs-tooltip=''
+            data-title=tip
+
+            data-trigger='hover'
+            data-placement='bottom'
+        ) #{options[0].text}
+        button.btn.dropdown-toggle.btn-primary(
+            data-ng-disabled=disabled && `${disabled}` || `!${JSON.stringify(options)}.length`
+
+            bs-dropdown=`${JSON.stringify(options)}`
+
+            data-toggle='dropdown'
+            data-container='body'
+            data-placement='bottom-right'
+        )
+            span.caret

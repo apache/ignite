@@ -210,3 +210,4 @@ public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
         }, IgniteCheckedException.class);
     }
 }
+

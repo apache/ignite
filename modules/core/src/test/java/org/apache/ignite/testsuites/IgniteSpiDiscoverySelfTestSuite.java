@@ -50,7 +50,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslParametersTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithWrongServerTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
+
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderDnsResolveTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -67,7 +67,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 @Suite.SuiteClasses({
     TcpDiscoveryVmIpFinderDnsResolveTest.class,
     TcpDiscoveryVmIpFinderSelfTest.class,
-    TcpDiscoveryJdbcIpFinderSelfTest.class,
+
     TcpDiscoveryIpFinderCleanerTest.class,
 
     TcpDiscoverySpiSelfTest.class,

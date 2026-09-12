@@ -1,0 +1,61 @@
+Apache Ignite python thin client
+================================
+
+0.6.1
+--------------------------------
+* Fixed query listener fires events only if debug logging level enabled.
+
+0.6.0
+--------------------------------
+* Added support of python 3.11
+* Dropped support of python 3.6
+* Fixed non-intuitive automatically setting of flag use_ssl when the authentication is enabled.
+* Added timeout support for cache operations in the async client.
+* Fixed incorrect result setting of already completed futures in async connection implementation.
+* Fixed examples and documentation.
+
+0.5.2
+--------------------------------
+* Fixed incorrect partial read from socket in sync client
+* Fixed nested object arrays deserialization
+
+0.5.1
+--------------------------------
+* Added logging of connection and queries events
+* Added event listeners to connection events and query events
+* Added client's side handshake timeout
+* Fixed excessive deprecation warnings on python 3.7
+* Fixed request to failed node when querying replicated cache
+* Fixed excessive partition mapping requests
+
+0.5.0
+--------------------------------
+* Added transaction API support (sync and async versions, async version supports only python 3.7+)
+* Added ExpiryPolicy (TTL) support
+* Improved performance of asyncio version by reimplementing network code using asyncio transports and protocols
+* Enabled partition awareness by default
+* Fixed handling collections of binary objects
+
+0.4.0
+--------------------------------
+* Added partition awareness support
+* Added asyncio support
+* Added C module to speedup hashcode calculation
+* Implement context management for connection method
+* Implement cursors and context management for ScanQuery, SqlQuery and SqlFieldsQuery
+* Add the ability to activate/deactivate the cluster
+* Implement support for big-endianness
+* Implement support of password for certificates
+* Fix performance issues while working with big bytearrays and binary objects
+* Fix serialization/deserialization of cache configuration
+* Fix handling of null fields
+* Fix SQL API
+* Fix UUID serialization/deserialization
+* Fix nested complex objects
+* Fix incorrect hash code calculation for classes as composite keys
+* Fix hashing of complex object
+* Fix insert and select VARBINARY data type through SQL
+* Fix wrong order of the SQL query result
+* Fix handling of bytes and bytearrays
+* Fix bool arrays handling
+* Fix cache.get_size with non-default PeekModes

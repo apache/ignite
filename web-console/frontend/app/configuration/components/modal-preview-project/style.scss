@@ -1,0 +1,52 @@
+
+
+
+modal-preview-project {
+    display: block;
+}
+
+.modal-preview-project-structure {
+    @import "public/stylesheets/variables.scss";
+
+    .modal-dialog {
+        width: 900px;
+    }
+    .modal-content .modal-body {
+        display: flex;
+        flex-direction: row;
+        height: 360px;
+        padding-top: 10px;
+        padding-bottom: 0;
+    }
+    .pane-left {
+        width: 330px;
+        overflow: auto;
+        border-right: 1px solid #dddddd;
+    }
+    .pane-right {
+        width: 560px;
+    }
+    treecontrol {
+        white-space: nowrap;
+        font-family: inherit;
+        font-size: 12px;
+        color: #393939;
+
+        ul {
+            overflow: visible;
+        }
+        li {
+            padding-left: 1em;
+        }
+        .fa {
+            margin-right: 5px;
+        }
+        .tree-selected {
+            color: $ignite-brand-success;
+        }
+    }
+    .file-preview {
+        margin: 0;
+        height: 100%;
+    }
+}

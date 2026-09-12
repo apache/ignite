@@ -1,0 +1,307 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'secondaryFileSystem'
+-var model = 'backupItem'
+-var enabled = `${model}.secondaryFileSystemEnabled`
+
+mixin basic-name-mapper(basicModel, prefix)
+    .pc-form-grid-col-60
+        +form-field__text({
+            label: 'Default user name:',
+            model: `${basicModel}.defaultUserName`,
+            name: `"${prefix}BasicDefaultUserName"`,
+            required: `${basicModel}.useDefaultUserName`,
+            disabled: `!(${enabled})`,
+            placeholder: 'Input default user name',
+            tip: 'Default user name'
+        })
+    .pc-form-grid-col-60
+        +form-field__checkbox({
+            label: 'Use default user name',
+            model: `${basicModel}.useDefaultUserName`,
+            name: `"${prefix}BasicUseDefaultUserName"`,
+            required: `!${basicModel}.mappings`,
+            disabled: `!(${enabled})`,
+            tip: 'Whether to use default user name'
+        })
+    .pc-form-grid-col-60
+        .ignite-form-field
+            +form-field__label({label: 'Name mappings:', name: `"${prefix}BasicNameMappings"`})
+                +form-field__tooltip({title: `Maps one user name to another`})
+
+            +list-pair-edit({
+                items: `${basicModel}.mappings`,
+                keyLbl: 'Old name',
+                valLbl: 'New name',
+                itemName: 'name',
+                itemsName: 'names'
+            })
+
+        .form-field__errors(
+            ng-messages=`receiverAddresses.$error`
+            ng-show=`receiverAddresses.$invalid`
+        )
+            +form-field__error({error: 'required', message: 'Name mappings should be configured'})
+
+mixin kerberos-name-mapper(kerberosModel, prefix)
+    .pc-form-grid-col-60
+        +form-field__text({
+            label: 'Instance:',
+            model: `${kerberosModel}.instance`,
+            name: `"${prefix}KerberosInstance"`,
+            disabled: `!(${enabled})`,
+            placeholder: 'Input instance',
+            tip: 'Kerberos instance'
+        })
+    .pc-form-grid-col-60
+        +form-field__text({
+            label: 'Realm:',
+            model: `${kerberosModel}.realm`,
+            name: `"${prefix}KerberosRealm"`,
+            disabled: `!(${enabled})`,
+            placeholder: 'Input realm',
+            tip: 'Kerberos realm'
+        })
+
+mixin custom-name-mapper(customModel, prefix)
+    .pc-form-grid-col-60
+        +form-field__java-class({
+            label: 'Class:',
+            model: `${customModel}.className`,
+            name: `"${prefix}CustomClassName"`,
+            required: true,
+            tip: 'User name mapper implementation class name'
+        })
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Secondary file system
+    panel-description
+        | Secondary file system is provided for pass-through, write-through, and read-through purposes.
+        a.link-success(href="https://apacheignite-fs.readme.io/docs/secondary-file-system" target="_blank") More info
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            -var secondaryFileSystem = `${model}.secondaryFileSystem`
+            -var nameMapperModel = `${secondaryFileSystem}.userNameMapper`
+
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    name: '"secondaryFileSystemEnabled"',
+                    model: enabled
+                })(
+                    ng-model-options='{allowInvalid: true}'
+                    ui-validate=`{
+                        requiredWhenIGFSProxyMode: '$ctrl.IGFSs.secondaryFileSystemEnabled.requiredWhenIGFSProxyMode(${model})',
+                        requiredWhenPathModeProxyMode: '$ctrl.IGFSs.secondaryFileSystemEnabled.requiredWhenPathModeProxyMode(${model})'
+                    }`
+                    ui-validate-watch-collection=`"[${model}.defaultMode, ${model}.pathModes]"`
+                    ui-validate-watch-object-equality='true'
+                )
+                    +form-field__error({ error: 'requiredWhenIGFSProxyMode', message: 'Secondary file system should be configured for "PROXY" IGFS mode' })
+                    +form-field__error({ error: 'requiredWhenPathModeProxyMode', message: 'Secondary file system should be configured for "PROXY" path mode' })
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'User name:',
+                    model: `${secondaryFileSystem}.userName`,
+                    name: '"userName"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input user name',
+                    tip: 'User name'
+                })
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'File system factory:',
+                    model: `${secondaryFileSystem}.kind`,
+                    name: '"FileSystemFactory"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Default',
+                    options: '[\
+                        {value: "Caching", label: "Caching"},\
+                        {value: "Kerberos", label: "Kerberos"},\
+                        {value: "Custom", label: "Custom"},\
+                        {value: null, label: "Default"}\
+                    ]',
+                    tip: 'File system factory:\
+                        <ul>\
+                            <li>Caching - Caches File system instances on per-user basis</li>\
+                            <li>Kerberos - Secure Hadoop file system factory that can work with underlying file system protected with Kerberos</li>\
+                            <li>Custom - Custom file system factory</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60(ng-if-start=`${secondaryFileSystem}.kind !== "Custom"`)
+                +form-field__text({
+                    label: 'URI:',
+                    model: `${secondaryFileSystem}.uri`,
+                    name: '"hadoopURI"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'hdfs://[namenodehost]:[port]/[path]',
+                    tip: 'URI of file system'
+                })
+            .pc-form-grid-col-60
+                mixin secondary-fs-cfg-paths()
+                    .ignite-form-field
+                        -let items = `${secondaryFileSystem}.cfgPaths`;
+
+                        list-editable(
+                            ng-model=items
+                            list-editable-cols=`::[{
+                                name: 'Config paths:',
+                                tip: 'Additional pathes to Hadoop configurations'
+                            }]`
+                            ng-disabled=`!(${enabled})`
+                        )
+                            list-editable-item-view {{ $item }}
+
+                            list-editable-item-edit
+                                .pc-form-grid-row
+                                    .pc-form-grid-col-60
+                                        +form-field__text({
+                                            label: 'Path:',
+                                            model: '$item',
+                                            name: '"path"',
+                                            required: true,
+                                            placeholder: 'Enter path'
+                                        })(ignite-auto-focus)
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$editLast((${items} = ${items} || []).push(""))`
+                                    label-single='Config path'
+                                    label-multiple='Config paths'
+                                )
+
+                - var form = '$parent.form'
+                +secondary-fs-cfg-paths
+                - var form = 'secondaryFileSystem'
+            .pc-form-grid-col-60(ng-if-start=`${secondaryFileSystem}.kind === "Kerberos"`)
+                +form-field__text({
+                    label: 'Keytab file:',
+                    model: `${secondaryFileSystem}.Kerberos.keyTab`,
+                    name: '"KerberosKeyTab"',
+                    required: true,
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input keytab full file name',
+                    tip: 'Keytab full file name'
+                })
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Keytab principal:',
+                    model: `${secondaryFileSystem}.Kerberos.keyTabPrincipal`,
+                    name: '"KerberosKeyTabPrincipals"',
+                    required: true,
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Input keytab principals',
+                    tip: 'Keytab principals short name'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__number({
+                    label: 'Relogin interval:',
+                    model: `${secondaryFileSystem}.Kerberos.reloginInterval`,
+                    name: '"KerberosReloginInterval"',
+                    placeholder: '600000',
+                    min: '0',
+                    tip: 'Total time in ms for execution of retry attempt'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__dropdown({
+                    label: 'User name mapper:',
+                    model: `${nameMapperModel}.kind`,
+                    name: '"NameMapperKind"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'Not set',
+                    options: '[\
+                        {value: "Chained", label: "Chained"},\
+                        {value: "Basic", label: "Basic"},\
+                        {value: "Kerberos", label: "Kerberos"},\
+                        {value: "Custom", label: "Custom"},\
+                        {value: null, label: "Not set"}\
+                    ]',
+                    tip: 'File system factory:\
+                        <ul>\
+                            <li>Chained - Delegate name conversion to child mappers</li>\
+                            <li>Basic - Maps one user name to another based on predefined dictionary</li>\
+                            <li>Kerberos - Map simple user name to Kerberos principal</li>\
+                            <li>Custom - Custom user name mapper</li>\
+                        </ul>'
+                })
+            .pc-form-group.pc-form-grid-row(ng-if=`${secondaryFileSystem}.kind !== "Custom" && ${nameMapperModel}.kind === "Chained"`)
+                .pc-form-grid-col-60
+                    .ignite-form-field
+                        -var chainedMapperModel = `${nameMapperModel}.Chained`
+
+                        +form-field__label({label: 'Chained name mappers:', name: '"ChainedNameMappers"'})
+                            +form-field__tooltip({title: `Chained name mappers`})
+
+                        -var items = `${chainedMapperModel}.mappers`
+                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='chainedNameMappers')
+                            list-editable-item-edit.pc-form-grid-row
+                                - form = '$parent.form'
+                                .pc-form-grid-col-60
+                                    +form-field__dropdown({
+                                        label: 'Name mapper:',
+                                        model: '$item.kind',
+                                        name: '"ChainedNameMapperKind"',
+                                        disabled: `!(${enabled})`,
+                                        placeholder: 'Custom',
+                                        options: '[\
+                                            {value: "Basic", label: "Basic"},\
+                                            {value: "Kerberos", label: "Kerberos"},\
+                                            {value: "Custom", label: "Custom"}\
+                                        ]',
+                                        tip: 'File system factory:\
+                                            <ul>\
+                                                <li>Basic - Maps one user name to another based on predefined dictionary</li>\
+                                                <li>Kerberos - Map simple user name to Kerberos principal</li>\
+                                                <li>Custom - Custom user name mapper</li>\
+                                            </ul>'
+                                    })
+                                .pc-form-group.pc-form-grid-row(ng-if=`$item.kind === "Basic"`)
+                                    +basic-name-mapper(`$item.Basic`)
+                                .pc-form-group.pc-form-grid-row(ng-if=`$item.kind === "Kerberos"`)
+                                    +kerberos-name-mapper(`$item.Kerberos`)
+                                .pc-form-group.pc-form-grid-row(ng-if=`$item.kind === "Custom"`)
+                                    +custom-name-mapper(`$item.Custom`, '')
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$ctrl.IGFSs.addSecondaryFsNameMapper(${model})`
+                                    label-single='name mapper'
+                                    label-multiple='name mappers'
+                                )
+
+            - form = 'secondaryFileSystem'
+            .pc-form-group.pc-form-grid-row(ng-if=`${secondaryFileSystem}.kind !== "Custom" && ${nameMapperModel}.kind === "Basic"`)
+                +basic-name-mapper(`${nameMapperModel}.Basic`)
+            .pc-form-group.pc-form-grid-row(ng-if=`${secondaryFileSystem}.kind !== "Custom" && ${nameMapperModel}.kind === "Kerberos"`)
+                +kerberos-name-mapper(`${nameMapperModel}.Kerberos`)
+            .pc-form-group.pc-form-grid-row(ng-if=`${secondaryFileSystem}.kind !== "Custom" && ${nameMapperModel}.kind === "Custom"`)
+                +custom-name-mapper(`${nameMapperModel}.Custom`, '')
+            .pc-form-grid-col-60(ng-if=`${secondaryFileSystem}.kind === "Custom"`)
+                +form-field__java-class({
+                    label: 'Class:',
+                    model: `${secondaryFileSystem}.Custom.className`,
+                    name: '"customFilesystemFactory"',
+                    required: true,
+                    tip: 'File system factory implementation class name',
+                    validationActive: required
+                })
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'igfsSecondFS')

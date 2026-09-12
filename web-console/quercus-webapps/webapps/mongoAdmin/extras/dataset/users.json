@@ -1,0 +1,30 @@
+[
+    {
+        "_id": "7f358e03c3360000ef0076d4",
+        "username": "Samuel",
+        "password": "yC0jT8gT9uS2rW8g",
+        "birthdate": "1985-12-22T00:00:00.000Z",
+        "meta": {
+            "createdAt": "2020-08-16T12:43:28.568Z"
+        }
+    },
+    {
+        "_id": "5f358e03c3360000ef0076d4",
+        "username": "Jean",
+        "password": "rI2gS6rF3fW1xK2a",
+        "birthdate": "1985-12-22T00:00:00.000Z",
+        "meta": {
+            "createdAt": "2020-08-16T12:43:28.568Z"
+        }
+    },
+    {
+        "_id": "6f358e03c3360000ef0076d4",
+        "username": "David",
+        "password": "qT0hA2bC1iL3lM8j",
+        "birthdate": "1985-12-22T00:00:00.000Z",
+        "meta": {
+            "createdAt": "2020-08-16T12:43:28.568Z"
+        }
+    }
+
+]

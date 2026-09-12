@@ -68,7 +68,7 @@ import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformCacheConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.SystemDataRegionConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -210,7 +210,7 @@ public class PlatformConfigurationUtils {
 
         if (dataRegionName != null)
             //noinspection deprecation
-            ccfg.setMemoryPolicyName(dataRegionName);
+            ccfg.setDataRegionName(dataRegionName);
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
         ccfg.setGroupName(in.readString());
@@ -748,7 +748,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
-            cfg.setLongQueryWarningTimeout(in.readLong());
+            //cfg.setLongQueryWarningTimeout(in.readLong());
+        	in.readLong();
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
         if (in.readBoolean())
@@ -777,8 +778,7 @@ public class PlatformConfigurationUtils {
 
         if (consId instanceof Serializable) {
             cfg.setConsistentId((Serializable)consId);
-        }
-        else if (consId != null) {
+        } else if (consId != null) {
             throw new IgniteException("IgniteConfiguration.ConsistentId should be Serializable.");
         }
 
@@ -894,8 +894,8 @@ public class PlatformConfigurationUtils {
                 break;
         }
 
-        if (in.readBoolean())
-            cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
+        //if (in.readBoolean())
+        //    cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         if (in.readBoolean())
             cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
@@ -1118,7 +1118,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isWriteThrough());
         writer.writeBoolean(ccfg.isStatisticsEnabled());
         //noinspection deprecation
-        writer.writeString(ccfg.getMemoryPolicyName());
+        writer.writeString(ccfg.getDataRegionName());
         writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
         writer.writeString(ccfg.getGroupName());
 
@@ -1174,8 +1174,7 @@ public class PlatformConfigurationUtils {
                 writer.writeString(key.getTypeName());
                 writer.writeString(key.getAffinityKeyFieldName());
             }
-        }
-        else {
+        } else {
             writer.writeInt(0);
         }
 
@@ -1338,8 +1337,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getClientFailureDetectionTimeout());
-        w.writeBoolean(true);
-        w.writeLong(cfg.getLongQueryWarningTimeout());
+        w.writeBoolean(false);
+        //w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
         w.writeBoolean(true);
@@ -1499,8 +1498,8 @@ public class PlatformConfigurationUtils {
             w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireCount());
             w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
-
-        writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
+        
+        //writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
 
@@ -1772,49 +1771,9 @@ public class PlatformConfigurationUtils {
         return factory.create();
     }
 
-    /**
-     * Reads the SQL connector configuration.
-     *
-     * @param in Reader.
-     * @return Config.
-     */
-    @SuppressWarnings("deprecation")
-    private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
-        return new SqlConnectorConfiguration()
-                .setHost(in.readString())
-                .setPort(in.readInt())
-                .setPortRange(in.readInt())
-                .setSocketSendBufferSize(in.readInt())
-                .setSocketReceiveBufferSize(in.readInt())
-                .setTcpNoDelay(in.readBoolean())
-                .setMaxOpenCursorsPerConnection(in.readInt())
-                .setThreadPoolSize(in.readInt());
-    }
+    
 
-    /**
-     * Writes the SQL connector configuration.
-     *
-     * @param w Writer.
-     */
-    @SuppressWarnings("deprecation")
-    private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
-        assert w != null;
 
-        if (cfg != null) {
-            w.writeBoolean(true);
-
-            w.writeString(cfg.getHost());
-            w.writeInt(cfg.getPort());
-            w.writeInt(cfg.getPortRange());
-            w.writeInt(cfg.getSocketSendBufferSize());
-            w.writeInt(cfg.getSocketReceiveBufferSize());
-            w.writeBoolean(cfg.isTcpNoDelay());
-            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
-            w.writeInt(cfg.getThreadPoolSize());
-        }
-        else
-            w.writeBoolean(false);
-    }
 
     /**
      * Reads the client connector configuration.

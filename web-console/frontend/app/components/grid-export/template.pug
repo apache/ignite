@@ -1,0 +1,16 @@
+
+
+button.btn-ignite.btn-ignite--primary-outline(
+    ng-click='$ctrl.export()'
+    bs-tooltip='::{title: ("gridExportComponent.tooltip"|translate)}'
+    data-placement='top'
+)
+    svg(ignite-icon='csv')
+
+button.btn-ignite.btn-ignite--link-success.link-success(
+    ng-click='$ctrl.export()'
+    bs-tooltip='::{title: ("gridExportComponent.tooltip"|translate)}'
+    data-placement='top'
+)
+    svg(ignite-icon='download')
+    i(translate='gridExportComponent.buttonLabel')

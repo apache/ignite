@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.query;
 
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLOSE_SQL_QUERY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SCAN_QUERY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_FIELDS_QUERY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.FETCH_SQL_QUERY;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
@@ -28,6 +34,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -36,8 +43,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.management.cache.VisorQueryScanRegexFilter;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -50,12 +59,6 @@ import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLOSE_SQL_QUERY;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SCAN_QUERY;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_FIELDS_QUERY;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.FETCH_SQL_QUERY;
 
 /**
  * Query command handler.
@@ -228,7 +231,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                 );
         }
 
-        if (req.command() != FETCH_SQL_QUERY && req.command() != CLOSE_SQL_QUERY) {
+        if (req.command() == EXECUTE_SQL_QUERY || req.command() == EXECUTE_SCAN_QUERY) {
             if (((RestQueryRequest)req).cacheName() == null) {
                 return new GridFinishedFuture<>(
                     new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("cacheName"))
@@ -289,7 +292,8 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
             try {
                 Query qry;
-
+                SqlFieldsQuery qryF = null;
+                QueryCursor qryCur;
                 switch (req.queryType()) {
                     case SQL:
                         qry = new SqlQuery(req.typeName(), req.sqlQuery());
@@ -301,39 +305,61 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                         break;
 
                     case SQL_FIELDS:
-                        qry = new SqlFieldsQuery(req.sqlQuery());
+                    	qryF = new SqlFieldsQuery(req.sqlQuery());
 
-                        ((SqlFieldsQuery)qry).setArgs(req.arguments());
+                    	qryF.setArgs(req.arguments());
 
-                        ((SqlFieldsQuery)qry).setDistributedJoins(req.distributedJoins());
-
+                        qryF.setDistributedJoins(req.distributedJoins());                        
+                        
+                        qry = qryF;
                         break;
 
                     case SCAN:
                         IgniteBiPredicate pred = null;
 
-                        if (req.className() != null)
-                            pred = instance(IgniteBiPredicate.class, req.className());
-
-                        qry = new ScanQuery(pred);
+                        if (req.className() != null && !req.className().isBlank()) {
+                        	if(req.className().startsWith("'")) {
+                        		pred = new VisorQueryScanRegexFilter(false,false,req.className().substring(1,req.className().length()-1));
+                        	}
+                        	else if(req.className().startsWith("/")) {
+                        		pred = new VisorQueryScanRegexFilter(true, true, req.className());
+                        	}
+                        	else {
+                        		pred = instance(IgniteBiPredicate.class, req.className());
+                        	}
+                        }
+                        // add@byron
+                        if(req.sqlQuery() !=null && !req.sqlQuery().isBlank()) {
+                        	qry = new TextQuery(req.typeName(), req.sqlQuery()).setFitler(pred);                        	
+                        }
+                        else {
+                        	qry = new ScanQuery(pred);
+                        }
 
                         break;
 
                     default:
                         throw new IgniteException("Incorrect query type [type=" + req.queryType() + "]");
                 }
+                
+                
+                if(req.cacheName()!=null) {
+	                IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
+	
+	                if (cache == null) {
+	                    return new GridRestResponse(GridRestResponse.STATUS_FAILED,
+	                        "Failed to find cache with name: " + req.cacheName());
+	                }
+	
+	                if (req.keepBinary())
+	                    cache = cache.withKeepBinary();
 
-                IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
-
-                if (cache == null) {
-                    return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Failed to find cache with name: " + req.cacheName());
+	                qryCur = cache.query(qry);
                 }
-
-                if (req.keepBinary())
-                    cache = cache.withKeepBinary();
-
-                final QueryCursor qryCur = cache.query(qry);
+                else{
+                	
+                	qryCur = ctx.query().querySqlFields(qryF, req.keepBinary());
+                }
 
                 Iterator cur = qryCur.iterator();
 
@@ -378,7 +404,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                 SQLException sqlErr = X.cause(e, SQLException.class);
 
                 return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                    sqlErr != null ? sqlErr.getMessage() : e.getMessage());
+                    sqlErr != null ? sqlErr.getMessage() : e.getCause()!=null ? e.getCause().getMessage(): e.getMessage());
             }
         }
 

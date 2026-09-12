@@ -1,0 +1,55 @@
+
+.pca-form-row()
+    .pca-form-column-6.pc-form-grid-row            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'JNDI Name:',
+                model: `${model}.jndiName`,
+                name: '"jndiName"',                        
+                placeholder: 'jndi'
+            })
+        .pc-form-grid-col-30
+            +form-field__dropdown({
+                label: 'Database Driver:',
+                model: `selectedPreset.driverCls`,
+                name: '"driverCls"',
+                placeholder: '- select db type -',
+                options: '$ctrl.drivers',                
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'JDBC URL:',
+                model: `selectedPreset.jdbcUrl`,
+                name: '"jdbcUrl"',                    
+                placeholder: 'jdbc:dbtype://[host]:[port]/[database]'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Default schema:',
+                model: `${model}.schemaName`,
+                name: '"schemaName"',
+                placeholder: 'public'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'User name:',
+                model: `${model}.userName`,
+                name: '"userName"'
+            })
+            
+        .pc-form-grid-col-30
+            +form-field__password({
+                label: 'Password:',
+                model: `${model}.password`,
+                name: '"password"'
+            })
+
+        .pc-form-grid-col-30
+            +form-field__text({
+                label: 'Driver class:',
+                model: `${model}.driverCls`,
+                name: '"Driver class"'
+            })

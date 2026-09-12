@@ -1,0 +1,46 @@
+
+
+include /app/helpers/jade/mixins
+
+//- This doesn't seem to do anything 😵
+.main-content(ng-if='error')
+    .text-center
+        p {{::$ctrl.ui.error}}
+h3.public-page__title(ng-if-start='$ctrl.ui.token && !$ctrl.ui.error' translate='passwordReset.pageTitle')
+form.page-password-reset__grid(name='$ctrl.form' ng-init='reset_info.token = token' ng-if-end)
+    +form-field__email({
+        label: 'E-mail:',
+        model: '$ctrl.ui.email',
+        disabled: true
+    })
+
+    +form-field__password({
+        label: 'New password:',
+        model: '$ctrl.ui.password',
+        name: '"password"',
+        required: true,
+        placeholder: '{{::"passwordReset.newPasswordInput.placeholder"|translate}}'
+    })(
+        ignite-auto-focus
+        ignite-on-enter-focus-move='passwordConfirmInput'
+    )
+    +form-field__password({
+        label: 'Confirm password:',
+        model: 'confirm',
+        name: '"passwordConfirm"',
+        required: true,
+        placeholder: '{{::"passwordReset.confirmNewPasswordInput.placeholder"|translate}}'
+    })(
+        ignite-on-enter-focus-move='resetForm.$valid && resetPassword(user_info)'
+        ignite-match='$ctrl.ui.password'
+    )
+
+    footer.form-footer
+        a(ui-sref='default-state' translate='passwordReset.cancelLinkLabel')
+        button.btn-ignite.btn-ignite--primary(
+            ng-disabled='$ctrl.form.$invalid'
+            ng-click='$ctrl.resetPassword()'
+        )
+            svg.icon-left(ignite-icon='checkmark')
+            span(translate='passwordReset.formActionButtonLabel')
+

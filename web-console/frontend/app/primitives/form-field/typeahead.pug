@@ -1,0 +1,41 @@
+
+
+mixin form-field__typeahead({ label, model, name, disabled, required, placeholder, options, tip })
+    -var errLbl = label.substring(0, label.length - 1)
+    mixin __form-field__typeahead()
+        input(
+            id=`{{ ${name} }}Input`
+            name=`{{ ${name} }}`
+            placeholder=placeholder
+           
+            ng-model=model
+
+            ng-required=required && `${required}`
+            ng-disabled=disabled && `${disabled}` || `!${options}.length`
+
+            bs-typeahead
+            bs-options=`item for item in ${options}`
+            container='body'
+            data-min-length='1'
+            ignite-retain-selection
+            ng-ref='$input'
+            ng-ref-read='ngModel'
+        )&attributes(attributes.attributes)
+
+    .form-field.form-field__typeahead.ignite-form-field(id=`{{ ${name} }}Field`)
+        +form-field__label({ label, name, required, disabled })
+            +form-field__tooltip({ title: tip, options: tipOpts })
+
+        .form-field__control
+            - attributes.type='text'
+            +__form-field__typeahead(attributes=attributes)
+
+        .form-field__errors(
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
+            if required
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
+            if block
+                block

@@ -48,6 +48,7 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -957,6 +958,8 @@ public abstract class IgniteUtils extends CommonUtils {
      * @param sb Buffer.
      */
     private static void printThreadInfo(ThreadInfo threadInfo, GridStringBuilder sb, Set<Long> deadlockedIdSet) {
+        // add@byron
+        if(threadInfo==null) return;
         final long id = threadInfo.getThreadId();
 
         if (deadlockedIdSet.contains(id))

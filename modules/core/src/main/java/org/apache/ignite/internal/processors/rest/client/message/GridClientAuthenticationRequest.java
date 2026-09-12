@@ -45,6 +45,11 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
         return cred;
     }
 
+    public GridClientAuthenticationRequest credentials(SecurityCredentials cred) {
+        this.cred = cred;
+        return this;
+    }
+
     /**
      * @return User attributes.
      */

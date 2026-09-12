@@ -1,0 +1,69 @@
+<div>
+<h2>Collection Stats</h2>
+<table class="table table-bordered table-striped">
+  <tr>
+    <td>
+      <strong>Documents</strong>
+    </td>
+    <td>
+      {{ $stats.count }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Total doc size</strong>
+    </td>
+    <td>
+      {{ $stats.size|convert_bytes }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Average doc size</strong>
+    </td>
+    <td>
+      {{ $stats.avgObjSize|convert_bytes }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Pre-allocated size</strong>
+    </td>
+    <td>
+      {{ $stats.storageSize|convert_bytes }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Indexes</strong>
+    </td>
+    <td>
+      {{ $stats.nindexes }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Total index size</strong>
+    </td>
+    <td>
+      {{ $stats.totalIndexSize|convert_bytes }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Padding factor</strong>
+    </td>
+    <td>
+      {{ $stats.paddingFactor }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Extents</strong>
+    </td>
+    <td>
+      {{ $stats.numExtents }}
+    </td>
+  </tr>
+</table>
+</div>

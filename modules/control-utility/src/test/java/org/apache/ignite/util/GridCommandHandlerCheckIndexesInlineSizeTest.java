@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -75,7 +74,7 @@ public class GridCommandHandlerCheckIndexesInlineSizeTest extends GridCommandHan
 
         assertEquals(INITIAL_PAYLOAD_SIZE, Integer.parseInt(System.getProperty(IGNITE_MAX_INDEX_PAYLOAD_SIZE)));
 
-        startGrids(NODES_CNT).cluster().state(ClusterState.ACTIVE);
+        startGrids(NODES_CNT).cluster().active(true);
 
         for (Map.Entry<String, Object[]> entry : getSqlStatements().entrySet())
             executeSql(grid(0), entry.getKey(), entry.getValue());

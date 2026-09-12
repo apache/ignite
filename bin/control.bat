@@ -116,7 +116,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\build-classpath.bat"
+
 set CP=%IGNITE_LIBS%;%IGNITE_HOME%\libs\optional\ignite-zookeeper\*
 
 ::
@@ -165,7 +165,7 @@ if %ERRORLEVEL% equ 0 (
 :: Assertions are disabled by default since version 3.5.
 :: If you want to enable them - set 'ENABLE_ASSERTIONS' flag to '1'.
 ::
-set ENABLE_ASSERTIONS=1
+set ENABLE_ASSERTIONS=0
 
 ::
 :: Set '-ea' options if assertions are enabled.
@@ -198,11 +198,11 @@ if defined JVM_OPTS (
 
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %CONTROL_JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% ^
-    -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
+     -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS% %*
 ) else (
     "%JAVA_HOME%\bin\java.exe" %CONTROL_JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% ^
-    -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
+     -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS% %*
 )
 

@@ -23,4 +23,5 @@ public interface MessageType {
      * @return Type.
      */
     public MessageCollectionItemType type();
+
 }

@@ -1,7 +1,0 @@
->>> Services example started.
-
->>> Deploying service to all nodes...
-Service initialized: my-service
-Service started: my-service
->>> Map service size: 10
-Service cancelled: my-service

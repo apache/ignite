@@ -1,0 +1,16 @@
+
+
+header.header-with-selector
+    div
+        .queries-title
+        cluster-selector
+    .queries-buttons
+
+div
+    ul.tabs.tabs--blue
+        li(role='presentation' ui-sref-active='active')
+            a(ui-sref='base.sql.tabs.notebooks-list')
+                span(translate='queries.notebooks.pageTitle')
+                span.badge.badge--blue {{ $ctrl.notebooks.length }}
+
+    ui-view

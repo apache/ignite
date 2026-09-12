@@ -1,0 +1,22 @@
+
+
+include /app/helpers/jade/mixins
+
+form(id='cluster' name='ui.inputForm' novalidate)
+    .panel-group 
+        include ./templates/rebalance
+        include ./templates/transactions
+        include ./templates/encryption        
+        include ./templates/attributes
+
+.pc-form-actions-panel(ng-show='$ctrl.cluster')
+    span.message(ng-bind-html='$ctrl.$scope.message')
+
+    .pc-form-actions-panel__right-after
+
+    button.btn-ignite.btn-ignite--link-success(
+        type='button'
+        ng-click='$ctrl.confirmAndReset()'
+    )
+        | Cancel
+    pc-split-button(actions=`::$ctrl.formActions`)

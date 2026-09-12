@@ -236,11 +236,11 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
 
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
-    public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
+    public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = Long.valueOf(10_000);
 
     /** Default failure detection timeout for client nodes in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
-    public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
+    public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = Long.valueOf(30_000);
 
     /** Default policy for node shutdown. */
     public static final ShutdownPolicy DFLT_SHUTDOWN_POLICY = ShutdownPolicy.IMMEDIATE;
@@ -263,6 +263,9 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
+    
+    /** Optional cluster comment. */
+    private String comment;
 
     /** User attributes. */
     private Map<String, ?> userAttrs;
@@ -290,6 +293,9 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
 
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
+
+    /** IGFS pool size. */
+    private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Data stream pool size. */
     private int dataStreamerPoolSize = DFLT_DATA_STREAMER_POOL_SIZE;
@@ -489,11 +495,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
 
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
-
-    /** ODBC configuration. */
-    @Deprecated
-    private OdbcConfiguration odbcCfg;
-
+    
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
@@ -553,10 +555,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
 
     /** Cluster state on start. */
     private ClusterState clusterStateOnStart;
-
-    /** SQL connector configuration. */
-    @Deprecated
-    private SqlConnectorConfiguration sqlConnCfg;
+   
 
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
@@ -631,6 +630,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         binaryCfg = cfg.getBinaryConfiguration();
         clusterStateOnStart = cfg.getClusterStateOnStart();
         dsCfg = cfg.getDataStorageConfiguration();
+       
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -646,6 +646,9 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
+       
+        igfsCfg = cfg.getFileSystemConfiguration();
+        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         failureHnd = cfg.getFailureHandler();
         igniteHome = cfg.getIgniteHome();
         igniteInstanceName = cfg.getIgniteInstanceName();
@@ -665,7 +668,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
-        odbcCfg = cfg.getOdbcConfiguration();
+        
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
@@ -689,7 +692,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         snapshotThreadPoolSize = cfg.getSnapshotThreadPoolSize();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -974,6 +977,16 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     }
 
     /**
+     * Size of thread pool that is in charge of processing outgoing IGFS messages.
+     * <p>
+     * If not provided, executor service will have size equals number of processors available in system.
+     *
+     * @return Thread pool size to be used for IGFS outgoing message sending.
+     */
+    public int getIgfsThreadPoolSize() {
+        return igfsPoolSize;
+    }
+    /**
      * Size of thread pool that is in charge of processing data stream messages.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_DATA_STREAMER_POOL_SIZE}.
@@ -1207,6 +1220,20 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         return this;
     }
 
+
+    /**
+     * Set thread pool size that will be used to process outgoing IGFS messages.
+     *
+     * @param poolSize Executor service to use for outgoing IGFS messages.
+     * @see IgniteConfiguration#getIgfsThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setIgfsThreadPoolSize(int poolSize) {
+        igfsPoolSize = poolSize;
+
+        return this;
+    }
+	
     /**
      * Set thread pool size that will be used to process data stream messages.
      *
@@ -2277,7 +2304,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     public LoadBalancingSpi[] getLoadBalancingSpi() {
         return loadBalancingSpi;
     }
-
+    
     /**
      * This value is used to expire messages from waiting list whenever node
      * discovery discrepancies happen.
@@ -2708,6 +2735,30 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
 
         return this;
     }
+    
+    private FileSystemConfiguration[] igfsCfg;
+
+    /**
+     * Gets IGFS (Ignite In-Memory File System) configurations.
+     *
+     * @return IGFS configurations.
+     */
+    public FileSystemConfiguration[] getFileSystemConfiguration() {
+        return igfsCfg;
+    }
+
+    /**
+     * Sets IGFS (Ignite In-Memory File System) configurations.
+     *
+     * @param igfsCfg IGFS configurations.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setFileSystemConfiguration(FileSystemConfiguration... igfsCfg) {
+        this.igfsCfg = igfsCfg;
+
+        return this;
+    }
+
 
     /**
      * Gets state of cluster on start.
@@ -2960,30 +3011,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         return this;
     }
 
-    /**
-     * Gets configuration for ODBC.
-     *
-     * @return ODBC configuration.
-     * @deprecated Use {@link #getClientConnectorConfiguration()} ()} instead.
-     */
-    @Deprecated
-    public OdbcConfiguration getOdbcConfiguration() {
-        return odbcCfg;
-    }
-
-    /**
-     * Sets configuration for ODBC.
-     *
-     * @param odbcCfg ODBC configuration.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
-        this.odbcCfg = odbcCfg;
-
-        return this;
-    }
+    
 
     /**
      * Gets configurations for services to be deployed on the grid.
@@ -3279,58 +3307,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     }
 
     /**
-     * Gets timeout in milliseconds after which long query warning will be printed.
-     *
-     * @return Timeout in milliseconds.
-     *
-     * @deprecated Use {@link SqlConfiguration#getLongQueryWarningTimeout()} instead.
-     */
-    @Deprecated
-    public long getLongQueryWarningTimeout() {
-        return sqlCfg.getLongQueryWarningTimeout();
-    }
-
-    /**
-     * Sets timeout in milliseconds after which long query warning will be printed.
-     *
-     * @param longQryWarnTimeout Timeout in milliseconds.
-     * @return {@code this} for chaining.
-     *
-     * @deprecated Use {@link SqlConfiguration#setLongQueryWarningTimeout(long)} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
-        sqlCfg.setLongQueryWarningTimeout(longQryWarnTimeout);
-
-        return this;
-    }
-
-    /**
-     * Sets SQL connector configuration.
-     *
-     * @param sqlConnCfg SQL connector configuration.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setSqlConnectorConfiguration(SqlConnectorConfiguration sqlConnCfg) {
-        this.sqlConnCfg = sqlConnCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets SQL connector configuration.
-     *
-     * @return SQL connector configuration.
-     * @deprecated Use {@link #getClientConnectorConfiguration()} instead.
-     */
-    @Deprecated
-    public SqlConnectorConfiguration getSqlConnectorConfiguration() {
-        return sqlConnCfg;
-    }
-
-    /**
      * Sets client connector configuration.
      *
      * @param cliConnCfg Client connector configuration.
@@ -3528,4 +3504,12 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     @Override public String toString() {
         return S.toString(IgniteConfiguration.class, this);
     }
+
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
 }

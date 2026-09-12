@@ -1,0 +1,52 @@
+
+
+.ignite-popper.ngxp__container {
+    --arrow-offset: 6px;
+    --target-margin: 8px;
+
+    background-color: var(--ignite-popper-background-color);
+    box-shadow: none !important;
+    border-color: var(--ignite-popper-border-color);
+    color: var(--ignite-popper-font-color);
+    padding: 12px;
+    border-radius: 4px;
+    max-width: 400px;
+    // Above app header
+    z-index: 11;
+
+    &[x-placement^="right"] {
+        margin-left: var(--target-margin);
+
+        .ngxp__arrow {
+            left: calc(-1 * var(--arrow-offset))
+        }
+    }
+
+    &[x-placement^="left"] {
+        margin-right: var(--target-margin);
+
+        .ngxp__arrow {
+            right: calc(-1 * var(--arrow-offset))
+        }
+    }
+
+    .ngxp__inner {
+        font-size: 12px;
+    }
+
+    .ngxp__arrow {
+        border-color: var(--ignite-popper-border-color);
+    }
+}
+
+.ignite-popper__tooltip {
+    --ignite-popper-background-color: white;
+    --ignite-popper-border-color: #ccc;
+    --ignite-popper-font-color: inherit;
+}
+
+.ignite-popper__error {
+    --ignite-popper-background-color: var(--error-red);
+    --ignite-popper-border-color: var(--error-red);
+    --ignite-popper-font-color: white;
+}

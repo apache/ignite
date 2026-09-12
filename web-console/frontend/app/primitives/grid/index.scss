@@ -1,0 +1,28 @@
+
+
+.theme--ignite {
+    .row {
+        display: flex;
+        margin: 16px -10px;
+
+        line-height: 36px;
+
+        & > [class*="col-"] {
+            & > * {
+                align-self: flex-end;
+            }
+        }
+    }
+
+    [class*="col-"] {
+        display: inline-flex;
+        padding: 0 10px;
+    }
+
+    @for $i from 1 through 20 {
+        .col-#{$i*5} {
+            width: $i*5%;
+        }
+    }
+}
+

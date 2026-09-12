@@ -1,0 +1,24 @@
+
+
+#createNotebookBtn {
+  [ignite-icon] {
+    height: 12px;
+  }
+}
+
+.queries-notebooks-list {
+  grid-no-data {
+    background: white;
+  }
+
+  .ui-grid-render-container-left:before {
+    display: none;
+  }
+
+  .notebook-name {
+    a {
+      color: #0067b9;
+    }
+  }
+}
+
