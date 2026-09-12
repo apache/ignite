@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -44,6 +45,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
@@ -80,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
@@ -379,6 +382,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_PERSISTENCE_ENABLED = 99;
+
+    /** */
+    public static final int OP_PLATFORM_CACHE_NODE_FILTER_APPLY = 100;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -1274,6 +1280,29 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return cache.context().group().persistenceEnabled() ? TRUE : FALSE;
         }
         return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_PLATFORM_CACHE_NODE_FILTER_APPLY: {
+                UUID nodeId = reader.readUuid();
+
+                IgnitePredicate<ClusterNode> nodeFilter = ((CacheConfiguration<?, ?>)(rawCache
+                    .getConfiguration(CacheConfiguration.class)))
+                    .getPlatformCacheConfiguration()
+                    .getNodeFilter();
+
+                ClusterNode node = cache.context()
+                    .grid()
+                    .cluster()
+                    .node(nodeId);
+
+                return nodeFilter.apply(node) ? TRUE : FALSE;
+            }
+        }
+
+        return super.processInStreamOutLong(type, reader);
     }
 
     /** {@inheritDoc} */

@@ -118,6 +118,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         PutWithPlatformCache = 95,
         ReservePartition = 96,
         ReleasePartition = 97,
-        PersistenceEnabled = 99
+        PersistenceEnabled = 99,
+        CacheNodeFilterApply = 100
     }
 }
