@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -681,7 +682,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 U.interrupt(addrSnd);
 
             for (AddressSender addrSnd : addrSnds)
-                U.join(addrSnd, log);
+                U.join(addrSnd, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
         }
     }
 
