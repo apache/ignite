@@ -62,6 +62,16 @@ public class PlannerTimeoutTest extends AbstractPlannerTest {
         AtomicReference<IgniteRel> plan = new AtomicReference<>();
         AtomicReference<RelOptPlanner.CannotPlanException> plannerError = new AtomicReference<>();
 
+        try (IgnitePlanner planner = ctx.planner()) {
+            plan.set(physicalPlan(planner, ctx.query()));
+
+            VolcanoPlanner volcanoPlanner = (VolcanoPlanner)ctx.cluster().getPlanner();
+
+            assertNotNull(volcanoPlanner);
+
+            GridTestUtils.assertThrowsWithCause(volcanoPlanner::checkCancel, VolcanoTimeoutException.class);
+        }
+
         GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
             try (IgnitePlanner planner = ctx.planner()) {
                 plan.set(physicalPlan(planner, ctx.query()));
