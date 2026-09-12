@@ -57,7 +57,7 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
             int end = ex.footerStartOffset();
 
             if (ex.hasBytes())
-                return BinaryUtils.hashCode(ex.bytes(), start, end);
+                return BinaryImplUtils.hashCode(ex.bytes(), start, end);
             else {
                 // Handle offheap object.
                 int hash = 1;
