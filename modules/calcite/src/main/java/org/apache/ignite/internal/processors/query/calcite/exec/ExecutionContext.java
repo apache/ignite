@@ -37,6 +37,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -148,10 +149,14 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** Entries holder per execution thread. */
     private static final ThreadLocal<Collection<QueryTxEntry>> txEntriesHolder = new ThreadLocal<>();
 
+    /** Binary marshaller. */
+    private final Function<Object, Object> binaryMarshaller;
+
     /**
      * @param qctx Parent base query context.
      * @param qryId Query ID.
      * @param fragmentDesc Partitions information.
+     * @param binaryMarshaller Binary marshaller.
      * @param params Parameters.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
@@ -169,7 +174,8 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         IoTracker ioTracker,
         long timeout,
         Map<String, Object> params,
-        @Nullable Collection<QueryTxEntry> qryTxEntries
+        @Nullable Collection<QueryTxEntry> qryTxEntries,
+        Function<Object, Object> binaryMarshaller
     ) {
         super(qctx);
 
@@ -186,6 +192,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.params = params;
         this.timeout = timeout;
         this.qryTxEntries = qryTxEntries == null ? txEntriesHolder.get() : qryTxEntries;
+        this.binaryMarshaller = binaryMarshaller;
 
         startTs = U.currentTimeMillis();
 
@@ -197,6 +204,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
             qctx.config().getParserConfig().conformance(),
             qctx.rexBuilder()
         );
+    }
+
+    /** Binary marshaller. */
+    public Function<Object, Object> binaryMarshaller() {
+        return binaryMarshaller;
     }
 
     /**
@@ -302,11 +314,16 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         return baseDataContext.get(name);
     }
 
-    /** */
+    /** Returns a parameter with internal representation or {@link BinaryObject}. */
     public Object getParameter(String name, Type storageType) {
         assert name.startsWith("?") : name;
 
-        return TypeUtils.toInternal(this, params.get(name), storageType);
+        Object param = params.get(name);
+
+        if (param != null && storageType == java.lang.Object.class && !(param instanceof BinaryObject))
+            return binaryMarshaller.apply(param);
+
+        return TypeUtils.toInternal(this, param, storageType);
     }
 
     /**
