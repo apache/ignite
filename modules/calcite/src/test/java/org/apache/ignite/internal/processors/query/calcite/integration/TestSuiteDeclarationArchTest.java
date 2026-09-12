@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.nio.file.Path;
 import java.util.Set;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -47,15 +46,22 @@ public class TestSuiteDeclarationArchTest {
     /** */
     private static JavaClasses allClassesCache;
 
-    /** */
+    /**
+     * Resolves compiled test classes of the calcite module (i.e. {@code modules/calcite/target/test-classes}).
+     * The location is derived from the test class itself instead of the working directory, because with
+     * {@code forkCount=0} the working directory is the one Maven was started from (e.g. the repository root),
+     * which would make the rules scan every module.
+     */
     static class CalciteLocationProvider implements LocationProvider {
         /** */
-        @Override public Set<Location> get(Class<?> testClass) {
-            // ignite/modules/calcite
-            Path modulesRoot = Path.of("").toAbsolutePath();
-
-            return Set.of(Location.of(modulesRoot));
+        @Override public Set<Location> get(Class<?> testCls) {
+            return Set.of(calciteTestClassesLocation());
         }
+    }
+
+    /** @return Location of the calcite module compiled test classes. */
+    private static Location calciteTestClassesLocation() {
+        return Location.of(TestSuiteDeclarationArchTest.class.getProtectionDomain().getCodeSource().getLocation());
     }
 
     /** */
@@ -83,7 +89,7 @@ public class TestSuiteDeclarationArchTest {
                     // Lazy load all classes to avoid repeated scanning
                     if (allClassesCache == null) {
                         allClassesCache = new ClassFileImporter()
-                            .importPackages("org.apache.ignite");
+                            .importLocations(Set.of(calciteTestClassesLocation()));
                     }
 
                     JavaClass ownerCls = method.getOwner();
