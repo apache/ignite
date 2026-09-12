@@ -201,6 +201,7 @@ You can modify test environments at execution time using global flags injected t
 | **AppSpec** | Specifies the class to use for application specifications in Ignite applications. Controls how Ignite applications are configured and started. | ```{"AppSpec": "myapp.services.MyAppSpec"}``` |
 | **IgniteTestContext** | Class name for the test context implementation. Allows customization of test context behavior. | ```{"IgniteTestContext": "myapp.context.CustomTestContext"}``` |
 | **project** | Project/fork name for version handling (e.g., "ignite", "fork"). Used to distinguish between different Ignite variants. Default is "ignite". | ```{"project": "fork"}``` |
+| **mdc_cache_topology_validator** | Whether the MDC tests create their caches with the cache level `MdcTopologyValidator`. Default is True. | ```{"mdc_cache_topology_validator": false}``` |
 
 #### Paths & Directories
 

@@ -611,10 +611,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         node = random.choice(self.alive_nodes)
 
         rebalanced = False
+
+        # A client of its own rather than the node's memoized one: this is called right after
+        # nodes were restarted, and a memoized client still holds the pid of the incarnation
+        # it was built for.
         mbean = JmxClient(node).find_mbean('.*name=cluster')
 
         while datetime.now() < delta_time and not rebalanced:
-            rebalanced = next(mbean.Rebalanced) == 'true'
+            rebalanced = mbean.bool_value("Rebalanced")
 
         if rebalanced:
             return
