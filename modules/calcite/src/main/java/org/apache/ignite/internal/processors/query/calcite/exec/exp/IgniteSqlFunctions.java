@@ -16,8 +16,17 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -37,6 +46,10 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.NUMERIC_ROUNDING_MODE;
 import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMath.convertToBigDecimal;
@@ -66,6 +79,11 @@ public class IgniteSqlFunctions {
     /** SQL SYSTEM_RANGE(start, end, increment) table function. */
     public static ScannableTable systemRange(Object rangeStart, Object rangeEnd, Object increment) {
         return new RangeTable(rangeStart, rangeEnd, increment);
+    }
+
+    /** SQL XML_TABLE(xml, rowPath, colPath1, colType1[, colPath2, colType2...]) table function. */
+    public static ScannableTable xmlTable(Object xml, Object rowPath, Object... colArgs) {
+        return new XmlTable(xml, rowPath, colArgs);
     }
 
     /** CAST(DECIMAL AS VARCHAR). */
@@ -341,5 +359,141 @@ public class IgniteSqlFunctions {
             return Commons.compareBinary(a, b) != 0;
 
         return SqlFunctions.neAny(a, b);
+    }
+
+    /** */
+    private static class XmlTable implements ScannableTable {
+        /** XML document text. */
+        private final Object xml;
+
+        /** XPath selecting source rows. */
+        private final Object rowPath;
+
+        /** XPath expressions and result types for columns. */
+        private final Object[] colArgs;
+
+        /** */
+        XmlTable(Object xml, Object rowPath, Object[] colArgs) {
+            if (colArgs.length == 0 || colArgs.length % 2 != 0)
+                throw new IllegalArgumentException("XML_TABLE columns must be specified as path/type pairs.");
+
+            this.xml = xml;
+            this.rowPath = rowPath;
+            this.colArgs = colArgs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+            RelDataTypeFactory.Builder b = typeFactory.builder();
+
+            for (int i = 0; i < colArgs.length; i += 2)
+                b.add("C" + (i / 2 + 1), columnType((String)colArgs[i + 1]));
+
+            return b.build();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Enumerable<@Nullable Object[]> scan(DataContext root) {
+            if (xml == null || rowPath == null)
+                return Linq4j.emptyEnumerable();
+
+            try {
+                XPath xpath = XPathFactory.newInstance().newXPath();
+                NodeList rows = (NodeList)xpath.evaluate(
+                    rowPath.toString(),
+                    parseXml(xml.toString()),
+                    XPathConstants.NODESET);
+
+                List<Object[]> res = new ArrayList<>(rows.getLength());
+
+                for (int i = 0; i < rows.getLength(); i++) {
+                    Node row = rows.item(i);
+                    Object[] vals = new Object[colArgs.length / 2];
+
+                    for (int j = 0; j < colArgs.length; j += 2) {
+                        Object colPath = colArgs[j];
+                        Object colType = colArgs[j + 1];
+                        String val = colPath == null ? null : xpath.evaluate(colPath.toString(), row);
+
+                        vals[j / 2] = convertXmlColumnValue(val, (String)colType);
+                    }
+
+                    res.add(vals);
+                }
+
+                return Linq4j.asEnumerable(res);
+            }
+            catch (Exception e) {
+                throw new IllegalArgumentException("Failed to evaluate XML_TABLE.", e);
+            }
+        }
+
+        /** */
+        private static Object convertXmlColumnValue(String val, String type) {
+            if (val == null)
+                return null;
+
+            switch (columnType(type)) {
+                case VARCHAR:
+                    return val;
+
+                case INTEGER:
+                    return Integer.valueOf(val);
+
+                default:
+                    throw new IllegalArgumentException("Unsupported XML_TABLE column type: " + type);
+            }
+        }
+
+        /** */
+        private static SqlTypeName columnType(String type) {
+            switch (type.toUpperCase(Locale.ROOT)) {
+                case "STRING":
+                case "VARCHAR":
+                    return SqlTypeName.VARCHAR;
+
+                case "INT":
+                case "INTEGER":
+                    return SqlTypeName.INTEGER;
+
+                default:
+                    throw new IllegalArgumentException("Unsupported XML_TABLE column type: " + type);
+            }
+        }
+
+        /** */
+        private static Document parseXml(String xml) throws Exception {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setXIncludeAware(false);
+            factory.setExpandEntityReferences(false);
+
+            return factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Statistic getStatistic() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Schema.TableType getJdbcTableType() {
+            return Schema.TableType.TABLE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRolledUp(String column) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean rolledUpColumnValidInsideAgg(String column, SqlCall call,
+            SqlNode parent, CalciteConnectionConfig cfg) {
+            return true;
+        }
     }
 }
