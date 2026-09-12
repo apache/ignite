@@ -801,7 +801,7 @@ public class JdbcThinResultSet implements ResultSet {
         if (cls == BigDecimal.class)
             return (BigDecimal)val;
         else if (val instanceof Number)
-            return new BigDecimal(((Number)val).doubleValue());
+            return BigDecimal.valueOf(((Number) val).doubleValue());
         else if (cls == Boolean.class)
             return new BigDecimal((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
