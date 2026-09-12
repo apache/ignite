@@ -582,7 +582,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
 	        	}
 	        	else {
                     stat.put("status", "started");
-	        		stat.put("message","Demo Ignite already started. Only allow one cluster to start in Demo mode!");
+	        		stat.put("message","Demo Ignite already started.");
 	        	}
 	        	return stat;
 			}			
@@ -606,13 +606,12 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
         JsonObject stat = new JsonObject();
         JsonObject json = fromJson(evt.getPayload());
         boolean isLastNode = evt.getRequestId().endsWith("-lastNode");
-        String id = json.getString("id");
         String clusterName = Utils.escapeFileName(json.getString("name"));
         if(json.getBoolean("demo",false)) {
         	AgentClusterDemo.stop();
-            IgniteClusterLauncher.stopIgnite(clusterName,id);
     	}
         else {
+        	String id = json.getString("id");
 
         	File startIniFile = new File(U.getIgniteHome()+ "/config/clusters/"+clusterName+"-start-nodes.ini");
 			

@@ -111,10 +111,6 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     @GridToStringExclude
     private File folder;
 
-    /** Warning guard. */
-    @GridToStringExclude
-    private final AtomicInteger nodeCounter = new AtomicInteger();
-
     /** Init guard. */
     @GridToStringExclude
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -186,7 +182,6 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
-            this.setShared(false);
         	String root = getFolderRoot();
         	String instanceName = this.ignite.name();
         	if (instanceName == null || instanceName.isEmpty())
@@ -380,9 +375,16 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
+        UUID nodeId = ignite.cluster().localNode().id();
+        registerAddresses(nodeId,addrs);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void registerAddresses(UUID nodeId,Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+        assert !F.isEmpty(addrs);
         init();
         try {
-
             JsonObject st = new JsonObject();
             this.ignite.cluster().localNode().attributes().forEach((k,v)->{
                 if(k.toLowerCase().contains("port")){
@@ -399,19 +401,18 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             st.put("discoveryAddress",hosts);
 
             if(this.httpClient!=null) {
-                UUID nodeId = ignite.cluster().localNode().id();
-            	String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId+"/"+NODE_JOINED;
-            	
-            	HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
-            			         .uri(URI.create(url))
-            			         .header("Authorization", "token " + accountToken)
-            			         .PUT(BodyPublishers.ofString(st.toString()))
-            			         .build();
-            	httpClient.send(request,BodyHandlers.discarding());
+                String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId+"/"+NODE_JOINED;
+
+                HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
+                        .uri(URI.create(url))
+                        .header("Authorization", "token " + accountToken)
+                        .PUT(BodyPublishers.ofString(st.toString()))
+                        .build();
+                httpClient.send(request,BodyHandlers.discarding());
             }
             else{
                 Files.writeString(
-                        Path.of(folder.getCanonicalPath(),ignite.cluster().localNode().consistentId()+".json"),
+                        Path.of(folder.getCanonicalPath(),nodeId+".json"),
                         st.toString(),
                         StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE,  // 创建新文件或覆盖
@@ -422,15 +423,14 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         catch (IOException e) {
             throw new IgniteSpiException("Failed to create file.", e);
         } catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+            e.printStackTrace();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
         init();
-        nodeCounter.decrementAndGet();
         try {
             JsonArray addresses = new JsonArray();
             for (InetSocketAddress addr: addrs) {
@@ -440,7 +440,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
         	if(this.httpClient!=null) {
 
-            	String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/to/node-left";
+            	String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/to/"+NODE_LEFT;
             	
             	HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
             			         .uri(URI.create(url))
@@ -544,12 +544,6 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         return hostAddress.replaceAll(COLON_SUBST, COLON_DELIM);
     }
 
-    /** {@inheritDoc} */
-    @Override public TcpDiscoveryWebConsoleServerIpFinder setShared(boolean shared) {
-        super.setShared(shared);
-
-        return this;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

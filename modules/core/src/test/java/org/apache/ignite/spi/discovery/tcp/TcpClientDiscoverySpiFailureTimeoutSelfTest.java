@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -445,8 +444,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         private Exception err;
 
         /**  */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
@@ -461,8 +460,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }
             }
 
-            if (sock.getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(sock, data, timeout);
+            if (ses.socket().getSoTimeout() >= writeToSocketDelay)
+                super.write(ses, data, timeout);
             else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
         }
@@ -491,8 +490,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         /**  */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
@@ -507,8 +506,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }
             }
 
-            if (sock.getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(sock, res, timeout);
+            if (ses.socket().getSoTimeout() >= writeToSocketDelay)
+                super.writeReceipt(ses, res, timeout);
             else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
         }

@@ -179,35 +179,25 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
      */
     private class TestDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
         ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            return super.openSocket(sockAddr, timeoutHelper);
+            return super.openSession(sock, sockAddr, timeoutHelper);
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
-            Socket sock,
-            InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteCheckedException {
-            awaitLatch();
-
-            return super.openSocket(sock, remAddr, timeoutHelper);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            super.writeToSocket(sock, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -222,14 +212,14 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            super.writeToSocket(sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /**
