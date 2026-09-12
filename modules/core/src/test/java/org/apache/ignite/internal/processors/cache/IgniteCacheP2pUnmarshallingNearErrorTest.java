@@ -47,7 +47,7 @@ public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnma
     @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() throws InterruptedException {
         //GridCacheEvictionRequest unmarshalling failed test.
-        readCnt.set(9); //4 for each put (near cache on client works!).
+        readCnt.set(11); //5 for each put: the near entry is now pre-created at update mapping (near cache on client works!).
 
         jcache(0).put(new TestKey(String.valueOf(++key)), "");
         jcache(0).put(new TestKey(String.valueOf(++key)), "");
