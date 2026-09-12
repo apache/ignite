@@ -157,7 +157,7 @@ public class SchemaOperationException extends IgniteCheckedException {
                 return "Index already exists: " + objName;
 
             case CODE_CACHE_ALREADY_INDEXED:
-                return "Cache is already indexed: " + objName;
+                return "Cache is already indexed (already supports SQL): " + objName;
 
             case CODE_VIEW_NOT_FOUND:
                 return "View doesn't exist: " + objName;
