@@ -190,12 +190,12 @@ def get_rebalance_metrics(node, cache_group):
     :param cache_group: Cache group.
     :return: RebalanceMetrics instance.
     """
-    mbean = node.jmx_client().find_mbean('.*group=cacheGroups.*name="%s"' % cache_group)
-    start_time = int(next(mbean.RebalancingStartTime))
-    end_time = int(next(mbean.RebalancingEndTime))
+    mbean = node.cache_group_mbean(cache_group)
+    start_time = int(mbean.value("RebalancingStartTime"))
+    end_time = int(mbean.value("RebalancingEndTime"))
 
     return RebalanceMetrics(
-        received_bytes=int(next(mbean.RebalancingReceivedBytes)),
+        received_bytes=int(mbean.value("RebalancingReceivedBytes")),
         start_time=start_time,
         end_time=end_time,
         duration=(end_time - start_time) if start_time != -1 and end_time != -1 else 0,
