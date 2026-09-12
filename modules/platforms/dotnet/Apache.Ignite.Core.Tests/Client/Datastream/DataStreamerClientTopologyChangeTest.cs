@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Datastream;
+    using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
@@ -128,6 +129,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
+            var logger = new TestUtils.TestContextLogger();
+            logger.Warn("/// TestStreamerDoesNotLoseDataOnRandomTopologyChanges START");
+
             const int maxNodes = 4;
             const int topologyChanges = 16;
 
@@ -141,12 +145,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var streamer = client.GetDataStreamer<int, int>(cache.Name, options);
 
             var id = 0;
-            var cancel = false;
+            var cancel = new CancellationTokenSource();
 
             var adderTask = Task.Factory.StartNew(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
-                while (!cancel)
+                while (!cancel.IsCancellationRequested)
                 {
                     id++;
 
@@ -162,21 +166,40 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             for (int i = 0; i < topologyChanges; i++)
             {
+                logger.Warn("/// Topology change " + i);
                 Thread.Sleep(100);
 
                 if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                 {
-                    nodes.Enqueue(StartServer());
+                    logger.Warn("/// Starting server... ");
+                    var startTask = Task.Run(StartServer);
+                    logger.Warn("/// Starting server - task started... ");
+
+                    Assert.IsTrue(startTask.Wait(TimeSpan.FromSeconds(15)));
+
+                    logger.Warn("/// Starting server (2) ...");
+                    nodes.Enqueue(startTask.Result);
+                    logger.Warn("/// Server started");
                 }
                 else
                 {
-                    nodes.Dequeue().Dispose();
+                    logger.Warn("/// Stopping server... ");
+                    var oldNode = nodes.Dequeue();
+                    var stopTask = Task.Run(() => oldNode.Dispose());
+                    Assert.IsTrue(stopTask.Wait(TimeSpan.FromSeconds(10)));
+                    logger.Warn("/// Server stopped");
                 }
             }
 
-            cancel = true;
-            adderTask.Wait(TimeSpan.FromSeconds(15));
-            streamer.Close(cancel: false);
+
+            logger.Warn("/// Topology changes ended");
+            cancel.Cancel();
+
+            Assert.IsTrue(adderTask.Wait(TimeSpan.FromSeconds(15)));
+            logger.Warn("/// Adder task stopped");
+
+            streamer.CloseAsync(cancel: false).Wait(TimeSpan.FromSeconds(15));
+            logger.Warn("/// Streamer closed");
 
             var streamerImpl = (DataStreamerClient<int, int>) streamer;
 
@@ -193,6 +216,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.AreEqual(1, cache[1]);
             Assert.AreEqual(id, cache[id]);
+
+            logger.Warn("/// TestStreamerDoesNotLoseDataOnRandomTopologyChanges END");
         }
 
         /// <summary>
