@@ -53,6 +53,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.query.QueryEntityMerger;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1968,26 +1969,23 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
             Class<?> keyCls = newIndexedTypes[i];
             Class<?> valCls = newIndexedTypes[i + 1];
 
-            QueryEntity newEntity = new QueryEntity(keyCls, valCls);
+            QueryEntity incomingEntity = new QueryEntity(keyCls, valCls);
 
-            boolean dup = false;
+            QueryEntity existingEntity = findQueryEntity(incomingEntity.findValueType());
 
-            for (QueryEntity entity : qryEntities) {
-                if (Objects.equals(entity.findValueType(), newEntity.findValueType())) {
-                    dup = true;
+            if (existingEntity == null)
+                qryEntities.add(incomingEntity);
+            else {
+                QueryEntity mergedEntity = QueryEntityMerger.merge(getName(), existingEntity, incomingEntity);
 
-                    break;
-                }
+                replaceQueryEntity(existingEntity, mergedEntity);
             }
-
-            if (!dup)
-                qryEntities.add(newEntity);
 
             // Set key configuration if needed.
             String affFieldName = BinaryUtils.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
-                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
+                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(incomingEntity.getKeyType(), affFieldName);
 
                 if (F.isEmpty(keyCfg))
                     keyCfg = new CacheKeyConfiguration[] { newKeyCfg };
@@ -2080,25 +2078,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
-        if (this.qryEntities == null) {
-            this.qryEntities = new ArrayList<>(qryEntities);
+        if (this.qryEntities == null)
+            this.qryEntities = new ArrayList<>();
 
-            return this;
-        }
+        for (QueryEntity incomingEntity : qryEntities) {
+            String valType = incomingEntity.findValueType();
 
-        for (QueryEntity entity : qryEntities) {
-            boolean found = false;
+            QueryEntity existingEntity = findQueryEntity(valType);
 
-            for (QueryEntity existing : this.qryEntities) {
-                if (Objects.equals(entity.findValueType(), existing.findValueType())) {
-                    found = true;
+            if (existingEntity == null)
+                this.qryEntities.add(incomingEntity);
+            else {
+                QueryEntity mergedEntity = QueryEntityMerger.merge(getName(), existingEntity, incomingEntity);
 
-                    break;
-                }
+                replaceQueryEntity(existingEntity, mergedEntity);
             }
-
-            if (!found)
-                this.qryEntities.add(entity);
         }
 
         return this;
@@ -2482,6 +2476,29 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
+    }
+
+    /** */
+    private QueryEntity findQueryEntity(String valType) {
+        if (qryEntities == null)
+            return null;
+
+        for (QueryEntity entity : qryEntities) {
+            if (Objects.equals(entity.findValueType(), valType))
+                return entity;
+        }
+
+        return null;
+    }
+
+    /** */
+    private void replaceQueryEntity(QueryEntity oldEntity, QueryEntity newEntity) {
+        Collection<QueryEntity> updated = new ArrayList<>(qryEntities.size());
+
+        for (QueryEntity entity : qryEntities)
+            updated.add(entity == oldEntity ? newEntity : entity);
+
+        qryEntities = updated;
     }
 
     /**
