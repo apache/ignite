@@ -35,12 +35,18 @@ import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "local = {0}, partSz = {1}")
+@MethodSource("parameters")
 public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final int ENTRIES_COUNT = 10000;
@@ -49,23 +55,24 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     private volatile int[] parts;
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean local;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int partSz;
 
     /** */
-    @Parameterized.Parameters(name = "local = {0}, partSz = {1}")
-    public static List<Object[]> parameters() {
+    @MethodSource("parameters")
+    private static List<Arguments> parameters() {
         return Stream.of(true, false)
             .flatMap(isLocal -> Stream.of(1, 2, 5, 10, 20)
-                .map(i -> new Object[]{isLocal, i}))
+                .map(i -> Arguments.of(isLocal, i)))
             .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -104,6 +111,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -135,6 +143,7 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() {
         // Skip super method to keep caches after each test.
     }

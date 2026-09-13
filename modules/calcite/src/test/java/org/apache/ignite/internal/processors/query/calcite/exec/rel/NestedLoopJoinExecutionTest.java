@@ -28,10 +28,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
@@ -40,9 +41,11 @@ import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.getFieldFromBiRows;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = "calcite.debug", value = "true")
 public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
     /** */
@@ -51,7 +54,7 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -365,7 +368,7 @@ public class NestedLoopJoinExecutionTest extends AbstractExecutionTest {
         while (node.hasNext())
             rows.add(node.next());
 
-        Assert.assertArrayEquals(expRes, rows.toArray(EMPTY));
+        assertArrayEquals(expRes, rows.toArray(EMPTY));
     }
 
     /**

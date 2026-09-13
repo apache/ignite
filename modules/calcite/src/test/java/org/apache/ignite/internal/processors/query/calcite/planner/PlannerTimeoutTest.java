@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test planner timeout.
@@ -53,16 +53,24 @@ public class PlannerTimeoutTest extends AbstractPlannerTest {
 
         String sql = "SELECT * FROM T1 JOIN T2 ON T1.A = T2.A";
 
-        PlanningContext ctx = PlanningContext.builder()
+        // Warm up the planner (class loading, JIT) without a timeout, so that the timed run below measures
+        // the planning itself and not the JVM start-up costs.
+        physicalPlan(PlanningContext.builder()
             .parentContext(baseQueryContext(Collections.singletonList(schema)))
-            .plannerTimeout(PLANNER_TIMEOUT)
             .query(sql)
-            .build();
+            .build());
 
         AtomicReference<IgniteRel> plan = new AtomicReference<>();
         AtomicReference<RelOptPlanner.CannotPlanException> plannerError = new AtomicReference<>();
 
         GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+            // The planner timeout is counted from the context creation, create it right before the planning.
+            PlanningContext ctx = PlanningContext.builder()
+                .parentContext(baseQueryContext(Collections.singletonList(schema)))
+                .plannerTimeout(PLANNER_TIMEOUT)
+                .query(sql)
+                .build();
+
             try (IgnitePlanner planner = ctx.planner()) {
                 plan.set(physicalPlan(planner, ctx.query()));
 

@@ -30,7 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Planner test for join order hints.
@@ -40,6 +42,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     private IgniteSchema schema;
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -47,6 +50,7 @@ public class JoinOrderHintsPlannerTest extends AbstractPlannerTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 

@@ -44,12 +44,17 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** Non-stable topology tests. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "awaitExchange={0}, idxSlowDown={1}")
+@MethodSource("parameters")
 public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String POI_CACHE_NAME = "POI_CACHE";
@@ -78,26 +83,26 @@ public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTes
     /** */
     private static final int NUM_ENTITIES = 2_000;
 
-    /** Test parameters. */
-    @Parameterized.Parameters(name = "awaitExchange={0}, idxSlowDown={1}")
-    public static List<Object[]> parameters() {
+    /** */
+    private static List<Arguments> parameters() {
         return ImmutableList.of(
-            new Object[]{true, true},
-            new Object[]{true, false},
-            new Object[]{false, false},
-            new Object[]{false, true}
+            Arguments.of(true, true),
+            Arguments.of(true, false),
+            Arguments.of(false, false),
+            Arguments.of(false, true)
         );
     }
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean awaitExchange;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean idxSlowDown;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op. We don't need to start anything.
     }
@@ -142,10 +147,9 @@ public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTes
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         stopAllGrids(true);
-
-        super.afterTest();
     }
 
     /**

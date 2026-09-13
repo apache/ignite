@@ -39,7 +39,8 @@ import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for server side statistics usage.
@@ -103,6 +104,7 @@ public class ServerStatisticsIntegrationTest extends AbstractBasicIntegrationTra
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() {
         cleanQueryPlanCache();
     }

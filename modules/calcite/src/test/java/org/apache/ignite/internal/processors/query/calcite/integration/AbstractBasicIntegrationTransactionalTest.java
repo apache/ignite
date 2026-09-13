@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,23 +35,32 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.SupplierX;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "sqlTxMode={0}")
+@MethodSource("parameters")
 public abstract class AbstractBasicIntegrationTransactionalTest extends AbstractBasicIntegrationTest {
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public SqlTransactionMode sqlTxMode;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sqlTxMode={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(SqlTransactionMode.values());
+    private static Collection<Arguments> parameters() {
+        Collection<Arguments> params = new ArrayList<>();
+        for (SqlTransactionMode mode : SqlTransactionMode.values()) {
+            params.add(Arguments.of(mode));
+        }
+        return params;
     }
 
     /** */
@@ -71,6 +80,7 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         if (currentMode != null && sqlTxMode == currentMode)
             return;
@@ -84,8 +94,8 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
         init();
     }
 
-
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         clearTransaction();
 
@@ -93,6 +103,7 @@ public abstract class AbstractBasicIntegrationTransactionalTest extends Abstract
     }
 
     /** {@inheritDoc} */
+    @AfterAll
     @Override protected void afterTestsStopped() throws Exception {
         clearTransaction();
 

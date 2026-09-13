@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -31,49 +30,54 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Index spool test.
  */
-@RunWith(Parameterized.class)
-public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "Rows: {0}")
+@MethodSource("testData")
+public class IndexSpoolIntegrationTest extends GridCommonAbstractWrapperTest {
     /** Rows. */
     private static final int[] ROWS = {1, 10, 512, 513, 2000};
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public int rows;
 
     /**
      * @return List of versions pairs to test.
      */
-    @Parameterized.Parameters(name = "Rows: {0}")
-    public static Collection<Object[]> testData() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> testData() {
+        List<Arguments> params = new ArrayList<>();
 
         for (int rs : ROWS)
-            params.add(new Object[]{rs});
+            params.add(Arguments.of(rs));
 
         return params;
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(2);
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         fillCache(grid(0).cache("TEST0"), rows);
         fillCache(grid(0).cache("TEST1"), rows);
@@ -82,6 +86,7 @@ public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         grid(0).cache("TEST0").clear();
         grid(0).cache("TEST1").clear();

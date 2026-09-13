@@ -47,7 +47,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class PartitionPruneTest extends AbstractBasicIntegrationTest {
@@ -115,6 +117,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -151,6 +154,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         clearIntercepted();
     }
@@ -316,7 +320,6 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
             testSelect(i, true, "ID");
         });
     }
-
 
     /** */
     @Test

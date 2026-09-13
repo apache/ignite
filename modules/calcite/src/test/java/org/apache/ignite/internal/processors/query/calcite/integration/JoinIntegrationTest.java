@@ -20,30 +20,35 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "sqlTxMode={0}, joinType={1}")
+@MethodSource("parameters")
 public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public JoinType joinType;
 
     /** */
-    @Parameterized.Parameters(name = "sqlTxMode={0},joinType={1}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
+    private static Stream<Arguments> parameters() {
+        List<Arguments> params = new ArrayList<>();
 
         for (SqlTransactionMode sqlTxMode : SqlTransactionMode.values()) {
             for (JoinType jt : JoinType.values())
-                params.add(new Object[] {sqlTxMode, jt});
+                params.add(Arguments.of(sqlTxMode, jt));
         }
 
-        return params;
+        return params.stream();
     }
 
     /** {@inheritDoc} */
@@ -61,6 +66,7 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() {
         // NO-OP
     }
@@ -688,7 +694,7 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
      */
     @Test
     public void testRightJoin() {
-        Assume.assumeTrue(joinType != JoinType.CORRELATED);
+        assumeTrue(joinType != JoinType.CORRELATED);
 
         assertQuery("" +
             "select t1.c1 c11, t1.c2 c12, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +
@@ -1035,7 +1041,7 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
      */
     @Test
     public void testFullJoin() {
-        Assume.assumeTrue(joinType != JoinType.CORRELATED);
+        assumeTrue(joinType != JoinType.CORRELATED);
 
         assertQuery("" +
             "select t1.c1 c11, t1.c2 c12, t1.c3 c13, t2.c1 c21, t2.c2 c22, t2.c3 c23 " +

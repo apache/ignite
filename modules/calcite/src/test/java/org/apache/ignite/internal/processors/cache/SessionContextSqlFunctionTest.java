@@ -28,18 +28,23 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.session.SessionContextProvider;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
-public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "mode={0}, isClnNode={1}")
+@MethodSource("parameters")
+public class SessionContextSqlFunctionTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final String SESSION_ID = "sessionId";
 
@@ -47,21 +52,21 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     private Ignite ign;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheAtomicityMode mode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean isClnNode;
 
     /** */
-    @Parameterized.Parameters(name = "mode={0}, isClnNode={1}")
-    public static List<Object[]> parameters() {
-        List<Object[]> params = new ArrayList<>();
+    @MethodSource("parameters")
+    private static List<Arguments> parameters() {
+        List<Arguments> params = new ArrayList<>();
 
         for (CacheAtomicityMode m: CacheAtomicityMode.values()) {
-            params.add(new Object[] {m, false});
-            params.add(new Object[] {m, true});
+            params.add(Arguments.of(m, false));
+            params.add(Arguments.of(m, true));
         }
 
         return params;
@@ -82,8 +87,9 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
         ign = startGrids(3);
 
         if (isClnNode)
@@ -93,6 +99,7 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() {
         stopAllGrids();
     }

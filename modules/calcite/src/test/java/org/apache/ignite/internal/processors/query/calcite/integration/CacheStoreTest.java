@@ -18,46 +18,72 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
-import org.junit.runners.Parameterized;
-
-import static java.util.Arrays.asList;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /** */
-public class CacheStoreTest extends AbstractMultiEngineIntegrationTest {
+@ParameterizedClass(name = "Engine={0}, atomicityMode={1}, cacheMode={2}, backups={3}, loadPreviousValue={4}")
+@MethodSource("parameters")
+public class CacheStoreTest extends AbstractBasicIntegrationTest {
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(0)
+    String engine;
+
+    /** */
+    @Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean loadPreviousValue;
+
+    /** {@inheritDoc} */
+    @BeforeAll
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @AfterEach
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        writeThroughEntries.clear();
+        readThroughEntries.clear();
+    }
 
     /** */
     private static final List<Object> writeThroughEntries = new CopyOnWriteArrayList<>();
@@ -66,20 +92,22 @@ public class CacheStoreTest extends AbstractMultiEngineIntegrationTest {
     private static final List<Object> readThroughEntries = new CopyOnWriteArrayList<>();
 
     /** */
-    @Parameterized.Parameters(name = "Engine={0}, atomicityMode={1}, cacheMode={2}, backups={3}, loadPreviousValue={4}")
-    public static Collection<?> params() {
+    private static Stream<Arguments> parameters() {
         return cartesianProduct(
-            asList(CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME),
-            asList(CacheAtomicityMode.ATOMIC, CacheAtomicityMode.TRANSACTIONAL),
-            asList(CacheMode.PARTITIONED, CacheMode.REPLICATED),
-            asList(0, 1),
-            asList(false, true)
-        );
+            List.of(CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME),
+            List.of(CacheAtomicityMode.ATOMIC, CacheAtomicityMode.TRANSACTIONAL),
+            List.of(CacheMode.PARTITIONED, CacheMode.REPLICATED),
+            List.of(0, 1),
+            List.of(false, true)
+        ).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setSqlConfiguration(new SqlConfiguration()
+                .setQueryEnginesConfiguration(engine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME) ?
+                    new CalciteQueryEngineConfiguration() : new IndexingQueryEngineConfiguration()));
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setBackups(backups)
@@ -99,14 +127,6 @@ public class CacheStoreTest extends AbstractMultiEngineIntegrationTest {
             )));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        writeThroughEntries.clear();
-        readThroughEntries.clear();
     }
 
     /** */
@@ -148,6 +168,12 @@ public class CacheStoreTest extends AbstractMultiEngineIntegrationTest {
         sql(srv, "INSERT INTO tbl(id, val) SELECT id+1000, val FROM tbl");
         checkWriteThrough(1002, 1003, 1004);
         checkReadThrough(1002, 1003, 1004);
+    }
+
+    /** */
+    @Override protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
+        return ignite.context().query().querySqlFields(new SqlFieldsQuery(sql).setArgs(params), true)
+            .getAll();
     }
 
     /** */

@@ -37,9 +37,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.G;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlDate;
@@ -47,62 +49,61 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.D
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToTimestamp;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "sqlTxMode={0}, isValidationEnabled={1}, sqlType={2}, columnCls={3}, testObjCls={4}, beforeGregorian={6}")
+@MethodSource("parameters")
 public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean isValidationEnabled;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public String sqlType;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public Class<?> colType;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public Class<?> objType;
 
     /** */
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public Function<Object, Object> sqlTypeConverter;
 
     /** */
-    @Parameterized.Parameter(6)
+    @Parameter(6)
     public boolean isOldDate;
 
     /** */
-    @Parameterized.Parameters(
-        name = "sqlTxMode={0}, isValidationEnabled={1}, sqlType={2}, columnCls={3}, testObjCls={4}, beforeGregorian={6}")
-    public static Collection<Object[]> parameters() {
-        Collection<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> parameters() {
+        Collection<Arguments> params = new ArrayList<>();
 
         for (SqlTransactionMode sqlTxmode : SqlTransactionMode.values()) {
             for (boolean isOldDate: Arrays.asList(true, false)) {
                 for (boolean isV : Arrays.asList(true, false)) {
-                    params.add(new Object[] {
+                    params.add(Arguments.of(
                         sqlTxmode, isV, "TIMESTAMP", null, LocalDateTime.class, f(ts -> convertToTimestamp((LocalDateTime)ts)), isOldDate
-                    });
-                    params.add(new Object[] {
+                    ));
+                    params.add(Arguments.of(
                         sqlTxmode, isV, "TIMESTAMP", null, Date.class, f(ts -> new Timestamp(((Date)ts).getTime())), isOldDate
-                    });
-                    params.add(new Object[] {
+                    ));
+                    params.add(Arguments.of(
                         sqlTxmode, isV, "TIMESTAMP", null, java.sql.Date.class, f(ts -> new Timestamp(((Date)ts).getTime())), isOldDate
-                    });
+                    ));
 
                     for (Class<?> testObjCls : Arrays.asList(Timestamp.class, LocalDateTime.class, Date.class, java.sql.Date.class)) {
-                        params.add(new Object[] {
+                        params.add(Arguments.of(
                             sqlTxmode, isV, null, Timestamp.class, testObjCls, f(ts -> {
                                 if (ts instanceof LocalDateTime)
                                     return convertToTimestamp((LocalDateTime)ts);
                                 return ts;
                             }),
                             isOldDate
-                        });
+                        ));
 
-                        params.add(new Object[] {
+                        params.add(Arguments.of(
                             sqlTxmode, isV, null, Date.class, testObjCls, f(ts -> {
                                 if (testObjCls == LocalDateTime.class)
                                     return new Date(convertToTimestamp((LocalDateTime)ts).getTime());
@@ -111,9 +112,9 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTransactio
                                 return ts;
                             }),
                             isOldDate
-                        });
+                        ));
 
-                        params.add(new Object[] {
+                        params.add(Arguments.of(
                             sqlTxmode, isV, null, LocalDateTime.class, testObjCls, f(ts -> {
                                 if (testObjCls == Timestamp.class)
                                     return ((Timestamp)ts).toLocalDateTime();
@@ -125,55 +126,55 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTransactio
                                     return ts;
                             }),
                             isOldDate
-                        });
+                        ));
                     }
 
-                    params.add(new Object[] {
+                    params.add(Arguments.of(
                         sqlTxmode, isV, "DATE", null, LocalDate.class, f(d -> convertToSqlDate((LocalDate)d)), isOldDate
-                    });
+                    ));
 
                     for (Class<?> testObjCls : Arrays.asList(LocalDate.class, java.sql.Date.class)) {
-                        params.add(new Object[] {
+                        params.add(Arguments.of(
                             sqlTxmode, isV, null, java.sql.Date.class, testObjCls, f(ts -> {
                                 if (testObjCls == LocalDate.class)
                                     return convertToSqlDate((LocalDate)ts);
                                 return ts;
                             }),
                             isOldDate
-                        });
+                        ));
 
-                        params.add(new Object[] {
+                        params.add(Arguments.of(
                             sqlTxmode, isV, null, LocalDate.class, testObjCls, f(ts -> {
                                 if (testObjCls == java.sql.Date.class)
                                     return ((java.sql.Date)ts).toLocalDate();
                                 return ts;
                             }),
                             isOldDate
-                        });
+                        ));
                     }
 
-                    params.add(new Object[] {
+                    params.add(Arguments.of(
                         sqlTxmode, isV, "TIME", null, LocalTime.class, f(t -> convertToSqlTime((LocalTime)t)), isOldDate
-                    });
+                    ));
 
                     for (Class<?> testObjCls : Arrays.asList(LocalTime.class, java.sql.Time.class)) {
-                        params.add(new Object[] {
+                        params.add(Arguments.of(
                             sqlTxmode, isV, null, java.sql.Time.class, testObjCls, f(ts -> {
                                 if (testObjCls == LocalTime.class)
                                     return convertToSqlTime((LocalTime)ts);
                                 return ts;
                             }),
                             isOldDate
-                        });
+                        ));
 
-                        params.add(new Object[] {
+                        params.add(Arguments.of(
                             sqlTxmode, isV, null, LocalTime.class, testObjCls, f(ts -> {
                                 if (testObjCls == java.sql.Time.class)
                                     return ((java.sql.Time)ts).toLocalTime();
                                 return ts;
                             }),
                             isOldDate
-                        });
+                        ));
                     }
                 }
             }
@@ -195,10 +196,15 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTransactio
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (Ignite ig: G.allGrids()) {
-            IgniteCacheObjectProcessor objProc = ((IgniteEx)ig).context().cacheObjects();
+        try {
+            for (Ignite ig : G.allGrids()) {
+                IgniteCacheObjectProcessor objProc = ((IgniteEx)ig).context().cacheObjects();
 
-            objProc.removeType(objProc.typeId(Data.class.getName()));
+                objProc.removeType(objProc.typeId(Data.class.getName()));
+            }
+        }
+        catch (Exception ignore) {
+            // No op.
         }
     }
 

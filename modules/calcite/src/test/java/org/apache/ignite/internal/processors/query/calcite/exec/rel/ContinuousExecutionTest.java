@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
@@ -35,15 +34,21 @@ import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
+@ParameterizedClass(name = "Task executor = {0}, Execution strategy = {1}, " +
+    "rowsCount={2}, " +
+    "remoteFragmentsCount={3}")
+@MethodSource("params")
 public class ContinuousExecutionTest extends AbstractExecutionTest {
     /** Row count parameter number. */
     protected static final int ROW_CNT_PARAM_NUM = LAST_PARAM_NUM + 1;
@@ -60,11 +65,8 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
     public int remoteFragmentsCnt;
 
     /** */
-    @Parameterized.Parameters(name = PARAMS_STRING + ", " +
-        "rowsCount={" + ROW_CNT_PARAM_NUM + "}, " +
-        "remoteFragmentsCount={" + REMOTE_FRAGMENTS_PARAM_NUM + "}")
-    public static List<Object[]> data() {
-        List<Object[]> extraParams = new ArrayList<>();
+    public static Collection<Arguments> params() {
+        List<Arguments> extraParams = new ArrayList<>();
 
         ImmutableList<Object[]> newParams = ImmutableList.of(
             new Object[] {10, 1},
@@ -79,11 +81,13 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
         );
 
         for (Object[] newParam : newParams) {
-            for (Object[] inheritedParam : AbstractExecutionTest.parameters()) {
-                Object[] both = Stream.concat(Arrays.stream(inheritedParam), Arrays.stream(newParam))
-                    .toArray(Object[]::new);
+            for (Object[] inheritedParam : innerParams()) {
+                Object[] combined = new Object[newParam.length + inheritedParam.length];
+                System.arraycopy(inheritedParam, 0, combined, 0, inheritedParam.length);
+                System.arraycopy(newParam, 0, combined, inheritedParam.length, newParam.length);
 
-                extraParams.add(both);
+                Arguments res = Arguments.of(combined);
+                extraParams.add(res);
             }
         }
 
@@ -93,7 +97,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = remoteFragmentsCnt + 1;
         super.setup();

@@ -33,16 +33,22 @@ import org.apache.ignite.internal.processors.query.calcite.integration.AbstractB
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "qryBlockingExecutor={0}")
+@MethodSource("parameters")
 public class TxThreadLockingTest extends AbstractBasicIntegrationTest {
     /** */
     private static final long TIMEOUT = 10_000L;
@@ -57,21 +63,22 @@ public class TxThreadLockingTest extends AbstractBasicIntegrationTest {
     private static final int MODIFY_BATCH_SIZE = AbstractExecutionTest.MODIFY_BATCH_SIZE;
 
     /** Use query blocking executor. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public boolean qryBlockingExecutor;
 
     /** */
-    @Parameterized.Parameters(name = "qryBlockingExecutor={0}")
-    public static Collection<?> parameters() {
-        return List.of(false, true);
+    private static Collection<Arguments> parameters() {
+        return List.of(Arguments.of(false), Arguments.of(true));
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, String.valueOf(qryBlockingExecutor));
 
@@ -81,6 +88,7 @@ public class TxThreadLockingTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 

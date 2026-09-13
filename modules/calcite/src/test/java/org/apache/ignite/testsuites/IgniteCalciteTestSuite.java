@@ -27,14 +27,14 @@ import org.apache.ignite.internal.processors.query.calcite.sql.SqlSelectForUpdat
 import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsSavepointTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsUnsupportedModesTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Calcite tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     UtilTestSuite.class,
 
     ParserCodegenResourcesTest.class,

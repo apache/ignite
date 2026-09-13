@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration test for WINDOW operator.
@@ -44,6 +45,7 @@ public class WindowIntegrationTest extends AbstractBasicIntegrationTransactional
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() {
         // No-op
     }

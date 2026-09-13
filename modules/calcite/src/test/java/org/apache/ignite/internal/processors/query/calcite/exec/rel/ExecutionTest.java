@@ -33,10 +33,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -47,6 +46,7 @@ import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.getFieldFromBiRows;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  *
@@ -57,7 +57,7 @@ public class ExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -122,8 +122,8 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(2, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", "Calcite"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", "Ignite"}, rows.get(1));
+        assertArrayEquals(new Object[] {2, "Ivan", "Calcite"}, rows.get(0));
+        assertArrayEquals(new Object[] {2, "Ivan", "Ignite"}, rows.get(1));
     }
 
     /**
@@ -227,10 +227,10 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(4, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
-        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
+        assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
+        assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
+        assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
+        assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
     }
 
     /**
@@ -288,10 +288,10 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(4, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(2));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(3));
+        assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
+        assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(1));
+        assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(2));
+        assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(3));
     }
 
     /**
@@ -349,11 +349,11 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(5, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
-        Assert.assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
-        Assert.assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
-        Assert.assertArrayEquals(new Object[] {null, null, "QA"}, rows.get(4));
+        assertArrayEquals(new Object[] {0, "Igor", "Core"}, rows.get(0));
+        assertArrayEquals(new Object[] {1, "Roman", "SQL"}, rows.get(1));
+        assertArrayEquals(new Object[] {2, "Ivan", null}, rows.get(2));
+        assertArrayEquals(new Object[] {3, "Alexey", "Core"}, rows.get(3));
+        assertArrayEquals(new Object[] {null, null, "QA"}, rows.get(4));
     }
 
     /**
@@ -410,8 +410,8 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(2, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {"Core"}, rows.get(0));
-        Assert.assertArrayEquals(new Object[] {"SQL"}, rows.get(1));
+        assertArrayEquals(new Object[] {"Core"}, rows.get(0));
+        assertArrayEquals(new Object[] {"SQL"}, rows.get(1));
     }
 
     /**
@@ -468,7 +468,7 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         assertEquals(1, rows.size());
 
-        Assert.assertArrayEquals(new Object[] {"QA"}, rows.get(0));
+        assertArrayEquals(new Object[] {"QA"}, rows.get(0));
     }
 
     /**

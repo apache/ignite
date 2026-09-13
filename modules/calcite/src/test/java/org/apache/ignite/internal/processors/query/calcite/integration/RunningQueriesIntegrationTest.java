@@ -61,11 +61,13 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
@@ -76,10 +78,11 @@ import static org.apache.ignite.internal.processors.query.running.RunningQueryMa
 /**
  *
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "2000")
 public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final long PLANNER_TIMEOUT = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
+    private static long plannerTimeout;
 
     /** */
     private static IgniteEx srv;
@@ -88,8 +91,11 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
     private static final long TIMEOUT_IN_MS = 10_000;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        plannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
 
         srv = grid(0);
     }
@@ -326,7 +332,7 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         try {
             AtomicReference<List<List<?>>> res = new AtomicReference<>();
-            GridTestUtils.assertTimeout(3 * PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+            GridTestUtils.assertTimeout(3 * plannerTimeout, TimeUnit.MILLISECONDS, () -> {
                 res.set(sql(longJoinQry));
             });
 
@@ -340,9 +346,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         DistributedSqlConfiguration distrCfg = queryProcessor(client).distributedConfiguration();
 
         try {
-            distrCfg.defaultQueryTimeout((int)PLANNER_TIMEOUT / 3).get();
+            distrCfg.defaultQueryTimeout((int)plannerTimeout / 3).get();
 
-            GridTestUtils.assertTimeout(PLANNER_TIMEOUT, TimeUnit.MILLISECONDS, () -> {
+            GridTestUtils.assertTimeout(plannerTimeout, TimeUnit.MILLISECONDS, () -> {
                 sql(longJoinQry + " AND 1=1"); // Modify SQL to skip cached plan.
             });
         }
@@ -398,7 +404,10 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
             latch.countDown();
         }
 
-        assertTrue(GridTestUtils.waitForCondition(() -> F.isEmpty(engine.runningQueries()), PLANNER_TIMEOUT * 2));
+        Object rr;
+        rr = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> F.isEmpty(engine.runningQueries()), plannerTimeout * 2));
     }
 
     /** */

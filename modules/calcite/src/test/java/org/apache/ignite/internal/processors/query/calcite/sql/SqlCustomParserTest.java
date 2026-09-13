@@ -41,6 +41,7 @@ import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
@@ -55,12 +56,10 @@ import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlSta
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.DISTINCT;
 import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.MAX_CHANGED_PARTITION_ROWS_PERCENT;
@@ -72,12 +71,12 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Test suite to verify parsing of the custom (DDL and others) command.
  */
-public class SqlCustomParserTest extends GridCommonAbstractTest {
+public class SqlCustomParserTest extends GridCommonAbstractWrapperTest {
     /**
      * Very simple case where only table name and a few columns are presented.
      */

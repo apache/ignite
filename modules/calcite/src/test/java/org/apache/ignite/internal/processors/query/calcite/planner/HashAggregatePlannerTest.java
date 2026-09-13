@@ -42,10 +42,10 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.hamcrest.core.IsInstanceOf;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createFieldCollation;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
@@ -245,12 +245,12 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(rdcAgg.getAggregateCalls()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(mapAgg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
@@ -282,12 +282,12 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(rdcAgg.getAggregateCalls()).getAggregation(),
             IsInstanceOf.instanceOf(SqlCountAggFunction.class));
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(mapAgg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlCountAggFunction.class));

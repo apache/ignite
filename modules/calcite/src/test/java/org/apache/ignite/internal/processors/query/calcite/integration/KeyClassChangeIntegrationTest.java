@@ -37,7 +37,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegrationTest {
@@ -56,9 +57,10 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
     /** */
     private boolean pds;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
+        beforeTest();
 
         failureHnd = new TestFailureHandler(true);
         validateTypes = false;
@@ -70,8 +72,6 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
         stopAllGrids();
     }
 
