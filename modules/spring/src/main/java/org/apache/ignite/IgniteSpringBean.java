@@ -38,7 +38,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
@@ -324,13 +323,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     /** {@inheritDoc} */
     @Override public IgniteSnapshot snapshot() {
         return g.snapshot();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        checkIgnite();
-
-        return g.tracingConfiguration();
     }
 
     /** {@inheritDoc} */

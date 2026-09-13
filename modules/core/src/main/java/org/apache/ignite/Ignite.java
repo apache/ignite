@@ -43,7 +43,6 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -785,22 +784,6 @@ public interface Ignite extends AutoCloseable {
      * @return Snapshot manager.
      */
     public IgniteSnapshot snapshot();
-
-    /**
-     * Returns the {@link TracingConfigurationManager} instance that allows to
-     * <ul>
-     *     <li>Configure tracing parameters such as sampling rate for the specific tracing coordinates
-     *          such as scope and label.</li>
-     *     <li>Retrieve the most specific tracing parameters for the specified tracing coordinates (scope and label)</li>
-     *     <li>Restore the tracing parameters for the specified tracing coordinates to the default.</li>
-     *     <li>List all pairs of tracing configuration coordinates and tracing configuration parameters.</li>
-     * </ul>
-     * @return {@link TracingConfigurationManager} instance.
-     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
-     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
-     */
-    @Deprecated(forRemoval = true)
-    public @NotNull TracingConfigurationManager tracingConfiguration();
 
     /**
      * Underlying operations of returned Ignite instance are aware of application attributes.

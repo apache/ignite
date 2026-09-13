@@ -170,7 +170,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 	}
 	
 	@Override public void onSpiContextDestroyed() {
-        clearAllAddresses();
+        if(!ignite.configuration().isClientMode())
+            clearAllAddresses();
         super.onSpiContextDestroyed();
     }
 	
@@ -273,6 +274,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 				HttpResponse<String> resp = httpClient.send(request,BodyHandlers.ofString());
 				for(String nodeInfo: resp.body().split("\n")) {
 		            try {
+                        if (nodeInfo.isBlank())
+                            continue;
                         JsonObject st = new JsonObject(nodeInfo);
 
                         if (st.isEmpty())

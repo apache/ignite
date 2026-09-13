@@ -168,7 +168,6 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
@@ -215,7 +214,6 @@ import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -2781,12 +2779,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         finally {
             unguard();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Deprecated(forRemoval = true)
-    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        return NoopTracingConfigurationManager.INSTANCE;
     }
 
     /** {@inheritDoc} */

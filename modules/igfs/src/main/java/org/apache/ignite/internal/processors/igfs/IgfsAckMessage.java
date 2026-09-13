@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
@@ -47,8 +46,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
     long id;
 
     /** Write exception. */
-    @GridDirectTransient
-    private IgniteCheckedException err;
+    private transient IgniteCheckedException err;
 
     /** */
     @Order(2)

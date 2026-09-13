@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOneRowMap;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -470,7 +471,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
             // Try getting from existing nodes.
             if (!canRemap) {
-                map(keys.keySet(), F.t(node, keys), topVer);
+                map(keys.keySet(), new IgniteOneRowMap(node, keys), topVer);
 
                 onDone(Collections.emptyMap());
             }
@@ -484,7 +485,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
                     .listen(f -> {
                         try {
                             // Remap.
-                            map(keys.keySet(), F.t(node, keys), f.get());
+                            map(keys.keySet(), new IgniteOneRowMap(node, keys), f.get());
 
                             onDone(Collections.emptyMap());
                         }
@@ -520,7 +521,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
                 if (!canRemap) {
                     map(F.view(keys.keySet(), (KeyCacheObject key) -> invalidParts.contains(cctx.affinity().partition(key))),
-                        F.t(node, keys), topVer);
+                            new IgniteOneRowMap(node, keys), topVer);
 
                     postProcessResult(res);
 
@@ -539,7 +540,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
 
                             // This will append new futures to compound list.
                             map(F.view(keys.keySet(), (KeyCacheObject key) -> invalidParts.contains(cctx.affinity().partition(key))),
-                                F.t(node, keys), topVer);
+                                    new IgniteOneRowMap(node, keys), topVer);
 
                             postProcessResult(res);
 

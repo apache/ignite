@@ -1,6 +1,7 @@
 [
     {
         "cluster": {
+            "demo": true,
             "name": "cluster-caches",
             "connector": {
                 "noDelay": true

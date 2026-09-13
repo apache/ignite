@@ -53,8 +53,8 @@ public class DemoService {
         List<JsonObject> items = json.getJsonArray(prop).stream()
             .map(c -> {
                 JsonObject obj = asJson(c);
-
-                obj.put("id", UUID.randomUUID().toString());
+                if(!obj.containsKey("id"))
+                    obj.put("id", UUID.randomUUID().toString());
 
                 return obj;
             }).collect(toList());
@@ -71,8 +71,8 @@ public class DemoService {
         List<JsonObject> items = json.getJsonArray("models").stream()
             .map(c -> {
                 JsonObject obj = asJson(c);
-
-                obj.put("caches", Collections.singleton(cacheIds.remove(0)));
+                if(!obj.containsKey("caches"))
+                    obj.put("caches", Collections.singleton(cacheIds.remove(0)));
 
                 return obj;
             }).collect(toList());
@@ -80,14 +80,28 @@ public class DemoService {
         json.put("models", items);
     }
 
+    private void linksCachesWithModels(JsonObject json, List<Object> modelIds) {
+        List<JsonObject> items = json.getJsonArray("caches").stream()
+                .map(c -> {
+                    JsonObject obj = asJson(c);
+                    if(!obj.containsKey("domains"))
+                        obj.put("domains", Collections.singleton(modelIds.remove(0)));
+
+                    return obj;
+                }).collect(toList());
+
+        json.put("caches", items);
+    }
+
+
     /**
      * @param accId Account ID.
      */
     public void reset(UUID accId) {
         ConfigurationKey space = new ConfigurationKey(accId, true);
-
-        cfgsRepo.deleteByAccountId(space);
-
+        //-cfgsRepo.deleteByAccountId(space);
+        clusters = cfgsRepo.loadClusters(space);
+        boolean loadFromFile = false;
         if (F.isEmpty(clusters)) {
             try {
                 ClassPathResource res = new ClassPathResource("demo-clusters.json");
@@ -95,18 +109,19 @@ public class DemoService {
                 String content = FileCopyUtils.copyToString(new InputStreamReader(res.getInputStream(), UTF_8));
 
                 clusters = new JsonArray(content);
+                loadFromFile = true;
             }
             catch (Exception e) {
                 log.error("Failed to get demo clusters", e);
             }
         }
 
-        if (!F.isEmpty(clusters)) {
+        if (loadFromFile && !F.isEmpty(clusters)) {
             for (int i=0;i<clusters.size();i++) {
             	JsonObject json = clusters.getJsonObject(i);
                 JsonObject cluster = json.getJsonObject("cluster");
-
-                cluster.put("id", UUID.randomUUID().toString());
+                if(!cluster.containsKey("id"))
+                    cluster.put("id", UUID.randomUUID().toString());
 
                 List<Object> mdlIds = fillId(json, "models");
                 List<Object> cacheIds = fillId(json, "caches");
@@ -115,6 +130,8 @@ public class DemoService {
                 cluster.put("caches", cacheIds);
 
                 linkModelsWithCaches(json, new ArrayList<>(cacheIds));
+
+                linksCachesWithModels(json, new ArrayList<>(mdlIds));
 
                 json.put("cluster", cluster);
 

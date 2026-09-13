@@ -94,7 +94,6 @@ import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -828,11 +827,6 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteSnapshot snapshot() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

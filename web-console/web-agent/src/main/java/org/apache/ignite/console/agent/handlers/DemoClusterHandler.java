@@ -36,7 +36,7 @@ public class DemoClusterHandler extends AbstractClusterHandler{
     public static String DEMO_CLUSTER_ID = null;
 
     /** Demo cluster name. */
-    public static final String DEMO_CLUSTER_NAME = "demo-cluster";
+    public static final String DEMO_CLUSTER_NAME = "demo-server";
 
     /**
      * @param cfg Config.

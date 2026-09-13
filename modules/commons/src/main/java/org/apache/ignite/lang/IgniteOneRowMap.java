@@ -17,27 +17,22 @@
 
 package org.apache.ignite.lang;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.*;
+
 /**
  * Convenience class representing mutable tuple of two values.
  */
-public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>, Externalizable, Cloneable {
+public final class IgniteOneRowMap<V1, V2> implements Map.Entry<V1, V2>,Map<V1, V2>,Externalizable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +47,7 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public IgniteBiTuple() {
+    public IgniteOneRowMap() {
         // No-op.
     }
 
@@ -62,18 +57,9 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
      * @param val1 First value.
      * @param val2 Second value.
      */
-    public IgniteBiTuple(@Nullable V1 val1, @Nullable V2 val2) {
+    public IgniteOneRowMap(@Nullable V1 val1, @Nullable V2 val2) {
         this.val1 = val1;
         this.val2 = val2;
-    }
-
-    /**
-     * Swaps values.
-     *
-     * @return New tuple with swapped values.
-     */
-    public IgniteBiTuple<V2, V1> swap() {
-        return F.t(val2, val1);
     }
 
     /**
@@ -143,38 +129,6 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Object> iterator() {
-        return new Iterator<Object>() {
-            /** */
-            private int nextIdx = 1;
-
-            @Override public boolean hasNext() {
-                return nextIdx < 3;
-            }
-
-            @Nullable @Override public Object next() {
-                if (!hasNext())
-                    throw new NoSuchElementException();
-
-                Object res = null;
-
-                if (nextIdx == 1)
-                    res = get1();
-                else if (nextIdx == 2)
-                    res = get2();
-
-                nextIdx++;
-
-                return res;
-            }
-
-            @Override public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     public int size() {
         return val1 == null && val2 == null ? 0 : 1;
     }
@@ -185,12 +139,12 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
     }
 
     /** {@inheritDoc} */
-    public boolean containsKey(Object key) {
+    @Override public boolean containsKey(Object key) {
         return Objects.equals(val1, key);
     }
 
     /** {@inheritDoc} */
-    public boolean containsValue(Object val) {
+    @Override public boolean containsValue(Object val) {
         return Objects.equals(val2, val);
     }
 
@@ -199,6 +153,14 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
         return containsKey(key) ? val2 : null;
     }
 
+    /** {@inheritDoc} */
+    @Nullable public V2 put(V1 key, V2 val) {
+        V2 old = containsKey(key) ? val2 : null;
+
+        set(key, val);
+
+        return old;
+    }
 
     /** {@inheritDoc} */
     @Nullable public V2 remove(Object key) {
@@ -215,11 +177,37 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
     }
 
     /** {@inheritDoc} */
+    public void putAll(Map<? extends V1, ? extends V2> m) {
+        A.notNull(m, "m");
+        A.ensure(m.size() <= 1, "m.size() <= 1");
+
+        for (Entry<? extends V1, ? extends V2> e : m.entrySet())
+            put(e.getKey(), e.getValue());
+    }
+
+    /** {@inheritDoc} */
     public void clear() {
         val1 = null;
         val2 = null;
     }
-    
+
+    /** {@inheritDoc} */
+    public Set<V1> keySet() {
+        return Collections.singleton(val1);
+    }
+
+    /** {@inheritDoc} */
+    public Collection<V2> values() {
+        return Collections.singleton(val2);
+    }
+
+    /** {@inheritDoc} */
+    public Set<Entry<V1, V2>> entrySet() {
+        return isEmpty() ?
+            Collections.<Entry<V1, V2>>emptySet() :
+            Collections.<Entry<V1, V2>>singleton(this);
+    }
+
     /** {@inheritDoc} */
     @Override public Object clone() {
         try {
@@ -252,10 +240,10 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
         if (this == o)
             return true;
 
-        if (!(o instanceof IgniteBiTuple))
+        if (!(o instanceof IgniteOneRowMap))
             return false;
 
-        IgniteBiTuple<?, ?> t = (IgniteBiTuple<?, ?>)o;
+        IgniteOneRowMap<?, ?> t = (IgniteOneRowMap<?, ?>)o;
 
         // Both nulls or equals.
         return Objects.equals(val1, t.val1) && Objects.equals(val2, t.val2);
@@ -263,6 +251,6 @@ public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteBiTuple.class, this);
+        return S.toString(IgniteOneRowMap.class, this);
     }
 }

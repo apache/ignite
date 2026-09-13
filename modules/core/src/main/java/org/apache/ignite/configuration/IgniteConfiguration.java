@@ -85,8 +85,6 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
-import org.apache.ignite.spi.tracing.NoopTracingSpi;
-import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -2446,33 +2444,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
      */
     public SystemViewExporterSpi[] getSystemViewExporterSpi() {
         return sysViewExporterSpi;
-    }
-
-    /**
-     * Set fully configured instance of {@link TracingSpi}.
-     *
-     * @param tracingSpi Fully configured instance of {@link TracingSpi}.
-     * @return {@code this} for chaining.
-     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
-     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
-     */
-    @Deprecated(forRemoval = true)
-    public IgniteConfiguration setTracingSpi(TracingSpi tracingSpi) {
-        U.warn(log, "Configured Tracing SPI is ignored. The Ignite Tracing is deprecated and subject to removal in a " +
-            " future release. Ignite Tracing has been retired in favor of Ignite Performance Statistics and Ignite Metrics.");
-
-        return this;
-    }
-
-    /**
-     * Gets fully configured tracing SPI implementation.
-     *
-     * @return Tracing SPI implementation.
-     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
-     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
-     */
-    public TracingSpi getTracingSpi() {
-        return NoopTracingSpi.INSTANCE;
     }
 
     /**

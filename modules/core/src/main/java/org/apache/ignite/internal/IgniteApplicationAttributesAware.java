@@ -70,7 +70,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -532,11 +531,6 @@ public class IgniteApplicationAttributesAware implements IgniteEx {
     /** {@inheritDoc} */
     @Override public IgniteSnapshot snapshot() {
         return delegate.snapshot();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        return delegate.tracingConfiguration();
     }
 
     /** */

@@ -144,16 +144,15 @@ public class IgniteClusterLauncher implements StartNodeCallable{
         if(cfg.getBinaryConfiguration()==null) {
         	BinaryConfiguration binConf = new BinaryConfiguration();
 			binConf.setNameMapper(new BinaryBasicNameMapper());
-        	binConf.setTypeConfigurations(new ArrayList<>());
         	cfg.setBinaryConfiguration(binConf);
         }
 
-        if(cfg.getBinaryConfiguration().getTypeConfigurations()==null) {
-        	cfg.getBinaryConfiguration().setTypeConfigurations(new ArrayList<>());
-        }
-
-		if(cfg.getBinaryConfiguration().getTypeConfigurations().isEmpty()) {
+		// disable@byron
+		if(false && cfg.getBinaryConfiguration()!=null) {
 			// add@byron
+			if(cfg.getBinaryConfiguration().getTypeConfigurations()==null) {
+				cfg.getBinaryConfiguration().setTypeConfigurations(new ArrayList<>());
+			}
 			// Custom ClusterSerializable
 			BinaryTypeConfiguration jsonBinCfg = new BinaryTypeConfiguration();
 			jsonBinCfg.setTypeName(JsonObject.class.getName());

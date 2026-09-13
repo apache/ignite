@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,8 +42,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
     IgniteUuid id;
 
     /** Optional error. */
-    @GridDirectTransient
-    private IgniteCheckedException err;
+    private transient IgniteCheckedException err;
 
     /** */
     @Order(1)

@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -91,7 +90,6 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -637,11 +635,6 @@ public class IgniteMock implements IgniteEx {
     /** {@inheritDoc} */
     @Override public IgniteSnapshot snapshot() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        return NoopTracingConfigurationManager.INSTANCE;
     }
 
     /** {@inheritDoc} */
