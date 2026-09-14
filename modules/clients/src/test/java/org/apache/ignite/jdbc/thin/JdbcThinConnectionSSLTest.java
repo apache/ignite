@@ -755,17 +755,6 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     }
 
     /** */
-    private Set<String> supportedCipherSuites() throws Exception {
-        // Initialize a standard SSL/TLS context to load all protocols
-        SSLContext ctx = SSLContext.getInstance("TLS");
-        ctx.init(null, null, null);
-        SSLSocketFactory factory = ctx.getSocketFactory();
-
-        // Retrieve all available cipher suites
-        return Set.of(factory.getSupportedCipherSuites());
-    }
-
-    /** */
     private SSLSocketFactory factory(String protocol) throws Exception {
         SSLContext ctx = SSLContext.getInstance(protocol);
         ctx.init(null, null, null);
