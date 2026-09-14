@@ -738,7 +738,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     @Override public void writeString(@Nullable String val) throws BinaryObjectException {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
-        else if (ZERO_COPY)
+        else if (ZERO_COPY && !BinaryUtils.USE_STR_SERIALIZATION_VER_2)
             StringWriter.write(val, out);
         else
             StringWriter.writeStringLegacy(val, out);
