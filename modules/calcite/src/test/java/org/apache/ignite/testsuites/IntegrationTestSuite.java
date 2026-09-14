@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.JoinInteg
 import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KeyClassChangeIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LitmusCheckIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalDateTimeSupportTest;
