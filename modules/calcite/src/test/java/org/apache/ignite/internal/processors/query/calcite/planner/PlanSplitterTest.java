@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -132,14 +133,10 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
-        // First table is replicated and planned with Exchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is added after fragments split for colocation.
-        assertPlan(sql, schema, hasFragmentsCount(2)
-            .and(nodeOrAnyChild(isInstanceOf(Join.class)
-                .and(hasChildThat(isInstanceOf(IgniteSort.class))
-                    .and(hasChildThat(isTableScan("DEVELOPER")))
-                .and(hasChildThat(isInstanceOf(IgniteExchange.class))
-                    .and(hasChildThat(isTableScan("PROJECT"))))))));
+        // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
+        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
+        // fragments split to send data to initiator node.
+        assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
     }
 
     /** */
@@ -163,15 +160,10 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) = ?";
 
-        // First table is replicated and planned with Exchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is added after fragments split for colocation.
-        assertPlan(sql, schema, hasFragmentsCount(3)
-            .and(nodeOrAnyChild(isInstanceOf(Join.class)
-                .and(hasChildThat(isInstanceOf(IgniteSort.class))
-                    .and(hasChildThat(isTableScan("DEVELOPER")))
-                .and(hasChildThat(isInstanceOf(IgniteExchange.class))
-                    .and(hasChildThat(isTableScan("PROJECT")))))))
-        );
+        // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
+        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
+        // fragments split to send data to initiator node.
+        assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
     }
 
     /** */
@@ -196,13 +188,9 @@ public class PlanSplitterTest extends AbstractPlannerTest {
             "WHERE (d.projectId + 1) = ?";
 
         // First table is replicated and planned with TrimExchange to colocate data, but set of nodes for partitioned
-        // table is differ, so exchange is added after fragments split for colocation.
-        assertPlan(sql, schema, hasFragmentsCount(2)
-            .and(nodeOrAnyChild(isInstanceOf(Join.class)
-                .and(hasChildThat(isInstanceOf(IgniteSort.class))
-                    .and(hasChildThat(isTableScan("DEVELOPER")))
-                .and(hasChildThat(isInstanceOf(IgniteExchange.class))
-                    .and(hasChildThat(isTableScan("PROJECT"))))))));
+        // table is differ, so exchange is added after fragments split for colocation. Another exchange is added after
+        // fragments split to send data to initiator node.
+        assertPlan(sql, schema, hasFragmentsCount(3).and(hasChildThat(isInstanceOf(IgniteTrimExchange.class))));
     }
 
     /** */

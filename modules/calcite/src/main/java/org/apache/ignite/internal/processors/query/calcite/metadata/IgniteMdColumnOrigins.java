@@ -38,6 +38,7 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableFunctionScan;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.CyclicMetadataException;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
@@ -268,11 +269,11 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
     ) {
         if (rel.projects() != null) {
             RexNode node = rel.projects().get(iOutputColumn);
-            if (node instanceof RexInputRef) {
+/*            if (node instanceof RexInputRef) {
                 RexInputRef inputRef = (RexInputRef)node;
                 iOutputColumn = inputRef.getIndex();
             }
-            else {
+            else {*/
                 Set<RexSlot> sources = new HashSet<>();
 
                 getOperands(node, RexSlot.class, sources);
@@ -290,7 +291,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
                 }
 
                 return res;
-            }
+            //}
         }
 
         ImmutableBitSet requiredColumns = rel.requiredColumns();
@@ -339,7 +340,14 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         RelMetadataQuery mq, int outputColumn) {
         RelNode original = rel.getOriginal();
 
-        return mq.getColumnOrigins(original != null ? original : rel.stripped(), outputColumn);
+        try {
+            return mq.getColumnOrigins(original != null ? original :
+                rel.stripped(), outputColumn);
+        }
+        catch (CyclicMetadataException ignore) {
+            // Cyclic set (see CALCITE-1048): origins are unknown, callers fall back to generic estimations.
+            return null;
+        }
     }
 
     /** Spools pass rows of their input through, so column origins are the same as the origins of the input. */

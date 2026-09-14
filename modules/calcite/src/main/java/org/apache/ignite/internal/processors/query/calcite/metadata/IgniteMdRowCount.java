@@ -31,7 +31,6 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
-import org.apache.calcite.rel.metadata.CyclicMetadataException;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdRowCount;
@@ -41,7 +40,6 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.NumberUtil;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -55,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.NumberUtil.multiply;
-
 
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
@@ -86,29 +83,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * expressions of the subset is returned.
      */
     @Override public Double getRowCount(RelSubset rel, RelMetadataQuery mq) {
-        RelNode original = rel.getOriginal();
-
-        if (original != null) {
-            try {
-                return mq.getRowCount(original);
-            }
-            catch (CyclicMetadataException ignore) {
-                // Fall back to the non-cyclic expressions of the subset.
-            }
-        }
-
-        Double res = null;
-
-        for (RelNode r : rel.getRels()) {
-            try {
-                res = NumberUtil.min(res, mq.getRowCount(r));
-            }
-            catch (CyclicMetadataException ignore) {
-                // Skip cyclic expression.
-            }
-        }
-
-        return res != null ? res : 1e6d; // Estimate large, as Calcite does.
+        return mq.getRowCount(rel.getOriginal());
     }
 
     /** {@inheritDoc} */
@@ -119,20 +94,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
     /** {@inheritDoc} */
     @Override public Double getRowCount(Sort rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
-    }
-
-    @Override public Double getRowCount(RelSubset subset, RelMetadataQuery mq) {
-        // copy paste from org.apache.calcite.rel.metadata.RelMdRowCount.getRowCount
-        // currently raises only for TpchQueryPlannerTest, q7
-        Double v = null;
-        for (RelNode r : subset.getRels()) {
-            try {
-                v = NumberUtil.min(v, mq.getRowCount(r));
-            } catch (CyclicMetadataException e) {
-                // ignore this rel; there will be other, non-cyclic ones
-            }
-        }
-        return Util.first(v, 1e6d);
     }
 
     /** */
@@ -172,8 +133,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
         Map<Integer, KeyColumnOrigin> columnsFromRight = resolveOrigins(mq, rel.getRight(), joinInfo.rightKeys);
 
         if (columnsFromLeft.isEmpty() || columnsFromRight.isEmpty()) {
-            // Fall-back to calcite's implementation.
-            return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
+            // Use crude estimation instead.
+            return crudeEstimation(mq, joinInfo, rel, leftRowCnt, rightRowCnt);
         }
 
         Map<TablesPair, JoinContext> joinCtxts = new HashMap<>();

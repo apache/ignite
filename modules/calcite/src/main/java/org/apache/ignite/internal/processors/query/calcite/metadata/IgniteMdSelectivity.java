@@ -26,6 +26,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.CyclicMetadataException;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
@@ -125,7 +126,14 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     public Double getSelectivity(RelSubset rel, RelMetadataQuery mq, RexNode predicate) {
         RelNode original = rel.getOriginal();
 
-        return mq.getSelectivity(original != null ? original : rel.stripped(), predicate);
+        try {
+            return mq.getSelectivity(original != null ? original :
+                rel.stripped(), predicate);
+        }
+        catch (CyclicMetadataException ignore) {
+            // Cyclic set (see CALCITE-1048): fall back to the predicate-only guess.
+            return RelMdUtil.guessSelectivity(predicate);
+        }
     }
 
     /**

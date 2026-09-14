@@ -66,7 +66,7 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     public static Collection<String> params() throws IOException {
         return Files.list(FileSystems.getDefault().getPath(U.resolveIgnitePath(RSRC_DIR).getPath()))
             .map(p -> p.getFileName().toString())
-            .filter(p -> p.endsWith(".sql") && !p.endsWith("ddl.sql") && p.contains("q7"))
+            .filter(p -> p.endsWith(".sql") && !p.endsWith("ddl.sql"))
             .map(p -> p.replace(".sql", ""))
             .sorted(Comparator.comparingInt(p -> Integer.parseInt(p.replace("variant_q", "").replace("q", ""))))
             .collect(Collectors.toList());
