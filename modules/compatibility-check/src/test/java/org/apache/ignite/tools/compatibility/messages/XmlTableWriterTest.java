@@ -55,13 +55,13 @@ public class XmlTableWriterTest {
                     <org.apache.ignite.internal.JdkMarshalled/>
                   </annotations>
                   <field>
-                    <type>java.util.List&lt;java.lang.String&gt;</type>
-                    <name>names</name>
                     <annotations>
                       <org.apache.ignite.internal.Compress/>
                       <org.apache.ignite.internal.CustomMapper>A&amp;B</org.apache.ignite.internal.CustomMapper>
                       <since>2.18.0</since>
                     </annotations>
+                    <type>java.util.List&lt;java.lang.String&gt;</type>
+                    <name>names</name>
                   </field>
                   <field>
                     <type>int</type>

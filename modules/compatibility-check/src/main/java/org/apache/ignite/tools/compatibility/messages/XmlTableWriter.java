@@ -85,6 +85,9 @@ class XmlTableWriter {
             xml.writeCharacters("\n      ");
 
             xml.writeStartElement("field");
+
+            writeAnnotations(xml, field.annotations(), "        ");
+
             xml.writeCharacters("\n        ");
             xml.writeStartElement("type");
             xml.writeCharacters(field.type());
@@ -95,8 +98,6 @@ class XmlTableWriter {
             xml.writeStartElement("name");
             xml.writeCharacters(field.name());
             xml.writeEndElement();
-
-            writeAnnotations(xml, field.annotations(), "        ");
 
             xml.writeCharacters("\n      ");
             xml.writeEndElement();
