@@ -121,6 +121,20 @@ public class IgniteMdRowCount extends RelMdRowCount {
         return rel.estimateRowCount(mq);
     }
 
+    @Override public Double getRowCount(RelSubset subset, RelMetadataQuery mq) {
+        // copy paste from org.apache.calcite.rel.metadata.RelMdRowCount.getRowCount
+        // currently raises only for TpchQueryPlannerTest, q7
+        Double v = null;
+        for (RelNode r : subset.getRels()) {
+            try {
+                v = NumberUtil.min(v, mq.getRowCount(r));
+            } catch (CyclicMetadataException e) {
+                // ignore this rel; there will be other, non-cyclic ones
+            }
+        }
+        return Util.first(v, 1e6d);
+    }
+
     /** */
     @Nullable public static Double joinRowCount(RelMetadataQuery mq, Join rel) {
         if (!rel.getJoinType().projectsRight()) {
