@@ -115,6 +115,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
@@ -3726,6 +3727,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRestartsAndCacheCreateDestroy() throws Exception {
         final int SRVS = 5;
 
+        // Explicit transaction timeout for TRANSACTIONAL op threads: a finite, tracked timeout so that an op stuck
+        // awaiting partition release during a concurrent cache destroy is rolled back and unblocks the exchange.
+        final long txTimeoutMs = SF.applyLB(60_000, 20_000);
+
         // Transactions of the op threads are implicit, so the per-transaction default timeout does not apply
         // (it is only tracked for explicit tx). Limit txTimeoutOnPartitionMapExchange instead: it forces the
         // partition exchange triggered by a concurrent cache destroy to roll back the blocking implicit tx,
@@ -3846,8 +3851,21 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                                 if (cache != null && caches.compareAndSet(idx, cache, null)) {
                                     try {
-                                        for (int i = 0; i < 10; i++)
-                                            cacheOperation(rnd, cache);
+                                        // Implicit transactions are not tracked by the tx timeout (trackTimeout is
+                                        // enabled only for explicit tx). A transactional op stuck awaiting partition
+                                        // release during a concurrent cache destroy would otherwise hang forever and
+                                        // deadlock the exchange. Run TRANSACTIONAL ops in an explicit tx with a finite
+                                        // timeout so a stuck op is rolled back and unblocks the exchange; ATOMIC ops
+                                        // are not transactional and are executed as-is.
+                                        boolean txCache = ((CacheConfiguration)cache.getConfiguration(
+                                            CacheConfiguration.class)).getAtomicityMode() == TRANSACTIONAL;
+
+                                        for (int i = 0; i < 10; i++) {
+                                            if (txCache)
+                                                cacheOperationTx(rnd, clientNode, cache, txTimeoutMs);
+                                            else
+                                                cacheOperation(rnd, cache);
+                                        }
                                     }
                                     catch (Exception e) {
                                         if (X.hasCause(e, CacheStoppedException.class) ||
@@ -4135,6 +4153,20 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
             map.remove(key);
+        }
+    }
+
+    /**
+     * @param rnd Random.
+     * @param ignite Ignite to start tx on.
+     * @param cache Cache.
+     * @param timeoutMs Transaction timeout.
+     */
+    private void cacheOperationTx(ThreadLocalRandom rnd, Ignite ignite, IgniteCache<?, ?> cache, long timeoutMs) {
+        try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, READ_COMMITTED, timeoutMs, 0)) {
+            cacheOperation(rnd, cache);
+
+            tx.commit();
         }
     }
 
