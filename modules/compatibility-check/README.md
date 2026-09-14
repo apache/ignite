@@ -5,9 +5,13 @@ Exports registered Ignite messages to
 The table contains message IDs, classes, ordered wire fields and serialization annotations.
 Logical `@Marshalled` fields are written separately from ordered wire fields.
 
-The table covers core, indexing, Calcite and ZooKeeper providers. Unregistered messages
-and third-party providers are out of scope. `CompressedMessage` is included with an empty
-schema because it has a hand-written serializer.
+The table covers messages registered by
+[`CoreMessagesProvider`](../core/src/main/java/org/apache/ignite/internal/CoreMessagesProvider.java),
+[`GridH2ValueMessageFactory`](../indexing/src/main/java/org/apache/ignite/internal/processors/query/h2/twostep/msg/GridH2ValueMessageFactory.java),
+[`CalciteMessageFactory`](../calcite/src/main/java/org/apache/ignite/internal/processors/query/calcite/message/CalciteMessageFactory.java) and
+[`ZkMessageFactory`](../zookeeper/src/main/java/org/apache/ignite/spi/discovery/zk/internal/ZkMessageFactory.java).
+Unregistered messages and third-party providers are out of scope. `CompressedMessage` is included
+with an empty schema because it has a hand-written serializer.
 
 This module only generates the table. It does not compare revisions or decide whether a
 change is compatible.
