@@ -91,7 +91,7 @@
                                 <configuration>
                                     <executable>${java.home}/bin/java</executable>
                                     <arguments>
-                                        <argument>-classpath</argument>
+                                        <argument>-cp</argument>
                                         <classpath/>
                                         <argument>org.apache.ignite.tools.compatibility.messages.MessageTable</argument>
                                         <argument>${project.basedir}/src/main/resources/messages/table.xml</argument>

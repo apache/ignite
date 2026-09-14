@@ -57,7 +57,7 @@ class MessageSchemaReader implements AutoCloseable {
         if (compiler == null)
             throw new IllegalStateException("A full JDK is required to read message fields");
 
-        String classpath = System.getProperty("surefire.test.class.path", System.getProperty("java.class.path"));
+        String classpath = System.getProperty("java.class.path");
 
         List<String> options = List.of("-proc:none", "-classpath", classpath);
 
