@@ -111,6 +111,8 @@ class MessageSchemaReader implements AutoCloseable {
             fields.removeIf(f -> f.getAnnotation(Order.class) == null);
             fields.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
+            int orderOffset = schema.size();
+
             for (VariableElement field : fields) {
                 List<AnnotationRepresentation> annotations = new ArrayList<>();
 
@@ -126,7 +128,7 @@ class MessageSchemaReader implements AutoCloseable {
                     annotations.add(new AnnotationRepresentation(CustomMapper.class.getName(), mapper.value()));
 
                 schema.add(new FieldRepresentation(
-                    schema.size(),
+                    orderOffset + field.getAnnotation(Order.class).value(),
                     field.asType().toString(),
                     field.getSimpleName().toString(),
                     annotations

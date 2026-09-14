@@ -55,7 +55,7 @@ public class MessageSchemaReaderTest {
             assertEquals(List.of(), reader.read(Empty.class).fields());
             assertEquals(List.of(), reader.read(Unannotated.class).fields());
             assertEquals(
-                List.of(new FieldRepresentation(0, "int", "id", List.of())),
+                List.of(new FieldRepresentation(1, "int", "id", List.of())),
                 reader.read(InvalidOrder.class).fields()
             );
         }
