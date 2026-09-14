@@ -85,7 +85,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Run "TestOldMode" in a separate process with changed setting.
             using (EnvVar.Set(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2, "true"))
             {
-                TestUtils.RunTestInNewProcess(GetType().FullName, "TestOldMode");
+                using (EnvVar.Set("IGNITE_BINARY_STRING_ZERO_COPY", "false"))
+                {
+                    TestUtils.RunTestInNewProcess(GetType().FullName, "TestOldMode");
+                }
             }
         }
 #endif
