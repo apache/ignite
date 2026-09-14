@@ -1,0 +1,19 @@
+
+
+grid-export {
+	&:not(.link-success) {
+		button:nth-child(2) {
+			display: none;
+		}
+	}
+
+	&.link-success {
+		button:nth-child(1) {
+			display: none;
+		}
+	}
+
+	[ignite-icon='download'] {
+		margin-right: 5px;
+	}
+}

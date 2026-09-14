@@ -1,0 +1,44 @@
+
+
+$color-inactive-primary: #C5C5C5;
+$color-inactive-secondary: #FFFFFF;
+$color-active-primary: #EE2B27;
+$color-active-secondary: #FF8485;
+
+.spinner-circle {
+  display: inline-block;
+
+  &:before {
+    content: '';
+
+    display: block;
+
+    width: 20px;
+    height: 20px;
+
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 50%;
+    border-color: $color-inactive-primary;
+    border-left-color: $color-active-primary;
+  }
+}
+
+.spinner-circle:before {
+  border-left-width: 2px;
+  border-left-color: $color-active-primary;
+
+  animation-name: spinner-circle--animation;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes spinner-circle--animation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

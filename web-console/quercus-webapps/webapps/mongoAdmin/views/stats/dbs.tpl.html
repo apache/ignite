@@ -1,0 +1,66 @@
+<div>
+<h3>Database {{ $stats.db }} Stats</h3>
+                    
+<table class="table table-bordered table-striped">
+  <tr>
+    <td><strong>Collections</strong></td>
+    <td>{{ $stats.collections }}</td>
+  </tr>
+  <tr>
+    <td><strong>Data Size</strong></td>
+    <td>{{ $stats.dataSize }}</td>
+  </tr>
+  <tr>
+    <td><strong>Storage Size</strong></td>
+    <td>{{ $stats.storageSize }}</td>
+  </tr>
+  {{ if $stats.fileSize }}
+    <tr>
+    <td><strong>File Size (on disk)</strong></td>
+    <td>{{ $stats.fileSize }}</td>
+    </tr>
+  {{ /if }}
+  {{ if $stats.avgObjSize }}
+    <tr>
+    <td><strong>Avg Obj Size #</strong></td>
+    <td>{{ $stats.avgObjSize }}</td>
+    </tr>
+  {{ /if }}
+  {{ if $stats.objects }}
+    <tr>
+    <td><strong>Objects #</strong></td>
+    <td>{{ $stats.objects }}</td>
+    </tr>
+  {{ /if }}
+  {{ if $stats.numExtents }}
+    <tr>
+    <td><strong>Extents #</strong></td>
+    <td>{{ $stats.numExtents }}</td>
+    </tr>
+  {{ /if }}
+  {{ if $stats.extentFreeListNum }}
+    <tr>
+    <td><strong>Extents Free List</strong></td>
+    <td>{{ $stats.extentFreeListNum }}</td>
+    </tr>
+  {{ /if }}
+  {{ if $stats.indexes }}
+    <tr>
+    <td><strong>Indexes #</strong></td>
+    <td>{{ $stats.indexes }}</td>
+    </tr>
+  {{ /if }}
+  {{ if $stats.indexSize }}
+    <tr>
+    <td><strong>Index Size</strong></td>
+    <td>{{ $stats.indexSize }}</td>
+    </tr>
+  {{ /if }}
+  {{ if $stats.dataFileVersion }}
+    <tr>
+    <td><strong>Data File Version</strong></td>
+    <td>{{ $stats.dataFileVersion }}</td>
+    </tr>
+  {{ /if }}
+</table>
+</div>

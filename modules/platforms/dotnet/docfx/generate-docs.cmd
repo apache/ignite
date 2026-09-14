@@ -1,1 +1,0 @@
-docfx Apache.Ignite.docfx.json --build

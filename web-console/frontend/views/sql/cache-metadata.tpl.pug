@@ -1,0 +1,28 @@
+.popover.cache-metadata(tabindex='-1' ignite-loading='loadingCacheMetadata' ignite-loading-text='Loading metadata...' ng-init='importMetadata(paragraph.cacheName)')
+    h3.popover-title
+        label.labelField Metadata for caches:
+        button.close(id='cache-metadata-close' ng-click='$hide()') &times;
+        .input-tip
+            input.form-control(type='text' ng-model='metaFilter' placeholder='Filter metadata...')
+    .popover-content(ng-if='metadata && metadata.length > 0')
+        treecontrol.tree-classic(tree-model='metadata' options='metaOptions' filter-expression='metaFilter')
+            span(ng-switch='node.type')
+                span(ng-switch-when='type' ng-dblclick='dblclickMetadata(paragraph, node)')
+                    i.fa.fa-table
+                    label.clickable
+                        div.node-display(ng-bind='node.displayName' ng-attr-title='{{node.description}}')
+                span(ng-switch-when='plain')
+                    label {{node.name}}
+                span(ng-switch-when='field' ng-dblclick='dblclickMetadata(paragraph, node)')
+                    i.fa(ng-class='node.system ? "fa-file-text-o" : "fa-file-o"')
+                    label.clickable {{node.name}}: 
+                        span.node-display(ng-bind='node.description' ng-if='node.description' ng-attr-title='{{node.clazz}}')
+                        span.node-display(ng-bind='node.clazz' ng-if='!node.description')                     
+                label(ng-switch-when='indexes') {{node.name}}
+                label(ng-switch-when='index') {{node.name}}
+                span(ng-switch-when='index-field' ng-dblclick='dblclickMetadata(paragraph, node)')
+                    i.fa(ng-class='node.order ? "fa-sort-amount-desc" : "fa-sort-amount-asc"')
+                    label.clickable {{node.name}}
+    .popover-content(ng-if='!metadata || metadata.length == 0')
+        label.content-empty No types found
+    h3.popover-footer Double click to paste into editor

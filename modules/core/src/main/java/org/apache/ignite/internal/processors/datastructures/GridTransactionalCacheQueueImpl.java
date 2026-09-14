@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter.AddFirstProcessor;
+import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter.PollLastProcessor;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -209,6 +211,92 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+    
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public boolean addFirst(T item) throws IgniteException {
+    	A.notNull(item, "item");
+
+        try {
+            return retryTopologySafe(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    boolean retVal;
+
+                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                        Long idx = (Long)cache.invoke(queueKey, new AddFirstProcessor(id, 1)).get();
+
+                        if (idx != null) {
+                            checkRemoved(idx);
+
+                            cache.getAndPut(itemKey(idx), item);
+
+                            retVal = true;
+                        }
+                        else
+                            retVal = false;
+
+                        tx.commit();
+
+                        return retVal;
+                    }
+                }
+            });
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e.getMessage(), e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public T pollLast() throws IgniteException {
+    	try {
+            return retryTopologySafe(new Callable<T>() {
+                @Override public T call() throws Exception {
+                    T retVal;
+
+                    while (true) {
+                        try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                            Long idx = (Long)cache.invoke(queueKey, new PollLastProcessor(id)).get();
+
+                            if (idx != null) {
+                                checkRemoved(idx);
+
+                                retVal = (T)cache.getAndRemove(itemKey(idx));
+
+                                if (retVal == null) { // Possible if data was lost.
+                                    tx.commit();
+
+                                    continue;
+                                }
+                            }
+                            else
+                                retVal = null;
+
+                            tx.commit();
+
+                            return retVal;
+                        }
+                    }
+                }
+            });
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e.getMessage(), e);
         }
     }
 }

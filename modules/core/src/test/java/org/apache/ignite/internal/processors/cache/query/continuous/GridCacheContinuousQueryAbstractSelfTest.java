@@ -1309,7 +1309,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 @Override public T2<Integer, Integer> apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                     T2<Integer, Integer> res = new T2<>();
 
-                    res.put(evt.getKey(), evt.getValue());
+                    res.set(evt.getKey(), evt.getValue());
 
                     return res;
                 }

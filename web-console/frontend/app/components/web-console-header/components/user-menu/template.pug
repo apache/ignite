@@ -1,0 +1,12 @@
+
+
+div.user-menu__trigger(
+    ng-class='{active: $ctrl.$state.includes("base.settings")}'
+    ng-click='$event.stopPropagation()'
+    bs-dropdown='$ctrl.menu$|async:this'
+    data-placement='bottom-right'
+    data-trigger='hover focus'
+    data-container='self'
+)
+    span.user-menu__username {{($ctrl.user$|async:this).firstName}} {{($ctrl.user$|async:this).lastName}}
+    span.caret

@@ -1,0 +1,10 @@
+
+
+.panel-collapsible__heading(ng-click='$ctrl.toggle()')
+    .panel-collapsible__status-icon
+        svg(ng-show='$ctrl.opened' ignite-icon='collapse')
+        svg(ng-hide='$ctrl.opened' ignite-icon='expand')
+    .panel-collapsible__title(panel-collapsible-transclude='title') {{::$ctrl.title}}
+    .panel-collapsible__description(panel-collapsible-transclude='description') {{::$ctrl.description}}
+    .panel-collapsible__actions(panel-collapsible-transclude='actions' ng-click='$event.stopPropagation()')
+.panel-collapsible__content(panel-collapsible-transclude='content' ng-show='$ctrl.opened')

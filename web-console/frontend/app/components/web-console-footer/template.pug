@@ -1,0 +1,18 @@
+
+
+
+.web-console-footer__sidebar-stuff
+    a(
+        href="/api/v1/downloads/agent"
+        target="_self"
+        ng-if='$ctrl.userIsAuthorized$|async:this'
+        translate-attr='{title: "appFooter.downloadAgentButtonLabel"}'
+    )
+        svg(ignite-icon='downloadAgent')
+
+.web-console-footer__regular-stuff
+    p(translate='appFooter.product' translate-values='{version: $ctrl.Version.webConsole}')
+    p(translate='appFooter.copyright' translate-values='::{year: $ctrl.year}')
+    p.web-console-footer__legal(translate='appFooter.legal')
+
+    a(href="/api/v1/downloads/agent" target="_self" ng-if='$ctrl.userIsAuthorized$|async:this' translate="appFooter.downloadAgentButtonLabel")

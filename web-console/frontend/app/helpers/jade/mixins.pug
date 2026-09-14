@@ -1,0 +1,18 @@
+
+
+include ../../primitives/btn-group/index
+include ../../primitives/datepicker/index
+include ../../primitives/timepicker/index
+include ../../primitives/dropdown/index
+include ../../primitives/switcher/index
+include ../../primitives/form-field/index
+
+
+//- Mixin for object preview.
+mixin preview-model(model, generator, detail)
+    b= generator
+    if model.generator
+        ul(id=generator)
+            each item,i in model.generator
+               li #{i}：#{item}
+    p= detail

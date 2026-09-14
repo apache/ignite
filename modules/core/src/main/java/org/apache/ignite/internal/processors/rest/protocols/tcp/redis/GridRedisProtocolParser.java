@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.charset.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+
 
 /**
  * Parser to decode/encode Redis protocol (RESP) requests.
@@ -50,7 +58,7 @@ public class GridRedisProtocolParser {
     private static final byte LF = 10;
 
     /** CRLF. */
-    private static final byte[] CRLF = new byte[] {13, 10};
+    static final byte[] CRLF = new byte[] {13, 10};
 
     /** Generic error prefix. */
     private static final byte[] ERR_GENERIC = "ERR ".getBytes();
@@ -73,6 +81,43 @@ public class GridRedisProtocolParser {
      * @see #NIL
      */
     public static final int ERROR_INT = -2;
+    
+    static MethodHandles.Lookup lookup = MethodHandles.lookup();
+    static MethodHandle isLatin1Handle = null;
+    static MethodHandle newStringNoReplHandle = null;
+    static MethodHandle getBytesNoReplHandle = null;
+
+    static {
+   
+		try {
+			Method isLatin1 = String.class.getDeclaredMethod("isLatin1");
+			isLatin1.setAccessible(true);
+	    	isLatin1Handle = lookup.unreflect(isLatin1);
+
+            Method newStringNoRepl = String.class.getDeclaredMethod("newStringNoRepl",byte[].class, Charset.class);
+            newStringNoRepl.setAccessible(true);
+            newStringNoReplHandle = lookup.unreflect(newStringNoRepl);
+
+            Method getBytesNoRepl = String.class.getDeclaredMethod("getBytesNoRepl",String.class, Charset.class);
+            getBytesNoRepl.setAccessible(true);
+            getBytesNoReplHandle = lookup.unreflect(getBytesNoRepl);
+
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+
+    /**
+     * 严格模式：遇到非法 UTF-8 时抛出异常
+     */
+    public static String decodeStrict(byte[] bytes) throws CharacterCodingException {
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+        decoder.onMalformedInput(CodingErrorAction.REPORT);    // 报告畸形输入
+        decoder.onUnmappableCharacter(CodingErrorAction.REPORT); // 报告不可映射字符
+
+        return decoder.decode(ByteBuffer.wrap(bytes)).toString();
+    }
 
     /**
      * Checks first byte is {@link #ARRAY}.
@@ -100,6 +145,25 @@ public class GridRedisProtocolParser {
      * @throws IgniteCheckedException If failed.
      */
     public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
+        byte[] bulkStr = readBulkBytes(buf);
+        if (bulkStr==null)
+            return null;
+
+        try {
+            return (String)newStringNoReplHandle.invokeExact(bulkStr,StandardCharsets.ISO_8859_1);
+        } catch (Throwable e) {
+            return new String(bulkStr,StandardCharsets.ISO_8859_1);
+        }
+    }
+    
+    /**
+     * Reads a bulk string.
+     *
+     * @param buf Buffer.
+     * @return Bulk string.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static byte[] readBulkBytes(ByteBuffer buf) throws IgniteCheckedException {
         if (!buf.hasRemaining())
             return null;
 
@@ -129,7 +193,7 @@ public class GridRedisProtocolParser {
         if (b0 != CR || b1 != LF)
             throw new IgniteCheckedException("Invalid request syntax[len=" + len + ']');
 
-        return new String(bulkStr);
+        return bulkStr;
     }
 
     /**
@@ -171,7 +235,26 @@ public class GridRedisProtocolParser {
      * @return Redis simple string.
      */
     public static ByteBuffer toSimpleString(String val) {
-        byte[] b = val.getBytes();
+        byte[] b;
+        boolean isLatin = false;
+        if(isLatin1Handle!=null) {
+        	try {
+				isLatin = (Boolean)isLatin1Handle.invoke(val);
+			} catch (Throwable e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+        if(isLatin) {
+            try {
+                b = (byte[])getBytesNoReplHandle.invokeExact(val,StandardCharsets.ISO_8859_1);
+            } catch (Throwable e) {
+                b = val.getBytes(StandardCharsets.ISO_8859_1);
+            }
+        }
+        else {
+        	b = val.getBytes(StandardCharsets.UTF_8);
+        }
 
         return toSimpleString(b);
     }
@@ -228,7 +311,7 @@ public class GridRedisProtocolParser {
      * @return Error response.
      */
     private static ByteBuffer toError(String errMsg, byte[] errPrefix) {
-        byte[] b = errMsg.getBytes();
+        byte[] b = errMsg.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(b.length + errPrefix.length + 3);
         buf.put(ERROR);
@@ -291,10 +374,44 @@ public class GridRedisProtocolParser {
      * @return Bulk string.
      */
     public static ByteBuffer toBulkString(Object val) {
-        assert val != null;
-
-        byte[] b = String.valueOf(val).getBytes();
-        byte[] l = String.valueOf(b.length).getBytes();
+        assert val != null;        
+        
+        if(val instanceof Short || val instanceof Integer || val instanceof Long) {
+        	return toInteger(val.toString());
+        }
+        
+        byte[] b;
+        byte[] l;
+        if(val instanceof byte[]) {
+        	b = (byte[]) val;
+            l = String.valueOf(b.length).getBytes();
+        }
+        else if(val instanceof String) {
+        	boolean isLatin = false;
+            if(isLatin1Handle!=null) {
+            	try {
+    				isLatin = (boolean)isLatin1Handle.bindTo(val).invokeExact();
+    			} catch (Throwable e) {
+    				// TODO Auto-generated catch block
+    				e.printStackTrace();
+    			}
+            }
+            if(isLatin) {
+                try {
+                    b = (byte[])getBytesNoReplHandle.invokeExact(val,StandardCharsets.ISO_8859_1);
+                } catch (Throwable e) {
+                    b = val.toString().getBytes(StandardCharsets.ISO_8859_1);
+                }
+            }
+            else {
+            	b = val.toString().getBytes(StandardCharsets.UTF_8);
+            }
+            l = String.valueOf(b.length).getBytes();
+        }
+        else {
+        	b = String.valueOf(val).getBytes();
+            l = String.valueOf(b.length).getBytes();
+        }
 
         ByteBuffer buf = ByteBuffer.allocate(b.length + l.length + 5);
         buf.put(BULK_STRING);
@@ -307,6 +424,60 @@ public class GridRedisProtocolParser {
 
         return buf;
     }
+	
+    /**
+     * Converts a resultant object to a bulk string.
+     *
+     * @param multResult Object.
+     * @return Bulk string.
+     */
+    public static ByteBuffer toBulkList(Collection<Object[]> multResult) {
+        assert multResult != null;
+        ArrayList<ByteBuffer> fullRes = new ArrayList<>();
+        int fullCapacity = 0;
+        for(Object[] val: multResult ) {
+        	int capacity = 0;
+        	ArrayList<ByteBuffer> res = new ArrayList<>();
+        	Object[] list = (Object[]) val;
+        	for(Object item: list) {
+        		ByteBuffer buf = toBulkString(item);
+        		res.add(buf);
+        		capacity += buf.limit();
+        	}
+        	byte[] arrSize = String.valueOf(res.size()).getBytes();
+
+            ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
+            buf.put(ARRAY);
+            buf.put(arrSize);
+            buf.put(CRLF);
+            res.forEach(o -> buf.put(o));
+            fullRes.add(buf);
+            fullCapacity += buf.limit();
+        	
+        }
+        ByteBuffer buf = ByteBuffer.allocateDirect(fullCapacity);        
+        fullRes.forEach(o -> buf.put(o));
+        buf.flip();
+        return buf;
+    }
+	
+    /**
+     * Converts a resultant map response to an array.
+     *
+     * @param vals Map.
+     * @return Array response.
+     */
+    public static ByteBuffer toArray(Map<Object, Object> vals,List<String> params) {
+    	ArrayList<Object> values = new ArrayList<>(vals.size()*2);
+    	if(params!=null && !params.isEmpty()) { //add@byron
+    		params.forEach((k)->values.add(vals.get(k)));    		
+    	} 
+    	else {    		
+        	vals.forEach((k,v)->{ values.add(k); values.add(v);});
+    	}
+        return toArray(values);
+    }
+	
 
     /**
      * Converts a resultant map response to an array.
@@ -341,6 +512,11 @@ public class GridRedisProtocolParser {
                 res.add(b);
                 capacity += b.limit();
             }
+            else{
+                ByteBuffer b = nil();
+                res.add(b);
+                capacity += b.limit();
+            }
         }
 
         byte[] arrSize = String.valueOf(res.size()).getBytes();
@@ -362,18 +538,41 @@ public class GridRedisProtocolParser {
      * @param vals Array elements.
      * @return Array response.
      */
-    public static ByteBuffer toArray(Collection<Object> vals) {
+    public static ByteBuffer toArray(Collection<?> vals) {
         assert vals != null;
+        int capacity = 0;
+        ArrayList<ByteBuffer> res = new ArrayList<>();
+        for (Object val : vals) {
+            if (val != null) {
+            	if(val instanceof Collection) {
+            		ByteBuffer b = toArray((Collection)val);
+	                res.add(b);
+	                capacity += b.limit();
+            	}
+            	else if(val instanceof ByteBuffer) {
+            		ByteBuffer b = (ByteBuffer)val;
+	                res.add(b);
+	                capacity += b.limit();
+            	}
+            	else {
+	                ByteBuffer b = toBulkString(val);
+	                res.add(b);
+	                capacity += b.limit();
+            	}
+            }
+        }
+        
 
-        byte[] arrSize = String.valueOf(vals.size()).getBytes();
+        byte[] arrSize = String.valueOf(res.size()).getBytes();
 
-        ByteBuffer buf = ByteBuffer.allocateDirect(1024 * 1024);
+        ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
         buf.put(ARRAY);
         buf.put(arrSize);
         buf.put(CRLF);
 
-        for (Object val : vals)
-            buf.put(toBulkString(val));
+        for (ByteBuffer val : res) {
+        	buf.put(val);
+        }
 
         buf.flip();
 

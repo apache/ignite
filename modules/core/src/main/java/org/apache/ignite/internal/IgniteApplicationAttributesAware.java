@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
@@ -48,7 +49,6 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -70,7 +70,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -512,16 +511,7 @@ public class IgniteApplicationAttributesAware implements IgniteEx {
     @Override public void resetLostPartitions(Collection<String> cacheNames) {
         delegate.resetLostPartitions(cacheNames);
     }
-
-    /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return delegate.memoryMetrics();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable MemoryMetrics memoryMetrics(String dataRegionName) {
-        return delegate.memoryMetrics(dataRegionName);
-    }
+    
 
     /** {@inheritDoc} */
     @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
@@ -543,11 +533,6 @@ public class IgniteApplicationAttributesAware implements IgniteEx {
         return delegate.snapshot();
     }
 
-    /** {@inheritDoc} */
-    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
-        return delegate.tracingConfiguration();
-    }
-
     /** */
     @Override public Ignite withApplicationAttributes(Map<String, String> attrs) {
         if (this.attrs.equals(attrs))
@@ -555,4 +540,14 @@ public class IgniteApplicationAttributesAware implements IgniteEx {
 
         return delegate.withApplicationAttributes(attrs);
     }
+
+	@Override
+	public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException {		
+		return delegate.fileSystem(name);
+	}
+
+	@Override
+	public Collection<IgniteFileSystem> fileSystems() {
+		return delegate.fileSystems();
+	}
 }

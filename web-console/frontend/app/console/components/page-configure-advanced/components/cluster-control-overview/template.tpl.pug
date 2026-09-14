@@ -1,0 +1,25 @@
+
+pc-items-table(
+    table-title='::"Grid Commands"'
+    max-rows-to-show='8'
+    column-defs='$ctrl.commandColumnDefs'
+    row-identity-key='id'
+    items='$ctrl.serviceList$|async:this'
+    actions-menu='$ctrl.tableActions$|async:this'
+    selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
+    one-way-selection='::true'
+    on-selection-change='$ctrl.selectedRows$.next($event);$ctrl.openDrawer = true'
+    on-filter-changed='$ctrl.filterChanges$.next($event)'   
+)
+
+app-drawer(
+  is-open="$ctrl.openDrawer && ($ctrl.isBlocked$|async:this)"
+  on-close="$ctrl.openDrawer = false"
+  title=`$ctrl.itemEditTitle$|async:this`
+  width="55%"
+)
+    command-call-form(
+        service='$ctrl.originalService$|async:this'    
+        on-call='$ctrl.onCall($event)'
+        ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'   
+    )

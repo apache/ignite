@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -43,12 +44,13 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseString;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
 /**
- * CREATE INDEX command.
+ * CREATE INDEX command.  // modify@byron support Fulltext Index
  */
 public class SqlCreateIndexCommand implements SqlCommand {
     /** Schema name. */
@@ -65,6 +67,12 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** Spatial index flag. */
     private boolean spatial;
+    
+    /** full text index flag. */
+    private boolean fulltext;    
+
+    /** Lucene index command */
+    private String luceneIndexOptions;
 
     /**
      * Parallelism level. <code>parallel=0</code> means that a default number
@@ -177,6 +185,21 @@ public class SqlCreateIndexCommand implements SqlCommand {
      */
     public int inlineSize() {
         return inlineSize;
+    }    
+
+    /**
+     * @return full text index flag.
+     */
+    public boolean fulltext() {
+        return fulltext;
+    }
+
+    /**
+     *
+     * @return lucene index options
+     */
+    public String luceneIndexOptions(){
+        return luceneIndexOptions;
     }
 
     /**
@@ -310,6 +333,21 @@ public class SqlCreateIndexCommand implements SqlCommand {
                             " value. Should be positive: " + inlineSize);
 
                     break;
+                    
+                case "FULLTEXT":
+                    fulltext = true;
+
+                    luceneIndexOptions = getStringProperty(lex, "FULLTEXT", foundProps);
+
+                    //disabled
+                    inlineSize = 0;
+                    
+
+                    //now make some validations here
+                    if (spatial){
+                        throw error(lex, "Spatial flag is not allowed for FULLTEXT index");
+                    }
+
 
                 default:
                     return;
@@ -335,6 +373,17 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return parseInt(lex);
     }
 
+    private String getStringProperty(SqlLexer lex, String keyword, Set<String> foundProps) {
+        if (foundProps.contains(keyword))
+            throw error(lex, "Only one " + keyword + " clause may be specified.");
+
+        foundProps.add(keyword);
+
+        lex.shift();
+
+        return parseString(lex);
+    }
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlCreateIndexCommand.class, this);

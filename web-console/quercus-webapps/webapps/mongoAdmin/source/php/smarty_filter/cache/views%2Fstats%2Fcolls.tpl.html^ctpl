@@ -1,0 +1,69 @@
+a:5:{s:4:"type";s:4:"ctpl";s:7:"version";s:4:"0.83";s:8:"bytecode";a:78:{i:0;s:4:"echo";i:1;s:165:"<div>
+<h2>Collection Stats</h2>
+<table class="table table-bordered table-striped">
+  <tr>
+    <td>
+      <strong>Documents</strong>
+    </td>
+    <td>
+      ";i:2;s:6:"lookup";i:3;s:5:"stats";i:4;s:4:"push";i:5;s:5:"count";i:6;s:1:".";i:7;s:5:"print";i:8;s:4:"echo";i:9;s:106:"
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Total doc size</strong>
+    </td>
+    <td>
+      ";i:10;s:6:"lookup";i:11;s:5:"stats";i:12;s:4:"push";i:13;s:4:"size";i:14;s:1:".";i:15;s:8:"modifier";i:16;s:13:"convert_bytes";i:17;a:0:{}i:18;s:5:"print";i:19;s:4:"echo";i:20;s:108:"
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Average doc size</strong>
+    </td>
+    <td>
+      ";i:21;s:6:"lookup";i:22;s:5:"stats";i:23;s:4:"push";i:24;s:10:"avgObjSize";i:25;s:1:".";i:26;s:8:"modifier";i:27;s:13:"convert_bytes";i:28;a:0:{}i:29;s:5:"print";i:30;s:4:"echo";i:31;s:110:"
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Pre-allocated size</strong>
+    </td>
+    <td>
+      ";i:32;s:6:"lookup";i:33;s:5:"stats";i:34;s:4:"push";i:35;s:11:"storageSize";i:36;s:1:".";i:37;s:8:"modifier";i:38;s:13:"convert_bytes";i:39;a:0:{}i:40;s:5:"print";i:41;s:4:"echo";i:42;s:99:"
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Indexes</strong>
+    </td>
+    <td>
+      ";i:43;s:6:"lookup";i:44;s:5:"stats";i:45;s:4:"push";i:46;s:8:"nindexes";i:47;s:1:".";i:48;s:5:"print";i:49;s:4:"echo";i:50;s:108:"
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Total index size</strong>
+    </td>
+    <td>
+      ";i:51;s:6:"lookup";i:52;s:5:"stats";i:53;s:4:"push";i:54;s:14:"totalIndexSize";i:55;s:1:".";i:56;s:8:"modifier";i:57;s:13:"convert_bytes";i:58;a:0:{}i:59;s:5:"print";i:60;s:4:"echo";i:61;s:106:"
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Padding factor</strong>
+    </td>
+    <td>
+      ";i:62;s:6:"lookup";i:63;s:5:"stats";i:64;s:4:"push";i:65;s:13:"paddingFactor";i:66;s:1:".";i:67;s:5:"print";i:68;s:4:"echo";i:69;s:99:"
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <strong>Extents</strong>
+    </td>
+    <td>
+      ";i:70;s:6:"lookup";i:71;s:5:"stats";i:72;s:4:"push";i:73;s:10:"numExtents";i:74;s:1:".";i:75;s:5:"print";i:76;s:4:"echo";i:77;s:38:"
+    </td>
+  </tr>
+</table>
+</div>";}s:7:"inherit";N;s:8:"sections";a:0:{}}

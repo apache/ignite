@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteOneRowMap;
 
 /**
  * Checks data consistency. Checks that each backup value equals to primary value.
@@ -238,7 +239,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     public <K, V> IgniteInternalFuture<V> single() {
         return init().chain(fut -> {
             try {
-                final Map<K, V> map = new IgniteBiTuple<>();
+                final Map<K, V> map = new IgniteOneRowMap<>();
 
                 addResult(fut, map);
 

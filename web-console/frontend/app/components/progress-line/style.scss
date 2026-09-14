@@ -1,0 +1,67 @@
+
+
+progress-line {
+    @import 'public/stylesheets/variables';
+
+    --background-color: transparent;
+    --foreground-color: #{$ignite-brand-primary};
+
+    height: 1px;
+    position: relative;
+    display: block;
+    overflow: hidden;
+
+    @keyframes progress-line-indeterminate {
+        0% {
+            left: -33%;
+            width: 33%;
+        }
+        100% {
+            left: 100%;
+            width: 33%;
+        }
+    }
+
+    @keyframes progress-line-indeterminate-to-complete {
+        0% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .progress-line__background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: block;
+        background: var(--background-color);
+    }
+
+    .progress-line__foreground {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        content: "";
+        display: block;
+        background: var(--foreground-color);
+    }
+
+    &.progress-line__complete .progress-line__foreground {
+        animation-name: progress-line-indeterminate-to-complete;
+        animation-iteration-count: 1;
+        animation-duration: 0.2s;
+        left: 0;
+        right: 0;
+        width: 100%;
+    }
+
+    &.progress-line__indeterminate .progress-line__foreground {
+        animation-name: progress-line-indeterminate;
+        animation-iteration-count: infinite;
+        animation-duration: 2s;
+    }
+}

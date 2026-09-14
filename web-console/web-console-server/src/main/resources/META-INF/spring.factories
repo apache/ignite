@@ -1,0 +1,6 @@
+
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+  org.apache.ignite.console.config.BeanCreationFailureAnalyzer
+
+org.springframework.boot.diagnostics.FailureAnalysisReporter=\
+  org.apache.ignite.console.config.CustomFailureAnalysisReporter

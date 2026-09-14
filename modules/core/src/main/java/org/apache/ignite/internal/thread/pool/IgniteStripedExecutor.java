@@ -784,17 +784,21 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
         @Override Runnable take() throws InterruptedException {
             Runnable r;
 
-            for (int i = 0; i < 2048; i++) {
+            for (int i = 0; i < 1024; i++) {
                 r = queue.poll();
 
                 if (r != null)
                     return r;
+
+                // add@byron
+                Thread.onSpinWait(); // 提示CPU正在自旋
+                // end@
             }
 
             parked = true;
 
             try {
-                for (;;) {
+                while (!isCancelled()) {
                     r = queue.poll();
 
                     if (r != null)
@@ -818,7 +822,9 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
                         }
                     }
 
-                    LockSupport.park();
+                    if (queue.isEmpty()) {
+                        LockSupport.park();
+                    }
 
                     if (Thread.interrupted())
                         throw new InterruptedException();
@@ -827,6 +833,7 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
             finally {
                 parked = false;
             }
+            return null;
         }
 
         /** {@inheritDoc} */

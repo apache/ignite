@@ -1,0 +1,22 @@
+
+
+page-configure-advanced-models {
+    @import 'public/stylesheets/variables.scss';
+    .page-configure-advanced__valid-model-cell,
+    .page-configure-advanced__invalid-model-cell {
+        i {
+            font-style: italic;
+        }
+        [ignite-icon] {
+            vertical-align: -3px;
+            margin-right: 10px;
+        }        
+    }
+    .page-configure-advanced__valid-model-cell {
+        color: green;
+    }
+    .page-configure-advanced__invalid-model-cell {
+        color: $ignite-brand-primary;
+
+    }
+}

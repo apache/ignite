@@ -1,0 +1,37 @@
+
+
+pc-items-table(
+    table-title='::"My caches"'
+    column-defs='$ctrl.cachesColumnDefs'
+    items='$ctrl.shortCaches$|async:this'
+    actions-menu='$ctrl.tableActions$|async:this'
+    selected-row-id='$ctrl.selectionManager.selectedItemIDs$|async:this'
+    one-way-selection='::true'
+    on-selection-change='$ctrl.selectedRows$.next($event);$ctrl.openDrawer = true'
+    on-filter-changed='$ctrl.filterChanges$.next($event)'
+    on-visible-rows-change='$ctrl.visibleRows$.next($event)'
+)
+    footer-slot
+        div(style='font-style: italic' ng-hide='($ctrl.shortCaches$|async:this).length')
+            | You have no caches. 
+            a.link-success(
+                ui-sref='base.configuration.edit.advanced.caches.cache({cacheID: "new"})'
+                ui-sref-opts='{location: "replace"}'
+            ) Create one? 
+
+
+app-drawer(
+  is-open="$ctrl.openDrawer && ($ctrl.isBlocked$|async:this)"
+  on-close="$ctrl.openDrawer = false"
+  title=`$ctrl.itemEditTitle$|async:this`
+  width="55%"
+)
+    cache-edit-ui-form(
+        cache='$ctrl.originalCache$|async:this'
+        caches='$ctrl.shortCaches$|async:this'
+        models='$ctrl.shortModels$|async:this'
+        on-save='$ctrl.save($event)'
+        ng-class='{"pca-form-blocked": !($ctrl.isBlocked$|async:this)}'
+        fake-ui-can-exit='base.configuration.edit.crudui.caches.cache'
+        form-ui-can-exit-guard
+    )

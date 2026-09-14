@@ -1,0 +1,13 @@
+
+
+no-data{
+  .data-loading-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .spinner-circle {
+      margin-right: 5px;
+    }
+  }
+}

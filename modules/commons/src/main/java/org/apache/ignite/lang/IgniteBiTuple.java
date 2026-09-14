@@ -37,8 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Convenience class representing mutable tuple of two values.
  */
-public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
-    Iterable<Object>, Externalizable, Cloneable {
+public class IgniteBiTuple<V1, V2> implements Map.Entry<V1, V2>,Iterable<Object>, Externalizable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -176,41 +175,33 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    public int size() {
         return val1 == null && val2 == null ? 0 : 1;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
+    public boolean isEmpty() {
         return size() == 0;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsKey(Object key) {
+    public boolean containsKey(Object key) {
         return Objects.equals(val1, key);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsValue(Object val) {
+    public boolean containsValue(Object val) {
         return Objects.equals(val2, val);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 get(Object key) {
+    @Nullable public V2 get(Object key) {
         return containsKey(key) ? val2 : null;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public V2 put(V1 key, V2 val) {
-        V2 old = containsKey(key) ? val2 : null;
-
-        set(key, val);
-
-        return old;
-    }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V2 remove(Object key) {
+    @Nullable public V2 remove(Object key) {
         if (containsKey(key)) {
             V2 v2 = val2;
 
@@ -224,37 +215,11 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends V1, ? extends V2> m) {
-        A.notNull(m, "m");
-        A.ensure(m.size() <= 1, "m.size() <= 1");
-
-        for (Map.Entry<? extends V1, ? extends V2> e : m.entrySet())
-            put(e.getKey(), e.getValue());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear() {
+    public void clear() {
         val1 = null;
         val2 = null;
     }
-
-    /** {@inheritDoc} */
-    @Override public Set<V1> keySet() {
-        return Collections.singleton(val1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<V2> values() {
-        return Collections.singleton(val2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Map.Entry<V1, V2>> entrySet() {
-        return isEmpty() ?
-            Collections.<Entry<V1, V2>>emptySet() :
-            Collections.<Entry<V1, V2>>singleton(this);
-    }
-
+    
     /** {@inheritDoc} */
     @Override public Object clone() {
         try {

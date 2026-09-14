@@ -1,0 +1,26 @@
+
+
+page-signin {
+    display: flex;
+    flex-direction: column;
+
+    .form-field {
+        margin: 10px 0;
+    }
+
+    .form-footer {
+        padding: 15px 0;
+        text-align: right;
+        display: flex;
+        align-items: center;
+
+        .btn-ignite {
+            margin-left: auto;
+        }
+    }
+
+    .page-signin__no-account-message {
+        text-align: center;
+        margin: 20px 0;
+    } 
+}

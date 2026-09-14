@@ -1,0 +1,42 @@
+
+
+section.intro-container-wrapper
+    .container
+        .col-lg-6.col-md-6.col-sm-6.col-xs-12.intro-content
+            h1(translate='landing.intro.title')
+            h2(translate='landing.intro.subtitle')
+            p(translate='landing.intro.text')
+            a#signup_show.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup' translate='landing.intro.signUpButtonLabel')
+        .col-lg-6.col-md-6.col-sm-6.col-xs-12
+            img(src='/images/page-landing-ui-sample.png')
+section.features-container-wrapper
+    .container.features-container
+        .section-title(translate='landing.features.title')
+        .row
+            .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
+                .col-lg-2.col-md-2.col-sm-2.col-xs-2
+                    i.fa.fa-sitemap
+                .col-lg-9.col-md-9.col-sm-9.col-xs-9
+                    h3(translate='landing.features.configuration.title')
+                    p(translate='landing.features.configuration.description')
+            .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
+                .col-lg-2.col-md-2.col-sm-2.col-xs-2
+                    i.fa.fa-search
+                .col-lg-9.col-md-9.col-sm-9.col-xs-9
+                    h3(translate='landing.features.sql.title')
+                    p(translate='landing.features.sql.description')
+        .row
+            .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
+                .col-lg-2.col-md-2.col-sm-2.col-xs-2
+                    i.fa.fa-database
+                .col-lg-9.col-md-9.col-sm-9.col-xs-9
+                    h3(translate='landing.features.schemaImport.title')
+                    p(translate='landing.features.schemaImport.description')
+            .col-lg-6.col-md-6.col-sm-6.col-xs-12.feature
+                .col-lg-2.col-md-2.col-sm-2.col-xs-2
+                    i.fa.fa-gears
+                .col-lg-9.col-md-9.col-sm-9.col-xs-9
+                    h3(translate='landing.features.userManagement.title')
+                    p(translate='landing.features.userManagement.description')
+        .align-center.text-center
+            a.btn.btn-lg.btn-primary.btn-custom(ui-sref='signup' translate='landing.features.signUpButtonLabel')

@@ -143,6 +143,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCH
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newCachedThreadPool;
@@ -868,6 +869,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
                 case IDX_POOL:
+                case IGFS_POOL: //add@byron
                 case DATA_STREAMER_POOL:
                 case QUERY_POOL:
                 case SCHEMA_POOL:

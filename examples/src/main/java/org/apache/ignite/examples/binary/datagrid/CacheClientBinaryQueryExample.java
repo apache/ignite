@@ -66,7 +66,7 @@ public class CacheClientBinaryQueryExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+        try (Ignite ignite = Ignition.start("config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Binary objects cache query example started.");
 
@@ -209,7 +209,8 @@ public class CacheClientBinaryQueryExample {
      */
     private static void textQuery(IgniteCache<BinaryObject, BinaryObject> cache) {
         TextQuery<BinaryObject, BinaryObject> qry = new TextQuery<>(Employee.class, "TX");
-
+        
+        qry.setFitler((k,v)-> ((Long) v.field("salary"))>10000L );
         QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> employees = cache.query(qry);
 
         System.out.println();

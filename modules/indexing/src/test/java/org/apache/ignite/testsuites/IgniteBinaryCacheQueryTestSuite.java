@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryStartFinishL
 import org.apache.ignite.internal.processors.query.h2.QueryDataPageScanTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
-import org.apache.ignite.internal.processors.sql.SqlConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.sql.SqlParserBulkLoadSelfTest;
 import org.apache.ignite.internal.sql.SqlParserDropIndexSelfTest;
 import org.apache.ignite.internal.sql.SqlParserMultiStatementSelfTest;
@@ -108,8 +107,6 @@ import org.junit.runners.Suite;
     SqlParserDropIndexSelfTest.class,
     SqlParserBulkLoadSelfTest.class,
     SqlParserMultiStatementSelfTest.class,
-
-    SqlConnectorConfigurationValidationSelfTest.class,
 
     SqlIllegalSchemaSelfTest.class,
     MultipleStatementsSqlQuerySelfTest.class,

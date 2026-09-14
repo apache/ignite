@@ -1,0 +1,49 @@
+
+
+pc-items-table {
+    @import "public/stylesheets/variables.scss";
+
+    display: block;
+
+    .panel-title {
+        display: flex;
+        flex-direction: row;
+    }
+
+    // Removes unwanted box-shadow and border-right from checkboxes column
+    .ui-grid.ui-grid--ignite .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-render-container-left:before {
+        box-shadow: none;
+    }
+    .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child {
+        border-right: none;
+    }    
+    footer-slot {
+        $height: 36px + 11px;
+        $line-height: 16px;
+        display: block;
+        line-height: $line-height;
+        font-size: 14px;
+        padding: 10px 20px 10px 70px;
+    }
+    .pco-clusters-table__column-selection {
+        margin-left: 0 !important;
+    }
+    .pco-clusters-table__actions-button {
+        margin-left: auto;
+    }
+    // Fixes header jank
+    .ui-grid-header-viewport {
+        min-height: 70px;
+    }
+    .pc-items-table__selection-count {
+        font-size: 14px;
+        font-style: italic;
+        flex: 0 0 auto;
+    }
+    .pc-items-table__table-name {
+        display: flex;
+    }
+    grid-column-selector {
+        flex: 0 0 auto;
+    }
+}

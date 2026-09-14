@@ -1,0 +1,25 @@
+
+
+version-picker {
+    display: inline-flex;
+    align-items: center;
+
+    .btn-ignite {
+        border-radius: 9px;
+        min-height: 0;
+        font-size: 12px;
+        font-weight: bold;
+        line-height: 20px;
+        padding-top: 0;
+        padding-bottom: 1px;
+    }
+
+    [ignite-icon] {
+        margin-left: 5px;
+    }
+
+    .dropdown-menu a {
+        // Fixes style leak from above
+        font-size: 14px !important;
+    }
+}

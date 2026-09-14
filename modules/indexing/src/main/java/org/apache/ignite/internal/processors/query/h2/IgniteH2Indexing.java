@@ -38,10 +38,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -331,12 +328,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
-        String cacheName, String qry, String typeName, IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
+        String cacheName, TextQuery<K, V> qry, String typeName, IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
             long qryId = runningQueryManager().register(
-                qry,
+                qry.getText(),
                 TEXT,
                 schemaName,
                 true,
@@ -348,7 +345,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             Throwable failReason = null;
             try {
-                return tbl.luceneIndex().query(qry.toUpperCase(), filters, limit);
+                return tbl.luceneIndex().query(qry, filters, limit);
             }
             catch (Throwable t) {
                 failReason = t;

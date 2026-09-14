@@ -1,0 +1,29 @@
+
+
+web-console-header-content {
+    display: flex;
+    flex: 1;
+
+    .web-console-header-content__right {
+        margin-left: auto;
+        display: flex;
+    }
+
+    .web-console-header-item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        padding: 0 20px;
+        border-left: 1px solid #dddddd;
+        height: 100%;
+    }
+}
+
+.web-console-header-content__title {
+    display: flex;
+    align-items: center;
+    margin-left: 80px;
+    font-size: 1.4em;
+    margin-right: auto;
+}

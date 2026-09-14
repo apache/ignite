@@ -1,0 +1,12 @@
+
+
+.web-console-header-content__right
+    .web-console-header-item(ng-if='$ctrl.showConnectedClusters')
+        connected-clusters
+    .web-console-header-item(ng-if='$ctrl.showDemoModeButton')
+        demo-mode-button
+    .web-console-header-item
+        help-menu
+
+.web-console-header-item(ng-if='$ctrl.showUserMenu')
+    user-menu
