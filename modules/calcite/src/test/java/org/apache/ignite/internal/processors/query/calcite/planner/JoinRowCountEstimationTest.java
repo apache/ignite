@@ -314,7 +314,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
         return node -> {
             String plan = RelOptUtil.dumpPlan("", node, SqlExplainFormat.TEXT, SqlExplainLevel.ALL_ATTRIBUTES);
 
-            String sanitized = plan.replace("\n", "");
+            String sanitized = plan.replaceAll("\\R", "");
             java.util.regex.Matcher matcher = pattern.matcher(sanitized);
 
             if (!matcher.matches())

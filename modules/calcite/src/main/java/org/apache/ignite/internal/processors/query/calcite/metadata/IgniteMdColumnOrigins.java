@@ -34,6 +34,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableFunctionScan;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
@@ -54,6 +55,7 @@ import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
@@ -325,10 +327,29 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         }
     }
 
-    /** Provides column origin for Subset relation. */
+    /**
+     * Provides column origins for a subset.
+     *
+     * <p>Origins are resolved through the original (logical) expression of the set rather than through the current best
+     * plan: the best expression changes during optimization, and metadata depending on it makes row count estimates
+     * of the same expression unstable, which in turn leads to inconsistent costs and cyclic best plans in Volcano memo.
+     * Column origins are a property of the logical expression, so the original expression is a stable source of them.
+     */
     public @Nullable Set<RelColumnOrigin> getColumnOrigins(RelSubset rel,
         RelMetadataQuery mq, int outputColumn) {
-        return mq.getColumnOrigins(rel.stripped(), outputColumn);
+        RelNode original = rel.getOriginal();
+
+        return mq.getColumnOrigins(original != null ? original : rel.stripped(), outputColumn);
+    }
+
+    /** Spools pass rows of their input through, so column origins are the same as the origins of the input. */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Spool rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
+    }
+
+    /** Limit passes rows of its input through, so column origins are the same as the origins of the input. */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(IgniteLimit rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
     }
 
     /**

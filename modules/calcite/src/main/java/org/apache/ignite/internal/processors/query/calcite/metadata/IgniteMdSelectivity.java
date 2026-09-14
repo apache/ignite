@@ -115,14 +115,17 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 
-    /** */
+    /**
+     * Selectivity for a subset.
+     *
+     * <p>Resolved through the original (logical) expression of the set rather than through the current best plan,
+     * because the best expression changes during optimization and metadata depending on it makes estimates of the same
+     * expression unstable (see {@link IgniteMdColumnOrigins#getColumnOrigins(RelSubset, RelMetadataQuery, int)}).
+     */
     public Double getSelectivity(RelSubset rel, RelMetadataQuery mq, RexNode predicate) {
-        RelNode best = rel.getBest();
+        RelNode original = rel.getOriginal();
 
-        if (best == null)
-            return super.getSelectivity(rel, mq, predicate);
-
-        return getSelectivity(best, mq, predicate);
+        return mq.getSelectivity(original != null ? original : rel.stripped(), predicate);
     }
 
     /**
