@@ -88,7 +88,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        // Handy if other test runs interrupted.
+        /** Handy if test running is interrupted and {@link #afterTest()} isn't invoked. */
         cleanPersistenceDir();
     }
 
@@ -96,6 +96,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
+        // Also cleans separated snapshot working directories.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);

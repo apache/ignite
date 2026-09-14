@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,6 +29,8 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -42,15 +47,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
+import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /** */
@@ -105,8 +113,19 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Override public void beforeTestSnapshot() throws Exception {
         super.beforeTestSnapshot();
 
-        // Handy
+        /** Handy if test running is interrupted and {@link #afterTestSnapshot()} isn't invoked. */
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
+
+        // Also cleans separated snapshot working directories.
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
+            for (Path path : files)
+                U.delete(path);
+        }
     }
 
     /** Tests snapshot deletion when one node finds snapshot but failes to delete its data. */
@@ -190,7 +209,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             F.asList(CHECK_SNAPSHOT_METAS, CHECK_SNAPSHOT_PARTS),
             true,
             null,
-            "Snapshot with this name is being checked"
+            "Snapshot with this name is being checked",
+            false
         );
     }
 
@@ -210,7 +230,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                 if (incremental)
                     snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
             },
-            "Snapshot with this name is being created"
+            "Snapshot with this name is being created",
+            false
         );
     }
 
@@ -234,7 +255,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
                 awaitPartitionMapExchange();
             },
-            "Snapshot with this name is being checked"
+            "Snapshot with this name is being checked",
+            false
         );
     }
 
@@ -269,7 +291,54 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
                 awaitPartitionMapExchange();
             },
-            "Snapshot with this name is being restored"
+            "Snapshot with this name is being restored",
+            false
+        );
+    }
+
+    /** Tests that a snapshot deletion is declined when a snapshot restore is in progress but fails. */
+    @Test
+    public void testSnapshotDeleteWhenRestoreProgressFails() throws Exception {
+        // An in-the-middle failure won't allow to start restoring the incrementals.
+        assumeFalse(incremental);
+
+        var restoreMsgs = F.asList(RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK);
+
+        if (incremental) {
+            restoreMsgs = new ArrayList<>(restoreMsgs);
+            restoreMsgs.add(RESTORE_INCREMENTAL_SNAPSHOT_START);
+        }
+
+        doTestConcurrentSnapshotDelete(
+            () -> {
+                if (incremental)
+                    return snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null, 1);
+                else
+                    return snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null);
+            },
+            restoreMsgs,
+            true,
+            () -> {
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                awaitPartitionMapExchange();
+
+                SnapshotFileTree sft = snapshotFileTree(grid(1), SNAPSHOT_NAME);
+
+                String failingFilePath = sft.partitionFile(dfltCacheCfg, primaries[0]).getAbsolutePath()
+                    .replace(sft.nodeStorage().getAbsolutePath(), "");
+
+                grid(1).context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
+                    FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
+
+                    if (file.getPath().endsWith(failingFilePath))
+                        throw new RuntimeException("Test exception");
+
+                    return delegate;
+                });
+            },
+            "Snapshot with this name is being restored",
+            true
         );
     }
 
@@ -279,13 +348,15 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
      * @param precreateSnp If {@code true}, creates snapshot after the cluster start.
      * @param prepareIteration If not {@code null}, is invoked in the beginning of test iteration at each {@code msgsToWatch}.
      * @param concurrentMsgErr Test of failed concurrent to {@code firstOp} delete snapshot operation to watch.
+     * @param ignoreFirstOpFailure If {@code true}, possible failure of {@code firstOp} is ignored.
      */
     protected void doTestConcurrentSnapshotDelete(
         Supplier<IgniteFuture<?>> firstOp,
         Collection<DistributedProcess.DistributedProcessType> msgsToWatch,
         boolean precreateSnp,
         @Nullable Runnable prepareIteration,
-        String concurrentMsgErr
+        String concurrentMsgErr,
+        boolean ignoreFirstOpFailure
     ) throws Exception {
         startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
 
@@ -299,6 +370,9 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         TestRecordingCommunicationSpi commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
 
         for (var nodeResMsgType : msgsToWatch) {
+            if (log.isInfoEnabled())
+                log.info("Iteration with message-to-wait-for type: " + nodeResMsgType);
+
             if (prepareIteration != null)
                 prepareIteration.run();
 
@@ -322,7 +396,17 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
             commSpi1.stopBlock();
 
-            firstFut.get(getTestTimeout());
+            if (ignoreFirstOpFailure) {
+                try {
+                    firstFut.get(getTestTimeout());
+                }
+                catch (Exception e) {
+                    if (log.isDebugEnabled())
+                        log.debug("The first operation failed but a failure is expected. Failure: " + e.getMessage());
+                }
+            }
+            else
+                firstFut.get(getTestTimeout());
         }
     }
 
