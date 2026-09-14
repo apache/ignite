@@ -22,10 +22,11 @@ import java.util.List;
 /**
  * Field description.
  *
+ * @param order Field order, or {@code null} for logical fields without a wire order.
  * @param type Field type.
  * @param name Field name.
  * @param annotations Serialization annotations.
  */
-public record FieldRepresentation(String type, String name, List<AnnotationRepresentation> annotations) {
+public record FieldRepresentation(Integer order, String type, String name, List<AnnotationRepresentation> annotations) {
     // No-op.
 }

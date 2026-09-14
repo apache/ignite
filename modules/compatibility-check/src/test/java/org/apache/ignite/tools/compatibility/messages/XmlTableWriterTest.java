@@ -36,12 +36,12 @@ public class XmlTableWriterTest {
         List<MessageRepresentation> msgs = List.of(
             new MessageRepresentation((short)7, "example.Message", new Schema(
                 List.of(new AnnotationRepresentation(JdkMarshalled.class.getName(), null)), List.of(
-                    new FieldRepresentation("java.util.List<java.lang.String>", "names", List.of(
+                    new FieldRepresentation(2, "java.util.List<java.lang.String>", "names", List.of(
                         new AnnotationRepresentation("since", "2.18.0"),
                         new AnnotationRepresentation(CustomMapper.class.getName(), "A&B"),
                         new AnnotationRepresentation(Compress.class.getName(), null)
                     )),
-                    new FieldRepresentation("int", "count", List.of())
+                    new FieldRepresentation(null, "int", "count", List.of())
             ))),
             new MessageRepresentation((short)8, "example.Empty", new Schema(List.of(), List.of()))
         );
@@ -54,7 +54,7 @@ public class XmlTableWriterTest {
                   <annotations>
                     <org.apache.ignite.internal.JdkMarshalled/>
                   </annotations>
-                  <field>
+                  <field order="2">
                     <annotations>
                       <org.apache.ignite.internal.Compress/>
                       <org.apache.ignite.internal.CustomMapper>A&amp;B</org.apache.ignite.internal.CustomMapper>

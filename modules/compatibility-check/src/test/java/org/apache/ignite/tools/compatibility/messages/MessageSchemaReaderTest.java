@@ -43,18 +43,21 @@ public class MessageSchemaReaderTest {
                 reader.read(Child.class).annotations());
             assertEquals(List.of(), reader.read(Empty.class).annotations());
             assertEquals(List.of(
-                new FieldRepresentation("int", "id", List.of()),
-                new FieldRepresentation("byte[]", "id", List.of(
+                new FieldRepresentation(0, "int", "id", List.of()),
+                new FieldRepresentation(0, "byte[]", "id", List.of(
                     new AnnotationRepresentation(Compress.class.getName(), null),
                     new AnnotationRepresentation(NioField.class.getName(), null))),
-                new FieldRepresentation(Mode.class.getCanonicalName(), "mode",
+                new FieldRepresentation(1, Mode.class.getCanonicalName(), "mode",
                     List.of(new AnnotationRepresentation(CustomMapper.class.getName(), "example.Mapper"))),
-                new FieldRepresentation("java.util.List<? extends java.lang.String>", "payload",
+                new FieldRepresentation(null, "java.util.List<? extends java.lang.String>", "payload",
                     List.of(new AnnotationRepresentation(Marshalled.class.getName(), "value=id")))
             ), reader.read(Child.class).fields());
             assertEquals(List.of(), reader.read(Empty.class).fields());
             assertEquals(List.of(), reader.read(Unannotated.class).fields());
-            assertEquals(List.of(new FieldRepresentation("int", "id", List.of())), reader.read(InvalidOrder.class).fields());
+            assertEquals(
+                List.of(new FieldRepresentation(1, "int", "id", List.of())),
+                reader.read(InvalidOrder.class).fields()
+            );
         }
     }
 

@@ -99,9 +99,12 @@ class MessageSchemaReader implements AutoCloseable {
                 Marshalled ann = field.getAnnotation(Marshalled.class);
 
                 if (ann != null) {
-                    marshalledFields.add(new FieldRepresentation(field.asType().toString(), field.getSimpleName().toString(),
-                        List.of(new AnnotationRepresentation(Marshalled.class.getName(), !ann.value().isEmpty() ? "value=" + ann.value()
-                        : "keys=" + ann.keys() + " values=" + ann.values()))));
+                    marshalledFields.add(new FieldRepresentation(
+                        null,
+                        field.asType().toString(),
+                        field.getSimpleName().toString(),
+                        List.of(new AnnotationRepresentation(Marshalled.class.getName(), marshalledValue(ann)))
+                    ));
                 }
             }
 
@@ -122,7 +125,12 @@ class MessageSchemaReader implements AutoCloseable {
                 if (mapper != null)
                     annotations.add(new AnnotationRepresentation(CustomMapper.class.getName(), mapper.value()));
 
-                schema.add(new FieldRepresentation(field.asType().toString(), field.getSimpleName().toString(), annotations));
+                schema.add(new FieldRepresentation(
+                    field.getAnnotation(Order.class).value(),
+                    field.asType().toString(),
+                    field.getSimpleName().toString(),
+                    annotations
+                ));
             }
         }
 
@@ -133,6 +141,11 @@ class MessageSchemaReader implements AutoCloseable {
         schema.addAll(marshalledFields);
 
         return new Schema(clsAnnotations, schema);
+    }
+
+    /** Returns a stable value for the {@link Marshalled} annotation. */
+    private static String marshalledValue(Marshalled ann) {
+        return !ann.value().isEmpty() ? "value=" + ann.value() : "keys=" + ann.keys() + " values=" + ann.values();
     }
 
     /** {@inheritDoc} */

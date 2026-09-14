@@ -86,6 +86,9 @@ class XmlTableWriter {
 
             xml.writeStartElement("field");
 
+            if (field.order() != null)
+                xml.writeAttribute("order", Integer.toString(field.order()));
+
             writeAnnotations(xml, field.annotations(), "        ");
 
             xml.writeCharacters("\n        ");
