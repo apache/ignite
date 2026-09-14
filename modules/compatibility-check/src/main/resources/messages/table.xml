@@ -436,11 +436,11 @@
         <type>byte[]</type>
         <name>errBytes</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>qryId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>long</type>
         <name>fragmentId</name>
       </field>
@@ -642,7 +642,7 @@
         <type>byte[]</type>
         <name>addrBytes</name>
       </field>
-      <field order="0">
+      <field order="2">
         <type>int</type>
         <name>port</name>
       </field>
@@ -785,7 +785,7 @@
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.KeyCacheObject</type>
         <name>key</name>
       </field>
@@ -855,15 +855,15 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>prevNodeId</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>java.lang.String</type>
         <name>dcId</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet</type>
         <name>nodeFeatures</name>
       </field>
@@ -893,19 +893,19 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>long</type>
         <name>order</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>boolean</type>
         <name>prevNodeAliveFlag</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage&gt;</type>
         <name>redirectAddrsMsgs</name>
       </field>
-      <field order="3">
+      <field order="9">
         <type>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet</type>
         <name>nodeFeatures</name>
       </field>
@@ -935,11 +935,11 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode</type>
         <name>node</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket</type>
         <name>dataPacket</name>
       </field>
@@ -969,27 +969,27 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode</type>
         <name>node</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket</type>
         <name>dataPacket</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage&gt;</type>
         <name>pendingMsgs</name>
       </field>
-      <field order="3">
+      <field order="9">
         <type>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode&gt;</type>
         <name>top</name>
       </field>
-      <field order="4">
+      <field order="10">
         <type>java.util.Map&lt;java.lang.Long,java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode&gt;&gt;</type>
         <name>topHist</name>
       </field>
-      <field order="5">
+      <field order="11">
         <type>long</type>
         <name>gridStartTime</name>
       </field>
@@ -1019,15 +1019,15 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>nodeId</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket</type>
         <name>clientDiscoData</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>byte[]</type>
         <name>clientNodeAttrsBytes</name>
       </field>
@@ -1090,15 +1090,15 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>failedNodeId</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>long</type>
         <name>order</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>java.lang.String</type>
         <name>warning</name>
       </field>
@@ -1154,7 +1154,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>clientNodeId</name>
       </field>
@@ -1184,7 +1184,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>boolean</type>
         <name>clientExists</name>
       </field>
@@ -1214,7 +1214,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>nodeToPing</name>
       </field>
@@ -1244,11 +1244,11 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>nodeToPing</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>boolean</type>
         <name>res</name>
       </field>
@@ -1278,7 +1278,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>msgId</name>
       </field>
@@ -1308,15 +1308,15 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>routerNodeId</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>lastMsgId</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage&gt;</type>
         <name>pendingMsgs</name>
       </field>
@@ -1346,11 +1346,11 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>msgId</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>boolean</type>
         <name>customMsgDiscard</name>
       </field>
@@ -1380,7 +1380,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.lang.String</type>
         <name>err</name>
       </field>
@@ -1410,11 +1410,11 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.Collection&lt;java.lang.String&gt;</type>
         <name>addrs</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>java.util.Collection&lt;java.lang.String&gt;</type>
         <name>hostNames</name>
       </field>
@@ -1444,11 +1444,11 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>int</type>
         <name>maxHops</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>int</type>
         <name>curHops</name>
       </field>
@@ -1478,7 +1478,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>nodeId</name>
       </field>
@@ -1508,7 +1508,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage</type>
         <name>msg</name>
       </field>
@@ -1538,7 +1538,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage</type>
         <name>msg</name>
       </field>
@@ -1568,15 +1568,15 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage&gt;</type>
         <name>creatorNodeAddrsMsgs</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>java.util.UUID</type>
         <name>failedNodeId</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>int</type>
         <name>status</name>
       </field>
@@ -1586,23 +1586,23 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>procId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>type</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>org.apache.ignite.plugin.extensions.communication.Message</type>
         <name>req</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>boolean</type>
         <name>waitClnRes</name>
       </field>
-      <field order="0">
+      <field order="5">
         <type>boolean</type>
         <name>needExchange</name>
       </field>
@@ -1632,15 +1632,15 @@
         <type>java.util.Set&lt;java.util.UUID&gt;</type>
         <name>nodes</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>boolean</type>
         <name>fullCheck</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>boolean</type>
         <name>allRestoreHandlers</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>int</type>
         <name>incIdx</name>
       </field>
@@ -1670,35 +1670,35 @@
         <type>java.util.Set&lt;java.util.UUID&gt;</type>
         <name>nodes</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>opNodeId</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>boolean</type>
         <name>incremental</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>int</type>
         <name>incIdx</name>
       </field>
-      <field order="3">
+      <field order="9">
         <type>boolean</type>
         <name>onlyPrimary</name>
       </field>
-      <field order="4">
+      <field order="10">
         <type>boolean</type>
         <name>dump</name>
       </field>
-      <field order="5">
+      <field order="11">
         <type>boolean</type>
         <name>compress</name>
       </field>
-      <field order="6">
+      <field order="12">
         <type>boolean</type>
         <name>encrypt</name>
       </field>
-      <field order="7">
+      <field order="13">
         <type>boolean</type>
         <name>configOnly</name>
       </field>
@@ -1862,19 +1862,19 @@
         <type>java.lang.String</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.lang.String</type>
         <name>snpName</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>java.lang.String</type>
         <name>snpPath</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>java.util.Map&lt;java.lang.Integer,int[]&gt;</type>
         <name>parts</name>
       </field>
@@ -1884,7 +1884,7 @@
         <type>java.lang.String</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.lang.String</type>
         <name>errMsg</name>
       </field>
@@ -1920,19 +1920,19 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.GridCacheMessage</type>
         <name>payload</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>java.util.UUID</type>
         <name>id</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>java.util.UUID</type>
         <name>txSnpId</name>
       </field>
-      <field order="3">
+      <field order="6">
         <type>long</type>
         <name>topVer</name>
       </field>
@@ -1976,7 +1976,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>srvcId</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage</type>
         <name>cfgMsg</name>
       </field>
@@ -1992,11 +1992,11 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId</type>
         <name>depId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult&gt;</type>
         <name>results</name>
       </field>
@@ -2006,7 +2006,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.service.ServiceChangeAbstractRequest&gt;</type>
         <name>reqs</name>
       </field>
@@ -2127,11 +2127,11 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>receiverNodeId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>connIdx</name>
       </field>
@@ -2141,15 +2141,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.lang.String</type>
         <name>key</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>byte[]</type>
         <name>valBytes</name>
       </field>
@@ -2159,7 +2159,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
@@ -2169,23 +2169,23 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.lang.String</type>
         <name>key</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>byte[]</type>
         <name>valBytes</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>byte[]</type>
         <name>expValBytes</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>boolean</type>
         <name>matches</name>
       </field>
@@ -2195,11 +2195,11 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="0">
+      <field order="2">
         <type>boolean</type>
         <name>updated</name>
       </field>
@@ -2209,19 +2209,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>processId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>type</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>java.util.Map&lt;java.util.UUID,R&gt;</type>
         <name>res</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt;</type>
         <name>err</name>
       </field>
@@ -2231,19 +2231,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>procId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>type</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>org.apache.ignite.plugin.extensions.communication.Message</type>
         <name>req</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>boolean</type>
         <name>waitClnRes</name>
       </field>
@@ -2253,15 +2253,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.Collection&lt;java.lang.String&gt;</type>
         <name>caches</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>byte</type>
         <name>flags</name>
       </field>
@@ -2271,11 +2271,11 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>int</type>
         <name>typeId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>boolean</type>
         <name>duplicated</name>
       </field>
@@ -2285,19 +2285,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>origNodeId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>typeId</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>boolean</type>
         <name>onCoordinator</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>java.lang.String</type>
         <name>errMsg</name>
       </field>
@@ -2307,23 +2307,23 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>opId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>grpId</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>grpDepId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>boolean</type>
         <name>changed</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.lang.String</type>
         <name>errMsg</name>
       </field>
@@ -2333,23 +2333,23 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>opId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>grpId</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>grpDepId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>java.util.Map&lt;java.lang.String,org.apache.ignite.lang.IgniteUuid&gt;</type>
         <name>caches</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>boolean</type>
         <name>enable</name>
       </field>
@@ -2359,15 +2359,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>int</type>
         <name>typeId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>int</type>
         <name>acceptedVer</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>boolean</type>
         <name>duplicated</name>
       </field>
@@ -2377,27 +2377,27 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>origNodeId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>byte[]</type>
         <name>metadataBytes</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>int</type>
         <name>typeId</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>int</type>
         <name>pendingVer</name>
       </field>
-      <field order="4">
+      <field order="5">
         <type>int</type>
         <name>acceptedVer</name>
       </field>
-      <field order="5">
+      <field order="6">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
@@ -2414,15 +2414,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>boolean</type>
         <name>isInit</name>
       </field>
@@ -2432,11 +2432,11 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>opId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
@@ -2446,7 +2446,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.internal.processors.authentication.UserManagementOperation</type>
         <name>op</name>
       </field>
@@ -2456,15 +2456,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>org.apache.ignite.cluster.ClusterState</type>
         <name>state</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>boolean</type>
         <name>transitionRes</name>
       </field>
@@ -2474,7 +2474,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>routineId</name>
       </field>
@@ -2484,7 +2484,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>routineId</name>
       </field>
@@ -2494,27 +2494,27 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId</type>
         <name>exchId</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.util.List&lt;java.util.UUID&gt;&gt;&gt;</type>
         <name>assignmentChange</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.lang.IgniteUuid&gt;</type>
         <name>cacheDeploymentIds</name>
       </field>
-      <field order="4">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage</type>
         <name>partsMsg</name>
       </field>
-      <field order="5">
+      <field order="6">
         <type>boolean</type>
         <name>exchangeNeeded</name>
       </field>
@@ -2524,11 +2524,11 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Boolean&gt;</type>
         <name>startedCaches</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.Set&lt;java.lang.Integer&gt;</type>
         <name>closedCaches</name>
       </field>
@@ -2538,7 +2538,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem</type>
         <name>item</name>
       </field>
@@ -2548,19 +2548,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>origNodeId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem</type>
         <name>mappingItem</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.marshaller.MappingProposedMessage.ProposalStatus</type>
         <name>status</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>java.lang.String</type>
         <name>conflictingClsName</name>
       </field>
@@ -2570,15 +2570,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.Collection&lt;java.lang.String&gt;</type>
         <name>cacheNames</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId</type>
         <name>exchId</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt;</type>
         <name>exchangeErrors</name>
       </field>
@@ -2588,15 +2588,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.Collection&lt;java.lang.String&gt;</type>
         <name>caches</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>byte</type>
         <name>flags</name>
       </field>
@@ -2606,15 +2606,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.Map&lt;java.lang.String,org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest&gt;</type>
         <name>startReqs</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>java.util.Set&lt;java.lang.String&gt;</type>
         <name>cachesToClose</name>
       </field>
@@ -2624,7 +2624,7 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest&gt;</type>
         <name>reqs</name>
       </field>
@@ -2718,19 +2718,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>byte[]</type>
         <name>payload</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.List&lt;java.util.UUID&gt;</type>
         <name>path</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>long</type>
         <name>hopSendTsMillis</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>java.util.List&lt;java.lang.Long&gt;</type>
         <name>hopTimesMillis</name>
       </field>
@@ -2740,15 +2740,15 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>requestId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.List&lt;java.util.UUID&gt;</type>
         <name>path</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>java.util.List&lt;java.lang.Long&gt;</type>
         <name>hopTimesMillis</name>
       </field>
@@ -2804,11 +2804,11 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>txKeys</name>
       </field>
@@ -2826,19 +2826,19 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey[]</type>
         <name>nearTxKeysArr</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>txKeys</name>
       </field>
-      <field order="3">
+      <field order="6">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.transactions.TxLock&gt;[]</type>
         <name>locksArr</name>
       </field>
@@ -2948,43 +2948,43 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>nearXidVer</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>int</type>
         <name>txNum</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>boolean</type>
         <name>sys</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>boolean</type>
         <name>nearTxCheck</name>
       </field>
@@ -3002,31 +3002,31 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>boolean</type>
         <name>success</name>
       </field>
@@ -3044,63 +3044,63 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>commitVer</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>boolean</type>
         <name>invalidate</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>boolean</type>
         <name>commit</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>baseVer</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>byte</type>
         <name>plc</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>org.apache.ignite.cache.CacheWriteSynchronizationMode</type>
         <name>syncMode</name>
       </field>
@@ -3118,15 +3118,15 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>txId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>int</type>
         <name>part</name>
       </field>
@@ -3144,67 +3144,67 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.transactions.TransactionConcurrency</type>
         <name>concurrency</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>org.apache.ignite.transactions.TransactionIsolation</type>
         <name>isolation</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>writeVer</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt;</type>
         <name>reads</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt;</type>
         <name>writes</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>dhtVerKeys</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>int</type>
         <name>txSize</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>java.util.Map&lt;java.util.UUID,java.util.Collection&lt;java.util.UUID&gt;&gt;</type>
         <name>txNodes</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>byte</type>
         <name>plc</name>
       </field>
-      <field order="11">
+      <field order="18">
         <type>byte</type>
         <name>flags</name>
       </field>
@@ -3222,27 +3222,27 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>int</type>
         <name>part</name>
       </field>
@@ -3260,75 +3260,75 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>commitVer</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>boolean</type>
         <name>invalidate</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>boolean</type>
         <name>commit</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>baseVer</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>byte</type>
         <name>plc</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>org.apache.ignite.cache.CacheWriteSynchronizationMode</type>
         <name>syncMode</name>
       </field>
-      <field order="0">
+      <field order="18">
         <type>java.util.UUID</type>
         <name>nearNodeId</name>
       </field>
-      <field order="1">
+      <field order="19">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="20">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage&gt;</type>
         <name>updCntrs</name>
       </field>
@@ -3346,31 +3346,31 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>txId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>int</type>
         <name>part</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>checkCommittedErrMsg</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.cache.GridCacheReturn</type>
         <name>retVal</name>
       </field>
-      <field order="3">
+      <field order="9">
         <type>boolean</type>
         <name>checkCommitted</name>
       </field>
@@ -3388,123 +3388,123 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.transactions.TransactionConcurrency</type>
         <name>concurrency</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>org.apache.ignite.transactions.TransactionIsolation</type>
         <name>isolation</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>writeVer</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt;</type>
         <name>reads</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt;</type>
         <name>writes</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>dhtVerKeys</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>int</type>
         <name>txSize</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>java.util.Map&lt;java.util.UUID,java.util.Collection&lt;java.util.UUID&gt;&gt;</type>
         <name>txNodes</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>byte</type>
         <name>plc</name>
       </field>
-      <field order="11">
+      <field order="18">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="19">
         <type>java.util.UUID</type>
         <name>nearNodeId</name>
       </field>
-      <field order="1">
+      <field order="20">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="21">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="3">
+      <field order="22">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="4">
+      <field order="23">
         <type>java.util.BitSet</type>
         <name>invalidateNearEntries</name>
       </field>
-      <field order="5">
+      <field order="24">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt;</type>
         <name>nearWrites</name>
       </field>
-      <field order="6">
+      <field order="25">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>ownedKeys</name>
       </field>
-      <field order="7">
+      <field order="26">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>ownedVals</name>
       </field>
-      <field order="8">
+      <field order="27">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage&gt;</type>
         <name>updCntrs</name>
       </field>
-      <field order="9">
+      <field order="28">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>nearXidVer</name>
       </field>
-      <field order="10">
+      <field order="29">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="11">
+      <field order="30">
         <type>java.util.BitSet</type>
         <name>preloadKeys</name>
       </field>
-      <field order="12">
+      <field order="31">
         <type>boolean</type>
         <name>skipCompletedVers</name>
       </field>
-      <field order="13">
+      <field order="32">
         <type>java.lang.String</type>
         <name>txLbl</name>
       </field>
@@ -3529,47 +3529,47 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>int</type>
         <name>part</name>
       </field>
-      <field order="0">
+      <field order="9">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>nearEvicted</name>
       </field>
-      <field order="1">
+      <field order="10">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="11">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="3">
+      <field order="12">
         <type>java.util.Map&lt;java.lang.Integer,int[]&gt;</type>
         <name>invalidParts</name>
       </field>
-      <field order="4">
+      <field order="13">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt;</type>
         <name>preloadEntries</name>
       </field>
@@ -3587,67 +3587,67 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>commitVer</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>boolean</type>
         <name>invalidate</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>boolean</type>
         <name>commit</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>baseVer</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>byte</type>
         <name>plc</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>org.apache.ignite.cache.CacheWriteSynchronizationMode</type>
         <name>syncMode</name>
       </field>
-      <field order="0">
+      <field order="18">
         <type>int</type>
         <name>miniId</name>
       </field>
@@ -3665,27 +3665,27 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>txId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>int</type>
         <name>part</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>long</type>
         <name>nearThreadId</name>
       </field>
@@ -3703,91 +3703,91 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.transactions.TransactionConcurrency</type>
         <name>concurrency</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>org.apache.ignite.transactions.TransactionIsolation</type>
         <name>isolation</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>writeVer</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt;</type>
         <name>reads</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry&gt;</type>
         <name>writes</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>dhtVerKeys</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>int</type>
         <name>txSize</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>java.util.Map&lt;java.util.UUID,java.util.Collection&lt;java.util.UUID&gt;&gt;</type>
         <name>txNodes</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>byte</type>
         <name>plc</name>
       </field>
-      <field order="11">
+      <field order="18">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="19">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="20">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="21">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="3">
+      <field order="22">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="4">
+      <field order="23">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="5">
+      <field order="24">
         <type>java.lang.String</type>
         <name>txLbl</name>
       </field>
@@ -3805,67 +3805,67 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>int</type>
         <name>part</name>
       </field>
-      <field order="0">
+      <field order="9">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>pending</name>
       </field>
-      <field order="1">
+      <field order="10">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="11">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="3">
+      <field order="12">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>dhtVer</name>
       </field>
-      <field order="4">
+      <field order="13">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>writeVer</name>
       </field>
-      <field order="5">
+      <field order="14">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue&gt;</type>
         <name>ownedVals</name>
       </field>
-      <field order="6">
+      <field order="15">
         <type>org.apache.ignite.internal.processors.cache.GridCacheReturn</type>
         <name>retVal</name>
       </field>
-      <field order="7">
+      <field order="16">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey&gt;</type>
         <name>filterFailedKeys</name>
       </field>
-      <field order="8">
+      <field order="17">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>clientRemapVer</name>
       </field>
-      <field order="9">
+      <field order="18">
         <type>boolean</type>
         <name>onePhaseCommit</name>
       </field>
@@ -3883,99 +3883,99 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>java.util.UUID</type>
         <name>nodeId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>nearXidVer</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>boolean</type>
         <name>isInTx</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>boolean</type>
         <name>isInvalidate</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>boolean</type>
         <name>isRead</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>org.apache.ignite.transactions.TransactionIsolation</type>
         <name>isolation</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>boolean[]</type>
         <name>retVals</name>
       </field>
-      <field order="11">
+      <field order="18">
         <type>int</type>
         <name>txSize</name>
       </field>
-      <field order="12">
+      <field order="19">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="20">
         <type>java.util.BitSet</type>
         <name>invalidateEntries</name>
       </field>
-      <field order="1">
+      <field order="21">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="22">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="3">
+      <field order="23">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="4">
+      <field order="24">
         <type>java.util.BitSet</type>
         <name>preloadKeys</name>
       </field>
-      <field order="5">
+      <field order="25">
         <type>long</type>
         <name>accessTtl</name>
       </field>
-      <field order="6">
+      <field order="26">
         <type>java.lang.String</type>
         <name>txLbl</name>
       </field>
@@ -3993,43 +3993,43 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt;</type>
         <name>vals</name>
       </field>
-      <field order="0">
+      <field order="10">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="1">
+      <field order="11">
         <type>java.util.Collection&lt;java.lang.Integer&gt;</type>
         <name>invalidParts</name>
       </field>
-      <field order="2">
+      <field order="12">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt;</type>
         <name>preloadEntries</name>
       </field>
@@ -4047,31 +4047,31 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>boolean</type>
         <name>forSavepoint</name>
       </field>
-      <field order="0">
+      <field order="9">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>nearKeys</name>
       </field>
@@ -4089,107 +4089,107 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>java.util.UUID</type>
         <name>nodeId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>nearXidVer</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>boolean</type>
         <name>isInTx</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>boolean</type>
         <name>isInvalidate</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>boolean</type>
         <name>isRead</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>org.apache.ignite.transactions.TransactionIsolation</type>
         <name>isolation</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>boolean[]</type>
         <name>retVals</name>
       </field>
-      <field order="11">
+      <field order="18">
         <type>int</type>
         <name>txSize</name>
       </field>
-      <field order="12">
+      <field order="19">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="20">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="1">
+      <field order="21">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="22">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion[]</type>
         <name>dhtVers</name>
       </field>
-      <field order="3">
+      <field order="23">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="4">
+      <field order="24">
         <type>long</type>
         <name>createTtl</name>
       </field>
-      <field order="5">
+      <field order="25">
         <type>long</type>
         <name>accessTtl</name>
       </field>
-      <field order="6">
+      <field order="26">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="7">
+      <field order="27">
         <type>java.lang.String</type>
         <name>txLbl</name>
       </field>
-      <field order="8">
+      <field order="28">
         <type>long</type>
         <name>waitTimeout</name>
       </field>
@@ -4207,63 +4207,63 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt;</type>
         <name>vals</name>
       </field>
-      <field order="0">
+      <field order="10">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>pending</name>
       </field>
-      <field order="1">
+      <field order="11">
         <type>int</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="12">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion[]</type>
         <name>dhtVers</name>
       </field>
-      <field order="3">
+      <field order="13">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion[]</type>
         <name>mappedVers</name>
       </field>
-      <field order="4">
+      <field order="14">
         <type>boolean[]</type>
         <name>filterRes</name>
       </field>
-      <field order="5">
+      <field order="15">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>clientRemapVer</name>
       </field>
-      <field order="6">
+      <field order="16">
         <type>boolean</type>
         <name>compatibleRemapVer</name>
       </field>
-      <field order="7">
+      <field order="17">
         <type>boolean</type>
         <name>lockAcquired</name>
       </field>
@@ -4281,27 +4281,27 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>boolean</type>
         <name>forSavepoint</name>
       </field>
@@ -4319,71 +4319,71 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>java.util.UUID</type>
         <name>nodeId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>nearXidVer</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>long</type>
         <name>threadId</name>
       </field>
-      <field order="3">
+      <field order="10">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="4">
+      <field order="11">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="5">
+      <field order="12">
         <type>boolean</type>
         <name>isInTx</name>
       </field>
-      <field order="6">
+      <field order="13">
         <type>boolean</type>
         <name>isInvalidate</name>
       </field>
-      <field order="7">
+      <field order="14">
         <type>boolean</type>
         <name>isRead</name>
       </field>
-      <field order="8">
+      <field order="15">
         <type>org.apache.ignite.transactions.TransactionIsolation</type>
         <name>isolation</name>
       </field>
-      <field order="9">
+      <field order="16">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="10">
+      <field order="17">
         <type>boolean[]</type>
         <name>retVals</name>
       </field>
-      <field order="11">
+      <field order="18">
         <type>int</type>
         <name>txSize</name>
       </field>
-      <field order="12">
+      <field order="19">
         <type>byte</type>
         <name>flags</name>
       </field>
@@ -4401,31 +4401,31 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>committedVers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>rolledbackVers</name>
       </field>
-      <field order="0">
+      <field order="7">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="8">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="2">
+      <field order="9">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt;</type>
         <name>vals</name>
       </field>
@@ -4443,7 +4443,7 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>vers</name>
       </field>
@@ -4461,11 +4461,11 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest</type>
         <name>payload</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>java.util.Map&lt;java.lang.String,java.lang.String&gt;</type>
         <name>appAttrs</name>
       </field>
@@ -4483,23 +4483,23 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
@@ -4517,27 +4517,27 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>missedKeys</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt;</type>
         <name>infos</name>
       </field>
@@ -4555,11 +4555,11 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>futIds</name>
       </field>
@@ -4577,83 +4577,83 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>writeVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>java.util.UUID</type>
         <name>nearNodeId</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>long</type>
         <name>nearFutId</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="11">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="1">
+      <field order="12">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt;</type>
         <name>vals</name>
       </field>
-      <field order="2">
+      <field order="13">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt;</type>
         <name>prevVals</name>
       </field>
-      <field order="3">
+      <field order="14">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>conflictVers</name>
       </field>
-      <field order="4">
+      <field order="15">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>ttls</name>
       </field>
-      <field order="5">
+      <field order="16">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>conflictExpireTimes</name>
       </field>
-      <field order="6">
+      <field order="17">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>nearTtls</name>
       </field>
-      <field order="7">
+      <field order="18">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>nearExpireTimes</name>
       </field>
-      <field order="8">
+      <field order="19">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>nearKeys</name>
       </field>
-      <field order="9">
+      <field order="20">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt;</type>
         <name>nearVals</name>
       </field>
-      <field order="10">
+      <field order="21">
         <type>java.util.List&lt;java.lang.Integer&gt;</type>
         <name>obsoleteIndexes</name>
       </field>
-      <field order="11">
+      <field order="22">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>updateCntrs</name>
       </field>
@@ -4671,23 +4671,23 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors</type>
         <name>errs</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>nearEvicted</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>int</type>
         <name>partId</name>
       </field>
@@ -4705,67 +4705,67 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.GridCacheOperation</type>
         <name>op</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.cache.CacheWriteSynchronizationMode</type>
         <name>syncMode</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>short</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="10">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="1">
+      <field order="11">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.CacheObject&gt;</type>
         <name>vals</name>
       </field>
-      <field order="2">
+      <field order="12">
         <type>java.util.List&lt;byte[]&gt;</type>
         <name>entryProcessorsBytes</name>
       </field>
-      <field order="3">
+      <field order="13">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>conflictVers</name>
       </field>
-      <field order="4">
+      <field order="14">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>conflictTtls</name>
       </field>
-      <field order="5">
+      <field order="15">
         <type>org.apache.ignite.internal.util.GridLongList</type>
         <name>conflictExpireTimes</name>
       </field>
-      <field order="6">
+      <field order="16">
         <type>java.util.List&lt;byte[]&gt;</type>
         <name>invokeArgsBytes</name>
       </field>
-      <field order="7">
+      <field order="17">
         <type>byte[]</type>
         <name>expiryPlcBytes</name>
       </field>
-      <field order="8">
+      <field order="18">
         <type>org.apache.ignite.internal.processors.cache.CacheEntryPredicate[]</type>
         <name>filter</name>
       </field>
@@ -4790,51 +4790,51 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>writeVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>java.util.UUID</type>
         <name>nearNodeId</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>long</type>
         <name>nearFutId</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="11">
         <type>org.apache.ignite.internal.processors.cache.KeyCacheObject</type>
         <name>key</name>
       </field>
-      <field order="1">
+      <field order="12">
         <type>org.apache.ignite.internal.processors.cache.CacheObject</type>
         <name>val</name>
       </field>
-      <field order="2">
+      <field order="13">
         <type>org.apache.ignite.internal.processors.cache.CacheObject</type>
         <name>prevVal</name>
       </field>
-      <field order="3">
+      <field order="14">
         <type>long</type>
         <name>updateCntr</name>
       </field>
@@ -4852,35 +4852,35 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors</type>
         <name>errs</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.GridCacheReturn</type>
         <name>ret</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>remapTopVer</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates</type>
         <name>nearUpdates</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>int</type>
         <name>partId</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>java.util.List&lt;java.util.UUID&gt;</type>
         <name>mapping</name>
       </field>
@@ -4898,39 +4898,39 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.GridCacheOperation</type>
         <name>op</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.cache.CacheWriteSynchronizationMode</type>
         <name>syncMode</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>short</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.KeyCacheObject</type>
         <name>key</name>
       </field>
-      <field order="1">
+      <field order="11">
         <type>org.apache.ignite.internal.processors.cache.CacheObject</type>
         <name>val</name>
       </field>
@@ -4948,47 +4948,47 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.GridCacheOperation</type>
         <name>op</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.cache.CacheWriteSynchronizationMode</type>
         <name>syncMode</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>short</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.KeyCacheObject</type>
         <name>key</name>
       </field>
-      <field order="1">
+      <field order="11">
         <type>org.apache.ignite.internal.processors.cache.CacheObject</type>
         <name>val</name>
       </field>
-      <field order="0">
+      <field order="12">
         <type>java.util.List&lt;byte[]&gt;</type>
         <name>invokeArgsBytes</name>
       </field>
-      <field order="1">
+      <field order="13">
         <type>byte[]</type>
         <name>entryProcBytes</name>
       </field>
@@ -5013,43 +5013,43 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.GridCacheOperation</type>
         <name>op</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.cache.CacheWriteSynchronizationMode</type>
         <name>syncMode</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>short</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.cache.KeyCacheObject</type>
         <name>key</name>
       </field>
-      <field order="1">
+      <field order="11">
         <type>org.apache.ignite.internal.processors.cache.CacheObject</type>
         <name>val</name>
       </field>
-      <field order="0">
+      <field order="12">
         <type>org.apache.ignite.internal.processors.cache.CacheEntryPredicate[]</type>
         <name>filter</name>
       </field>
@@ -5067,15 +5067,15 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>int</type>
         <name>partId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>long</type>
         <name>futId</name>
       </field>
@@ -5119,51 +5119,51 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>java.util.Collection&lt;java.lang.Boolean&gt;</type>
         <name>readersFlags</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="7">
+      <field order="11">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="8">
+      <field order="12">
         <type>long</type>
         <name>createTtl</name>
       </field>
-      <field order="9">
+      <field order="13">
         <type>long</type>
         <name>accessTtl</name>
       </field>
-      <field order="10">
+      <field order="14">
         <type>java.lang.String</type>
         <name>txLbl</name>
       </field>
@@ -5188,35 +5188,35 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>miniId</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt;</type>
         <name>entries</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>java.util.Collection&lt;java.lang.Integer&gt;</type>
         <name>invalidParts</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
@@ -5234,39 +5234,39 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.cache.KeyCacheObject</type>
         <name>key</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>int</type>
         <name>taskNameHash</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>long</type>
         <name>createTtl</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>long</type>
         <name>accessTtl</name>
       </field>
-      <field order="7">
+      <field order="11">
         <type>java.lang.String</type>
         <name>txLbl</name>
       </field>
@@ -5284,27 +5284,27 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.plugin.extensions.communication.Message</type>
         <name>res</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>byte</type>
         <name>flags</name>
       </field>
@@ -5322,27 +5322,27 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>int</type>
         <name>partId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.UUID</type>
         <name>primaryId</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors</type>
         <name>errs</name>
       </field>
@@ -5360,31 +5360,31 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>keys</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>vers</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>nearKeys</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>nearVers</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>long</type>
         <name>ttl</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
@@ -5460,15 +5460,15 @@
         <type>org.apache.ignite.internal.processors.cache.CacheObject</type>
         <name>val</name>
       </field>
-      <field order="0">
+      <field order="2">
         <type>long</type>
         <name>ttl</name>
       </field>
-      <field order="1">
+      <field order="3">
         <type>long</type>
         <name>expireTime</name>
       </field>
-      <field order="2">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
@@ -5570,15 +5570,15 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest</type>
         <name>payload</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Map&lt;java.lang.String,java.lang.String&gt;</type>
         <name>appAttrs</name>
       </field>
@@ -5622,19 +5622,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>routineId</name>
       </field>
-      <field order="0">
+      <field order="2">
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt;</type>
         <name>errs</name>
       </field>
-      <field order="1">
+      <field order="3">
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;</type>
         <name>updateCntrs</name>
       </field>
-      <field order="2">
+      <field order="4">
         <type>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
         <name>updateCntrsPerNode</name>
       </field>
@@ -5644,27 +5644,27 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>routineId</name>
       </field>
-      <field order="0">
+      <field order="2">
         <type>org.apache.ignite.internal.processors.continuous.StartRequestData</type>
         <name>startReqData</name>
       </field>
-      <field order="1">
+      <field order="3">
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt;</type>
         <name>errs</name>
       </field>
-      <field order="2">
+      <field order="4">
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;</type>
         <name>updateCntrs</name>
       </field>
-      <field order="3">
+      <field order="5">
         <type>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
         <name>updateCntrsPerNode</name>
       </field>
-      <field order="4">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage.Mode</type>
         <name>mode</name>
       </field>
@@ -5841,19 +5841,19 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>grpId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
@@ -5871,34 +5871,34 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>grpId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>futId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.List&lt;java.util.List&lt;java.util.UUID&gt;&gt;</type>
         <name>affAssignmentIds</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>java.util.List&lt;java.util.List&lt;java.util.UUID&gt;&gt;</type>
         <name>idealAffAssignment</name>
       </field>
-      <field order="4">
+      <field order="8">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap</type>
         <name>partMap</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>affAssignmentErrMsg</name>
       </field>
@@ -6076,27 +6076,27 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>grpId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>rebalanceId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap</type>
         <name>parts</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>long</type>
         <name>timeout</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>int</type>
         <name>workerId</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
@@ -6114,35 +6114,35 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>grpId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>rebalanceId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;</type>
         <name>last</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>java.util.Collection&lt;java.lang.Integer&gt;</type>
         <name>missed</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>java.util.Map&lt;java.lang.Integer,java.util.List&lt;org.apache.ignite.internal.processors.cache.GridCacheEntryInfo&gt;&gt;</type>
         <name>infos</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>int</type>
         <name>msgSize</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
@@ -6160,82 +6160,82 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId</type>
         <name>exchId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>lastVer</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="6">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap&gt;</type>
         <name>locParts</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Integer&gt;</type>
         <name>dupPartsData</name>
       </field>
-      <field order="2">
+      <field order="8">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap&gt;</type>
         <name>partCntrs</name>
       </field>
-      <field order="3">
+      <field order="9">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.util.UUID,java.util.Map&lt;org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair,java.lang.Long&gt;&gt;</type>
         <name>partHistSuppliers</name>
       </field>
-      <field order="4">
+      <field order="10">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,java.util.Set&lt;java.lang.Integer&gt;&gt;&gt;</type>
         <name>partsToReload</name>
       </field>
-      <field order="5">
+      <field order="11">
         <type>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
         <name>partsSizes</name>
       </field>
-      <field order="6">
+      <field order="12">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="7">
+      <field order="13">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt;</type>
         <name>errMsgs</name>
       </field>
-      <field order="8">
+      <field order="14">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>resTopVer</name>
       </field>
-      <field order="9">
+      <field order="15">
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage&gt;</type>
         <name>joinedNodeAff</name>
       </field>
-      <field order="10">
+      <field order="16">
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage&gt;</type>
         <name>idealAffDiff</name>
       </field>
-      <field order="11">
+      <field order="17">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="12">
+      <field order="18">
         <type>java.util.Map&lt;java.lang.Integer,int[]&gt;</type>
         <name>lostParts</name>
       </field>
@@ -6253,67 +6253,67 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId</type>
         <name>exchId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>lastVer</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="6">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap&gt;</type>
         <name>parts</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Integer&gt;</type>
         <name>dupPartsData</name>
       </field>
-      <field order="2">
+      <field order="8">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap&gt;</type>
         <name>partCntrs</name>
       </field>
-      <field order="3">
+      <field order="9">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
         <name>partsSizes</name>
       </field>
-      <field order="4">
+      <field order="10">
         <annotations>
           <org.apache.ignite.internal.Compress/>
         </annotations>
         <type>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
         <name>partHistCntrs</name>
       </field>
-      <field order="5">
+      <field order="11">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="6">
+      <field order="12">
         <type>boolean</type>
         <name>client</name>
       </field>
-      <field order="7">
+      <field order="13">
         <type>java.util.Collection&lt;java.lang.Integer&gt;</type>
         <name>grpsAffReq</name>
       </field>
-      <field order="8">
+      <field order="14">
         <type>long</type>
         <name>exchangeStartTime</name>
       </field>
-      <field order="9">
+      <field order="15">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage</type>
         <name>finishMsg</name>
       </field>
@@ -6331,19 +6331,19 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId</type>
         <name>exchId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>lastVer</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>byte</type>
         <name>flags</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId</type>
         <name>restoreExchId</name>
       </field>
@@ -6375,19 +6375,19 @@
         <type>java.lang.String</type>
         <name>schemaName</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>java.lang.String</type>
         <name>tblName</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.query.QueryField&gt;</type>
         <name>cols</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>boolean</type>
         <name>ifTblExists</name>
       </field>
-      <field order="3">
+      <field order="6">
         <type>boolean</type>
         <name>ifNotExists</name>
       </field>
@@ -6405,19 +6405,19 @@
         <type>java.lang.String</type>
         <name>schemaName</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>java.lang.String</type>
         <name>tblName</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.internal.cache.query.QueryIndexMessage</type>
         <name>idxMsg</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>boolean</type>
         <name>ifNotExists</name>
       </field>
-      <field order="3">
+      <field order="6">
         <type>int</type>
         <name>parallel</name>
       </field>
@@ -6435,11 +6435,11 @@
         <type>java.lang.String</type>
         <name>schemaName</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>java.lang.String</type>
         <name>idxName</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>boolean</type>
         <name>ifExists</name>
       </field>
@@ -6457,19 +6457,19 @@
         <type>java.lang.String</type>
         <name>schemaName</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>java.lang.String</type>
         <name>tblName</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>java.util.List&lt;java.lang.String&gt;</type>
         <name>cols</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>boolean</type>
         <name>ifTblExists</name>
       </field>
-      <field order="3">
+      <field order="6">
         <type>boolean</type>
         <name>ifExists</name>
       </field>
@@ -6487,15 +6487,15 @@
         <type>java.lang.String</type>
         <name>schemaName</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage&gt;</type>
         <name>entitiesMsgs</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>int</type>
         <name>qryParallelism</name>
       </field>
-      <field order="2">
+      <field order="5">
         <type>boolean</type>
         <name>sqlEscape</name>
       </field>
@@ -6523,19 +6523,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation</type>
         <name>op</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.lang.String</type>
         <name>errMsg</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>int</type>
         <name>errCode</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>depId</name>
       </field>
@@ -6545,19 +6545,19 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation</type>
         <name>op</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.lang.String</type>
         <name>errMsg</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>int</type>
         <name>errCode</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>boolean</type>
         <name>nop</name>
       </field>
@@ -6633,95 +6633,95 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>long</type>
         <name>id</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.lang.String</type>
         <name>cacheName</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.processors.cache.query.GridCacheQueryType</type>
         <name>type</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>java.lang.String</type>
         <name>clause</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>byte[]</type>
         <name>idxQryDescBytes</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>int</type>
         <name>limit</name>
       </field>
-      <field order="6">
+      <field order="10">
         <type>java.lang.String</type>
         <name>clsName</name>
       </field>
-      <field order="7">
+      <field order="11">
         <type>byte[]</type>
         <name>keyValFilterBytes</name>
       </field>
-      <field order="8">
+      <field order="12">
         <type>byte[]</type>
         <name>rdcBytes</name>
       </field>
-      <field order="9">
+      <field order="13">
         <type>byte[]</type>
         <name>transBytes</name>
       </field>
-      <field order="10">
+      <field order="14">
         <type>byte[]</type>
         <name>argsBytes</name>
       </field>
-      <field order="11">
+      <field order="15">
         <type>int</type>
         <name>pageSize</name>
       </field>
-      <field order="12">
+      <field order="16">
         <type>boolean</type>
         <name>incBackups</name>
       </field>
-      <field order="13">
+      <field order="17">
         <type>boolean</type>
         <name>cancel</name>
       </field>
-      <field order="14">
+      <field order="18">
         <type>boolean</type>
         <name>incMeta</name>
       </field>
-      <field order="15">
+      <field order="19">
         <type>boolean</type>
         <name>all</name>
       </field>
-      <field order="16">
+      <field order="20">
         <type>boolean</type>
         <name>keepBinary</name>
       </field>
-      <field order="17">
+      <field order="21">
         <type>int</type>
         <name>taskHash</name>
       </field>
-      <field order="18">
+      <field order="22">
         <type>int</type>
         <name>part</name>
       </field>
-      <field order="19">
+      <field order="23">
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>topVer</name>
       </field>
-      <field order="20">
+      <field order="24">
         <type>java.util.Collection&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject&gt;</type>
         <name>skipKeys</name>
       </field>
-      <field order="21">
+      <field order="25">
         <type>byte</type>
         <name>flags</name>
       </field>
@@ -6774,31 +6774,31 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>boolean</type>
         <name>finished</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>long</type>
         <name>reqId</name>
       </field>
-      <field order="2">
+      <field order="6">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
-      <field order="3">
+      <field order="7">
         <type>boolean</type>
         <name>fields</name>
       </field>
-      <field order="4">
+      <field order="8">
         <type>org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta</type>
         <name>idxQryMetadata</name>
       </field>
-      <field order="5">
+      <field order="9">
         <type>java.util.Collection&lt;byte[]&gt;</type>
         <name>dataBytes</name>
       </field>
@@ -7093,15 +7093,15 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>int</type>
         <name>cacheId</name>
       </field>
-      <field order="0">
+      <field order="4">
         <type>java.util.UUID</type>
         <name>routineId</name>
       </field>
-      <field order="1">
+      <field order="5">
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;</type>
         <name>updateCntrs</name>
       </field>
@@ -7119,7 +7119,7 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>org.apache.ignite.internal.processors.cache.version.GridCacheVersion</type>
         <name>ver</name>
       </field>
@@ -7292,27 +7292,27 @@
         <type>java.util.Map&lt;java.lang.String,java.lang.Integer&gt;</type>
         <name>fieldsScale</name>
       </field>
-      <field order="0">
+      <field order="13">
         <type>boolean</type>
         <name>preserveKeysOrder</name>
       </field>
-      <field order="1">
+      <field order="14">
         <type>boolean</type>
         <name>implicitPk</name>
       </field>
-      <field order="2">
+      <field order="15">
         <type>boolean</type>
         <name>fillAbsentPKsWithDefaults</name>
       </field>
-      <field order="3">
+      <field order="16">
         <type>int</type>
         <name>pkInlineSize</name>
       </field>
-      <field order="4">
+      <field order="17">
         <type>int</type>
         <name>affKeyInlineSize</name>
       </field>
-      <field order="5">
+      <field order="18">
         <type>boolean</type>
         <name>sql</name>
       </field>
@@ -8695,15 +8695,15 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage&gt;</type>
         <name>connectedClientsMetricsMsgs</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage&gt;</type>
         <name>serversFullMetricsMsgs</name>
       </field>
-      <field order="2">
+      <field order="8">
         <type>java.util.Set&lt;java.util.UUID&gt;</type>
         <name>clientNodeIds</name>
       </field>
@@ -8733,7 +8733,7 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.internal.ClusterMetricsSnapshot</type>
         <name>metricsMsg</name>
       </field>
@@ -8821,11 +8821,11 @@
         <type>org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage</type>
         <name>opCtxSnp</name>
       </field>
-      <field order="0">
+      <field order="6">
         <type>org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage</type>
         <name>creatorAddrMsg</name>
       </field>
-      <field order="1">
+      <field order="7">
         <type>java.util.UUID</type>
         <name>targetNodeId</name>
       </field>
@@ -9153,31 +9153,31 @@
         <type>org.apache.ignite.lang.IgniteUuid</type>
         <name>id</name>
       </field>
-      <field order="0">
+      <field order="1">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="2">
         <type>java.util.UUID</type>
         <name>initiatingNodeId</name>
       </field>
-      <field order="2">
+      <field order="3">
         <type>org.apache.ignite.cluster.ClusterState</type>
         <name>state</name>
       </field>
-      <field order="3">
+      <field order="4">
         <type>java.util.List&lt;org.apache.ignite.internal.processors.cache.StoredCacheData&gt;</type>
         <name>storedCfgs</name>
       </field>
-      <field order="4">
+      <field order="5">
         <type>byte[]</type>
         <name>baselineTopologyBytes</name>
       </field>
-      <field order="5">
+      <field order="6">
         <type>boolean</type>
         <name>forceChangeBaselineTopology</name>
       </field>
-      <field order="6">
+      <field order="7">
         <type>boolean</type>
         <name>forceDeactivation</name>
       </field>
@@ -9202,11 +9202,11 @@
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
         <name>lastAffChangedTopVer</name>
       </field>
-      <field order="0">
+      <field order="3">
         <type>java.util.UUID</type>
         <name>reqId</name>
       </field>
-      <field order="1">
+      <field order="4">
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
         <name>errMsg</name>
       </field>
@@ -9677,7 +9677,7 @@
         <type>org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet</type>
         <name>features</name>
       </field>
-      <field order="0">
+      <field order="2">
         <type>java.lang.String</type>
         <name>compName</name>
       </field>

@@ -126,7 +126,7 @@ class MessageSchemaReader implements AutoCloseable {
                     annotations.add(new AnnotationRepresentation(CustomMapper.class.getName(), mapper.value()));
 
                 schema.add(new FieldRepresentation(
-                    field.getAnnotation(Order.class).value(),
+                    schema.size(),
                     field.asType().toString(),
                     field.getSimpleName().toString(),
                     annotations
