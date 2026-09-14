@@ -1,7 +1,7 @@
 # Message table
 
 Exports registered Ignite messages to
-[`src/main/resources/messages/table.xml`](src/main/resources/messages/table.xml) for rolling upgrade review.
+[`src/main/resources/messages/table.xml`](src/main/resources/messages/table.xml) to control compatibility changes.
 The table contains message IDs, classes, ordered wire fields and serialization annotations.
 Logical `@Marshalled` fields are written separately from ordered wire fields.
 
@@ -15,24 +15,20 @@ change is compatible.
 Example:
 
 ```xml
-<message id="300" class="org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest">
+<message id="13013" class="org.apache.ignite.internal.processors.plugin.PluginsDataBagItem">
   <orderedFields>
     <field order="0">
-      <type>java.lang.String</type>
-      <name>schema</name>
-    </field>
-    <field order="7">
       <type>byte[]</type>
-      <name>paramsBytes</name>
+      <name>dataBytes</name>
     </field>
   </orderedFields>
   <marshalledFields>
     <field>
       <annotations>
-        <org.apache.ignite.internal.Marshalled>value=paramsBytes</org.apache.ignite.internal.Marshalled>
+        <org.apache.ignite.internal.Marshalled>value=dataBytes</org.apache.ignite.internal.Marshalled>
       </annotations>
-      <type>java.lang.Object[]</type>
-      <name>params</name>
+      <type>java.util.Map&lt;java.lang.String,java.io.Serializable&gt;</type>
+      <name>data</name>
     </field>
   </marshalledFields>
 </message>
@@ -40,9 +36,7 @@ Example:
 
 ## Generate
 
-Use JDK 17. Enable the `message-table` profile to update
-`modules/compatibility-check/src/main/resources/messages/table.xml` directly.
-To generate only the message table, run:
+Use JDK 17. Enable the `message-table` profile to update the table directly:
 
 ```sh
 ./mvnw -pl modules/compatibility-check -Pmessage-table process-classes
