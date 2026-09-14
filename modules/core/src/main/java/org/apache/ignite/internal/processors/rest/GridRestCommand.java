@@ -223,10 +223,7 @@ public enum GridRestCommand {
     WARM_UP("warmup"),
 
     /** probe. */
-    PROBE("probe"),
-
-    /** Client info. */
-    CLIENT("client");
+    PROBE("probe");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();
