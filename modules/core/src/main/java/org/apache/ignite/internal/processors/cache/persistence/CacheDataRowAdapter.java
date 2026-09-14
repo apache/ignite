@@ -167,6 +167,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int grpId = grp != null ? grp.groupId() : 0;
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
+        if (readCacheId)
+            flags |= FLAG_STORE_CACHE_ID;
+
         doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, null, skipVer);
     }
 
@@ -195,6 +198,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int itemId0 = itemId;
         ByteBuffer buff = pageBuff;
         IncompleteObject<?> incomplete = null;
+
+        if (readCacheId)
+            flags |= FLAG_STORE_CACHE_ID;
 
         for (;;) {
             long pageAddr = GridUnsafe.bufferAddress(buff);
@@ -249,6 +255,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int grpId = grp != null ? grp.groupId() : 0;
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
+        if (readCacheId)
+            flags |= FLAG_STORE_CACHE_ID;
+
         IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem.pageSize(),
             pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
@@ -299,9 +308,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     ) throws IgniteCheckedException {
         assert link != 0 : "link";
         assert key == null : "key";
-
-        if (readCacheId)
-            flags |= FLAG_STORE_CACHE_ID;
 
         long nextLink = link;
 

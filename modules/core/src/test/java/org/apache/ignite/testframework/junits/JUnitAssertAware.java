@@ -205,6 +205,11 @@ public class JUnitAssertAware {
         Assert.assertNotSame(msg, exp, actual);
     }
 
+    /** See {@link Assert#assertNotEquals(long, long)} javadocs. */
+    protected static void assertNotEquals(long unexpected, long actual) {
+        Assert.assertNotEquals(unexpected, actual);
+    }
+
     /** Check arrays equality as well as objects equality. */
     protected static void assertEqualsArraysAware(Object exp, Object actual) {
         assertEqualsArraysAware(null, exp, actual);

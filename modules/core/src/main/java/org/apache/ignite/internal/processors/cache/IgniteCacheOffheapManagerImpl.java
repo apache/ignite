@@ -1235,7 +1235,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY
         );
 
-        /** */
+        /**
+         * Threshold for row size when it's not safe to use milti-page in-place updates, but safe to use single-page
+         * in-place update.
+         */
         private final int updateValSizeThreshold;
 
         /** */
@@ -1271,6 +1274,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pCntr = grp.shared().logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                 new PartitionUpdateCounterDebugWrapper(partId, delegate) : new PartitionUpdateCounterErrorWrapper(partId, delegate);
 
+            // When the size does not exceed 3/4 of the page size, row is guaranteed to fit into a single page.
             updateValSizeThreshold = grp.shared().database().pageSize() * 3 / 4;
 
             if (cleaner == null)

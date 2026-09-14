@@ -133,7 +133,7 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
         // Size changed, can't do in-place update.
         cache.put(key, new byte[payload.length + 1]);
 
-        assertNotSame(link, link(ignite, key));
+        assertNotEquals(link, link(ignite, key));
     }
 
     /** */
@@ -340,7 +340,7 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
             assertEqualsArraysAware(payloads[i], cache.get(i));
             // Entry has the same payload, but link can be changed, since logical recovery applies records never using
             // in-place update.
-            assertNotSame(links[i], link(ignite, i));
+            assertNotEquals(links[i], link(ignite, i));
         }
     }
 
