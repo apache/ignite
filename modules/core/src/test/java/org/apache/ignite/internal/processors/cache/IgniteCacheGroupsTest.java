@@ -138,8 +138,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private static final int ASYNC_TIMEOUT = 5000;
 
-    /** Per-test default transaction timeout in ms, {@code 0} to use default. */
-    private long txTimeoutMs;
+    /** Per-test tx timeout on partition map exchange in ms, {@code 0} to use default. */
+    private long txTimeoutOnPartitionMapExchangeMs;
 
     /** */
     private CacheConfiguration[] ccfgs;
@@ -148,13 +148,13 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (txTimeoutMs > 0) {
+        if (txTimeoutOnPartitionMapExchangeMs > 0) {
             TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
 
             if (txCfg == null)
                 txCfg = new TransactionConfiguration();
 
-            txCfg.setDefaultTxTimeout(txTimeoutMs);
+            txCfg.setTxTimeoutOnPartitionMapExchange(txTimeoutOnPartitionMapExchangeMs);
 
             cfg.setTransactionConfiguration(txCfg);
         }
@@ -3726,10 +3726,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRestartsAndCacheCreateDestroy() throws Exception {
         final int SRVS = 5;
 
-        // Limit default transaction timeout so that implicit transactions of op threads
-        // stuck in partition exchange (awaiting partition release during concurrent cache destroy)
-        // are rolled back instead of hanging the test forever.
-        txTimeoutMs = SF.applyLB(60_000, 20_000);
+        // Transactions of the op threads are implicit, so the per-transaction default timeout does not apply
+        // (it is only tracked for explicit tx). Limit txTimeoutOnPartitionMapExchange instead: it forces the
+        // partition exchange triggered by a concurrent cache destroy to roll back the blocking implicit tx,
+        // otherwise the exchange (and the destroy) hang until the test watchdog fires.
+        txTimeoutOnPartitionMapExchangeMs = SF.applyLB(60_000, 20_000);
 
         startGrids(SRVS);
 
@@ -3924,7 +3925,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            txTimeoutMs = 0;
+            txTimeoutOnPartitionMapExchangeMs = 0;
 
             stop.set(true);
         }
