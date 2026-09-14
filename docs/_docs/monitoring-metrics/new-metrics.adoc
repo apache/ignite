@@ -526,6 +526,7 @@ Register name: `io.discovery`
 |SslEnabled | boolean | Whether SSL is enabled.
 |TotalProcessedMessages | integer | Total processed messages count.
 |TotalReceivedMessages | integer | Total received messages count.
+|SocketWriteTimeoutsCount | long | TCP discovery socket write timeouts count.
 |===
 
 NOTE: `Coordinator`, `CoordinatorSince`, `LocalPort`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only.
