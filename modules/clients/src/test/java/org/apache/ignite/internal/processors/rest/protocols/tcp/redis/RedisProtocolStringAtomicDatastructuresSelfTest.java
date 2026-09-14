@@ -31,7 +31,7 @@ public class RedisProtocolStringAtomicDatastructuresSelfTest extends RedisCommon
      */
     @Test
     public void testAtomicCommandsTopologyChange() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             int size = grid(0).cachesx().size();
 
             jedis.incr("key1");

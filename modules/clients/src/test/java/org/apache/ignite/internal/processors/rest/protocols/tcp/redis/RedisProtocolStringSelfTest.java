@@ -26,6 +26,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.jedis.params.SetParams;
 
 /**
  * Tests for String commands of Redis protocol.
@@ -36,7 +37,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testGet() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             jcache().put("getKey1", "getVal1");
 
             Assert.assertEquals("getVal1", jedis.get("getKey1"));
@@ -60,18 +61,18 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testGetSet() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             jcache().put("getSetKey1", "1");
 
-            Assert.assertEquals("1", jedis.getSet("getSetKey1", "0"));
+            Assert.assertEquals("1", jedis.setGet("getSetKey1", "0"));
             Assert.assertNull(jedis.get("getSetNonExistingKey"));
 
-            jcache().put("setDataTypeKey", new HashSet<String>(Arrays.asList("1", "2")));
+            jcache().put("setDataTypeKey", new HashSet<>(Arrays.asList("1", "2")));
 
             try {
-                jedis.getSet("setDataTypeKey", "0");
+                jedis.setGet("setDataTypeKey", "0");
 
-                assert false : "Exception has to be thrown!";
+                fail("Exception has to be thrown!");
             }
             catch (JedisDataException e) {
                 assertTrue(e.getMessage().startsWith("WRONGTYPE"));
@@ -84,7 +85,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testMGet() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             jcache().put("getKey1", "getVal1");
             jcache().put("getKey2", 0);
 
@@ -133,7 +134,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             values.add("getValue" + i);
         }
 
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             for (int i = 0; i < keysCnt; ++i)
                 jcache().put(keys.get(i), values.get(i));
 
@@ -158,7 +159,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testMGetDuplicates() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             jcache().put("key-A", "value-A");
             jcache().put("key-B", "value-B");
 
@@ -180,7 +181,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         long EXPIRE_MS = 1000L;
         int EXPIRE_SEC = 1;
 
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             jedis.set("setKey1", "1");
             jedis.set("setKey2".getBytes(), "b0".getBytes());
 
@@ -188,14 +189,14 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals("b0", jcache().get("setKey2"));
 
             // test options.
-            jedis.set("setKey1", "2", "nx");
-            jedis.set("setKey3", "3", "nx", "px", EXPIRE_MS);
+            jedis.set("setKey1", "2", SetParams.setParams().nx());
+            jedis.set("setKey3", "3", SetParams.setParams().nx().px(EXPIRE_MS));
 
             Assert.assertEquals("1", jcache().get("setKey1"));
             Assert.assertEquals("3", jcache().get("setKey3"));
 
-            jedis.set("setKey1", "2", "xx", "ex", EXPIRE_SEC);
-            jedis.set("setKey4", "4", "xx");
+            jedis.set("setKey1", "2", SetParams.setParams().xx().ex(EXPIRE_SEC));
+            jedis.set("setKey4", "4", SetParams.setParams().xx());
 
             Assert.assertEquals("2", jcache().get("setKey1"));
             Assert.assertNull(jcache().get("setKey4"));
@@ -213,7 +214,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testMSet() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             jedis.mset("setKey1", "1", "setKey2", "2");
 
             Assert.assertEquals("1", jcache().get("setKey1"));
@@ -226,7 +227,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testIncrDecr() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(1, (long)jedis.incr("newKeyIncr"));
             Assert.assertEquals(-1, (long)jedis.decr("newKeyDecr"));
 
@@ -310,7 +311,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testIncrDecrBy() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(2, (long)jedis.incrBy("newKeyIncrBy", 2));
             Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecrBy", 2));
 
@@ -367,7 +368,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testAppend() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(5, (long)jedis.append("appendKey1", "Hello"));
             Assert.assertEquals(12, (long)jedis.append("appendKey1", " World!"));
 
@@ -389,7 +390,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testStrlen() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(0, (long)jedis.strlen("strlenKeyNonExisting"));
 
             jcache().put("strlenKey", "abc");
@@ -414,7 +415,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testSetRange() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals(0, (long)jedis.setrange("setRangeKey1", 0, ""));
 
             jcache().put("setRangeKey2", "abc");
@@ -463,7 +464,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testGetRange() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals("", jedis.getrange("getRangeKeyNonExisting", 0, 0));
 
             jcache().put("getRangeKey", "This is a string");
@@ -493,7 +494,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     public void testDel() throws Exception {
         jcache().put("delKey1", "abc");
         jcache().put("delKey2", "abcd");
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             // Should return the number of actually deleted entries.
 //            Assert.assertEquals(0, (long)jedis.del("nonExistingDelKey"));
             Assert.assertEquals(2, (long)jedis.del("delKey1", "delKey2"));
@@ -507,7 +508,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     public void testExists() throws Exception {
         jcache().put("existsKey1", "abc");
         jcache().put("existsKey2", "abcd");
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertFalse(jedis.exists("nonExistingDelKey"));
             Assert.assertEquals(2, (long)jedis.exists("existsKey1", "existsKey2"));
         }
@@ -539,7 +540,7 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
 
     /** */
     private void testExpire(Expiration exp) throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             jedis.set("k1", "v1");
 
             Assert.assertTrue(jedis.exists("k1"));

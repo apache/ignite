@@ -22,8 +22,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.ClientSetInfoConfig;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.Jedis;
 
 /**
  * Common for all Redis tests.
@@ -38,8 +40,8 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
     /** Port. */
     protected static final int PORT = 6379;
 
-    /** Pool. */
-    protected static JedisPool pool;
+    /** Redis client factory. */
+    protected static RedisClientFactory redisClientFactory;
 
     /** Default Redis cache name. */
     private static final String DFLT_CACHE_NAME = "redis-ignite-internal-cache-0";
@@ -48,23 +50,19 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(gridCount());
 
-        JedisPoolConfig jedisPoolCfg = new JedisPoolConfig();
-
-        jedisPoolCfg.setMaxWaitMillis(20000);
-        jedisPoolCfg.setMaxIdle(100);
-        jedisPoolCfg.setMinIdle(1);
-        jedisPoolCfg.setNumTestsPerEvictionRun(10);
-        jedisPoolCfg.setTestOnBorrow(true);
-        jedisPoolCfg.setTestOnReturn(true);
-        jedisPoolCfg.setTestWhileIdle(true);
-        jedisPoolCfg.setTimeBetweenEvictionRunsMillis(30000);
-
-        pool = new JedisPool(jedisPoolCfg, HOST, PORT, 10000);
+        redisClientFactory = new RedisClientFactory(
+                new HostAndPort(HOST, PORT),
+                DefaultJedisClientConfig.builder()
+                    .connectionTimeoutMillis(10000)
+                    .socketTimeoutMillis(10000)
+                    .clientSetInfoConfig(ClientSetInfoConfig.DISABLED)
+                    .build()
+        );
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        pool.destroy();
+        redisClientFactory = null;
     }
 
     /** {@inheritDoc} */
@@ -82,7 +80,7 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(redisCfg);
 
-        CacheConfiguration ccfg = defaultCacheConfiguration();
+        CacheConfiguration<String, String> ccfg = defaultCacheConfiguration();
 
         ccfg.setStatisticsEnabled(true);
         ccfg.setIndexedTypes(String.class, String.class);
@@ -115,5 +113,32 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
         jcache().clear();
 
         assertTrue(jcache().localSize() == 0);
+    }
+
+    /**
+     * Lightweight Redis connection factory.
+     */
+    protected static class RedisClientFactory {
+        /** Redis address. */
+        private final HostAndPort addr;
+
+        /** Client config. */
+        private final DefaultJedisClientConfig cfg;
+
+        /**
+         * @param addr Redis address.
+         * @param cfg Client config.
+         */
+        RedisClientFactory(HostAndPort addr, DefaultJedisClientConfig cfg) {
+            this.addr = addr;
+            this.cfg = cfg;
+        }
+
+        /**
+         * @return Redis client.
+         */
+        Jedis getResource() {
+            return new Jedis(addr, cfg);
+        }
     }
 }

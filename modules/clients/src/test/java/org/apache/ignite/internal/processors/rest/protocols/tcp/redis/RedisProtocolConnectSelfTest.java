@@ -33,7 +33,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testPing() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals("PONG", jedis.ping());
         }
     }
@@ -43,7 +43,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testEcho() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             Assert.assertEquals("Hello, grid!", jedis.echo("Hello, grid!"));
         }
     }
@@ -53,7 +53,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
      */
     @Test
     public void testSelect() throws Exception {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             // connected to cache with index 0
             jedis.set("k0", "v0");
             Assert.assertEquals("v0", jedis.get("k0"));
@@ -64,7 +64,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals("v1", jedis.get("k1"));
             Assert.assertNull(jedis.get("k0"));
 
-            try (Jedis jedis2 = pool.getResource()) {
+            try (Jedis jedis2 = redisClientFactory.getResource()) {
                 // connected to cache with index 0
                 Assert.assertEquals("v0", jedis2.get("k0"));
                 Assert.assertNull(jedis2.get("k1"));
@@ -81,7 +81,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
     /** */
     @Test
     public void testSetGetLongString() {
-        try (Jedis jedis = pool.getResource()) {
+        try (Jedis jedis = redisClientFactory.getResource()) {
             for (int len : new int[] {8, 16, 32}) {
                 String key = "b" + len;
                 String val = RandomStringUtils.randomAscii((int)(len * KB));
