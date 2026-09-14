@@ -46,6 +46,7 @@ import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.GridDefaultBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.RawBinaryObjectExtractorTest;
+import org.apache.ignite.internal.binary.StringWriterSelfTest;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsOffheapNonCompactSelfTest;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompac
 import org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStreamTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
+import org.apache.ignite.internal.binary.streams.ThreadLocalAllocatorChunkShrinkTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataInMemoryTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataMoveLegacyFolderTest;
@@ -106,6 +108,7 @@ import org.junit.runners.Suite;
 
     BinaryTreeSelfTest.class,
     BinaryMarshallerSelfTest.class,
+    StringWriterSelfTest.class,
     BinaryObjectExceptionSelfTest.class,
 
     BinarySerialiedFieldComparatorSelfTest.class,
@@ -182,6 +185,8 @@ import org.junit.runners.Suite;
 
     RawBinaryObjectExtractorTest.class,
     CrossObjectReferenceSerializationTest.class,
+
+    ThreadLocalAllocatorChunkShrinkTest.class
 })
 public class IgniteBinaryObjectsTestSuite {
 }

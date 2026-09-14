@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
@@ -29,7 +28,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * User message wrapper.
  */
-@UseBinaryMarshaller
 public class GridIoUserMessage implements Message {
     /** Message body. */
     private Object body;

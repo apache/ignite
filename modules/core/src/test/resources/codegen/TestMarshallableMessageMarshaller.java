@@ -31,20 +31,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public final class TestMarshallableMessageMarshaller implements MessageMarshaller<TestMarshallableMessage> {
     /** */
-    private final Marshaller marshaller;
-
-    /** */
-    public TestMarshallableMessageMarshaller(Marshaller marshaller) {
-        this.marshaller = marshaller;
+    @Override public void marshal(TestMarshallableMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        msg.marshal(marsh);
     }
 
     /** */
-    @Override public void marshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        msg.marshal(marshaller);
-    }
-
-    /** */
-    @Override public void unmarshal(TestMarshallableMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
-        msg.unmarshal(marshaller, clsLdr);
+    @Override public void unmarshal(TestMarshallableMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        msg.unmarshal(marsh, clsLdr);
     }
 }

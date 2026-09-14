@@ -130,6 +130,17 @@ public class IgniteTableScan extends ProjectableFilterableTableScan implements S
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteTableScan copy(
+        RelTraitSet traitSet,
+        @Nullable RelDataType rowType,
+        @Nullable List<RexNode> projects,
+        @Nullable RexNode condition
+    ) {
+        return new IgniteTableScan(sourceId, getCluster(), traitSet, getTable(), rowType, projects, condition,
+            requiredColumns);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
         return new IgniteTableScan(sourceId, getCluster(), getTraitSet(), getTable(), rowType, projects, condition,
             requiredColumns);

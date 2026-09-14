@@ -24,6 +24,7 @@ import org.apache.ignite.internal.TestMarshalledMapMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
@@ -33,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public final class TestMarshalledMapMessageMarshaller implements MessageMarshaller<TestMarshalledMapMessage> {
     /** */
-    @Override public void marshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledMapMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.theMap != null && msg.mapKeys == null) {
             msg.mapKeys = msg.theMap.keySet();
             msg.mapVals = msg.theMap.values();
@@ -41,7 +42,7 @@ public final class TestMarshalledMapMessageMarshaller implements MessageMarshall
     }
 
     /** */
-    @Override public void unmarshal(TestMarshalledMapMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledMapMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.mapKeys != null) {

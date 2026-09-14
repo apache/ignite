@@ -207,26 +207,25 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
             Socket sock,
             InetSocketAddress remAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
         ) throws IOException, IgniteCheckedException {
             checkSegmented(remAddr, timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
 
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            return super.openSession(sock, remAddr, timeoutHelper);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
+            checkSegmented((InetSocketAddress)ses.socket().getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -239,15 +238,14 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
+            checkSegmented((InetSocketAddress)ses.socket().getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
     }
 

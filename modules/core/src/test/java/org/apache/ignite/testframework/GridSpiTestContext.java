@@ -74,7 +74,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Test SPI context.
@@ -552,7 +551,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
-            factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider(jdk(), jdk())});
+            factory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider()});
 
         return factory;
     }

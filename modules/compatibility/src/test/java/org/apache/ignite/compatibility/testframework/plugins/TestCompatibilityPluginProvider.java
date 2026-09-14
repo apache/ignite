@@ -23,8 +23,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -34,13 +34,26 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Creates {@link DisabledValidationProcessor} to allow for nodes with different
- * versions {@link IgniteNodeAttributes#ATTR_BUILD_VER} join to topology.
- */
+/** Provides node validation for compatibility tests. */
 public class TestCompatibilityPluginProvider implements PluginProvider {
     /** */
     private GridKernalContext kCtx;
+
+    /** Rolling upgrade support flag. */
+    private boolean rollingUpgradeSupported;
+
+    /** Auto-enable rolling upgrade flag. */
+    private final boolean autoEnableRollingUpgrade;
+
+    /** */
+    public TestCompatibilityPluginProvider() {
+        this(false);
+    }
+
+    /** @param autoEnableRollingUpgrade Auto-enable rolling upgrade flag. */
+    public TestCompatibilityPluginProvider(boolean autoEnableRollingUpgrade) {
+        this.autoEnableRollingUpgrade = autoEnableRollingUpgrade;
+    }
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -79,7 +92,8 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() throws IgniteCheckedException {
-        // No-op.
+        if (autoEnableRollingUpgrade && rollingUpgradeSupported)
+            kCtx.rollingUpgrade().enableVersionUpgrade();
     }
 
     /** {@inheritDoc} */
@@ -108,7 +122,11 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
             try {
                 Class.forName("org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor");
 
-                return new DisabledRollingUpgradeProcessor(kCtx);
+                rollingUpgradeSupported = true;
+
+                return autoEnableRollingUpgrade
+                    ? new RollingUpgradeProcessor(kCtx)
+                    : new DisabledRollingUpgradeProcessor(kCtx);
             }
             catch (ClassNotFoundException ignore) {
                 return new DisabledValidationProcessor(kCtx);

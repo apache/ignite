@@ -37,7 +37,9 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const ANNOTATION = 'org.apache.ignite.internal.Order';
+            const ORDER_USE = '@Order(';
+            const ORDER_IMPORT = 'import org.apache.ignite.internal.Order;';
+            const ORDER_PKG = 'package org.apache.ignite.internal;';
             const MARKER = '<!-- ignite-rolling-upgrade-check -->';
             const { owner, repo } = context.repo;
             const pr = context.payload.pull_request;
@@ -78,12 +80,17 @@ jobs:
                 const { data: blob } = await github.rest.git.getBlob({ owner, repo, file_sha: meta.sha });
                 content = Buffer.from(blob.content, blob.encoding).toString('utf8');
               }
-              return content.includes(ANNOTATION);
+              const lines = content.split(/\r?\n/);
+
+              return content.includes(ORDER_USE)
+                && (lines.includes(ORDER_IMPORT) || lines.includes(ORDER_PKG));
             };
 
             const hits = [];
             for (const [path, ref] of revisions) {
-              if (path.endsWith('.java') && await isProtected(path, ref)) hits.push(path);
+              if (path.endsWith('.java')
+                && !path.startsWith('modules/core/src/test/resources/codegen/')
+                && await isProtected(path, ref)) hits.push(path);
             }
 
             if (hits.length === 0) return;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -28,9 +29,13 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Message used to transfer {@link Throwable} objects.
+ * <p>
+ * Travels both transports, Communication and Discovery, and an error is an arbitrary user class the cluster may
+ * not know yet.
  */
 // TODO IGNITE-28912: move to a common package.
 @SuppressWarnings({"NullableProblems", "unused"})
+@JdkMarshalled
 public class ErrorMessage implements MarshallableMessage {
     /** Error bytes. */
     @Order(0)

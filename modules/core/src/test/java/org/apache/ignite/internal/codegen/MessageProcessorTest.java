@@ -413,24 +413,6 @@ public class MessageProcessorTest {
             .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshaller.java"));
     }
 
-    /** The self-marshalling step is called from the generated marshaller, statically. */
-    @Test
-    public void testSelfMarshallingMessage() {
-        Compilation compilation = compile("TestSelfMarshallingMessage.java");
-
-        assertThat(compilation).succeeded();
-
-        assertEquals(2, compilation.generatedSourceFiles().size());
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageSerializer.java"));
-
-        assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.TestSelfMarshallingMessageMarshaller")
-            .hasSourceEquivalentTo(javaFile("TestSelfMarshallingMessageMarshaller.java"));
-    }
-
     /**
      * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
      */
@@ -670,19 +652,8 @@ public class MessageProcessorTest {
 
         assertThat(compilation).failed();
 
-        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
-            "or SelfMarshallingMessage, nor declare @Marshalled fields");
-    }
-
-    /** A self-marshalling step of a {@code NonMarshallableMessage} would never run: it gets no marshaller to call it. */
-    @Test
-    public void testNonMarshallableSelfMarshallingFailed() {
-        Compilation compilation = compile("WrongSelfMarshallingMessage.java");
-
-        assertThat(compilation).failed();
-
-        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage " +
-            "or SelfMarshallingMessage, nor declare @Marshalled fields");
+        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage, " +
+            "nor declare @Marshalled fields");
     }
 
     /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
@@ -783,5 +754,22 @@ public class MessageProcessorTest {
         catch (Exception e) {
             throw new RuntimeException("Unable to locate JAR for: " + clazz.getName(), e);
         }
+    }
+
+    /** Verifies that {@code @JdkMarshalled} makes the generated companion take the JDK marshaller of the node. */
+    @Test
+    public void testJdkMarshalledMessage() {
+        Compilation compilation = compile("TestJdkMarshalledMessage.java", "TestJdkMarshalledChildMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestJdkMarshalledMessageMarshaller.java"));
+
+        // The pin belongs to the message, so a subclass marshals the inherited fields the same way.
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledChildMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestJdkMarshalledChildMessageMarshaller.java"));
     }
 }

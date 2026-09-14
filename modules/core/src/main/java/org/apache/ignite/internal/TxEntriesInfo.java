@@ -30,7 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
  * Diagnostic info block that dumps the state of cache entries for the given keys. Requested when a transaction
  * lock future waits for a remote node's response for too long.
  */
-@UseBinaryMarshaller
 public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo implements CacheIdAware {
     /** */
     @Order(0)

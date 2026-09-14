@@ -43,6 +43,7 @@ import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.PruneEmptyRules;
 import org.apache.calcite.rel.rules.SetOpToFilterRule;
 import org.apache.calcite.rel.rules.SortRemoveRule;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -61,10 +62,13 @@ import org.apache.ignite.internal.processors.query.calcite.rule.LogicalScanConve
 import org.apache.ignite.internal.processors.query.calcite.rule.MergeJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.RecursiveTableScanConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.RepeatUnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanScalarSubQueryRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyDistributedConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifySingleNodeConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UncollectConverterRule;
@@ -93,7 +97,8 @@ public enum PlannerPhase {
                 RuleSets.ofList(
                     CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
                     CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE,
-                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE
+                    CoreRules.JOIN_SUB_QUERY_TO_CORRELATE,
+                    TableFunctionScanScalarSubQueryRule.INSTANCE
                 )
             );
         }
@@ -281,7 +286,9 @@ public enum PlannerPhase {
 
                     ((RelRule<?>)PruneEmptyRules.SORT_FETCH_ZERO_INSTANCE).config
                         .withOperandSupplier(b ->
-                            b.operand(LogicalSort.class).anyInputs())
+                            b.operand(LogicalSort.class)
+                                .predicate(sort -> sort.fetch instanceof RexLiteral)
+                                .anyInputs())
                         .toRule(),
 
                     ExposeIndexRule.INSTANCE,
@@ -306,6 +313,8 @@ public enum PlannerPhase {
                     //CoreRules.WINDOW_REDUCE_EXPRESSIONS,
 
                     ValuesConverterRule.INSTANCE,
+                    RepeatUnionConverterRule.INSTANCE,
+                    RecursiveTableScanConverterRule.INSTANCE,
                     LogicalScanConverterRule.INDEX_SCAN,
                     LogicalScanConverterRule.TABLE_SCAN,
                     IndexCountRule.INSTANCE,

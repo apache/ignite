@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -267,6 +266,7 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContextWrapper;
 import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage;
@@ -290,8 +290,6 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
@@ -357,20 +355,9 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /**
      * Default plugin-purposes constructor.
      *
-     * @see #init(Marshaller, Marshaller)
      */
     public CoreMessagesProvider() {
         // No-op.
-    }
-
-    /**
-     * Constructor allowing not to call {@link #init(Marshaller, Marshaller)}.
-     *
-     * @param dfltMarsh Schema-less marshaller like {@link JdkMarshaller}.
-     * @param schemaAwareMarsh Schema-aware marshaller like {@link BinaryMarshaller}.
-     */
-    public CoreMessagesProvider(Marshaller dfltMarsh, Marshaller schemaAwareMarsh) {
-        init(dfltMarsh, schemaAwareMarsh);
     }
 
     /**
@@ -772,6 +759,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(IgniteCoreFeatureSet.class);
         register(IgnitePluginFeatureSet.class);
         register(RollingUpgradeClusterData.class);
+        register(IgniteNodeFeatureSet.class);
 
         withNoSchema(DownloadClassPathMessage.class);
         withNoSchema(DownloadClassPathFailureMessage.class);

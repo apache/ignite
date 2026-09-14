@@ -101,6 +101,9 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     /** Config path in container. */
     private static final String CFG_PATH = ROOT_DIR_PATH + "config/test-config.xml";
 
+    /** Common config path in container. */
+    private static final String COMMON_CFG_PATH = ROOT_DIR_PATH + "config/common-test-config.xml";
+
     /** */
     private static final Pattern CLUSTER_STATE_PATTERN = Pattern.compile("Cluster state: (ACTIVE|INACTIVE)");
 
@@ -197,6 +200,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
             withCreateContainerCmdModifier(cmd -> cmd.withUser(uidGid));
         }
 
+        withCopyFileToContainer(forClasspathResource("docker/common-test-config.xml"), COMMON_CFG_PATH);
         withCopyFileToContainer(forClasspathResource("docker/test-config.xml"), CFG_PATH);
         withCopyFileToContainer(forHostPath(testClassesJar().getAbsolutePath()), LIBS_DIR_PATH + "test-classes.jar");
 
@@ -260,6 +264,8 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
 
         if (!Boolean.TRUE.equals(resp.isRunning()) && resp.getExitCodeLong() != null && resp.getExitCodeLong() != 0)
             throw new IllegalStateException("Failed to clean and extract libs: " + err);
+
+        copyFileToContainer(forClasspathResource("docker/target-test-config.xml"), CFG_PATH);
 
         stopGraceful();
 

@@ -63,7 +63,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
 
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESSAGE_FACTORY;
 
 /**
@@ -434,7 +433,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.messageFactory(new IgniteMessageFactoryImpl(
-                new MessageFactoryProvider[] {new CoreMessagesProvider(jdk(), jdk()), GRID_TEST_MESSAGE_FACTORY})
+                new MessageFactoryProvider[] {new CoreMessagesProvider(), GRID_TEST_MESSAGE_FACTORY})
             );
 
             ctx.setLocalNode(node);

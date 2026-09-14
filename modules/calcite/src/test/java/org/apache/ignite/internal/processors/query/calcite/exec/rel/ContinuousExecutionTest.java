@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessag
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.junit.Before;
 import org.junit.Test;
@@ -100,8 +99,6 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
         super.setup();
 
         CalciteMessageFactory msgFactory = new CalciteMessageFactory();
-
-        msgFactory.init(Marshallers.jdk(), Marshallers.jdk());
 
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{msgFactory});

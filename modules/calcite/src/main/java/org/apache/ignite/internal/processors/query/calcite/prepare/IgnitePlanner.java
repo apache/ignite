@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -365,7 +366,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+        SqlValidator validator = createSqlValidator(catalogReader);
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
@@ -435,7 +436,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+            validator = createSqlValidator();
 
         return validator;
     }
@@ -648,7 +649,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 if (!condition.isA(SqlKind.OR))
                     return condition;
 
-                Set<RexNode> commonPart = new HashSet<>();
+                // Insertion order matters: RexNode hash codes are not stable across JVMs, so a hash-ordered set
+                // would make the order of the extracted conjuncts (and the resulting plan) differ from run to run.
+                Set<RexNode> commonPart = new LinkedHashSet<>();
 
                 List<RexNode> orOps = ((RexCall)condition).getOperands();
 
@@ -806,5 +809,22 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             super.checkCancel();
         }
+    }
+
+    /** */
+    private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
+        return new IgniteSqlValidator(
+            operatorTbl,
+            catalogReader,
+            typeFactory,
+            validatorCfg,
+            ctx.parameters(),
+            ctx.unwrap(IgniteSqlSemantics.class)
+        );
+    }
+
+    /** */
+    private SqlValidator createSqlValidator() {
+        return createSqlValidator(catalogReader);
     }
 }

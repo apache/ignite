@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -38,7 +37,6 @@ import org.apache.ignite.lang.IgniteUuid;
  * DHT cache lock response.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-@UseBinaryMarshaller
 public class GridDhtLockResponse extends GridDistributedLockResponse implements DeployableMessage {
     /** Mini future ID. */
     @Order(0)

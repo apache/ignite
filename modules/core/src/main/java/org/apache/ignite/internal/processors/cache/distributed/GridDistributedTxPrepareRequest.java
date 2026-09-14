@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -43,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-@UseBinaryMarshaller
 public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
@@ -91,12 +89,12 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** Transaction read set. */
     @Order(5)
     @GridToStringInclude
-    public Collection<IgniteTxEntry> reads;
+    public @Nullable Collection<IgniteTxEntry> reads;
 
     /** Transaction write entries. */
     @Order(6)
     @GridToStringInclude
-    public Collection<IgniteTxEntry> writes;
+    public @Nullable Collection<IgniteTxEntry> writes;
 
     /** Keys whose DHT version has to be verified on the remote node. */
     @Order(7)
@@ -148,7 +146,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         IgniteInternalTx tx,
         long timeout,
         @Nullable Collection<IgniteTxEntry> reads,
-        Collection<IgniteTxEntry> writes,
+        @Nullable Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
         boolean retVal,
         boolean last,
@@ -289,14 +287,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return Read set.
      */
-    public Collection<IgniteTxEntry> reads() {
+    public @Nullable Collection<IgniteTxEntry> reads() {
         return reads;
     }
 
     /**
      * @return Write entries.
      */
-    public Collection<IgniteTxEntry> writes() {
+    public @Nullable Collection<IgniteTxEntry> writes() {
         return writes;
     }
 

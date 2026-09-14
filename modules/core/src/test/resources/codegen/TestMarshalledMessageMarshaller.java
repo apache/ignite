@@ -32,23 +32,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public final class TestMarshalledMessageMarshaller implements MessageMarshaller<TestMarshalledMessage> {
     /** */
-    private final Marshaller marshaller;
-
-    /** */
-    public TestMarshalledMessageMarshaller(Marshaller marshaller) {
-        this.marshaller = marshaller;
-    }
-
-    /** */
-    @Override public void marshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void marshal(TestMarshalledMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         if (msg.data != null && msg.dataBytes == null)
-            msg.dataBytes = U.marshal(marshaller, msg.data);
+            msg.dataBytes = U.marshal(marsh, msg.data);
     }
 
     /** */
-    @Override public void unmarshal(TestMarshalledMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMarshalledMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         if (msg.dataBytes != null) {
-            msg.data = U.unmarshal(marshaller, msg.dataBytes, clsLdr);
+            msg.data = U.unmarshal(marsh, msg.dataBytes, clsLdr);
 
             msg.dataBytes = null;
         }

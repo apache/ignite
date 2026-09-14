@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptUtil;
@@ -220,7 +221,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Nullable RelOptListener planLsnr,
         String... disabledRules
     ) {
-        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, null, ImmutableSet.copyOf(disabledRules));
+        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, null, ImmutableSet.copyOf(disabledRules), null);
     }
 
     /** */
@@ -229,10 +230,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Collection<IgniteSchema> schemas,
         @Nullable RelOptListener planLsnr,
         Collection<Object> params,
-        Collection<String> disabledRules
+        Collection<String> disabledRules,
+        @Nullable Context additionalCtx
     ) {
+        Context parentCtx = Contexts.of(baseQueryContext(schemas), planLsnr);
+
         PlanningContext.Builder ctxBuilder = PlanningContext.builder()
-            .parentContext(Contexts.of(baseQueryContext(schemas), planLsnr))
+            .parentContext(additionalCtx == null ? parentCtx : Contexts.chain(parentCtx, additionalCtx))
             .query(sql);
 
         if (params != null)
@@ -843,6 +847,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Nullable private RelOptListener planListener;
 
         /** */
+        @Nullable private Context additionalCtx;
+
+        /** */
         public TestPlanningContextBuilder query(String qry) {
             query = qry;
             return this;
@@ -885,8 +892,14 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** */
+        public TestPlanningContextBuilder additionalCtx(Context additionalCtx) {
+            this.additionalCtx = additionalCtx;
+            return this;
+        }
+
+        /** */
         PlanningContext build() {
-            return plannerCtx(query, schemas, planListener, params, disabledRules);
+            return plannerCtx(query, schemas, planListener, params, disabledRules, additionalCtx);
         }
     }
 

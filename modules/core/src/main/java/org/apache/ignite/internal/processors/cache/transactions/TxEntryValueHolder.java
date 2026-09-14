@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -36,7 +35,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
  */
-@UseBinaryMarshaller
 public class TxEntryValueHolder implements Message {
     /** Stored value. */
     @Order(0)
