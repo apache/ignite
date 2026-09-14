@@ -110,8 +110,6 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
             publicSchema,
             nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
 
-        // It needs to return like: CATALOG_RETURNS_SIZE * IS_NOT_NULL_SELECTIVITY, but it will be done at future
-        // Need to adopt: IGNITE-23969
         assertPlan(SELECT
             + "  FROM catalog_sales"
             + "      ,catalog_returns"
@@ -119,7 +117,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
             + "    AND cs_order_number = cr_order_number"
             + "    AND cs_promo_sk IS NOT NULL",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * IS_NOT_NULL_SELECTIVITY)));
     }
 
     /** */
@@ -213,14 +211,14 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
             publicSchema,
             nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * EQUALS_SELECTIVITY)));
 
-        // Need to adopt: IGNITE-23969
         assertPlan(SELECT
                 + "  FROM date_dim"
                 + "      ,catalog_returns"
                 + "  WHERE cr_returned_date_sk = d_date_sk"
                 + "    AND d_moy > 6",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * EQUALS_SELECTIVITY)));
+            nodeRowCount("IgniteHashJoin",
+                approximatelyEqual(CATALOG_RETURNS_SIZE * EQUALS_SELECTIVITY * COMPARISON_SELECTIVITY)));
     }
 
     /** */
@@ -297,7 +295,8 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  WHERE cr_returned_date_sk = d_date_sk",
             publicSchema,
             nodeOrAnyChild(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-                .and(nodeRowCount("IgniteCorrelatedNestedLoopJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)))));
+                .and(nodeRowCount("IgniteCorrelatedNestedLoopJoin",
+                    approximatelyEqual(CATALOG_RETURNS_SIZE * EQUALS_SELECTIVITY)))));
     }
 
     /**

@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Test;
 
@@ -24,12 +25,28 @@ import static org.apache.logging.log4j.Level.DEBUG;
 
 /** Calcite litmus related tests. */
 public class LitmusCheckIntegrationTest extends AbstractBasicIntegrationTest {
+    /** Logger whose {@link Level#DEBUG} severity enables additional Calcite litmus checks. */
+    private static final String PLANNER_LOG_NAME = "org.apache.calcite.plan.RelOptPlanner";
+
+    /** Level of the planner logger before the test. */
+    private Level prevLevel;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        prevLevel = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(PLANNER_LOG_NAME).getLevel();
+
         // Some calcite litmus related checks are enabled only with DEBUG severity logging.
-        setCalciteLoggerDebugLevel();
+        Configurator.setLevel(PLANNER_LOG_NAME, DEBUG);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        // Restore the level, otherwise every test executed later in the same JVM plans with the litmus checks enabled.
+        Configurator.setLevel(PLANNER_LOG_NAME, prevLevel);
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -47,15 +64,5 @@ public class LitmusCheckIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertQuery("SELECT distinct p.c1 FROM t11 cd left join " +
             "t22 p ON p.c2 = cd.c2 WHERE cd.c2 = 1;").resultSize(0).check();
-    }
-
-    /**
-     * Sets the log level for logger ({@link #log}) to {@link Level#DEBUG}. The log level will be reset to
-     * default in {@link #afterTest()}.
-     */
-    protected final void setCalciteLoggerDebugLevel() {
-        String logName = "org.apache.calcite.plan.RelOptPlanner";
-
-        Configurator.setLevel(logName, DEBUG);
     }
 }

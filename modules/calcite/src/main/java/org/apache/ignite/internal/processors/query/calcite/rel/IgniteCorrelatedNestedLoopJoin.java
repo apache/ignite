@@ -39,6 +39,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount.correlatedJoinRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
 
 /**
@@ -259,7 +261,7 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
 
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
-        // condition selectivity already counted within the external filter
-        return super.estimateRowCount(mq) / mq.getSelectivity(this, getCondition());
+        // The join condition is already applied by the correlated filter of the right input.
+        return Util.first(correlatedJoinRowCount(mq, this), 1D);
     }
 }

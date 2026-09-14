@@ -98,6 +98,29 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
     /** */
     @Nullable public static Double joinRowCount(RelMetadataQuery mq, Join rel) {
+        return joinRowCount(mq, rel, 1.0);
+    }
+
+    /**
+     * Estimates row count of a correlated nested loop join.
+     *
+     * <p>The join condition of such a join is pushed to its right input as a correlated filter, so the right input
+     * is already reduced by the condition selectivity. To get the same estimate as for the equivalent uncorrelated
+     * join, the row count and the percentage of original rows of the right input are restored before estimation.
+     */
+    @Nullable public static Double correlatedJoinRowCount(RelMetadataQuery mq, Join rel) {
+        Double selectivity = mq.getSelectivity(rel, rel.getCondition());
+
+        double rightAdjust = selectivity == null || selectivity <= 0.0 ? 1.0 : 1.0 / selectivity;
+
+        return joinRowCount(mq, rel, rightAdjust);
+    }
+
+    /**
+     * @param rightAdjust Multiplier restoring estimates of the right input when the join condition has already been
+     *      applied to it (see {@link #correlatedJoinRowCount(RelMetadataQuery, Join)}), {@code 1.0} otherwise.
+     */
+    @Nullable private static Double joinRowCount(RelMetadataQuery mq, Join rel, double rightAdjust) {
         if (!rel.getJoinType().projectsRight()) {
             // Create a RexNode representing the selectivity of the
             // semijoin filter and pass it to getSelectivity
@@ -118,7 +141,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         // Row count estimates of 0 will be rounded up to 1.
         // So, use maxRowCount where the product is very small.
         final Double leftRowCnt = mq.getRowCount(rel.getLeft());
-        final Double rightRowCnt = mq.getRowCount(rel.getRight());
+        final Double rightRowCnt = multiply(mq.getRowCount(rel.getRight()), rightAdjust);
 
         if (leftRowCnt == null || rightRowCnt == null)
             return null;
@@ -223,7 +246,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 }
                 else {
                     baseRowCnt = leftRowCnt;
-                    percentageAdjustment = mq.getPercentageOriginalRows(rel.getRight());
+                    percentageAdjustment = rightPercentage(mq, rel, rightAdjust);
                 }
             }
             else if (rel.getJoinType() == JoinRelType.LEFT) {
@@ -250,7 +273,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
                 baseRowCnt = leftRowCnt * selectivity;
-                percentageAdjustment = mq.getPercentageOriginalRows(rel.getRight());
+                percentageAdjustment = rightPercentage(mq, rel, rightAdjust);
             }
             else if (rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.RIGHT) {
                 baseRowCnt = leftRowCnt;
@@ -297,6 +320,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
         }
 
         return baseRowCnt * percentageAdjustment * postFiltrationAdjustment;
+    }
+
+    /** Percentage of original rows of the right input, see {@link #joinRowCount(RelMetadataQuery, Join, double)}. */
+    @Nullable private static Double rightPercentage(RelMetadataQuery mq, Join rel, double rightAdjust) {
+        Double percentage = mq.getPercentageOriginalRows(rel.getRight());
+
+        return percentage == null ? null : Math.min(1.0, percentage * rightAdjust);
     }
 
     /** */
