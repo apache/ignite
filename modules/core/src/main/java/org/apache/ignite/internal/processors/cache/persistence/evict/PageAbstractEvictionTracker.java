@@ -91,8 +91,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /**
      * @param pageIdx Page index.
      * @param tryLock {@code true} to acquire entry locks non-blockingly, skipping contended or already-held entries
-     *      (e.g. when size-aware eviction runs while the current thread already holds entry locks), avoiding a
-     *      lock-ordering deadlock.
+     * (e.g. when size-aware eviction runs while the current thread already holds entry locks), avoiding a
+     * lock-ordering deadlock.
      * @return true if at least one data row has been evicted
      * @throws IgniteCheckedException If failed.
      */

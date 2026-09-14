@@ -612,7 +612,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /**
      * @return {@code true} when the region has effectively no headroom left (allocated pages reached the configured
-     *      max), so a fresh {@code allocateDataPage} could no longer grow it.
+     * max), so a fresh {@code allocateDataPage} could no longer grow it.
      */
     private boolean regionEffectivelyFull() {
         return pageMem.loadedPages() >= dataRegion.config().getMaxSize() / pageMem.systemPageSize();
@@ -665,7 +665,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throw e;
         }
         catch (IgniteOutOfMemoryException e) {
-            // OOM (reserve path reports it as a critical failure) must not be mislabelled as free-list corruption.
             throw e;
         }
         catch (Throwable t) {
@@ -723,7 +722,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
         }
         catch (IgniteOutOfMemoryException e) {
-            // OOM (reserve path reports it as a critical failure) must not be mislabelled as free-list corruption.
             throw e;
         }
         catch (RuntimeException e) {
@@ -758,6 +756,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /**
      * Take a page and write row on it.
+     * <p>
+     * The page is acquired via {@link #takePageWithReserve}: the size-aware reserve (RowStore.addRow/addRows) only
+     * bounds the shared empty-pages counter and does not pin pages to this thread, so a concurrent writer may consume
+     * them before this allocation — the lazy re-reserve closes that gap instead of falling straight to a raw
+     * {@code allocateDataPage}. Reached from the BPlusTree.invoke row-creation closure, this re-reserve is an inline
+     * demand-eviction that removes entries with no data-tree page locks held (the search releases the read lock before
+     * the closure; the leaf write lock is taken only afterwards — see BPlusTree.invokeDown). The entry-level tryLock
+     * only skips contended/self-held entries and never blocks; the residual risk is that the TTL expiration worker can
+     * still deadlock via cross-tree lock ordering (data->pending here vs pending->data there) — a known limitation.
      *
      * @param row Row to write.
      * @param written Written size.
@@ -766,13 +773,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @throws IgniteCheckedException If failed.
      */
     private int writeSinglePage(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        // Lazy re-reserve: the size-aware reserve (RowStore.addRow/addRows) only bounds the shared empty-pages counter
-        // and does not pin pages to this thread, so a concurrent writer may consume them before this allocation. The
-        // re-reserve below is an inline demand-eviction; reached from the BPlusTree.invoke row-creation closure, it
-        // removes entries with no data-tree page locks held (search releases the read lock before the closure, and the
-        // leaf write lock is taken only afterwards - see BPlusTree.invokeDown). Entry-level tryLock only skips
-        // contended/self-held entries and never blocks; the residual cross-tree data->pending vs pending->data
-        // lock-ordering risk with the TTL expiration worker is documented (known limitation, see design notes).
         AbstractDataPageIO initIo = null;
 
         long pageId = takePageWithReserve(row.size() - written, row, statHolder);

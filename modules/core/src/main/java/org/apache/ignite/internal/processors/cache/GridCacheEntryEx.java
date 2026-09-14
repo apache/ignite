@@ -216,7 +216,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if entry could be evicted.
      * @throws IgniteCheckedException In case of error.
      */
-    default boolean evictInternal(
+    public default boolean evictInternal(
         GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter,
         boolean evictOffheap,

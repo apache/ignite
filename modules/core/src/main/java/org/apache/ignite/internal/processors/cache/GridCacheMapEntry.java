@@ -3687,9 +3687,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public boolean evictInternal(
         GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter,
-        boolean evictOffheap)
-        throws IgniteCheckedException {
-
+        boolean evictOffheap
+    ) throws IgniteCheckedException {
         return evictInternal(obsoleteVer, filter, evictOffheap, false);
     }
 

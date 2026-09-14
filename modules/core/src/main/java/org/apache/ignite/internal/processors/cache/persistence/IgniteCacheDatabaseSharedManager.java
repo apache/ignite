@@ -1256,13 +1256,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteOutOfMemoryException If the region does not have enough free space for the new entry.
      */
     private void checkOomThreshold(DataRegion region, DataRegionConfiguration regCfg, int dataRowSize) throws IgniteOutOfMemoryException {
-        long memorySize = regCfg.getMaxSize();
-
         PageMemory pageMem = region.pageMemory();
 
-        CacheFreeList freeList = freeListMap.get(regCfg.getName());
-
-        long nonEmptyPages = (pageMem.loadedPages() - freeList.emptyDataPages());
+        long nonEmptyPages = (pageMem.loadedPages() - freeListMap.get(regCfg.getName()).emptyDataPages());
 
         // The maximum number of pages that can be allocated (memorySize / systemPageSize)
         // should be greater or equal to pages required for inserting a new entry plus
@@ -1271,7 +1267,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // Note that not the whole page can be used to storing links,
         // see PagesListNodeIO and PagesListMetaIO#getCapacity(), so we pessimistically multiply the result on 1.5,
         // in any way, the number of required pages is less than 1 percent.
-        boolean oomThreshold = (memorySize / pageMem.systemPageSize()) <
+        boolean oomThreshold = (regCfg.getMaxSize() / pageMem.systemPageSize()) <
             ((double)dataRowSize / pageMem.pageSize() + nonEmptyPages * (8.0 * 1.5 / pageMem.pageSize() + 1) + 256 /*one page per bucket*/);
 
         if (oomThreshold)
@@ -1300,17 +1296,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) throws IgniteOutOfMemoryException, IgniteCheckedException {
         PageMemory pageMem = region.pageMemory();
 
-        long pageSize = pageMem.pageSize();
-
         // Maximum payload bytes that a single data page can hold for a fragmented row.
-        long pagePayload = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
+        long pagePayload = pageMem.pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
         // A row that fits into the steady-state empty-pages pool is satisfied by normal threshold eviction, so the
         // fast path is a single comparison (no page computation, free-list lookup or page-memory reads on the hot
         // small-put path).
-        long maxFastRowBytes = regCfg.getEmptyPagesPoolSize() * pagePayload;
-
-        if (dataRowSize <= maxFastRowBytes)
+        if (dataRowSize <= regCfg.getEmptyPagesPoolSize() * pagePayload)
             return;
 
         CacheFreeList freeList = freeListMap.get(regCfg.getName());
@@ -1336,22 +1328,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // lazy re-reserve in AbstractFreeList#writeSinglePage.
         long emptyPages = freeList.emptyDataPages();
 
-        long headroom = totalPages - pageMem.loadedPages();
-
-        long pagesThreshold = (long)(totalPages * regCfg.getEvictionThreshold());
-
         // The gate reuses evictionThreshold as a regime boundary, not as "when to start eviction" (evictionRequired()
         // does that, stopping on emptyPages >= poolSize; no last 10% of page memory is left unusable). Below the
         // threshold the region has real slack, so a row fitting into the combined spare space is satisfied without
         // eviction (live, e.g. short-TTL, entries are not evicted just to accumulate empty pages). At/above it headroom
         // is no longer trustworthy (concurrent writers could commit the same headroom - TOCTOU), so only real empty
         // pages are counted and eviction is driven below.
-        boolean evictionRegime = pageMem.loadedPages() >= pagesThreshold;
+        boolean evictionRegime = pageMem.loadedPages() >= (long)(totalPages * regCfg.getEvictionThreshold());
 
         // Fast path: skip eviction when (a) enough real empty pages exist, or (b) below the regime with enough spare
         // space to grow into. This is a snapshot and only necessary, not sufficient: under contention two writers can
         // both pass and consume the same pages - recovered by the lazy re-reserve in AbstractFreeList#writeSinglePage.
-        if (emptyPages >= requiredPages || (!evictionRegime && emptyPages + headroom >= requiredPages))
+        if (emptyPages >= requiredPages || (!evictionRegime && emptyPages + (totalPages - pageMem.loadedPages()) >= requiredPages))
             return;
 
         PageEvictionTracker evictionTracker = region.evictionTracker();

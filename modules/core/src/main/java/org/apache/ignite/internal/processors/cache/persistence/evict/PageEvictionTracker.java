@@ -58,8 +58,8 @@ public interface PageEvictionTracker extends LifecycleAware {
      * not possible, as some of them can be used by active transactions.
      *
      * @param tryLock {@code true} to acquire entry locks non-blockingly, skipping contended or already-held entries
-     *      instead of blocking on them. Used by size-aware eviction that may run while the current thread already
-     *      holds other entry locks, to avoid a lock-ordering deadlock.
+     * instead of blocking on them. Used by size-aware eviction that may run while the current thread already
+     * holds other entry locks, to avoid a lock-ordering deadlock.
      * @return {@code true} if at least one data row has been evicted.
      * @throws IgniteCheckedException In case of page memory error.
      */
