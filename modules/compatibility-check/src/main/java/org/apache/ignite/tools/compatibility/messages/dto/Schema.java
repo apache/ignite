@@ -15,25 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tools.compatibility.messages;
+package org.apache.ignite.tools.compatibility.messages.dto;
 
 import java.util.List;
 
 /**
  * Class schema, independent of message registration and output format.
  *
- * @param jdkMarshalled Whether the class uses the JDK marshaller.
+ * @param annotations Class serialization annotations.
  * @param fields Ordered wire fields followed by sorted marshalling descriptions.
  */
-record Schema(boolean jdkMarshalled, List<Schema.Field> fields) {
-    /**
-     * Field description.
-     *
-     * @param type Field type.
-     * @param name Field name.
-     * @param serialization Serialization annotations.
-     */
-    record Field(String type, String name, String serialization) {
-        // No-op.
-    }
+public record Schema(List<AnnotationRepresentation> annotations, List<FieldRepresentation> fields) {
+    // No-op.
 }

@@ -17,27 +17,18 @@
 
 package org.apache.ignite.tools.compatibility.messages;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
+import org.apache.ignite.tools.compatibility.messages.dto.MessageRepresentation;
 
 /** Exports the actual production registrations and their compiled field descriptions. */
 public class MessageTable {
-    /** No instances. */
-    private MessageTable() {
-        // No-op.
-    }
-
     /**
      * Exports the registered messages to an XML file.
      *
@@ -49,17 +40,6 @@ public class MessageTable {
             throw new IllegalArgumentException("Expected: output-file");
 
         Path out = Path.of(args[0]).toAbsolutePath();
-        String table = new XmlTableWriter().write(collect());
-
-        Files.createDirectories(out.getParent());
-        Files.writeString(out, table);
-    }
-
-    /**
-     * @return Collected message table.
-     * @throws Exception If any registered message cannot be described.
-     */
-    static Data collect() throws IOException {
         MessageFactoryProvider[] providers = {
             new CoreMessagesProvider(),
             new GridH2ValueMessageFactory(),
@@ -67,36 +47,10 @@ public class MessageTable {
             new ZkMessageFactory()
         };
 
-        IgniteMessageFactoryImpl<?, ?> factory = new IgniteMessageFactoryImpl<>(providers);
-        short[] ids = factory.registeredDirectTypes();
+        List<MessageRepresentation> msgs = new MessageTableCollector(providers).collect();
+        String table = new XmlTableWriter().toXml(providers, msgs);
 
-        Arrays.sort(ids);
-
-        List<MessageRepresentation> msgs = new ArrayList<>();
-
-        try (MessageSchema schemas = new MessageSchema()) {
-            for (short id : ids) {
-                Message msg = factory.create(id);
-
-                Class<?> cls = msg.getClass();
-
-                msgs.add(new MessageRepresentation(id, cls.getName(), schemas.read(cls)));
-            }
-        }
-
-        List<String> providerNames = Arrays.stream(providers).map(p -> p.getClass().getName()).toList();
-
-        return new Data(providerNames, msgs);
+        Files.createDirectories(out.getParent());
+        Files.writeString(out, table);
     }
-
-    /**
-     * Collected input for XML serialization.
-     *
-     * @param providers Provider class names.
-     * @param messages Messages sorted by registered ID.
-     */
-    record Data(List<String> providers, List<MessageRepresentation> messages) {
-        // No-op.
-    }
-
 }

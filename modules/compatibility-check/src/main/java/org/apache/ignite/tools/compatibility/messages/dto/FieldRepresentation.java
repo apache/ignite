@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tools.compatibility.messages;
+package org.apache.ignite.tools.compatibility.messages.dto;
+
+import java.util.List;
 
 /**
- * Registered message and its class schema.
+ * Field description.
  *
- * @param id Registered message ID.
- * @param className Message class name.
- * @param schema Class schema.
+ * @param type Field type.
+ * @param name Field name.
+ * @param annotations Serialization annotations.
  */
-record MessageRepresentation(short id, String className, Schema schema) {
+public record FieldRepresentation(String type, String name, List<AnnotationRepresentation> annotations) {
     // No-op.
 }

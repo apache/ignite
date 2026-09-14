@@ -25,29 +25,36 @@ import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 /** Verifies field schemas read from bytecode rather than compiler output resources. */
-public class MessageSchemaTest {
+public class MessageSchemaReaderTest {
     /** CLASS annotations are invisible to reflection but available through the compiler model. */
     @Test public void testCompiledFields() throws Exception {
         assertNull(Parent.class.getDeclaredField("id").getAnnotation(Order.class));
 
-        try (MessageSchema reader = new MessageSchema()) {
-            assertEquals(true, reader.read(Child.class).jdkMarshalled());
-            assertEquals(false, reader.read(Empty.class).jdkMarshalled());
+        try (MessageSchemaReader reader = new MessageSchemaReader()) {
+            assertEquals(List.of(new AnnotationRepresentation(JdkMarshalled.class.getName(), null)),
+                reader.read(Child.class).annotations());
+            assertEquals(List.of(), reader.read(Empty.class).annotations());
             assertEquals(List.of(
-                new Schema.Field("int", "id", ""),
-                new Schema.Field("byte[]", "id", "compress nio"),
-                new Schema.Field(Mode.class.getCanonicalName(), "mode", "customMapper=example.Mapper"),
-                new Schema.Field("java.util.List<? extends java.lang.String>", "payload", "marshalled value=id")
+                new FieldRepresentation("int", "id", List.of()),
+                new FieldRepresentation("byte[]", "id", List.of(
+                    new AnnotationRepresentation(Compress.class.getName(), null),
+                    new AnnotationRepresentation(NioField.class.getName(), null))),
+                new FieldRepresentation(Mode.class.getCanonicalName(), "mode",
+                    List.of(new AnnotationRepresentation(CustomMapper.class.getName(), "example.Mapper"))),
+                new FieldRepresentation("java.util.List<? extends java.lang.String>", "payload",
+                    List.of(new AnnotationRepresentation(Marshalled.class.getName(), "value=id")))
             ), reader.read(Child.class).fields());
             assertEquals(List.of(), reader.read(Empty.class).fields());
             assertEquals(List.of(), reader.read(Unannotated.class).fields());
-            assertEquals(List.of(new Schema.Field("int", "id", "")), reader.read(InvalidOrder.class).fields());
+            assertEquals(List.of(new FieldRepresentation("int", "id", List.of())), reader.read(InvalidOrder.class).fields());
         }
     }
 

@@ -5,8 +5,10 @@ Fields, including inherited fields and CLASS-retained annotations, are read from
 compiled classes through the JDK compiler API. No node or intermediate manifest is needed.
 XML is written using the JDK StAX API without an external XML library.
 Each `field` contains separate `type` and `name` elements, plus an optional
-`serialization` element for serialization annotations. The message-level
-`jdkMarshalled` marker is a separate element.
+`annotations` element containing serialization annotations. Marker annotations
+use empty elements; annotations with values contain text. Annotation names are
+sorted for stable output. Annotation element names are fully qualified class names. Message-level annotations use the same `annotations` structure directly inside
+`message`.
 Element position defines field order; field indexes and declaring classes are omitted.
 
 Coverage: core, indexing, Calcite and ZooKeeper providers. Unregistered classes and

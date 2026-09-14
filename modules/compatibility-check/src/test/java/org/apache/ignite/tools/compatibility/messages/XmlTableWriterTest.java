@@ -18,6 +18,15 @@
 package org.apache.ignite.tools.compatibility.messages;
 
 import java.util.List;
+import org.apache.ignite.internal.Compress;
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.CustomMapper;
+import org.apache.ignite.internal.JdkMarshalled;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.MessageRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.Schema;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -26,27 +35,38 @@ import static org.junit.Assert.assertEquals;
 public class XmlTableWriterTest {
     /** Writes synthetic data, including escaping, field order, empty fields and a message-level marker. */
     @Test public void testWrite() throws Exception {
-        MessageTable.Data data = new MessageTable.Data(List.of("example.Provider"), List.of(
-            new MessageRepresentation((short)7, "example.Message", new Schema(true, List.of(
-                new Schema.Field("java.util.List<java.lang.String>", "names", "customMapper=A&B"),
-                new Schema.Field("int", "count", "")
+        List<MessageRepresentation> msgs = List.of(
+            new MessageRepresentation((short)7, "example.Message", new Schema(
+                List.of(new AnnotationRepresentation(JdkMarshalled.class.getName(), null)), List.of(
+                    new FieldRepresentation("java.util.List<java.lang.String>", "names", List.of(
+                        new AnnotationRepresentation("since", "2.18.0"),
+                        new AnnotationRepresentation(CustomMapper.class.getName(), "A&B"),
+                        new AnnotationRepresentation(Compress.class.getName(), null)
+                    )),
+                    new FieldRepresentation("int", "count", List.of())
             ))),
-            new MessageRepresentation((short)8, "example.Empty", new Schema(false, List.of()))
-        ));
+            new MessageRepresentation((short)8, "example.Empty", new Schema(List.of(), List.of()))
+        );
 
         String expected = """
             <?xml version="1.0" encoding="UTF-8"?>
             <messageTable formatVersion="1">
               <providers>
-                <provider>example.Provider</provider>
+                <provider>org.apache.ignite.internal.CoreMessagesProvider</provider>
               </providers>
               <messages>
                 <message id="7" class="example.Message">
-                  <jdkMarshalled/>
+                  <annotations>
+                    <org.apache.ignite.internal.JdkMarshalled/>
+                  </annotations>
                   <field>
                     <type>java.util.List&lt;java.lang.String&gt;</type>
                     <name>names</name>
-                    <serialization>customMapper=A&amp;B</serialization>
+                    <annotations>
+                      <org.apache.ignite.internal.Compress/>
+                      <org.apache.ignite.internal.CustomMapper>A&amp;B</org.apache.ignite.internal.CustomMapper>
+                      <since>2.18.0</since>
+                    </annotations>
                   </field>
                   <field>
                     <type>int</type>
@@ -59,6 +79,6 @@ public class XmlTableWriterTest {
             </messageTable>
             """;
 
-        assertEquals(expected, new XmlTableWriter().write(data));
+        assertEquals(expected, new XmlTableWriter().toXml(new MessageFactoryProvider[] {new CoreMessagesProvider()}, msgs));
     }
 }

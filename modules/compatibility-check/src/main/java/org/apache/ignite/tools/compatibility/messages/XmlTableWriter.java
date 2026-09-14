@@ -18,21 +18,27 @@
 package org.apache.ignite.tools.compatibility.messages;
 
 import java.io.StringWriter;
+import java.util.Comparator;
 import java.util.List;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.MessageRepresentation;
 
 /** Writes collected message metadata as XML with fixed formatting. */
 class XmlTableWriter {
     /**
      * Writes collected metadata without loading message classes.
      *
-     * @param data Collected table.
+     * @param providers Message registration providers.
+     * @param msgs Collected messages.
      * @return XML table.
      * @throws XMLStreamException If XML writing fails.
      */
-    String write(MessageTable.Data data) throws XMLStreamException {
+    String toXml(MessageFactoryProvider[] providers, List<MessageRepresentation> msgs) throws XMLStreamException {
         StringWriter out = new StringWriter();
         XMLStreamWriter xml = XMLOutputFactory.newDefaultFactory().createXMLStreamWriter(out);
 
@@ -43,9 +49,9 @@ class XmlTableWriter {
             xml.writeAttribute("formatVersion", "1");
             xml.writeCharacters("\n  ");
 
-            writeProviders(xml, data.providers());
+            writeProviders(xml, providers);
 
-            writeMessages(xml, data.messages());
+            writeMessages(xml, msgs);
 
             xml.writeEndElement();
             xml.writeCharacters("\n");
@@ -59,13 +65,13 @@ class XmlTableWriter {
     }
 
     /** Writes provider names. */
-    private static void writeProviders(XMLStreamWriter xml, List<String> providers) throws XMLStreamException {
+    private static void writeProviders(XMLStreamWriter xml, MessageFactoryProvider[] providers) throws XMLStreamException {
         xml.writeStartElement("providers");
 
-        for (String provider : providers) {
+        for (MessageFactoryProvider provider : providers) {
             xml.writeCharacters("\n    ");
             xml.writeStartElement("provider");
-            xml.writeCharacters(provider);
+            xml.writeCharacters(provider.getClass().getName());
             xml.writeEndElement();
         }
 
@@ -93,12 +99,9 @@ class XmlTableWriter {
         xml.writeAttribute("id", Short.toString(msg.id()));
         xml.writeAttribute("class", msg.className());
 
-        if (msg.schema().jdkMarshalled()) {
-            xml.writeCharacters("\n      ");
-            xml.writeEmptyElement("jdkMarshalled");
-        }
+        writeAnnotations(xml, msg.schema().annotations(), "      ");
 
-        for (Schema.Field field : msg.schema().fields()) {
+        for (FieldRepresentation field : msg.schema().fields()) {
             xml.writeCharacters("\n      ");
 
             xml.writeStartElement("field");
@@ -113,18 +116,41 @@ class XmlTableWriter {
             xml.writeCharacters(field.name());
             xml.writeEndElement();
 
-            if (!field.serialization().isEmpty()) {
-                xml.writeCharacters("\n        ");
-                xml.writeStartElement("serialization");
-                xml.writeCharacters(field.serialization());
-                xml.writeEndElement();
-            }
+            writeAnnotations(xml, field.annotations(), "        ");
 
             xml.writeCharacters("\n      ");
             xml.writeEndElement();
         }
 
         xml.writeCharacters("\n    ");
+        xml.writeEndElement();
+    }
+
+    /** Writes class or field annotations in name order using fixed indentation. */
+    private static void writeAnnotations(XMLStreamWriter xml, List<AnnotationRepresentation> annotations, String indent)
+        throws XMLStreamException {
+        if (annotations.isEmpty())
+            return;
+
+        xml.writeCharacters("\n" + indent);
+        xml.writeStartElement("annotations");
+
+        List<AnnotationRepresentation> sorted = annotations.stream()
+            .sorted(Comparator.comparing(AnnotationRepresentation::name)).toList();
+
+        for (AnnotationRepresentation annotation : sorted) {
+            xml.writeCharacters("\n" + indent + "  ");
+
+            if (annotation.value() == null)
+                xml.writeEmptyElement(annotation.name());
+            else {
+                xml.writeStartElement(annotation.name());
+                xml.writeCharacters(annotation.value());
+                xml.writeEndElement();
+            }
+        }
+
+        xml.writeCharacters("\n" + indent);
         xml.writeEndElement();
     }
 }

@@ -38,10 +38,12 @@ import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.tools.compatibility.messages.Schema.Field;
+import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
+import org.apache.ignite.tools.compatibility.messages.dto.Schema;
 
 /** Reads CLASS-retained field annotations from compiled classes using the public JDK compiler API. */
-class MessageSchema implements AutoCloseable {
+class MessageSchemaReader implements AutoCloseable {
     /** Classpath reader, closed after exporting the table. */
     private final StandardJavaFileManager files;
 
@@ -49,7 +51,7 @@ class MessageSchema implements AutoCloseable {
     private final JavacTask task;
 
     /** Creates a reader for the same classpath as the registration providers. */
-    MessageSchema() {
+    MessageSchemaReader() {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
         if (compiler == null)
@@ -81,11 +83,14 @@ class MessageSchema implements AutoCloseable {
             curMsgType = (TypeElement)task.getTypes().asElement(curMsgType.getSuperclass());
         }
 
-        List<Field> schema = new ArrayList<>();
+        List<FieldRepresentation> schema = new ArrayList<>();
 
-        boolean jdkMarshalled = hierarchy.stream().anyMatch(t -> t.getAnnotation(JdkMarshalled.class) != null);
+        List<AnnotationRepresentation> clsAnnotations = new ArrayList<>();
 
-        List<Field> marshalledFields = new ArrayList<>();
+        if (hierarchy.stream().anyMatch(t -> t.getAnnotation(JdkMarshalled.class) != null))
+            clsAnnotations.add(new AnnotationRepresentation(JdkMarshalled.class.getName(), null));
+
+        List<FieldRepresentation> marshalledFields = new ArrayList<>();
 
         for (TypeElement t : hierarchy) {
             List<VariableElement> fields = new ArrayList<>(ElementFilter.fieldsIn(t.getEnclosedElements()));
@@ -94,9 +99,9 @@ class MessageSchema implements AutoCloseable {
                 Marshalled ann = field.getAnnotation(Marshalled.class);
 
                 if (ann != null) {
-                    marshalledFields.add(new Field(field.asType().toString(), field.getSimpleName().toString(),
-                        "marshalled" + (!ann.value().isEmpty() ? " value=" + ann.value()
-                        : " keys=" + ann.keys() + " values=" + ann.values())));
+                    marshalledFields.add(new FieldRepresentation(field.asType().toString(), field.getSimpleName().toString(),
+                        List.of(new AnnotationRepresentation(Marshalled.class.getName(), !ann.value().isEmpty() ? "value=" + ann.value()
+                        : "keys=" + ann.keys() + " values=" + ann.values()))));
                 }
             }
 
@@ -104,30 +109,30 @@ class MessageSchema implements AutoCloseable {
             fields.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
             for (VariableElement field : fields) {
-                String serialization = "";
+                List<AnnotationRepresentation> annotations = new ArrayList<>();
 
                 if (field.getAnnotation(Compress.class) != null)
-                    serialization += " compress";
+                    annotations.add(new AnnotationRepresentation(Compress.class.getName(), null));
 
                 if (field.getAnnotation(NioField.class) != null)
-                    serialization += " nio";
+                    annotations.add(new AnnotationRepresentation(NioField.class.getName(), null));
 
                 CustomMapper mapper = field.getAnnotation(CustomMapper.class);
 
                 if (mapper != null)
-                    serialization += " customMapper=" + mapper.value();
+                    annotations.add(new AnnotationRepresentation(CustomMapper.class.getName(), mapper.value()));
 
-                schema.add(new Field(field.asType().toString(), field.getSimpleName().toString(), serialization.trim()));
+                schema.add(new FieldRepresentation(field.asType().toString(), field.getSimpleName().toString(), annotations));
             }
         }
 
-        marshalledFields.sort(Comparator.comparing(Field::type)
-            .thenComparing(Field::name)
-            .thenComparing(Field::serialization));
+        marshalledFields.sort(Comparator.comparing(FieldRepresentation::type)
+            .thenComparing(FieldRepresentation::name)
+            .thenComparing(field -> field.annotations().get(0).value()));
 
         schema.addAll(marshalledFields);
 
-        return new Schema(jdkMarshalled, schema);
+        return new Schema(clsAnnotations, schema);
     }
 
     /** {@inheritDoc} */

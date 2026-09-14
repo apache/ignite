@@ -415,7 +415,9 @@
       <field>
         <type>java.lang.Object[]</type>
         <name>params</name>
-        <serialization>marshalled value=paramsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=paramsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="301" class="org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse">
@@ -433,7 +435,9 @@
       </field>
     </message>
     <message id="302" class="org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage">
-      <jdkMarshalled/>
+      <annotations>
+        <org.apache.ignite.internal.JdkMarshalled/>
+      </annotations>
       <field>
         <type>byte[]</type>
         <name>errBytes</name>
@@ -519,7 +523,9 @@
       <field>
         <type>java.lang.Object</type>
         <name>val</name>
-        <serialization>marshalled value=serialized</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=serialized</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="308" class="org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping">
@@ -625,7 +631,9 @@
     <message id="5000" class="org.apache.ignite.internal.managers.communication.CompressedMessage">
     </message>
     <message id="5001" class="org.apache.ignite.internal.util.ErrorMessage">
-      <jdkMarshalled/>
+      <annotations>
+        <org.apache.ignite.internal.JdkMarshalled/>
+      </annotations>
       <field>
         <type>byte[]</type>
         <name>errBytes</name>
@@ -707,12 +715,16 @@
       <field>
         <type>java.lang.Object</type>
         <name>consistentId</name>
-        <serialization>marshalled value=consistentIdBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=consistentIdBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.String,java.lang.Object&gt;</type>
         <name>attrs</name>
-        <serialization>marshalled value=attrsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=attrsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="5005" class="org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket">
@@ -723,17 +735,23 @@
       <field>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message&gt;</type>
         <name>joiningNodeData</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message&gt;</type>
         <name>commonData</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message&gt;&gt;</type>
         <name>nodeSpecificData</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
     </message>
     <message id="5006" class="org.apache.ignite.internal.util.GridByteArrayList">
@@ -1022,7 +1040,9 @@
       <field>
         <type>java.util.Map&lt;java.lang.String,java.lang.Object&gt;</type>
         <name>clientNodeAttrs</name>
-        <serialization>marshalled value=clientNodeAttrsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=clientNodeAttrsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="5705" class="org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage">
@@ -2103,7 +2123,9 @@
       <field>
         <type>java.lang.Object</type>
         <name>affKey</name>
-        <serialization>marshalled value=affKeyBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=affKeyBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="6500" class="org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage">
@@ -2388,7 +2410,9 @@
       <field>
         <type>org.apache.ignite.internal.binary.BinaryMetadata</type>
         <name>metadata</name>
-        <serialization>marshalled value=metadataBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=metadataBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="6514" class="org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage">
@@ -2827,7 +2851,9 @@
       <field>
         <type>java.util.Map&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey,java.util.List&lt;org.apache.ignite.internal.processors.cache.transactions.TxLock&gt;&gt;</type>
         <name>nearTxKeyLocks</name>
-        <serialization>marshalled keys=nearTxKeysArr values=locksArr</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>keys=nearTxKeysArr values=locksArr</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10005" class="org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey">
@@ -2896,7 +2922,9 @@
       <field>
         <type>java.util.Collection&lt;org.apache.ignite.internal.util.typedef.T2&lt;javax.cache.processor.EntryProcessor&lt;java.lang.Object,java.lang.Object,java.lang.Object&gt;,java.lang.Object[]&gt;&gt;</type>
         <name>entryProcessorsCol</name>
-        <serialization>marshalled value=transformClosBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=transformClosBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10007" class="org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder">
@@ -3489,7 +3517,9 @@
       <field>
         <type>java.util.Map&lt;org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey,org.apache.ignite.internal.processors.cache.version.GridCacheVersion&gt;</type>
         <name>owned</name>
-        <serialization>marshalled keys=ownedKeys values=ownedVals</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>keys=ownedKeys values=ownedVals</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10017" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse">
@@ -4748,7 +4778,9 @@
       <field>
         <type>java.util.List&lt;java.lang.Object&gt;</type>
         <name>entryProcessors</name>
-        <serialization>marshalled value=entryProcessorsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=entryProcessorsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10306" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest">
@@ -4969,7 +5001,9 @@
       <field>
         <type>javax.cache.processor.EntryProcessor&lt;java.lang.Object,java.lang.Object,java.lang.Object&gt;</type>
         <name>entryProc</name>
-        <serialization>marshalled value=entryProcBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=entryProcBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10310" class="org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest">
@@ -5142,7 +5176,9 @@
       <field>
         <type>java.util.Map&lt;org.apache.ignite.internal.processors.cache.KeyCacheObject,java.lang.Boolean&gt;</type>
         <name>keyMap</name>
-        <serialization>marshalled keys=keys values=readersFlags</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>keys=keys values=readersFlags</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10314" class="org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse">
@@ -5640,7 +5676,9 @@
       </field>
     </message>
     <message id="10333" class="org.apache.ignite.internal.processors.cache.StoredCacheData">
-      <jdkMarshalled/>
+      <annotations>
+        <org.apache.ignite.internal.JdkMarshalled/>
+      </annotations>
       <field>
         <type>byte[]</type>
         <name>ccfgBytes</name>
@@ -5664,12 +5702,16 @@
       <field>
         <type>java.util.Collection&lt;org.apache.ignite.cache.QueryEntity&gt;</type>
         <name>qryEntities</name>
-        <serialization>marshalled value=qryEntitiesBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=qryEntitiesBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.configuration.CacheConfiguration&lt;?,?&gt;</type>
         <name>ccfg</name>
-        <serialization>marshalled value=ccfgBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=ccfgBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10334" class="org.apache.ignite.internal.processors.cache.CacheNodeCommonDiscoveryData">
@@ -5734,7 +5776,9 @@
       <field>
         <type>org.apache.ignite.configuration.CacheConfiguration</type>
         <name>cacheCfg</name>
-        <serialization>marshalled value=cacheCfgBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=cacheCfgBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10336" class="org.apache.ignite.internal.processors.cache.CacheGroupData">
@@ -5785,7 +5829,9 @@
       <field>
         <type>org.apache.ignite.configuration.CacheConfiguration&lt;?,?&gt;</type>
         <name>cacheCfg</name>
-        <serialization>marshalled value=cacheCfgBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=cacheCfgBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10600" class="org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest">
@@ -5854,7 +5900,9 @@
       <field>
         <type>org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap</type>
         <name>partMap</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
@@ -6133,7 +6181,9 @@
       <field>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap&gt;</type>
         <name>locParts</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Integer&gt;</type>
@@ -6142,17 +6192,23 @@
       <field>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap&gt;</type>
         <name>partCntrs</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.util.UUID,java.util.Map&lt;org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair,java.lang.Long&gt;&gt;</type>
         <name>partHistSuppliers</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.util.UUID,java.util.Map&lt;java.lang.Integer,java.util.Set&lt;java.lang.Integer&gt;&gt;&gt;</type>
         <name>partsToReload</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
@@ -6165,7 +6221,9 @@
       <field>
         <type>java.util.Map&lt;java.util.UUID,org.apache.ignite.internal.util.ErrorMessage&gt;</type>
         <name>errMsgs</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion</type>
@@ -6216,7 +6274,9 @@
       <field>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap&gt;</type>
         <name>parts</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Integer,java.lang.Integer&gt;</type>
@@ -6225,17 +6285,23 @@
       <field>
         <type>java.util.Map&lt;java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap&gt;</type>
         <name>partCntrs</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
         <name>partsSizes</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Integer,java.util.Map&lt;java.lang.Integer,java.lang.Long&gt;&gt;</type>
         <name>partHistCntrs</name>
-        <serialization>compress</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Compress/>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.internal.util.ErrorMessage</type>
@@ -6668,27 +6734,37 @@
       <field>
         <type>java.lang.Object[]</type>
         <name>args</name>
-        <serialization>marshalled value=argsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=argsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.internal.processors.cache.query.IndexQueryDesc</type>
         <name>idxQryDesc</name>
-        <serialization>marshalled value=idxQryDescBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=idxQryDescBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.lang.IgniteBiPredicate&lt;java.lang.Object,java.lang.Object&gt;</type>
         <name>keyValFilter</name>
-        <serialization>marshalled value=keyValFilterBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=keyValFilterBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.lang.IgniteClosure&lt;?,?&gt;</type>
         <name>trans</name>
-        <serialization>marshalled value=transBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=transBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.lang.IgniteReducer&lt;java.lang.Object,java.lang.Object&gt;</type>
         <name>rdc</name>
-        <serialization>marshalled value=rdcBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=rdcBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10912" class="org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse">
@@ -6735,7 +6811,9 @@
       <field>
         <type>java.util.Collection&lt;java.lang.Object&gt;</type>
         <name>data</name>
-        <serialization>marshalled value=dataBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=dataBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10913" class="org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest">
@@ -7162,7 +7240,9 @@
       <field>
         <type>java.util.Map&lt;java.lang.String,java.lang.Object&gt;</type>
         <name>dfltFieldValues</name>
-        <serialization>marshalled value=dfltFieldValuesBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=dfltFieldValuesBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10934" class="org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage">
@@ -7245,7 +7325,9 @@
       <field>
         <type>java.util.Map&lt;java.lang.String,java.lang.Object&gt;</type>
         <name>dfltFieldValues</name>
-        <serialization>marshalled value=dfltFieldValuesBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=dfltFieldValuesBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10935" class="org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo">
@@ -7366,7 +7448,9 @@
       <field>
         <type>java.lang.Object</type>
         <name>topic</name>
-        <serialization>marshalled value=topicBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=topicBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10939" class="org.apache.ignite.internal.GridEventConsumeHandler">
@@ -7433,7 +7517,9 @@
       <field>
         <type>org.apache.ignite.lang.IgnitePredicate&lt;org.apache.ignite.cluster.ClusterNode&gt;</type>
         <name>prjPred</name>
-        <serialization>marshalled value=prjPredBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=prjPredBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10942" class="org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem">
@@ -7464,7 +7550,9 @@
       <field>
         <type>org.apache.ignite.lang.IgnitePredicate&lt;org.apache.ignite.cluster.ClusterNode&gt;</type>
         <name>prjPred</name>
-        <serialization>marshalled value=prjPredBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=prjPredBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="10943" class="org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData">
@@ -7589,22 +7677,30 @@
       <field>
         <type>java.util.Map&lt;? extends java.io.Serializable,? extends java.io.Serializable&gt;</type>
         <name>jobAttrs</name>
-        <serialization>marshalled value=jobAttrsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=jobAttrsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Object,java.lang.Object&gt;</type>
         <name>sesAttrs</name>
-        <serialization>marshalled value=sesAttrsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=sesAttrsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.compute.ComputeJob</type>
         <name>job</name>
-        <serialization>marshalled value=jobBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=jobBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.lang.IgnitePredicate&lt;org.apache.ignite.cluster.ClusterNode&gt;</type>
         <name>topPred</name>
-        <serialization>marshalled value=topPredBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=topPredBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="11202" class="org.apache.ignite.internal.GridJobExecuteResponse">
@@ -7643,17 +7739,23 @@
       <field>
         <type>java.lang.Object</type>
         <name>res</name>
-        <serialization>marshalled value=resBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=resBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>java.util.Map&lt;java.lang.Object,java.lang.Object&gt;</type>
         <name>jobAttrs</name>
-        <serialization>marshalled value=jobAttrsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=jobAttrsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.IgniteException</type>
         <name>gridEx</name>
-        <serialization>marshalled value=gridExBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=gridExBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="11203" class="org.apache.ignite.internal.GridJobSiblingsRequest">
@@ -7722,7 +7824,9 @@
       <field>
         <type>java.lang.Object</type>
         <name>res</name>
-        <serialization>marshalled value=resBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=resBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="11209" class="org.apache.ignite.spi.collision.jobstealing.JobStealingRequest">
@@ -7732,7 +7836,9 @@
       </field>
     </message>
     <message id="11210" class="org.apache.ignite.internal.util.distributed.SingleNodeMessage">
-      <jdkMarshalled/>
+      <annotations>
+        <org.apache.ignite.internal.JdkMarshalled/>
+      </annotations>
       <field>
         <type>java.util.UUID</type>
         <name>processId</name>
@@ -7784,7 +7890,9 @@
       <field>
         <type>org.apache.ignite.internal.GridTopicMessage</type>
         <name>topicMsg</name>
-        <serialization>nio</serialization>
+        <annotations>
+          <org.apache.ignite.internal.NioField/>
+        </annotations>
       </field>
       <field>
         <type>boolean</type>
@@ -7969,7 +8077,9 @@
       <field>
         <type>org.apache.ignite.stream.StreamReceiver&lt;?,?&gt;</type>
         <name>rcvr</name>
-        <serialization>marshalled value=rcvrBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=rcvrBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="11900" class="org.apache.ignite.internal.processors.cluster.CacheMetricsMessage">
@@ -8863,7 +8973,9 @@
       </field>
     </message>
     <message id="12208" class="org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo">
-      <jdkMarshalled/>
+      <annotations>
+        <org.apache.ignite.internal.JdkMarshalled/>
+      </annotations>
       <field>
         <type>byte[]</type>
         <name>metadataBytes</name>
@@ -8879,7 +8991,9 @@
       <field>
         <type>org.apache.ignite.internal.binary.BinaryMetadata</type>
         <name>metadata</name>
-        <serialization>marshalled value=metadataBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=metadataBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="12209" class="org.apache.ignite.internal.processors.cache.binary.CacheBinaryDataBagItem">
@@ -9018,7 +9132,9 @@
       <field>
         <type>org.apache.ignite.lang.IgnitePredicate&lt;?&gt;</type>
         <name>filter</name>
-        <serialization>marshalled value=filterBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=filterBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13001" class="org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse">
@@ -9033,7 +9149,9 @@
       <field>
         <type>java.util.Collection&lt;org.apache.ignite.events.Event&gt;</type>
         <name>evts</name>
-        <serialization>marshalled value=evtsBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=evtsBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13002" class="org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage">
@@ -9072,7 +9190,9 @@
       <field>
         <type>org.apache.ignite.internal.processors.cluster.BaselineTopology</type>
         <name>baselineTopology</name>
-        <serialization>marshalled value=baselineTopologyBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=baselineTopologyBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13003" class="org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse">
@@ -9245,21 +9365,29 @@
       <field>
         <type>org.apache.ignite.configuration.CacheConfiguration&lt;?,?&gt;</type>
         <name>startCfg</name>
-        <serialization>marshalled value=cfgBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=cfgBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.configuration.NearCacheConfiguration&lt;?,?&gt;</type>
         <name>nearCacheCfg</name>
-        <serialization>marshalled value=nearCfgBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=nearCfgBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>org.apache.ignite.internal.processors.query.QuerySchema</type>
         <name>schema</name>
-        <serialization>marshalled value=schemaBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=schemaBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13009" class="org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord">
-      <jdkMarshalled/>
+      <annotations>
+        <org.apache.ignite.internal.JdkMarshalled/>
+      </annotations>
       <field>
         <type>org.apache.ignite.internal.management.cache.PartitionKey</type>
         <name>partKey</name>
@@ -9315,16 +9443,22 @@
       <field>
         <type>java.lang.Object</type>
         <name>consistentId</name>
-        <serialization>marshalled value=consistentIdBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=consistentIdBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>java.lang.Object</type>
         <name>updateCntr</name>
-        <serialization>marshalled value=updateCntrBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=updateCntrBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13010" class="org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord">
-      <jdkMarshalled/>
+      <annotations>
+        <org.apache.ignite.internal.JdkMarshalled/>
+      </annotations>
       <field>
         <type>byte[]</type>
         <name>locConsistentIdBytes</name>
@@ -9340,12 +9474,16 @@
       <field>
         <type>java.lang.Object</type>
         <name>locConsistentId</name>
-        <serialization>marshalled value=locConsistentIdBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=locConsistentIdBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
       <field>
         <type>java.lang.Object</type>
         <name>rmtConsistentId</name>
-        <serialization>marshalled value=rmtConsistentIdBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=rmtConsistentIdBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13011" class="org.apache.ignite.internal.processors.cluster.ClusterIdAndTag">
@@ -9372,7 +9510,9 @@
       <field>
         <type>java.util.Map&lt;java.lang.String,java.io.Serializable&gt;</type>
         <name>data</name>
-        <serialization>marshalled value=dataBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=dataBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13014" class="org.apache.ignite.internal.managers.eventstorage.EventsDataBagItem">
@@ -9435,7 +9575,9 @@
       <field>
         <type>org.apache.ignite.internal.processors.cluster.BaselineTopology</type>
         <name>baselineTop</name>
-        <serialization>marshalled value=baselineTopBytes</serialization>
+        <annotations>
+          <org.apache.ignite.internal.Marshalled>value=baselineTopBytes</org.apache.ignite.internal.Marshalled>
+        </annotations>
       </field>
     </message>
     <message id="13019" class="org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage">
