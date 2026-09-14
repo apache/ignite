@@ -741,8 +741,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         else if (ZERO_COPY && !BinaryUtils.USE_STR_SERIALIZATION_VER_2)
             StringWriter.write(val, out);
         else
-            // Version 2 serialization uses modified UTF-8 (surrogates and NUL are encoded separately, no 4-byte sequences),
-            // which differs from the standard UTF-8 produced by the zero-copy writer.
             StringWriter.writeStringLegacy(val, out);
     }
 
