@@ -20,13 +20,17 @@ package org.apache.ignite.tools.compatibility.messages;
 import java.util.List;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.CustomMapper;
-import org.apache.ignite.internal.EmptyMessage;
 import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
+import org.apache.ignite.tools.compatibility.messages.messages.TestChildMessage;
+import org.apache.ignite.tools.compatibility.messages.messages.TestEmptyMessage;
+import org.apache.ignite.tools.compatibility.messages.messages.TestInvalidOrderMessage;
+import org.apache.ignite.tools.compatibility.messages.messages.TestParentMessage;
+import org.apache.ignite.tools.compatibility.messages.messages.TestUnannotatedMessage;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -36,97 +40,32 @@ import static org.junit.Assert.assertNull;
 public class MessageSchemaReaderTest {
     /** CLASS annotations are invisible to reflection but available through the compiler model. */
     @Test public void testCompiledFields() throws Exception {
-        assertNull(Parent.class.getDeclaredField("id").getAnnotation(Order.class));
+        assertNull(TestParentMessage.class.getDeclaredField("id").getAnnotation(Order.class));
 
         try (MessageSchemaReader reader = new MessageSchemaReader()) {
             assertEquals(List.of(new AnnotationRepresentation(JdkMarshalled.class.getName(), null)),
-                reader.read(Child.class).annotations());
-            assertEquals(List.of(), reader.read(Empty.class).annotations());
+                reader.read(TestChildMessage.class).annotations());
+            assertEquals(List.of(), reader.read(TestEmptyMessage.class).annotations());
             assertEquals(List.of(
                 new FieldRepresentation(0, "int", "id", List.of()),
                 new FieldRepresentation(1, "byte[]", "parentValueBytes", List.of()),
                 new FieldRepresentation(2, "byte[]", "id", List.of(
                     new AnnotationRepresentation(Compress.class.getName(), null),
                     new AnnotationRepresentation(NioField.class.getName(), null))),
-                new FieldRepresentation(3, Mode.class.getCanonicalName(), "mode",
+                new FieldRepresentation(3, TestChildMessage.Mode.class.getCanonicalName(), "mode",
                     List.of(new AnnotationRepresentation(CustomMapper.class.getName(), "example.Mapper"))),
                 new FieldRepresentation(null, "java.lang.Object", "parentValue",
                     List.of(new AnnotationRepresentation(Marshalled.class.getName(), "value=parentValueBytes"))),
                 new FieldRepresentation(null, "java.util.List<? extends java.lang.String>", "payload",
                     List.of(new AnnotationRepresentation(Marshalled.class.getName(), "value=id")))
-            ), reader.read(Child.class).fields());
-            assertEquals(List.of(), reader.read(Empty.class).fields());
-            assertEquals(List.of(), reader.read(Unannotated.class).fields());
+            ), reader.read(TestChildMessage.class).fields());
+            assertEquals(List.of(), reader.read(TestEmptyMessage.class).fields());
+            assertEquals(List.of(), reader.read(TestUnannotatedMessage.class).fields());
             assertEquals(
                 List.of(new FieldRepresentation(1, "int", "id", List.of())),
-                reader.read(InvalidOrder.class).fields()
+                reader.read(TestInvalidOrderMessage.class).fields()
             );
         }
     }
 
-    /** Parent fields precede child fields, and marshaller selection is inherited. */
-    @JdkMarshalled
-    private static class Parent {
-        /** Parent field. */
-        @Order(0)
-        private int id;
-
-        /** Parent companion field. */
-        @Order(1)
-        private byte[] parentValueBytes;
-
-        /** Parent logical value mapped to a wire field. */
-        @Marshalled("parentValueBytes")
-        private Object parentValue;
-    }
-
-    /** Declaration order is deliberately different from serialization order. */
-    private static class Child extends Parent {
-        /** Enum mapped by a named mapper. */
-        @Order(1)
-        @CustomMapper("example.Mapper")
-        private Mode mode;
-
-        /** Child field hides the parent's field. */
-        @Order(0)
-        @Compress
-        @NioField
-        private byte[] id;
-
-        /** Logical value mapped to a wire field. */
-        @Marshalled("id")
-        private List<? extends String> payload;
-
-        /** Ordinary, non-wire field. */
-        private int ignored;
-
-        /** Ordinary methods do not become schema entries. */
-        int ignored() {
-            return ignored;
-        }
-    }
-
-    /** Empty messages have an explicit marker. */
-    @EmptyMessage
-    private static class Empty {
-        // No-op.
-    }
-
-    /** Classes without field annotations produce an empty schema. */
-    private static class Unannotated {
-        // No-op.
-    }
-
-    /** Order validation belongs to the code generator, not the table exporter. */
-    private static class InvalidOrder {
-        /** Missing preceding field. */
-        @Order(1)
-        private int id;
-    }
-
-    /** Fixture enum. */
-    private enum Mode {
-        /** Single fixture value. */
-        ONE
-    }
 }
