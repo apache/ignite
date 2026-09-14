@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
@@ -69,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
-import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -1822,16 +1820,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public boolean findTo(GridCacheContext cctx, KeyCacheObject key, BinaryWriterEx writer) throws IgniteCheckedException {
-            key.valueBytes(cctx.cacheObjectContext());
+            int pos = writer.out().position();
 
-            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+            find(cctx, key);
 
-            // TODO: FIXME
-            CopyToClosure c = new CopyToClosure(writer);
-
-            dataTree.findOne(new SearchRow(cacheId, key), c, null);
-
-            return c.found;
+            return pos != writer.out().position();
         }
 
         /** {@inheritDoc} */
@@ -2043,44 +2036,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** */
         public ExpiredKeyCacheObject() {
-        }
-    }
-
-    /** */
-    protected static class CopyToClosure implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
-        /** */
-        private final BinaryWriterEx writer;
-
-        /** */
-        boolean found;
-
-        /** */
-        public CopyToClosure(BinaryWriterEx writer) {
-            this.writer = writer;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(
-            BPlusTree<CacheSearchRow, CacheDataRow> tree,
-            BPlusIO<CacheSearchRow> io,
-            long pageAddr,
-            int idx
-        ) throws IgniteCheckedException {
-            found = true;
-
-            // TODO: how to copy value?
-            RowLinkIO rowIo = (RowLinkIO)io;
-
-            long link = rowIo.getLink(pageAddr, idx);
-            int hash = rowIo.getHash(pageAddr, idx);
-
-            int cacheId = grp.sharedGroup() ? rowIo.getCacheId(pageAddr, idx) : CU.UNDEFINED_CACHE_ID;
-
-            CacheDataRowAdapter.RowData x = asRowData(flags);
-
-            return rowStore.dataRow(cacheId, hash, link, x);
-
-            return false;
         }
     }
 }

@@ -74,8 +74,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAP
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.platform.client.cache.ClientDirectCacheGetRequest.FOUND;
-import static org.apache.ignite.internal.processors.platform.client.cache.ClientDirectCacheGetRequest.NOT_FOUND;
 
 /**
  *
@@ -465,9 +463,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     BinaryWriterEx directWriter = OperationContext.get(ClientDirectCacheGetRequest.DIRECT_WRITER);
 
                     if (directWriter != null) {
-                        boolean found = cctx.offheap().readTo(cctx, key0, directWriter);
+                        cctx.offheap().readTo(cctx, key0, directWriter);
 
-                        setResult(found ? FOUND : NOT_FOUND);
+                        //setResult(found ? FOUND : NOT_FOUND);
                     }
                     else {
                         CacheDataRow row = cctx.offheap().read(cctx, key0);

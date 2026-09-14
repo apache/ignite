@@ -36,33 +36,34 @@ import static org.apache.ignite.client.Config.SERVER;
 
 /** */
 public class ThinClientSimpleTest extends GridCommonAbstractTest {
-
-    public static final byte[] VAL = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-
     /** */
     @Test
     public void testThinClientPerf() throws Exception {
         try (IgniteEx srv = startGrid()) {
             IgniteCache<Object, Object> c = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            IntStream.range(0, 1000).forEach(i -> c.put(i, VAL));
+            ThreadLocalRandom r = ThreadLocalRandom.current();
+
+            byte[] val = new byte[100];
+
+            r.nextBytes(val);
+
+            IntStream.range(0, 1000).forEach(i -> c.put(i, val));
 
             try (IgniteClient cln = Ignition.startClient(new ClientConfiguration().setAddresses(SERVER))) {
                 ClientCache<Integer, byte[]> cc = cln.cache(DEFAULT_CACHE_NAME);
-
-                ThreadLocalRandom r = ThreadLocalRandom.current();
 
                 // Warmup
                 for (int i = 0; i < 100_000; i++)
                     assertNotNull(cc.get(r.nextInt(1000)));
 
-                for (boolean direct: new boolean[] {false, true}) {
+                for (boolean direct: new boolean[] {true, false}) {
                     ClientMessageParser.USE_DIRECT_READ = direct;
 
                     long start = System.nanoTime();
 
                     for (int i = 0; i < 100_000; i++)
-                        assertTrue(Arrays.equals(VAL, cc.get(r.nextInt(1000))));
+                        assertTrue(Arrays.equals(val, cc.get(r.nextInt(1000))));
 
                     long finish = System.nanoTime();
 

@@ -755,13 +755,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     @Override public ClientMessage encode(ClientListenerResponse resp) {
         assert resp != null;
 
-        if (resp instanceof ClientListenerDirectResponse) {
-            BinaryOutputStream out = ((ClientListenerDirectResponse)resp).out();
-
-            out.position(0);
-
-            return new ClientMessage(out);
-        }
+        if (resp instanceof ClientListenerDirectResponse)
+            return new ClientMessage(((ClientListenerDirectResponse)resp).out());
 
         BinaryOutputStream outStream = BinaryStreams.createPooledOutputStream(32, false);
 

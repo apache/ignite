@@ -60,9 +60,11 @@ public class ClientDirectCacheGetRequest extends ClientCacheKeyRequest implement
         try (Scope ignored = OperationContext.set(DIRECT_WRITER, writer)) {
             ClientResponse.encodeHeader(ctx, writer, requestId(), ClientStatus.SUCCESS, null, ctx.checkAffinityTopologyVersion());
 
+            int pos = writer.out().position();
+
             Object val = cache(ctx).get(key());
 
-            if (val == FOUND)
+            if (pos != writer.out().position())
                 return new ClientListenerDirectResponse(requestId(), writer.out());
 
             return new ClientObjectResponse(requestId(), val);
