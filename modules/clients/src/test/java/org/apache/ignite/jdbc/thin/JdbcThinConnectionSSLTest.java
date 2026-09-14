@@ -336,8 +336,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testDisabledCustomCipher() throws Exception {
-        Set<String> disabledSuites = disabledByDefaultCipherSuites();
-        String disabledSuite = disabledSuites.iterator().next();
+        String disabledSuite = disabledByDefaultCipherSuites().iterator().next();
 
         System.out.println("Run test with cipher suite: " + disabledSuite);
 
@@ -376,7 +375,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
             String completelyDisabledSuite = "TLS_RSA_WITH_DES_CBC_SHA";
 
-            assertFalse(supportedCipherSuites().contains(completelyDisabledSuite));
+            assertFalse(Set.of(factory("TLS").getSupportedCipherSuites()).contains(completelyDisabledSuite));
 
             // Java 17+, the cipher suite TLS_RSA_WITH_NULL_SHA256 is completely disabled by default.
             GridTestUtils.assertThrows(log, () -> {
@@ -767,16 +766,21 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     }
 
     /** */
-    private Set<String> disabledByDefaultCipherSuites() throws Exception {
-        SSLContext ctx = SSLContext.getInstance("TLSv1.2");
+    private SSLSocketFactory factory(String protocol) throws Exception {
+        SSLContext ctx = SSLContext.getInstance(protocol);
         ctx.init(null, null, null);
-        SSLSocketFactory factory = ctx.getSocketFactory();
 
-        Set<String> dfltCiphersSuites = Set.of(factory.getDefaultCipherSuites());
+        return ctx.getSocketFactory();
+    }
+
+    /** */
+    private Set<String> disabledByDefaultCipherSuites() throws Exception {
+        SSLSocketFactory factory = factory("TLSv1.2");
+
         Set<String> supportedCiphersSuites = new HashSet<>(Arrays.stream(factory.getSupportedCipherSuites()).toList());
 
         // Fulter supported, but NOT in the default active list.
-        supportedCiphersSuites.removeAll(dfltCiphersSuites);
+        supportedCiphersSuites.removeAll(Set.of(factory.getDefaultCipherSuites()));
 
         // Current TC settings.
         supportedCiphersSuites.removeIf(s -> s.contains("_anon_"));
