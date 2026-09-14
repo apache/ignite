@@ -44,11 +44,14 @@ public class MessageSchemaReaderTest {
             assertEquals(List.of(), reader.read(Empty.class).annotations());
             assertEquals(List.of(
                 new FieldRepresentation(0, "int", "id", List.of()),
-                new FieldRepresentation(1, "byte[]", "id", List.of(
+                new FieldRepresentation(1, "byte[]", "parentValueBytes", List.of()),
+                new FieldRepresentation(2, "byte[]", "id", List.of(
                     new AnnotationRepresentation(Compress.class.getName(), null),
                     new AnnotationRepresentation(NioField.class.getName(), null))),
-                new FieldRepresentation(2, Mode.class.getCanonicalName(), "mode",
+                new FieldRepresentation(3, Mode.class.getCanonicalName(), "mode",
                     List.of(new AnnotationRepresentation(CustomMapper.class.getName(), "example.Mapper"))),
+                new FieldRepresentation(null, "java.lang.Object", "parentValue",
+                    List.of(new AnnotationRepresentation(Marshalled.class.getName(), "value=parentValueBytes"))),
                 new FieldRepresentation(null, "java.util.List<? extends java.lang.String>", "payload",
                     List.of(new AnnotationRepresentation(Marshalled.class.getName(), "value=id")))
             ), reader.read(Child.class).fields());
@@ -67,6 +70,14 @@ public class MessageSchemaReaderTest {
         /** Parent field. */
         @Order(0)
         private int id;
+
+        /** Parent companion field. */
+        @Order(1)
+        private byte[] parentValueBytes;
+
+        /** Parent logical value mapped to a wire field. */
+        @Marshalled("parentValueBytes")
+        private Object parentValue;
     }
 
     /** Declaration order is deliberately different from serialization order. */

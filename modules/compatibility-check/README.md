@@ -4,12 +4,16 @@ Exports registered message IDs, classes and fields to `table.xml`.
 Fields, including inherited fields and CLASS-retained annotations, are read from
 compiled classes through the JDK compiler API. No node or intermediate manifest is needed.
 XML is written using the JDK StAX API without an external XML library.
-Each `field` contains separate `type` and `name` elements, plus an optional
-`annotations` element containing serialization annotations. Ordered wire fields
-also have an `order` attribute with their generated serializer state. Marker
-annotations use empty elements; annotations with values contain text. Annotation names are
-sorted for stable output. Annotation element names are fully qualified class names. Message-level annotations use the same `annotations` structure directly inside
-`message`.
+Ordered wire fields are written under `orderedFields`. Each ordered wire `field`
+contains separate `type` and `name` elements, plus an `order` attribute with its
+generated serializer state and an optional `annotations` element containing
+serialization annotations. Logical fields annotated with `@Marshalled` are written
+separately under `marshalledFields`, because they are converted to ordered
+companion fields before the message serializer writes data.
+Marker annotations use empty elements; annotations with values contain text.
+Annotation names are sorted for stable output. Annotation element names are fully
+qualified class names. Message-level annotations use the same `annotations`
+structure directly inside `message`.
 Element position follows field order; declaring classes are omitted.
 
 Coverage: core, indexing, Calcite and ZooKeeper providers. Unregistered classes and

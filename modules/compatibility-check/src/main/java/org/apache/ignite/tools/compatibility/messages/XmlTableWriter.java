@@ -23,6 +23,7 @@ import java.util.List;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.MessageRepresentation;
@@ -81,33 +82,78 @@ class XmlTableWriter {
 
         writeAnnotations(xml, msg.schema().annotations(), "      ");
 
-        for (FieldRepresentation field : msg.schema().fields()) {
-            xml.writeCharacters("\n      ");
-
-            xml.writeStartElement("field");
-
-            if (field.order() != null)
-                xml.writeAttribute("order", Integer.toString(field.order()));
-
-            writeAnnotations(xml, field.annotations(), "        ");
-
-            xml.writeCharacters("\n        ");
-            xml.writeStartElement("type");
-            xml.writeCharacters(field.type());
-            xml.writeEndElement();
-
-            xml.writeCharacters("\n        ");
-
-            xml.writeStartElement("name");
-            xml.writeCharacters(field.name());
-            xml.writeEndElement();
-
-            xml.writeCharacters("\n      ");
-            xml.writeEndElement();
-        }
+        writeOrderedFields(xml, msg.schema().fields());
+        writeMarshalledFields(xml, msg.schema().fields());
 
         xml.writeCharacters("\n    ");
         xml.writeEndElement();
+    }
+
+    /** Writes ordered wire fields. */
+    private static void writeOrderedFields(XMLStreamWriter xml, List<FieldRepresentation> fields)
+        throws XMLStreamException {
+        List<FieldRepresentation> orderedFields = fields.stream().filter(field -> !isMarshalled(field)).toList();
+
+        if (orderedFields.isEmpty())
+            return;
+
+        xml.writeCharacters("\n      ");
+        xml.writeStartElement("orderedFields");
+
+        for (FieldRepresentation field : orderedFields)
+            writeField(xml, field, "        ");
+
+        xml.writeCharacters("\n      ");
+        xml.writeEndElement();
+    }
+
+    /** Writes logical fields converted to ordered wire fields by the generated marshaller. */
+    private static void writeMarshalledFields(XMLStreamWriter xml, List<FieldRepresentation> fields)
+        throws XMLStreamException {
+        List<FieldRepresentation> marshalledFields = fields.stream().filter(XmlTableWriter::isMarshalled).toList();
+
+        if (marshalledFields.isEmpty())
+            return;
+
+        xml.writeCharacters("\n      ");
+        xml.writeStartElement("marshalledFields");
+
+        for (FieldRepresentation field : marshalledFields)
+            writeField(xml, field, "        ");
+
+        xml.writeCharacters("\n      ");
+        xml.writeEndElement();
+    }
+
+    /** Writes one field using the given indentation. */
+    private static void writeField(XMLStreamWriter xml, FieldRepresentation field, String indent)
+        throws XMLStreamException {
+        xml.writeCharacters("\n" + indent);
+        xml.writeStartElement("field");
+
+        if (field.order() != null)
+            xml.writeAttribute("order", Integer.toString(field.order()));
+
+        writeAnnotations(xml, field.annotations(), indent + "  ");
+
+        xml.writeCharacters("\n" + indent + "  ");
+        xml.writeStartElement("type");
+        xml.writeCharacters(field.type());
+        xml.writeEndElement();
+
+        xml.writeCharacters("\n" + indent + "  ");
+
+        xml.writeStartElement("name");
+        xml.writeCharacters(field.name());
+        xml.writeEndElement();
+
+        xml.writeCharacters("\n" + indent);
+        xml.writeEndElement();
+    }
+
+    /** Returns {@code true} if the field is a logical field converted by the generated marshaller. */
+    private static boolean isMarshalled(FieldRepresentation field) {
+        return field.annotations().stream().anyMatch(a -> Marshalled.class.getName().equals(a.name()));
     }
 
     /** Writes class or field annotations in name order using fixed indentation. */

@@ -23,7 +23,7 @@ import java.util.List;
  * Class schema, independent of message registration and output format.
  *
  * @param annotations Class serialization annotations.
- * @param fields Ordered wire fields followed by sorted marshalling descriptions.
+ * @param fields Ordered wire fields and logical fields converted to ordered wire fields by the generated marshaller.
  */
 public record Schema(List<AnnotationRepresentation> annotations, List<FieldRepresentation> fields) {
     // No-op.

@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.CustomMapper;
 import org.apache.ignite.internal.JdkMarshalled;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.MessageRepresentation;
@@ -41,7 +42,9 @@ public class XmlTableWriterTest {
                         new AnnotationRepresentation(CustomMapper.class.getName(), "A&B"),
                         new AnnotationRepresentation(Compress.class.getName(), null)
                     )),
-                    new FieldRepresentation(null, "int", "count", List.of())
+                    new FieldRepresentation(3, "int", "count", List.of()),
+                    new FieldRepresentation(null, "java.lang.Object", "data",
+                        List.of(new AnnotationRepresentation(Marshalled.class.getName(), "value=dataBytes")))
             ))),
             new MessageRepresentation((short)8, "example.Empty", new Schema(List.of(), List.of()))
         );
@@ -54,19 +57,30 @@ public class XmlTableWriterTest {
                   <annotations>
                     <org.apache.ignite.internal.JdkMarshalled/>
                   </annotations>
-                  <field order="2">
-                    <annotations>
-                      <org.apache.ignite.internal.Compress/>
-                      <org.apache.ignite.internal.CustomMapper>A&amp;B</org.apache.ignite.internal.CustomMapper>
-                      <since>2.18.0</since>
-                    </annotations>
-                    <type>java.util.List&lt;java.lang.String&gt;</type>
-                    <name>names</name>
-                  </field>
-                  <field>
-                    <type>int</type>
-                    <name>count</name>
-                  </field>
+                  <orderedFields>
+                    <field order="2">
+                      <annotations>
+                        <org.apache.ignite.internal.Compress/>
+                        <org.apache.ignite.internal.CustomMapper>A&amp;B</org.apache.ignite.internal.CustomMapper>
+                        <since>2.18.0</since>
+                      </annotations>
+                      <type>java.util.List&lt;java.lang.String&gt;</type>
+                      <name>names</name>
+                    </field>
+                    <field order="3">
+                      <type>int</type>
+                      <name>count</name>
+                    </field>
+                  </orderedFields>
+                  <marshalledFields>
+                    <field>
+                      <annotations>
+                        <org.apache.ignite.internal.Marshalled>value=dataBytes</org.apache.ignite.internal.Marshalled>
+                      </annotations>
+                      <type>java.lang.Object</type>
+                      <name>data</name>
+                    </field>
+                  </marshalledFields>
                 </message>
                 <message id="8" class="example.Empty">
                 </message>
