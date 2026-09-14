@@ -761,8 +761,8 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(RollingUpgradeClusterData.class);
         register(IgniteNodeFeatureSet.class);
 
-        withNoSchema(DownloadClassPathMessage.class);
-        withNoSchema(DownloadClassPathFailureMessage.class);
+        register(DownloadClassPathMessage.class);
+        register(DownloadClassPathFailureMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }

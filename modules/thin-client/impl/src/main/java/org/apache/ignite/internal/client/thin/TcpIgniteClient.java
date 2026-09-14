@@ -79,6 +79,7 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.NullLogger;
@@ -654,7 +655,7 @@ public class TcpIgniteClient implements IgniteClient {
                 cliCh.service(
                     ClientOperation.FILE_UPLOAD,
                     ch -> {
-                        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), ch.out(), null)) {
+                        try (BinaryWriterEx w = BinaryUtils.writerWithoutSchema(marsh.context(), ch.out())) {
                             w.writeUuid(node.id());
                             w.writeUuid(icpID);
                             w.writeString(name);
