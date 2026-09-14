@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,8 +57,21 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
+    private boolean separatedWorkDir;
+
+    /** */
     @Parameter(2)
     public boolean incremental = true;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        var cfg = super.getConfiguration(igniteInstanceName);
+
+        if (separatedWorkDir)
+            cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
+
+        return cfg;
+    }
 
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, incremental={2}")
@@ -86,6 +107,65 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         // Handy
         cleanPersistenceDir();
+    }
+
+    /** Tests snapshot deletion when one node finds snapshot but failes to delete its data. */
+    @Test
+    public void testUncompletedNodes() throws Exception {
+        separatedWorkDir = true;
+
+        // Simulates a deletion error on some node.
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+                            if (ctx.localNode().id().equals(grid(1).localNode().id())) {
+                                existsFlag.set(true);
+
+                                return false;
+                            }
+
+                            return super.deleteLocalSnapshot(sft, existsFlag);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+
+        var delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertTrue(F.isEmpty(delSnpRes.emptyNodes));
+        assertFalse(F.isEmpty(delSnpRes.uncompletedNodes));
+        assertTrue(delSnpRes.uncompletedNodes.contains(grid(1).localNode().id()));
+    }
+
+    /** Tests snapshot deletion when one node has no snapshot data. */
+    @Test
+    public void testEmptyNodes() throws Exception {
+        separatedWorkDir = true;
+
+        startGridsWithCache(2, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+
+        startGrid(G.allGrids().size());
+
+        var delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertFalse(F.isEmpty(delSnpRes.emptyNodes));
+        assertTrue(delSnpRes.emptyNodes.contains(grid(G.allGrids().size() - 1).localNode().id()));
+        assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
     }
 
     /** Tests that a concurrent deletion of the same snapshot is declined. */

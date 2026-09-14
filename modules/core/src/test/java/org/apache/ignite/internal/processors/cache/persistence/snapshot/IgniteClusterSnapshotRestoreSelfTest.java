@@ -105,9 +105,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         if (resetConsistentId)
             cfg.setConsistentId(null);
 
-        if (pluginProvider != null)
-            cfg.setPluginProviders(pluginProvider);
-
         return cfg;
     }
 
