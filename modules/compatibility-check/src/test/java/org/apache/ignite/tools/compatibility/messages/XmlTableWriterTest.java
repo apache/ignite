@@ -19,10 +19,8 @@ package org.apache.ignite.tools.compatibility.messages;
 
 import java.util.List;
 import org.apache.ignite.internal.Compress;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.CustomMapper;
 import org.apache.ignite.internal.JdkMarshalled;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.MessageRepresentation;
@@ -51,9 +49,6 @@ public class XmlTableWriterTest {
         String expected = """
             <?xml version="1.0" encoding="UTF-8"?>
             <messageTable formatVersion="1">
-              <providers>
-                <provider>org.apache.ignite.internal.CoreMessagesProvider</provider>
-              </providers>
               <messages>
                 <message id="7" class="example.Message">
                   <annotations>
@@ -79,6 +74,6 @@ public class XmlTableWriterTest {
             </messageTable>
             """;
 
-        assertEquals(expected, new XmlTableWriter().toXml(new MessageFactoryProvider[] {new CoreMessagesProvider()}, msgs));
+        assertEquals(expected, new XmlTableWriter().toXml(msgs));
     }
 }

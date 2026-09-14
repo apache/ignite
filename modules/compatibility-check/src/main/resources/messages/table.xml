@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <messageTable formatVersion="1">
-  <providers>
-    <provider>org.apache.ignite.internal.CoreMessagesProvider</provider>
-    <provider>org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory</provider>
-    <provider>org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory</provider>
-    <provider>org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory</provider>
-  </providers>
   <messages>
     <message id="-56" class="org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse">
       <field>

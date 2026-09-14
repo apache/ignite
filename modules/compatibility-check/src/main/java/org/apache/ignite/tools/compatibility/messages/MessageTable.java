@@ -48,7 +48,7 @@ public class MessageTable {
         };
 
         List<MessageRepresentation> msgs = new MessageTableCollector(providers).collect();
-        String table = new XmlTableWriter().toXml(providers, msgs);
+        String table = new XmlTableWriter().toXml(msgs);
 
         Files.createDirectories(out.getParent());
         Files.writeString(out, table);

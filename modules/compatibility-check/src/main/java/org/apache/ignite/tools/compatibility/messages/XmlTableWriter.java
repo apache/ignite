@@ -23,7 +23,6 @@ import java.util.List;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.tools.compatibility.messages.dto.AnnotationRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.FieldRepresentation;
 import org.apache.ignite.tools.compatibility.messages.dto.MessageRepresentation;
@@ -33,12 +32,11 @@ class XmlTableWriter {
     /**
      * Writes collected metadata without loading message classes.
      *
-     * @param providers Message registration providers.
      * @param msgs Collected messages.
      * @return XML table.
      * @throws XMLStreamException If XML writing fails.
      */
-    String toXml(MessageFactoryProvider[] providers, List<MessageRepresentation> msgs) throws XMLStreamException {
+    String toXml(List<MessageRepresentation> msgs) throws XMLStreamException {
         StringWriter out = new StringWriter();
         XMLStreamWriter xml = XMLOutputFactory.newDefaultFactory().createXMLStreamWriter(out);
 
@@ -48,8 +46,6 @@ class XmlTableWriter {
             xml.writeStartElement("messageTable");
             xml.writeAttribute("formatVersion", "1");
             xml.writeCharacters("\n  ");
-
-            writeProviders(xml, providers);
 
             writeMessages(xml, msgs);
 
@@ -62,22 +58,6 @@ class XmlTableWriter {
         }
 
         return out.toString();
-    }
-
-    /** Writes provider names. */
-    private static void writeProviders(XMLStreamWriter xml, MessageFactoryProvider[] providers) throws XMLStreamException {
-        xml.writeStartElement("providers");
-
-        for (MessageFactoryProvider provider : providers) {
-            xml.writeCharacters("\n    ");
-            xml.writeStartElement("provider");
-            xml.writeCharacters(provider.getClass().getName());
-            xml.writeEndElement();
-        }
-
-        xml.writeCharacters("\n  ");
-        xml.writeEndElement();
-        xml.writeCharacters("\n  ");
     }
 
     /** Writes the collected messages in their existing order. */

@@ -46,11 +46,11 @@ class MessageTableCollector {
 
         List<MessageRepresentation> msgs = new ArrayList<>();
 
-        try (MessageSchemaReader schemas = new MessageSchemaReader()) {
+        try (MessageSchemaReader schemaReader = new MessageSchemaReader()) {
             for (short id : ids) {
                 Class<?> msgCls = factory.create(id).getClass();
 
-                msgs.add(new MessageRepresentation(id, msgCls.getName(), schemas.read(msgCls)));
+                msgs.add(new MessageRepresentation(id, msgCls.getName(), schemaReader.read(msgCls)));
             }
         }
 
