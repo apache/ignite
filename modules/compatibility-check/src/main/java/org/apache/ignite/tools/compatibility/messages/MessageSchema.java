@@ -38,9 +38,10 @@ import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.tools.compatibility.messages.Schema.Field;
 
 /** Reads CLASS-retained field annotations from compiled classes using the public JDK compiler API. */
-final class MessageSchema implements AutoCloseable {
+class MessageSchema implements AutoCloseable {
     /** Classpath reader, closed after exporting the table. */
     private final StandardJavaFileManager files;
 
@@ -64,7 +65,7 @@ final class MessageSchema implements AutoCloseable {
     }
 
     /** Returns a canonical field description, including inherited fields and marshalling annotations. */
-    List<Field> read(Class<?> cls) {
+    Schema read(Class<?> cls) {
         TypeElement msgType = task.getElements().getTypeElement(cls.getCanonicalName());
 
         if (msgType == null)
@@ -82,8 +83,7 @@ final class MessageSchema implements AutoCloseable {
 
         List<Field> schema = new ArrayList<>();
 
-        if (hierarchy.stream().anyMatch(t -> t.getAnnotation(JdkMarshalled.class) != null))
-            schema.add(new Field("", "", "jdkMarshalled"));
+        boolean jdkMarshalled = hierarchy.stream().anyMatch(t -> t.getAnnotation(JdkMarshalled.class) != null);
 
         List<Field> marshalledFields = new ArrayList<>();
 
@@ -127,18 +127,7 @@ final class MessageSchema implements AutoCloseable {
 
         schema.addAll(marshalledFields);
 
-        return schema;
-    }
-
-    /**
-     * Field description. An empty name denotes a message-level serialization marker.
-     *
-     * @param type Field type.
-     * @param name Field name.
-     * @param serialization Serialization annotations.
-     */
-    record Field(String type, String name, String serialization) {
-        // No-op.
+        return new Schema(jdkMarshalled, schema);
     }
 
     /** {@inheritDoc} */

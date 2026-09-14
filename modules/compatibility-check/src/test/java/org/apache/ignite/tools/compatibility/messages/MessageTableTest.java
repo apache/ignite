@@ -17,86 +17,64 @@
 
 package org.apache.ignite.tools.compatibility.messages;
 
-import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import javax.xml.parsers.DocumentBuilderFactory;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** Tests message table generation. */
+/** Tests metadata collection and XML writing independently. */
 public class MessageTableTest {
     /** Temporary output directory. */
     @Rule public TemporaryFolder tmp = new TemporaryFolder();
 
-    /** Exercise real providers and compiled schemas without starting a node. */
-    @Test public void testGeneratedTable() throws Exception {
-        String table = MessageTable.generate();
+    /** Collects registrations and compiled schemas without XML serialization. */
+    @Test public void testCollect() throws Exception {
+        MessageTable.Data data = MessageTable.collect();
 
-        assertEquals(table, MessageTable.generate());
-        Document doc = DocumentBuilderFactory.newDefaultInstance().newDocumentBuilder()
-            .parse(new InputSource(new StringReader(table)));
-
-        assertEquals("messageTable", doc.getDocumentElement().getTagName());
-        assertEquals("1", doc.getDocumentElement().getAttribute("formatVersion"));
-
-        String[] providers = {
+        assertEquals(data, MessageTable.collect());
+        assertEquals(List.of(
             "org.apache.ignite.internal.CoreMessagesProvider",
             "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory",
             "org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory",
             "org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory"
-        };
+        ), data.providers());
+        assertFalse(data.messages().isEmpty());
 
-        NodeList providerNodes = doc.getElementsByTagName("provider");
-
-        assertEquals(providers.length, providerNodes.getLength());
-
-        for (int i = 0; i < providers.length; i++)
-            assertEquals(providers[i], providerNodes.item(i).getTextContent());
-
-        NodeList msgs = doc.getElementsByTagName("message");
-        boolean compressedFound = false;
         int prevId = Integer.MIN_VALUE;
+        boolean compressedFound = false;
 
-        for (int i = 0; i < msgs.getLength(); i++) {
-            Element msg = (Element)msgs.item(i);
-            int id = Integer.parseInt(msg.getAttribute("id"));
+        for (MessageRepresentation msg : data.messages()) {
+            assertTrue(msg.id() > prevId);
+            prevId = msg.id();
 
-            assertTrue(id > prevId);
-            prevId = id;
-
-            if (id == 5000) {
+            if (msg.id() == 5000) {
                 compressedFound = true;
-                assertEquals("org.apache.ignite.internal.managers.communication.CompressedMessage",
-                    msg.getAttribute("class"));
-                assertEquals(0, msg.getElementsByTagName("field").getLength());
+                assertEquals("org.apache.ignite.internal.managers.communication.CompressedMessage", msg.className());
+                assertTrue(msg.schema().fields().isEmpty());
+                assertFalse(msg.schema().jdkMarshalled());
             }
         }
 
         assertTrue(compressedFound);
-        Element firstField = (Element)doc.getElementsByTagName("field").item(0);
+        assertEquals(new Schema.Field("long", "reqId", ""), data.messages().get(0).schema().fields().get(0));
+    }
 
-        assertEquals("long", firstField.getElementsByTagName("type").item(0).getTextContent());
-        assertEquals("reqId", firstField.getElementsByTagName("name").item(0).getTextContent());
-        assertTrue(table.contains("&lt;"));
-
-        Document expected = DocumentBuilderFactory.newDefaultInstance().newDocumentBuilder()
-            .parse(Path.of("src/main/resources/messages/table.xml").toFile());
-
-        assertTrue(expected.isEqualNode(doc));
-
+    /** The command writes the collected table and preserves the checked-in format. */
+    @Test public void testMain() throws Exception {
         Path out = tmp.getRoot().toPath().resolve("result/table.xml");
 
         MessageTable.main(new String[] {out.toString()});
-        assertEquals(table, Files.readString(out));
+
+        String table = Files.readString(out);
+
+        assertEquals(new XmlTableWriter().write(MessageTable.collect()), table);
+        assertEquals(Files.readString(Path.of("src/main/resources/messages/table.xml")), table);
 
         try (var files = Files.list(out.getParent())) {
             assertEquals(1, files.count());

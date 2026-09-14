@@ -17,13 +17,12 @@
 
 package org.apache.ignite.tools.compatibility.messages;
 
-import java.io.StringWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
+import java.util.List;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory;
@@ -33,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
 
 /** Exports the actual production registrations and their compiled field descriptions. */
-public final class MessageTable {
+public class MessageTable {
     /** No instances. */
     private MessageTable() {
         // No-op.
@@ -50,17 +49,17 @@ public final class MessageTable {
             throw new IllegalArgumentException("Expected: output-file");
 
         Path out = Path.of(args[0]).toAbsolutePath();
-        String table = generate();
+        String table = new XmlTableWriter().write(collect());
 
         Files.createDirectories(out.getParent());
         Files.writeString(out, table);
     }
 
     /**
-     * @return Canonical XML table.
+     * @return Collected message table.
      * @throws Exception If any registered message cannot be described.
      */
-    static String generate() throws Exception {
+    static Data collect() throws IOException {
         MessageFactoryProvider[] providers = {
             new CoreMessagesProvider(),
             new GridH2ValueMessageFactory(),
@@ -73,99 +72,31 @@ public final class MessageTable {
 
         Arrays.sort(ids);
 
-        StringWriter out = new StringWriter();
-        XMLStreamWriter xml = XMLOutputFactory.newDefaultFactory().createXMLStreamWriter(out);
+        List<MessageRepresentation> msgs = new ArrayList<>();
 
         try (MessageSchema schemas = new MessageSchema()) {
-            xml.writeStartDocument("UTF-8", "1.0");
-            xml.writeCharacters("\n");
-            xml.writeStartElement("messageTable");
-            xml.writeAttribute("formatVersion", "1");
-            xml.writeCharacters("\n  ");
+            for (short id : ids) {
+                Message msg = factory.create(id);
 
-            writeProviders(xml, providers);
+                Class<?> cls = msg.getClass();
 
-            writeMessages(xml, ids, factory, schemas);
-
-            xml.writeEndElement();
-            xml.writeCharacters("\n");
-            xml.writeEndDocument();
-        }
-        finally {
-            xml.close();
-        }
-
-        return out.toString();
-    }
-
-    private static void writeProviders(XMLStreamWriter xml, MessageFactoryProvider[] providers) throws XMLStreamException {
-        xml.writeStartElement("providers");
-
-        for (MessageFactoryProvider provider : providers) {
-            xml.writeCharacters("\n    ");
-            xml.writeStartElement("provider");
-            xml.writeCharacters(provider.getClass().getName());
-            xml.writeEndElement();
-        }
-
-        xml.writeCharacters("\n  ");
-        xml.writeEndElement();
-        xml.writeCharacters("\n  ");
-    }
-
-    private static void writeMessages(XMLStreamWriter xml, short[] ids, IgniteMessageFactoryImpl<?, ?> factory, MessageSchema schemas) throws XMLStreamException {
-        xml.writeStartElement("messages");
-
-        for (short id : ids) {
-            Message msg = factory.create(id);
-
-            writeMessage(id, xml, msg, schemas);
-        }
-
-        xml.writeCharacters("\n  ");
-        xml.writeEndElement();
-        xml.writeCharacters("\n");
-    }
-
-    private static void writeMessage(short id, XMLStreamWriter xml, Message msg, MessageSchema schemas) throws XMLStreamException {
-        xml.writeCharacters("\n    ");
-        xml.writeStartElement("message");
-        xml.writeAttribute("id", Short.toString(id));
-        xml.writeAttribute("class", msg.getClass().getName());
-
-        for (MessageSchema.Field field : schemas.read(msg.getClass())) {
-            xml.writeCharacters("\n      ");
-
-            if (field.name().isEmpty()) {
-                xml.writeEmptyElement(field.serialization());
-
-                continue;
+                msgs.add(new MessageRepresentation(id, cls.getName(), schemas.read(cls)));
             }
-
-            xml.writeStartElement("field");
-            xml.writeCharacters("\n        ");
-            xml.writeStartElement("type");
-            xml.writeCharacters(field.type());
-            xml.writeEndElement();
-
-            xml.writeCharacters("\n        ");
-
-            xml.writeStartElement("name");
-            xml.writeCharacters(field.name());
-            xml.writeEndElement();
-
-            if (!field.serialization().isEmpty()) {
-                xml.writeCharacters("\n        ");
-                xml.writeStartElement("serialization");
-                xml.writeCharacters(field.serialization());
-                xml.writeEndElement();
-            }
-
-            xml.writeCharacters("\n      ");
-            xml.writeEndElement();
         }
 
-        xml.writeCharacters("\n    ");
-        xml.writeEndElement();
+        List<String> providerNames = Arrays.stream(providers).map(p -> p.getClass().getName()).toList();
+
+        return new Data(providerNames, msgs);
     }
+
+    /**
+     * Collected input for XML serialization.
+     *
+     * @param providers Provider class names.
+     * @param messages Messages sorted by registered ID.
+     */
+    record Data(List<String> providers, List<MessageRepresentation> messages) {
+        // No-op.
+    }
+
 }

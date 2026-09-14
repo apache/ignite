@@ -37,16 +37,17 @@ public class MessageSchemaTest {
         assertNull(Parent.class.getDeclaredField("id").getAnnotation(Order.class));
 
         try (MessageSchema reader = new MessageSchema()) {
+            assertEquals(true, reader.read(Child.class).jdkMarshalled());
+            assertEquals(false, reader.read(Empty.class).jdkMarshalled());
             assertEquals(List.of(
-                new MessageSchema.Field("", "", "jdkMarshalled"),
-                new MessageSchema.Field("int", "id", ""),
-                new MessageSchema.Field("byte[]", "id", "compress nio"),
-                new MessageSchema.Field(Mode.class.getCanonicalName(), "mode", "customMapper=example.Mapper"),
-                new MessageSchema.Field("java.util.List<? extends java.lang.String>", "payload", "marshalled value=id")
-            ), reader.read(Child.class));
-            assertEquals(List.of(), reader.read(Empty.class));
-            assertEquals(List.of(), reader.read(Unannotated.class));
-            assertEquals(List.of(new MessageSchema.Field("int", "id", "")), reader.read(InvalidOrder.class));
+                new Schema.Field("int", "id", ""),
+                new Schema.Field("byte[]", "id", "compress nio"),
+                new Schema.Field(Mode.class.getCanonicalName(), "mode", "customMapper=example.Mapper"),
+                new Schema.Field("java.util.List<? extends java.lang.String>", "payload", "marshalled value=id")
+            ), reader.read(Child.class).fields());
+            assertEquals(List.of(), reader.read(Empty.class).fields());
+            assertEquals(List.of(), reader.read(Unannotated.class).fields());
+            assertEquals(List.of(new Schema.Field("int", "id", "")), reader.read(InvalidOrder.class).fields());
         }
     }
 
