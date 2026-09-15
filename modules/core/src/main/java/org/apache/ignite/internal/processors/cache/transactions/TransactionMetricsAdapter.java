@@ -110,19 +110,19 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         txDeadlocks = mreg.intMetric("txDeadlocks", "Number of transaction deadlocks.");
         commitTime = mreg.longMetric("commitTime", "Last commit time.");
         rollbackTime = mreg.longMetric("rollbackTime", "Last rollback time.");
-        totalTxSystemTime = mreg.longAdderMetric(METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node.");
-        totalTxUserTime = mreg.longAdderMetric(METRIC_TOTAL_USER_TIME, "Total transactions user time on node.");
+        totalTxSystemTime = mreg.longAdderMetric(METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node, in milliseconds.");
+        totalTxUserTime = mreg.longAdderMetric(METRIC_TOTAL_USER_TIME, "Total transactions user time on node, in milliseconds.");
 
         txSystemTimeHistogram = mreg.histogram(
             METRIC_SYSTEM_TIME_HISTOGRAM,
             METRIC_TIME_BUCKETS,
-            "Transactions system times on node represented as histogram."
+            "Transactions system times on node represented as histogram, in milliseconds."
         );
 
         txUserTimeHistogram = mreg.histogram(
             METRIC_USER_TIME_HISTOGRAM,
             METRIC_TIME_BUCKETS,
-            "Transactions user times on node represented as histogram."
+            "Transactions user times on node represented as histogram, in milliseconds."
         );
     }
 

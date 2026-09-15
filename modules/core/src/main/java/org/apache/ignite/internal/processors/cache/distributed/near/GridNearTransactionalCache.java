@@ -509,6 +509,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             return;
 
         try {
+            GridCacheVersion obsoleteVer = forSavepoint ? nextVersion() : null;
+
             int keyCnt = -1;
 
             Map<ClusterNode, GridNearUnlockRequest> map = null;
@@ -558,6 +560,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 // Remove candidate from local node first.
                                 if (entry.removeLock(cand.version())) {
+                                    if (forSavepoint)
+                                        evictNearEntry(entry, obsoleteVer, cand.topologyVersion());
+
                                     if (primary.isLocal()) {
                                         dht.removeLocks(
                                             primary.id(),

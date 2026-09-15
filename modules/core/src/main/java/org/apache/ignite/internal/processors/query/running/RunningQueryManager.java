@@ -47,7 +47,9 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFinishedInfo;
 import org.apache.ignite.internal.processors.query.GridQueryStartedInfo;
@@ -141,6 +143,12 @@ public class RunningQueryManager {
      */
     private final AtomicLongMetric canceledQrsCnt;
 
+    /** Histogram of result set sizes for SQL queries. */
+    private final HistogramMetricImpl resultSetSizeHistogram;
+
+    /** Maximum result set size for SQL queries. */
+    private final MaxValueMetric maxResultSetSize;
+
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -231,6 +239,13 @@ public class RunningQueryManager {
 
         canceledQrsCnt = userMetrics.longMetric("canceled", "Number of canceled queries that have been started " +
             "on this node. This metric number included in the general 'failed' metric.");
+
+        resultSetSizeHistogram = userMetrics.histogram("resultSetSizeHistogram",
+            new long[] {0, 1, 10, 100, 1_000, 10_000, 100_000, 1_000_000},
+            "Histogram of result set sizes for SQL queries.");
+
+        maxResultSetSize = userMetrics.maxValueMetric("maxResultSetSize",
+            "Maximum result set size for SQL queries.", 60_000L, 5);
     }
 
     /** */
@@ -267,6 +282,16 @@ public class RunningQueryManager {
                 futs.forEach(f -> f.onDone("Query node has left the grid: [nodeId=" + nodeId + "]"));
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+    }
+
+    /**
+     * Called when a result set is fully fetched. Increments result set size metrics.
+     *
+     * @param size Result set size (number of fetched rows).
+     */
+    public void onFullyFetched(long size) {
+        resultSetSizeHistogram.value(size);
+        maxResultSetSize.update(size);
     }
 
     /**

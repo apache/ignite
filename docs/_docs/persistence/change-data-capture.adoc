@@ -68,7 +68,7 @@ CDC is configured in the same way as the Ignite node - via the spring XML file:
 | `checkFrequency` | Amount of time application sleeps between subsequent checks when no new files available. | 1000 milliseconds.
 | `keepBinary` | Flag to specify if key and value of changed entries should be provided in link:key-value-api/binary-objects[binary format]. | `true`
 | `consumer` | Implementation of `org.apache.ignite.cdc.CdcConsumer` that consumes entries changes. | null
-| `metricExporterSpi` | Array of SPI's to export CDC metrics. See link:monitoring-metrics/new-metrics-system#_metric_exporters[metrics] documentation, also. | null
+| `metricExporterSpi` | Array of SPI's to export CDC metrics. See link:monitoring-metrics/new-metrics-system#metric-exporters[metrics] documentation, also. | null
 |===
 
 === Distributed properties
@@ -93,7 +93,7 @@ Below is a single change of the data reflected by `CdcEvent`.
 |Name |Description
 | `key()` | Key for the changed entry.
 | `value()` | Value for the changed entry. This method will return `null` if the event reflects removal.
-| `cacheId()` | ID of the cache where the change happens. The value is equal to the `CACHE_ID` from link:monitoring-metrics/system-views#_CACHES[`SYS.CACHES`].
+| `cacheId()` | ID of the cache where the change happens. The value is equal to the `CACHE_ID` from link:monitoring-metrics/system-views#caches[`SYS.CACHES`].
 | `partition()` | Partition of the changed entry.
 | `primary()` | Flag to distinguish if operation happens on the primary or a backup node.
 | `version()` | `Comparable` version of the changed entry. Internally, Ignite maintains ordered versions of each entry so any changes of the same entry can be sorted.

@@ -117,9 +117,20 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         super().start_node(node, **kwargs)
 
-        wait_until(lambda: self.alive(node), timeout_sec=10)
+        wait_until(lambda: self.alive(node), timeout_sec=10, err_msg=lambda: self.__jvm_startup_failure_msg(node))
 
         ignite_jmx_mixin(node, self)
+
+    def __jvm_startup_failure_msg(self, node):
+        """
+        A JVM that rejects an option (an unknown collector, a bad heap value, two collectors selected)
+        dies before it logs anything Ignite-shaped, so without the console tail this is a bare timeout.
+        """
+        console_log = os.path.join(self.log_dir, "console.log")
+
+        output = node.account.ssh_capture(f"tail -n 30 {console_log}", allow_fail=True)
+
+        return f"{self.who_am_i(node)}: JVM did not start within 10 seconds. Tail of {console_log}:\n{output}"
 
     def stop_async(self, force_stop=False, **kwargs):
         """

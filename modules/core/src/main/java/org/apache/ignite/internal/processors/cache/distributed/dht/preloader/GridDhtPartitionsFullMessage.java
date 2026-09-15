@@ -489,6 +489,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public void cleanUp() {
         locParts = null;
         partCntrs = null;
+        partsSizes = null;
     }
 
     /** */

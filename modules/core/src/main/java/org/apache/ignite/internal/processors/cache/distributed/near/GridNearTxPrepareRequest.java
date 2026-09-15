@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
@@ -39,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest implements SelfMarshallingMessage {
+public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final int NEAR_FLAG_MASK = 0x01;
 
@@ -114,7 +113,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest im
         AffinityTopologyVersion topVer,
         GridNearTxLocal tx,
         long timeout,
-        Collection<IgniteTxEntry> reads,
+        @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         boolean near,
         Map<UUID, Collection<UUID>> txNodes,
@@ -128,14 +127,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest im
         boolean allowWaitTopFut,
         boolean recovery
     ) {
-        super(tx,
-            timeout,
-            reads,
-            writes,
-            txNodes,
-            retVal,
-            last,
-            onePhaseCommit);
+        super(tx, timeout, reads, writes, txNodes, retVal, last, onePhaseCommit);
 
         assert futId != null;
         assert !firstClientReq || tx.optimistic() : tx;
@@ -290,25 +282,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest im
     /** {@inheritDoc} */
     @Override public int stripeIdx() {
         return U.safeAbs(version().hashCode());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
-        // Of all tx messages, only the near prepare request transfers entry expiry policies.
-        if (writes() != null) {
-            for (IgniteTxEntry e : writes())
-                e.transferExpiryPolicy(true);
-        }
-
-        if (reads() != null) {
-            for (IgniteTxEntry e : reads())
-                e.transferExpiryPolicy(true);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

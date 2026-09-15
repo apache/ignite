@@ -555,7 +555,7 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** Serialize string. */
     private void writeString(String s, BinaryOutputStream out) {
-        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
+        try (BinaryWriterEx w = BinaryUtils.writerWithoutSchema(marsh.context(), out)) {
             w.writeString(s);
         }
     }

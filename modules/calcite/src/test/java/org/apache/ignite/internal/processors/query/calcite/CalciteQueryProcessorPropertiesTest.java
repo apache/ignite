@@ -38,8 +38,11 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.QueryParserMetricsHolder.QUERY_PARSER_METRIC_GROUP_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE;
+import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.DFLT_RECURSIVE_CTE_ITERATION_LIMIT;
+import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.not;
 
@@ -54,6 +57,12 @@ public class CalciteQueryProcessorPropertiesTest extends AbstractBasicIntegratio
     @Override protected void afterTest() throws Exception {
         changeDistributedProperty(DistributedCalciteConfiguration.DISABLED_RULES_PROPERTY_NAME, " ",
             pVal -> F.compareArrays(pVal, new String[0]) == 0);
+
+        changeDistributedProperty(
+            RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME,
+            String.valueOf(DFLT_RECURSIVE_CTE_ITERATION_LIMIT),
+            pVal -> pVal.equals(DFLT_RECURSIVE_CTE_ITERATION_LIMIT)
+        );
     }
 
     /** */
@@ -210,6 +219,49 @@ public class CalciteQueryProcessorPropertiesTest extends AbstractBasicIntegratio
 
         checkPlanCacheSize(grid(0), 100);
         checkPlanCacheSize(grid(1), 100);
+    }
+
+    /** */
+    @Test
+    public void testRecursiveCteIterationLimit() throws Exception {
+        for (Ignite ig : G.allGrids()) {
+            DistributedChangeableProperty<Integer> prop =
+                distributedProperty(ig, RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME);
+
+            assertNotNull(prop);
+            assertEquals(DFLT_RECURSIVE_CTE_ITERATION_LIMIT, prop.get().intValue());
+        }
+
+        String qry = "WITH RECURSIVE numbers(n) AS (" +
+            "SELECT 1 " +
+            "UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE n < 5" +
+            ") " +
+            "SELECT n FROM numbers";
+
+        // Populate the plan cache with the default iteration limit.
+        assertQuery(qry)
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .returns(5)
+            .check();
+
+        changeDistributedProperty(
+            RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME,
+            "2",
+            pVal -> pVal.equals(2)
+        );
+
+        // The property listener must invalidate the cached plan and apply the new limit to the same query.
+        assertThrowsAnyCause(
+            log,
+            () -> sql(qry),
+            IgniteSQLException.class,
+            "Recursive CTE iteration limit exceeded [limit=2, property=" +
+                RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME + ']'
+        );
     }
 
     /** */

@@ -302,18 +302,17 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            assertNotFailedNode(sock);
+            assertNotFailedNode(ses.socket());
 
-            if (isDrop(msg))
+            if (isDrop())
                 return;
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -321,37 +320,32 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             assertNotFailedNode(ses.socket());
 
-            if (isDrop(msg))
+            if (isDrop()) {
+                ignite.log().info(">> Drop message " + msg);
+
                 return;
+            }
 
             super.writeMessage(ses, msg, timeout);
         }
 
-        /**
-         *
-         */
-        private boolean isDrop(TcpDiscoveryAbstractMessage msg) {
-            boolean drop = failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
-
-            if (drop)
-                ignite.log().info(">> Drop message " + msg);
-
-            return drop;
+        /** */
+        private boolean isDrop() {
+            return failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
             int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            assertNotFailedNode(sock);
+            assertNotFailedNode(ses.socket());
 
-            if (isDrop(msg))
+            if (isDrop())
                 return;
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /**

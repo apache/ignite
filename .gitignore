@@ -90,6 +90,7 @@ CMakeSettings.json
 
 #Ducktape
 /results
+/.ducktests-demo
 .ducktape
 *.pyc
 /tests/venv
