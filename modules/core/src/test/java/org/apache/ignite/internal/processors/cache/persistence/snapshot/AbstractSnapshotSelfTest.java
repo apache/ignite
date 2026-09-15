@@ -44,6 +44,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -854,7 +855,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+                        @Override public boolean deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            @Nullable AtomicBoolean existsFlag,
+                            @Nullable Supplier<Boolean> cancel
+                        ) {
                             delProcInitLatch.countDown();
 
                             try {
@@ -864,7 +869,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                                 throw new RuntimeException("Interrupted.", e);
                             }
 
-                            return super.deleteLocalSnapshot(sft, existsFlag);
+                            return super.deleteLocalSnapshot(sft, existsFlag, cancel);
                         }
                     };
                 }

@@ -115,7 +115,7 @@ public class SnapshotDeleteProcess {
 
     /** */
     private IgniteInternalFuture<SnapshotDeleteResponse> deletePhase(UUID ignored, SnapshotDeleteRequest req) {
-        if (kctx.isStopping()) {
+        if (interrupted || kctx.isStopping()) {
             return new GridFinishedFuture<>(new NodeStoppingException(OP_REJECT_MSG +
                 " Node is stopping [req=" + req + ']'));
         }
@@ -161,7 +161,11 @@ public class SnapshotDeleteProcess {
                 try {
                     AtomicBoolean foundFlag = new AtomicBoolean();
 
-                    boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
+                    boolean deleted = snpMgr.deleteLocalSnapshot(
+                        new SnapshotFileTree(kctx, req.snpName, req.snpPath),
+                        foundFlag,
+                        () -> interrupted || kctx.isStopping()
+                    );
 
                     SnapshotDeleteResponse.SnapshotDeleteStatus res;
 

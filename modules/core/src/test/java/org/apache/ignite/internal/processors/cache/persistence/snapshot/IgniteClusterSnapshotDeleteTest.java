@@ -21,6 +21,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -129,14 +131,18 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+                        @Override public boolean deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            @Nullable AtomicBoolean existsFlag,
+                            @Nullable Supplier<Boolean> cancel
+                        ) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 existsFlag.set(true);
 
                                 return false;
                             }
 
-                            return super.deleteLocalSnapshot(sft, existsFlag);
+                            return super.deleteLocalSnapshot(sft, existsFlag, cancel);
                         }
                     };
                 }
@@ -182,7 +188,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
     /** Tests snapshot deletion repeat after an offline node restarts. */
     @Test
-    public void testLeftPart() throws Exception {
+    public void testDeletionRepeatAfterOfflineNodeStarts() throws Exception {
         separatedWorkDir = true;
 
         startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
@@ -217,6 +223,81 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
         assertEquals(2, delSnpRes.emptyNodes.size());
+    }
+
+    /** Test snapshot deletion process when one node leaves. */
+    @Test
+    public void testNodeStopsInTheMiddle() throws Exception {
+        // Incremental snapshots don't support only-primary and encryption mode.
+        assumeTrue(!incremental || !(onlyPrimary || encryption));
+
+        separatedWorkDir = true;
+
+        CountDownLatch beginLatch = new CountDownLatch(1);
+        CountDownLatch proceedLatch = new CountDownLatch(1);
+
+        // Simulates a deletion error on some node.
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public boolean deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            @Nullable AtomicBoolean existsFlag,
+                            @Nullable Supplier<Boolean> cancel
+                        ) {
+                            if (ctx.localNode().id().equals(grid(1).localNode().id())) {
+                                beginLatch.countDown();
+
+                                try {
+                                    assertTrue(proceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                                }
+                                catch (InterruptedException e) {
+                                    throw new RuntimeException("Interrupted.", e);
+                                }
+                            }
+
+                            return super.deleteLocalSnapshot(sft, existsFlag, cancel);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        var delFut = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(beginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        UUID stoppedGridId = grid(1).localNode().id();
+
+        stopGrid(1);
+
+        proceedLatch.countDown();
+
+        var delRes = delFut.get(getTestTimeout());
+
+        assertEquals(2, delRes.completedNodes.size());
+        assertFalse(delRes.completedNodes.contains(stoppedGridId));
+
+        startGrid(1);
+
+        delRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertEquals(1, delRes.completedNodes.size());
+        assertTrue(delRes.completedNodes.contains(grid(1).localNode().id()));
     }
 
     /** Tests that a concurrent deletion of a snapshot with the same name but different path is allowed. */
