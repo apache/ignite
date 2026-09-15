@@ -344,6 +344,34 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         );
     }
 
+    /** */
+    @Test
+    public void testConcurrentSnapshotDeleteAndRestoreOperationsWithDifferentPath() throws Exception {
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+
+                grid(0).createCache(DEFAULT_CACHE_NAME);
+
+                try (var ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                    for (int i = 0; i < CACHE_KEYS_RANGE; ++i)
+                        ds.addData(i, i);
+                }
+
+                snp(grid(0)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(getTestTimeout());
+
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                awaitPartitionMapExchange();
+            },
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, snpPath, null).get(),
+            null,
+            false
+        );
+    }
+
     /**
      * Ensures that the cache doesn't start if one of the baseline nodes fails.
      *

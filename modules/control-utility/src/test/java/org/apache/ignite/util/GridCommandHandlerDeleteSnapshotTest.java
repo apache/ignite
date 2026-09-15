@@ -96,7 +96,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
-        // Also cleans separated snapshot working directories.
+        // Also cleans separated snapshot working directories and custom snapshot pacthes.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);

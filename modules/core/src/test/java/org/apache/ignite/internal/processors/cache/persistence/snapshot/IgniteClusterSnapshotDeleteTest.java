@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +44,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
@@ -116,17 +112,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         /** Handy if test running is interrupted and {@link #afterTestSnapshot()} isn't invoked. */
         cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void cleanPersistenceDir() throws Exception {
-        super.cleanPersistenceDir();
-
-        // Also cleans separated snapshot working directories.
-        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
-            for (Path path : files)
-                U.delete(path);
-        }
     }
 
     /** Tests snapshot deletion when one node finds snapshot but fails to delete its data. */

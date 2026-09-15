@@ -125,6 +125,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Cluster-wide snapshot check procedure tests.
@@ -1210,6 +1211,26 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             () -> snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get(),
             e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)),
             true
+        );
+    }
+
+    /** */
+    @Test
+    public void testConcurrentSnapshotDeleteAndCheckOperationsWithDifferentPath() throws Exception {
+        // The test uses thread blocking.
+        assumeTrue(snpThrdPoolSz > 1);
+
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                prepareGridsAndSnapshot(4, 3, 1, false);
+
+                snp(grid(0)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(getTestTimeout());
+            },
+            () -> snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, snpPath).get(),
+            null,
+            false
         );
     }
 

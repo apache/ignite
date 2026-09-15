@@ -294,6 +294,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
+
+        // Clean all: also separated snapshot working directories and custom snapshot pathes.
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
+            for (Path path : files)
+                U.delete(path);
+        }
+    }
+
     /**
      * @param evts Events to check.
      * @throws IgniteInterruptedCheckedException If interrupted.
@@ -829,7 +840,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected void doTestConcurrentSnapshotDeleteOperation(
         ExRunnable prepareCluster,
         ExRunnable concurrentOp,
-        Function<Exception, Boolean> errValidator,
+        @Nullable Function<Exception, Boolean> errValidator,
         boolean rerunAtTheEnd
     ) throws Exception {
         CountDownLatch delProcInitLatch = new CountDownLatch(1);
@@ -871,10 +882,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         try {
             concurrentOp.run();
 
-            throw new IllegalStateException("Exception is not thrown.");
+            if (errValidator != null)
+                throw new IllegalStateException("Exception is not thrown.");
         }
         catch (Exception e) {
-            if (!errValidator.apply(e))
+            if (errValidator == null || !errValidator.apply(e))
                 throw new IllegalStateException("Unexpected exception: " + e.getMessage(), e);
         }
 

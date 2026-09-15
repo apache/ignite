@@ -633,6 +633,25 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         );
     }
 
+    /**
+     * Tests that a concurrent deletion of a same-named snapshot is allowed if it has a different path.
+     */
+    @Test
+    public void testConcurrentSnapshotDeleteOperationWithDifferentPath() throws Exception {
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+                snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
+            },
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(),
+            null,
+            false
+        );
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCleanedOnLeft() throws Exception {
