@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,7 +62,7 @@ public class SnapshotDeleteProcess {
     private final Map<UUID, GridFutureAdapter<SnapshotDeleteProcessResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
     /** Process requests per snapshot name on each server node. */
-    private final Map<String, SnapshotDeleteRequest> requests = new ConcurrentHashMap<>();
+    private final Set<SnapshotDeleteRequest> requests = ConcurrentHashMap.newKeySet();
 
     /** The distributed process. */
     private final DistributedProcess<SnapshotDeleteRequest, SnapshotDeleteResponse> distrProc;
@@ -149,7 +150,7 @@ public class SnapshotDeleteProcess {
         }
 
         try {
-            if (requests.putIfAbsent(req.snpName, req) != null) {
+            if (!requests.add(req)) {
                 return new GridFinishedFuture<>(new IgniteIllegalStateException("Deletion of the snapshot has already " +
                     "started [req=" + req + ']'));
             }
@@ -258,8 +259,8 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    public boolean isSnapshotDeleting(String snpName) {
-        return requests.get(snpName) != null;
+    public boolean isSnapshotDeleting(String snpName, @Nullable String snpPath) {
+        return requests.contains(new SnapshotDeleteRequest(null, snpName, snpPath));
     }
 
     /**

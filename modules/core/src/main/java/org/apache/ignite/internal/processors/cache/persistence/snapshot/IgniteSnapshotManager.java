@@ -852,7 +852,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "re-encryption process is not finished yet."));
         }
 
-        if (cctx.snapshotMgr().isSnapshotDeleting(req.snapshotName())) {
+        if (cctx.snapshotMgr().isSnapshotDeleting(req.snapshotName(), req.snapshotPath())) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Snapshot " +
                 "'%s' is being deleted.".formatted(req.snapshotName())));
         }
@@ -1493,8 +1493,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return {@code True} if a snapshot {@code snpName} delete operation is in progress.
      */
-    public boolean isSnapshotDeleting(String snpName) {
-        return deleteSnpProc.isSnapshotDeleting(snpName);
+    public boolean isSnapshotDeleting(String snpName, @Nullable String snpPath) {
+        return deleteSnpProc.isSnapshotDeleting(snpName, snpPath);
     }
 
     /**
@@ -2097,7 +2097,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (!incremental && snpExists) {
                     throw new IgniteException("Create snapshot request has been rejected. " +
-                        "Snapshot with given name already exists on local node.");
+                        "Snapshot with given name already exists on local node or the path is not empty.");
                 }
 
                 if (incremental) {

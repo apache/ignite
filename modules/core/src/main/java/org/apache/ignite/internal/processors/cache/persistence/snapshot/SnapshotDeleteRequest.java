@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -56,6 +57,21 @@ public class SnapshotDeleteRequest implements Message {
         this.reqId = reqId;
         this.snpName = snpName;
         this.snpPath = snpPath;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SnapshotDeleteRequest other = (SnapshotDeleteRequest)o;
+
+        return snpName.equals(other.snpName) && Objects.equals(snpPath, other.snpPath);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(snpName, snpPath);
     }
 
     /** {@inheritDoc} */
