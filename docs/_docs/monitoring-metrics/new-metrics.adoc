@@ -35,6 +35,7 @@ Register name: `sys`
 |ThreadCount | integer | Current number of live threads, including daemon threads.
 |TotalExecutedTasks | long | Total executed tasks.
 |TotalStartedThreadCount | long | Total number of threads created and started since the JVM started.
+|BlockedSystemThreadsCount | long | Total number of blocked system-critical threads.
 |UpTime | long | JVM uptime, in milliseconds.
 |memory.heap.committed | long | Amount of heap memory committed for the JVM to use, in bytes.
 |memory.heap.init | long | Initial amount of heap memory requested by the JVM, in bytes; -1 if undefined.

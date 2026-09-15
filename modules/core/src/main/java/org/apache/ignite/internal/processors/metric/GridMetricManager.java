@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -247,6 +248,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             "CPU time of the thread that reads the metric, in nanoseconds.");
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime,
             "User-mode CPU time of the thread that reads the metric, in nanoseconds.");
+
+        WorkersRegistry workersRegistry = ctx.workersRegistry();
+
+        // Workers registry can be unavailable in standalone (WAL reader) and test contexts.
+        if (workersRegistry != null)
+            workersRegistry.registerMetrics(sysreg);
 
         MetricRegistryImpl pmeReg = registry(PME_METRICS);
 
