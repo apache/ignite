@@ -185,7 +185,7 @@ public class SnapshotDeleteProcess {
                     reqLocFut.onDone(new SnapshotDeleteResponse(res));
                 }
                 finally {
-                    requests.remove(req.snpName);
+                    requests.remove(req);
                 }
             });
 
@@ -195,7 +195,7 @@ public class SnapshotDeleteProcess {
             return reqLocFut;
         }
         catch (Throwable t) {
-            requests.remove(req.snpName);
+            requests.remove(req);
 
             log.warning("An error occurred during snapshot deletion [req=" + req + ']', t);
 

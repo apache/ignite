@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -177,6 +178,45 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         assertFalse(F.isEmpty(delSnpRes.emptyNodes));
         assertTrue(delSnpRes.emptyNodes.contains(grid(G.allGrids().size() - 1).localNode().id()));
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
+    }
+
+    /** Tests snapshot deletion repeat after an offline node restarts. */
+    @Test
+    public void testLeftPart() throws Exception {
+        separatedWorkDir = true;
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        int stoppedNodeIdx = G.allGrids().size() - 1;
+
+        UUID stoppedNodeId = grid(stoppedNodeIdx).localNode().id();
+
+        stopGrid(stoppedNodeIdx);
+
+        var delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertEquals(2, delSnpRes.completedNodes.size());
+        assertFalse(delSnpRes.completedNodes.contains(stoppedNodeId));
+
+        assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
+        assertTrue(F.isEmpty(delSnpRes.emptyNodes));
+
+        startGrid(stoppedNodeIdx);
+
+        stoppedNodeId = grid(stoppedNodeIdx).localNode().id();
+
+        delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertEquals(1, delSnpRes.completedNodes.size());
+        assertTrue(delSnpRes.completedNodes.contains(stoppedNodeId));
+
+        assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
+        assertEquals(2, delSnpRes.emptyNodes.size());
     }
 
     /** Tests that a concurrent deletion of a snapshot with the same name but different path is allowed. */
