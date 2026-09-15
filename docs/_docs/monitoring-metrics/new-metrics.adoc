@@ -25,6 +25,7 @@ Register name: `sys`
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
+|BlockedSystemThreadsCount | long | Total number of blocked system-critical threads.
 |CpuLoad | double | CPU load.
 |CurrentThreadCpuTime | long | CPU time of the thread that reads the metric, in nanoseconds.
 |CurrentThreadUserTime | long | User-mode CPU time of the thread that reads the metric, in nanoseconds.
@@ -45,6 +46,8 @@ Register name: `sys`
 |memory.nonheap.max | long | Maximum amount of non-heap memory that can be used, in bytes; -1 if undefined.
 |memory.nonheap.used | long | Amount of used non-heap memory, in bytes.
 |===
+
+NOTE: `BlockedSystemThreadsCount` counts blocking episodes, not detection passes — a worker with a stale heartbeat is counted once until it makes progress again. The detection timeout is defined by `IgniteConfiguration.setSystemWorkerBlockedTimeout` and defaults to `failureDetectionTimeout`. A detection invokes the failure handler with the `SYSTEM_WORKER_BLOCKED` failure type — the default handler stops the node. Detections ignored by a custom failure handler are also counted in the `failure.ignored.SYSTEM_WORKER_BLOCKED` metric.
 
 == Node
 
