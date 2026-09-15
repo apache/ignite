@@ -469,6 +469,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private boolean skipAddrsRandomization = false;
 
     /** Socket write timeouts count metric. */
+    @GridToStringExclude
     private AtomicLongMetric writeTimedOutCntMetric;
 
     /**
