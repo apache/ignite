@@ -67,7 +67,6 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -733,7 +732,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param sft Snapshot file tree
      */
     public boolean deleteLocalSnapshot(SnapshotFileTree sft) {
-        return deleteLocalSnapshot(sft, null, null);
+        return deleteLocalSnapshot(sft, null);
     }
 
     /**
@@ -741,40 +740,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param sft Snapshot file tree
      * @param existsFlag Flag to set {@code true} if any snapshot file or directory was found (existed). If {@code null}, ignored.
-     * @param cancel If not {@code null}, is being periodically checked to stop deletion.
      * @return {@code True}, if data is found and completely deleted or if no data found;
      *         {@code False}, if data is found but might not be deleted completely or if was canceled.
      */
-    public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag, @Nullable Supplier<Boolean> cancel) {
+    public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
         AtomicBoolean res = new AtomicBoolean(true);
 
-        sft.allStorages().forEach(f -> {
-            if (cancel == null || !cancel.get())
-                deleteAndCheckExisted(f, res, existsFlag);
-        });
-
-        if (cancel != null && cancel.get())
-            return false;
+        sft.allStorages().forEach(f -> deleteAndCheckExisted(f, res, existsFlag));
 
         deleteAndCheckExisted(sft.binaryMeta(), res, existsFlag);
-
-        if (cancel != null && cancel.get())
-            return false;
-
         deleteAndCheckExisted(sft.binaryMetaRoot(), res, existsFlag);
-
-        if (cancel != null && cancel.get())
-            return false;
-
         deleteAndCheckExisted(sft.marshaller(), res, existsFlag);
-
-        if (cancel != null && cancel.get())
-            return false;
-
         deleteAndCheckExisted(sft.root(), res, existsFlag);
-
-        if (cancel != null && cancel.get())
-            return false;
 
         return res.get();
     }

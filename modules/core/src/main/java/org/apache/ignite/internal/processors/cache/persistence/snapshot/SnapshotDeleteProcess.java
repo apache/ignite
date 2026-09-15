@@ -161,11 +161,7 @@ public class SnapshotDeleteProcess {
                 try {
                     AtomicBoolean foundFlag = new AtomicBoolean();
 
-                    boolean deleted = snpMgr.deleteLocalSnapshot(
-                        new SnapshotFileTree(kctx, req.snpName, req.snpPath),
-                        foundFlag,
-                        () -> interrupted || kctx.isStopping()
-                    );
+                    boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
 
                     SnapshotDeleteResponse.SnapshotDeleteStatus res;
 
