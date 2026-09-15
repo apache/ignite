@@ -157,14 +157,14 @@ public class ConverterUtils {
 
     /** */
     private static Expression fromInternal(@Nullable Expression root, Expression operand, Type targetType) {
+        if (Types.isAssignableFrom(targetType, operand.getType()))
+            return operand;
+
         // Preserve Calcite's calendar conversion for JDBC dates and timestamps.
         Expression converted = fromInternal(operand, targetType);
 
         if (root == null || converted != operand || !TypeUtils.isConvertableType(targetType))
             return converted;
-
-        if (Types.isAssignableFrom(targetType, operand.getType()))
-            return operand;
 
         if (Primitive.is(operand.getType()))
             operand = Expressions.box(operand);

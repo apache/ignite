@@ -85,7 +85,11 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.t
 
 /** */
 public class TypeUtils {
-    /** Start of the Gregorian part of the calendar used by JDBC temporal types. */
+    /**
+     * Cutover (1582-10-15) for the calendar used by {@link java.sql.Date} and {@link Timestamp}.
+     * These classes interpret earlier dates using the Julian calendar; {@link LocalDate}, {@link LocalDateTime}
+     * and Calcite use the proleptic Gregorian calendar. Conversions must preserve the calendar date.
+     */
     private static final long GREGORIAN_CUTOVER =
         LocalDate.of(1582, 10, 15).toEpochDay() * DateTimeUtils.MILLIS_PER_DAY;
 
@@ -433,10 +437,13 @@ public class TypeUtils {
         long time = val.getTime();
         long locTs = time + tz.getOffset(time);
 
+        // The calendars agree from the cutover onward; avoid calendar conversion and allocation for these dates.
         if (locTs >= GREGORIAN_CUTOVER)
             return locTs;
 
-        // JDBC uses the Julian calendar before the cutover; Calcite uses the proleptic Gregorian calendar.
+        // java.sql.Date and Timestamp use the Julian calendar before the cutover, while Calcite uses the
+        // proleptic Gregorian calendar. Using only the time-zone-adjusted millis would turn a java.sql.Date
+        // representing 1500-01-02 into SQL DATE '1500-01-11'. Preserve its calendar fields instead.
         Calendar cal = new GregorianCalendar(DateTimeUtils.UTC_ZONE, Locale.ROOT);
 
         cal.setTimeInMillis(locTs);
@@ -545,7 +552,7 @@ public class TypeUtils {
             cal.set(date.getYear() > 0 ? date.getYear() : 1 - date.getYear(), date.getMonthValue() - 1,
                 date.getDayOfMonth());
 
-            // Reconstruct the same calendar date in JDBC before applying the query's time zone.
+            // Reconstruct the date in the legacy Java calendar before applying the query's time zone.
             ts = cal.getTimeInMillis() + Math.floorMod(ts, DateTimeUtils.MILLIS_PER_DAY);
         }
 

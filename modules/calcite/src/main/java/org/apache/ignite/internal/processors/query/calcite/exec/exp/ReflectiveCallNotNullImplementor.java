@@ -75,15 +75,12 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
 
             if (converted != callExpr)
                 callExpr = converted;
-            else {
-                Expression result = method.getReturnType().isPrimitive() ? Expressions.box(callExpr) : callExpr;
-
+            else
                 callExpr = Expressions.convert_(
-                    Expressions.call(TypeUtils.class, "toInternal", translator.getRoot(), result,
+                    Expressions.call(TypeUtils.class, "toInternal", translator.getRoot(), callExpr,
                         Expressions.constant(method.getReturnType())),
                     targetType
                 );
-            }
         }
 
         if (!containsCheckedException(method))
