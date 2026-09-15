@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.Join;
@@ -70,20 +69,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
     /** */
     public Double getRowCount(IgniteCorrelatedNestedLoopJoin rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
-    }
-
-    /**
-     * Row count of a subset.
-     *
-     * <p>In the Volcano model cardinality is a property of the whole equivalence set, so it is estimated by the original
-     * (logical) expression of the set. Calcite's implementation delegates to the current best expression instead, which
-     * changes during optimization: estimates of the same expression become unstable, costs inconsistent, and best
-     * expressions of different subsets of the same set may end up referencing each other (see CALCITE-1048).
-     * The latter case is still handled defensively: cyclic expressions are skipped and the minimum over the remaining
-     * expressions of the subset is returned.
-     */
-    @Override public Double getRowCount(RelSubset rel, RelMetadataQuery mq) {
-        return mq.getRowCount(rel.getOriginal());
     }
 
     /** {@inheritDoc} */

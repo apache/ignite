@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
     ExecutionTestSuite.class,
     JdbcTestSuite.class,
 
-    //ScriptTestSuite.class,
+    ScriptTestSuite.class,
 })
 public class IgniteCalciteTestSuite2 {
 }
