@@ -269,29 +269,23 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
     ) {
         if (rel.projects() != null) {
             RexNode node = rel.projects().get(iOutputColumn);
-/*            if (node instanceof RexInputRef) {
-                RexInputRef inputRef = (RexInputRef)node;
-                iOutputColumn = inputRef.getIndex();
-            }
-            else {*/
-                Set<RexSlot> sources = new HashSet<>();
+            Set<RexSlot> sources = new HashSet<>();
 
-                getOperands(node, RexSlot.class, sources);
+            getOperands(node, RexSlot.class, sources);
 
-                boolean derived = sources.size() > 1;
-                Set<RelColumnOrigin> res = new HashSet<>();
+            boolean derived = sources.size() > 1;
+            Set<RelColumnOrigin> res = new HashSet<>();
 
-                for (RexSlot slot : sources) {
-                    if (slot instanceof RexLocalRef) {
-                        RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
+            for (RexSlot slot : sources) {
+                if (slot instanceof RexLocalRef) {
+                    RelColumnOrigin slotOrigin = rel.columnOriginsByRelLocalRef(slot.getIndex());
 
-                        res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
-                            derived));
-                    }
+                    res.add(new RelColumnOrigin(slotOrigin.getOriginTable(), slotOrigin.getOriginColumnOrdinal(),
+                        derived));
                 }
+            }
 
-                return res;
-            //}
+            return res;
         }
 
         ImmutableBitSet requiredColumns = rel.requiredColumns();

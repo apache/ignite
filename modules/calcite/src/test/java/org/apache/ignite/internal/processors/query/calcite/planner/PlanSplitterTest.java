@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.core.Exchange;
-import org.apache.calcite.rel.core.Join;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
@@ -29,9 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
