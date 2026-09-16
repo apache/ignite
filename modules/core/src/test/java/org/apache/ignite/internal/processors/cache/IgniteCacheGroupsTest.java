@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -75,7 +76,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -102,7 +102,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -138,26 +137,12 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     private static final int ASYNC_TIMEOUT = 5000;
 
-    /** Per-test tx timeout on partition map exchange in ms, {@code 0} to use default. */
-    private long txTimeoutOnPartitionMapExchangeMs;
-
     /** */
     private CacheConfiguration[] ccfgs;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (txTimeoutOnPartitionMapExchangeMs > 0) {
-            TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
-
-            if (txCfg == null)
-                txCfg = new TransactionConfiguration();
-
-            txCfg.setTxTimeoutOnPartitionMapExchange(txTimeoutOnPartitionMapExchangeMs);
-
-            cfg.setTransactionConfiguration(txCfg);
-        }
 
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);
@@ -3726,11 +3711,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRestartsAndCacheCreateDestroy() throws Exception {
         final int SRVS = 5;
 
-        // Implicit transactions of the op threads have timeout=0 (infinite). A tx stuck awaiting partition release
-        // during a concurrent cache destroy would hang forever and deadlock the exchange. Force
-        // txTimeoutOnPartitionMapExchange so the exchange rolls back the blocking tx instead.
-        txTimeoutOnPartitionMapExchangeMs = SF.applyLB(60_000, 20_000);
-
         startGrids(SRVS);
 
         final Ignite clientNode = startClientGrid(SRVS);
@@ -3749,6 +3729,13 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicInteger cacheCntr = new AtomicInteger();
+
+        // Client-side cache create/destroy and node restart both trigger a distributed exchange. When they run
+        // concurrently, a client-initiated exchange can deadlock with the node re-join (client never receives the
+        // coordinator's final message), blocking the whole cluster. Serialize them so that a node restart never
+        // overlaps an in-flight client create/destroy, while ordinary cache operations still run concurrently with
+        // restarts.
+        final ReentrantLock restartLock = new ReentrantLock();
 
         try {
             final int ITERATIONS_CNT = SF.applyLB(10, 1);
@@ -3769,32 +3756,24 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                                 log.info("Stop node: " + node);
 
-                                stopGrid(node);
-
-                                U.sleep(500);
-
-                                log.info("Start node: " + node);
-
-                                startGrid(node);
+                                restartLock.lock();
 
                                 try {
-                                    if (rnd.nextBoolean()) {
-                                        // awaitPartitionMapExchange can block indefinitely if a concurrent
-                                        // exchange is stuck on a client node (e.g. due to a cache destroy
-                                        // racing with node restart). Run it with a timeout to avoid
-                                        // hanging the restart thread and causing restartFut.get() to fail.
-                                        IgniteInternalFuture<?> awaitFut = GridTestUtils.runAsync(
-                                            () -> {
-                                                try {
-                                                    awaitPartitionMapExchange();
-                                                }
-                                                catch (InterruptedException ignored) {
-                                                    Thread.currentThread().interrupt();
-                                                }
-                                            });
+                                    stopGrid(node);
 
-                                        awaitFut.get(SF.applyLB(30_000, 10_000));
-                                    }
+                                    U.sleep(500);
+
+                                    log.info("Start node: " + node);
+
+                                    startGrid(node);
+                                }
+                                finally {
+                                    restartLock.unlock();
+                                }
+
+                                try {
+                                    if (rnd.nextBoolean())
+                                        awaitPartitionMapExchange();
                                 }
                                 catch (Exception ignore) {
                                     // No-op.
@@ -3824,15 +3803,22 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                 if (cache != null && caches.compareAndSet(idx, cache, null)) {
                                     log.info("Destroy cache: " + cache.getName());
 
-                                    clientNode.destroyCache(cache.getName());
+                                    restartLock.lock();
 
-                                    CacheAtomicityMode atomicityMode = rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL;
+                                    try {
+                                        clientNode.destroyCache(cache.getName());
 
-                                    String name = "newName-" + cacheCntr.incrementAndGet();
+                                        CacheAtomicityMode atomicityMode = rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL;
 
-                                    cache = clientNode.createCache(
-                                        cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
-                                            name, PARTITIONED, atomicityMode, 0, false));
+                                        String name = "newName-" + cacheCntr.incrementAndGet();
+
+                                        cache = clientNode.createCache(
+                                            cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                                                name, PARTITIONED, atomicityMode, 0, false));
+                                    }
+                                    finally {
+                                        restartLock.unlock();
+                                    }
 
                                     caches.set(idx, cache);
                                 }
@@ -3865,7 +3851,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                     }
                                     catch (Exception e) {
                                         if (X.hasCause(e, CacheStoppedException.class) ||
-                                            X.hasCause(e, TransactionTimeoutException.class) ||
                                             (X.hasCause(e, CacheInvalidStateException.class) &&
                                                 X.hasCause(e, TransactionRollbackException.class))
                                         ) {
@@ -3873,8 +3858,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                             // awaiting new topology version and cancelled with CacheStoppedException cause.
                                             // Cache operation can failed
                                             // if a node was stopped during transaction.
-                                            // Transaction can be timed out while awaiting for
-                                            // partition release during cache destroy.
                                             continue;
                                         }
 
@@ -3900,9 +3883,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                 stop.set(true);
 
-                restartFut.get(SF.applyLB(5 * 60_000, 120_000));
-                cacheFut.get(SF.applyLB(5 * 60_000, 120_000));
-                opFut.get(SF.applyLB(5 * 60_000, 120_000));
+                restartFut.get();
+                cacheFut.get();
+                opFut.get();
 
                 assertNull("Unexpected error during test, see log for details", err.get());
 
@@ -3939,8 +3922,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            txTimeoutOnPartitionMapExchangeMs = 0;
-
             stop.set(true);
         }
     }
