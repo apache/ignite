@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.thread.pool;
 
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.thread.pool.IgniteStripedExecutor.STARVATION_EVENTS_CNT;
 
 /**
  *
@@ -156,6 +160,31 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 1, 10000));
 
         assertTrue(stripedExecSvc.detectStarvation());
+    }
+
+    /**
+     * Tests that the {@code StarvationEventsCount} metric is registered in the metric registry with a zero initial value
+     * and is incremented when possible starvation is detected in the striped pool.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStarvationDetectedMetric() throws Exception {
+        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
+
+        stripedExecSvc.registerMetrics(mreg);
+
+        LongMetric metric = mreg.findMetric(STARVATION_EVENTS_CNT);
+
+        assertNotNull("Metric is not registered", metric);
+        assertEquals(0L, metric.value());
+
+        // Block a stripe to trigger possible starvation detection.
+        stripedExecSvc.execute(0, new TestRunnable(true));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
+
+        assertTrue("Metric is not incremented", metric.value() > 0);
     }
 
     /**

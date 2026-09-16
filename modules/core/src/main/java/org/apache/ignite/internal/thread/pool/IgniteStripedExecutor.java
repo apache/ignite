@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -68,6 +69,12 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
     /** @see IgniteSystemProperties#IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD */
     public static final int DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD = 4;
 
+    /** Starvation events count metric name. */
+    static final String STARVATION_EVENTS_CNT = "StarvationEventsCount";
+
+    /** Starvation events count metric description. */
+    private static final String STARVATION_EVENTS_CNT_DESC = "The number of possible starvation events detected in striped pool.";
+
     /** Stripes. */
     private final Stripe[] stripes;
 
@@ -80,6 +87,10 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
     /** Task execution time metric. */
     @GridToStringExclude
     private volatile HistogramMetricImpl execTime;
+
+    /** Starvation events count metric. */
+    @GridToStringExclude
+    private volatile AtomicLongMetric starvationEvtsCnt;
 
     /**
      * @param cnt Count.
@@ -176,6 +187,10 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
 
             if (active && lastStartedTs + threshold < U.currentTimeMillis()) {
                 starvationDetected = true;
+
+                if (starvationEvtsCnt != null)
+                    starvationEvtsCnt.increment();
+
                 boolean deadlockPresent = U.deadlockPresent();
 
                 GridStringBuilder sb = new GridStringBuilder();
@@ -497,6 +512,8 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
         mreg.register("DetectStarvation",
             this::detectStarvation,
             "True if possible starvation in striped pool is detected.");
+
+        starvationEvtsCnt = mreg.longMetric(STARVATION_EVENTS_CNT, STARVATION_EVENTS_CNT_DESC);
 
         mreg.register("TotalQueueSize",
             this::queueSize,
