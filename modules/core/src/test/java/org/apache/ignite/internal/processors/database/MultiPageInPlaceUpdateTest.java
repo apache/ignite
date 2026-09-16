@@ -28,10 +28,13 @@ import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -39,9 +42,11 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -372,7 +377,7 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
         int payloadSize,
         boolean expectInPlaceUpdate,
         boolean ensureTtlChanged
-    ) throws IgniteCheckedException {
+    ) {
         int key = 0;
 
         byte[] payload = new byte[payloadSize];
@@ -381,9 +386,9 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
         cache.put(key, payload);
         long link = link(ignite, key);
 
-        long ts = U.currentTimeMillis();
-
         if (ensureTtlChanged) {
+            long ts = U.currentTimeMillis();
+
             while (ts == U.currentTimeMillis())
                 doSleep(10);
         }
@@ -396,7 +401,88 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private long link(IgniteEx ignite, Object key) throws IgniteCheckedException {
+    @Test
+    public void testInPlaceUpdateRowSizeCalculation() throws Exception {
+        CacheConfiguration<Integer, byte[]> plainCacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        // When cache belongs to shared group - cacheId is stored in CacheDataRow (but not always in the page store).
+        CacheConfiguration<Integer, byte[]> cacheCfgWithGrp = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        cacheCfgWithGrp.setGroupName("grp");
+
+        for (CacheConfiguration<Integer, byte[]> ccfg : F.asList(plainCacheCfg, cacheCfgWithGrp)) {
+            IgniteConfiguration plainCfg = getConfiguration(getTestIgniteInstanceName(0));
+            // When eviction is enabled - cacheId is always stored in the page store.
+            IgniteConfiguration cfgWithEviction = getConfiguration(getTestIgniteInstanceName(0))
+                .setDataStorageConfiguration(new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                        .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU)));
+
+            checkInPlaceUpdateRowSizeCalculation(plainCfg, ccfg);
+            checkInPlaceUpdateRowSizeCalculation(cfgWithEviction, ccfg);
+        }
+    }
+
+    /** */
+    private void checkInPlaceUpdateRowSizeCalculation(
+        IgniteConfiguration cfg,
+        CacheConfiguration<Integer, byte[]> ccfg
+    ) throws Exception {
+        try (IgniteEx ignite = startGrid(cfg)) {
+            IgniteCache<Integer, byte[]> cache = ignite.createCache(ccfg);
+
+            checkLinkChange(ignite, cache, 10_000, true, false);
+        }
+    }
+
+    /** */
+    @Test
+    public void testConcurrentInPlaceUpdate() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        int entrySize = 100 * 1024;
+        int entryCnt = 100;
+        byte[][] payloads = new byte[entryCnt][entrySize];
+
+        for (int i = 0; i < entryCnt; i++) {
+            ThreadLocalRandom.current().nextBytes(payloads[i]);
+
+            payloads[i][0] = (byte)i; // Store index of payload as first element.
+
+            cache.put(i, payloads[i]);
+        }
+
+        AtomicBoolean end = new AtomicBoolean();
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+            () -> {
+                while (!end.get()) {
+                    int key = ThreadLocalRandom.current().nextInt(entryCnt);
+
+                    long link = link(ignite, key);
+
+                    cache.put(key, payloads[ThreadLocalRandom.current().nextInt(payloads.length)]);
+
+                    assertEquals(link, link(ignite, key));
+                }
+            }, 10, "workload");
+
+        doSleep(5_000L);
+
+        end.set(true);
+
+        fut.get(5_000L);
+
+        for (int i = 0; i < entryCnt; i++) {
+            byte[] val = cache.get(i);
+
+            int payloadIdx = val[0];
+
+            assertEqualsArraysAware(val, payloads[payloadIdx]); // Check that value is consistent.
+        }
+    }
+
+    /** */
+    private long link(IgniteEx ignite, Object key) {
         KeyCacheObject keyCacheObj = ignite.cachex(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key);
         SearchRow searchRow = new SearchRow(CU.cacheId(DEFAULT_CACHE_NAME), keyCacheObj);
 
@@ -405,10 +491,15 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
 
         assertNotNull(tree);
 
-        CacheDataRow row = tree.findOne(searchRow);
-        assertNotNull(row);
+        try {
+            CacheDataRow row = tree.findOne(searchRow);
+            assertNotNull(row);
 
-        return row.link();
+            return row.link();
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
