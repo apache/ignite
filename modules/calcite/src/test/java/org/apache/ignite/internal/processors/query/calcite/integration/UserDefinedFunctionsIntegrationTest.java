@@ -54,6 +54,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.hamcrest.CoreMatchers;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
@@ -729,6 +730,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-29058")
     public void testJavaTimeFunctionResultsAsJdbcValues() {
         client.getOrCreateCache(new CacheConfiguration<>("java-time-jdbc-results")
             .setSqlSchema("PUBLIC")

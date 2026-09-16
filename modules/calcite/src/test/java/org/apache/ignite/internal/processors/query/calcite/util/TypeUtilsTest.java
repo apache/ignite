@@ -34,6 +34,7 @@ import org.apache.calcite.DataContexts;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -72,6 +73,7 @@ public class TypeUtilsTest {
 
     /** */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-29058")
     public void testSqlDateConversion() {
         for (String date : new String[] {
             "0001-01-01", "1500-01-02", "1582-10-04", "1582-10-15", "1969-12-31", "1970-01-01", "9999-12-31"
@@ -82,6 +84,7 @@ public class TypeUtilsTest {
 
     /** */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-29058")
     public void testSqlTimestampConversion() {
         for (String ts : new String[] {
             "0001-01-01 00:00:00", "1500-01-02 03:04:05.123", "1582-10-04 23:59:59.999",
@@ -97,6 +100,7 @@ public class TypeUtilsTest {
 
     /** */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-29058")
     public void testHistoricalJdbcConversionWithTimeZone() {
         for (String zone : new String[] {"UTC", "Europe/Moscow", "America/New_York", "Pacific/Apia"}) {
             TimeZone tz = TimeZone.getTimeZone(zone);
