@@ -60,24 +60,29 @@ public class IgniteClusterContainer implements Startable {
      * @param idx Node index.
      * @return The node container.
      */
-    protected IgniteContainer container(int idx) throws Exception {
+    protected IgniteContainer container(int idx) {
         return new IgniteContainer(imageName, net, "node" + (1 + idx), consistentIds.get(idx), idx);
     }
 
     /** Builds the node containers. */
-    protected void initContainers() throws Exception {
+    protected void initContainers() {
         for (int i = 0; i < consistentIds.size(); i++)
             containers.add(container(i));
     }
 
     /** {@inheritDoc} */
     @Override public void start() {
-        // Idempotent: either the cluster already started successfully, or container creation succeeded
-        // but startup (deepStart/activateCluster) failed on a previous attempt — in both cases the
-        // containers list is already populated and must not be built a second time (duplicate hostnames,
-        // consistent IDs and fixed host ports would make the baseline unreachable).
-        if (started || !containers.isEmpty())
+        if (started)
             return;
+
+        // Creation may have succeeded but startup (deepStart/activateCluster) failed on a previous attempt,
+        // leaving a partially started cluster. Retrying would create duplicate hostnames, consistent IDs and
+        // fixed host ports, making the baseline unreachable — surface it as an error rather than silently
+        // continuing with a cluster that was never activated.
+        if (!containers.isEmpty()) {
+            throw new IllegalStateException("Cluster partially started: containers are already created but start() "
+                + "did not complete (activateCluster was not reached). The first start() call must have failed.");
+        }
 
         try {
             initContainers();

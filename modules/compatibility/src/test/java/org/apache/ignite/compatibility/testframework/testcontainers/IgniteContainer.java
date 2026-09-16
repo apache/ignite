@@ -146,7 +146,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
      * @param consistentId Consistent ID.
      * @param idx Node index.
      */
-    public IgniteContainer(String imageName, Network net, String hostname, String consistentId, int idx) throws Exception {
+    public IgniteContainer(String imageName, Network net, String hostname, String consistentId, int idx) {
         super(DockerImageName.parse(imageName));
 
         this.hostname = hostname;
@@ -378,7 +378,7 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
     }
 
     /** */
-    protected String execControl(String... cmd) {
+    private String execControl(String... cmd) {
         ExecResult result;
 
         try {
@@ -450,7 +450,6 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
      *      their own jar instead of silently reusing the one built for the base class.
      */
     protected File testClassesJar() throws IOException {
-        // List.copyOf makes an immutable, value-comparable key.
         List<String> classes = List.copyOf(testClasses());
 
         File jar = TEST_CLASSES_JARS.get(classes);
@@ -553,20 +552,13 @@ public class IgniteContainer extends GenericContainer<IgniteContainer> {
         return res;
     }
 
-    /** A class resource: its name on the classpath paired with the already-resolved URL. */
-    private static final class ClassResource {
-        /** Resource name on the classpath. */
-        final String name;
-
-        /** Resolved URL of the resource. */
-        final URL url;
-
-        /** @param name Resource name on the classpath. */
-        ClassResource(String name, URL url) {
-            this.name = name;
-            this.url = url;
-        }
-    }
+    /**
+     * A class resource: its name on the classpath paired with the already-resolved URL.
+     *
+     * @param name Resource name on the classpath.
+     * @param url Resolved URL of the resource.
+     */
+    private record ClassResource(String name, URL url) { }
 
     /**
      * Returns a cached tar archive (plain, no gzip) containing all files from {@link #TARGET_LIBS_DIR}
