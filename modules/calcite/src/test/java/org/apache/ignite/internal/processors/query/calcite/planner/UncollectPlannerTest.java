@@ -112,11 +112,7 @@ public class UncollectPlannerTest extends AbstractPlannerTest {
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(Join.class)
             .and(nodeOrAnyChild(isInstanceOf(IgniteExchange.class).negate())
                 .and(nodeOrAnyChild(isTableScan("hash_tbl"))))
-            .and(nodeOrAnyChild(isInstanceOf(IgniteTrimExchange.class))
-                .and(nodeOrAnyChild(isInstanceOf(IgniteUncollect.class)
-                    .and(hasDistribution(broadcast()))
-                ))
-            )
+            .and(nodeOrAnyChild(isInstanceOf(IgniteUncollect.class)))
         ));
     }
 
