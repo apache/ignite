@@ -437,7 +437,7 @@ public class TypeUtils {
         long time = val.getTime();
         long locTs = time + tz.getOffset(time);
 
-        // The calendars agree from the cutover onward; avoid calendar conversion and allocation for these dates.
+        // Optimization: skip calendar conversion when both calendars agree.
         if (locTs >= GREGORIAN_CUTOVER)
             return locTs;
 
