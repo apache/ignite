@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -38,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -68,6 +71,12 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
     /** @see IgniteSystemProperties#IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD */
     public static final int DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD = 4;
 
+    /** Starvation events count metric name. */
+    static final String STARVATION_EVENTS_CNT = "StarvationEventsCount";
+
+    /** Starvation events count metric description. */
+    private static final String STARVATION_EVENTS_CNT_DESC = "The number of possible starvation events detected in striped pool.";
+
     /** Stripes. */
     private final Stripe[] stripes;
 
@@ -80,6 +89,14 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
     /** Task execution time metric. */
     @GridToStringExclude
     private volatile HistogramMetricImpl execTime;
+
+    /** Starvation events count metric. */
+    @GridToStringExclude
+    private volatile AtomicLongMetric starvationEvtsCnt;
+
+    /** Time of the last detected possible starvation event (epoch milliseconds), {@code 0} if none. */
+    @GridToStringExclude
+    private volatile long lastStarvationTs;
 
     /**
      * @param cnt Count.
@@ -176,6 +193,16 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
 
             if (active && lastStartedTs + threshold < U.currentTimeMillis()) {
                 starvationDetected = true;
+
+                if (stripe.starvationReported.compareAndSet(false, true)) {
+                    stripe.starvationCnt.incrementAndGet();
+
+                    lastStarvationTs = U.currentTimeMillis();
+
+                    if (starvationEvtsCnt != null)
+                        starvationEvtsCnt.increment();
+                }
+
                 boolean deadlockPresent = U.deadlockPresent();
 
                 GridStringBuilder sb = new GridStringBuilder();
@@ -350,6 +377,21 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
         return res;
     }
 
+    /** @return Starvation events count per stripe. */
+    public long[] stripesStarvationCounts() {
+        long[] res = new long[stripesCount()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].starvationCnt.get();
+
+        return res;
+    }
+
+    /** @return Time of the last detected possible starvation event (epoch milliseconds), {@code 0} if none. */
+    public long lastStarvationTime() {
+        return lastStarvationTs;
+    }
+
     /**
      * @return Number of active tasks per stripe.
      */
@@ -511,6 +553,17 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
             long[].class,
             "Number of completed tasks per stripe.");
 
+        starvationEvtsCnt = mreg.longMetric(STARVATION_EVENTS_CNT, STARVATION_EVENTS_CNT_DESC);
+
+        mreg.register("LastStarvationTime",
+            this::lastStarvationTime,
+            "Time of the last detected possible starvation event (epoch milliseconds), 0 if none.");
+
+        mreg.register("StripesStarvationCounts",
+            this::stripesStarvationCounts,
+            long[].class,
+            "Starvation events count per stripe.");
+
         mreg.register("ActiveCount",
             this::activeStripesCount,
             "Number of active tasks of all stripes.");
@@ -561,6 +614,12 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
 
         /** */
         private volatile long lastStartedTs;
+
+        /** Flag indicating whether possible starvation is already reported for the task being executed. */
+        private final AtomicBoolean starvationReported = new AtomicBoolean();
+
+        /** Starvation events count detected on this stripe. */
+        private final AtomicInteger starvationCnt = new AtomicInteger();
 
         /** Thread executing the loop. */
         protected Thread thread;
@@ -639,6 +698,8 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
                             cmd.run();
                         }
                         finally {
+                            starvationReported.set(false);
+
                             active = false;
                             completedCnt++;
 

@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.thread.pool;
 
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.thread.pool.IgniteStripedExecutor.STARVATION_EVENTS_CNT;
 
 /**
  *
@@ -158,6 +163,72 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
         assertTrue(stripedExecSvc.detectStarvation());
     }
 
+    /** */
+    @Test
+    public void testStarvationDetectedMetric() throws Exception {
+        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
+
+        stripedExecSvc.registerMetrics(mreg);
+
+        LongMetric metric = mreg.findMetric(STARVATION_EVENTS_CNT);
+
+        assertNotNull("Metric is not registered", metric);
+        assertEquals(0L, metric.value());
+        assertEquals(0L, stripedExecSvc.lastStarvationTime());
+
+        stripedExecSvc.execute(0, new TestRunnable(true));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
+
+        assertEquals("Metric is not incremented", 1L, metric.value());
+
+        stripedExecSvc.detectStarvation();
+        stripedExecSvc.detectStarvation();
+
+        assertEquals("Metric is incremented on repeated detection", 1L, metric.value());
+
+        long[] starvationCnts = stripedExecSvc.stripesStarvationCounts();
+
+        assertEquals(1, starvationCnts[0]);
+        assertEquals(0, starvationCnts[1]);
+        assertEquals(0, starvationCnts[2]);
+
+        assertTrue(stripedExecSvc.lastStarvationTime() > 0);
+    }
+
+    /** */
+    @Test
+    public void testStarvationMetricNewEpisode() throws Exception {
+        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
+
+        stripedExecSvc.registerMetrics(mreg);
+
+        LongMetric metric = mreg.findMetric(STARVATION_EVENTS_CNT);
+
+        TestLatchRunnable task1 = new TestLatchRunnable();
+
+        stripedExecSvc.execute(0, task1);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
+
+        assertEquals(1L, metric.value());
+
+        task1.release();
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 10_000));
+
+        TestLatchRunnable task2 = new TestLatchRunnable();
+
+        stripedExecSvc.execute(0, task2);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
+
+        assertEquals(2L, metric.value());
+        assertEquals(2L, stripedExecSvc.stripesStarvationCounts()[0]);
+
+        task2.release();
+    }
+
     /**
      *
      */
@@ -184,6 +255,27 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
             try {
                 while (infinitely)
                     sleepASec();
+            }
+            catch (InterruptedException e) {
+                info("Got interrupted exception while sleeping: " + e);
+            }
+        }
+    }
+
+    /** */
+    private final class TestLatchRunnable implements Runnable {
+        /** */
+        private final CountDownLatch latch = new CountDownLatch(1);
+
+        /** Releases the task. */
+        public void release() {
+            latch.countDown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                latch.await();
             }
             catch (InterruptedException e) {
                 info("Got interrupted exception while sleeping: " + e);
