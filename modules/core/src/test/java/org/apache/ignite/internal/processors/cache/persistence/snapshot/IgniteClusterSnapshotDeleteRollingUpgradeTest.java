@@ -27,9 +27,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_PREPARE_VERSION_FINALIZATION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
@@ -64,6 +68,47 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         );
 
         return cfg;
+    }
+
+    /** */
+    @Test
+    public void testConcurrentUnfinishedRU() throws Exception {
+        for (int i = 0; i < ALL_GRIDS; i++)
+            startGrid(i, "2.19.0", i >= ALL_GRIDS - CLIENTS);
+
+        grid(0).cluster().active(true);
+
+        int testNodeIx = ALL_GRIDS - CLIENTS - 1;
+
+        createCacheAndSnapshot(testNodeIx);
+
+        ru(grid(testNodeIx)).enableVersionUpgrade();
+
+        for (int i = 0; i < ALL_GRIDS; i++) {
+            assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
+
+            upgradeNodeVersion(i, "2.19.1");
+        }
+
+        spi(grid(testNodeIx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
+            snm.type() == RU_PREPARE_VERSION_FINALIZATION.ordinal());
+
+        var finalizeFut = GridTestUtils.runAsync(() -> ru(testNodeIx).finalizeClusterVersion());
+
+        assertTrue(spi(grid(testNodeIx)).waitForBlocked(1, getTestTimeout()));
+
+        ensureSnapshotDeletionFailed();
+
+        spi(grid(testNodeIx)).stopBlock();
+
+        assertFalse(spi(grid(testNodeIx)).hasBlockedMessages());
+
+        finalizeFut.get(getTestTimeout());
+
+        for (int i = 0; i < ALL_GRIDS; i++)
+            assertFalse(ru(grid(i)).isVersionUpgradeEnabled());
+
+        assertFalse(F.isEmpty(snp(1).deleteSnapshot(SNP_NAME, null).get(getTestTimeout()).completedNodes));
     }
 
     /** */
