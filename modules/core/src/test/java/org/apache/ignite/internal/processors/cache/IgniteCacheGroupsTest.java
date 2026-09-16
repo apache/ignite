@@ -3778,8 +3778,23 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                 startGrid(node);
 
                                 try {
-                                    if (rnd.nextBoolean())
-                                        awaitPartitionMapExchange();
+                                    if (rnd.nextBoolean()) {
+                                        // awaitPartitionMapExchange can block indefinitely if a concurrent
+                                        // exchange is stuck on a client node (e.g. due to a cache destroy
+                                        // racing with node restart). Run it with a timeout to avoid
+                                        // hanging the restart thread and causing restartFut.get() to fail.
+                                        IgniteInternalFuture<?> awaitFut = GridTestUtils.runAsync(
+                                            () -> {
+                                                try {
+                                                    awaitPartitionMapExchange();
+                                                }
+                                                catch (InterruptedException ignored) {
+                                                    Thread.currentThread().interrupt();
+                                                }
+                                            });
+
+                                        awaitFut.get(SF.applyLB(30_000, 10_000));
+                                    }
                                 }
                                 catch (Exception ignore) {
                                     // No-op.
