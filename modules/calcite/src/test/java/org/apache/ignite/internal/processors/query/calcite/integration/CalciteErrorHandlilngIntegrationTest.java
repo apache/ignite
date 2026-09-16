@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -50,6 +49,8 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor.CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG;
 
 /** */
 @WithSystemProperty(key = "calcite.debug", value = "false")
@@ -86,7 +87,7 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
                     String root = GridTestUtils.getFieldValue(req, "root");
 
                     GridTestUtils.setFieldValue(req, "root",
-                        root.replace("\"joinType\":\"inner\"", "\"joinType\":\"ASOF\""));
+                        root.replace("\"joinType\":\"inner\"", "\"joinType\":\"full\""));
                 }
 
                 super.sendMessage(node, msg, ackC);
@@ -100,11 +101,11 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
 
         sql(client, "create table test (id int primary key, val varchar)");
 
-        String sql = "select /*+ NL_JOIN */ t1.id " +
+        String sql = "select /*+ CNL_JOIN */ t1.id " +
             "from test t1, test t2 where t1.id = t2.id";
 
-        Throwable t = GridTestUtils.assertThrowsWithCause(() -> sql(client, sql), IgniteSQLException.class);
-        assertEquals("Join type 'ASOF' is not supported.", t.getCause().getMessage());
+        Throwable t = GridTestUtils.assertThrowsWithCause(() -> sql(client, sql), AssertionError.class);
+        assertEquals(CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG, t.getCause().getMessage());
     }
 
     /**
