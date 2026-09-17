@@ -890,7 +890,6 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue("Metric is not incremented", metric.value() > 0);
     }
 
-
     /** */
     @Test
     @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "100")
