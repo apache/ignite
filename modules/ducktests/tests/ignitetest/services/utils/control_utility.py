@@ -180,16 +180,6 @@ class ControlUtility:
 
         return re.search(r'/.*.txt', data).group(0)
 
-    def cache_destroy(self, cache_names):
-        """
-        Destroys caches.
-        :param cache_names: Cache name, or list of cache names.
-        """
-        if isinstance(cache_names, str):
-            cache_names = [cache_names]
-
-        return self.__run(f"--cache destroy --caches {','.join(cache_names)} --yes")
-
     def cache_distribution(self, node_id=None, cache_names=None, user_attributes=None):
         """
         Prints partition distribution.
