@@ -997,7 +997,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             try {
                 batch.add(new DataRowCacheAware(info.key(),
-                    info.value(),
+                    // Already expired value is stored as removed, don't insert it to the row store (see IGNITE-25194).
+                    CU.isExpired(info.expireTime()) ? null : info.value(),
                     info.version(),
                     part.id(),
                     info.expireTime(), info.cacheId(), grp.storeCacheIdInDataPage()));
