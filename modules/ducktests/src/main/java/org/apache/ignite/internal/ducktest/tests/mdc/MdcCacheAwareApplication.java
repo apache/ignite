@@ -65,8 +65,7 @@ import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
  *     <li>{@code writeSync} - {@link CacheWriteSynchronizationMode}, default {@code FULL_SYNC}.
  *         Note: MDC-aware local reads require a mode other than {@code PRIMARY_SYNC};</li>
  *     <li>{@code readFromBackup} - default {@code true}, required for DC-local reads;</li>
- *     <li>{@code partitions} - affinity partitions number, default 512;</li>
- *     <li>{@code backupFilter} - whether to set the MDC affinity backup filter, default {@code true}.</li>
+ *     <li>{@code partitions} - affinity partitions number, default 512.</li>
  * </ul>
  */
 public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
@@ -173,9 +172,6 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
      */
     protected IgniteBiPredicate<ClusterNode, List<ClusterNode>> backupFilter(JsonNode jNode, int dcsNum,
         int backups) {
-        if (!jNode.path("backupFilter").asBoolean(true))
-            return null;
-
         return new MdcAffinityBackupFilter(dcsNum, backups);
     }
 

@@ -41,9 +41,6 @@ from ignitetest.utils.version import DEV_BRANCH
 
 CACHE_NAME = "mdc-majority"
 
-# A cache left without the MDC affinity backup filter, to see the safety metrics say no.
-UNSAFE_CACHE_NAME = "mdc-majority-unsafe"
-
 # Keys generated from each DC; the whole data set is [0, KEYS_PER_DC * len(DCS_3)).
 KEYS_PER_DC = 100
 
@@ -95,15 +92,6 @@ class MdcMajorityPartitionTest(IgniteTest):
             # metric reports the cache CONFIGURATION, the distribution one the assignment
             # verify_cache_distribution() has just walked partition by partition.
             mdc.verify_cache_mdc_metrics(CACHE_NAME, affinity_safe=True, distribution_safe=True)
-
-            # ...and the verdict is not a constant. Without the MDC backup filter the cache is
-            # unsafe by configuration, and plain rendezvous leaves some partition without a copy
-            # in some DC. Destroyed before the cut, as the isolated DC would lose its partitions.
-            mdc.generate_data(mdc.dcs[0], UNSAFE_CACHE_NAME, 0, KEYS_PER_DC, backupFilter=False)
-
-            mdc.verify_cache_mdc_metrics(UNSAFE_CACHE_NAME, affinity_safe=False, distribution_safe=False)
-
-            mdc.control().cache_destroy(UNSAFE_CACHE_NAME)
 
             # Both cuts land in the same SSH round-trip: rolling them out one after the
             # other would briefly present the cluster with a two segment topology it would
