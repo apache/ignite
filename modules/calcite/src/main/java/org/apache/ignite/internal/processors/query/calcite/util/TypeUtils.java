@@ -30,8 +30,11 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -82,6 +85,14 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.t
 
 /** */
 public class TypeUtils {
+    /**
+     * Cutover (1582-10-15) for the calendar used by {@link java.sql.Date} and {@link Timestamp}.
+     * These classes interpret earlier dates using the Julian calendar; {@link LocalDate}, {@link LocalDateTime}
+     * and Calcite use the proleptic Gregorian calendar. Conversions must preserve the calendar date.
+     */
+    private static final long GREGORIAN_CUTOVER =
+        LocalDate.of(1582, 10, 15).toEpochDay() * DateTimeUtils.MILLIS_PER_DAY;
+
     /** */
     private static final Set<Type> CONVERTABLE_TYPES = ImmutableSet.of(
         java.util.Date.class,
@@ -424,8 +435,26 @@ public class TypeUtils {
     /** */
     private static long toLong(java.util.Date val, TimeZone tz) {
         long time = val.getTime();
+        long locTs = time + tz.getOffset(time);
 
-        return time + tz.getOffset(time);
+        // Optimization: skip calendar conversion when both calendars agree.
+        if (locTs >= GREGORIAN_CUTOVER)
+            return locTs;
+
+        // java.sql.Date and Timestamp use the Julian calendar before the cutover, while Calcite uses the
+        // proleptic Gregorian calendar. Using only the time-zone-adjusted millis would turn a java.sql.Date
+        // representing 1500-01-02 into SQL DATE '1500-01-11'. Preserve its calendar fields instead.
+        Calendar cal = new GregorianCalendar(DateTimeUtils.UTC_ZONE, Locale.ROOT);
+
+        cal.setTimeInMillis(locTs);
+
+        int year = cal.get(Calendar.YEAR);
+
+        if (cal.get(Calendar.ERA) == GregorianCalendar.BC)
+            year = 1 - year;
+
+        return LocalDate.of(year, cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH)).toEpochDay()
+            * DateTimeUtils.MILLIS_PER_DAY + Math.floorMod(locTs, DateTimeUtils.MILLIS_PER_DAY);
     }
 
     /** */
@@ -514,6 +543,19 @@ public class TypeUtils {
 
     /** */
     private static long fromLocalTs(DataContext ctx, long ts) {
+        if (ts < GREGORIAN_CUTOVER) {
+            LocalDate date = LocalDate.ofEpochDay(Math.floorDiv(ts, DateTimeUtils.MILLIS_PER_DAY));
+            Calendar cal = new GregorianCalendar(DateTimeUtils.UTC_ZONE, Locale.ROOT);
+
+            cal.clear();
+            cal.set(Calendar.ERA, date.getYear() > 0 ? GregorianCalendar.AD : GregorianCalendar.BC);
+            cal.set(date.getYear() > 0 ? date.getYear() : 1 - date.getYear(), date.getMonthValue() - 1,
+                date.getDayOfMonth());
+
+            // Reconstruct the date in the legacy Java calendar before applying the query's time zone.
+            ts = cal.getTimeInMillis() + Math.floorMod(ts, DateTimeUtils.MILLIS_PER_DAY);
+        }
+
         TimeZone tz = timeZone(ctx);
 
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
