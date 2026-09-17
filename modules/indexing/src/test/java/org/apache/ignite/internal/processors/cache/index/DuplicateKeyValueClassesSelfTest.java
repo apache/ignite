@@ -48,11 +48,7 @@ public class DuplicateKeyValueClassesSelfTest extends AbstractIndexingCommonTest
         grid(0).destroyCache(CACHE_NAME);
     }
 
-    /**
-     * Checks that the same key class can be used with different value classes.
-     *
-     * @throws Exception If failed.
-     */
+    /** Checks that the same key class can be used with different value classes. */
     @Test
     public void testDuplicateKeyClass() {
         CacheConfiguration ccfg = new CacheConfiguration()
@@ -73,7 +69,9 @@ public class DuplicateKeyValueClassesSelfTest extends AbstractIndexingCommonTest
             valTypes.add(entity.getValueType());
         }
 
-        assertEquals(new HashSet<>(Arrays.asList(Clazz1.class.getName(), Clazz2.class.getName())), valTypes);
+        Set<String> expValTypes = new HashSet<>(Arrays.asList(Clazz1.class.getName(), Clazz2.class.getName()));
+
+        assertEquals(expValTypes, valTypes);
     }
 
     /**
