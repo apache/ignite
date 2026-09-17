@@ -46,7 +46,7 @@ def _ere_escape(value):
     Escapes a literal for a POSIX extended regular expression, which is what 'grep -E' reads -
     re.escape() escapes for the Python dialect instead.
     """
-    return re.sub(r'([[\\.^$*+?(){|])', r'\\\1', value)
+    return re.sub(r'([\[\\.^$*+?(){|])', r'\\\1', value)
 
 
 def metric_registry_pattern(registry):
