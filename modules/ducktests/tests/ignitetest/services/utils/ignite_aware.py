@@ -37,7 +37,7 @@ from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
-from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
+from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.jvm_utils import JvmProcessMixin, JvmVersionMixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
@@ -600,10 +600,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         node = random.choice(self.alive_nodes)
 
         rebalanced = False
-        mbean = JmxClient(node).find_mbean('.*name=cluster')
+        mbean = node.metric_registry_mbean('cluster')
 
         while datetime.now() < delta_time and not rebalanced:
-            rebalanced = next(mbean.Rebalanced) == 'true'
+            rebalanced = mbean.bool_value("Rebalanced")
 
         if rebalanced:
             return
