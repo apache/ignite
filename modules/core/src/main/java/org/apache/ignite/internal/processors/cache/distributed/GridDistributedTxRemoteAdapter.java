@@ -584,6 +584,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
 
+                                    // Explicit expire time is already reached: remove instead of storing an already
+                                    // expired value (the same way as for TTL_ZERO, see IGNITE-25194).
+                                    if ((op == CREATE || op == UPDATE) && CU.isExpired(txEntry.conflictExpireTime()))
+                                        op = DELETE;
+
                                     GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
                                     if (!near() && cacheCtx.group().logDataRecords() &&

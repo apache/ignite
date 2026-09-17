@@ -604,7 +604,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (expiry != null) {
                                             txEntry.cached().unswap(false);
 
-                                            Duration duration = cached.hasValue() ?
+                                            Duration duration = cached.hasNonExpiredValue() ?
                                                 expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
                                             txEntry.ttl(CU.toTtl(duration));
@@ -624,7 +624,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                     if (expiry != null) {
-                                        Duration duration = cached.hasValue() ?
+                                        // Expired (but not cleaned up yet) value is treated as absent.
+                                        Duration duration = cached.hasNonExpiredValue() ?
                                             expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
                                         long ttl = CU.toTtl(duration);
@@ -675,6 +676,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     txEntry.entryProcessors(null);
                                     txEntry.conflictVersion(explicitVer);
                                 }
+
+                                // Explicit expire time is already reached: remove instead of storing an already
+                                // expired value (the same way as for TTL_ZERO, see IGNITE-25194).
+                                if ((op == CREATE || op == UPDATE) && CU.isExpired(txEntry.conflictExpireTime()))
+                                    op = DELETE;
 
                                 if (dhtVer == null)
                                     dhtVer = explicitVer != null ? explicitVer : writeVersion();

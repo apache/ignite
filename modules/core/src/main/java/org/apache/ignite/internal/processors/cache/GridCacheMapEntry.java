@@ -993,6 +993,31 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        // Explicit expire time is already reached, the value is expired: remove the entry instead of storing
+        // an already expired row. A row with expire time in the past must never be written to the row store,
+        // otherwise the (expireTime, link) pair, already processed by the TTL cleanup worker, can be recreated
+        // and the pending entries tree becomes inconsistent (see IGNITE-25194).
+        if (CU.isExpired(drExpireTime)) {
+            return innerRemove(
+                tx,
+                evtNodeId,
+                affNodeId,
+                retval,
+                evt,
+                metrics,
+                keepBinary,
+                keepBinaryInInterceptor,
+                oldValPresent,
+                oldVal,
+                topVer,
+                drType,
+                explicitVer,
+                taskName,
+                dhtVer,
+                updateCntr
+            );
+        }
+
         CacheObject old;
 
         final boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
@@ -1077,6 +1102,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (ttl == -1L) {
                     ttl = ttlExtras();
                     expireTime = expireTimeExtras();
+
+                    // The current value is already expired (but not cleaned up yet), so the update is actually
+                    // a creation: calculate a new expire time instead of inheriting the expired one. A row with
+                    // expire time in the past must never be written to the row store (see IGNITE-25194).
+                    if (CU.isExpired(expireTime))
+                        expireTime = CU.toExpireTime(ttl);
                 }
                 else
                     expireTime = CU.toExpireTime(ttl);
@@ -2435,6 +2466,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             return hasValueUnlocked();
+        }
+        finally {
+            unlockEntry();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public final boolean hasNonExpiredValue() {
+        lockEntry();
+
+        try {
+            return hasValueUnlocked() && !CU.isExpired(expireTimeExtras());
         }
         finally {
             unlockEntry();
@@ -4979,7 +5022,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
-            if (newExpireTime > 0 && newExpireTime <= U.currentTimeMillis()) {
+            if (CU.isExpired(newExpireTime)) {
                 op = DELETE;
 
                 writeObj = null;
