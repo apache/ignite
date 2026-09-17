@@ -522,4 +522,5 @@ Register name: `sql.queries.user`
 |canceled| long | The number of canceled SQL queries.
 |resultSetSizeHistogram| histogram | Histogram of fetched result set sizes for SQL queries.
 |maxResultSetSize| max value | Maximum fetched result set size for SQL queries.
+|bigResultSetEventsCount| long | Number of events when a SQL query produced a big result set.
 |===
