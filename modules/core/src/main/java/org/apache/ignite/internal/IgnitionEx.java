@@ -1319,11 +1319,7 @@ public class IgnitionEx {
      * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
-        String name = U.getCurrentIgniteName();
-
-        if (U.isCurrentIgniteNameSet(name))
-            return gridx(name);
-        else if (Thread.currentThread() instanceof IgniteThread)
+        if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getIgniteInstanceName());
         else
             throw new IllegalArgumentException("Ignite instance name thread local must be set or" +

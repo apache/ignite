@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -1300,45 +1299,39 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         limitMaxMemoryOfDataStorageConfiguration(cfg);
 
         if (!isRemoteJvm(igniteInstanceName)) {
-            IgniteUtils.setCurrentIgniteName(igniteInstanceName);
+            String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
 
-            try {
-                String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
+            if (cfgProcClsName != null) {
+                try {
+                    Class<?> cfgProc = Class.forName(cfgProcClsName);
 
-                if (cfgProcClsName != null) {
-                    try {
-                        Class<?> cfgProc = Class.forName(cfgProcClsName);
+                    Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
 
-                        Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
+                    if (!Modifier.isStatic(method.getModifiers()))
+                        throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
 
-                        if (!Modifier.isStatic(method.getModifiers()))
-                            throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
-
-                        method.invoke(null, cfg);
-                    }
-                    catch (Exception e) {
-                        log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
-
-                        throw new IgniteException(e);
-                    }
+                    method.invoke(null, cfg);
                 }
+                catch (Exception e) {
+                    log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
 
-                Ignite node = IgnitionEx.start(optimize(cfg), ctx);
-
-                IgniteConfiguration nodeCfg = node.configuration();
-
-                nodeCfg.getGridLogger().getLogger(getClass().getName())
-                        .info("Node started with the following configuration ["
-                                + "id=" + node.cluster().localNode().id()
-                                + ", discovery=" + nodeCfg.getDiscoverySpi()
-                                + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
-                                + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
-
-                return node;
+                    throw new IgniteException(e);
+                }
             }
-            finally {
-                IgniteUtils.setCurrentIgniteName(null);
-            }
+
+            Ignite node = IgnitionEx.start(optimize(cfg), ctx);
+
+            IgniteConfiguration nodeCfg = node.configuration();
+
+            nodeCfg.getGridLogger().getLogger(getClass().getName())
+                    .info("Node started with the following configuration ["
+                            + "id=" + node.cluster().localNode().id()
+                            + ", discovery=" + nodeCfg.getDiscoverySpi()
+                            + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                            + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
+
+            return node;
+
         }
         else
             return startRemoteGrid(igniteInstanceName, cfg, ctx);
@@ -1586,14 +1579,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
             if (!isRemoteJvm(igniteInstanceName)) {
-                IgniteUtils.setCurrentIgniteName(igniteInstanceName);
-
-                try {
-                    IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
-                }
-                finally {
-                    IgniteUtils.setCurrentIgniteName(null);
-                }
+                IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
             }
             else
                 IgniteProcessProxy.stop(igniteInstanceName, cancel);
