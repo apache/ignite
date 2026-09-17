@@ -1325,9 +1325,19 @@ public class IgnitionEx {
             return gridx(name);
         else if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getIgniteInstanceName());
-        else
+        else {
+            if (grids.isEmpty()) {
+                synchronized (dfltGridMux) {
+                    if (dfltGrid != null)
+                        return dfltGrid.grid;
+                }
+            }
+
+            grids.values().iterator();
+
             throw new IllegalArgumentException("Ignite instance name thread local must be set or" +
                 " this method should be accessed under " + IgniteThread.class.getName());
+        }
     }
 
     /**

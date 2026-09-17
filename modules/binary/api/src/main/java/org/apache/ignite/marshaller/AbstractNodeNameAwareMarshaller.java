@@ -20,28 +20,12 @@ package org.apache.ignite.marshaller;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Marshaller allowing for {@code Ignition#localIgnite()} calls.
  */
 public abstract class AbstractNodeNameAwareMarshaller extends AbstractMarshaller {
-    /** Whether node name is set. */
-    private volatile boolean nodeNameSet;
-
-    /** Node name. */
-    private volatile String nodeName = CommonUtils.LOC_IGNITE_NAME_EMPTY;
-
-    /** {@inheritDoc} */
-    @Override public void nodeName(@Nullable String nodeName) {
-        if (!nodeNameSet) {
-            this.nodeName = nodeName;
-
-            nodeNameSet = true;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
         return marshal0(obj);
