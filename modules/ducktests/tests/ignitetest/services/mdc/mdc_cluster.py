@@ -37,7 +37,6 @@ from ignitetest.services.network_group.configuration import NetworkGroupStore, C
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, TcpCommunicationSpi
-from ignitetest.services.utils.jmx_utils import JmxClient, metric_registry_pattern
 from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, from_ignite_cluster, \
     from_ignite_services
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
@@ -279,15 +278,14 @@ class MdcCluster:
     def _server_service(self, dc: str, num_nodes: int) -> IgniteService:
         """
         Builds the server service of one DC. The single place a server command line is put
-        together, so a fork that starts its servers differently overrides just this.
+        together.
         """
         return IgniteService(self.test_context, self.ignite_config, num_nodes=num_nodes,
                              jvm_opts=dc_jvm_opts(dc), startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
 
     def dc_servers(self, dc: str) -> List[IgniteService]:
         """
-        :return: All server services of the given DC - one, unless a subclass splits a DC's
-                 servers into several services (node groups, cells, availability zones).
+        :return: All server services of the given DC, one per DC in this fixture.
         """
         return [self.servers[dc]] if dc in self.servers else []
 
@@ -613,7 +611,7 @@ class MdcCluster:
         node = next(node for svc in self.dc_servers(dc if dc is not None else self.dcs[0])
                     for node in svc.alive_nodes)
 
-        mbean = JmxClient(node).find_mbean(metric_registry_pattern('cache', cache_name))
+        mbean = node.metric_registry_mbean(f'cache.{cache_name}')
 
         return {name: mbean.bool_value(name)
                 for name in (MDC_SAFE_AFFINITY_METRIC, MDC_SAFE_DISTRIBUTION_METRIC)}

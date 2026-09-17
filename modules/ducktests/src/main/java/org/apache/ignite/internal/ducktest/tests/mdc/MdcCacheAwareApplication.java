@@ -65,7 +65,8 @@ import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
  *     <li>{@code writeSync} - {@link CacheWriteSynchronizationMode}, default {@code FULL_SYNC}.
  *         Note: MDC-aware local reads require a mode other than {@code PRIMARY_SYNC};</li>
  *     <li>{@code readFromBackup} - default {@code true}, required for DC-local reads;</li>
- *     <li>{@code partitions} - affinity partitions number, default 512.</li>
+ *     <li>{@code partitions} - affinity partitions number, default 512;</li>
+ *     <li>{@code backupFilter} - whether to set the MDC affinity backup filter, default {@code true}.</li>
  * </ul>
  */
 public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
@@ -163,9 +164,7 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
 
     /**
      * The affinity backup filter the cache is configured with. A {@link RendezvousAffinityFunction}
-     * holds exactly one, so an override replaces the MDC filter rather than complementing it - which
-     * is the point: a fork that spreads the copies by something finer than the data center (a cell,
-     * an availability zone) says so here instead of repeating the rest of the cache configuration.
+     * holds exactly one, so an override replaces the MDC filter rather than complementing it.
      *
      * @param jNode Parameters.
      * @param dcsNum Number of data centers.
@@ -174,6 +173,9 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
      */
     protected IgniteBiPredicate<ClusterNode, List<ClusterNode>> backupFilter(JsonNode jNode, int dcsNum,
         int backups) {
+        if (!jNode.path("backupFilter").asBoolean(true))
+            return null;
+
         return new MdcAffinityBackupFilter(dcsNum, backups);
     }
 
