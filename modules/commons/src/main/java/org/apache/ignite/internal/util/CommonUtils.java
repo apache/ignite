@@ -690,6 +690,54 @@ public abstract class CommonUtils {
     }
 
     /**
+     * Get current Ignite name.
+     *
+     * @return Current Ignite name.
+     */
+    @Nullable public static String getCurrentIgniteName() {
+        return LOC_IGNITE_NAME.get();
+    }
+
+    /**
+     * Check if current Ignite name is set.
+     *
+     * @param name Name to check.
+     * @return {@code True} if set.
+     */
+    @SuppressWarnings("StringEquality")
+    public static boolean isCurrentIgniteNameSet(@Nullable String name) {
+        return name != LOC_IGNITE_NAME_EMPTY;
+    }
+
+    /**
+     * Set current Ignite name.
+     *
+     * @param newName New name.
+     * @return Old name.
+     */
+    @SuppressWarnings("StringEquality")
+    @Nullable public static String setCurrentIgniteName(@Nullable String newName) {
+        String oldName = LOC_IGNITE_NAME.get();
+
+        if (oldName != newName)
+            LOC_IGNITE_NAME.set(newName);
+
+        return oldName;
+    }
+
+    /**
+     * Restore old Ignite name.
+     *
+     * @param oldName Old name.
+     * @param curName Current name.
+     */
+    @SuppressWarnings("StringEquality")
+    public static void restoreOldIgniteName(@Nullable String oldName, @Nullable String curName) {
+        if (oldName != curName)
+            LOC_IGNITE_NAME.set(oldName);
+    }
+
+    /**
      * @return Class loader used to load Ignite itself.
      */
     public static ClassLoader gridClassLoader() {
