@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageUpdateResult;
@@ -194,9 +195,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             boolean walEnabled = wal != null && !wal.pageRecordsDisabled(grpId, pageId);
+            // Never need payload for in-memory. For persistence need payload if wal is enabled and need to compare
+            // page to mark it dirty if it's not dirty yet even if wal is disabled.
+            boolean needPayload = pageMem instanceof PageMemoryEx && (walEnabled || !pageMem.isDirty(grpId, pageId, page));
 
             DataPageUpdateResult updateRes = io.updateRowFragment(pageMem, pageAddr, itemId, pageSize(),
-                fragment.row, fragment.written, walEnabled);
+                fragment.row, fragment.written, needPayload);
 
             evictionTracker.touchPage(pageId);
 
@@ -209,7 +213,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         updateRes.modifiedPayload()));
                 }
 
-                fragment.modified = !walEnabled || updateRes.modifiedPayload() != null;
+                fragment.modified = !needPayload || updateRes.modifiedPayload() != null;
                 fragment.nextLink = updateRes.nextLink();
                 fragment.written += updateRes.payloadSize();
             }

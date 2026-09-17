@@ -171,15 +171,33 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
             checkLinkChange(ignite, cache, i, true, false);
     }
 
+    /** */
+    @Test
+    public void testDirtyPagesCountAfterUpdateWithPhysicalWal() throws Exception {
+        pds = true;
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        checkDirtyPagesCountAfterUpdate(cfg);
+    }
 
     /** */
     @Test
-    public void testDirtyPagesCountAfterUpdate() throws Exception {
+    public void testDirtyPagesCountAfterUpdateWithCheckpoinRecoveryFiles() throws Exception {
         pds = true;
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        cfg.getDataStorageConfiguration().setWriteRecoveryDataOnCheckpoint(true);
+
+        checkDirtyPagesCountAfterUpdate(cfg);
+    }
+
+    /** */
+    private void checkDirtyPagesCountAfterUpdate(IgniteConfiguration cfg) throws Exception {
         int entrySize = 100 * 1024;
         int entryCnt = 100;
 
-        IgniteEx ignite = startGrid(0);
+        IgniteEx ignite = startGrid(cfg);
 
         ignite.cluster().state(ClusterState.ACTIVE);
         IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
