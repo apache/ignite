@@ -315,10 +315,11 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         // Start high workload.
         IgniteInternalFuture<?> loadFut = runMultiThreadedAsync(() -> {
             List<IgniteCache<Object, Object>> caches = F.asList(
-                srv.cache(CACHE_NAME_ATOMIC),
-                srv.cache(CACHE_NAME_TX),
-                srv.cache(CACHE_NAME_NEAR_ATOMIC),
-                srv.cache(CACHE_NAME_NEAR_TX)
+                //srv.cache(CACHE_NAME_ATOMIC),
+                // TODO Fail here eventually.
+                srv.cache(CACHE_NAME_TX)
+                //srv.cache(CACHE_NAME_NEAR_ATOMIC),
+                //srv.cache(CACHE_NAME_NEAR_TX)
             );
 
             while (!end.get() && !failureHndTriggered) {

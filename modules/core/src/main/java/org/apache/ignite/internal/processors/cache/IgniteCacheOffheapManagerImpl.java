@@ -1507,9 +1507,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 case PUT: {
                     assert c.newRow() != null : c;
 
-                    CacheDataRow oldRow = c.oldRow();
-
-                    finishUpdate(cctx, c.newRow(), oldRow, c.oldRowExpiredFlag());
+                    finishUpdate(cctx, c.newRow(), c.oldRow());
 
                     break;
                 }
@@ -1666,21 +1664,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
          */
-        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
-            throws IgniteCheckedException {
-            finishUpdate(cctx, newRow, oldRow, false);
-        }
-
-        /**
-         * @param cctx Cache context.
-         * @param newRow New row.
-         * @param oldRow Old row if available.
-         * @param oldRowExpired Old row expiration flag
-         * @throws IgniteCheckedException If failed.
-         */
-        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow, boolean oldRowExpired)
-            throws IgniteCheckedException {
-            if (oldRow == null && !oldRowExpired)
+        private void finishUpdate(
+            GridCacheContext<?, ?> cctx,
+            CacheDataRow newRow,
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException {
+            if (oldRow == null)
                 incrementSize(cctx.cacheId());
 
             GridCacheQueryManager qryMgr = cctx.queries();
