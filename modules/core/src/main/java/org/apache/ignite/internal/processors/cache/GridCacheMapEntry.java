@@ -2569,6 +2569,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
+            CacheDataRow expiredRow = null;
+
+            // The value is already expired: store it as removed instead of storing an already expired row.
+            // A row with expire time in the past must never be written to the row store (see IGNITE-25194).
+            if (val != null && CU.isExpired(expTime)) {
+                val = null;
+
+                // Pre-created row is already inserted to the row store and must be removed.
+                expiredRow = row;
+                row = null;
+            }
+
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
             final boolean unswapped = ((flags & IS_UNSWAPPED_MASK) != 0);
@@ -2625,6 +2637,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             else
                 update = storeValue(val, expTime, ver, p, row);
+
+            // If update is not applied, the pre-created row is removed by the caller (see CacheDataStore#insertRows).
+            if (expiredRow != null && update) {
+                cctx.offheap().dataStore(localPartition()).rowStore()
+                    .removeRow(expiredRow.link(), cctx.group().statisticsHolderData());
+            }
 
             if (update) {
                 update(val, expTime, ttl, ver, true);
