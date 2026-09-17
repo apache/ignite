@@ -3732,9 +3732,9 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         // Client-side cache create/destroy and node restart both trigger a distributed exchange. When they run
         // concurrently, a client-initiated exchange can deadlock with the node re-join (client never receives the
-        // coordinator's final message), blocking the whole cluster. Serialize them so that a node restart never
-        // overlaps an in-flight client create/destroy, while ordinary cache operations still run concurrently with
-        // restarts.
+        // coordinator's final message), blocking the whole cluster. Synchronize them with a lock so that node restart
+        // and in-flight client create/destroy are executed sequentially and never overlap, while ordinary cache
+        // operations still run concurrently with restarts.
         final ReentrantLock restartLock = new ReentrantLock();
 
         try {
