@@ -4979,7 +4979,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 newSysExpireTime = newExpireTime = conflictCtx.expireTime();
             }
 
-            if (newExpireTime > 0 && newExpireTime < U.currentTimeMillis()) {
+            if (newExpireTime > 0 && newExpireTime <= U.currentTimeMillis()) {
                 op = DELETE;
 
                 writeObj = null;

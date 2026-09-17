@@ -317,6 +317,29 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             List<IgniteCache<Object, Object>> caches = F.asList(
                 //srv.cache(CACHE_NAME_ATOMIC),
                 // TODO Fail here eventually.
+                // Failure scenario (transactional cache, AccessedExpiryPolicy, see IGNITE-25194):
+                // 1. Row R1 with link L and expireTime T is stored, (T, L) is put to the PendingEntriesTree.
+                // 2. TTL cleanup worker removes (T, L) from the PendingEntriesTree and creates cache entry with
+                //    ExpiredKeyCacheObject(T, L) key, but not yet removed R1 from the data tree and row store.
+                // 3. Transactional put on the same key: for AccessedExpiryPolicy update TTL is "not changed", so
+                //    GridCacheMapEntry#innerSet inherits already expired expireTime T from the in-memory entry
+                //    (expireTimeExtras()). UpdateClosure detects that R1 is expired, writes a new row R2 with the
+                //    same expireTime T, removes R1 link from the row store (removex from the PendingEntriesTree
+                //    returns false, since the row was already removed by the TTL cleanup worker).
+                // 4. Next transactional put on the same key: R2 is expired too, a new row R3 is written with the
+                //    same expireTime T and reuses the freed link L (free list returns recently freed slot),
+                //    (T, L) is put to the PendingEntriesTree again.
+                // 5. TTL cleanup worker continues with onTtlExpired -> removeValue -> finishRemove: the removed
+                //    data row R3 has the same (T, L) as ExpiredKeyCacheObject, so PendingEntriesTree cleanup is
+                //    skipped (optimization from IGNITE-21929), but link L is freed. The PendingEntriesTree now
+                //    contains (T, L) pointing to the freed link, next expiration fails on row read by link.
+                // For ATOMIC caches this scenario is impossible: AtomicCacheUpdateClosure uses creation TTL
+                // (fresh expireTime) when the old row is expired, and, after IGNITE-25194, converts update with
+                // already expired expireTime to remove. So a row with expireTime <= U.currentTimeMillis() is never
+                // written and the (expireTime, link) pair removed by the TTL cleanup worker can't be recreated.
+                // Before multi-page in-place update changes the link of the expired old row was leaked (never
+                // removed from the row store) on step 3, so it couldn't be reused on step 4, and the problem was
+                // hidden for transactional caches.
                 srv.cache(CACHE_NAME_TX)
                 //srv.cache(CACHE_NAME_NEAR_ATOMIC),
                 //srv.cache(CACHE_NAME_NEAR_TX)
