@@ -240,11 +240,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
         if (userType) {
             if (ctx.isCompactFooter()) {
-                flags = BinaryUtils.FLAG_USR_TYP | BinaryUtils.FLAG_COMPACT_FOOTER;
+                flags = BinaryImplUtils.FLAG_USR_TYP | BinaryImplUtils.FLAG_COMPACT_FOOTER;
                 useCompactFooter = true;
             }
             else {
-                flags = BinaryUtils.FLAG_USR_TYP;
+                flags = BinaryImplUtils.FLAG_USR_TYP;
                 useCompactFooter = false;
             }
         }
@@ -259,18 +259,18 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             offset = out.position() - start;
 
             // Write the schema.
-            flags |= BinaryUtils.FLAG_HAS_SCHEMA;
+            flags |= BinaryImplUtils.FLAG_HAS_SCHEMA;
 
             int offsetByteCnt = schema.write(out, fieldCnt, useCompactFooter);
 
-            if (offsetByteCnt == BinaryUtils.OFFSET_1)
-                flags |= BinaryUtils.FLAG_OFFSET_ONE_BYTE;
-            else if (offsetByteCnt == BinaryUtils.OFFSET_2)
-                flags |= BinaryUtils.FLAG_OFFSET_TWO_BYTES;
+            if (offsetByteCnt == BinaryImplUtils.OFFSET_1)
+                flags |= BinaryImplUtils.FLAG_OFFSET_ONE_BYTE;
+            else if (offsetByteCnt == BinaryImplUtils.OFFSET_2)
+                flags |= BinaryImplUtils.FLAG_OFFSET_TWO_BYTES;
 
             // Write raw offset if needed.
             if (rawOffPos != 0) {
-                flags |= BinaryUtils.FLAG_HAS_RAW;
+                flags |= BinaryImplUtils.FLAG_HAS_RAW;
 
                 out.writeInt(rawOffPos - start);
             }
@@ -280,7 +280,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
                 offset = rawOffPos - start;
 
                 // If there is no schema, we are free to write raw offset to schema offset.
-                flags |= BinaryUtils.FLAG_HAS_RAW;
+                flags |= BinaryImplUtils.FLAG_HAS_RAW;
             }
             else
                 offset = GridBinaryMarshaller.DFLT_HDR_LEN;
