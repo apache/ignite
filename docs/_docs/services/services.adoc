@@ -286,7 +286,7 @@ In this way, you don't have to stop the server nodes, so you don't interrupt the
 
 You can measure durations of your service's methods. If you want this analytics, enable service statistics in the
 service configuration. Service statistics are collected under name "Services" in
-link:monitoring-metrics/new-metrics-system.adoc[metrics], in
+link:monitoring-metrics/new-metrics#services[metrics], in
 link:monitoring-metrics/system-views.adoc[system views], and in JMX.
 
 [tabs]
