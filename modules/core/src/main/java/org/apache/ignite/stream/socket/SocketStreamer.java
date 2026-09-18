@@ -175,7 +175,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
             new GridDelimitedParser(delim, directMode);
 
         if (converter == null)
-            converter = new DefaultConverter<>(getIgnite().name());
+            converter = new DefaultConverter<>();
 
         GridNioFilter codec = new GridNioCodecFilter(parser, log, directMode);
 
@@ -219,17 +219,12 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
      */
     private class DefaultConverter<T> implements SocketMessageConverter<T> {
         /** Marshaller. */
-        private final Marshaller marsh;
+        private final Marshaller marsh = Marshallers.jdk();
 
         /**
          * Constructor.
-         *
-         * @param igniteInstanceName Ignite instance name.
          */
-        private DefaultConverter(@Nullable String igniteInstanceName) {
-            marsh = Marshallers.jdk();
-
-            marsh.nodeName(igniteInstanceName);
+        private DefaultConverter() {
         }
 
         /** {@inheritDoc} */

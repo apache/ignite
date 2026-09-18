@@ -204,11 +204,7 @@ public abstract class CommonUtils {
     public static final String LOC_IGNITE_NAME_EMPTY = new String();
 
     /** Local Ignite name thread local. */
-    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
-        @Override protected String initialValue() {
-            return LOC_IGNITE_NAME_EMPTY;
-        }
-    };
+    private static final ThreadLocal<String> LOC_IGNITE_NAME = ThreadLocal.withInitial(() -> LOC_IGNITE_NAME_EMPTY);
 
     /** Ignite package. */
     public static final String IGNITE_PKG = "org.apache.ignite.";

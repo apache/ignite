@@ -74,13 +74,6 @@ public interface Marshaller {
     public void setContext(MarshallerContext ctx);
 
     /**
-     * Set node name.
-     *
-     * @param nodeName Node name.
-     */
-    public void nodeName(@Nullable String nodeName);
-
-    /**
      * Marshals object to the output stream. This method should not close
      * given output stream.
      *

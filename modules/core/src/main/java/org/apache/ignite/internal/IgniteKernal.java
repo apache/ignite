@@ -1419,7 +1419,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         Marshaller marsh = ctx.marshaller();
 
         marsh.setContext(ctx.marshallerContext());
-        marsh.nodeName(ctx.igniteInstanceName());
     }
 
     /** */

@@ -2441,8 +2441,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return Marshaller.
      */
     protected Marshaller marshaller() {
-        marsh.nodeName(igniteInstanceName);
-
         return marsh;
     }
 

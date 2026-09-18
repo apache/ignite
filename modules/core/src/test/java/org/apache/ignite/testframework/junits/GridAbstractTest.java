@@ -1300,45 +1300,41 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         limitMaxMemoryOfDataStorageConfiguration(cfg);
 
         if (!isRemoteJvm(igniteInstanceName)) {
-            IgniteUtils.setCurrentIgniteName(igniteInstanceName);
+            if (Thread.currentThread() instanceof IgniteTestThread)
+                ((IgniteTestThread)Thread.currentThread()).setIgniteTestInstanceName(igniteInstanceName);
 
-            try {
-                String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
+            String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
 
-                if (cfgProcClsName != null) {
-                    try {
-                        Class<?> cfgProc = Class.forName(cfgProcClsName);
+            if (cfgProcClsName != null) {
+                try {
+                    Class<?> cfgProc = Class.forName(cfgProcClsName);
 
-                        Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
+                    Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
 
-                        if (!Modifier.isStatic(method.getModifiers()))
-                            throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
+                    if (!Modifier.isStatic(method.getModifiers()))
+                        throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
 
-                        method.invoke(null, cfg);
-                    }
-                    catch (Exception e) {
-                        log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
-
-                        throw new IgniteException(e);
-                    }
+                    method.invoke(null, cfg);
                 }
+                catch (Exception e) {
+                    log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
 
-                Ignite node = IgnitionEx.start(optimize(cfg), ctx);
-
-                IgniteConfiguration nodeCfg = node.configuration();
-
-                nodeCfg.getGridLogger().getLogger(getClass().getName())
-                        .info("Node started with the following configuration ["
-                                + "id=" + node.cluster().localNode().id()
-                                + ", discovery=" + nodeCfg.getDiscoverySpi()
-                                + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
-                                + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
-
-                return node;
+                    throw new IgniteException(e);
+                }
             }
-            finally {
-                IgniteUtils.setCurrentIgniteName(null);
-            }
+
+            Ignite node = IgnitionEx.start(optimize(cfg), ctx);
+
+            IgniteConfiguration nodeCfg = node.configuration();
+
+            nodeCfg.getGridLogger().getLogger(getClass().getName())
+                    .info("Node started with the following configuration ["
+                            + "id=" + node.cluster().localNode().id()
+                            + ", discovery=" + nodeCfg.getDiscoverySpi()
+                            + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                            + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
+
+            return node;
         }
         else
             return startRemoteGrid(igniteInstanceName, cfg, ctx);
@@ -1586,7 +1582,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
             if (!isRemoteJvm(igniteInstanceName)) {
-                IgniteUtils.setCurrentIgniteName(igniteInstanceName);
+                //IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
                 try {
                     IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
@@ -2485,7 +2481,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         try {
             final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
+            Thread runner = new IgniteTestThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
                 @Override public void run() {
                     try {
                         testRoutine.evaluate();
@@ -3219,5 +3215,29 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** @return Snapshot directories for specific snapshot. */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name, String path) {
         return new SnapshotFileTree(srv.context(), name, path);
+    }
+
+    /**
+     * {@link IgniteThread} with modifiable instance name.
+     * Keep final field in base class
+     */
+    public static class IgniteTestThread extends IgniteThread {
+        /** */
+        private String igniteTestInstanceName;
+
+        /** */
+        public IgniteTestThread(String igniteInstanceName, String threadName, Runnable r) {
+            super(igniteInstanceName, threadName, r);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getIgniteInstanceName() {
+            return igniteTestInstanceName == null ? super.getIgniteInstanceName() : igniteTestInstanceName;
+        }
+
+        /** */
+        public void setIgniteTestInstanceName(String igniteTestInstanceName) {
+            this.igniteTestInstanceName = igniteTestInstanceName;
+        }
     }
 }

@@ -1706,14 +1706,8 @@ class BinaryReaderExImpl implements BinaryReaderEx {
     /** {@inheritDoc} */
     @Override public @Nullable Object deserialize() throws BinaryObjectException {
         String newName = ctx.igniteInstanceName();
-        String oldName = CommonUtils.setCurrentIgniteName(newName);
 
-        try {
-            return deserialize0();
-        }
-        finally {
-            CommonUtils.restoreOldIgniteName(oldName, newName);
-        }
+        return deserialize0();
     }
 
     /**
