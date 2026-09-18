@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -54,8 +55,12 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MessageSerializationContext.UNNEGOTIATED;
+import static org.apache.ignite.internal.direct.IgniteMessageSerializationContext.buildForPeers;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_SER_CTX;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
@@ -210,6 +215,9 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
+        if (ses.meta(MSG_SER_CTX.ordinal()) == null)
+            ses.addMeta(MSG_SER_CTX.ordinal(), UNNEGOTIATED);
+
         if (ses.accepted()) {
             if (log.isInfoEnabled()) {
                 log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
@@ -511,6 +519,18 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         final ConnectionKey old = ses.addMeta(CONN_IDX_META, connKey);
 
         assert old == null;
+
+        try {
+            ses.addMeta(MSG_SER_CTX.ordinal(), buildForPeers(igniteExSupplier.get(), rmtNode));
+        }
+        catch (UnsupportedNodeVersionException | ClusterTopologyCheckedException e) {
+            U.warn(log, "Failed to resolve message serialization context for remote node session" +
+                " [rmtNodeId=" + sndId + ", ses=" + ses + ", errMsg=" + e.getMessage() + ']');
+
+            ses.close();
+
+            return;
+        }
 
         ClusterNode locNode = locNodeSupplier.get();
 

@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.context;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
-/**
- * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
- * all nodes in the cluster.
- */
-public class DistributedAttributeIdRegistry {
-    /** ID Reserved for {@link SecurityContext} propagation. */
-    public static final byte SECURITY = 0;
+/** */
+public class TestFeatureRegistry {
+    /** */
+    public static final IgniteFeature FIRST_FEATURE = new IgniteCoreFeature(0);
+
+    /** */
+    public static final IgniteFeature SECOND_FEATURE = new IgniteCoreFeature(1);
 }
