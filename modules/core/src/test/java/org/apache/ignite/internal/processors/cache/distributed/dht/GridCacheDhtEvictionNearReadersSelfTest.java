@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -30,12 +29,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -151,22 +147,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      */
     private Collection<ClusterNode> keyNodes(Object key) {
         return grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @return Predicate for events belonging to specified node.
-     */
-    private IgnitePredicate<Event> nodeEvent(final UUID nodeId) {
-        assert nodeId != null;
-
-        return new P1<Event>() {
-            @Override public boolean apply(Event e) {
-                info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
-
-                return e.node().id().equals(nodeId);
-            }
-        };
     }
 
     /**

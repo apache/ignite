@@ -135,15 +135,6 @@ public class ServiceRedeploymentOnNodeLeftTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void invokeOnDiscoveryMessage(int nodeIdx, Class<?> msgCls, Runnable action) {
-        interceptDiscoveryMessage(nodeIdx, msgCls, () -> {
-            action.run();
-
-            return true;
-        });
-    }
-
-    /** */
     private void interceptDiscoveryMessage(int nodeIdx, Class<?> msgCls, Supplier<Boolean> interceptor) {
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)grid(nodeIdx).configuration().getDiscoverySpi();
 
