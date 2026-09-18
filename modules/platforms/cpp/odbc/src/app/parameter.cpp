@@ -78,21 +78,23 @@ namespace ignite
 
             void Parameter::Write(impl::binary::BinaryWriterImpl& writer, int offset, SqlUlen idx) const
             {
-                if (buffer.GetInputSize() == SQL_NULL_DATA)
+                // Buffer to use to get data. Offsets are applied before the value is
+                // inspected, so that the length indicator of the current row of the
+                // parameter array is used and not the one of the first row.
+                ApplicationDataBuffer buf(buffer);
+                buf.SetByteOffset(offset);
+                buf.SetElementOffset(idx);
+
+                if (buf.GetInputSize() == SQL_NULL_DATA)
                 {
                     writer.WriteNull();
 
                     return;
                 }
 
-                // Buffer to use to get data.
-                ApplicationDataBuffer buf(buffer);
-                buf.SetByteOffset(offset);
-                buf.SetElementOffset(idx);
-
                 SqlLen storedDataLen = static_cast<SqlLen>(storedData.size());
 
-                if (buffer.IsDataAtExec())
+                if (buf.IsDataAtExec())
                 {
                     buf = ApplicationDataBuffer(buffer.GetType(),
                         const_cast<int8_t*>(&storedData[0]), storedDataLen, &storedDataLen);
@@ -183,6 +185,13 @@ namespace ignite
                             break;
 
                         int32_t paramLen = static_cast<int32_t>(*resLenPtr);
+
+                        if (paramLen < 0)
+                        {
+                            writer.WriteNull();
+
+                            break;
+                        }
 
                         writer.WriteInt8Array(reinterpret_cast<const int8_t*>(constRef.GetData()), paramLen);
 
