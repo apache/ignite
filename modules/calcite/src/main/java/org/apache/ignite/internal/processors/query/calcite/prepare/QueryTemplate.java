@@ -31,6 +31,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
 
 /** */
@@ -86,6 +88,11 @@ public class QueryTemplate {
                 return executionPlan0;
             }
             catch (FragmentMappingException e) {
+                if (ctx.isLocal() && X.hasCause(e, ColocationMappingException.class)) {
+                    throw new IgniteSQLException(
+                        "Execution of non-collocated query in local mode is not possible", e);
+                }
+
                 if (ex == null)
                     ex = e;
                 else
