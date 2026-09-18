@@ -339,7 +339,27 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
+                Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
+                    .readCachesData(
+                        ft,
+                        kctx.marshallerContext().jdkMarshaller(),
+                        igniteCfg)
+                    .entrySet().stream()
+                    .map(data -> {
+                        int cacheId = data.getValue().cacheId();
+                        long lastModified = data.getKey().lastModified();
+
+                        Long lastModified0 = cachesState.get(cacheId);
+
+                        if (lastModified0 != null && lastModified0 == lastModified)
+                            return (CdcCacheEvent)data.getValue();
+
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .iterator();
+
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheEvts);
 
                 started = true;
 
