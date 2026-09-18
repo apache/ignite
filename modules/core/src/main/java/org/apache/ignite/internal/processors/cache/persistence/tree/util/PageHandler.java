@@ -94,6 +94,26 @@ public abstract class PageHandler<X, R> {
     }
 
     /**
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param pageAddr Page address.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @return {@code True} if mark page as dirty.
+     */
+    public boolean markDirtyAfterWrite(
+        int cacheId,
+        long pageId,
+        long page,
+        long pageAddr,
+        X arg,
+        int intArg
+    ) {
+        return true;
+    }
+
+    /**
      * @param pageMem Page memory.
      * @param cacheId Cache ID.
      * @param pageId Page ID.
@@ -299,7 +319,7 @@ public abstract class PageHandler<X, R> {
             if (pageAddr == 0L)
                 return lockFailed;
 
-            boolean ok = false;
+            boolean markDirty = false;
 
             try {
                 if (init != null) {
@@ -312,7 +332,7 @@ public abstract class PageHandler<X, R> {
 
                 R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
 
-                ok = true;
+                markDirty = h.markDirtyAfterWrite(grpId, pageId, page, pageAddr, arg, intArg);
 
                 return res;
             }
@@ -320,7 +340,7 @@ public abstract class PageHandler<X, R> {
                 assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
                 if (releaseAfterWrite = h.releaseAfterWrite(grpId, pageId, page, pageAddr, arg, intArg))
-                    writeUnlock(pageMem, grpId, pageId, page, pageAddr, lsnr, walPlc, ok);
+                    writeUnlock(pageMem, grpId, pageId, page, pageAddr, lsnr, walPlc, markDirty);
             }
         }
         finally {
@@ -367,7 +387,7 @@ public abstract class PageHandler<X, R> {
         if (pageAddr == 0L)
             return lockFailed;
 
-        boolean ok = false;
+        boolean markDirty = false;
 
         try {
             if (init != null) {
@@ -380,7 +400,7 @@ public abstract class PageHandler<X, R> {
 
             R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
 
-            ok = true;
+            markDirty = h.markDirtyAfterWrite(grpId, pageId, page, pageAddr, arg, intArg);
 
             return res;
         }
@@ -388,7 +408,7 @@ public abstract class PageHandler<X, R> {
             assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
 
             if (h.releaseAfterWrite(grpId, pageId, page, pageAddr, arg, intArg))
-                writeUnlock(pageMem, grpId, pageId, page, pageAddr, lsnr, walPlc, ok);
+                writeUnlock(pageMem, grpId, pageId, page, pageAddr, lsnr, walPlc, markDirty);
         }
     }
 
