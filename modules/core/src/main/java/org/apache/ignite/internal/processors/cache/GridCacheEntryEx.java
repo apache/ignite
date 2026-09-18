@@ -115,6 +115,11 @@ public interface GridCacheEntryEx {
     public boolean hasValue();
 
     /**
+     * @return {@code True} if has value or value bytes and the value is not expired yet.
+     */
+    public boolean hasNonExpiredValue();
+
+    /**
      * @param val New value.
      * @param ttl Time to live.
      * @return Old value.

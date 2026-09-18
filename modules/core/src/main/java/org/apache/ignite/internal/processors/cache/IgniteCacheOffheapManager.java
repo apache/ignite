@@ -418,12 +418,6 @@ public interface IgniteCacheOffheapManager {
          * @return Old row.
          */
         @Nullable public CacheDataRow oldRow();
-
-        /**
-         * Flag that indicates if oldRow was expired during invoke.
-         * @return {@code true} if old row was expired, {@code false} otherwise.
-         */
-        public boolean oldRowExpiredFlag();
     }
 
     /**

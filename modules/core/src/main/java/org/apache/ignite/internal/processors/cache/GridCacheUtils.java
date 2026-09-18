@@ -1068,6 +1068,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param expireTime Expire time.
+     * @return {@code True} if the given expire time is set and already reached.
+     */
+    public static boolean isExpired(long expireTime) {
+        return expireTime > 0 && expireTime <= U.currentTimeMillis();
+    }
+
+    /**
      * Convert TTL to expire time.
      *
      * @param ttl TTL.
