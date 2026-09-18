@@ -25,7 +25,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.codegen.idto.IDTOSerializerFactory;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.direct.IgniteMessageSerializationContext.buildForInitiator;
+import static org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.OP_FEATURES_ATTR;
 
 /**
  * Base class for data transfer objects.
@@ -72,7 +76,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 
-            serializer.writeExternal(this, dtout);
+            serializer.writeExternal(this, dtout, buildForInitiator(OperationContext.get(OP_FEATURES_ATTR)));
         }
     }
 
@@ -81,7 +85,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 
-            serializer.readExternal(this, dtin);
+            serializer.readExternal(this, dtin, buildForInitiator(OperationContext.get(OP_FEATURES_ATTR)));
         }
     }
 }

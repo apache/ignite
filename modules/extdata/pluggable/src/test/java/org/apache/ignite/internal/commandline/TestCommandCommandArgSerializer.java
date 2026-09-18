@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.commandline.CommandsProviderExtImpl.TestCommandCommandArg;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
@@ -36,12 +37,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class TestCommandCommandArgSerializer implements IgniteDataTransferObjectSerializer<TestCommandCommandArg> {
     /** {@inheritDoc} */
-    @Override public void writeExternal(TestCommandCommandArg obj, ObjectOutput out) throws IOException {
+    @Override public void writeExternal(TestCommandCommandArg obj, ObjectOutput out, MessageSerializationContext ctx) throws IOException {
         U.writeString(out, obj.testPrint);
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(TestCommandCommandArg obj, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(
+        TestCommandCommandArg obj,
+        ObjectInput in,
+        MessageSerializationContext ctx
+    ) throws IOException, ClassNotFoundException {
         obj.testPrint = U.readString(in);
     }
 }

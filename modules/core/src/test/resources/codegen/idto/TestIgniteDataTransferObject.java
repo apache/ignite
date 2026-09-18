@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Arrays;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
@@ -28,4 +27,12 @@ public class TestIgniteDataTransferObject extends IgniteDataTransferObject {
     @Order(0)
     @Argument
     char[] charArray;
+
+    /** */
+    @Order(value = 1, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
+    String deprecatedFld;
+
+    /** */
+    @Order(value = 2, introducedBy = "ROLLING_UPGRADE_FEATURE")
+    String introducedFld;
 }

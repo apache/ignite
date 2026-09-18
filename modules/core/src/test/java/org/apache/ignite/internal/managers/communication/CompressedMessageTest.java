@@ -42,6 +42,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -70,7 +71,7 @@ public class CompressedMessageTest {
         ByteBuffer msgBuf = ByteBuffer.allocate(40_960);
 
         while (!finished) {
-            finished = writer.writeMessage(fullMsg, true);
+            finished = writer.writeMessage(fullMsg, true, IGNORED);
 
             if (checkChunkCnt) {
                 DirectMessageState<?> state = U.field(writer, "state");
@@ -104,7 +105,7 @@ public class CompressedMessageTest {
 
         reader.setBuffer(msgBuf);
 
-        Message readMsg = reader.readMessage(true);
+        Message readMsg = reader.readMessage(true, IGNORED);
 
         assertTrue(readMsg instanceof GridDhtPartitionsFullMessage);
 
@@ -133,7 +134,7 @@ public class CompressedMessageTest {
         reader.setBuffer(buf);
 
         GridTestUtils.assertThrows(null,
-            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
+            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader, IGNORED),
             IgniteException.class,
             "unexpected null chunk");
     }
@@ -156,7 +157,7 @@ public class CompressedMessageTest {
         reader.setBuffer(buf);
 
         GridTestUtils.assertThrows(null,
-            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
+            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader, IGNORED),
             IgniteException.class,
             "Invalid compressed message data size");
     }
@@ -217,7 +218,7 @@ public class CompressedMessageTest {
 
         writer.setBuffer(tmpBuf);
 
-        assertTrue(writer.writeMessage(fullMessage(), false));
+        assertTrue(writer.writeMessage(fullMessage(), false, IGNORED));
 
         tmpBuf.flip();
 
@@ -231,7 +232,7 @@ public class CompressedMessageTest {
 
         wireWriter.setBuffer(wire);
 
-        assertTrue(wireWriter.writeMessage(compressedMsg, false));
+        assertTrue(wireWriter.writeMessage(compressedMsg, false, IGNORED));
 
         wire.flip();
 
@@ -239,7 +240,7 @@ public class CompressedMessageTest {
 
         reader.setBuffer(wire);
 
-        GridTestUtils.assertThrows(null, () -> reader.readMessage(true), IgniteException.class, "ended unexpectedly");
+        GridTestUtils.assertThrows(null, () -> reader.readMessage(true, IGNORED), IgniteException.class, "ended unexpectedly");
     }
 
     /** */

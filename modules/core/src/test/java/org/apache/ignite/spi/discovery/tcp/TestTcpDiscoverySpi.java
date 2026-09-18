@@ -125,7 +125,11 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         };
 
         try (dataSock) {
-            return new TcpDiscoveryIoSession(ctx, dataSock).readMessage();
+            TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(ctx, dataSock);
+
+            ses.applyMessageSerializationContext(ctx.localNodeFeatures());
+
+            return ses.readMessage();
         }
         catch (Exception e) {
             throw new IgniteException("Failed to decode a message", e);

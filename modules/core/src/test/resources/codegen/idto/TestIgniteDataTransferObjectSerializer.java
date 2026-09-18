@@ -17,6 +17,8 @@
 
  package org.apache.ignite.internal;
 
+ import org.apache.ignite.internal.MessageSerializationContext;
+ import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
  import java.io.ObjectOutput;
  import org.apache.ignite.internal.util.typedef.internal.U;
  import org.apache.ignite.internal.TestIgniteDataTransferObject;
@@ -31,12 +33,24 @@
   */
  public class TestIgniteDataTransferObjectSerializer implements IgniteDataTransferObjectSerializer<TestIgniteDataTransferObject> {
      /** {@inheritDoc} */
-     @Override public void writeExternal(TestIgniteDataTransferObject obj, ObjectOutput out) throws IOException {
+     @Override public void writeExternal(TestIgniteDataTransferObject obj, ObjectOutput out, MessageSerializationContext ctx) throws IOException {
          U.writeCharArray(out, obj.charArray);
+          if (ctx.includeFieldDeprecatedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+             U.writeString(out, obj.deprecatedFld);
+         }
+         if (ctx.includeFieldIntroducedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+             U.writeString(out, obj.introducedFld);
+         }
      }
 
      /** {@inheritDoc} */
-     @Override public void readExternal(TestIgniteDataTransferObject obj, ObjectInput in) throws IOException, ClassNotFoundException {
+     @Override public void readExternal(TestIgniteDataTransferObject obj, ObjectInput in, MessageSerializationContext ctx) throws IOException, ClassNotFoundException {
          obj.charArray = U.readCharArray(in);
+          if (ctx.includeFieldDeprecatedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+             obj.deprecatedFld = U.readString(in);
+         }
+         if (ctx.includeFieldIntroducedBy(SupportedFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+             obj.introducedFld = U.readString(in);
+         }
      }
  }

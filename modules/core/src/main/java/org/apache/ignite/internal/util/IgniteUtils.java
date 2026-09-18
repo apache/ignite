@@ -163,6 +163,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
@@ -7681,12 +7682,12 @@ public abstract class IgniteUtils extends CommonUtils {
     /** */
     public static final IgniteDataTransferObjectSerializer<?> EMPTY_DTO_SERIALIZER = new IgniteDataTransferObjectSerializer() {
         /** {@inheritDoc} */
-        @Override public void writeExternal(Object instance, ObjectOutput out) {
+        @Override public void writeExternal(Object instance, ObjectOutput out, MessageSerializationContext ctx) {
             throw new IllegalStateException("Can't find serializer for: " + instance.getClass());
         }
 
         /** {@inheritDoc} */
-        @Override public void readExternal(Object instance, ObjectInput in) {
+        @Override public void readExternal(Object instance, ObjectInput in, MessageSerializationContext ctx) {
             throw new IllegalStateException("Can't find serializer for: " + instance.getClass());
         }
     };
