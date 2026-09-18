@@ -97,6 +97,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Abstra
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.stopCollectStatisticsAndRead;
 import static org.apache.ignite.internal.processors.query.QueryParserMetricsHolder.QUERY_PARSER_METRIC_GROUP_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.BIG_RESULT_SET_EVENTS_CNT;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.BIG_RESULT_SET_MSG;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_ERROR_MSG;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
@@ -874,6 +875,20 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(logLsnr2.check(1000L));
     }
 
+    /** */
+    @Test
+    public void testBigResultSetMetric() {
+        grid(0).context().query().runningQueryManager().heavyQueriesTracker()
+            .setResultSetSizeThreshold(BIG_RESULT_SET_THRESHOLD);
+
+        sql(grid(0), "SELECT * FROM TABLE(SYSTEM_RANGE(1, ?))", BIG_RESULT_SET_THRESHOLD * 2 + 1);
+
+        LongMetric metric = grid(0).context().metric().registry(SQL_USER_QUERIES_REG_NAME)
+            .findMetric(BIG_RESULT_SET_EVENTS_CNT);
+
+        assertNotNull("Metric is not registered", metric);
+        assertTrue("Metric is not incremented", metric.value() > 0);
+    }
 
     /** */
     @Test

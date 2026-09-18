@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -54,6 +55,12 @@ public final class HeavyQueriesTracker {
     /** */
     public static final String BIG_RESULT_SET_MSG = "Query produced big result set.";
 
+    /** Big result set events count metric name. */
+    public static final String BIG_RESULT_SET_EVENTS_CNT = "bigResultSetEventsCount";
+
+    /** Big result set events count metric description. */
+    private static final String BIG_RESULT_SET_EVENTS_CNT_DESC = "Number of events when a SQL query produced a big result set.";
+
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
     private final ConcurrentHashMap<TrackableQuery, TimeoutChecker> qrys = new ConcurrentHashMap<>();
 
@@ -62,6 +69,9 @@ public final class HeavyQueriesTracker {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Big result set events count metric. */
+    private final AtomicLongMetric bigResultSetEvtsCnt;
 
     /** Long query timeout milliseconds. */
     private volatile long timeout;
@@ -96,6 +106,9 @@ public final class HeavyQueriesTracker {
      */
     public HeavyQueriesTracker(GridKernalContext ctx) {
         log = ctx.log(HeavyQueriesTracker.class);
+
+        bigResultSetEvtsCnt = ctx.metric().registry(RunningQueryManager.SQL_USER_QUERIES_REG_NAME)
+            .longMetric(BIG_RESULT_SET_EVENTS_CNT, BIG_RESULT_SET_EVENTS_CNT_DESC);
 
         checkWorker = new GridWorker(ctx.igniteInstanceName(), "long-qry", log) {
             @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
@@ -156,7 +169,7 @@ public final class HeavyQueriesTracker {
      * @param qryInfo Query info.
      */
     public ResultSetChecker resultSetChecker(TrackableQuery qryInfo) {
-        return new ResultSetChecker(log, qryInfo, rsSizeThreshold, rsSizeThresholdMult);
+        return new ResultSetChecker(log, qryInfo, rsSizeThreshold, rsSizeThresholdMult, bigResultSetEvtsCnt);
     }
 
     /**
@@ -314,12 +327,22 @@ public final class HeavyQueriesTracker {
         /** Big results flag. */
         private boolean bigResults;
 
+        /** Big result set events count metric. */
+        private final AtomicLongMetric bigResultSetEvtsCnt;
+
         /** Ctor. */
-        private ResultSetChecker(IgniteLogger log, TrackableQuery qryInfo, long threshold, int thresholdMult) {
+        private ResultSetChecker(
+            IgniteLogger log,
+            TrackableQuery qryInfo,
+            long threshold,
+            int thresholdMult,
+            AtomicLongMetric bigResultSetEvtsCnt
+        ) {
             this.log = log;
             this.qryInfo = qryInfo;
             this.threshold = threshold;
             this.thresholdMult = thresholdMult;
+            this.bigResultSetEvtsCnt = bigResultSetEvtsCnt;
         }
 
         /**
@@ -331,6 +354,9 @@ public final class HeavyQueriesTracker {
 
             if (threshold > 0 && fetchedSize >= threshold) {
                 LT.warn(log, BIG_RESULT_SET_MSG + qryInfo.queryInfo("fetched=" + fetchedSize));
+
+                if (bigResultSetEvtsCnt != null)
+                    bigResultSetEvtsCnt.increment();
 
                 if (thresholdMult > 1)
                     threshold *= thresholdMult;
