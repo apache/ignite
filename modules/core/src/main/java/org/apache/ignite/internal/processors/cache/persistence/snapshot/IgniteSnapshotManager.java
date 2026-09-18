@@ -30,6 +30,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -60,6 +61,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -344,6 +346,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot validation distributed process. */
     private final SnapshotCheckProcess checkSnpProc;
 
+    /** Distributed process to delete cluster snapshot. */
+    private final SnapshotDeleteProcess deleteSnpProc;
+
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationEndRequest, SnapshotOperationResponse> endSnpProc;
 
@@ -445,6 +450,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
         checkSnpProc = new SnapshotCheckProcess(ctx);
+
+        deleteSnpProc = new SnapshotDeleteProcess(ctx);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
@@ -664,6 +671,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         restoreCacheGrpProc.interrupt(stopErr);
         checkSnpProc.interrupt(stopErr);
+        deleteSnpProc.interrupt(stopErr);
 
         // Try stop all snapshot processing if not yet.
         for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
@@ -701,46 +709,107 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpDir Snapshot dir.
      */
-    public void deleteSnapshot(File snpDir) {
+    public void deleteLocalSnapshot(File snpDir) {
         if (!snpDir.exists())
             return;
 
         if (!snpDir.isDirectory())
             return;
 
-        deleteSnapshot(new SnapshotFileTree(
+        var sft = new SnapshotFileTree(
             cctx.kernalContext(),
             snpDir.getName(),
             snpDir.getParent(),
             ft.folderName(),
-            pdsSettings.consistentId().toString()));
+            pdsSettings.consistentId().toString()
+        );
+
+        deleteLocalSnapshot(sft, ft.folderName(), null);
     }
 
-    /** */
-    public void deleteSnapshot(SnapshotFileTree sft) {
-        try {
-            U.delete(sft.binaryMeta());
-            sft.allStorages().forEach(U::delete);
-            U.delete(sft.meta());
+    /**
+     * Deletes local shapshot data.
+     *
+     * @param sft Snapshot file tree
+     * @param nodeFolderName Exact node's data subdirectory name usually taken from the consistent id.
+     * @param existsFlag Flag to set {@code true} if any snapshot file or directory was found (existed). If {@code null}, ignored.
+     * @return {@code True}, if data is found and completely deleted;
+     *         {@code False}, if nothing found or if data is found but might not be deleted completely.
+     */
+    public boolean deleteLocalSnapshot(SnapshotFileTree sft, String nodeFolderName, @Nullable AtomicBoolean existsFlag) {
+        if (existsFlag != null)
+            existsFlag.set(sft.root().exists());
 
-            deleteDirectory(sft.binaryMetaRoot());
-            deleteDirectory(sft.marshaller());
+        if (!sft.root().exists())
+            return false;
 
-            // Delete parent dir which is {snapshot_root}/db if empty.
-            sft.marshaller().getParentFile().delete();
-            // Delete root dir which is {snapshot_root} if empty.
-            sft.root().delete();
+        AtomicBoolean res = new AtomicBoolean(true);
+
+        for (var dir : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller(), sft.db())) {
+            if (!dir.exists())
+                continue;
+
+            var nodeDir = new File(dir, nodeFolderName);
+
+            if (nodeDir.exists())
+                deleteSnapshotDataCompletely(nodeDir, res);
+
+            // Recheck for the case of concurrent deletion.
+            try {
+                Files.delete(dir.toPath());
+            }
+            catch (NoSuchFileException ne) {
+                // No-op: someone else deleted.
+            }
+            catch (Exception e) {
+                res.set(false);
+            }
         }
-        catch (IOException e) {
-            throw new IgniteException(e);
+
+        deleteSnapshotDataCompletely(sft.meta(), res);
+
+        try {
+            Files.delete(sft.root().toPath());
+        } catch (Exception e) {
+            res.set(false);
+        }
+
+        return res.get();
+    }
+
+    /**
+     * Deletes file/directory and sets existence and deletion failure flags.
+     *
+     * @param f File/directory to delete. If {@code null}, does nothing.
+     * @param failRes Is set to {@code False} if at least one existed file or directory was denied to delete.
+     */
+    private void deleteSnapshotDataCompletely(@Nullable File f, AtomicBoolean failRes) {
+        if (f == null || !f.exists())
+            return;
+
+        try {
+            if (f.isDirectory()) {
+                if (!deleteDirectoryWithContent(f))
+                    failRes.set(false);
+            }
+            else
+                Files.delete(f.toPath());
+        }
+        catch (Exception e) {
+            failRes.set(false);
         }
     }
 
     /** Concurrently traverse the directory and delete all files. */
-    private void deleteDirectory(File dir) throws IOException {
-        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
+    private boolean deleteDirectoryWithContent(File dir) throws IOException {
+        AtomicBoolean res = new AtomicBoolean(true);
+
+        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<>() {
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                U.delete(file);
+                var f = file.toFile();
+
+                if (f.exists() && !U.delete(file) && f.exists())
+                    res.set(false);
 
                 return FileVisitResult.CONTINUE;
             }
@@ -751,7 +820,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             @Override public FileVisitResult postVisitDirectory(Path dir, IOException e) {
-                dir.toFile().delete();
+                var f = dir.toFile();
+
+                if (f.exists() && !f.delete() && f.exists())
+                    res.set(false);
 
                 if (log.isInfoEnabled() && e != null)
                     log.info("Snapshot directory cleaned with an exception [dir=" + dir + ", e=" + e.getMessage() + ']');
@@ -759,6 +831,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return FileVisitResult.CONTINUE;
             }
         });
+
+        return res.get();
     }
 
     /**
@@ -811,6 +885,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cctx.kernalContext().encryption().reencryptionInProgress()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Caches " +
                 "re-encryption process is not finished yet."));
+        }
+
+        if (cctx.snapshotMgr().isSnapshotDeleting(req.snapshotName(), req.snapshotPath())) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Snapshot " +
+                "'%s' is being deleted.".formatted(req.snapshotName())));
         }
 
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
@@ -1282,7 +1361,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (snpStartReq.incremental())
                         U.delete(snpOp.snapshotFileTree().incrementalSnapshotFileTree(snpStartReq.incrementIndex()).root());
                     else
-                        deleteSnapshot(snpOp.snapshotFileTree());
+                        deleteLocalSnapshot(snpOp.snapshotFileTree(), cctx.kernalContext().pdsFolderResolver().fileTree().folderName(), null);
                 }
                 else if (!F.isEmpty(endReq.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -1444,6 +1523,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public boolean isSnapshotChecking(String snpName) {
         return checkSnpProc.isSnapshotChecking(snpName);
+    }
+
+    /**
+     * @return {@code True} if a snapshot {@code snpName} delete operation is in progress.
+     */
+    public boolean isSnapshotDeleting(String snpName, @Nullable String snpPath) {
+        return deleteSnpProc.isSnapshotDeleting(snpName, snpPath);
+    }
+
+    /**
+     * Deletes the cluster-wide snapshot with the given name.
+     * <p>
+     * The operation is rejected if a concurrent snapshot operation (create, restore, check, etc...) is in progress
+     * for the snapshot.
+     *
+     * @param name Snapshot name.
+     * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory will be used.
+     * @return Future which will be completed when the snapshot is deleted on all the baseline nodes.
+     */
+    public IgniteFuture<SnapshotDeleteProcessResult> deleteSnapshot(String name, @Nullable String snpPath) {
+        return deleteSnpProc.start(name, snpPath);
     }
 
     /**
@@ -2032,7 +2132,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (!incremental && snpExists) {
                     throw new IgniteException("Create snapshot request has been rejected. " +
-                        "Snapshot with given name already exists on local node.");
+                        "Snapshot with given name already exists on local node or the path is not empty.");
                 }
 
                 if (incremental) {
@@ -2263,7 +2363,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (SnapshotFileTree.incrementSnapshotDir(snpDir))
                 U.delete(snpDir);
             else
-                deleteSnapshot(snpDir);
+                deleteLocalSnapshot(snpDir);
         }
 
         if (log.isInfoEnabled()) {
@@ -3957,7 +4057,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteSnapshot(sft);
+                deleteLocalSnapshot(sft, cctx.kernalContext().pdsFolderResolver().fileTree().folderName(), null);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
@@ -4317,7 +4417,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean call() throws Exception {
+        @Override public Boolean call() {
             if (reqId != null)
                 return ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(reqId);
             else {

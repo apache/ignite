@@ -36,7 +36,10 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -98,6 +101,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -173,6 +178,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return valBuilder;
     }
 
+    /** */
+    protected @Nullable AbstractTestPluginProvider pluginProvider;
+
     /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
     @Parameterized.Parameter
     public boolean encryption;
@@ -182,7 +190,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public boolean onlyPrimary;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}")
     public static Collection<Object[]> params() {
         List<Object[]> res = new ArrayList<>();
 
@@ -216,6 +224,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         if (cfg.isClientMode())
             return cfg;
+
+        if (pluginProvider != null)
+            cfg.setPluginProviders(pluginProvider);
 
         return cfg.setConsistentId(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -281,6 +292,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
+
+        // Clean all: also separated snapshot working directories and custom snapshot pathes.
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
+            for (Path path : files)
+                U.delete(path);
+        }
     }
 
     /**
@@ -814,6 +836,85 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
     }
 
+    /** Tests concurrent snapshot deletion. */
+    protected void doTestConcurrentSnapshotDeleteOperation(
+        ExRunnable prepareCluster,
+        ExRunnable concurrentOp,
+        @Nullable Function<Exception, Boolean> errValidator,
+        boolean rerunAtTheEnd
+    ) throws Exception {
+        CountDownLatch delProcInitLatch = new CountDownLatch(1);
+        CountDownLatch delProcProceedLatch = new CountDownLatch(1);
+
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public boolean deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            String nodeFolderName,
+                            @Nullable AtomicBoolean existsFlag
+                        ) {
+                            delProcInitLatch.countDown();
+
+                            try {
+                                assertTrue(delProcProceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                            }
+                            catch (InterruptedException e) {
+                                throw new RuntimeException("Interrupted.", e);
+                            }
+
+                            return super.deleteLocalSnapshot(sft, nodeFolderName, existsFlag);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        prepareCluster.run();
+
+        var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(delProcInitLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        try {
+            concurrentOp.run();
+
+            if (errValidator != null)
+                throw new IllegalStateException("Exception is not thrown.");
+        }
+        catch (Exception e) {
+            if (errValidator == null || !errValidator.apply(e))
+                throw new IllegalStateException("Unexpected exception: " + e.getMessage(), e);
+        }
+
+        delProcProceedLatch.countDown();
+
+        var delRes = delFut.get(getTestTimeout());
+
+        assertFalse(delRes.completedNodes.isEmpty());
+
+        if (!rerunAtTheEnd)
+            return;
+
+        assertThrowsAnyCause(
+            null,
+            () -> {
+                concurrentOp.run();
+
+                return null;
+            },
+            IllegalArgumentException.class,
+            "Snapshot does not exists "
+        );
+    }
+
     /**
      * @param sft Snapshot file tree.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -992,6 +1093,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         public void waitBlockedSize(int size, long timeout) throws IgniteInterruptedCheckedException {
             GridTestUtils.waitForCondition(() -> blocked.size() == size, timeout);
         }
+    }
+
+    /** */
+    @FunctionalInterface
+    protected interface ExRunnable {
+        /** */
+        void run() throws Exception;
     }
 
     /** */
