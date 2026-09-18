@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -46,10 +47,12 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
@@ -99,12 +102,14 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -150,6 +155,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
+    /** Injected Ignite Logger**/
+    @LoggerResource
+    private IgniteLogger log;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -169,7 +178,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     ) {
         this(ctx, delegate, new AtomicReference<>(null), async);
     }
-
     /**
      * @param ctx Context.
      * @param delegate Delegate.
@@ -1279,9 +1287,26 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         }
     }
 
+    /**
+     * Warns if an ineffective annotation is used
+     *
+     * @param valueCls Value class
+     */
+    private void checkIneffectiveAnnotations(Class valueCls) {
+        for (Field f: valueCls.getDeclaredFields()) {
+            AffinityKeyMapped[] annotations = f.getDeclaredAnnotationsByType(AffinityKeyMapped.class);
+            if (annotations != null && annotations.length > 0) {
+                LT.warn(log,
+                        "AffinityKeyMapped annotation should be used on key and not value type");
+            }
+
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        checkIneffectiveAnnotations(val.getClass());
 
         try {
             if (isAsync())
