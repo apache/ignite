@@ -84,7 +84,7 @@ public class BufferingWindowNode<Row> extends AbstractNode<Row> implements Singl
         if (inLoop)
             return;
 
-        if (part.ready() > 0)
+        if (part.ready() > 0 || waiting < 0)
             context().execute(this::flush, this::onError);
         else if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
@@ -120,7 +120,7 @@ public class BufferingWindowNode<Row> extends AbstractNode<Row> implements Singl
 
         if (part.ready() > 0)
             flush();
-        else if (waiting == 0)
+        else if (waiting == 0 && requested > 0)
             context().execute(() -> source().request(waiting = IN_BUFFER_SIZE), this::onError);
     }
 

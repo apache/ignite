@@ -245,7 +245,7 @@ final class WindowFunctionFactory<Row> extends AccumulatorsFactoryBase<Row> {
 
         /** {@inheritDoc} */
         @Override public boolean isAggAccumulator() {
-            return accumulator() instanceof IterableAccumulator<?>;
+            return accumulator().accumulator() instanceof IterableAccumulator<?>;
         }
 
         /** */
