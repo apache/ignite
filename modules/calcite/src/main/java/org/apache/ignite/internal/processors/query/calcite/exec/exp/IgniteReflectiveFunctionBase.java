@@ -17,6 +17,8 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
+import java.util.List;
+import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
 
 /** A base for outer java-method functions. */
@@ -25,10 +27,20 @@ abstract class IgniteReflectiveFunctionBase extends ReflectiveFunctionBase imple
     protected final CallImplementor implementor;
 
     /** */
+    private final List<FunctionParameter> funcParams;
+
+    /** */
     protected IgniteReflectiveFunctionBase(Method method, CallImplementor implementor) {
         super(method);
 
         this.implementor = implementor;
+
+        funcParams = IgniteFunctionParameter.toSql(super.getParameters());
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<FunctionParameter> getParameters() {
+        return funcParams;
     }
 
     /** {@inheritDoc} */
