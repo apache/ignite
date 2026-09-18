@@ -18,7 +18,9 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Platform cache configuration.
@@ -37,6 +39,9 @@ public class PlatformCacheConfiguration implements Serializable {
 
     /** Whether to cache binary objects. */
     private boolean keepBinary;
+
+    /** Cluster node filter. */
+    private IgnitePredicate<ClusterNode> nodeFilter;
 
     /**
      * Gets fully-qualified platform type name of the cache key used for the local map.
@@ -101,6 +106,29 @@ public class PlatformCacheConfiguration implements Serializable {
      */
     public PlatformCacheConfiguration setKeepBinary(boolean keepBinary) {
         this.keepBinary = keepBinary;
+
+        return this;
+    }
+
+    /**
+     * Sets node filter. Platform cache will be started only on nodes satisfying this cluster node filter.
+     * In case of empty filter platform cache starts on all server nodes.
+     *
+     * @return Cluster node filter.
+     */
+    public IgnitePredicate<ClusterNode> getNodeFilter() {
+        return nodeFilter;
+    }
+
+    /**
+     * Sets node filter. Platform cache will be started only on nodes satisfying this cluster node filter.
+     * In case of empty filter platform cache starts on all server nodes.
+     *
+     * @param nodeFilter Cluster node filter.
+     * @return {@code this} for chaining.
+     */
+    public PlatformCacheConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
 
         return this;
     }
