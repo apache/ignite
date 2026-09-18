@@ -371,24 +371,6 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    private void putRegularGetInBinary(IgniteCache<Object, Object> c) {
-        List<?> vals = dataToTest();
-
-        for (Object val : vals) {
-            c.put(1, val);
-
-            Object obj = c.withKeepBinary().get(1);
-
-            assertEquals(useBinaryArrays ? BinaryArray.class : Object[].class, obj.getClass());
-
-            if (useBinaryArrays)
-                assertEquals(val.getClass(), ((BinaryObject)obj).deserialize().getClass());
-
-            assertTrue(c.remove(1));
-        }
-    }
-
-    /** */
     private void putInBinaryGetRegular(CacheAdapter<Object, Object> c) {
         Runnable checker = () -> {
             Object[] arr = (Object[])c.get(1);
