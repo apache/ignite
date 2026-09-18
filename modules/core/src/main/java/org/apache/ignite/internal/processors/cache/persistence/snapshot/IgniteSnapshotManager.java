@@ -30,6 +30,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -723,35 +724,55 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             pdsSettings.consistentId().toString()
         );
 
-        deleteLocalSnapshot(sft);
+        deleteLocalSnapshot(sft, ft.folderName(), null);
     }
 
     /**
      * Deletes local shapshot data.
      *
      * @param sft Snapshot file tree
-     */
-    public boolean deleteLocalSnapshot(SnapshotFileTree sft) {
-        return deleteLocalSnapshot(sft, null);
-    }
-
-    /**
-     * Deletes local shapshot data.
-     *
-     * @param sft Snapshot file tree
+     * @param nodeFolderName Exact node's data subdirectory name usually taken from the consistent id.
      * @param existsFlag Flag to set {@code true} if any snapshot file or directory was found (existed). If {@code null}, ignored.
-     * @return {@code True}, if data is found and completely deleted or if no data found;
-     *         {@code False}, if data is found but might not be deleted completely or if was canceled.
+     * @return {@code True}, if data is found and completely deleted;
+     *         {@code False}, if nothing found or if data is found but might not be deleted completely.
      */
-    public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+    public boolean deleteLocalSnapshot(SnapshotFileTree sft, String nodeFolderName, @Nullable AtomicBoolean existsFlag) {
+        if (existsFlag != null)
+            existsFlag.set(sft.root().exists());
+
+        if (!sft.root().exists())
+            return false;
+
         AtomicBoolean res = new AtomicBoolean(true);
 
-        sft.allStorages().forEach(f -> deleteAndCheckExisted(f, res, existsFlag));
+        for (var dir : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller(), sft.db())) {
+            if (!dir.exists())
+                continue;
 
-        deleteAndCheckExisted(sft.binaryMeta(), res, existsFlag);
-        deleteAndCheckExisted(sft.binaryMetaRoot(), res, existsFlag);
-        deleteAndCheckExisted(sft.marshaller(), res, existsFlag);
-        deleteAndCheckExisted(sft.root(), res, existsFlag);
+            var nodeDir = new File(dir, nodeFolderName);
+
+            if (nodeDir.exists())
+                deleteSnapshotDataCompletely(nodeDir, res);
+
+            // Recheck for the case of concurrent deletion.
+            try {
+                Files.delete(dir.toPath());
+            }
+            catch (NoSuchFileException ne) {
+                // No-op: someone else deleted.
+            }
+            catch (Exception e) {
+                res.set(false);
+            }
+        }
+
+        deleteSnapshotDataCompletely(sft.meta(), res);
+
+        try {
+            Files.delete(sft.root().toPath());
+        } catch (Exception e) {
+            res.set(false);
+        }
 
         return res.get();
     }
@@ -761,29 +782,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param f File/directory to delete. If {@code null}, does nothing.
      * @param failRes Is set to {@code False} if at least one existed file or directory was denied to delete.
-     * @param existsFlag Is set to {@code True} if not {@code null} and if at least one file or directory was found (existed).
      */
-    private void deleteAndCheckExisted(@Nullable File f, AtomicBoolean failRes, @Nullable AtomicBoolean existsFlag) {
-        if (f == null)
+    private void deleteSnapshotDataCompletely(@Nullable File f, AtomicBoolean failRes) {
+        if (f == null || !f.exists())
             return;
 
-        boolean existed = f.exists();
-
-        if (existed && existsFlag != null)
-            existsFlag.set(true);
-
         try {
-            // Additionally checks the existence for the case of concurrent deletion.
-            if (existed && ((!f.isDirectory() && !U.delete(f)) || (f.isDirectory() && !deleteDirectory(f))) && f.exists())
-                failRes.set(false);
+            if (f.isDirectory()) {
+                if (!deleteDirectoryWithContent(f))
+                    failRes.set(false);
+            }
+            else
+                Files.delete(f.toPath());
         }
-        catch (IOException e) {
+        catch (Exception e) {
             failRes.set(false);
         }
     }
 
     /** Concurrently traverse the directory and delete all files. */
-    private boolean deleteDirectory(File dir) throws IOException {
+    private boolean deleteDirectoryWithContent(File dir) throws IOException {
         AtomicBoolean res = new AtomicBoolean(true);
 
         Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<>() {
@@ -1343,7 +1361,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (snpStartReq.incremental())
                         U.delete(snpOp.snapshotFileTree().incrementalSnapshotFileTree(snpStartReq.incrementIndex()).root());
                     else
-                        deleteLocalSnapshot(snpOp.snapshotFileTree());
+                        deleteLocalSnapshot(snpOp.snapshotFileTree(), cctx.kernalContext().pdsFolderResolver().fileTree().folderName(), null);
                 }
                 else if (!F.isEmpty(endReq.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -4039,7 +4057,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteLocalSnapshot(sft);
+                deleteLocalSnapshot(sft, cctx.kernalContext().pdsFolderResolver().fileTree().folderName(), null);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

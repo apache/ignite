@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 public class SnapshotDeleteResponse implements Message {
     /** {@code null} for client node. */
     @Order(0)
-    @Nullable SnapshotDeleteStatus res;
+    @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus res;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteResponse() {
@@ -39,8 +39,13 @@ public class SnapshotDeleteResponse implements Message {
     }
 
     /** {@code null} for client node. */
-    SnapshotDeleteResponse(@Nullable SnapshotDeleteStatus res) {
+    SnapshotDeleteResponse(@Nullable SnapshotDeleteResponse.SnapshotDeleteStatus res) {
         this.res = res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SnapshotDeleteResponse.class, this);
     }
 
     /** */
@@ -52,11 +57,6 @@ public class SnapshotDeleteResponse implements Message {
         PARTLY_DELETED,
 
         /** Snapshot not found. */
-        NOT_FOUND
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SnapshotDeleteResponse.class, this);
+        NOT_FOUND;
     }
 }

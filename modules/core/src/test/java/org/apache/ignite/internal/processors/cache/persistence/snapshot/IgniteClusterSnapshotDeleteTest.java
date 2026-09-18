@@ -133,14 +133,18 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+                        @Override public boolean deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            String nodeFolderName,
+                            @Nullable AtomicBoolean existsFlag
+                        ) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 existsFlag.set(true);
 
                                 return false;
                             }
 
-                            return super.deleteLocalSnapshot(sft, existsFlag);
+                            return super.deleteLocalSnapshot(sft, nodeFolderName, existsFlag);
                         }
                     };
                 }
@@ -161,6 +165,81 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         assertTrue(F.isEmpty(delSnpRes.emptyNodes));
         assertFalse(F.isEmpty(delSnpRes.uncompletedNodes));
         assertTrue(delSnpRes.uncompletedNodes.contains(grid(1).localNode().id()));
+    }
+
+    /** */
+    @Test
+    public void testDeleteNotSnapshotSharedDirectory() throws Exception {
+        doTestDeleteNotSnapshot(false);
+    }
+
+    /** */
+    @Test
+    public void testDeleteNotSnapshotDedicatedDirectories() throws Exception {
+        doTestDeleteNotSnapshot(true);
+    }
+
+    /** */
+    protected void doTestDeleteNotSnapshot(boolean separatedWorkDir) throws Exception {
+        this.separatedWorkDir = separatedWorkDir;
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        var snpSft = new SnapshotFileTree(grid(1).context(), SNAPSHOT_NAME, null);
+
+        // Ensure that all the snapshot node folders exist.
+        assertTrue(snpSft.binaryMeta().exists());
+        assertTrue(new SnapshotFileTree(grid(0).context(), SNAPSHOT_NAME, null, folderName(0), consistentId(0))
+            .binaryMeta().exists());
+        assertTrue(new SnapshotFileTree(grid(2).context(), SNAPSHOT_NAME, null, folderName(2), consistentId(2))
+            .binaryMeta().exists());
+
+        assertTrue(snpSft.meta().exists());
+        assertTrue(U.delete(snpSft.meta()));
+        assertFalse(snpSft.meta().exists());
+
+        var delSnpRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        // Check the result.
+        if(separatedWorkDir) {
+            // One node doesn't find meta, decided not a snapshot.
+            assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
+            assertEquals(2, delSnpRes.completedNodes.size());
+            assertEquals(1, delSnpRes.emptyNodes.size());
+            assertTrue(delSnpRes.emptyNodes.contains(grid(1).localNode().id()));
+        } else {
+            // All nodes may see some metas, may try to delete snapshot by the metas, but see that the snapshot directory isn't empty.
+            // Some node may not get any meta to process. But node of the nodes can say the snapshot 100% deleted.
+            assertTrue(F.isEmpty(delSnpRes.completedNodes));
+
+            int cnt = 0;
+
+            if (!F.isEmpty(delSnpRes.emptyNodes))
+                cnt += delSnpRes.emptyNodes.size();
+
+            if (!F.isEmpty(delSnpRes.uncompletedNodes))
+                cnt += delSnpRes.uncompletedNodes.size();
+
+            assertEquals(3, cnt);
+        }
+
+        assertTrue(snpSft.binaryMeta().exists());
+        assertFalse(new SnapshotFileTree(grid(0).context(), SNAPSHOT_NAME, null, folderName(0), consistentId(0))
+            .binaryMeta().exists());
+        assertFalse(new SnapshotFileTree(grid(2).context(), SNAPSHOT_NAME, null, folderName(2), consistentId(2))
+            .binaryMeta().exists());
+    }
+
+    /** */
+    private String consistentId(int gridIdx) {
+        return grid(gridIdx).configuration().getConsistentId().toString();
+    }
+
+    /** */
+    private String folderName(int gridIdx) {
+        return grid(gridIdx).context().pdsFolderResolver().fileTree().folderName();
     }
 
     /** Test delete snapshot directly in Ignite. */
@@ -321,7 +400,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+                        @Override public boolean deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            String nodeFolderName,
+                            @Nullable AtomicBoolean existsFlag
+                        ) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 beginLatch.countDown();
 
@@ -333,7 +416,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                                 }
                             }
 
-                            return super.deleteLocalSnapshot(sft, existsFlag);
+                            return super.deleteLocalSnapshot(sft, nodeFolderName, existsFlag);
                         }
                     };
                 }

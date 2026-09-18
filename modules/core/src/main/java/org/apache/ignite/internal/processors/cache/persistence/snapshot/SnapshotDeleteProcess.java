@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,11 +33,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
@@ -154,13 +157,14 @@ public class SnapshotDeleteProcess {
                 "The snapshot deletion feature isn't activated yet [req=" + req + ']'));
         }
 
-        File path = null;
+        File path = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
 
         if (!F.isEmpty(req.snpPath)) {
-            path = new File(req.snpPath);
+            File reqPath = new File(req.snpPath);
 
-            if (!path.isAbsolute())
-                path = new File(kctx.pdsFolderResolver().fileTree().snapshotsRoot(), req.snpPath);
+            path = reqPath.isAbsolute()
+                ? reqPath
+                : new File(path, req.snpPath);
 
             String pathValidationErr = validateAbsoluteSnapshotRoot(path);
 
@@ -176,48 +180,73 @@ public class SnapshotDeleteProcess {
                     "started [req=" + req + ']'));
             }
 
-            GridFutureAdapter<SnapshotDeleteResponse> reqLocFut = new GridFutureAdapter<>();
+            SnapshotFileTree snpFiles = new SnapshotFileTree(kctx, req.snpName, path.getAbsolutePath());
+
+            // We need to find and read snapshot metas to ensure the content is a snapshot. Also, the metas contain
+            // initial cluster topology and actual snasphot folder names.
+            List<SnapshotMetadata> locMetas = kctx.cache().context().snapshotMgr().readSnapshotMetadatas(snpFiles);
+
+            if (locMetas.isEmpty()) {
+                log.warning("Snapshot deletion won't process, no snapshot metadata found [req=" + req + ']');
+
+                return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND));
+            }
+
+            // Future to delete snapshot contents according to snapshot metadatas.
+            GridCompoundFuture<SnapshotDeleteResponse.SnapshotDeleteStatus, SnapshotDeleteResponse> resultFut =
+                new GridCompoundFuture<>(new MetaFuturesReducer());
+
+            resultFut.listen(fut->requests.remove(req));
 
             File path0 = path;
 
-            kctx.pools().getSnapshotExecutorService().submit(() -> {
-                try {
-                    AtomicBoolean foundFlag = new AtomicBoolean();
+            for(var meta : locMetas) {
+                GridFutureAdapter<SnapshotDeleteResponse.SnapshotDeleteStatus> perMetaFut = new GridFutureAdapter<>();
 
-                    var sft = new SnapshotFileTree(kctx, req.snpName, path0 == null ? null : path0.getAbsolutePath());
+                kctx.pools().getSnapshotExecutorService().submit(() -> {
+                    try {
+                        AtomicBoolean foundFlag = new AtomicBoolean();
 
-                    boolean deleted = snpMgr.deleteLocalSnapshot(sft, foundFlag);
+                        // Read file tree of the snapshot.
+                        var byMetaSft = new SnapshotFileTree(kctx, req.snpName, path0.getAbsolutePath(), meta.folderName(),
+                            meta.consId);
 
-                    SnapshotDeleteResponse.SnapshotDeleteStatus res;
+                        boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, meta.folderName(), foundFlag);
 
-                    if (foundFlag.get()) {
-                        if (deleted && log.isInfoEnabled())
-                            log.info("Snapshot successfully deleted [req=" + req + ']');
-                        else if (!deleted)
-                            log.warning("Snapshot deleted not completely [req=" + req + ']');
+                        SnapshotDeleteResponse.SnapshotDeleteStatus res;
 
-                        res = deleted
-                            ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
-                            : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+                        if (foundFlag.get()) {
+                            if (deleted && log.isInfoEnabled())
+                                log.info("Snapshot successfully deleted [req=" + req + ']');
+                            else if (!deleted)
+                                log.warning("Snapshot deleted not completely [req=" + req + ']');
+
+                            res = deleted
+                                ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
+                                : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+                        }
+                        else {
+                            if (log.isInfoEnabled())
+                                log.info("Snapshot not found to delete [req=" + req + ']');
+
+                            res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
+                        }
+
+                        perMetaFut.onDone(res);
+                    } catch (Throwable e) {
+                        perMetaFut.onDone(e);
                     }
-                    else {
-                        if (log.isInfoEnabled())
-                            log.info("Snapshot not found to delete [req=" + req + ']');
+                });
 
-                        res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
-                    }
+                resultFut.add(perMetaFut);
+            }
 
-                    reqLocFut.onDone(new SnapshotDeleteResponse(res));
-                }
-                finally {
-                    requests.remove(req);
-                }
-            });
+            resultFut.markInitialized();
 
             if (log.isInfoEnabled())
                 log.info("Deletion of snapshot initialized [req=" + req + ']');
 
-            return reqLocFut;
+            return resultFut;
         }
         catch (Throwable t) {
             requests.remove(req);
@@ -333,5 +362,31 @@ public class SnapshotDeleteProcess {
         Path candidate0 = candidate.toPath().toAbsolutePath().normalize();
 
         return candidate0.startsWith(root0);
+    }
+
+    /** */
+    private static class MetaFuturesReducer implements IgniteReducer<SnapshotDeleteResponse.SnapshotDeleteStatus, SnapshotDeleteResponse> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus res = null;
+
+        /** {@inheritDoc} */
+        @Override public boolean collect(@Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status) {
+            synchronized (this) {
+                if (res == null || res == status)
+                    res = status;
+                else
+                    res = SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SnapshotDeleteResponse reduce() {
+            return new SnapshotDeleteResponse(res == null ? SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND : res);
+        }
     }
 }
