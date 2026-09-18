@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,10 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHO
  */
 public class SnapshotDeleteProcess {
     /** Reject operation messages. */
-    private static final String OP_REJECT_MSG = "Snapshot deletion was rejected.";
+    private static final String OP_REJECT_MSG = "Snapshot deletion was rejected. ";
+
+    /** */
+    private static final String SNP_PATH_ERR_PREF = "Provided snapshot path ";
 
     /** Kernal context. */
     private final GridKernalContext kctx;
@@ -131,22 +135,38 @@ public class SnapshotDeleteProcess {
 
         if (curCreateRq != null && curCreateRq.snpName.equals(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being created [req=" + req + ']'));
+                "Snapshot with this name is being created [req=" + req + ']'));
         }
 
         if (snpMgr.isRestoring(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being restored [req=" + req + ']'));
+                "Snapshot with this name is being restored [req=" + req + ']'));
         }
 
         if (snpMgr.isSnapshotChecking(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " Snapshot with this name is being checked [req=" + req + ']'));
+                "Snapshot with this name is being checked [req=" + req + ']'));
         }
 
         if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                " The snapshot deletion feature isn't activated yet [req=" + req + ']'));
+                "The snapshot deletion feature isn't activated yet [req=" + req + ']'));
+        }
+
+        File path = null;
+
+        if (!F.isEmpty(req.snpPath)) {
+            path = new File(req.snpPath);
+
+            if (!path.isAbsolute())
+                path = new File(kctx.pdsFolderResolver().fileTree().snapshotsRoot(), req.snpPath);
+
+            String pathValidationErr = validateAbsoluteSnapshotRoot(path);
+
+            if (pathValidationErr != null) {
+                return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
+                    pathValidationErr + " [req=" + req + ']'));
+            }
         }
 
         try {
@@ -157,11 +177,15 @@ public class SnapshotDeleteProcess {
 
             GridFutureAdapter<SnapshotDeleteResponse> reqLocFut = new GridFutureAdapter<>();
 
+            File path0 = path;
+
             kctx.pools().getSnapshotExecutorService().submit(() -> {
                 try {
                     AtomicBoolean foundFlag = new AtomicBoolean();
 
-                    boolean deleted = snpMgr.deleteLocalSnapshot(new SnapshotFileTree(kctx, req.snpName, req.snpPath), foundFlag);
+                    var sft = new SnapshotFileTree(kctx, req.snpName, path0 == null ? null : path0.getAbsolutePath());
+
+                    boolean deleted = snpMgr.deleteLocalSnapshot(sft, foundFlag);
 
                     SnapshotDeleteResponse.SnapshotDeleteStatus res;
 
@@ -201,6 +225,29 @@ public class SnapshotDeleteProcess {
 
             return new GridFinishedFuture<>(t);
         }
+    }
+
+    /** */
+    private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path) {
+        if (path == null)
+            return null;
+
+        assert path.isAbsolute();
+
+        var ignWorkRoot = kctx.pdsFolderResolver().fileTree();
+        var ignWorkRootStr = kctx.pdsFolderResolver().fileTree().root().getAbsolutePath();
+        var pathStr = path.getAbsolutePath();
+
+        if (pathStr.startsWith(ignWorkRootStr) && !pathStr.startsWith(ignWorkRoot.snapshotsRoot().getAbsolutePath()))
+            return "belongs to Ignite's working directory";
+
+        if (!path.exists())
+            return SNP_PATH_ERR_PREF + "doesn't exist";
+
+        if (!path.isDirectory())
+            return SNP_PATH_ERR_PREF + "is not a directory";
+
+        return null;
     }
 
     /** */

@@ -161,6 +161,93 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         assertTrue(delSnpRes.uncompletedNodes.contains(grid(1).localNode().id()));
     }
 
+    /** Test delete snapshot directly in Ignite. */
+    @Test
+    public void testDeletionInIgnite() throws Exception {
+        /** No need to multiply this test. */
+        assumeFalse(onlyPrimary || encryption || incremental);
+
+        startGridsMultiThreaded(3);
+
+        var ignRootWork = grid(0).context().pdsFolderResolver().fileTree();
+
+        IgniteSnapshotManager snp = snp(grid(0));
+
+        var sep = File.separator;
+
+        var belongsToErrMsg = "belongs to Ignite's working directory";
+
+        assertThrowsAnyCause(
+            null,
+            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + ';')
+                .get(getTestTimeout()),
+            IllegalArgumentException.class,
+            belongsToErrMsg
+        );
+
+        assertThrowsAnyCause(
+            null,
+            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath()).get(getTestTimeout()),
+            IllegalArgumentException.class,
+            belongsToErrMsg
+        );
+
+        assertThrowsAnyCause(
+            null,
+            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + sep)
+                .get(getTestTimeout()),
+            IllegalArgumentException.class,
+            belongsToErrMsg
+        );
+
+        assertThrowsAnyCause(
+            null,
+            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + sep + sep)
+                .get(getTestTimeout()),
+            IllegalArgumentException.class,
+            belongsToErrMsg
+        );
+
+        assertThrowsAnyCause(
+            null,
+            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + '_' + UUID.randomUUID())
+                .get(getTestTimeout()),
+            IllegalArgumentException.class,
+            belongsToErrMsg
+        );
+
+        assertThrowsAnyCause(
+            null,
+            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + sep + UUID.randomUUID())
+                .get(getTestTimeout()),
+            IllegalArgumentException.class,
+            belongsToErrMsg
+        );
+
+        for(var ignSubRoot : ignRootWork.root().listFiles()) {
+            assert ignSubRoot.isDirectory();
+
+            if(ignSubRoot.compareTo(ignRootWork.snapshotsRoot()) == 0)
+                continue;
+
+            assertThrowsAnyCause(
+                null,
+                () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignSubRoot.getAbsolutePath())
+                    .get(getTestTimeout()),
+                IllegalArgumentException.class,
+                belongsToErrMsg
+            );
+
+            assertThrowsAnyCause(
+                null,
+                () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignSubRoot.getAbsolutePath() + sep + UUID.randomUUID())
+                    .get(getTestTimeout()),
+                IllegalArgumentException.class,
+                belongsToErrMsg
+            );
+        }
+    }
+
     /** Tests snapshot deletion when one node has no snapshot data. */
     @Test
     public void testEmptyNodes() throws Exception {
