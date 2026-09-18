@@ -24,6 +24,9 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientAsyncResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -34,6 +37,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.direct.ClientDirectWriteRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.typedef.X;
@@ -63,6 +67,9 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Protocol context. */
     private final ClientProtocolContext protocolCtx;
 
+    /** Marshaller. */
+    private final GridBinaryMarshaller marsh;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -77,6 +84,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
         this.ctx = ctx;
         this.protocolCtx = protocolCtx;
+        this.marsh = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).marshaller();
         log = ctx.kernalContext().log(getClass());
     }
 
@@ -124,7 +132,13 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         ClientRequest req0 = (ClientRequest)req;
 
         if (req0.isAsync(ctx)) {
-            IgniteInternalFuture<ClientResponse> fut = req0.processAsync(ctx);
+            IgniteInternalFuture<ClientResponse> fut;
+
+            if (req0 instanceof ClientDirectWriteRequest) {
+                fut = ((ClientDirectWriteRequest)req).processAsync(ctx, marsh.writer(BinaryStreams.createPooledOutputStream(32, false)));
+            }
+            else
+                fut = req0.processAsync(ctx);
 
             if (asyncReqWaitTimeout <= 0)
                 return new ClientAsyncResponse(req0.requestId(), fut);
@@ -140,6 +154,9 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             catch (IgniteCheckedException e) {
                 throw new IgniteClientException(ClientStatus.FAILED, e.getMessage(), e);
             }
+        }
+        else if (req0 instanceof ClientDirectWriteRequest) {
+            return ((ClientDirectWriteRequest)req).process(ctx, marsh.writer(BinaryStreams.createPooledOutputStream(32, false)));
         }
         else
             return req0.process(ctx);

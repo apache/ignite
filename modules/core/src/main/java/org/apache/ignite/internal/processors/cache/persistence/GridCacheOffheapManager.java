@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -2531,6 +2532,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 return delegate.find(cctx, key);
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean findTo(GridCacheContext cctx, KeyCacheObject key, BinaryWriterEx writer) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(true);
+
+            if (delegate != null)
+                return delegate.findTo(cctx, key, writer);
+
+            return false;
         }
 
         /** {@inheritDoc} */
