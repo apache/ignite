@@ -115,7 +115,6 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -2111,17 +2110,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        try {
-            if (dataPacket.joiningNodeId().equals(locNode.id()))
-                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
-            else
-                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
-        }
-        catch (IgniteCheckedException e) {
-            ignite.context().failure().process(new FailureContext(CRITICAL_ERROR, e));
-
-            throw new IgniteException(e);
-        }
+        if (dataPacket.joiningNodeId().equals(locNode.id()))
+            dataBag = dataPacket.bagWithNodeData();
+        else
+            dataBag = dataPacket.bagWithJoiningNodeData();
 
         exchange.onExchange(dataBag);
     }
