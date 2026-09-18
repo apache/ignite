@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.lang.reflect.Constructor;
+import java.net.Socket;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
@@ -40,7 +42,10 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.SOCKET_WRITE_TIMEOUTS_CNT;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests TcpDiscoverySpiMBean.
@@ -191,6 +196,62 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
+
+    /**
+     * Tests that the {@code SocketWriteTimeoutsCount} metric is registered in the discovery metric registry
+     * on each node with a zero initial value, and that it is incremented on a socket write timeout.
+     *
+     * @throws Exception if fails.
+     */
+    @Test
+    public void testSocketWriteTimeoutsMetric() throws Exception {
+        try {
+            int cnt = 3;
+
+            startGrids(cnt);
+
+            for (int i = 0; i < cnt; i++) {
+                LongMetric metric = grid(i).context().metric().registry(DISCO_METRICS).findMetric(SOCKET_WRITE_TIMEOUTS_CNT);
+
+                assertNotNull("Metric is not registered on node " + i, metric);
+                assertEquals(0L, metric.value());
+            }
+
+            // Simulate a 'Socket write has timed out' on node 0 by invoking the private timeout handler.
+            TcpDiscoverySpi spi = (TcpDiscoverySpi)grid(0).context().discovery().getInjectedDiscoverySpi();
+
+            LongMetric metric = grid(0).context().metric().registry(DISCO_METRICS).findMetric(SOCKET_WRITE_TIMEOUTS_CNT);
+
+            Constructor<?> timeoutCtor = null;
+
+            for (Class<?> cls : spi.getClass().getDeclaredClasses()) {
+                if ("SocketTimeoutObject".equals(cls.getSimpleName())) {
+                    timeoutCtor = cls.getDeclaredConstructor(TcpDiscoverySpi.class, TcpDiscoveryIoSession.class, long.class);
+
+                    break;
+                }
+            }
+
+            assertNotNull("SocketTimeoutObject class is not found", timeoutCtor);
+
+            timeoutCtor.setAccessible(true);
+
+            TcpDiscoveryIoSession ses = mock(TcpDiscoveryIoSession.class);
+
+            // The private timeout handler formats a log message via the session socket.
+            when(ses.socket()).thenReturn(mock(Socket.class));
+
+            Object timeoutObj = timeoutCtor.newInstance(spi, ses, Long.MAX_VALUE);
+
+            GridTestUtils.invoke(timeoutObj, "onTimeout");
+
+            assertEquals(1L, metric.value());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
 
     /**
      * Tests TcpDiscoverySpiMBean#excludeNode.

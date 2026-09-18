@@ -382,6 +382,7 @@ Register name: `io.discovery`
 |SslEnabled|   boolean|   Indicates whether SSL is enabled.
 |TotalProcessedMessages|   integer|   Total processed messages count.
 |TotalReceivedMessages|   integer|   Total received messages count.
+|SocketWriteTimeoutsCount|   long|   TCP discovery socket write timeouts count.
 |===
 
 

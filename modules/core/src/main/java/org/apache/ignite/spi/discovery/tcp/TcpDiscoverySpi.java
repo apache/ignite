@@ -58,6 +58,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -306,6 +307,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Pool size to ping remote DC at the connection recovery. */
     public static final int DFLT_RMT_DC_PING_POOL_SIZE = Math.max(8, Runtime.getRuntime().availableProcessors() / 2);
 
+    /** Socket write timeouts count metric name. */
+    static final String SOCKET_WRITE_TIMEOUTS_CNT = "SocketWriteTimeoutsCount";
+
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
@@ -463,6 +467,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
+
+    /** Socket write timeouts count metric. */
+    @GridToStringExclude
+    private AtomicLongMetric writeTimedOutCntMetric;
 
     /**
      * Gets current SPI state.
@@ -1478,6 +1486,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         MetricRegistryImpl discoReg = (MetricRegistryImpl)getSpiContext().getOrCreateMetricRegistry(DISCO_METRICS);
 
         stats.registerMetrics(discoReg);
+
+        writeTimedOutCntMetric = discoReg.longMetric(SOCKET_WRITE_TIMEOUTS_CNT, "The number of socket write timeouts.");
 
         discoReg.register("SslEnabled", this::isSslEnabled, "Whether SSL is enabled.");
 
@@ -2537,6 +2547,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (done.compareAndSet(false, true)) {
                 // Close session - timeout occurred.
                 ses.close();
+
+                if (writeTimedOutCntMetric != null)
+                    writeTimedOutCntMetric.increment();
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
