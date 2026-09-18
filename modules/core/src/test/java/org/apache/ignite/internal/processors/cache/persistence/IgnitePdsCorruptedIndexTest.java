@@ -90,7 +90,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE)
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setIndexedTypes(Integer.class, IndexedObject.class, Long.class, IndexedObject.class)
+            .setIndexedTypes(Integer.class, IndexedObject.class)
             .setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg);
