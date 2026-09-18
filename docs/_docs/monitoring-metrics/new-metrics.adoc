@@ -37,6 +37,7 @@ Register name: `sys`
 |ThreadCount |integer| ThreadMXBean.getThreadCount
 |TotalExecutedTasks  |long|    Total executed tasks.
 |TotalStartedThreadCount |long|    ThreadMXBean.getTotalStartedThreadCount
+|BlockedSystemThreadsCount |long| Total number of blocked system-critical threads.
 |UpTime|  long  |  RuntimeMxBean.getUptime()
 |memory.heap.committed|   long|    MemoryUsage.getHeapMemoryUsage().getCommitted()
 |memory.heap.init |   long|    MemoryUsage.getHeapMemoryUsage().getInit()

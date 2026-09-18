@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
@@ -42,6 +44,12 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 public class WorkersRegistry implements GridWorkerListener {
     /** */
     private static final long DFLT_CHECK_INTERVAL = 3_000;
+
+    /** Blocked system-critical threads count metric name. */
+    public static final String BLOCKED_SYSTEM_WORKERS_CNT = "BlockedSystemThreadsCount";
+
+    /** Blocked system-critical threads count metric description. */
+    private static final String BLOCKED_SYSTEM_WORKERS_CNT_DESC = "Total number of blocked system-critical threads.";
 
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();
@@ -71,6 +79,9 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Blocked system-critical threads count metric. */
+    private volatile AtomicLongMetric blockedWorkersCntMetric;
 
     /**
      * @param workerFailedHnd Closure to invoke on worker failure.
@@ -158,6 +169,15 @@ public class WorkersRegistry implements GridWorkerListener {
         sysWorkerBlockedTimeout = U.ensurePositive(val, Long.MAX_VALUE);
     }
 
+    /**
+     * Registers workers registry metrics.
+     *
+     * @param mreg Metric registry to register metrics in.
+     */
+    public void registerMetrics(MetricRegistryImpl mreg) {
+        blockedWorkersCntMetric = mreg.longMetric(BLOCKED_SYSTEM_WORKERS_CNT, BLOCKED_SYSTEM_WORKERS_CNT_DESC);
+    }
+
     /** {@inheritDoc} */
     @Override public void onStarted(GridWorker w) {
         register(w);
@@ -228,6 +248,9 @@ public class WorkersRegistry implements GridWorkerListener {
                                     "This can lead to cluster-wide undefined behaviour " +
                                     "[workerName=" + worker.name() + ", threadName=" + runner.getName() +
                                     ", blockedFor=" + heartbeatDelay / 1000 + "s]");
+
+                            if (blockedWorkersCntMetric != null)
+                                blockedWorkersCntMetric.increment();
 
                             workerFailedHnd.apply(worker, SYSTEM_WORKER_BLOCKED);
                         }
