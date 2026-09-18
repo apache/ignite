@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,6 +37,9 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     /** */
     private final RowFactory<Row> rowFactory;
 
+    /** Character columns that require Oracle-compatible empty string handling. */
+    private final boolean[] characterColumns;
+
     /** */
     public TableFunctionScan(
         RelDataType rowType,
@@ -45,6 +49,11 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
         this.rowType = rowType;
         this.dataSupplier = dataSupplier;
         this.rowFactory = rowFactory;
+
+        characterColumns = new boolean[rowType.getFieldCount()];
+
+        for (int i = 0; i < characterColumns.length; i++)
+            characterColumns[i] = SqlTypeUtil.isCharacter(rowType.getFieldList().get(i).getType());
     }
 
     /** {@inheritDoc} */
@@ -66,6 +75,22 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
 
-        return rowFactory.create(rowArr);
+        return rowFactory.create(nullIfEmpty(rowArr));
+    }
+
+    /** Converts empty strings returned for character columns to {@code null}. */
+    private Object[] nullIfEmpty(Object[] row) {
+        Object[] normalizedRow = row;
+
+        for (int i = 0; i < characterColumns.length; i++) {
+            if (characterColumns[i] && "".equals(row[i])) {
+                if (normalizedRow == row)
+                    normalizedRow = row.clone();
+
+                normalizedRow[i] = null;
+            }
+        }
+
+        return normalizedRow;
     }
 }
