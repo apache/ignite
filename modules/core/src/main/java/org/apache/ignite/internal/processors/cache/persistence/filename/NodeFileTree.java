@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.cdc.CdcMode;
+import org.apache.ignite.internal.classpath.IgniteClassPath;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -99,6 +100,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  * │  ├── lock
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes)
  * │  │  └── 1645778359.classname0
+ * │  ├── classpath                                                             ← classpath (shared between all local nodes)
+ * │  │  └── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                        ← node classpath root dir (node 0).
+ * │  │     └── myapp_v1                                                        ← classpath dir (ClassPath name "myapp_v1").
+ * │  │        ├── mapp-api-1.0.0.jar                                           ← classpath lib.
+ * │  │        └── mapp-impl-1.0.0.jar                                          ← classpath lib.
+ * │  │        └── icp.properties                                               ← classpath descriptor.
+ * │  │     └── myapp_v2                                                        ← classpath dir (ClassPath name "myapp_v2").
+ * │  │        ├── mapp-api-2.0.0.jar                                           ← classpath lib.
+ * │  │        └── mapp-impl-2.0.0.jar                                          ← classpath lib.
+ * │  │        └── icp.properties                                               ← classpath descriptor.
  * │  ├── node00-e57e62a9-2ccf-4e1b-a11e-c24c21b9ed4c                           ← nodeStorage (node 0).
  * │  │  ├── cache-default                                                      ← cacheStorage (cache name "default").
  * │  │  │  ├── cache_data.dat                                                  ← cache("default") configuration file.
@@ -286,6 +297,9 @@ public class NodeFileTree extends SharedFileTree {
     /** Maintenance file name. */
     private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
 
+    /** {@link IgniteClassPath} descriptor name. */
+    public static final String ICP_DESCRIPTOR_NAME = "icp.properties";
+
     /** Folder name for consistent id. */
     private final String folderName;
 
@@ -294,6 +308,9 @@ public class NodeFileTree extends SharedFileTree {
 
     /** Path to the storage directory. */
     private final File nodeStorage;
+
+    /** Path to the root classpath directory. */
+    private final File icp;
 
     /**
      * Key is the path from {@link DataStorageConfiguration#getExtraStoragePaths()}, may be relative. Value is storage.
@@ -334,6 +351,7 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
+        icp = new File(icpRoot, folderName);
         nodeStorage = rootRelative(DB_DIR);
         checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
         wal = rootRelative(DFLT_WAL_PATH);
@@ -382,6 +400,7 @@ public class NodeFileTree extends SharedFileTree {
         this.folderName = folderName;
 
         binaryMeta = new File(binaryMetaRoot, folderName);
+        icp = new File(icpRoot, folderName);
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
@@ -429,6 +448,11 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Path to binary metadata directory. */
     public File binaryMeta() {
         return binaryMeta;
+    }
+
+    /** @return Root directory for Ignite class path files. */
+    public File classPathRoot() {
+        return icp;
     }
 
     /** @return Path to the directory containing active WAL segments. */
@@ -1080,6 +1104,22 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Maintenance file. */
     public File maintenanceFile() {
         return new File(nodeStorage, MAINTENANCE_FILE_NAME);
+    }
+
+    /**
+     * @param name {@link IgniteClassPath} name.
+     * @return {@link IgniteClassPath} directory.
+     */
+    public File classPathRoot(String name) {
+        return new File(icp, name);
+    }
+
+    /**
+     * @param name {@link IgniteClassPath} name.
+     * @return {@link IgniteClassPath} descriptor file.
+     */
+    public File classPathDescriptor(String name) {
+        return new File(classPathRoot(name), ICP_DESCRIPTOR_NAME);
     }
 
     /**

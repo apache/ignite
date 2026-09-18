@@ -21,6 +21,8 @@ import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.classpath.DownloadClassPathFailureMessage;
+import org.apache.ignite.internal.classpath.DownloadClassPathMessage;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
@@ -758,6 +760,9 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(IgnitePluginFeatureSet.class);
         register(RollingUpgradeClusterData.class);
         register(IgniteNodeFeatureSet.class);
+
+        register(DownloadClassPathMessage.class);
+        register(DownloadClassPathFailureMessage.class);
 
         assert msgIdx <= MAX_MESSAGE_ID;
     }
