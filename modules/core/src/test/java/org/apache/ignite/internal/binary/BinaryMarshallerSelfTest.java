@@ -131,6 +131,16 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testRecord() throws Exception {
+        TestRecord testRecord = new TestRecord("value", 42L);
+
+        assertEquals(testRecord, marshalUnmarshal(testRecord));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testByte() throws Exception {
         assertEquals((byte)100, marshalUnmarshal((byte)100).byteValue());
     }
@@ -6277,4 +6287,10 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             v = new Value(127);
         }
     }
+
+    /** */
+    private record TestRecord(String value, long timestamp) implements Serializable {
+        // No-op.
+    }
+
 }
