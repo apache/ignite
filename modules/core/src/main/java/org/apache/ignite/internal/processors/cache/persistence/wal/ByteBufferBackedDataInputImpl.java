@@ -170,4 +170,18 @@ public class ByteBufferBackedDataInputImpl implements ByteBufferBackedDataInput 
     @Override public String readUTF() throws IOException {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public long position() {
+        return buf.position();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public long size() throws IOException {
+        return buf.limit();
+    }
 }
