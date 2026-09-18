@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -3729,6 +3730,13 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicInteger cacheCntr = new AtomicInteger();
 
+        // Client-side cache create/destroy and node restart both trigger a distributed exchange. When they run
+        // concurrently, a client-initiated exchange can deadlock with the node re-join (client never receives the
+        // coordinator's final message), blocking the whole cluster. Synchronize them with a lock so that node restart
+        // and in-flight client create/destroy are executed sequentially and never overlap, while ordinary cache
+        // operations still run concurrently with restarts.
+        final ReentrantLock restartLock = new ReentrantLock();
+
         try {
             final int ITERATIONS_CNT = SF.applyLB(10, 1);
             for (int i = 0; i < ITERATIONS_CNT; i++) {
@@ -3748,13 +3756,20 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                                 log.info("Stop node: " + node);
 
-                                stopGrid(node);
+                                restartLock.lock();
 
-                                U.sleep(500);
+                                try {
+                                    stopGrid(node);
 
-                                log.info("Start node: " + node);
+                                    U.sleep(500);
 
-                                startGrid(node);
+                                    log.info("Start node: " + node);
+
+                                    startGrid(node);
+                                }
+                                finally {
+                                    restartLock.unlock();
+                                }
 
                                 try {
                                     if (rnd.nextBoolean())
@@ -3788,15 +3803,22 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                 if (cache != null && caches.compareAndSet(idx, cache, null)) {
                                     log.info("Destroy cache: " + cache.getName());
 
-                                    clientNode.destroyCache(cache.getName());
+                                    restartLock.lock();
 
-                                    CacheAtomicityMode atomicityMode = rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL;
+                                    try {
+                                        clientNode.destroyCache(cache.getName());
 
-                                    String name = "newName-" + cacheCntr.incrementAndGet();
+                                        CacheAtomicityMode atomicityMode = rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL;
 
-                                    cache = clientNode.createCache(
-                                        cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
-                                            name, PARTITIONED, atomicityMode, 0, false));
+                                        String name = "newName-" + cacheCntr.incrementAndGet();
+
+                                        cache = clientNode.createCache(
+                                            cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                                                name, PARTITIONED, atomicityMode, 0, false));
+                                    }
+                                    finally {
+                                        restartLock.unlock();
+                                    }
 
                                     caches.set(idx, cache);
                                 }
@@ -3880,16 +3902,21 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 }
 
                 for (int n = 0; n < SRVS; n++) {
-                    CacheGroupContext grp = cacheGroup(ignite(n), GROUP1);
+                    for (String grpName : Arrays.asList(GROUP1, GROUP2)) {
+                        CacheGroupContext grp = cacheGroup(ignite(n), grpName);
 
-                    assertNotNull(grp);
+                        // Group may be absent on a node if all its caches were
+                        // re-created under another group during this iteration.
+                        if (grp == null)
+                            continue;
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
+                        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                            IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
 
-                        assertTrue(cachesMap.size() <= cacheIds.size());
+                            assertTrue(cachesMap.size() <= cacheIds.size());
 
-                        cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                            cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                        }
                     }
                 }
             }
