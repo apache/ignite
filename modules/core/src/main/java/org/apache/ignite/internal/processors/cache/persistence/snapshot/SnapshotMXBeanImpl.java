@@ -23,11 +23,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.Metric;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_CHECK_ON_RESTORE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
@@ -116,16 +119,17 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public String status() {
+        StringBuilder res = null;
+
         SnapshotOperationRequest req = mgr.currentCreateRequest();
 
         if (req != null) {
-            return "Create snapshot operation is in progress [name=" + req.snapshotName() +
+            res = new StringBuilder("Create snapshot operation is in progress [name=" + req.snapshotName() +
                 ", incremental=" + req.incremental() +
                 (req.incremental() ? (", incrementIndex=" + req.incrementIndex()) : "") +
-                ", id=" + req.requestId() + ']';
+                ", id=" + req.requestId() + ']');
         }
-
-        if (mgr.isRestoring()) {
+        else if (mgr.isRestoring()) {
             MetricRegistry mreg = metricMgr.registry(SNAPSHOT_RESTORE_METRICS);
 
             String name = mreg.findMetric("snapshotName").getAsString();
@@ -134,10 +138,53 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
             boolean incremental = incIdx > 0;
 
-            return "Restore snapshot operation is in progress [name=" + name + ", incremental=" + incremental +
-                (incremental ? ", incrementIndex=" + incIdx : "") + ", id=" + id + ']';
+            res = new StringBuilder("Restore snapshot operation is in progress [name=" + name + ", incremental=" + incremental +
+                (incremental ? ", incrementIndex=" + incIdx : "") + ", id=" + id + ']');
         }
 
-        return "There is no create or restore snapshot operation in progress.";
+        boolean one = true;
+
+        for (var mreg : metricMgr) {
+            if (!mreg.name().startsWith(SnapshotCheckProcess.SNAPSHOT_CHECK_METRIC))
+                continue;
+
+            Metric rqIdMetric = mreg.findMetric("requestId");
+
+            // The requestId metric is registered last.
+            if (rqIdMetric == null)
+                continue;
+
+            String name = MetricUtils.fromFullName(mreg.name()).get2();
+            int incIdx = mreg.<IntMetric>findMetric("incrementIndex").value();
+            String id = rqIdMetric.getAsString();
+
+            if (one) {
+                if (res == null)
+                    res = new StringBuilder();
+                else
+                    res.append(U.nl()).append(U.nl());
+            }
+
+            res.append("Check snapshot operations are in progress [");
+
+            StringBuilder sb0 = new StringBuilder();
+
+            if (!one)
+                sb0.append(", ");
+
+            sb0.append("[name=").append(name).append(", incremental=").append(incIdx > 0)
+                .append(incIdx > 0 ? ", incrementIndex=" + incIdx : "").append(", id=").append(id).append(']');
+
+            res.append(sb0);
+
+            one = false;
+        }
+
+        if (res == null)
+            return "No snapshot operation is in progress.";
+
+        res.append(']');
+
+        return res.toString();
     }
 }
