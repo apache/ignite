@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -169,83 +171,74 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         startGridsMultiThreaded(3);
 
-        var ignRootWork = grid(0).context().pdsFolderResolver().fileTree();
+        List<String> dirsToTest = new ArrayList<>(30);
 
-        IgniteSnapshotManager snp = snp(grid(0));
+        var ignFileTree = grid(0).context().pdsFolderResolver().fileTree();
 
-        var sep = File.separator;
+        dirsToTest.addAll(ignFileTree.all().stream().filter(f -> f.compareTo(ignFileTree.snapshotsRoot()) != 0)
+            .map(File::getAbsolutePath).toList());
 
-        var belongsToErrMsg = "belongs to Ignite's working directory";
+        IgniteSnapshotManager snpMgr = snp(grid(0));
+        var fileSep = File.separator;
+        var belongsToErrMsg = "belongs to a an Ignite's directory";
 
-        assertThrowsAnyCause(
-            null,
-            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + ';')
-                .get(getTestTimeout()),
-            IllegalArgumentException.class,
-            belongsToErrMsg
-        );
+        for (var dir : dirsToTest) {
+            List<String> tests = new ArrayList<>(20);
 
-        assertThrowsAnyCause(
-            null,
-            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath()).get(getTestTimeout()),
-            IllegalArgumentException.class,
-            belongsToErrMsg
-        );
+            tests.add(dir + fileSep);
+            tests.add(dir + fileSep + fileSep);
+            tests.add(dir.replaceAll(fileSep, fileSep + fileSep));
+            tests.add(dir + fileSep + "unexisting");
 
-        assertThrowsAnyCause(
-            null,
-            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + sep)
-                .get(getTestTimeout()),
-            IllegalArgumentException.class,
-            belongsToErrMsg
-        );
+            for (var test : tests) {
+                if (log.isInfoEnabled())
+                    log.info("Testing path: " + test);
 
-        assertThrowsAnyCause(
-            null,
-            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + sep + sep)
-                .get(getTestTimeout()),
-            IllegalArgumentException.class,
-            belongsToErrMsg
-        );
+                assertThrowsAnyCause(
+                    null,
+                    () -> snpMgr.deleteSnapshot(SNAPSHOT_NAME, test).get(getTestTimeout()),
+                    IllegalArgumentException.class,
+                    belongsToErrMsg
+                );
+            }
 
-        assertThrowsAnyCause(
-            null,
-            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + '_' + UUID.randomUUID())
-                .get(getTestTimeout()),
-            IllegalArgumentException.class,
-            belongsToErrMsg
-        );
+            tests.clear();
+            tests.add(dir + File.pathSeparator);
+            tests.add(dir + "_unexisting");
 
-        assertThrowsAnyCause(
-            null,
-            () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignRootWork.root().getAbsolutePath() + sep + UUID.randomUUID())
-                .get(getTestTimeout()),
-            IllegalArgumentException.class,
-            belongsToErrMsg
-        );
+            for (var test : tests) {
+                if (log.isInfoEnabled())
+                    log.info("Testing path: " + test);
 
-        for(var ignSubRoot : ignRootWork.root().listFiles()) {
-            assert ignSubRoot.isDirectory();
+                try {
+                    snpMgr.deleteSnapshot(SNAPSHOT_NAME, test).get(getTestTimeout());
 
-            if(ignSubRoot.compareTo(ignRootWork.snapshotsRoot()) == 0)
-                continue;
+                    throw new IllegalStateException("An exception wasn't thrown.");
+                }
+                catch (Exception e) {
+                    var m = e.getMessage();
 
-            assertThrowsAnyCause(
-                null,
-                () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignSubRoot.getAbsolutePath())
-                    .get(getTestTimeout()),
-                IllegalArgumentException.class,
-                belongsToErrMsg
-            );
-
-            assertThrowsAnyCause(
-                null,
-                () -> snp.deleteSnapshot(SNAPSHOT_NAME, ignSubRoot.getAbsolutePath() + sep + UUID.randomUUID())
-                    .get(getTestTimeout()),
-                IllegalArgumentException.class,
-                belongsToErrMsg
-            );
+                    if (!X.hasCause(e, IllegalArgumentException.class)
+                        || (!m.contains(belongsToErrMsg) && !m.contains("Provided snapshot path doesn't exist"))
+                    )
+                        throw new IllegalStateException("Unexpected exception.", e);
+                }
+            }
         }
+
+        var snpRoot = ignFileTree.snapshotsRoot();
+
+        var delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, snpRoot.getAbsolutePath()).get(getTestTimeout());
+
+        assertTrue(F.isEmpty(delRes.completedNodes));
+        assertTrue(F.isEmpty(delRes.uncompletedNodes));
+        assertEquals(3, delRes.emptyNodes.size());
+
+        delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, new File(snpRoot, "unexisting").getAbsolutePath()).get(getTestTimeout());
+
+        assertTrue(F.isEmpty(delRes.completedNodes));
+        assertTrue(F.isEmpty(delRes.uncompletedNodes));
+        assertEquals(3, delRes.emptyNodes.size());
     }
 
     /** Tests snapshot deletion when one node has no snapshot data. */

@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,6 +67,9 @@ public class SharedFileTree {
     /** Path to the snapshot root directory. */
     private final File snpsRoot;
 
+    /** All knows working pathes. */
+    protected final Set<File> all = new HashSet<>();
+
     /**
      * @param root Root directory.
      * @param snpsRoot Snapshot path.
@@ -70,13 +77,13 @@ public class SharedFileTree {
     protected SharedFileTree(File root, String snpsRoot) {
         A.notNull(root, "Root directory");
 
-        this.root = root;
-        this.snpsRoot = resolveDirectory(snpsRoot);
+        all.add(this.root = root);
+        all.add(this.snpsRoot = resolveDirectory(snpsRoot));
 
         String rootStr = root.getAbsolutePath();
 
-        marshaller = Paths.get(rootStr, DB_DIR, MARSHALLER_DIR).toFile();
-        binaryMetaRoot = Paths.get(rootStr, DB_DIR, BINARY_METADATA_DIR).toFile();
+        all.add(marshaller = Paths.get(rootStr, DB_DIR, MARSHALLER_DIR).toFile());
+        all.add(binaryMetaRoot = Paths.get(rootStr, DB_DIR, BINARY_METADATA_DIR).toFile());
     }
 
     /**
@@ -130,6 +137,11 @@ public class SharedFileTree {
     /** @return Path to snapshots root directory. */
     public File snapshotsRoot() {
         return snpsRoot;
+    }
+
+    /** @return All known main pathes used. */
+    public Collection<File> all() {
+        return Collections.unmodifiableSet(all);
     }
 
     /**

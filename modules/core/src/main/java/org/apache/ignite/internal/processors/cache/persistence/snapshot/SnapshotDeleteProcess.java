@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
@@ -165,7 +166,7 @@ public class SnapshotDeleteProcess {
 
             if (pathValidationErr != null) {
                 return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
-                    pathValidationErr + " [req=" + req + ']'));
+                    SNP_PATH_ERR_PREF + pathValidationErr + " [req=" + req + ']'));
             }
         }
 
@@ -234,18 +235,21 @@ public class SnapshotDeleteProcess {
 
         assert path.isAbsolute();
 
-        var ignWorkRoot = kctx.pdsFolderResolver().fileTree();
-        var ignWorkRootStr = kctx.pdsFolderResolver().fileTree().root().getAbsolutePath();
-        var pathStr = path.getAbsolutePath();
+        var ignFileTree = kctx.pdsFolderResolver().fileTree();
 
-        if (pathStr.startsWith(ignWorkRootStr) && !pathStr.startsWith(ignWorkRoot.snapshotsRoot().getAbsolutePath()))
-            return "belongs to Ignite's working directory";
+        for (var ignPath : ignFileTree.all()) {
+            if (contains(ignPath, path)) {
+                return ignPath.equals(ignFileTree.snapshotsRoot())
+                    ? null
+                    : "belongs to a an Ignite's directory";
+            }
+        }
 
         if (!path.exists())
-            return SNP_PATH_ERR_PREF + "doesn't exist";
+            return "doesn't exist";
 
         if (!path.isDirectory())
-            return SNP_PATH_ERR_PREF + "is not a directory";
+            return "is not a directory";
 
         return null;
     }
@@ -321,5 +325,13 @@ public class SnapshotDeleteProcess {
         clusterOpFuts.forEach((reqId, clusterOpFut) -> clusterOpFut.onDone(err));
 
         clusterOpFuts.clear();
+    }
+
+    /** */
+    public static boolean contains(File root, File candidate) {
+        Path root0 = root.toPath().toAbsolutePath().normalize();
+        Path candidate0 = candidate.toPath().toAbsolutePath().normalize();
+
+        return candidate0.startsWith(root0);
     }
 }
