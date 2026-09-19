@@ -27,14 +27,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonList;
 
 /** */
-public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
+public class SqlFieldsQueryUsageTest extends GridCommonAbstractWrapperTest {
     /** */
     private static IgniteEx client;
 
@@ -44,15 +44,16 @@ public class SqlFieldsQueryUsageTest extends GridCommonAbstractTest {
             new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    /** */
+    @BeforeAll
+    void setup() throws Exception {
         startGrids(1);
 
         client = startClientGrid();
     }
 
     /** */
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         G.stopAll(false);
     }

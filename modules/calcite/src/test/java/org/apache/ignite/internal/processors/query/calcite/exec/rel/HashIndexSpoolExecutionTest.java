@@ -30,20 +30,23 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  *
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
+public class HashIndexSpoolExecutionTest extends AbstractExecutionParametrizedTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();

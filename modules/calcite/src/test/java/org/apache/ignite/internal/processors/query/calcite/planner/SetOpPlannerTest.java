@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -40,31 +38,27 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Test to verify set op (EXCEPT, INTERSECT).
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "SetOp = {0}")
+@EnumSource(value = SetOpPlannerTest.SetOp.class)
 public class SetOpPlannerTest extends AbstractPlannerTest {
     /** Algorithm. */
-    @Parameterized.Parameter
+    @Parameter
     public SetOp setOp;
-
-    /** */
-    @Parameterized.Parameters(name = "SetOp = {0}")
-    public static List<Object[]> parameters() {
-        return Stream.of(SetOp.values()).map(a -> new Object[]{a}).collect(Collectors.toList());
-    }
 
     /** Public schema. */
     private IgniteSchema publicSchema;
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 

@@ -27,7 +27,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
@@ -58,6 +59,7 @@ public class LocalQueryIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 

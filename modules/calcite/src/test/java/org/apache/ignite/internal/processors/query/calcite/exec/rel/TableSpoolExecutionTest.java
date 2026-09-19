@@ -28,10 +28,12 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.Collections.singletonList;
 
@@ -39,12 +41,13 @@ import static java.util.Collections.singletonList;
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class TableSpoolExecutionTest extends AbstractExecutionTest {
+public class TableSpoolExecutionTest extends AbstractExecutionParametrizedTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();

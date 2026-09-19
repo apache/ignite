@@ -19,13 +19,15 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test scalar IN operator.
  */
 public class ScalarInIntegrationTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

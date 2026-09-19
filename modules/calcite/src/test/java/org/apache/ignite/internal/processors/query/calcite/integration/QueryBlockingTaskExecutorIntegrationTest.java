@@ -19,14 +19,17 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
 
 /**
  * Integration test with common queries for query blocking task executor instead of striped task executor.
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
 public class QueryBlockingTaskExecutorIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
