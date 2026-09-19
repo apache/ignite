@@ -178,6 +178,9 @@ public class AbstractExecutionTest extends GridCommonAbstractWrapperTest {
     /** */
     @BeforeEach
     public void setup() throws Exception {
+        // Test instance is shared between test methods (PER_CLASS lifecycle), drop an error of the previous test.
+        lastE = null;
+
         nodes = IntStream.range(0, nodesCnt)
             .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
 
