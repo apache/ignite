@@ -34,6 +34,10 @@ import org.apache.ignite.internal.util.typedef.F;
 /** Utility for merging compatible {@link QueryEntity} metadata. */
 public final class QueryEntityMerger {
     /** */
+    public static final String CONFLICT_MESSAGE_TEMPLATE = "Failed to merge query entities due to conflicting metadata " +
+        "[cacheName=%s, property=%s, existingValue=%s, incomingValue=%s]";
+
+    /** */
     private final String cacheName;
 
     /** */
@@ -251,11 +255,7 @@ public final class QueryEntityMerger {
     /** */
     private CacheException mergeConflict(String propName, Object existingVal, Object incomingVal) {
         return new CacheException(
-            "Failed to merge query entities due to conflicting metadata " +
-                "[cacheName=" + cacheName +
-                ", property=" + propName +
-                ", existingValue=" + existingVal +
-                ", incomingValue=" + incomingVal + ']'
+            String.format(CONFLICT_MESSAGE_TEMPLATE, cacheName, propName, existingVal, incomingVal)
         );
     }
 }

@@ -2158,7 +2158,14 @@ public class GridCacheUtils {
         boolean isSqlEscape,
         int qryParallelism
     ) {
-        return new CacheConfiguration<>(oldCfg)
+        CacheConfiguration<K, V> newCfg = new CacheConfiguration<>(oldCfg);
+
+        Collection<QueryEntity> oldEntities = oldCfg.getQueryEntities();
+
+        newCfg.clearQueryEntities();
+        newCfg.setQueryEntities(oldEntities);
+
+        return newCfg
                 .setQueryEntities(entities)
                 .setSqlSchema(sqlSchema)
                 .setSqlEscapeAll(isSqlEscape)

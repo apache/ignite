@@ -110,9 +110,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      *
      * @throws Exception If failed.
      */
-    private <T> void test(Class<T> keyType, Function<Integer, T> keyMapper) throws Exception {
-        indexedKeyType = keyType;
-
+    private <T> void test(Function<Integer, T> keyMapper) throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
@@ -125,7 +123,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         QueryEntity qryEntity = qryEntities.iterator().next();
 
-        assertEquals(keyType.getName(), qryEntity.getKeyType());
+        assertEquals(indexedKeyType.getName(), qryEntity.getKeyType());
 
         IgniteCache<T, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
@@ -133,7 +131,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         Cache.Entry<T, Object> entry = cache.iterator().next();
 
-        assertEquals(keyType, entry.getKey().getClass());
+        assertEquals(indexedKeyType, entry.getKey().getClass());
 
         CacheFileTree cft = ig.context().pdsFolderResolver().fileTree().cacheTree(dfltCacheCfg);
 
@@ -183,7 +181,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         Cache.Entry<T, Object> entryAfterDefragmentation = cache.iterator().next();
 
-        assertEquals(keyType, entryAfterDefragmentation.getKey().getClass());
+        assertEquals(indexedKeyType, entryAfterDefragmentation.getKey().getClass());
     }
 
     /**
@@ -216,7 +214,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     @Test
     public void testIndexingWithIntegerKey() throws Exception {
-        test(Integer.class, Function.identity());
+        test(Function.identity());
     }
 
     /**
@@ -226,10 +224,9 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     @Test
     public void testIndexingWithComplexKey() throws Exception {
-        test(
-            IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class,
-            integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer)
-        );
+        indexedKeyType = IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class;
+
+        test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
     }
 
     /**

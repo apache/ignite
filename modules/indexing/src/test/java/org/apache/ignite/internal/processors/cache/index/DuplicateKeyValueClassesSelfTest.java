@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.QueryEntityMerger.CONFLICT_MESSAGE_TEMPLATE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Tests handling of duplicate key and value classes configured through {@link CacheConfiguration#setIndexedTypes}. */
@@ -83,9 +84,7 @@ public class DuplicateKeyValueClassesSelfTest extends AbstractIndexingCommonTest
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME);
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata " +
-            "[cacheName=%s, property=keyType, existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, UUID.class.getName(), String.class.getName());
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE, CACHE_NAME, "keyType", UUID.class.getName(), String.class.getName());
 
         assertThrows(
             log,
