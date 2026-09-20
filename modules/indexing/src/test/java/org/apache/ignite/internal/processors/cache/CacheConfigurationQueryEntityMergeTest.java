@@ -29,9 +29,12 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
@@ -40,11 +43,14 @@ import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.query.QueryEntityMerger.CONFLICT_MESSAGE_TEMPLATE;
 import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_TBLS_VIEW;
 import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_TBL_COLS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Tests for merging QueryEntity metadata in CacheConfiguration. */
+@SuppressWarnings("ThrowableNotThrown")
 public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "query-entity-merge-cache";
@@ -64,6 +70,19 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
     /** */
     private static final String AGE_FIELD = "age";
 
+    /** */
+    private boolean staticCfg;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (staticCfg)
+            cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -71,9 +90,12 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
         super.afterTest();
     }
 
-    /** Query entities with different value types must not be merged. */
+    /**
+     * Query entities with the same key type but different value types are treated as different entities, are not
+     * viewed as a conflict and are not merged into one entity.
+     */
     @Test
-    public void testDifferentValueTypesAreNotMerged() throws Exception {
+    public void testQueryEntitiesWithSameKeyTypeAndDifferentValueTypesAreNotMerged() throws Exception {
         IgniteEx node = startGrid(0);
 
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(CACHE_NAME);
@@ -101,9 +123,12 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
             assertTrue(entities.stream().anyMatch(e -> cls.getName().equals(e.getValueType())));
     }
 
-    /** Query entities with the same value type but different key type are a conflict. */
+    /**
+     * Verifies that query entities with the same value type but conflicting key types fail to merge instead of silently
+     * ignoring one of the entities.
+     */
     @Test
-    public void testConflictingKeyTypesFail() {
+    public void testConflictingKeyTypesForSameValueTypeFail() {
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         QueryEntity first = new QueryEntity()
@@ -118,9 +143,8 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singleton(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-            "cacheName=%s, property=keyType, existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, Integer.class.getName(), String.class.getName());
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE,
+            CACHE_NAME, "keyType", Integer.class.getName(), String.class.getName());
 
         assertThrows(
             log,
@@ -155,9 +179,8 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singleton(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-                "cacheName=%s, property=keyType, existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, Integer.class.getName(), String.class.getName());
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE,
+            CACHE_NAME, "keyType", Integer.class.getName(), String.class.getName());
 
         assertThrows(
             log,
@@ -271,9 +294,7 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singletonList(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-                "cacheName=%s, property=tableName, existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, tableA, tableB);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE, CACHE_NAME, "tableName", tableA, tableB);
 
         assertThrows(
             log,
@@ -350,9 +371,7 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singletonList(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-                "cacheName=%s, property=keyFieldName, existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, key1, key2);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE, CACHE_NAME, "keyFieldName", key1, key2);
 
         assertThrows(
             log,
@@ -429,9 +448,7 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singletonList(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-                "cacheName=%s, property=valueFieldName, existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, val1, val2);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE, CACHE_NAME, "valueFieldName", val1, val2);
 
         assertThrows(
             log,
@@ -472,9 +489,8 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singletonList(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata " +
-                "[cacheName=%s, property=fieldType[%s], existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, NAME_FIELD, String.class.getName(), Integer.class.getName());
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE,
+            CACHE_NAME, "fieldType[" + NAME_FIELD + ']', String.class.getName(), Integer.class.getName());
 
         assertThrows(
             log,
@@ -642,9 +658,7 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singletonList(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-                "cacheName=%s, property=aliases[%s], existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, NAME_FIELD, alias1, alias2);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE, CACHE_NAME, "aliases[" + NAME_FIELD + ']', alias1, alias2);
 
         assertThrows(
             log,
@@ -706,9 +720,8 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singletonList(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-                "cacheName=%s, property=defaultFieldValues[%s], existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, NAME_FIELD, defName1, defName2);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE,
+            CACHE_NAME, "defaultFieldValues[" + NAME_FIELD + ']', defName1, defName2);
 
         assertThrows(
             log,
@@ -791,9 +804,8 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         ccfg.setQueryEntities(Collections.singletonList(first));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-                "cacheName=%s, property=fieldsPrecision[%s], existingValue=%s, incomingValue=%s]",
-            CACHE_NAME, NAME_FIELD, precision1, precision2);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE,
+            CACHE_NAME, "fieldsPrecision[" + NAME_FIELD + ']', precision1, precision2);
 
         assertThrows(
             log,
@@ -842,9 +854,8 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
         QueryEntity configured = configuredEntity(AnnotatedPerson.class)
             .setFieldsScale(Collections.singletonMap(heightField, heightScale));
 
-        String msg = String.format("Failed to merge query entities due to conflicting metadata [" +
-            "cacheName=%s, property=fieldsScale[%s], existingValue=2, incomingValue=%s]",
-            CACHE_NAME, heightField, heightScale);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE,
+            CACHE_NAME, "fieldsScale[" + heightField + ']', 2, heightScale);
 
         assertThrows(
             log,
@@ -1026,6 +1037,53 @@ public class CacheConfigurationQueryEntityMergeTest extends GridCommonAbstractTe
 
         for (QueryIndex idx : List.of(firstIdx, secondIdx, thirdIdx))
             assertTrue(entity.getIndexes().stream().anyMatch(i -> i.getFields().equals(idx.getFields())));
+    }
+
+    /**
+     * Verifies that adding SQL metadata to a statically configured cache preserves {@link QueryEntityEx} and its
+     * extended metadata.
+     *
+     * <p>A schema-add operation patches both the runtime cache configuration and the cache descriptor configuration.
+     * These configurations must not share a mutable query-entity collection, otherwise the first patch may modify the
+     * descriptor configuration before the schema-finish phase and cause the same query entity to be merged again.</p>
+     */
+    @Test
+    public void testSchemaAddPreservesQueryEntityExMetadata() throws Exception {
+        staticCfg = true;
+
+        IgniteEx node = startGrid(0);
+
+        node.cluster().state(ACTIVE);
+
+        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(CACHE_NAME);
+
+        assertTrue(desc.cacheConfiguration().getQueryEntities().isEmpty());
+
+        node.cache(CACHE_NAME).query(new SqlFieldsQuery(
+            "CREATE TABLE TEST_TBL (" +
+                "ID1 INT, " +
+                "ID2 INT, " +
+                "VAL VARCHAR NOT NULL, " +
+                "PRIMARY KEY (ID1, ID2)" +
+                ") WITH \"CACHE_NAME=" + CACHE_NAME + "\""
+        )).getAll();
+
+        Collection<QueryEntity> entities = node.context().cache()
+            .cacheDescriptor(CACHE_NAME)
+            .cacheConfiguration()
+            .getQueryEntities();
+
+        assertEquals(1, entities.size());
+
+        QueryEntity entity = entities.iterator().next();
+
+        assertTrue(entity instanceof QueryEntityEx);
+
+        QueryEntityEx entityEx = (QueryEntityEx)entity;
+
+        assertTrue(entityEx.sql());
+        assertTrue(entityEx.isPreserveKeysOrder());
+        assertTrue(entityEx.fillAbsentPKsWithDefaults());
     }
 
     /** */
