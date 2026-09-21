@@ -3710,9 +3710,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRestartsAndCacheCreateDestroy() throws Exception {
         final int SRVS = 5;
 
-        startGrids(SRVS);
+        startGrid(0);
 
-        final Ignite clientNode = startClientGrid(SRVS);
+        final Ignite clientNode = startClientGrid(1);
+
+        startGridsMultiThreaded(2, SRVS - 1);
 
         final int CACHES = SF.applyLB(10, 2);
 
@@ -3744,7 +3746,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                             while (!stop.get()) {
-                                int node = rnd.nextInt(SRVS);
+                                // 0 - server node, 1 - client node.
+                                int node = rnd.nextInt(2, SRVS + 1);
 
                                 log.info("Stop node: " + node);
 

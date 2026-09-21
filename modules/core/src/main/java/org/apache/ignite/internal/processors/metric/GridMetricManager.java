@@ -428,16 +428,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         });
 
-        try {
-            opsFut.markInitialized();
-            opsFut.get();
-        }
-        catch (NodeStoppingException ignored) {
-            // No-op.
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to remove metrics configuration.", e);
-        }
+        opsFut.markInitialized();
+
+        // Do not wait for the removal here: this method is invoked from the partition map exchange (cache stop), and
+        // the removal is a discovery custom message round trip. On a client node such message can be lost during
+        // reconnect to another router, so waiting for it would block the exchange on the client forever.
+        opsFut.listen(() -> {
+            try {
+                opsFut.get();
+            }
+            catch (NodeStoppingException ignored) {
+                // No-op.
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to remove metrics configuration [regName=" + regName + ']', e);
+            }
+        });
     }
 
     /**
