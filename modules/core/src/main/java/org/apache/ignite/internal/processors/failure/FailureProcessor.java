@@ -34,12 +34,15 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedDataStructureException;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.validateRamUsage;
 
 /**
@@ -66,6 +69,15 @@ public class FailureProcessor extends GridProcessorAdapter {
     /** Failure log message. */
     static final String FAILURE_LOG_MSG = "Critical system error detected. " +
         "Will be handled accordingly to configured handler ";
+
+    /** Failure metrics group name. */
+    public static final String FAILURE_METRICS = metricName("failure");
+
+    /** Ignored failures count metric name. */
+    public static final String IGNORED_FAILURES_CNT = "IgnoredFailuresCount";
+
+    /** Ignored failures count metric. */
+    private volatile AtomicLongMetric ignoredFailuresCntMetric;
 
     /** Thread dump per failure type timestamps. */
     private final Map<FailureType, Long> threadDumpPerFailureTypeTs;
@@ -127,6 +139,14 @@ public class FailureProcessor extends GridProcessorAdapter {
         U.quietAndInfo(log, "Configured failure handler: [hnd=" + hnd + ']');
     }
 
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        MetricRegistryImpl mreg = ctx.metric().registry(FAILURE_METRICS);
+
+        ignoredFailuresCntMetric = mreg.longMetric(IGNORED_FAILURES_CNT,
+            "The number of failures suppressed in accordance with a configured failure handler.");
+    }
+
     /**
      * @return @{code True} if a node will be stopped by current handler in near time.
      */
@@ -176,6 +196,9 @@ public class FailureProcessor extends GridProcessorAdapter {
             return false;
 
         if (failureTypeIgnored(failureCtx, hnd)) {
+            if (ignoredFailuresCntMetric != null)
+                ignoredFailuresCntMetric.increment();
+
             U.quietAndWarn(ignite.log(), IGNORED_FAILURE_LOG_MSG +
                 "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
         }
