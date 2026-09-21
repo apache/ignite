@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -1582,14 +1581,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
             if (!isRemoteJvm(igniteInstanceName)) {
-                //IgniteUtils.setCurrentIgniteName(igniteInstanceName);
-
-                try {
-                    IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
-                }
-                finally {
-                    IgniteUtils.setCurrentIgniteName(null);
-                }
+                IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
             }
             else
                 IgniteProcessProxy.stop(igniteInstanceName, cancel);

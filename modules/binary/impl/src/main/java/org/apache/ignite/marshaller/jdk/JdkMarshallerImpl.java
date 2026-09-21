@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
+import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
@@ -69,7 +69,7 @@ import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_ENABLE_OBJE
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implements JdkMarshaller {
+public class JdkMarshallerImpl extends AbstractMarshaller implements JdkMarshaller {
     static {
         if (IgniteCommonsSystemProperties.getBoolean(IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, true)) {
             ObjectInputFilter objFilter = ObjectInputFilter.Config.getSerialFilter();
@@ -88,7 +88,7 @@ public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implement
     }
 
     /** {@inheritDoc} */
-    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         try (ObjectOutputStream objOut = new JdkMarshallerObjectOutputStream(
@@ -104,16 +104,16 @@ public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implement
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
         try (GridByteArrayOutputStream out = new GridByteArrayOutputStream(DFLT_BUFFER_SIZE)) {
-            marshal0(obj, out);
+            marshal(obj, out);
 
             return out.toByteArray();
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         if (clsLdr == null)
@@ -133,9 +133,9 @@ public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implement
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         try (GridByteArrayInputStream in = new GridByteArrayInputStream(arr, 0, arr.length)) {
-            return unmarshal0(in, clsLdr);
+            return unmarshal(in, clsLdr);
         }
     }
 

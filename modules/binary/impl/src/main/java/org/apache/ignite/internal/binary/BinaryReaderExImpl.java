@@ -1705,16 +1705,6 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Override public @Nullable Object deserialize() throws BinaryObjectException {
-        String newName = ctx.igniteInstanceName();
-
-        return deserialize0();
-    }
-
-    /**
-     * @return Deserialized object.
-     * @throws BinaryObjectException If failed.
-     */
-    @Nullable private Object deserialize0() throws BinaryObjectException {
         Object obj;
 
         byte flag = in.readByte();
