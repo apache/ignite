@@ -1705,6 +1705,21 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Override public @Nullable Object deserialize() throws BinaryObjectException {
+        BinaryContext oldCtx = GridBinaryMarshaller.pushContext(ctx);
+
+        try {
+            return deserialize0();
+        }
+        finally {
+            GridBinaryMarshaller.popContext(oldCtx);
+        }
+    }
+
+    /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable private Object deserialize0() throws BinaryObjectException {
         Object obj;
 
         byte flag = in.readByte();

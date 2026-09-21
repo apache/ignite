@@ -136,6 +136,22 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     private void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
+        BinaryContext oldCtx = GridBinaryMarshaller.pushContext(ctx);
+
+        try {
+            marshal0(obj, enableReplace);
+        }
+        finally {
+            GridBinaryMarshaller.popContext(oldCtx);
+        }
+    }
+
+    /**
+     * @param obj Object.
+     * @param enableReplace Object replacing enabled flag.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    private void marshal0(Object obj, boolean enableReplace) throws BinaryObjectException {
         assert obj != null;
 
         Class<?> cls = obj.getClass();
