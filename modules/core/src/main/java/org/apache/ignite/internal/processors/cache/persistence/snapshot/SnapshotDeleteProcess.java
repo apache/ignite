@@ -167,7 +167,7 @@ public class SnapshotDeleteProcess {
                 ? reqPath
                 : new File(path, req.snpPath);
 
-            String pathValidationErr = validateAbsoluteSnapshotRoot(path);
+            String pathValidationErr = validateAbsoluteSnapshotRoot(path, req.snpName);
 
             if (pathValidationErr != null) {
                 return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
@@ -260,7 +260,7 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path) {
+    private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path, String snpName) {
         if (path == null)
             return null;
 
@@ -268,19 +268,12 @@ public class SnapshotDeleteProcess {
 
         var ignFileTree = kctx.pdsFolderResolver().fileTree();
 
-        if (ignFileTree.snapshotsRoot().compareTo(path) == 0 || contains(ignFileTree.snapshotsRoot(), path))
-            return null;
-
-        for (var ignPath : List.of(new File(CommonUtils.getIgniteHome()), ignFileTree.root())) {
-            if (ignPath.compareTo(path) == 0 || contains(ignPath, path))
-                return "belongs to a an Ignite's directory";
+        if (ignFileTree.snapshotsRoot().compareTo(path) != 0 && !contains(ignFileTree.snapshotsRoot(), path)) {
+            for (var ignPath : List.of(new File(CommonUtils.getIgniteHome()), ignFileTree.root())) {
+                if (ignPath.compareTo(path) == 0 || contains(ignPath, path))
+                    return "belongs to a an Ignite's directory";
+            }
         }
-
-        if (!path.exists())
-            return "doesn't exist";
-
-        if (!path.isDirectory())
-            return "is not a directory";
 
         return null;
     }

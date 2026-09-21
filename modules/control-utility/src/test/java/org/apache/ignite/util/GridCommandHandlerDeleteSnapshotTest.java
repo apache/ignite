@@ -137,7 +137,9 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
 
         createCacheAndPreload(ig, entriesCnt);
 
-        File cstSnpsRoot = customPath ? new File(U.defaultWorkDirectory(), "ex_snapshots") : null;
+        File cstSnpsRoot = customPath
+            ? new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
+            : null;
         File snpDir = new File(customPath ? cstSnpsRoot : ig.context().pdsFolderResolver().fileTree().snapshotsRoot(), "testSnapshot");
 
         snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
@@ -225,7 +227,8 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             // When nodes use a shared work directory, there is a race for the delete operation. One node can get faster
             // than others and remove snapshot completely quickly. The others might not find snapshot files. We can be
             // only sure that at least one node removes snapshot.
-            assertTrue(out.contains("Snapshot removed on the following nodes [cnt="));
+            assertTrue(out.contains("Snapshot removed on the following nodes [cnt=")
+                || out.contains("the following nodes found snapshot data but might not remove it completely [cnt="));
         }
 
         assertFalse(out.contains("Snapshot not found on current server nodes"));
