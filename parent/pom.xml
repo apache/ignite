@@ -98,7 +98,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.logging.version>3.6.3.Final</jboss.logging.version>
         <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
-        <jetty.version>12.1.10</jetty.version>
+        <jetty.version>12.1.13</jetty.version>
         <jetty-jakarta-servlet-api.version>6.1.0</jetty-jakarta-servlet-api.version>
         <jmh.version>1.37</jmh.version>
         <jna.version>5.19.1</jna.version>
@@ -114,7 +114,7 @@
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
         <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
-        <maven.model.version>3.8.9</maven.model.version>
+        <maven.model.version>3.9.16</maven.model.version>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
