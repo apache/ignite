@@ -1329,11 +1329,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         long emptyPages = freeList.emptyDataPages();
 
         // The gate reuses evictionThreshold as a regime boundary, not as "when to start eviction" (evictionRequired()
-        // does that, stopping on emptyPages >= poolSize; no last 10% of page memory is left unusable). Below the
-        // threshold the region has real slack, so a row fitting into the combined spare space is satisfied without
-        // eviction (live, e.g. short-TTL, entries are not evicted just to accumulate empty pages). At/above it headroom
-        // is no longer trustworthy (concurrent writers could commit the same headroom - TOCTOU), so only real empty
-        // pages are counted and eviction is driven below.
+        // does that, stopping on emptyPages >= poolSize; no last (1 - evictionThreshold) of page memory is left
+        // unusable). Below the threshold the region has real slack, so a row fitting into the combined spare space is
+        // satisfied without eviction (live, e.g. short-TTL, entries are not evicted just to accumulate empty pages).
+        // At/above it headroom is no longer trustworthy (concurrent writers could commit the same headroom - TOCTOU),
+        // so only real empty pages are counted and eviction is driven below.
         boolean evictionRegime = pageMem.loadedPages() >= (long)(totalPages * regCfg.getEvictionThreshold());
 
         // Fast path: skip eviction when (a) enough real empty pages exist, or (b) below the regime with enough spare

@@ -3703,8 +3703,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             if (F.isEmptyOrNulls(filter)) {
-                // With tryLock=true the lock is taken non-blockingly and a contended/self-held entry is skipped
+                // With tryLock=true the lock is taken non-blockingly and a contended entry is skipped
                 // (returns false) to avoid a lock-ordering deadlock; the tracker then picks another page.
+                // Reentry is forbidden here to prevent self-eviction: if the current thread already holds
+                // the entry lock (e.g. during a row insert that triggers size-aware eviction), evicting
+                // the entry from under itself would corrupt in-flight operations.
+                if (tryLock && lockedByCurrentThread())
+                    return false;
+
                 if (!lockEntry(tryLock))
                     return false;
 
@@ -3740,6 +3746,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             else {
                 // For optimistic check.
+                // Reentry is forbidden when tryLock=true to prevent self-eviction (see the comment above).
+                if (tryLock && lockedByCurrentThread())
+                    return false;
+
                 while (true) {
                     GridCacheVersion v;
 
@@ -4209,7 +4219,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private boolean lockEntry(boolean tryLock) {
         if (tryLock)
-            return !lock.isHeldByCurrentThread() && tryLockEntry(0);
+            return tryLockEntry(0);
 
         lockEntry();
 

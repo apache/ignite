@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
@@ -615,7 +616,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * max), so a fresh {@code allocateDataPage} could no longer grow it.
      */
     private boolean regionEffectivelyFull() {
-        return pageMem.loadedPages() >= dataRegion.config().getMaxSize() / pageMem.systemPageSize();
+        long maxPages = dataRegion.config().getMaxSize() / pageMem.systemPageSize();
+
+        // Each of up to 16 segments loses up to one page to allocation overhead (lastAllocatedIdxPtr + alignment),
+        // so the theoretical max is never reached in practice. Subtract the worst-case segment loss to get an
+        // effective limit that reflects real product scenarios.
+        if (maxPages > 16)
+            maxPages -= 16;
+
+        return pageMem.loadedPages() >= maxPages;
     }
 
     /**
@@ -635,7 +644,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private long takePageWithReserve(int size, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         long pageId = takePage(size, row, statHolder);
 
-        if (pageId == 0L && dbMgr != null) {
+        if (pageId == 0L && dbMgr != null && !dataRegion.config().isPersistenceEnabled()
+            && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
             int reReserveAttempts = regionEffectivelyFull() ? RE_RESERVE_ATTEMPTS : 1;
 
             for (int i = 0; pageId == 0L && i < reReserveAttempts; i++) {
@@ -661,10 +671,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
             while (written != COMPLETE);
         }
-        catch (IgniteCheckedException | Error e) {
-            throw e;
-        }
-        catch (IgniteOutOfMemoryException e) {
+        catch (IgniteCheckedException | Error | IgniteOutOfMemoryException e) {
             throw e;
         }
         catch (Throwable t) {
@@ -757,14 +764,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /**
      * Take a page and write row on it.
      * <p>
-     * The page is acquired via {@link #takePageWithReserve}: the size-aware reserve (RowStore.addRow/addRows) only
-     * bounds the shared empty-pages counter and does not pin pages to this thread, so a concurrent writer may consume
-     * them before this allocation — the lazy re-reserve closes that gap instead of falling straight to a raw
-     * {@code allocateDataPage}. Reached from the BPlusTree.invoke row-creation closure, this re-reserve is an inline
-     * demand-eviction that removes entries with no data-tree page locks held (the search releases the read lock before
-     * the closure; the leaf write lock is taken only afterwards — see BPlusTree.invokeDown). The entry-level tryLock
-     * only skips contended/self-held entries and never blocks; the residual risk is that the TTL expiration worker can
-     * still deadlock via cross-tree lock ordering (data->pending here vs pending->data there) — a known limitation.
+     * The page is acquired via {@link #takePageWithReserve}, which handles the size-aware re-reserve and TOCTOU
+     * recovery (see its javadoc for details). Reached from the BPlusTree.invoke row-creation closure, this re-reserve
+     * is an inline demand-eviction that runs without any BPlusTree page locks held by the row-creation closure (the
+     * search releases the read lock before the closure; the leaf write lock is taken only afterwards — see
+     * BPlusTree.invokeDown). The entry-level tryLock only skips contended/self-held entries and never blocks.
+     * The TTL expiration worker is also safe: it removes entries from the data tree and pending tree in separate
+     * BPlusTree operations, each releasing all page locks before returning, so no cross-tree nested locks occur.
      *
      * @param row Row to write.
      * @param written Written size.

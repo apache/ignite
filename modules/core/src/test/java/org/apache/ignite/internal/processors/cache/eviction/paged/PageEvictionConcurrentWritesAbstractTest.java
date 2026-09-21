@@ -19,8 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,6 +27,9 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -65,7 +67,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
     private static final int SMALL_ENTRIES = 48_000;
 
     /** Number of writer threads. */
-    private static final int THREADS = 2;
+    private static final int THREADS = 10;
 
     /** Large rows inserted per thread. Their total (threads x rows) exceeds the buffer left by the pre-fill, so the
      * last large writes overflow the region and require size-aware eviction to free small entry pages. */
@@ -117,60 +119,22 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
 
         byte[] largeVal = new byte[LARGE_RECORD_SIZE];
 
-        AtomicLong errors = new AtomicLong();
-
-        AtomicReference<Throwable> firstErr = new AtomicReference<>();
-
         CountDownLatch startLatch = new CountDownLatch(1);
 
-        long deadline = System.currentTimeMillis() + DEADLINE;
+        AtomicInteger threadIdx = new AtomicInteger();
 
-        Thread[] threads = new Thread[THREADS];
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+                U.awaitQuiet(startLatch);
 
-        for (int i = 0; i < THREADS; i++) {
-            final int threadIdx = i;
+                int idx = threadIdx.getAndIncrement();
 
-            threads[i] = new Thread(() -> {
-                try {
-                    startLatch.await();
-
-                    for (int k = 0; k < LARGE_ROWS_PER_THREAD; k++)
-                        cache.put(SMALL_ENTRIES + threadIdx * LARGE_ROWS_PER_THREAD + k, largeVal);
-                }
-                catch (Throwable e) {
-                    errors.incrementAndGet();
-
-                    firstErr.compareAndSet(null, e);
-
-                    log.error("Unexpected error in writer thread", e);
-                }
-            }, "paged-writer-" + i);
-
-            threads[i].start();
-        }
+                for (int k = 0; k < LARGE_ROWS_PER_THREAD; k++)
+                    cache.put(SMALL_ENTRIES + idx * LARGE_ROWS_PER_THREAD + k, largeVal);
+            },
+            THREADS, "paged-writer");
 
         startLatch.countDown();
 
-        long start = System.currentTimeMillis();
-
-        for (Thread t : threads)
-            t.join(Math.max(1, deadline - System.currentTimeMillis()));
-
-        // The core assertion of this deadlock test: every writer must have completed (no thread is stuck waiting on
-        // an entry lock held by size-aware eviction running under another entry lock).
-        for (Thread t : threads) {
-            if (t.isAlive()) {
-                log.error("Writer thread " + t.getName() + " is still alive after " +
-                    (System.currentTimeMillis() - start) + "ms, state=" + t.getState());
-
-                for (StackTraceElement frame : t.getStackTrace())
-                    log.error("  at " + frame);
-            }
-        }
-
-        for (Thread t : threads)
-            assertFalse("Writer thread " + t.getName() + " did not finish (possible deadlock)", t.isAlive());
-
-        assertEquals("Writer threads reported errors, reason: " + firstErr.get(), 0, errors.get());
+        fut.get(DEADLINE);
     }
 }
