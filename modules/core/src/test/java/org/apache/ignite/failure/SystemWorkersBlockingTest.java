@@ -30,13 +30,17 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.worker.WorkersRegistry.BLOCKED_SYSTEM_WORKERS_CNT;
 
 /**
  * Tests the handling of long blocking operations in system-critical workers.
@@ -125,6 +129,30 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
             e -> CountDownLatch.class.getName().equals(e.getClassName())));
         assertTrue(Arrays.stream(blockedExeption.getStackTrace()).anyMatch(
             e -> LatchingGridWorker.class.getName().equals(e.getClassName())));
+    }
+
+    /**
+     * Tests that the {@code BlockedSystemThreadsCount} metric is registered in the system metric registry
+     * and is incremented when a system-critical thread is detected as blocked.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBlockedSystemThreadsCountMetric() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        GridWorker worker = new LatchingGridWorker(ignite);
+
+        runWorker(worker);
+
+        ignite.context().workersRegistry().register(worker);
+
+        assertTrue(hndLatch.await(ignite.configuration().getFailureDetectionTimeout() * 2, TimeUnit.MILLISECONDS));
+
+        LongMetric metric = ignite.context().metric().registry(GridMetricManager.SYS_METRICS).findMetric(BLOCKED_SYSTEM_WORKERS_CNT);
+
+        assertNotNull("Metric is not registered", metric);
+        assertTrue("Metric is not incremented", metric.value() > 0);
     }
 
     /**
