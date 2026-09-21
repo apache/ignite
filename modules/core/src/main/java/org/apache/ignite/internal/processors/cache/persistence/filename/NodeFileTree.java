@@ -333,12 +333,12 @@ public class NodeFileTree extends SharedFileTree {
 
         this.folderName = folderName;
 
-        all.add(binaryMeta = new File(binaryMetaRoot, folderName));
-        all.add(nodeStorage = rootRelative(DB_DIR));
-        all.add(checkpoint = new File(nodeStorage, CHECKPOINT_DIR));
-        all.add(wal = rootRelative(DFLT_WAL_PATH));
-        all.add(walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH));
-        all.add(walCdc = rootRelative(DFLT_WAL_CDC_PATH));
+        binaryMeta = new File(binaryMetaRoot, folderName);
+        nodeStorage = rootRelative(DB_DIR);
+        checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+        wal = rootRelative(DFLT_WAL_PATH);
+        walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
+        walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         extraStorages = Collections.emptyMap();
     }
 
@@ -381,31 +381,29 @@ public class NodeFileTree extends SharedFileTree {
 
         this.folderName = folderName;
 
-        all.add(binaryMeta = new File(binaryMetaRoot, folderName));
+        binaryMeta = new File(binaryMetaRoot, folderName);
 
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
         if (CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg)) {
             // Snapshots MUST use root relative node storage path.
-            all.add(nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
+            nodeStorage = (dsCfg.getStoragePath() == null || isSnapshot)
                 ? rootRelative(DB_DIR)
-                : resolveDirectory(dsCfg.getStoragePath()));
-            all.add(checkpoint = new File(nodeStorage, CHECKPOINT_DIR));
-            all.add(wal = resolveDirectory(dsCfg.getWalPath()));
-            all.add(walArchive = resolveDirectory(dsCfg.getWalArchivePath()));
-            all.add(walCdc = resolveDirectory(dsCfg.getCdcWalPath()));
+                : resolveDirectory(dsCfg.getStoragePath());
+            checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+            wal = resolveDirectory(dsCfg.getWalPath());
+            walArchive = resolveDirectory(dsCfg.getWalArchivePath());
+            walCdc = resolveDirectory(dsCfg.getCdcWalPath());
         }
         else {
-            all.add(nodeStorage = rootRelative(DB_DIR));
-            all.add(checkpoint = new File(nodeStorage, CHECKPOINT_DIR));
-            all.add(wal = rootRelative(DFLT_WAL_PATH));
-            all.add(walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH));
-            all.add(walCdc = rootRelative(DFLT_WAL_CDC_PATH));
+            nodeStorage = rootRelative(DB_DIR);
+            checkpoint = new File(nodeStorage, CHECKPOINT_DIR);
+            wal = rootRelative(DFLT_WAL_PATH);
+            walArchive = rootRelative(DFLT_WAL_ARCHIVE_PATH);
+            walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         }
 
         extraStorages = extraStorages(dsCfg);
-
-        all.addAll(extraStorages.values());
     }
 
     /** @return Node storage directory. */

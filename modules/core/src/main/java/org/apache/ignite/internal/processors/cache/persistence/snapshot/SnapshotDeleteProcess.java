@@ -267,7 +267,7 @@ public class SnapshotDeleteProcess {
 
         var ignFileTree = kctx.pdsFolderResolver().fileTree();
 
-        for (var ignPath : ignFileTree.all()) {
+        for (var ignPath : ignFileTree.allStorages().toList()) {
             if (contains(ignPath, path)) {
                 return ignPath.equals(ignFileTree.snapshotsRoot())
                     ? null

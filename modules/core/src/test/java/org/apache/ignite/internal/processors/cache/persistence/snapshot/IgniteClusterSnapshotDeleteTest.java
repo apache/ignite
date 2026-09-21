@@ -283,7 +283,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         var ignFileTree = grid(0).context().pdsFolderResolver().fileTree();
 
-        dirsToTest.addAll(ignFileTree.all().stream().filter(f -> f.compareTo(ignFileTree.snapshotsRoot()) != 0)
+        dirsToTest.addAll(ignFileTree.allStorages().filter(f -> f.compareTo(ignFileTree.snapshotsRoot()) != 0)
             .map(File::getAbsolutePath).toList());
 
         IgniteSnapshotManager snpMgr = snp(grid(0));
