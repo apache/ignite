@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -73,12 +74,18 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Parameter(2)
     public boolean incremental = true;
 
+    /** */
+    private @Nullable String cstIdSuffix;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         var cfg = super.getConfiguration(igniteInstanceName);
 
         if (separatedWorkDir)
             cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
+
+        if (cstIdSuffix != null)
+            cfg.setConsistentId(cfg.getConsistentId().toString() + '_' + cstIdSuffix);
 
         return cfg;
     }
@@ -169,6 +176,27 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
+    public void testDeleteOtherConsistentId() throws Exception {
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false);
+
+        stopAllGrids();
+
+        cstIdSuffix = "_ext";
+
+        startGridsMultiThreaded(3);
+
+        var delRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertTrue(F.isEmpty(delRes.emptyNodes));
+
+        for (var ig : G.allGrids()) {
+            assertTrue(Files.list(((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath())
+                .findFirst().isEmpty());
+        }
+    }
+
+    /** */
+    @Test
     public void testDeleteNotSnapshotSharedDirectory() throws Exception {
         doTestDeleteNotSnapshot(false);
     }
@@ -203,13 +231,14 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delSnpRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         // Check the result.
-        if(separatedWorkDir) {
+        if (separatedWorkDir) {
             // One node doesn't find meta, decided not a snapshot.
             assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
             assertEquals(2, delSnpRes.completedNodes.size());
             assertEquals(1, delSnpRes.emptyNodes.size());
             assertTrue(delSnpRes.emptyNodes.contains(grid(1).localNode().id()));
-        } else {
+        }
+        else {
             // All nodes may see some metas, may try to delete snapshot by the metas, but see that the snapshot directory isn't empty.
             // Some node may not get any meta to process. But node of the nodes can say the snapshot 100% deleted.
             assertTrue(F.isEmpty(delSnpRes.completedNodes));

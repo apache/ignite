@@ -196,11 +196,11 @@ public class SnapshotDeleteProcess {
             GridCompoundFuture<SnapshotDeleteResponse.SnapshotDeleteStatus, SnapshotDeleteResponse> resultFut =
                 new GridCompoundFuture<>(new MetaFuturesReducer());
 
-            resultFut.listen(fut->requests.remove(req));
+            resultFut.listen(fut -> requests.remove(req));
 
             File path0 = path;
 
-            for(var meta : locMetas) {
+            for (var meta : locMetas) {
                 GridFutureAdapter<SnapshotDeleteResponse.SnapshotDeleteStatus> perMetaFut = new GridFutureAdapter<>();
 
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
@@ -233,7 +233,8 @@ public class SnapshotDeleteProcess {
                         }
 
                         perMetaFut.onDone(res);
-                    } catch (Throwable e) {
+                    }
+                    catch (Throwable e) {
                         perMetaFut.onDone(e);
                     }
                 });

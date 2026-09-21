@@ -736,7 +736,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True}, if data is found and completely deleted;
      *         {@code False}, if nothing found or if data is found but might not be deleted completely.
      */
-    public boolean deleteLocalSnapshot(SnapshotFileTree sft, String nodeFolderName, @Nullable AtomicBoolean existsFlag) {
+    public boolean deleteLocalSnapshot(SnapshotFileTree sft, String nodeFolderName,
+        @Nullable AtomicBoolean existsFlag) {
         if (existsFlag != null)
             existsFlag.set(sft.root().exists());
 
@@ -770,7 +771,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             Files.delete(sft.root().toPath());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             res.set(false);
         }
 
@@ -784,7 +786,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param failRes Is set to {@code False} if at least one existed file or directory was denied to delete.
      */
     private void deleteSnapshotDataCompletely(@Nullable File f, AtomicBoolean failRes) {
-        if (f == null || !f.exists())
+        if (f == null || !f.exists() || !SnapshotFileTree.isSnapshotFile(f))
             return;
 
         try {
@@ -1360,8 +1362,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     if (snpStartReq.incremental())
                         U.delete(snpOp.snapshotFileTree().incrementalSnapshotFileTree(snpStartReq.incrementIndex()).root());
-                    else
-                        deleteLocalSnapshot(snpOp.snapshotFileTree(), cctx.kernalContext().pdsFolderResolver().fileTree().folderName(), null);
+                    else {
+                        deleteLocalSnapshot(
+                            snpOp.snapshotFileTree(),
+                            cctx.kernalContext().pdsFolderResolver().fileTree().folderName(),
+                            null
+                        );
+                    }
                 }
                 else if (!F.isEmpty(endReq.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
