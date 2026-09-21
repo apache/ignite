@@ -301,7 +301,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
-        if (!fullCleanPersistentDir)
+        if (!fullCleanPersistentDir())
             return;
 
         // Clean all: also separated snapshot working directories and custom snapshot pathes.
@@ -309,6 +309,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             for (Path path : files)
                 U.delete(path);
         }
+    }
+
+    /** */
+    protected boolean fullCleanPersistentDir() {
+        return fullCleanPersistentDir;
     }
 
     /**
