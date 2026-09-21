@@ -1536,7 +1536,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if a snapshot {@code snpName} delete operation is in progress.
      */
     public boolean isSnapshotDeleting(String snpName, @Nullable String snpPath) {
-        return deleteSnpProc.isSnapshotDeleting(snpName, snpPath);
+        return deleteSnpProc.isDeleting(snpName, snpPath);
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -267,12 +268,12 @@ public class SnapshotDeleteProcess {
 
         var ignFileTree = kctx.pdsFolderResolver().fileTree();
 
-        for (var ignPath : ignFileTree.allStorages().toList()) {
-            if (contains(ignPath, path)) {
-                return ignPath.equals(ignFileTree.snapshotsRoot())
-                    ? null
-                    : "belongs to a an Ignite's directory";
-            }
+        if (ignFileTree.snapshotsRoot().compareTo(path) == 0 || contains(ignFileTree.snapshotsRoot(), path))
+            return null;
+
+        for (var ignPath : List.of(new File(CommonUtils.getIgniteHome()), ignFileTree.root())) {
+            if (ignPath.compareTo(path) == 0 || contains(ignPath, path))
+                return "belongs to a an Ignite's directory";
         }
 
         if (!path.exists())
@@ -340,7 +341,7 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    public boolean isSnapshotDeleting(String snpName, @Nullable String snpPath) {
+    public boolean isDeleting(String snpName, @Nullable String snpPath) {
         return requests.contains(new SnapshotDeleteRequest(null, snpName, snpPath));
     }
 
