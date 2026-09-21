@@ -225,6 +225,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
          * Constructor.
          */
         private DefaultConverter() {
+            // No-op.
         }
 
         /** {@inheritDoc} */

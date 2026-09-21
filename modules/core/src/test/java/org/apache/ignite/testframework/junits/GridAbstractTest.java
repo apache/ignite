@@ -1299,9 +1299,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         limitMaxMemoryOfDataStorageConfiguration(cfg);
 
         if (!isRemoteJvm(igniteInstanceName)) {
-            if (Thread.currentThread() instanceof IgniteTestThread)
-                ((IgniteTestThread)Thread.currentThread()).setIgniteTestInstanceName(igniteInstanceName);
-
             String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
 
             if (cfgProcClsName != null) {
@@ -2473,7 +2470,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         try {
             final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-            Thread runner = new IgniteTestThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
+            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
                 @Override public void run() {
                     try {
                         testRoutine.evaluate();
@@ -3207,29 +3204,5 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** @return Snapshot directories for specific snapshot. */
     protected static SnapshotFileTree snapshotFileTree(IgniteEx srv, String name, String path) {
         return new SnapshotFileTree(srv.context(), name, path);
-    }
-
-    /**
-     * {@link IgniteThread} with modifiable instance name.
-     * Keep final field in base class
-     */
-    public static class IgniteTestThread extends IgniteThread {
-        /** */
-        private String igniteTestInstanceName;
-
-        /** */
-        public IgniteTestThread(String igniteInstanceName, String threadName, Runnable r) {
-            super(igniteInstanceName, threadName, r);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getIgniteInstanceName() {
-            return igniteTestInstanceName == null ? super.getIgniteInstanceName() : igniteTestInstanceName;
-        }
-
-        /** */
-        public void setIgniteTestInstanceName(String igniteTestInstanceName) {
-            this.igniteTestInstanceName = igniteTestInstanceName;
-        }
     }
 }
