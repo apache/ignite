@@ -44,7 +44,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
@@ -101,7 +100,6 @@ public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTes
     public boolean idxSlowDown;
 
     /** {@inheritDoc} */
-    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op. We don't need to start anything.
     }
