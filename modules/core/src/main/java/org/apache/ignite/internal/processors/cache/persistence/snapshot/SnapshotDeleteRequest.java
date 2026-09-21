@@ -76,6 +76,6 @@ public class SnapshotDeleteRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotDeleteRequest.class, this, super.toString());
+        return S.toString(SnapshotDeleteRequest.class, this);
     }
 }

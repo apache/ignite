@@ -181,6 +181,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** */
     protected @Nullable AbstractTestPluginProvider pluginProvider;
 
+    /** */
+    protected boolean fullCleanPersistentDir = true;
+
     /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
     @Parameterized.Parameter
     public boolean encryption;
@@ -297,6 +300,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
+
+        if (!fullCleanPersistentDir)
+            return;
 
         // Clean all: also separated snapshot working directories and custom snapshot pathes.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
@@ -898,7 +904,15 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         var delRes = delFut.get(getTestTimeout());
 
-        assertFalse(delRes.completedNodes.isEmpty());
+        // Concurrent deletion on the same path may cause exeptions like 'directory is not empty' or 'access denied'.
+        int nonEmptyCnt = (F.isEmpty(delRes.completedNodes)
+            ? 0
+            : delRes.completedNodes.size()) + (F.isEmpty(delRes.uncompletedNodes) ? 0 : delRes.uncompletedNodes.size());
+
+        assertEquals(grid(0).cluster().forServers().nodes().size(), nonEmptyCnt);
+
+        for (var node : G.allGrids())
+            assertFalse(new SnapshotFileTree(((IgniteEx)node).context(), SNAPSHOT_NAME, null).root().exists());
 
         if (!rerunAtTheEnd)
             return;

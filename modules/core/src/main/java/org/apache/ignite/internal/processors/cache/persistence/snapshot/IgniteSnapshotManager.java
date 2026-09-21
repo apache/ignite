@@ -736,13 +736,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True}, if data is found and completely deleted;
      *         {@code False}, if nothing found or if data is found but might not be deleted completely.
      */
-    public boolean deleteLocalSnapshot(SnapshotFileTree sft, String nodeFolderName,
-        @Nullable AtomicBoolean existsFlag) {
+    public boolean deleteLocalSnapshot(SnapshotFileTree sft, String nodeFolderName, @Nullable AtomicBoolean existsFlag) {
         if (existsFlag != null)
             existsFlag.set(sft.root().exists());
 
         if (!sft.root().exists())
             return false;
+
+        Exception err = null;
 
         AtomicBoolean res = new AtomicBoolean(true);
 
@@ -763,7 +764,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 // No-op: someone else deleted.
             }
             catch (Exception e) {
-                res.set(false);
+                if (dir.exists()) {
+                    res.set(false);
+
+                    if (err == null)
+                        err = e;
+                }
             }
         }
 
@@ -773,7 +779,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Files.delete(sft.root().toPath());
         }
         catch (Exception e) {
-            res.set(false);
+            if (sft.root().exists()) {
+                res.set(false);
+
+                if (err == null)
+                    err = e;
+            }
+        }
+
+        if (err != null) {
+            log.warning("Failed to delete snapshot '%s', error: %s - %s".formatted(
+                sft.root().getName(),
+                err.getClass().getSimpleName(),
+                err.getMessage())
+            );
         }
 
         return res.get();
@@ -797,8 +816,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 Files.delete(f.toPath());
         }
+        catch (NoSuchFileException ignored) {
+            // No-op.
+        }
         catch (Exception e) {
-            failRes.set(false);
+            if (f.exists())
+                failRes.set(false);
         }
     }
 
