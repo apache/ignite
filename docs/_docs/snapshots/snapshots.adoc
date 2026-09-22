@@ -324,10 +324,9 @@ control.bat --snapshot delete snapshot_09062021 --src /tmp/ignite/snapshots
 
 The delete operation is subject to the following limitations:
 
-* The deletion is rejected if any concurrent snapshot operation (create, restore, check, or a delete with the same name) is
+* The deletion is rejected if any snapshot operation with the same name (create, restore, check, or a delete with the same name) is
   active for the snapshot.
-* The operation is irreversible. It cannot be undone, and the deleted snapshot cannot be restored.
-* The command prompts for a confirmation before the deletion because the operation is irreversible and cannot be undone.
+* The operation cannot be cancelled. It cannot be undone, and the deleted snapshot cannot be restored. The command prompts for a confirmation.
 
 == Getting Snapshot Operation Status
 

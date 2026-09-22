@@ -72,7 +72,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
     /** */
     @Test
-    public void testConcurrentUnfinishedRU() throws Exception {
+    public void testParallelRollingUpgradeInProgress() throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
             startGrid(i, "2.19.0", i >= ALL_GRIDS - CLIENTS);
 
@@ -138,7 +138,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertFalse(ru(grid(i)).isVersionUpgradeEnabled());
 
-            assertFalse(F.isEmpty(snp(i).deleteSnapshot(SNP_NAME, null).get().completedNodes));
+            assertTrue(F.isEmpty(snp(i).deleteSnapshot(SNP_NAME, null).get().completedNodes));
 
             if (i < ALL_GRIDS - 1)
                 createSnapshot(i);

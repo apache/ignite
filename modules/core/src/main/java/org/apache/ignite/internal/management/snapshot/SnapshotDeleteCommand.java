@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.util.Collection;
-import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
@@ -34,9 +31,26 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * @see SnapshotDeleteProcess
  */
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
+    /** */
+    public static final String DESC = "Deletes snapshot and all its incrementals from all the online server nodes";
+
+    /** */
+    public static final String UNSURED_DELETION_PREF = "WARNING: the following nodes found snapshot data but might not " +
+        "remove it completely ";
+
+    /** */
+    public static final String REMOVED_PREF = "Snapshot removal is completed on: ";
+
+    /** */
+    public static final String SOME_NODES_NOT_FOUND_PREF = "NOTE: the following nodes can't find any snapshot data, " +
+        "operation skipped ";
+
+    /** */
+    public static final String NOT_FOUND_PREF = "Snapshot not found on current server nodes.";
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Deletes snapshot and all its increments from all the online server nodes";
+        return DESC;
     }
 
     /** {@inheritDoc} */
@@ -56,8 +70,9 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!F.isEmpty(res.uncompletedNodes())) {
             found = true;
 
-            printer.accept("WARNING, the following nodes found snapshot data but might not remove it completely "
-                + nodeIdsStrLst(res.uncompletedNodes()));
+            var nodes = res.uncompletedNodes();
+
+            printer.accept(UNSURED_DELETION_PREF + "cnt=" + nodes.size() + "]: " + nodes);
 
             printer.accept("");
         }
@@ -65,36 +80,32 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!F.isEmpty(res.completedNodes())) {
             found = true;
 
-            printer.accept("Snapshot removed on the following nodes " + nodeIdsStrLst(res.completedNodes()));
+            var nodes = res.completedNodes();
+
+            printer.accept(REMOVED_PREF + "cnt=" + nodes.size() + "]: " + nodes);
+
             printer.accept("");
         }
 
         if (found) {
-            if (!F.isEmpty(res.emptyNodes())) {
-                printer.accept("NOTE, the following nodes didn't find any snapshot data, nothing to delete "
-                    + nodeIdsStrLst(res.emptyNodes()));
-            }
+            var nodes = res.completedNodes();
+
+            if (!F.isEmpty(res.emptyNodes()))
+                printer.accept(SOME_NODES_NOT_FOUND_PREF + "cnt=" + nodes.size() + "]: " + nodes);
         }
         else {
-            if (!F.isEmpty(res.emptyNodes()))
-                printer.accept("Snapshot not found on current server nodes.");
-            else
-                printer.accept("Unknown result.");
-        }
-    }
+            assert !F.isEmpty(res.emptyNodes());
 
-    /** */
-    private static String nodeIdsStrLst(Collection<UUID> uuids) {
-        return "[cnt=" + uuids.size() + "]: " + uuids.stream().map(UUID::toString).collect(Collectors.joining(", "));
+            printer.accept(NOT_FOUND_PREF);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "This will delete snapshot '" + arg.snapshotName() +
-            "' and all its increments from all online server nodes." +
+        return "This operation will completelly remove snapshot: '" + arg.snapshotName() +
+            "' and all its incrementals from all online server nodes." +
             U.nl() + U.nl() +
-            "WARNING: the snapshot integrity, topology and correctness aren't checked." +
-            " Snapshot data on offline server nodes aren't deleted." +
+            "NOTE: Snapshot data on offline server nodes will remain untouched." +
             U.nl() + U.nl() +
             "The operation is irreversible.";
     }

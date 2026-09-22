@@ -49,7 +49,7 @@ public class SnapshotDeleteResponse implements Message {
     }
 
     /** */
-    public enum SnapshotDeleteStatus {
+    enum SnapshotDeleteStatus {
         /** Snapshot found and completely deleted. */
         DELETED,
 
