@@ -25,12 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-/**
- * Tests the synergy between ExpiryPolicy (TTL cleanup) and size-aware page eviction on an in-memory data region.
- * Verifies that concurrent TTL cleanup and eviction do not deadlock, that a large row larger than the
- * empty-pages pool is still written when eviction is enabled, and that TTL-freed space is accounted for by eviction
- * (a row that only fits after expired entries are removed is still written without OOM).
- */
+/** Tests the synergy between ExpiryPolicy (TTL cleanup) and size-aware page eviction on an in-memory data region. */
 public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvictionAbstractTest {
     /** Off-heap region size. */
     private static final int SIZE = 128 * 1024 * 1024;
@@ -42,11 +37,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
      */
     private static final int RECORD_SIZE = 32 * 1024 * 1024;
 
-    /**
-     * Short TTL applied to some entries. Kept short enough that entries expire while the eviction loop is still
-     * active (not after all entries have already been evicted), so the TTL worker genuinely runs concurrently with
-     * size-aware eviction.
-     */
+    /** Short TTL applied to some entries. */
     private static final long TTL = 2000;
 
     /** {@inheritDoc} */
@@ -73,27 +64,19 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
     public void testLargePutWithExpiryNoDeadlock() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        // Short-TTL entries keep the TTL worker actively freeing pages while eviction runs.
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, TTL, false);
 
         Object val = new byte[RECORD_SIZE];
 
-        // Writing more data than the region can hold forces eviction; concurrent expiry of short-TTL entries must not
-        // deadlock with it. The entry count and TTL are chosen so that early entries expire while the eviction loop is
-        // still active for later entries, giving the TTL worker a real chance to run concurrently with eviction.
         for (int i = 0; i < 60; i++)
             cache.put(i, val);
 
-        // The most recently written entry cannot have expired yet (TTL is far larger than this read), so a non-null
-        // read both verifies the cache is responsive after concurrent expiry/eviction (the test's goal) and is not
-        // racy. Reading the first written key would be racy (it may already have expired under the TTL).
         assertNotNull("Cache must remain responsive after concurrent expiry and eviction", cache.get(59));
     }
 
     /**
-     * Space freed by TTL cleanup must be available for subsequent writes: after short-TTL entries expire and free
-     * their pages, putting the same amount of data to a non-expiring cache must succeed without evicting the pre-filled
-     * small entries — the TTL-freed pages should be reused instead.
+     * After short-TTL entries expire and free their pages, putting the same amount of data to a non-expiring cache
+     * must succeed, and the pre-filled small entries must remain intact (not evicted).
      *
      * @throws Exception If failed.
      */
@@ -104,10 +87,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
         IgniteEx ignite = startGrid(1);
 
-        // Non-expiring cache for prefill and the final large put.
         IgniteCache<Integer, Object> plainCache = createCache(ignite, "plain-cache");
-
-        // Short-TTL cache for entries that will expire and free pages.
         IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL, false);
 
         // Pre-fill the region with small non-expiring entries, but leave enough room for the large TTL entries.
@@ -116,7 +96,6 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         for (int i = 0; i < smallEntries; i++)
             plainCache.put(i, small);
 
-        // Add large short-TTL entries that will expire and free their pages.
         Object val = new byte[RECORD_SIZE];
 
         for (int i = 0; i < ttlEntries; i++)
@@ -126,15 +105,12 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
         GridTestUtils.waitForCondition(() -> ttlCache.get(0) == null, 10_000);
 
-        // After expiry, put the same amount of large data to the non-expiring cache. The TTL-freed pages should be
-        // reused, so to write succeeds without evicting pre-filled small entries.
         for (int i = 0; i < ttlEntries; i++)
             plainCache.put(smallEntries + i, val);
 
         for (int i = 0; i < ttlEntries; i++)
             assertNotNull("Fresh large record must be present", plainCache.get(smallEntries + i));
 
-        // Verify that pre-filled small entries were not evicted.
         for (int i = 0; i < smallEntries; i++)
             assertNotNull("Pre-filled entry " + i + " must not be evicted", plainCache.get(i));
     }

@@ -766,11 +766,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * <p>
      * The page is acquired via {@link #takePageWithReserve}, which handles the size-aware re-reserve and TOCTOU
      * recovery (see its javadoc for details). Reached from the BPlusTree.invoke row-creation closure, this re-reserve
-     * is an inline demand-eviction that runs without any BPlusTree page locks held by the row-creation closure (the
-     * search releases the read lock before the closure; the leaf write lock is taken only afterwards — see
-     * BPlusTree.invokeDown). The entry-level tryLock only skips contended/self-held entries and never blocks.
-     * The TTL expiration worker is also safe: it removes entries from the data tree and pending tree in separate
-     * BPlusTree operations, each releasing all page locks before returning, so no cross-tree nested locks occur.
+     * is an inline demand-eviction that runs while the BPlusTree leaf page read lock is held (the closure is invoked
+     * inside {@code read} before the write lock is taken). The entry-level tryLock only skips contended/self-held
+     * entries and never blocks, avoiding a lock-ordering deadlock with the entry lock already held by the caller.
      *
      * @param row Row to write.
      * @param written Written size.

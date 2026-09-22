@@ -33,13 +33,7 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-/**
- * Negative test for the size-aware eviction progress guard.
- * <p>
- * When every resident entry is locked by another thread/transaction, page eviction cannot free any page: the guarded
- * {@code tryLockEntry(0)} in {@code evictInternal} fails for every candidate, so {@code ensureFreeSpaceForEviction}
- * makes no progress and must fail with an {@code IgniteOutOfMemoryException} within bounded time instead of deadlock.
- */
+/** Negative test for the size-aware eviction progress guard. */
 public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
     /** Off-heap region size. */
     private static final int SIZE = 12 * 1024 * 1024;

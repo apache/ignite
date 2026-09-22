@@ -29,16 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-/**
- * Concurrent deadlock test for size-aware page eviction.
- * <p>
- * The region is first filled with a large number of small entries (so there is plenty of evictable page space), then
- * several threads concurrently insert large rows (larger than the empty-pages pool). Each large insert goes through
- * the size-aware reserve and, for the single-row path, eviction under the new entry lock with the non-blocking
- * {@code tryLockEntry}. The average data volume is kept within the region capacity, so eviction frees already-stored
- * small entries rather than overrunning the free list. The test asserts that no deadlock occurs (all threads finish
- * within a global deadline).
- */
+/** Concurrent deadlock test for size-aware page eviction. */
 public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvictionAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -59,8 +50,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
     @Test
     public void testConcurrentLargeWritesNoDeadlock() throws Exception {
          // Number of small pre-fill entries, leaving a buffer that is exceeded by the total of the large writes, so that
-         // the last of them can only be stored by freeing pages via size-aware eviction. The large records are small
-         // enough that concurrent size-aware eviction reliably frees the required pages (no spurious guard OOM).
+         // the last of them can only be stored by freeing pages via size-aware eviction.
         int smallEntries = 48_000;
 
          // Large rows inserted per thread. Their total (threads x rows) exceeds the buffer left by the pre-fill, so the
@@ -88,7 +78,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
             for (int k = 0; k < largeRowsPerThread; k++)
                 cache.put(smallEntries + idx * largeRowsPerThread + k, largeVal);
-            }, 10, "paged-writer");
+        }, 10, "paged-writer");
 
         startLatch.countDown();
 

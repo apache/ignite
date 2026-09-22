@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -30,7 +31,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import javax.cache.expiry.Duration;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.cache.expiry.CreatedExpiryPolicy.factoryOf;
