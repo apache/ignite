@@ -167,7 +167,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         assertTrue(F.isEmpty(delSnpRes.emptyNodes));
         assertFalse(F.isEmpty(delSnpRes.uncompletedNodes));
-        assertTrue(delSnpRes.uncompletedNodes.contains(grid(1).localNode().id()));
+        assertTrue(delSnpRes.uncompletedNodes.containsKey(grid(1).localNode().id()));
     }
 
     /** */
@@ -232,7 +232,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
             assertEquals(2, delSnpRes.completedNodes.size());
             assertEquals(1, delSnpRes.emptyNodes.size());
-            assertTrue(delSnpRes.emptyNodes.contains(grid(1).localNode().id()));
+            assertTrue(delSnpRes.emptyNodes.containsKey(grid(1).localNode().id()));
             assertTrue(snpSft.binaryMeta().exists());
         }
         else
@@ -344,7 +344,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertFalse(F.isEmpty(delSnpRes.emptyNodes));
-        assertTrue(delSnpRes.emptyNodes.contains(grid(G.allGrids().size() - 1).localNode().id()));
+        assertTrue(delSnpRes.emptyNodes.containsKey(grid(G.allGrids().size() - 1).localNode().id()));
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
     }
 
@@ -369,7 +369,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertEquals(2, delSnpRes.completedNodes.size());
-        assertFalse(delSnpRes.completedNodes.contains(stoppedNodeId));
+        assertFalse(delSnpRes.completedNodes.containsKey(stoppedNodeId));
 
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
         assertTrue(F.isEmpty(delSnpRes.emptyNodes));
@@ -381,7 +381,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertEquals(1, delSnpRes.completedNodes.size());
-        assertTrue(delSnpRes.completedNodes.contains(stoppedNodeId));
+        assertTrue(delSnpRes.completedNodes.containsKey(stoppedNodeId));
 
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
         assertEquals(2, delSnpRes.emptyNodes.size());
@@ -448,14 +448,14 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delRes = delFut.get(getTestTimeout());
 
         assertEquals(2, delRes.completedNodes.size());
-        assertFalse(delRes.completedNodes.contains(stoppedGridId));
+        assertFalse(delRes.completedNodes.containsKey(stoppedGridId));
 
         startGrid(1);
 
         delRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertEquals(1, delRes.completedNodes.size());
-        assertTrue(delRes.completedNodes.contains(grid(1).localNode().id()));
+        assertTrue(delRes.completedNodes.containsKey(grid(1).localNode().id()));
     }
 
     /** Tests that a concurrent deletion of a snapshot with the same name but different path is allowed. */

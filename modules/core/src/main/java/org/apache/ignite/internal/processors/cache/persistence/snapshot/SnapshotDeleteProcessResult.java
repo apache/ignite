@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -31,15 +32,15 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
 
     /** Nodes which found snapshot data and completely removed it. */
     @Order(0)
-    Collection<UUID> completedNodes;
+    Map<UUID, String> completedNodes;
 
     /** Nodes which found snapshot data but didn't remove it completely. */
     @Order(1)
-    Collection<UUID> uncompletedNodes;
+    Map<UUID, String> uncompletedNodes;
 
     /** Server nodes which didn't find any snapshot data. */
     @Order(2)
-    Collection<UUID> emptyNodes;
+    Map<UUID, String> emptyNodes;
 
     /** Snapshot's baseline nodes which aren't found in current cluster. */
     @Order(3)
@@ -52,9 +53,9 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
 
     /** */
     public SnapshotDeleteProcessResult(
-        Collection<UUID> completedNodes,
-        Collection<UUID> uncompletedNodes,
-        Collection<UUID> emptyNodes,
+        Map<UUID, String> completedNodes,
+        Map<UUID, String> uncompletedNodes,
+        Map<UUID, String> emptyNodes,
         Collection<String> absentBaselines
     ) {
         this.completedNodes = completedNodes;
@@ -64,18 +65,18 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
     }
 
     /** */
-    public Collection<UUID> completedNodes() {
-        return Collections.unmodifiableCollection(completedNodes);
+    public Map<UUID, String> completedNodes() {
+        return Collections.unmodifiableMap(completedNodes);
     }
 
     /** */
-    public Collection<UUID> uncompletedNodes() {
-        return Collections.unmodifiableCollection(uncompletedNodes);
+    public Map<UUID, String> uncompletedNodes() {
+        return Collections.unmodifiableMap(uncompletedNodes);
     }
 
     /** */
-    public Collection<UUID> emptyNodes() {
-        return Collections.unmodifiableCollection(emptyNodes);
+    public Map<UUID, String> emptyNodes() {
+        return Collections.unmodifiableMap(emptyNodes);
     }
 
     /** */

@@ -85,7 +85,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
     /** */
     @Test
-    public void testConcurrentUnfinishedRU() throws Exception {
+    public void testParallelRollingUpgradeInProgress() throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
             startGrid(i, "2.19.0", i >= ALL_GRIDS - CLIENTS);
 

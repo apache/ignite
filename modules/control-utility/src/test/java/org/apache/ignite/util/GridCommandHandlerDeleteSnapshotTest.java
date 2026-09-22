@@ -222,7 +222,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
 
         if (separatedWorkDir) {
             // When the nodes use own separated work directory, we expect a strict result.
-            assertTrue(out.contains("Snapshot removed on the following nodes [cnt=%d]:".formatted(initNodes)));
+            assertTrue(out.contains("Snapshot removal is completed on [cnt=%d]:".formatted(initNodes)));
 
             if (extraNodeIsServer == 1)
                 assertTrue(out.contains("the following nodes didn't find any snapshot data, nothing to delete [cnt=1]:"));

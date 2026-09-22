@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
@@ -35,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Deletes snapshot and all its increments from all the online server nodes";
+        return "Deletes snapshot and all its incrementals from all the online server nodes";
     }
 
     /** {@inheritDoc} */
@@ -56,7 +58,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
             found = true;
 
             printer.accept("WARNING: the following nodes found snapshot data but might not remove it completely "
-                + nodeIdsStrLst(res.uncompletedNodes()));
+                + nodeIdPairsStrLst(res.uncompletedNodes()));
 
             printer.accept("");
         }
@@ -64,14 +66,14 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!F.isEmpty(res.completedNodes())) {
             found = true;
 
-            printer.accept("Snapshot removed on the following nodes " + nodeIdsStrLst(res.completedNodes()));
+            printer.accept("Snapshot removal is completed on " + nodeIdPairsStrLst(res.completedNodes()));
             printer.accept("");
         }
 
         if (found) {
             if (!F.isEmpty(res.emptyNodes())) {
                 printer.accept("NOTE: the following nodes didn't find any snapshot data, nothing to delete "
-                    + nodeIdsStrLst(res.emptyNodes()));
+                    + nodeIdPairsStrLst(res.emptyNodes()));
             }
 
             if (!F.isEmpty(res.absentBaselines())) {
@@ -87,18 +89,24 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
     }
 
     /** */
-    private static String nodeIdsStrLst(Collection<?> uuids) {
-        return "[cnt=" + uuids.size() + "]: " + uuids.stream().map(Object::toString).collect(Collectors.joining(", "));
+    private static String nodeIdPairsStrLst(Map<UUID, String> uuids) {
+        return "[cnt=" + uuids.size() + "]: " + uuids.entrySet().stream()
+            .map(e -> e.getValue() + " [uuid=" + e.getKey() + ']')
+            .collect(Collectors.joining(", "));
+    }
+
+    /** */
+    private static String nodeIdsStrLst(Collection<String> uuids) {
+        return "[cnt=" + uuids.size() + "]: " + String.join(", ", uuids);
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "This will delete snapshot '" + arg.snapshotName() +
-            "' and all its increments from all online server nodes." +
+        return "This operation will completely remove snapshot: '" + arg.snapshotName() +
+            "' and all its incrementals from all online server nodes." +
             U.nl() + U.nl() +
-            "WARNING: the snapshot integrity, topology and correctness aren't checked." +
-            " Snapshot data on offline server nodes aren't deleted." +
+            "NOTE: Snapshot data on offline server nodes will remain untouched." +
             U.nl() + U.nl() +
-            "The operation is irreversible.";
+            "The operation cannot be reverted.";
     }
 }

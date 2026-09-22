@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +40,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
@@ -312,9 +312,9 @@ public class SnapshotDeleteProcess {
                 return;
             }
 
-            var completedNodes = new ArrayList<UUID>(results.size());
-            var uncompletedNodes = new ArrayList<UUID>(results.size());
-            var emptyNodes = new ArrayList<UUID>(results.size());
+            Map<UUID, String> completedNodes = U.newHashMap(results.size());
+            Map<UUID, String> uncompletedNodes = U.newHashMap(results.size());
+            Map<UUID, String> emptyNodes = U.newHashMap(results.size());
             var snpNodes = new HashSet<String>();
 
             results.forEach((nodeId, nodeRes) -> {
@@ -324,13 +324,13 @@ public class SnapshotDeleteProcess {
                 if (nodeRes.status != null) {
                     switch (nodeRes.status) {
                         case NOT_FOUND:
-                            emptyNodes.add(nodeId);
+                            emptyNodes.put(nodeId, consistentId(nodeId));
                             break;
                         case DELETED:
-                            completedNodes.add(nodeId);
+                            completedNodes.put(nodeId, consistentId(nodeId));
                             break;
                         case PARTLY_DELETED:
-                            uncompletedNodes.add(nodeId);
+                            uncompletedNodes.put(nodeId, consistentId(nodeId));
                             break;
                         default:
                             throw new IgniteIllegalStateException("Unknown snapshot deletion node result, [nodeRes=" +
@@ -347,6 +347,16 @@ public class SnapshotDeleteProcess {
         catch (Throwable t) {
             clusterOpFut.onDone(t);
         }
+    }
+
+    /** */
+    private String consistentId(UUID nodeId) {
+        var node = kctx.discovery().node(nodeId);
+
+        if (node == null)
+            node = kctx.discovery().historicalNode(nodeId);
+
+        return node == null ? "" : node.consistentId().toString();
     }
 
     /** */
