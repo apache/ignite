@@ -66,7 +66,7 @@ import org.jetbrains.annotations.Nullable;
  * by a single thread at a time, while socket write operations may be performed concurrently by multiple threads. Because
  * {@link #writeMessage(TcpDiscoveryAbstractMessage)} writes messages in batches, all session write methods must be
  * blocking. Currently, {@link TcpDiscoveryIoSession} may be accessed concurrently for writing by the
- * {@link ServerImpl.ClientMessageWorker} and {@link ServerImpl.SocketReader} threads.
+ * ServerImpl.ClientMessageWorker and ServerImpl.SocketReader threads.
  * </p>
  */
 public class TcpDiscoveryIoSession implements AutoCloseable {
