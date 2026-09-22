@@ -21,6 +21,7 @@ Docker is used to emulate a distributed multi-node cluster environment where eac
 ### 1. Prerequisites
 * **Docker** installed and running on your host system.
 * **Python >= 3.8** installed on your host system (required only for local environment scripts and development).
+* **A Linux (or WSL2) host for the checkout.** On Windows, see [Running on Windows](#running-on-windows) before you start: the checkout has to live inside a WSL2 distro, not on a Windows drive.
 
 ### 2. Prepare the Environment & Code
 Execute these preparation steps from the root directory of your project:
@@ -97,6 +98,67 @@ Always clean up and tear down active background nodes after your test runs finis
 
 # Stop and remove all currently active ducker-ignite cluster nodes
 ./docker/clean_up.sh
+```
+
+---
+
+## Running on Windows
+
+Ducktests run on Windows through Docker Desktop's WSL2 backend, with one rule that decides whether it works at all:
+
+> **Keep the Ignite checkout inside a WSL2 distro (e.g. `~/ignite`), not on a Windows drive (`C:\...` or `/mnt/c/...`).**
+
+`ducker-ignite` bind-mounts your checkout into every container as `/opt/ignite-dev`, and each node builds its classpath from it (`bin/include/build-classpath.sh`). Class loading stats thousands of files, which is slow across the Windows filesystem boundary:
+
+| Checkout location | Node start, to its first topology snapshot |
+|---|---|
+| Inside a WSL2 distro (ext4) | ~4 s |
+| Windows drive, bind-mounted | ~250 s |
+
+Since the default service startup timeout is 60 s, a checkout on a Windows drive fails tests that the same checkout inside WSL2 passes in seconds. The node is not crashing in that case — it is still class-loading when ducktape stops waiting.
+
+### Setup
+
+1. **Install WSL2 and a distro** — in an Administrator PowerShell: `wsl --install -d Ubuntu`, then reboot if asked.
+2. **Install Docker Desktop**, select the **WSL 2 backend**, and enable Settings → Resources → **WSL Integration** for your distro. Allow it at least 6 GB of RAM for small runs; the 13-container default needs considerably more.
+3. **Prepare the distro:**
+   ```bash
+   sudo apt update && sudo apt install -y openjdk-17-jdk maven git python3 python-is-python3
+   sudo usermod -aG docker $USER   # then `wsl --shutdown` in PowerShell, and reopen the distro
+   docker ps                       # must work without sudo
+   python --version                # run_tests.sh calls `python`, not `python3`
+   ```
+4. **Clone and build inside the distro**, then follow the Quick Start above from there:
+   ```bash
+   cd ~ && git clone https://github.com/apache/ignite.git && cd ignite
+   ./mvnw clean install -DskipTests
+   ./scripts/build-module.sh ducktests
+   ```
+
+Run `run_tests.sh` from the distro's shell, not from Git Bash or PowerShell.
+
+### If you build on Windows
+
+To keep building with your Windows toolchain or IDE, treat the Windows checkout as the source of truth and sync it into the distro before each run:
+
+```bash
+rsync -a --delete --exclude .git --exclude results --exclude .ducktape --exclude '*/src/' \
+  /mnt/c/path/to/ignite/ ~/ignite/
+```
+
+The sync is dominated by scanning the Windows mount rather than by copying, so it costs much the same whether one file changed or many. Java sources are excluded because nothing needs them at runtime.
+
+Two things to know in this setup:
+
+* **Build the ducker image from inside the distro.** The image bakes the host's uid (`--build-arg USER_UID=$(id -u)`), so an image built from Git Bash carries a Windows uid and cannot write into a checkout owned by your Linux user. The symptom is `PermissionError: [Errno 13] Permission denied: '.ducktape/metadata/session_id'`. It does not appear on a Windows bind mount, where ownership is synthesised.
+* **After rebuilding an image, run `./docker/ducker-ignite down -f`.** `run_tests.sh` reuses an already-running cluster, so old containers otherwise keep serving the previous image.
+
+### Older clones and line endings
+
+The repository ships a `.gitattributes` that keeps `*.sh` and `ducker-ignite` LF on checkout. A clone made before it was added, on a Windows machine with `core.autocrlf=true`, still has CRLF copies, which fail inside the containers with `$'\r': command not found`. Renormalise such a clone with:
+
+```bash
+git rm --cached -r -q . && git reset --hard
 ```
 
 ---
