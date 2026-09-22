@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.jetbrains.annotations.Nullable;
 
 /** Result of {@link SnapshotDeleteProcess}. */
 public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject {
@@ -31,15 +32,19 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
 
     /** Nodes which found snapshot data and completely removed it. */
     @Order(0)
-    @Nullable Collection<UUID> completedNodes;
+    Map<UUID, String> completedNodes;
 
     /** Nodes which found snapshot data but didn't remove it completely. */
     @Order(1)
-    @Nullable Collection<UUID> uncompletedNodes;
+    Map<UUID, String> uncompletedNodes;
 
     /** Server nodes which didn't find any snapshot data. */
     @Order(2)
-    @Nullable Collection<UUID> emptyNodes;
+    Map<UUID, String> emptyNodes;
+
+    /** Snapshot's baseline nodes which aren't found in current cluster. */
+    @Order(3)
+    Collection<String> absentBaselines;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteProcessResult() {
@@ -48,27 +53,34 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
 
     /** */
     public SnapshotDeleteProcessResult(
-        @Nullable Collection<UUID> completedNodes,
-        @Nullable Collection<UUID> uncompletedNodes,
-        @Nullable Collection<UUID> emptyNodes
+        Map<UUID, String> completedNodes,
+        Map<UUID, String> uncompletedNodes,
+        Map<UUID, String> emptyNodes,
+        Collection<String> absentBaselines
     ) {
         this.completedNodes = completedNodes;
         this.uncompletedNodes = uncompletedNodes;
         this.emptyNodes = emptyNodes;
+        this.absentBaselines = absentBaselines;
     }
 
     /** */
-    public @Nullable Collection<UUID> completedNodes() {
-        return completedNodes;
+    public Map<UUID, String> completedNodes() {
+        return Collections.unmodifiableMap(completedNodes);
     }
 
     /** */
-    public @Nullable Collection<UUID> uncompletedNodes() {
-        return uncompletedNodes;
+    public Map<UUID, String> uncompletedNodes() {
+        return Collections.unmodifiableMap(uncompletedNodes);
     }
 
     /** */
-    public @Nullable Collection<UUID> emptyNodes() {
-        return emptyNodes;
+    public Map<UUID, String> emptyNodes() {
+        return Collections.unmodifiableMap(emptyNodes);
+    }
+
+    /** */
+    public Collection<String> absentBaselines() {
+        return Collections.unmodifiableCollection(absentBaselines);
     }
 }

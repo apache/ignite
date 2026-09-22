@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
@@ -95,9 +97,16 @@ public class SnapshotDeleteProcess {
      * @return Future that will be completed when the snapshot is deleted.
      */
     public IgniteFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
-        UUID reqId = UUID.randomUUID();
-
         var clusterOpFut = new GridFutureAdapter<SnapshotDeleteProcessResult>();
+
+        if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
+            clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_MSG +
+                "The snapshot deletion feature isn't activated yet [snpName=" + snpName + ", snpPath=" + snpPath + ']'));
+
+            return new IgniteFutureImpl<>(clusterOpFut);
+        }
+
+        UUID reqId = UUID.randomUUID();
 
         clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId));
 
@@ -130,7 +139,7 @@ public class SnapshotDeleteProcess {
         }
 
         if (kctx.cluster().get().localNode().isClient())
-            return new GridFinishedFuture<>(new SnapshotDeleteResponse(null));
+            return new GridFinishedFuture<>(new SnapshotDeleteResponse());
 
         kctx.security().authorize(ADMIN_SNAPSHOT);
 
@@ -138,7 +147,7 @@ public class SnapshotDeleteProcess {
 
         var curCreateRq = snpMgr.currentCreateRequest();
 
-        if (curCreateRq != null && curCreateRq.snpName.equals(req.snpName)) {
+        if (curCreateRq != null && curCreateRq.snpName.equalsIgnoreCase(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
                 "Snapshot with this name is being created [req=" + req + ']'));
         }
@@ -153,27 +162,16 @@ public class SnapshotDeleteProcess {
                 "Snapshot with this name is being checked [req=" + req + ']'));
         }
 
-        if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
-            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "The snapshot deletion feature isn't activated yet [req=" + req + ']'));
+        File path = resolvePath(req.snpPath);
+
+        String pathValidationErr = validateAbsoluteSnapshotRoot(path);
+
+        if (pathValidationErr != null) {
+            return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
+                SNP_PATH_ERR_PREF + pathValidationErr + " [req=" + req + ']'));
         }
 
-        File path = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
-
-        if (!F.isEmpty(req.snpPath)) {
-            File reqPath = new File(req.snpPath);
-
-            path = reqPath.isAbsolute()
-                ? reqPath
-                : new File(path, req.snpPath);
-
-            String pathValidationErr = validateAbsoluteSnapshotRoot(path, req.snpName);
-
-            if (pathValidationErr != null) {
-                return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
-                    SNP_PATH_ERR_PREF + pathValidationErr + " [req=" + req + ']'));
-            }
-        }
+        req.resolvedPath = path;
 
         try {
             if (!requests.add(req)) {
@@ -188,13 +186,15 @@ public class SnapshotDeleteProcess {
             List<SnapshotMetadata> locMetas = kctx.cache().context().snapshotMgr().readSnapshotMetadatas(snpFiles);
 
             if (locMetas.isEmpty()) {
+                requests.remove(req);
+
                 log.warning("Snapshot deletion won't process, no snapshot metadata found [req=" + req + ']');
 
-                return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND));
+                return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND, null));
             }
 
             // Future to delete snapshot contents according to snapshot metadatas.
-            GridCompoundFuture<SnapshotDeleteResponse.SnapshotDeleteStatus, SnapshotDeleteResponse> resultFut =
+            GridCompoundFuture<SnapshotDeleteResponse, SnapshotDeleteResponse> resultFut =
                 new GridCompoundFuture<>(new MetaFuturesReducer());
 
             resultFut.listen(fut -> requests.remove(req));
@@ -202,7 +202,7 @@ public class SnapshotDeleteProcess {
             File path0 = path;
 
             for (var meta : locMetas) {
-                GridFutureAdapter<SnapshotDeleteResponse.SnapshotDeleteStatus> perMetaFut = new GridFutureAdapter<>();
+                GridFutureAdapter<SnapshotDeleteResponse> perMetaFut = new GridFutureAdapter<>();
 
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
                     try {
@@ -212,9 +212,9 @@ public class SnapshotDeleteProcess {
                         var byMetaSft = new SnapshotFileTree(kctx, req.snpName, path0.getAbsolutePath(), meta.folderName(),
                             meta.consId);
 
-                        boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, meta.folderName(), foundFlag);
+                        boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, foundFlag);
 
-                        SnapshotDeleteResponse.SnapshotDeleteStatus res;
+                        SnapshotDeleteResponse.SnapshotDeleteStatus status;
 
                         if (foundFlag.get()) {
                             if (deleted && log.isInfoEnabled())
@@ -222,7 +222,7 @@ public class SnapshotDeleteProcess {
                             else if (!deleted)
                                 log.warning("Snapshot deleted not completely [req=" + req + ']');
 
-                            res = deleted
+                            status = deleted
                                 ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
                                 : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
                         }
@@ -230,10 +230,10 @@ public class SnapshotDeleteProcess {
                             if (log.isInfoEnabled())
                                 log.info("Snapshot not found to delete [req=" + req + ']');
 
-                            res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
+                            status = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
                         }
 
-                        perMetaFut.onDone(res);
+                        perMetaFut.onDone(new SnapshotDeleteResponse(status, meta.bltNodes));
                     }
                     catch (Throwable e) {
                         perMetaFut.onDone(e);
@@ -260,7 +260,20 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path, String snpName) {
+    private File resolvePath(@Nullable String path) {
+        var res = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
+
+        if (path != null) {
+            File reqPath = new File(path);
+
+            res = reqPath.isAbsolute() ? reqPath : new File(res, path);
+        }
+
+        return res;
+    }
+
+    /** */
+    private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path) {
         if (path == null)
             return null;
 
@@ -299,21 +312,25 @@ public class SnapshotDeleteProcess {
                 return;
             }
 
-            var completedNodes = new ArrayList<UUID>(results.size());
-            var uncompletedNodes = new ArrayList<UUID>(results.size());
-            var emptyNodes = new ArrayList<UUID>(results.size());
+            Map<UUID, String> completedNodes = U.newHashMap(results.size());
+            Map<UUID, String> uncompletedNodes = U.newHashMap(results.size());
+            Map<UUID, String> emptyNodes = U.newHashMap(results.size());
+            var snpNodes = new HashSet<String>();
 
             results.forEach((nodeId, nodeRes) -> {
-                if (nodeRes.res != null) {
-                    switch (nodeRes.res) {
+                if (!F.isEmpty(nodeRes.nodeIds))
+                    snpNodes.addAll(nodeRes.nodeIds);
+
+                if (nodeRes.status != null) {
+                    switch (nodeRes.status) {
                         case NOT_FOUND:
-                            emptyNodes.add(nodeId);
+                            emptyNodes.put(nodeId, consistentId(nodeId));
                             break;
                         case DELETED:
-                            completedNodes.add(nodeId);
+                            completedNodes.put(nodeId, consistentId(nodeId));
                             break;
                         case PARTLY_DELETED:
-                            uncompletedNodes.add(nodeId);
+                            uncompletedNodes.put(nodeId, consistentId(nodeId));
                             break;
                         default:
                             throw new IgniteIllegalStateException("Unknown snapshot deletion node result, [nodeRes=" +
@@ -322,11 +339,10 @@ public class SnapshotDeleteProcess {
                 }
             });
 
-            clusterOpFut.onDone(new SnapshotDeleteProcessResult(
-                completedNodes.isEmpty() ? null : completedNodes,
-                uncompletedNodes.isEmpty() ? null : uncompletedNodes,
-                emptyNodes.isEmpty() ? null : emptyNodes
-            ));
+            kctx.discovery().baselineNodes(kctx.discovery().topologyVersionEx()).stream()
+                .map(bn -> bn.consistentId().toString()).toList().forEach(snpNodes::remove);
+
+            clusterOpFut.onDone(new SnapshotDeleteProcessResult(completedNodes, uncompletedNodes, emptyNodes, snpNodes));
         }
         catch (Throwable t) {
             clusterOpFut.onDone(t);
@@ -334,8 +350,22 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
+    private String consistentId(UUID nodeId) {
+        var node = kctx.discovery().node(nodeId);
+
+        if (node == null)
+            node = kctx.discovery().historicalNode(nodeId);
+
+        return node == null ? "" : node.consistentId().toString();
+    }
+
+    /** */
     public boolean isDeleting(String snpName, @Nullable String snpPath) {
-        return requests.contains(new SnapshotDeleteRequest(null, snpName, snpPath));
+        var rq = new SnapshotDeleteRequest(null, snpName, snpPath);
+
+        rq.resolvedPath = resolvePath(rq.snpPath);
+
+        return requests.contains(rq);
     }
 
     /**
@@ -360,20 +390,28 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private static class MetaFuturesReducer implements IgniteReducer<SnapshotDeleteResponse.SnapshotDeleteStatus, SnapshotDeleteResponse> {
+    private static class MetaFuturesReducer implements IgniteReducer<SnapshotDeleteResponse, SnapshotDeleteResponse> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus res = null;
+        private @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status;
+
+        /** */
+        private final Collection<String> nodeIds = new HashSet<>();
 
         /** {@inheritDoc} */
-        @Override public boolean collect(@Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status) {
+        @Override public boolean collect(SnapshotDeleteResponse res) {
+            assert res != null;
+
             synchronized (this) {
-                if (res == null || res == status)
-                    res = status;
+                if (!F.isEmpty(res.nodeIds))
+                    nodeIds.addAll(res.nodeIds);
+
+                if (status == null || status == res.status)
+                    status = res.status;
                 else
-                    res = SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+                    status = SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
             }
 
             return true;
@@ -381,7 +419,7 @@ public class SnapshotDeleteProcess {
 
         /** {@inheritDoc} */
         @Override public SnapshotDeleteResponse reduce() {
-            return new SnapshotDeleteResponse(res == null ? SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND : res);
+            return new SnapshotDeleteResponse(status == null ? SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND : status, nodeIds);
         }
     }
 }

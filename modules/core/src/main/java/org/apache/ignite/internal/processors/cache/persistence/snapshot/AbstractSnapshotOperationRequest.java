@@ -79,7 +79,7 @@ abstract class AbstractSnapshotOperationRequest implements Message {
         Collection<UUID> nodes
     ) {
         this.reqId = reqId;
-        this.snpName = snpName;
+        this.snpName = snpName.trim();
         this.grps = grps;
         this.snpPath = snpPath;
         this.nodes = new HashSet<>(nodes);

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
@@ -48,6 +51,10 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
     /** */
     public static final String NOT_FOUND_PREF = "Snapshot not found on current server nodes.";
 
+    /** */
+    public static final String MISSING_BASELINES = "WARNING: the snapshot's baseline nodes with the following consistent " +
+        "ids are missing in current cluster ";
+
     /** {@inheritDoc} */
     @Override public String description() {
         return DESC;
@@ -70,9 +77,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!F.isEmpty(res.uncompletedNodes())) {
             found = true;
 
-            var nodes = res.uncompletedNodes();
-
-            printer.accept(UNSURED_DELETION_PREF + "cnt=" + nodes.size() + "]: " + nodes);
+            printer.accept(UNSURED_DELETION_PREF + nodeIdPairsStrLst(res.uncompletedNodes()));
 
             printer.accept("");
         }
@@ -80,18 +85,16 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!F.isEmpty(res.completedNodes())) {
             found = true;
 
-            var nodes = res.completedNodes();
-
-            printer.accept(REMOVED_PREF + "cnt=" + nodes.size() + "]: " + nodes);
-
+            printer.accept(REMOVED_PREF + nodeIdPairsStrLst(res.completedNodes()));
             printer.accept("");
         }
 
         if (found) {
-            var nodes = res.completedNodes();
-
             if (!F.isEmpty(res.emptyNodes()))
-                printer.accept(SOME_NODES_NOT_FOUND_PREF + "cnt=" + nodes.size() + "]: " + nodes);
+                printer.accept(SOME_NODES_NOT_FOUND_PREF + nodeIdPairsStrLst(res.emptyNodes()));
+
+            if (!F.isEmpty(res.absentBaselines()))
+                printer.accept(MISSING_BASELINES + nodeIdsStrLst(res.absentBaselines()));
         }
         else {
             assert !F.isEmpty(res.emptyNodes());
@@ -100,13 +103,25 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         }
     }
 
+    /** */
+    private static String nodeIdPairsStrLst(Map<UUID, String> uuids) {
+        return "[cnt=" + uuids.size() + "]: " + uuids.entrySet().stream()
+            .map(e -> e.getValue() + " [uuid=" + e.getKey() + ']')
+            .collect(Collectors.joining(", "));
+    }
+
+    /** */
+    private static String nodeIdsStrLst(Collection<String> uuids) {
+        return "[cnt=" + uuids.size() + "]: " + String.join(", ", uuids);
+    }
+
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "This operation will completelly remove snapshot: '" + arg.snapshotName() +
+        return "This operation will completely remove snapshot: '" + arg.snapshotName() +
             "' and all its incrementals from all online server nodes." +
             U.nl() + U.nl() +
             "NOTE: Snapshot data on offline server nodes will remain untouched." +
             U.nl() + U.nl() +
-            "The operation is irreversible.";
+            "The operation cannot be reverted.";
     }
 }

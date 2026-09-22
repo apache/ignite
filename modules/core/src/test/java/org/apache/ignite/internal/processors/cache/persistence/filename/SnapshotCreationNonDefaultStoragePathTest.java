@@ -88,8 +88,9 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
             assertTrue(sft.nodeStorage().getAbsolutePath() + " must not extists", !sft.nodeStorage().exists());
 
-            for (File es : sft.extraStorages().values())
+            for (File es : sft.extraStorages().values()) {
                 assertTrue(es.getAbsolutePath() + " must not extists", !es.exists());
+            }
         }
 
         U.delete(srvExtraSnpRoot);

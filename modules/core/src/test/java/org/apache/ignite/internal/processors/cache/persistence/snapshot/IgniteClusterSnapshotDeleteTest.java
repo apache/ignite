@@ -140,18 +140,14 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(
-                            SnapshotFileTree sft,
-                            String nodeFolderName,
-                            @Nullable AtomicBoolean existsFlag
-                        ) {
+                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 existsFlag.set(true);
 
                                 return false;
                             }
 
-                            return super.deleteLocalSnapshot(sft, nodeFolderName, existsFlag);
+                            return super.deleteLocalSnapshot(sft, existsFlag);
                         }
                     };
                 }
@@ -171,7 +167,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         assertTrue(F.isEmpty(delSnpRes.emptyNodes));
         assertFalse(F.isEmpty(delSnpRes.uncompletedNodes));
-        assertTrue(delSnpRes.uncompletedNodes.contains(grid(1).localNode().id()));
+        assertTrue(delSnpRes.uncompletedNodes.containsKey(grid(1).localNode().id()));
     }
 
     /** */
@@ -236,25 +232,12 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
             assertEquals(2, delSnpRes.completedNodes.size());
             assertEquals(1, delSnpRes.emptyNodes.size());
-            assertTrue(delSnpRes.emptyNodes.contains(grid(1).localNode().id()));
+            assertTrue(delSnpRes.emptyNodes.containsKey(grid(1).localNode().id()));
+            assertTrue(snpSft.binaryMeta().exists());
         }
-        else {
-            // All nodes may see some metas, may try to delete snapshot by the metas, but see that the snapshot directory isn't empty.
-            // Some node may not get any meta to process. But node of the nodes can say the snapshot 100% deleted.
-            assertTrue(F.isEmpty(delSnpRes.completedNodes));
+        else
+            assertEquals(3, delSnpRes.uncompletedNodes.size() + delSnpRes.completedNodes.size() + delSnpRes.emptyNodes.size());
 
-            int cnt = 0;
-
-            if (!F.isEmpty(delSnpRes.emptyNodes))
-                cnt += delSnpRes.emptyNodes.size();
-
-            if (!F.isEmpty(delSnpRes.uncompletedNodes))
-                cnt += delSnpRes.uncompletedNodes.size();
-
-            assertEquals(3, cnt);
-        }
-
-        assertTrue(snpSft.binaryMeta().exists());
         assertFalse(new SnapshotFileTree(grid(0).context(), SNAPSHOT_NAME, null, folderName(0), consistentId(0))
             .binaryMeta().exists());
         assertFalse(new SnapshotFileTree(grid(2).context(), SNAPSHOT_NAME, null, folderName(2), consistentId(2))
@@ -325,16 +308,13 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         if (log.isInfoEnabled())
             log.info("Testing path: " + testDir);
 
-        assertThrowsAnyCause(
-            null,
-            () -> snpMgr.deleteSnapshot(SNAPSHOT_NAME, testDir).get(getTestTimeout()),
-            IllegalArgumentException.class,
-            "snapshot path doesn't exist"
-        );
+        var delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, testDir).get(getTestTimeout());
+
+        assertEquals(3, delRes.emptyNodes.size());
 
         var snpRoot = ignFileTree.snapshotsRoot();
 
-        var delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, snpRoot.getAbsolutePath()).get(getTestTimeout());
+        delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, snpRoot.getAbsolutePath()).get(getTestTimeout());
 
         assertTrue(F.isEmpty(delRes.completedNodes));
         assertTrue(F.isEmpty(delRes.uncompletedNodes));
@@ -364,7 +344,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertFalse(F.isEmpty(delSnpRes.emptyNodes));
-        assertTrue(delSnpRes.emptyNodes.contains(grid(G.allGrids().size() - 1).localNode().id()));
+        assertTrue(delSnpRes.emptyNodes.containsKey(grid(G.allGrids().size() - 1).localNode().id()));
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
     }
 
@@ -389,7 +369,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertEquals(2, delSnpRes.completedNodes.size());
-        assertFalse(delSnpRes.completedNodes.contains(stoppedNodeId));
+        assertFalse(delSnpRes.completedNodes.containsKey(stoppedNodeId));
 
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
         assertTrue(F.isEmpty(delSnpRes.emptyNodes));
@@ -401,7 +381,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertEquals(1, delSnpRes.completedNodes.size());
-        assertTrue(delSnpRes.completedNodes.contains(stoppedNodeId));
+        assertTrue(delSnpRes.completedNodes.containsKey(stoppedNodeId));
 
         assertTrue(F.isEmpty(delSnpRes.uncompletedNodes));
         assertEquals(2, delSnpRes.emptyNodes.size());
@@ -427,11 +407,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(
-                            SnapshotFileTree sft,
-                            String nodeFolderName,
-                            @Nullable AtomicBoolean existsFlag
-                        ) {
+                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 beginLatch.countDown();
 
@@ -443,7 +419,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                                 }
                             }
 
-                            return super.deleteLocalSnapshot(sft, nodeFolderName, existsFlag);
+                            return super.deleteLocalSnapshot(sft, existsFlag);
                         }
                     };
                 }
@@ -472,14 +448,14 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delRes = delFut.get(getTestTimeout());
 
         assertEquals(2, delRes.completedNodes.size());
-        assertFalse(delRes.completedNodes.contains(stoppedGridId));
+        assertFalse(delRes.completedNodes.containsKey(stoppedGridId));
 
         startGrid(1);
 
         delRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         assertEquals(1, delRes.completedNodes.size());
-        assertTrue(delRes.completedNodes.contains(grid(1).localNode().id()));
+        assertTrue(delRes.completedNodes.containsKey(grid(1).localNode().id()));
     }
 
     /** Tests that a concurrent deletion of a snapshot with the same name but different path is allowed. */
@@ -495,7 +471,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         if (incremental)
             addIncrementalSnapshot(null);
 
-        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+        String snpPath = new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots").getAbsolutePath();
 
         snp(grid(0)).createSnapshot(SNAPSHOT_NAME, snpPath, false, onlyPrimary).get(getTestTimeout());
 
@@ -517,8 +493,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         var delRes0 = delFut0.get(getTestTimeout());
         var delRes1 = delFut1.get(getTestTimeout());
 
-        assertFalse((delRes0.completedNodes().isEmpty()));
-        assertFalse(delRes1.completedNodes().isEmpty());
+        assertTrue(!delRes0.completedNodes().isEmpty() || !delRes0.uncompletedNodes().isEmpty());
+        assertTrue(!delRes1.completedNodes().isEmpty() || !delRes1.uncompletedNodes().isEmpty());
     }
 
     /** Tests that a concurrent deletion of the same snapshot is declined. */

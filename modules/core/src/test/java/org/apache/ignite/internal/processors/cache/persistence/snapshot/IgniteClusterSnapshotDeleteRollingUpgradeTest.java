@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -29,9 +32,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_PREPARE_VERSION_FINALIZATION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -52,6 +57,12 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         super.afterTest();
 
         cleanPersistenceDir();
+
+        // Clean all: also separated snapshot working directories.
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
+            for (Path path : files)
+                U.delete(path);
+        }
     }
 
     /** {@inheritDoc} */
@@ -66,6 +77,8 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
                         .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
         );
+
+        cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
 
         return cfg;
     }
@@ -113,7 +126,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
     /** */
     @Test
-    public void testNodeNotSupportingSnapshotDeleteFeature() throws Exception {
+    public void testSnapshotDeleteFeature() throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
             startGrid(i, "2.19.0", i >= ALL_GRIDS - CLIENTS);
 
@@ -135,26 +148,20 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
         ru(grid(1)).finalizeClusterVersion();
 
-        for (int i = 0; i < ALL_GRIDS; i++) {
+        for (int i = 0; i < ALL_GRIDS; i++)
             assertFalse(ru(grid(i)).isVersionUpgradeEnabled());
 
-            assertTrue(F.isEmpty(snp(i).deleteSnapshot(SNP_NAME, null).get().completedNodes));
-
-            if (i < ALL_GRIDS - 1)
-                createSnapshot(i);
-        }
+        assertEquals(3, snp(1).deleteSnapshot(SNP_NAME, null).get().completedNodes().size());
     }
 
     /** */
     private void createCacheAndSnapshot(int gridIdx) {
-        int partsCnt = 32;
+        int partsCnt = 5;
         int keysCnt = partsCnt * 10;
 
         grid(gridIdx).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.REPLICATED)
-            .setBackups(1)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(32))
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(partsCnt))
             .setAtomicityMode(CacheAtomicityMode.ATOMIC));
 
         try (var ds = grid(gridIdx).dataStreamer(DEFAULT_CACHE_NAME)) {

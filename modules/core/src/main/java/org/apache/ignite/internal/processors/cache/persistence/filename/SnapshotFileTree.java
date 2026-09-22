@@ -51,7 +51,7 @@ public class SnapshotFileTree extends NodeFileTree {
     private static final String DELTA_IDX_SUFFIX = ".idx";
 
     /** Snapshot metafile extension. */
-    private static final String SNAPSHOT_METAFILE_EXT = ".smf";
+    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
     /** File name template consists of delta pages. */
     private static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
@@ -455,33 +455,6 @@ public class SnapshotFileTree extends NodeFileTree {
         res.extraStorages.putAll(snpTmpExtraStorages);
 
         return res;
-    }
-
-    /** */
-    public static boolean isSnapshotFile(File f) {
-        if (f.isDirectory())
-            return true;
-
-        int idx = f.getName().indexOf('.');
-
-        if (idx < 1)
-            return false;
-
-        String ext = f.getName().substring(idx);
-
-        switch (ext) {
-            case DELTA_IDX_SUFFIX:
-            case DELTA_SUFFIX:
-            case SNAPSHOT_METAFILE_EXT:
-            case DUMP_FILE_EXT:
-            case DUMP_LOCK:
-            case WAL_SEGMENT_FILE_EXT:
-            case FILE_SUFFIX:
-            case ".dat":
-                return true;
-        }
-
-        return false;
     }
 
     /** {@inheritDoc} */

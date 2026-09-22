@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -43,6 +45,9 @@ public class SnapshotDeleteRequest implements Message {
     @Order(2)
     @Nullable String snpPath;
 
+    /** Resolved absolute path. Transient */
+    @Nullable File resolvedPath;
+
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteRequest() {
         // No-op.
@@ -55,7 +60,14 @@ public class SnapshotDeleteRequest implements Message {
      */
     SnapshotDeleteRequest(UUID reqId, String snpName, @Nullable String snpPath) {
         this.reqId = reqId;
-        this.snpName = snpName;
+        this.snpName = snpName.trim();
+
+        // A protection against empty relative paths like "  ".
+        if (!F.isEmpty(snpPath))
+            snpPath = snpPath.trim();
+
+        snpPath = F.isEmpty(snpPath) ? null : snpPath;
+
         this.snpPath = snpPath;
     }
 
@@ -66,12 +78,12 @@ public class SnapshotDeleteRequest implements Message {
 
         SnapshotDeleteRequest other = (SnapshotDeleteRequest)o;
 
-        return snpName.equals(other.snpName) && Objects.equals(snpPath, other.snpPath);
+        return snpName.equalsIgnoreCase(other.snpName) && Objects.equals(resolvedPath, other.resolvedPath);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(snpName, snpPath);
+        return Objects.hash(snpName.toLowerCase(), resolvedPath);
     }
 
     /** {@inheritDoc} */
