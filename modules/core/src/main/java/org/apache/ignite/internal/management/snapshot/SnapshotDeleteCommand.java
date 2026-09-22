@@ -21,10 +21,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -42,20 +42,22 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         "remove it completely ";
 
     /** */
-    public static final String REMOVED_PREF = "Snapshot removal is completed on: ";
+    public static final String REMOVED_PREF = "Snapshot removal is completed on ";
 
     /** */
-    public static final String SOME_NODES_NOT_FOUND_PREF = "NOTE: the following nodes can't find any snapshot data, " +
+    public static final String NODE_NOT_FOUND_PREF = "NOTE: the following nodes can't find any snapshot data, " +
         "operation skipped ";
 
     /** */
-    public static final String NOT_FOUND_PREF = "Snapshot not found on current server nodes.";
+    public static final String NOT_FOUND_PREF = "Snapshot not found on current server nodes ";
 
     /** */
     public static final String MISSING_BASELINES = "WARNING: the snapshot's baseline nodes with the following consistent " +
         "ids are missing in current cluster ";
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public String description() {
         return DESC;
     }
@@ -74,7 +76,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
     @Override public void printResult(SnapshotDeleteCommandArg arg, SnapshotDeleteProcessResult res, Consumer<String> printer) {
         boolean found = false;
 
-        if (!F.isEmpty(res.uncompletedNodes())) {
+        if (!res.uncompletedNodes().isEmpty()) {
             found = true;
 
             printer.accept(UNSURED_DELETION_PREF + nodeIdPairsStrLst(res.uncompletedNodes()));
@@ -82,7 +84,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
             printer.accept("");
         }
 
-        if (!F.isEmpty(res.completedNodes())) {
+        if (!res.completedNodes().isEmpty()) {
             found = true;
 
             printer.accept(REMOVED_PREF + nodeIdPairsStrLst(res.completedNodes()));
@@ -90,14 +92,14 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         }
 
         if (found) {
-            if (!F.isEmpty(res.emptyNodes()))
-                printer.accept(SOME_NODES_NOT_FOUND_PREF + nodeIdPairsStrLst(res.emptyNodes()));
+            if (!res.emptyNodes().isEmpty())
+                printer.accept(NODE_NOT_FOUND_PREF + nodeIdPairsStrLst(res.emptyNodes()));
 
-            if (!F.isEmpty(res.absentBaselines()))
+            if (!res.absentBaselines().isEmpty())
                 printer.accept(MISSING_BASELINES + nodeIdsStrLst(res.absentBaselines()));
         }
         else {
-            assert !F.isEmpty(res.emptyNodes());
+            assert !res.emptyNodes().isEmpty();
 
             printer.accept(NOT_FOUND_PREF);
         }
@@ -117,8 +119,8 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "This operation will completely remove snapshot: '" + arg.snapshotName() +
-            "' and all its incrementals from all online server nodes." +
+        return "This operation will completely remove snapshot: '" + arg.snapshotName() + "' and all its incrementals " +
+            "from all online server nodes." +
             U.nl() + U.nl() +
             "NOTE: Snapshot data on offline server nodes will remain untouched." +
             U.nl() + U.nl() +

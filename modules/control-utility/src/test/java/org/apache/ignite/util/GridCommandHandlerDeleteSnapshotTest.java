@@ -25,6 +25,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.snapshot.SnapshotDeleteCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -201,9 +202,9 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
 
         String out = testOut.toString();
 
-        assertFalse(out.contains("Snapshot removed on the following nodes"));
-        assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
-        assertTrue(out.contains("Snapshot not found on current server nodes"));
+        assertFalse(out.contains(SnapshotDeleteCommand.REMOVED_PREF));
+        assertFalse(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF));
+        assertTrue(out.contains(SnapshotDeleteCommand.NOT_FOUND_PREF));
 
         testOut.reset();
         assertTrue(testOut.toString().isEmpty());
@@ -218,23 +219,22 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         out = testOut.toString();
 
         if (changeBaseline)
-            assertTrue(out.contains("consistent ids are missing in current cluster [cnt=1]: " + baselineGone));
+            assertTrue(out.contains(SnapshotDeleteCommand.MISSING_BASELINES + "[cnt=1]: " + baselineGone));
 
         if (separatedWorkDir) {
             // When the nodes use own separated work directory, we expect a strict result.
-            assertTrue(out.contains("Snapshot removal is completed on [cnt=%d]:".formatted(initNodes)));
+            assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF + "[cnt=%d]:".formatted(initNodes)));
 
             if (extraNodeIsServer == 1)
-                assertTrue(out.contains("the following nodes didn't find any snapshot data, nothing to delete [cnt=1]:"));
+                assertTrue(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF + "[cnt=1]:"));
             else if (extraNodeIsServer == 0)
-                assertFalse(out.contains("the following nodes didn't find any snapshot data, nothing to delete"));
+                assertFalse(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF));
         }
         else {
             // When nodes use a shared work directory, there is a race for the delete operation. One node can get faster
             // than others and remove snapshot completely quickly. The others might not find snapshot files. We can be
             // only sure that at least one node removes snapshot.
-            assertTrue(out.contains("Snapshot removed on the following nodes [cnt=")
-                || out.contains("the following nodes found snapshot data but might not remove it completely [cnt="));
+            assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF) || out.contains(SnapshotDeleteCommand.UNSURED_DELETION_PREF));
         }
 
         assertFalse(out.contains("Snapshot not found on current server nodes"));
