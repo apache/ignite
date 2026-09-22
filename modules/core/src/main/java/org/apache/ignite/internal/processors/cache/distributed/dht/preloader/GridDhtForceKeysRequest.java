@@ -17,23 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Force keys request. This message is sent by node while preloading to force another node to put given keys into the
@@ -41,18 +34,21 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Keys to request. */
+    @Order(2)
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private Collection<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
-    private AffinityTopologyVersion topVer;
+    @Order(3)
+    AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor.
@@ -67,15 +63,13 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
      * @param miniId Mini-future ID.
      * @param keys Keys.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info.
      */
     GridDhtForceKeysRequest(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
         Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -86,7 +80,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         this.miniId = miniId;
         this.keys = keys;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -118,24 +111,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
@@ -147,99 +122,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         return keys.size();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeIgniteUuid(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                keys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                miniId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 42;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

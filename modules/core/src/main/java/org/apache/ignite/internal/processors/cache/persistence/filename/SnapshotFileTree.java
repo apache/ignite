@@ -134,7 +134,7 @@ public class SnapshotFileTree extends NodeFileTree {
         this.path = path;
         this.consId = consId;
 
-        Map<String, File> snpExtraStorages = snapshotExtraStorages(ft, cfg.getSnapshotPath());
+        Map<String, File> snpExtraStorages = snapshotExtraStorages(ft, cfg);
 
         if (snpExtraStorages.isEmpty())
             extraStorages.clear();
@@ -380,27 +380,54 @@ public class SnapshotFileTree extends NodeFileTree {
      * This will distribute workload to all physical device on host.
      *
      * @param ft Node file tree.
-     * @param snpDfltPath Snapshot default path.
+     * @param cfg Ignite configuration.
      */
-    private Map<String, File> snapshotExtraStorages(NodeFileTree ft, String snpDfltPath) {
+    private Map<String, File> snapshotExtraStorages(NodeFileTree ft, IgniteConfiguration cfg) {
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
         // If path provided then create snapshot inside it, only.
-        // Same rule applies if absolute path to the snapshot root dir configured.
-        if (path != null || new File(snpDfltPath).isAbsolute())
+        if (path != null || dsCfg == null)
             return Collections.emptyMap();
 
-        Map<String, File> snpExtraStorages = new HashMap<>();
+        String[] extraStorages = dsCfg.getExtraStoragePaths();
 
-        ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
-            // In case we want to make snapshot in several folders the paths will be the following:
-            // {storage_path}/db/{folder_name} - node cache storage.
-            // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
-            snpExtraStorages.put(
-                cfgStoragePath,
-                new File(storagePath.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
-            );
-        });
+        if (extraStorages == null)
+            return Collections.emptyMap();
 
-        return snpExtraStorages;
+        String[] extraSnpPaths = dsCfg.getExtraSnapshotPaths();
+
+        boolean hasExtraSnpPaths = extraSnpPaths != null && extraSnpPaths.length > 0;
+
+        String snpDfltPath = cfg.getSnapshotPath();
+
+        boolean snpDfltPathAbsolute = new File(snpDfltPath).isAbsolute();
+
+        // If absolute path to the snapshot root dir configured and no extra snapshot paths, then use snapshot root, only.
+        if (snpDfltPathAbsolute && !hasExtraSnpPaths)
+            return Collections.emptyMap();
+
+        Map<String, File> snpRoots = new HashMap<>();
+
+        String snpUniqSuffix = snpDfltPathAbsolute
+            ? Path.of(name, DB_DIR, folderName()).toString()
+            : Path.of(snpDfltPath, name, DB_DIR, folderName()).toString();
+
+        for (int i = 0; i < extraStorages.length; i++) {
+            File snpRoot = hasExtraSnpPaths
+                // Extra snapshot paths configured as "root" related.
+                // folderName can be different from local (NodeFileTree ft) one in case snapshot restored on smaller topology
+                // and data from some node copied to local.
+                // resolveDirectory returns in form {root}/{extra_snp_path}/{folder_name} so parent required.
+                ? ft.resolveDirectory(extraSnpPaths[i]).getParentFile()
+                // In case we want to make snapshot in several folders the paths will be the following:
+                // {storage_path}/db/{folder_name} - node cache storage.
+                // {storage_path} - snapshot root.
+                : ft.extraStorages.get(extraStorages[i]).getParentFile().getParentFile();
+
+            snpRoots.put(extraStorages[i], new File(snpRoot, snpUniqSuffix));
+        }
+
+        return snpRoots;
     }
 
     /**

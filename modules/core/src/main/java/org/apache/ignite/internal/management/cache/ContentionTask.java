@@ -81,9 +81,7 @@ public class ContentionTask extends VisorMultiNodeTask<CacheContentionCommandArg
 
                 ignite.context().resource().injectGeneric(clo);
 
-                ContentionInfo info = clo.call();
-
-                return new ContentionJobResult(info);
+                return clo.call();
             }
             catch (Exception e) {
                 throw new IgniteException(e);

@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Marshalled;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,47 +27,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridTaskResultResponse implements Message {
     /** Result. */
-    @GridDirectTransient
-    private Object res;
+    @Marshalled("resBytes")
+    public @Nullable Object res;
 
     /** Serialized result. */
-    private byte[] resBytes;
+    @Order(0)
+    @Nullable byte[] resBytes;
 
     /** Finished flag. */
-    private boolean finished;
+    @Order(1)
+    boolean finished;
 
     /** Flag indicating that task has ever been launched on node. */
-    private boolean found;
+    @Order(2)
+    boolean found;
 
     /** Error. */
-    private String err;
+    @Order(3)
+    String err;
 
     /**
      * @return Task result.
      */
     @Nullable public Object result() {
         return res;
-    }
-
-    /**
-     * @param res Task result.
-     */
-    public void result(@Nullable Object res) {
-        this.res = res;
-    }
-
-    /**
-     * @param resBytes Serialized result.
-     */
-    public void resultBytes(byte[] resBytes) {
-        this.resBytes = resBytes;
-    }
-
-    /**
-     * @return Serialized result.
-     */
-    public byte[] resultBytes() {
-        return resBytes;
     }
 
     /**
@@ -114,96 +95,4 @@ public class GridTaskResultResponse implements Message {
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString(err))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean(finished))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(found))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByteArray(resBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                err = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                finished = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                found = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                resBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 77;
-    }
 }

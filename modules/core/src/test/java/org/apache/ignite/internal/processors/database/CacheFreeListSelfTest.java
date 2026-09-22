@@ -40,7 +40,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -54,8 +53,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVers
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -297,7 +294,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                 Random rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 200_000; i++) {
+                for (int i = 0; i < GridTestUtils.SF.applyLB(200_000, 50_000); i++) {
                     boolean grow0 = grow.get();
 
                     if (grow0) {
@@ -685,7 +682,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(CacheObjectContext ctx) {
+        @Override public int valueBytesLength(CacheObjectValueContext ctx) {
             return data.length;
         }
 
@@ -721,46 +718,20 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+        @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
             assert false;
 
             return this;
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
+        @Override public void unmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
             throws IgniteCheckedException {
             assert false;
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
-            assert false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            assert false;
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            assert false;
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            assert false;
-
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
+        @Override public void marshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             assert false;
         }
     }

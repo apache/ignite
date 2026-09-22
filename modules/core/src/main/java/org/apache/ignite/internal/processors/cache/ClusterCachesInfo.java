@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
-import java.io.Serializable;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,8 +57,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
-import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -70,6 +67,8 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.systemview.CacheGroupViewWalker;
+import org.apache.ignite.internal.systemview.CacheViewWalker;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -82,6 +81,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
@@ -173,6 +173,9 @@ public class ClusterCachesInfo {
 
     /** Flag that caches were already filtered out. */
     private final AtomicBoolean alreadyFiltered = new AtomicBoolean();
+
+    /** */
+    @Nullable private volatile ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData;
 
     /**
      * @param ctx Context.
@@ -298,7 +301,7 @@ public class ClusterCachesInfo {
 
         Map<String, CacheConfiguration> grpCfgs = new HashMap<>();
 
-        for (CacheJoinNodeDiscoveryData.CacheInfo info : joinDiscoData.caches().values()) {
+        for (CacheJoinInfo info : joinDiscoData.caches().values()) {
             if (info.cacheData().config().getGroupName() == null)
                 continue;
 
@@ -327,7 +330,7 @@ public class ClusterCachesInfo {
         if (gridData != null && gridData.joinDiscoData != null) {
             CacheJoinNodeDiscoveryData joinDiscoData = gridData.joinDiscoData;
 
-            for (CacheJoinNodeDiscoveryData.CacheInfo locCacheInfo : joinDiscoData.caches().values()) {
+            for (CacheJoinInfo locCacheInfo : joinDiscoData.caches().values()) {
                 CacheConfiguration locCfg = locCacheInfo.cacheData().config();
 
                 CacheData cacheData = gridData.gridData.caches().get(locCfg.getName());
@@ -385,7 +388,7 @@ public class ClusterCachesInfo {
      * @throws IgniteCheckedException If check failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
+    private void checkCache(CacheJoinInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
         GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.cacheConfigurationEnrichment());
         GridCacheAttributes locAttr =
@@ -406,8 +409,11 @@ public class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
             "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
 
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator",
-            "Cache topology validator", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidatorClass",
+            "Cache topology validator class", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator", "Cache topology validator",
+            locAttr.configuration().getTopologyValidator(), rmtAttr.configuration().getTopologyValidator(), true);
 
         ClusterNode rmtNode = ctx.discovery().node(rmt);
 
@@ -427,6 +433,8 @@ public class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityPartitionsCount",
             "Affinity partitions count", locAttr.affinityPartitionsCount(),
             rmtAttr.affinityPartitionsCount(), true);
+
+        // TODO IGNITE-26967 - implement validation of affinity backup filter.
 
         CU.validateKeyConfigiration(rmtAttr.groupName(), rmtAttr.cacheName(), rmt, rmtAttr.configuration().getKeyConfiguration(),
             locAttr.configuration().getKeyConfiguration(), log, true);
@@ -1153,7 +1161,7 @@ public class ClusterCachesInfo {
             req.initiatingNodeId(),
             req.deploymentId(),
             req.encryptionKey(),
-            req.encryptionKeyId(),
+            req.encryptionKeyId() < 0 ? null : req.encryptionKeyId(),
             req.cacheConfigurationEnrichment()
         );
 
@@ -1269,37 +1277,22 @@ public class ClusterCachesInfo {
     /**
      * @return Discovery date sent on local node join.
      */
-    private Serializable joinDiscoveryData() {
+    private Message joinDiscoveryData() {
         if (cachesOnDisconnect != null) {
-            Map<Integer, CacheClientReconnectDiscoveryData.CacheGroupInfo> cacheGrpsInfo = new HashMap<>();
-            Map<String, CacheClientReconnectDiscoveryData.CacheInfo> cachesInfo = new HashMap<>();
+            Map<String, CacheReconnectInfo> cachesInfo = new HashMap<>();
 
-            Map<Integer, CacheGroupDescriptor> grps = cachesOnDisconnect.cacheGrps;
             Map<String, DynamicCacheDescriptor> caches = cachesOnDisconnect.caches;
 
-            for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
-                CacheGroupDescriptor desc = grps.get(grp.groupId());
-
-                assert desc != null : grp.cacheOrGroupName();
-
-                cacheGrpsInfo.put(grp.groupId(), new CacheClientReconnectDiscoveryData.CacheGroupInfo(desc.config(),
-                    desc.deploymentId(),
-                    0));
-            }
-
-            for (IgniteInternalCache cache : ctx.cache().caches()) {
+            for (IgniteInternalCache<?, ?> cache : ctx.cache().caches()) {
                 DynamicCacheDescriptor desc = caches.get(cache.name());
 
                 assert desc != null : cache.name();
 
-                cachesInfo.put(cache.name(), new CacheClientReconnectDiscoveryData.CacheInfo(desc.cacheConfiguration(),
-                    desc.cacheType(),
-                    desc.deploymentId(),
-                    cache.context().isNear(),
-                    0));
+                cachesInfo.put(cache.name(), new CacheReconnectInfo(desc.cacheConfiguration().getName(),
+                    desc.deploymentId(), cache.context().isNear()));
             }
 
-            return new CacheClientReconnectDiscoveryData(cacheGrpsInfo, cachesInfo);
+            return new CacheClientReconnectDiscoveryData(cachesInfo);
         }
         else {
             assert joinDiscoData != null;
@@ -1423,7 +1416,6 @@ public class ClusterCachesInfo {
                 grpDesc.startTopologyVersion(),
                 grpDesc.deploymentId(),
                 grpDesc.caches(),
-                0,
                 grpDesc.persistenceEnabled(),
                 grpDesc.walEnabled(),
                 grpDesc.walChangeRequests(),
@@ -1439,7 +1431,6 @@ public class ClusterCachesInfo {
             T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = cfgSplitter.split(desc);
 
             CacheData cacheData = new CacheData(splitCfg.get1(),
-                desc.cacheId(),
                 desc.groupId(),
                 desc.cacheType(),
                 desc.deploymentId(),
@@ -1448,7 +1439,6 @@ public class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 desc.sql(),
                 false,
-                0,
                 splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
@@ -1463,7 +1453,6 @@ public class ClusterCachesInfo {
             CacheData cacheData = new CacheData(
                 splitCfg.get1(),
                 0,
-                0,
                 desc.cacheType(),
                 desc.deploymentId(),
                 desc.schema(),
@@ -1471,20 +1460,18 @@ public class ClusterCachesInfo {
                 desc.staticallyConfigured(),
                 false,
                 true,
-                0,
                 splitCfg.get2() != null ? desc.cacheConfigurationEnrichment() : null
             );
 
             templates.put(desc.cacheName(), cacheData);
         }
 
-        Collection<String> restarting = new HashSet<>(restartingCaches.keySet());
-
         return new CacheNodeCommonDiscoveryData(caches,
             templates,
             cacheGrps,
             ctx.discovery().clientNodesMap(),
-            restarting);
+            clusterCacheGrpRecoveryData
+        );
     }
 
     /**
@@ -1494,10 +1481,9 @@ public class ClusterCachesInfo {
         if (data.commonData() == null)
             return;
 
-        assert joinDiscoData != null || disconnectedState();
-        assert data.commonData() instanceof CacheNodeCommonDiscoveryData : data;
+        CacheNodeCommonDiscoveryData cachesData = data.commonData();
 
-        CacheNodeCommonDiscoveryData cachesData = (CacheNodeCommonDiscoveryData)data.commonData();
+        assert joinDiscoData != null || disconnectedState();
 
         // CacheGroup configurations that were created from local node configuration.
         Map<Integer, CacheGroupDescriptor> locCacheGrps = new HashMap<>(registeredCacheGroups());
@@ -1530,7 +1516,7 @@ public class ClusterCachesInfo {
         String conflictErr = null;
 
         if (joinDiscoData != null) {
-            for (Map.Entry<String, CacheJoinNodeDiscoveryData.CacheInfo> e : joinDiscoData.caches().entrySet()) {
+            for (Map.Entry<String, CacheJoinInfo> e : joinDiscoData.caches().entrySet()) {
                 if (!registeredCaches.containsKey(e.getKey())) {
                     conflictErr = checkCacheConflict(e.getValue().cacheData().config(), true);
 
@@ -1580,6 +1566,14 @@ public class ClusterCachesInfo {
             assert grpDesc != null : cacheData.cacheConfiguration().getName();
 
             CacheConfiguration<?, ?> cfg = cacheData.cacheConfiguration();
+
+            // CacheGroupData and CacheData are marshalled as separate byte[] blobs, so on receipt the cache
+            // config's AffinityFunction is a different instance from the group config's. With JDK serialization
+            // this was transparent — the shared object graph kept reference identity across the wire.
+            // Restore it here so GridCacheProcessor.lifecycleAwares() does not start/stop the affinity twice
+            // (it compares group and cache affinity by != and adds per-cache affinity to the lifecycle
+            // list only when they differ).
+            cfg.setAffinity(grpDesc.config().getAffinity());
 
             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
                 ctx,
@@ -1716,6 +1710,8 @@ public class ClusterCachesInfo {
                 grpData.config().getNodeFilter(),
                 grpData.config().getCacheMode());
         }
+
+        clusterCacheGrpRecoveryData = cachesData.clusterCacheGroupRecoveryData();
     }
 
     /**
@@ -1800,7 +1796,7 @@ public class ClusterCachesInfo {
         if (joinDiscoData == null)
             return Collections.emptyList();
 
-        CacheJoinNodeDiscoveryData.CacheInfo cacheInfo = joinDiscoData.caches().get(cacheName);
+        CacheJoinInfo cacheInfo = joinDiscoData.caches().get(cacheName);
 
         if (cacheInfo == null)
             return Collections.emptyList();
@@ -1837,7 +1833,7 @@ public class ClusterCachesInfo {
                 if (reconnect && surviveReconnect(cfg.getName()) && cachesOnDisconnect.state.active() && active)
                     continue;
 
-                CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
+                CacheJoinInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
                 NearCacheConfiguration nearCfg = null;
 
@@ -2026,20 +2022,18 @@ public class ClusterCachesInfo {
      */
     public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
-            Serializable joiningNodeData = data.joiningNodeData();
-
-            if (joiningNodeData instanceof CacheClientReconnectDiscoveryData) {
+            if (data.joiningNodeData() instanceof CacheClientReconnectDiscoveryData reconData) {
                 if (disconnectedState()) {
                     if (clientReconnectReqs == null)
                         clientReconnectReqs = new LinkedHashMap<>();
 
-                    clientReconnectReqs.put(data.joiningNodeId(), (CacheClientReconnectDiscoveryData)joiningNodeData);
+                    clientReconnectReqs.put(data.joiningNodeId(), reconData);
                 }
                 else
-                    processClientReconnectData((CacheClientReconnectDiscoveryData)joiningNodeData, data.joiningNodeId());
+                    processClientReconnectData(reconData, data.joiningNodeId());
             }
-            else if (joiningNodeData instanceof CacheJoinNodeDiscoveryData)
-                processJoiningNode((CacheJoinNodeDiscoveryData)joiningNodeData, data.joiningNodeId(), false);
+            else if (data.joiningNodeData() instanceof CacheJoinNodeDiscoveryData joinData)
+                processJoiningNode(joinData, data.joiningNodeId(), false);
         }
     }
 
@@ -2050,15 +2044,11 @@ public class ClusterCachesInfo {
      */
     public String validateJoiningNodeData(DiscoveryDataBag.JoiningNodeDiscoveryData data, boolean joiningNodeClient) {
         if (data.hasJoiningNodeData()) {
-            Serializable joiningNodeData = data.joiningNodeData();
-
-            if (joiningNodeData instanceof CacheJoinNodeDiscoveryData) {
-                CacheJoinNodeDiscoveryData joinData = (CacheJoinNodeDiscoveryData)joiningNodeData;
-
+            if (data.joiningNodeData() instanceof CacheJoinNodeDiscoveryData joinData) {
                 Set<String> problemCaches = null;
                 Set<String> encClientCaches = null;
 
-                for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
+                for (CacheJoinInfo cacheInfo : joinData.caches().values()) {
                     CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
                     if (!registeredCaches.containsKey(cfg.getName())) {
@@ -2114,16 +2104,16 @@ public class ClusterCachesInfo {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (state.state().active() && !state.transition()) {
-            for (CacheClientReconnectDiscoveryData.CacheInfo cacheInfo : clientData.clientCaches().values()) {
-                String cacheName = cacheInfo.config().getName();
+            for (CacheReconnectInfo cacheReconnectInfo : clientData.clientCaches().values()) {
+                String cacheName = cacheReconnectInfo.cacheName();
 
                 if (surviveReconnect(cacheName))
                     ctx.discovery().addClientNode(cacheName, clientNodeId, false);
                 else {
                     DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
-                    if (desc != null && desc.deploymentId().equals(cacheInfo.deploymentId()))
-                        ctx.discovery().addClientNode(cacheName, clientNodeId, cacheInfo.nearCache());
+                    if (desc != null && desc.deploymentId().equals(cacheReconnectInfo.deploymentId()))
+                        ctx.discovery().addClientNode(cacheName, clientNodeId, cacheReconnectInfo.nearCache());
                 }
             }
         }
@@ -2198,12 +2188,14 @@ public class ClusterCachesInfo {
     private String processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, boolean locJoin) {
         registerNewCacheTemplates(joinData, nodeId);
 
+        processJoiningNodeClusterCacheGroupRecoveryData(joinData.clusterCacheGroupRecoveryData());
+
         Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply = new HashMap<>();
 
         boolean hasSchemaPatchConflict = false;
         boolean active = ctx.state().clusterState().active();
 
-        for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
+        for (CacheJoinInfo cacheInfo : joinData.caches().values()) {
             CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
             if (!registeredCaches.containsKey(cfg.getName())) {
@@ -2265,7 +2257,7 @@ public class ClusterCachesInfo {
     private void registerNewCache(
         CacheJoinNodeDiscoveryData joinData,
         UUID nodeId,
-        CacheJoinNodeDiscoveryData.CacheInfo cacheInfo
+        CacheJoinInfo cacheInfo
     ) {
         CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
@@ -2332,7 +2324,7 @@ public class ClusterCachesInfo {
      * @param nodeId Joining node id.
      */
     private void registerNewCacheTemplates(CacheJoinNodeDiscoveryData joinData, UUID nodeId) {
-        for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.templates().values()) {
+        for (CacheJoinInfo cacheInfo : joinData.templates().values()) {
             CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
             if (!registeredTemplates.containsKey(cfg.getName())) {
@@ -2567,8 +2559,11 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "dataRegionName", "Data region",
             cfg.getDataRegionName(), startCfg.getDataRegionName(), true);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidatorClass", "Topology validator class",
             attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
+            cfg.getTopologyValidator(), startCfg.getTopologyValidator(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "partitionLossPolicy", "Partition Loss Policy",
             cfg.getPartitionLossPolicy(), startCfg.getPartitionLossPolicy(), true);
@@ -2803,6 +2798,32 @@ public class ClusterCachesInfo {
      */
     public void removeRestartingCaches() {
         restartingCaches.clear();
+    }
+
+    /** */
+    @Nullable public ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData() {
+        return clusterCacheGrpRecoveryData;
+    }
+
+    /** */
+    public void clusterCacheGroupRecoveryData(ClusterCacheGroupRecoveryData data) {
+        clusterCacheGrpRecoveryData = data;
+    }
+
+    /** */
+    private void processJoiningNodeClusterCacheGroupRecoveryData(ClusterCacheGroupRecoveryData joiningNodeData) {
+        if (joiningNodeData == null)
+            return;
+
+        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+        if (clusterState.transition() || clusterState.state().active())
+            return;
+
+        ClusterCacheGroupRecoveryData locData = clusterCacheGrpRecoveryData;
+
+        if (locData == null || joiningNodeData.isMoreRelevantThan(locData))
+            clusterCacheGrpRecoveryData = joiningNodeData;
     }
 
     /**

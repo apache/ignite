@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery;
 import java.util.Collection;
 import java.util.NavigableMap;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,11 +40,8 @@ public class DiscoveryNotification {
     /** Topology history. */
     private @Nullable NavigableMap<Long, Collection<ClusterNode>> topHist;
 
-    /** Custom message data. */
-    private @Nullable DiscoverySpiCustomMessage customMsgData;
-
-    /** Span container. */
-    private SpanContainer spanContainer;
+    /** Custom message. */
+    private @Nullable DiscoverySpiCustomMessage customMsg;
 
     /**
      * @param eventType Event type.
@@ -66,8 +62,7 @@ public class DiscoveryNotification {
      * @param node Node.
      * @param topSnapshot Topology snapshot.
      * @param topHist Topology history.
-     * @param customMsgData Custom message data.
-     * @param spanContainer Span container.
+     * @param customMsg Custom message.
      */
     public DiscoveryNotification(
         int eventType,
@@ -75,16 +70,14 @@ public class DiscoveryNotification {
         ClusterNode node,
         Collection<ClusterNode> topSnapshot,
         @Nullable NavigableMap<Long, Collection<ClusterNode>> topHist,
-        @Nullable DiscoverySpiCustomMessage customMsgData,
-        SpanContainer spanContainer
+        @Nullable DiscoverySpiCustomMessage customMsg
     ) {
         this.eventType = eventType;
         this.topVer = topVer;
         this.node = node;
         this.topSnapshot = topSnapshot;
         this.topHist = topHist;
-        this.customMsgData = customMsgData;
-        this.spanContainer = spanContainer;
+        this.customMsg = customMsg;
     }
 
     /**
@@ -123,16 +116,9 @@ public class DiscoveryNotification {
     }
 
     /**
-     * @return Custom message data.
+     * @return Custom message.
      */
-    public DiscoverySpiCustomMessage getCustomMsgData() {
-        return customMsgData;
-    }
-
-    /**
-     * @return Span container.
-     */
-    public SpanContainer getSpanContainer() {
-        return spanContainer;
+    public DiscoverySpiCustomMessage customMessage() {
+        return customMsg;
     }
 }

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 
@@ -52,9 +56,10 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "Kernal Self")
+@RunWith(Parameterized.class)
 public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /** */
-    private enum FailType {
+    public enum FailType {
         /** */
         MAP,
 
@@ -66,6 +71,16 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** */
         EXECUTE
+    }
+
+    /** */
+    @Parameterized.Parameter
+    public FailType failType;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "failType={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(FailType.values());
     }
 
     /** */
@@ -87,106 +102,13 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExecuteFailed() throws Exception {
+    public void testFailComputeTask() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
         ComputeTaskFuture<?> fut =
-            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.EXECUTE);
-
-        try {
-            fut.get();
-
-            assert false;
-        }
-        catch (IgniteException e) {
-            info("Got expected grid exception: " + e);
-        }
-
-        IgniteUuid sesId = fut.getTaskSession().getId();
-
-        // Query for correct events.
-        List<Event> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
-
-        info("Job failed event: " + evts.get(0));
-
-        assert evts.size() == 1;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMapFailed() throws Exception {
-        Ignite ignite = G.ignite(getTestIgniteInstanceName());
-
-        ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
-
-        ComputeTaskFuture<?> fut =
-            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.MAP);
-
-        try {
-            fut.get();
-
-            assert false;
-        }
-        catch (IgniteException e) {
-            info("Got expected grid exception: " + e);
-        }
-
-        IgniteUuid sesId = fut.getTaskSession().getId();
-
-        // Query for correct events.
-        List<Event> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
-
-        assert evts.size() == 1;
-
-        info("Task failed event: " + evts.get(0));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testResultFailed() throws Exception {
-        Ignite ignite = G.ignite(getTestIgniteInstanceName());
-
-        ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
-
-        ComputeTaskFuture<?> fut =
-            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
-
-        try {
-            fut.get();
-
-            assert false;
-        }
-        catch (IgniteException e) {
-            info("Got expected grid exception: " + e);
-        }
-
-        IgniteUuid sesId = fut.getTaskSession().getId();
-
-        // Query for correct events.
-        List<Event> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
-
-        assert evts.size() == 1;
-
-        info("Task failed event: " + evts.get(0));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReduceFailed() throws Exception {
-        Ignite ignite = G.ignite(getTestIgniteInstanceName());
-
-        ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
-
-        ComputeTaskFuture<?> fut =
-            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), FailType.RESULT);
+            executeAsync(ignite.compute(), GridTaskFailedTestTask.class.getName(), failType);
 
         try {
             fut.get();

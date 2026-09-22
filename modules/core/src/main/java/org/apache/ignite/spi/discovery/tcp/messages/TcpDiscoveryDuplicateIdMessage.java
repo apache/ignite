@@ -18,36 +18,21 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 /**
  * Message telling joining node that new topology already contain
  * different node with same ID.
  */
 public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Node with duplicate ID. */
-    private final TcpDiscoveryNode node;
-
     /** ID of the node with duplicate ID. */
-    private final UUID nodeId;
+    @Order(0)
+    UUID nodeId;
 
-    /**
-     * Constructor.
-     *
-     * @param creatorNodeId Creator node ID.
-     * @param node Node with same ID.
-     */
-    public TcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, TcpDiscoveryNode node) {
-        super(creatorNodeId);
-
-        assert node != null;
-
-        this.node = node;
-        this.nodeId = null;
+    /** */
+    public TcpDiscoveryDuplicateIdMessage() {
+        // No-op.
     }
 
     /**
@@ -61,15 +46,7 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
 
         assert nodeId != null;
 
-        this.node = null;
         this.nodeId = nodeId;
-    }
-
-    /**
-     * @return Node with duplicate ID.
-     */
-    public TcpDiscoveryNode node() {
-        return node;
     }
 
     /**

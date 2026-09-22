@@ -21,31 +21,34 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 class GridTestMessage implements Message, Externalizable {
     /** */
-    private IgniteUuid id;
+    @Order(0)
+    IgniteUuid id;
 
     /** */
-    private long field1;
+    @Order(1)
+    long field1;
 
     /** */
-    private long field2;
+    @Order(2)
+    long field2;
 
     /** */
-    private String str;
+    @Order(3)
+    String str;
 
     /** */
-    private byte[] bytes;
+    @Order(4)
+    byte[] bytes;
 
     /**
      * @param id Message ID.
@@ -80,22 +83,10 @@ class GridTestMessage implements Message, Externalizable {
     }
 
     /**
-     * @return Bytes.
-     */
-    public byte[] bytes() {
-        return bytes;
-    }
-
-    /**
      * @param bytes Bytes.
      */
     public void bytes(byte[] bytes) {
         this.bytes = bytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -114,20 +105,5 @@ class GridTestMessage implements Message, Externalizable {
         field2 = in.readLong();
         str = U.readString(in);
         bytes = U.readByteArray(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 0;
     }
 }

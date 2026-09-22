@@ -22,12 +22,13 @@ from jinja2 import FileSystemLoader, Environment
 
 IGNITE_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 ZK_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "zk", "templates")
+CDC_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cdc", "templates")
 DEFAULT_IGNITE_CONF = "ignite.xml.j2"
 DEFAULT_THIN_CLIENT_CONF = "thin_client_config.xml.j2"
 DEFAULT_THIN_JDBC_CONF = "thin_jdbc_config.xml.j2"
 DEFAULT_LOG4J2_CONF = "log4j2.xml.j2"
 
-TEMPLATE_PATHES = [IGNITE_TEMPLATE_PATH, ZK_TEMPLATE_PATH]
+TEMPLATE_PATHES = [IGNITE_TEMPLATE_PATH, ZK_TEMPLATE_PATH, CDC_TEMPLATE_PATH]
 
 
 class ConfigTemplate:

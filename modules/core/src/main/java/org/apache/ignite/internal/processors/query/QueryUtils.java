@@ -20,15 +20,8 @@ package org.apache.ignite.internal.processors.query;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -51,11 +44,13 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
@@ -67,9 +62,9 @@ import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor
 import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -112,10 +107,13 @@ public class QueryUtils {
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
 
     /** Field name for key. */
-    public static final String KEY_FIELD_NAME = "_KEY";
+    public static final String KEY_FIELD_NAME = CommonUtils.KEY_FIELD_NAME;
 
     /** Field name for value. */
-    public static final String VAL_FIELD_NAME = "_VAL";
+    public static final String VAL_FIELD_NAME = CommonUtils.VAL_FIELD_NAME;
+
+    /** Field name for row version. */
+    public static final String VER_FIELD_NAME = "_VER";
 
     /** Well-known template name for PARTITIONED cache. */
     public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
@@ -129,12 +127,6 @@ public class QueryUtils {
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE =
         getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, DFLT_INDEXING_DISCOVERY_HISTORY_SIZE);
-
-    /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
-
-    /** */
-    private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
 
     /** Default SQL delimeter. */
     public static final char DEFAULT_DELIM = '\n';
@@ -158,36 +150,6 @@ public class QueryUtils {
      */
     public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
         ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
-
-    /**
-     * Creates SQL types set.
-     *
-     * @return SQL types set.
-     */
-    @NotNull private static Set<Class<?>> createSqlTypes() {
-        Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
-            Integer.class,
-            Boolean.class,
-            Byte.class,
-            Short.class,
-            Long.class,
-            BigDecimal.class,
-            Double.class,
-            Float.class,
-            Time.class,
-            Timestamp.class,
-            Date.class,
-            java.sql.Date.class,
-            LocalTime.class,
-            LocalDate.class,
-            LocalDateTime.class,
-            String.class,
-            UUID.class,
-            byte[].class
-        ));
-
-        return sqlClasses;
-    }
 
     /**
      * Get table name for entity.
@@ -229,12 +191,22 @@ public class QueryUtils {
      * @return Index name.
      */
     public static String indexName(String tblName, QueryIndex idx) {
-        String res = idx.getName();
+        return indexName(tblName, idx.getName(), idx.getFields());
+    }
 
-        if (res == null) {
+    /**
+     * Get index name.
+     *
+     * @param tblName Table name.
+     * @param name Index name.
+     * @param fields Fields.
+     * @return Index name.
+     */
+    public static String indexName(String tblName, @Nullable String name, Map<String, Boolean> fields) {
+        if (name == null) {
             StringBuilder idxName = new StringBuilder(tblName + "_");
 
-            for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
+            for (Map.Entry<String, Boolean> field : fields.entrySet()) {
                 idxName.append(field.getKey());
 
                 idxName.append('_');
@@ -255,17 +227,18 @@ public class QueryUtils {
             return idxName.toString();
         }
 
-        return res;
+        return name;
     }
 
     /**
      * Normalize cache query entities.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entities Query entities.
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+    public static Collection<QueryEntity> normalizeQueryEntities(boolean recoveryMode,
         Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
@@ -273,7 +246,7 @@ public class QueryUtils {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(recoveryMode, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -283,11 +256,12 @@ public class QueryUtils {
      * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
      * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entity Query entity.
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(boolean recoveryMode, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -381,7 +355,7 @@ public class QueryUtils {
 
         validateQueryEntity(normalEntity);
 
-        if (!ctx.recoveryMode())
+        if (!recoveryMode)
             normalEntity.fillAbsentPKsWithDefaults(true);
         else if (entity instanceof QueryEntityEx)
             normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
@@ -475,7 +449,12 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(
+            cacheName,
+            coCtx,
+            ctx.cacheObjects(),
+            ctx.config().getSqlConfiguration().isValidationEnabled()
+        );
 
         desc.schemaName(schemaName);
 
@@ -488,8 +467,8 @@ public class QueryUtils {
         // We need that to set correct types for _key and _val columns.
         // We better box these types - otherwise, if user provides, say, raw 'byte' for
         // key or value (which they could), we'll deem key or value as Object which clearly is not right.
-        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
-        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
+        Class<?> keyCls = U.box(ClassLoaderUtils.classForNameWithPrimitives(qryEntity.findKeyType()));
+        Class<?> valCls = U.box(ClassLoaderUtils.classForNameWithPrimitives(qryEntity.findValueType()));
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -614,11 +593,14 @@ public class QueryUtils {
 
             desc.primaryKeyInlineSize(qe.getPrimaryKeyInlineSize() != null ? qe.getPrimaryKeyInlineSize() : -1);
             desc.affinityFieldInlineSize(qe.getAffinityKeyInlineSize() != null ? qe.getAffinityKeyInlineSize() : -1);
+            desc.sql(qe.sql());
         }
         else {
             desc.primaryKeyInlineSize(-1);
             desc.affinityFieldInlineSize(-1);
         }
+
+        desc.onInitialized();
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
@@ -674,7 +656,7 @@ public class QueryUtils {
             Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, fieldName,
-                U.classForName(fieldType, Object.class, true),
+                U.firstNotNull(ClassLoaderUtils.classForNameWithPrimitives(fieldType), Object.class),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
                 scale == null ? -1 : scale.getOrDefault(fieldName, -1));
@@ -723,7 +705,7 @@ public class QueryUtils {
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx,
             name,
-            U.classForName(typeName, Object.class, true),
+            U.firstNotNull(ClassLoaderUtils.classForNameWithPrimitives(typeName), Object.class),
             d.aliases(),
             isKey,
             true,
@@ -752,7 +734,7 @@ public class QueryUtils {
                 d.keyFieldName(),
                 d.valueFieldName(),
                 entry.getKey(),
-                U.classForName(entry.getValue(), Object.class),
+                U.firstNotNull(ClassLoaderUtils.classForName(entry.getValue()), Object.class),
                 d.aliases(),
                 notNulls != null && notNulls.contains(entry.getKey()),
                 coCtx);
@@ -948,11 +930,13 @@ public class QueryUtils {
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
         String valueFieldName, String pathStr, Class<?> resType, Map<String, String> aliases, boolean notNull,
         CacheObjectContext coCtx) throws IgniteCheckedException {
+        String alias = aliases.get(pathStr);
+
         if (pathStr.equals(keyFieldName))
-            return new KeyOrValProperty(true, pathStr, keyCls);
+            return new KeyOrValProperty(true, alias == null ? pathStr : alias, keyCls);
 
         if (pathStr.equals(valueFieldName))
-            return new KeyOrValProperty(false, pathStr, valCls);
+            return new KeyOrValProperty(false, alias == null ? pathStr : alias, valCls);
 
         return buildClassProperty(keyCls,
                 valCls,
@@ -1148,19 +1132,7 @@ public class QueryUtils {
      * @return {@code true} If can.
      */
     public static boolean isSqlType(Class<?> cls) {
-        cls = U.box(cls);
-
-        return SQL_TYPES.contains(cls) || QueryUtils.isGeometryClass(cls);
-    }
-
-    /**
-     * Checks if the given class is GEOMETRY.
-     *
-     * @param cls Class.
-     * @return {@code true} If this is geometry.
-     */
-    public static boolean isGeometryClass(Class<?> cls) {
-        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+        return CommonUtils.isSqlType(cls);
     }
 
     /**
@@ -1170,30 +1142,7 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(String clsName) {
-        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
-
-        if (genericStart >= 0)
-            clsName = clsName.substring(0, genericStart);
-
-        int pkgEnd = clsName.lastIndexOf('.');
-
-        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
-            clsName = clsName.substring(pkgEnd + 1);
-
-        if (clsName.endsWith("[]"))
-            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
-
-        int parentEnd = clsName.lastIndexOf('$');
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        parentEnd = clsName.lastIndexOf('+');   // .NET parent
-
-        if (parentEnd >= 0)
-            clsName = clsName.substring(parentEnd + 1);
-
-        return clsName;
+        return CommonUtils.typeName(clsName);
     }
 
     /**
@@ -1203,38 +1152,7 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(Class<?> cls) {
-        String typeName = cls.getSimpleName();
-
-        // To protect from failure on anonymous classes.
-        if (F.isEmpty(typeName)) {
-            String pkg = cls.getPackage().getName();
-
-            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
-        }
-
-        if (cls.isArray()) {
-            assert typeName.endsWith("[]");
-
-            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
-        }
-
-        return typeName;
-    }
-
-    /**
-     * @param timeout Timeout.
-     * @param timeUnit Time unit.
-     * @return Converted time.
-     */
-    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
-        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
-            "timeUnit minimal resolution is millisecond.");
-
-        A.ensure(timeout >= 0, "timeout value should be non-negative.");
-
-        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
-
-        return (int)tmp;
+        return CommonUtils.typeName(cls);
     }
 
     /**
@@ -1562,6 +1480,12 @@ public class QueryUtils {
         return null;
     }
 
+    /** */
+    public static boolean isSystemFieldNameIgnoreCase(String fieldName) {
+        return KEY_FIELD_NAME.equalsIgnoreCase(fieldName) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName) ||
+            VER_FIELD_NAME.equalsIgnoreCase(fieldName);
+    }
+
     /**
      * Returns true if the exception is triggered by query cancel.
      *
@@ -1701,6 +1625,11 @@ public class QueryUtils {
 
                 break;
 
+            case SchemaOperationException.CODE_INVALID_SCHEMA:
+                sqlCode = IgniteQueryErrorCode.INVALID_SCHEMA;
+
+                break;
+
             default:
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
@@ -1786,6 +1715,14 @@ public class QueryUtils {
             return val instanceof java.time.LocalDateTime || val instanceof java.util.Date;
 
         return false;
+    }
+
+    /** */
+    public static <K, V> IgniteInternalCache<K, V> cacheForDML(IgniteInternalCache<K, V> c) {
+        if (!c.configuration().isReadThrough() || c.configuration().isLoadPreviousValue())
+            return c;
+        else
+            return c.withSkipReadThrough();
     }
 
     /**

@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
@@ -72,34 +71,26 @@ public class DistributedIndexingConfiguration extends DistributedSqlConfiguratio
      * @param ctx Kernal context
      * @param log Logger.
      */
-    public DistributedIndexingConfiguration(
-        GridKernalContext ctx,
-        IgniteLogger log
-    ) {
+    public DistributedIndexingConfiguration(GridKernalContext ctx, IgniteLogger log) {
         super(ctx, log);
+    }
 
-        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
-            new DistributedConfigurationLifecycleListener() {
-                @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                    disabledSqlFuncs.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
+    /** {@inheritDoc} */
+    @Override protected void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+        super.onReadyToRegister(dispatcher);
 
-                    dispatcher.registerProperty(disabledSqlFuncs);
-                    dispatcher.registerProperty(disableCreateLuceneIndexForStringValueType);
-                }
+        disabledSqlFuncs.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
 
-                @Override public void onReadyToWrite() {
-                    setDefaultValue(
-                        disabledSqlFuncs,
-                        DFLT_DISABLED_FUNCS,
-                        log);
+        dispatcher.registerProperty(disabledSqlFuncs);
+        dispatcher.registerProperty(disableCreateLuceneIndexForStringValueType);
+    }
 
-                    setDefaultValue(
-                        disableCreateLuceneIndexForStringValueType,
-                        false,
-                        log);
-                }
-            }
-        );
+    /** {@inheritDoc} */
+    @Override protected void onReadyToWrite() {
+        super.onReadyToWrite();
+
+        setDefaultValue(disabledSqlFuncs, DFLT_DISABLED_FUNCS, log);
+        setDefaultValue(disableCreateLuceneIndexForStringValueType, false, log);
     }
 
     /**

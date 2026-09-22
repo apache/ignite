@@ -96,6 +96,7 @@ import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -126,6 +127,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  * Full API cache test.
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
+@WithSystemProperty(key = "h2.check", value = "false")
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;

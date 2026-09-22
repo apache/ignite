@@ -18,7 +18,7 @@ This module contains classes and utilities to start zookeeper cluster for testin
 """
 
 import os.path
-from distutils.version import LooseVersion
+from looseversion import LooseVersion
 
 from ducktape.utils.util import wait_until
 

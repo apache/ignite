@@ -41,7 +41,8 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<Str
     public MetricCommand() {
         super(
             new MetricConfigureHistogramCommand(),
-            new MetricConfigureHitrateCommand()
+            new MetricConfigureHitrateCommand(),
+            new MetricConfigureMaxValueCommand()
         );
     }
 

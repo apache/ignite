@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
@@ -72,7 +73,7 @@ public class IgniteMath {
     private static final double BYTE_MIN_EXT = Byte.MIN_VALUE - 1d;
 
     /** */
-    public static final RoundingMode NUMERIC_ROUNDING_MODE = RoundingMode.HALF_UP;
+    public static final RoundingMode NUMERIC_ROUNDING_MODE = IgniteTypeSystem.INSTANCE.roundingMode();
 
     /** Returns the sum of its arguments, throwing an exception if the result overflows an {@code long}. */
     public static long addExact(long x, long y) {
@@ -267,7 +268,12 @@ public class IgniteMath {
 
     /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
     public static long convertToLongExact(Number x) {
-        x = round(x);
+        return convertToLongExact(x, NUMERIC_ROUNDING_MODE);
+    }
+
+    /** Cast value to {@code long}, throwing an exception if the result overflows an {@code long}. */
+    public static long convertToLongExact(Number x, RoundingMode roundingMode) {
+        x = round(x, roundingMode);
 
         checkNumberLongBounds(BIGINT, x);
 
@@ -411,11 +417,16 @@ public class IgniteMath {
 
     /** */
     private static double extendToRound(double x) {
-        return x < 0.0d ? x - 0.5d : x + 0.5d;
+        return round(x).doubleValue();
+    }
+
+    /** */
+    private static BigDecimal round(Number x, RoundingMode roundingMode) {
+        return convertToBigDecimal(x).setScale(0, roundingMode);
     }
 
     /** */
     private static BigDecimal round(Number x) {
-        return convertToBigDecimal(x).setScale(0, NUMERIC_ROUNDING_MODE);
+        return round(x, NUMERIC_ROUNDING_MODE);
     }
 }

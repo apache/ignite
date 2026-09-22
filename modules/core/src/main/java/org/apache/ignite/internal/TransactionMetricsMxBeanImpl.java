@@ -78,6 +78,11 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     }
 
     /** {@inheritDoc} */
+    @Override public int txDeadlocks() {
+        return transactionMetrics.txDeadlocks();
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<String, String> getAllOwnerTransactions() {
         return transactionMetrics.getAllOwnerTransactions();
     }

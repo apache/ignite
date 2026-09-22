@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -32,14 +29,15 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** */
-    @GridDirectTransient
     private GridNearAtomicAbstractUpdateRequest updateReq;
 
     /** */
-    private int partId;
+    @Order(0)
+    int partId;
 
     /** */
-    private long futId;
+    @Order(1)
+    long futId;
 
     /**
      *
@@ -56,7 +54,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
 
         this.updateReq = updateReq;
         this.cacheId = updateReq.cacheId();
-        this.partId = updateReq.partition();
+        this.partId = updateReq.stripeIdx();
         this.futId = updateReq.futureId();
 
         assert partId >= 0;
@@ -76,8 +74,12 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
         return updateReq;
     }
 
-    /** {@inheritDoc} */
-    @Override public int partition() {
+    /**
+     * The value travels because the primary puts it into the response, it cannot restore it otherwise.
+     *
+     * {@inheritDoc}
+     */
+    @Override public int stripeIdx() {
         return partId;
     }
 
@@ -91,71 +93,6 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -50;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeInt(partId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                partId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

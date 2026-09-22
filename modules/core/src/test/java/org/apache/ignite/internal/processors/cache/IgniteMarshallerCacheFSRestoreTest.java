@@ -30,8 +30,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
@@ -93,8 +94,11 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(singleCacheCfg);
 
         //persistence must be enabled to verify restoring mappings from FS case
-        if (isPersistenceEnabled)
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        if (isPersistenceEnabled) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)));
+        }
 
         return cfg;
     }
@@ -246,8 +250,8 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> onDiscovery(
                 DiscoveryNotification notification
             ) {
-                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
-                    : (DiscoveryCustomMessage)U.field(notification.getCustomMsgData(), "delegate");
+                DiscoveryCustomMessage customMsg = notification.customMessage() == null ? null
+                    : U.unwrapCustomMessage(notification.customMessage());
 
                 if (customMsg != null) {
                     //don't want to make this class public, using equality of class name instead of instanceof operator

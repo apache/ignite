@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -26,10 +27,13 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    IgniteUuid msgId;
 
     /** */
-    private final IgniteUuid msgId;
+    public TcpDiscoveryClientAckResponse() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.

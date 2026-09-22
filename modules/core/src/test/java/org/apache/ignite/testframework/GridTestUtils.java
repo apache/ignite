@@ -24,6 +24,9 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
@@ -33,8 +36,11 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -75,10 +81,12 @@ import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
+import javax.management.MBeanServer;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import com.google.common.collect.Lists;
+import com.sun.management.HotSpotDiagnosticMXBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -94,7 +102,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -105,13 +112,13 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -122,8 +129,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -160,6 +170,12 @@ public final class GridTestUtils {
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 
+    /** This is the name of the HotSpot Diagnostic MBean. */
+    private static final String HOTSPOT_BEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
+
+    /** Field to store the hotspot diagnostic MBean. */
+    private static volatile HotSpotDiagnosticMXBean hotspotMBean;
+
     /**
      * Creates an absolute (no-arg) closure that does nothing.
      *
@@ -170,20 +186,68 @@ public final class GridTestUtils {
     }
 
     /**
+     * Call this method from your application whenever you
+     * want to dump the heap snapshot into a file.
+     *
+     * @param fileName Name of the heap dump file.
+     * @param live Flag that tells whether to dump
+     * only the live objects.
+     */
+    public static void dumpHeap(String fileName, boolean live) {
+        // Initialize hotspot diagnostic MBean.
+        initHotspotMBean();
+
+        File f = new File(fileName);
+
+        if (f.exists())
+            f.delete();
+
+        try {
+            hotspotMBean.dumpHeap(fileName, live);
+        }
+        catch (RuntimeException re) {
+            throw re;
+        }
+        catch (Exception exp) {
+            throw new RuntimeException(exp);
+        }
+    }
+
+    /**
+     * Initialize the hotspot diagnostic MBean field.
+     */
+    private static void initHotspotMBean() {
+        if (hotspotMBean == null) {
+            synchronized (GridTestUtils.class) {
+                if (hotspotMBean == null)
+                    hotspotMBean = getMBean(HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
+            }
+        }
+    }
+
+    /**
+     * Get MXBean from the platform MBeanServer.
+     *
+     * @param mxbeanName The name for uniquely identifying the MXBean within an MBeanServer.
+     * @param mxbeanItf The MXBean interface.
+     * @return A proxy for a platform MXBean interface.
+     */
+    private static <T> T getMBean(String mxbeanName, Class<T> mxbeanItf) {
+        try {
+            MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+
+            return ManagementFactory.newPlatformMXBeanProxy(srv, mxbeanName, mxbeanItf);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
      * Hook object intervenes to discovery message handling
      * and thus allows to make assertions or other actions like skipping certain discovery messages.
      */
     public static class DiscoveryHook {
-        /**
-         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                beforeDiscovery(unwrap((CustomMessageWrapper)msg));
-        }
-
         /**
          * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
          *
@@ -191,16 +255,6 @@ public final class GridTestUtils {
          */
         public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
             // No-op.
-        }
-
-        /**
-         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                afterDiscovery(unwrap((CustomMessageWrapper)msg));
         }
 
         /**
@@ -217,16 +271,6 @@ public final class GridTestUtils {
          */
         public void ignite(IgniteEx ignite) {
             // No-op.
-        }
-
-        /**
-         * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
-         *
-         * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
-         * @return Unwrapped {@link DiscoveryCustomMessage}.
-         */
-        private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
-            return U.field(wrapper, "delegate");
         }
     }
 
@@ -251,11 +295,11 @@ public final class GridTestUtils {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-            hook.beforeDiscovery(notification.getCustomMsgData());
+            hook.beforeDiscovery(U.unwrapCustomMessage(notification.customMessage()));
 
             IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
+            fut.listen(f -> hook.afterDiscovery(U.unwrapCustomMessage(notification.customMessage())));
 
             return fut;
         }
@@ -1839,14 +1883,13 @@ public final class GridTestUtils {
                 throw new IgniteException("Modification of static final field through reflection.");
 
             if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
-                long fieldOffset = GridUnsafe.objectFieldOffset(field);
+                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Field.class, MethodHandles.lookup());
 
-                GridUnsafe.putObjectField(obj, fieldOffset, val);
+                VarHandle varHandle = lookup.findVarHandle(Field.class, "modifiers", int.class);
 
-                return;
+                varHandle.set(field, field.getModifiers() & ~Modifier.FINAL);
             }
-
-            if (isFinal) {
+            else if (isFinal) {
                 Field modifiersField = Field.class.getDeclaredField("modifiers");
 
                 modifiersField.setAccessible(true);
@@ -2643,5 +2686,69 @@ public final class GridTestUtils {
      */
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param skip Skip.
+     */
+    @SuppressWarnings("deprecation")
+    public static void skipCommNioServerRead(IgniteEx ignite, boolean skip) {
+        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)(ignite.context().config().getCommunicationSpi());
+
+        GridNioServer<?> nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
+
+        setFieldValue(nioSrvr, "skipRead", skip);
+    }
+
+    /** */
+    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls) {
+        try {
+            Class<?> serCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Serializer");
+
+            return (MessageSerializer<T>)U.newInstance(serCls);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
+        }
+    }
+
+    /** Loads the generated {@code *Marshaller} class for {@code msgCls}; the marshaller is passed per call, not held. */
+    public static <T extends Message> MessageMarshaller<T> loadMarshaller(Class<? extends Message> msgCls) {
+        try {
+            Class<?> marshallerCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Marshaller");
+
+            return (MessageMarshaller<T>)U.newInstance(marshallerCls);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find marshaller for message: " + msgCls, e);
+        }
+    }
+
+    /**
+     * Calculates directory size, tolerating files that disappear during traversal.
+     *
+     * @param dir Directory.
+     * @return Size.
+     * @throws IOException If failed.
+     */
+    public static long sizeOfDirectory(File dir) throws IOException {
+        long[] size = {0L};
+
+        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                size[0] += attrs.size();
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return size[0];
     }
 }

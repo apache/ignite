@@ -17,12 +17,23 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.jetbrains.annotations.Nullable;
@@ -32,20 +43,31 @@ import static org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListener
 /**
  *
  */
-public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
+public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscoverySpiInternalListenerSupport {
     /** */
     public boolean ignorePingResponse;
 
     /** Interceptor of discovery messages. */
     private DiscoveryHook discoHook;
 
+    /** */
+    private IgniteDiscoverySpiInternalListener internalLsnr;
+
     /** {@inheritDoc} */
-    @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+    @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
         if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
             return;
-        else
-            super.writeToSocket(sock, out, msg, timeout);
+
+        if (internalLsnr != null) {
+            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                internalLsnr.beforeJoin(locNode, log);
+
+            if (msg instanceof TcpDiscoveryClientReconnectMessage)
+                internalLsnr.beforeReconnect(locNode, log);
+        }
+
+        super.writeMessage(ses, msg, timeout);
     }
 
     /** {@inheritDoc} */
@@ -58,6 +80,23 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         super.setListener(lsnr == null || discoHook == null ? lsnr : wrap(lsnr, discoHook));
     }
 
+    /** {@inheritDoc} */
+    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
+
+        if (internalLsnr != null) {
+            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
+                return;
+        }
+
+        super.sendCustomEvent(msg);
+    }
+
+    /** */
+    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
+        internalLsnr = lsnr;
+    }
+
     /**
      * Sets interceptor of discovery messages. Note that {@link DiscoveryHook} must be set before SPI start.
      * Otherwise, this method call will take no effect.
@@ -68,5 +107,28 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         assert !started();
 
         this.discoHook = discoHook;
+    }
+
+    /** */
+    public static @Nullable TcpDiscoveryAbstractMessage decodeMessage(GridKernalContext ctx, byte[] data) {
+        if (Arrays.equals(U.IGNITE_HEADER, data))
+            return null;
+
+        Socket dataSock = new Socket() {
+            @Override public InputStream getInputStream() {
+                return new ByteArrayInputStream(data);
+            }
+
+            @Override public OutputStream getOutputStream() {
+                return new ByteArrayOutputStream();
+            }
+        };
+
+        try (dataSock) {
+            return new TcpDiscoveryIoSession(ctx, dataSock).readMessage();
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to decode a message", e);
+        }
     }
 }

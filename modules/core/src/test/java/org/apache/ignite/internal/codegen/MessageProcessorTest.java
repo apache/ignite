@@ -18,18 +18,33 @@
 package org.apache.ignite.internal.codegen;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;
 import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.cache.query.QueryIndexMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
@@ -38,6 +53,28 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class MessageProcessorTest {
+    /** Custom mapper error. */
+    public static final String CUSTOM_MAPPER_ERROR = "Annotation @CustomMapper must only be used for enum fields or " +
+        "enum collections and maps, including nested ones.";
+
+    /** */
+    @Test
+    public void testMarshalledObjectsMessage() {
+        Compilation compilation = compile("TestMarshalledObjectsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageMarshaller.java"));
+    }
+
     /** */
     @Test
     public void testProcessorGeneratesSerializer() {
@@ -45,11 +82,15 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
+        assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
     }
 
     /** */
@@ -59,20 +100,81 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(1, compilation.generatedSourceFiles().size());
+        assertEquals(2, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestCollectionsMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestCollectionsMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestCollectionsMessageMarshaller.java"));
     }
 
     /** */
     @Test
-    public void testEmptyMessage() {
-        Compilation compilation = compile("EmptyMessage.java");
+    public void testEnumSetMessage() {
+        Compilation compilation = compile("TestEnumSetMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestEnumSetMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestEnumSetMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testEnumSetOfTypeVariableFailed() {
+        Compilation compilation = compile("WrongEnumSetMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining(
+            "Unexpected Enum Set element type [itemType=E, colType=java.util.EnumSet<E>");
+    }
+
+    /** */
+    @Test
+    public void testMapMessage() {
+        Compilation compilation = compile("TestMapMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMapMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMapMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMapMessageMarshaller.java"));
+    }
+
+    /** */
+    @Test
+    public void testIncorrectEmptyMessage() {
+        Compilation compilation = compile("IncorrectEmptyMessage.java");
 
         assertThat(compilation).succeeded();
         assertTrue(compilation.generatedSourceFiles().isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testCorrectEmptyMessage() {
+        Compilation compilation = compile("CorrectEmptyMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.CorrectEmptyMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CorrectEmptyMessageSerializer.java"));
     }
 
     /** */
@@ -106,10 +208,11 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
+        // No marshaller: the messages have nothing to marshal, so its generation is skipped.
         assertEquals(1, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
     }
 
@@ -120,15 +223,20 @@ public class MessageProcessorTest {
 
         assertThat(compilation).succeeded();
 
-        assertEquals(2, compilation.generatedSourceFiles().size());
+        // No ChildMessageMarshaller: the message has nothing to marshal, so its generation is skipped.
+        assertEquals(3, compilation.generatedSourceFiles().size());
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.ChildMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMessageSerializer")
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
     }
 
     /** */
@@ -147,30 +255,493 @@ public class MessageProcessorTest {
         assertThat(compilation).failed();
     }
 
+    /** Tests {@link QueryIndexMessage} that copies {@link QueryIndex}. */
+    @Test
+    public void testQueryIndex() {
+        Field[] fields0 = QueryIndex.class.getDeclaredFields();
+
+        Map<String, Field> fields = CommonUtils.newHashMap(fields0.length);
+
+        for (Field f : fields0) {
+            if (!Modifier.isStatic(f.getModifiers()))
+                fields.put(f.getName(), f);
+        }
+
+        assertEquals(4, fields.size());
+
+        assertEquals(String.class, fields.get("name").getType());
+        assertEquals(LinkedHashMap.class, fields.get("fields").getType());
+        assertEquals(QueryIndexType.class, fields.get("type").getType());
+        assertEquals(int.class, fields.get("inlineSize").getType());
+
+        QueryIndex idx = new QueryIndex("fld0", QueryIndexType.GEOSPATIAL, false, "testIdx");
+
+        QueryIndexMessage msg = new QueryIndexMessage(idx);
+
+        QueryIndex idx1 = QueryIndexMessage.queryIndex(msg);
+
+        assertEquals(idx, idx1);
+    }
+
+    /** */
+    @Test
+    public void testExceptionFailed() {
+        Compilation compilation = compile("ExceptionMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("You should use ErrorMessage for serialization of throwables.");
+    }
+
+    /**
+     * Positive test for default enum mapper for enum fields.
+     */
+    @Test
+    public void testDefaultMapperEnumFields() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        // No marshaller: enum fields need no marshalling, so its generation is skipped.
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.DefaultMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a field of a primitive type.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnPrimitiveField() {
+        Compilation compilation = compile("CustomEnumMapperOnPrimitiveFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a field of an array type.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnArrayField() {
+        Compilation compilation = compile("CustomEnumMapperOnArrayFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection, which does not store enums.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnNonEnumCollection() {
+        Compilation compilation = compile("CustomEnumMapperOnNonEnumCollectionMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection, which does not store enums.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnNonEnumMap() {
+        Compilation compilation = compile("CustomEnumMapperOnNonEnumMapMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(CUSTOM_MAPPER_ERROR);
+    }
+
+    /**
+     * Negative test for enum mapper verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a collection with nested enums of different type.
+     */
+    @Test
+    public void testEnumMapperCannotBeTwoEnums() {
+        Compilation compilation = compile("TwoDifferentEnumsInCollectionMessage.java");
+
+        assertThat(compilation).failed();
+
+        String oai = "org.apache.ignite.";
+
+        assertThat(compilation).hadErrorContaining(String.format("Multiple enums of different types are not supported " +
+            "for a single field [msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]",
+            oai + "internal.TwoDifferentEnumsInCollectionMessage", "col",
+            oai + "transactions.TransactionIsolation",
+            oai + "internal.processors.cache.GridCacheOperation"));
+    }
+
+    /**
+     * Positive test for custom EnumMapper implementation for enum field: codegeneration tool
+     * generates a serializer using provided EnumMapper implementation.
+     * Generated serializer compiles successfully.
+     */
+    @Test
+    public void testCustomMapperEnumFieldsMessage() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).succeeded();
+
+        // No marshaller: enum fields need no marshalling, so its generation is skipped.
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testMarshallableMessage() {
+        Compilation compilation = compile("TestMarshallableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshallableMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshallableMessageMarshaller.java"));
+    }
+
+    /**
+     * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
+     */
+    @Test
+    public void testDifferentMappersForTheSameEnumAreProhibited() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java",
+            "CustomMapperEnumFieldsMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).failed();
+
+        String errMsg = "Enum " + TransactionIsolation.class.getName() + " is declared with different mappers: " +
+            DefaultEnumMapper.class.getName() + " in org.apache.ignite.internal.DefaultMapperEnumFieldsMessage" +
+            " and org.apache.ignite.internal.TransactionIsolationEnumMapper in org.apache.ignite.internal.CustomMapperEnumFieldsMessage.";
+
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Negative test for a conflict situation when two enum mappers are used for the same enum in different messages.
+     * Tests conflict between ordinary enum field and collection of enums.
+     */
+    @Test
+    public void testDifferentMappersForTheSameEnumAreProhibitedWithCollection() {
+        Compilation compilation = compile("DefaultMapperEnumMapCollectionMessage.java",
+            "CustomMapperEnumFieldsMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).failed();
+
+        String errMsg = "Enum " + TransactionIsolation.class.getName() + " is declared with different mappers: " +
+            DefaultEnumMapper.class.getName() + " in org.apache.ignite.internal.DefaultMapperEnumMapCollectionMessage" +
+            " and org.apache.ignite.internal.TransactionIsolationEnumMapper in org.apache.ignite.internal.CustomMapperEnumFieldsMessage.";
+
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Positive test verifies that codegeneration is successful when two messages use DefaultEnumMapper for the same enum type.
+     */
+    @Test
+    public void testDefaultMapperForSameEnumTypeInDifferentMessagesIsAllowed() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java",
+            "DefaultMapperEnumFieldsSecondMessage.java");
+
+        assertThat(compilation).succeeded();
+    }
+
+    /**
+     * Positive test verifies that codegeneration is successful when two messages use
+     * the same custom EnumMapper for the same enum type.
+     */
+    @Test
+    public void testSameCustomMapperForSameEnumTypeInDifferentMessagesIsAllowed() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java",
+            "CustomMapperEnumFieldsSecondMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).succeeded();
+    }
+
+    /**
+     * Negative test that verifies the compilation failed if the CompressedMessage type is used in Message.
+     */
+    @Test
+    public void testCompressedMessageExplicitUsageFails() {
+        String errMsg = "CompressedMessage should not be used explicitly. To compress the required field use the @Compress annotation.";
+
+        Compilation compilation = compile("TestCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestCollectionsCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+
+        compilation = compile("TestMapCompressedMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Negative test that verifies the compilation failed if the Compress annotation is used for unsupported types.
+     */
+    @Test
+    public void testCompressAnnotationFailsForUnsupportedTypes() {
+        Compilation compilation = compile("TestCompressUnsupportedTypeMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Compress annotation is used for an unsupported type: java.util.List");
+    }
+
+    /** Verifies that {@code @NioField} on a non-{@link Message}-typed field is a compilation error. */
+    @Test
+    public void testNioFieldOnNonMessageTypeFails() {
+        Compilation compilation = compile("NioFieldOnNonMessageMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("@NioField has no effect on non-Message field");
+    }
+
+    /** Verifies that {@code @NioField} on a message needing a cache object context is a compilation error. */
+    @Test
+    public void testNioFieldNeedingCacheContextFails() {
+        Compilation compilation = compile("NioFieldNeedsCtxMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("needs a cache object context to unmarshal");
+    }
+
+    /** Verifies that {@code @Marshalled} generates {@code U.unmarshal} with a blank line before the null-out. */
+    @Test
+    public void testMarshalledMessage() {
+        Compilation compilation = compile("TestMarshalledMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMessageMarshaller.java"));
+    }
+
+    /** Verifies the companions generated for a {@code @Marshalled} field whose logical form is a Set. */
+    @Test
+    public void testMarshalledCollectionMessage() {
+        Compilation compilation = compile("TestMarshalledCollectionMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledCollectionMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledCollectionMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledCollectionMessageMarshaller.java"));
+    }
+
+    /** Verifies the companions generated for a {@code @Marshalled} field whose logical form is a Map. */
+    @Test
+    public void testMarshalledMapMessage() {
+        Compilation compilation = compile("TestMarshalledMapMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
+    }
+
+    /** Verifies array-backed Map reconstruction of {@code @Marshalled} fields, both rebuilt and final maps. */
+    @Test
+    public void testMarshalledArrayMapMessage() {
+        Compilation compilation = compile("TestMarshalledArrayMapMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(2, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledArrayMapMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledArrayMapMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestMarshalledArrayMapMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestMarshalledArrayMapMessageMarshaller.java"));
+    }
+
+    /** Verifies a deployable {@link GridCacheIdMessage} gets a generated deployer that bridges cache-object fields. */
+    @Test
+    public void testDeployerGeneration() {
+        Compilation compilation = compile("TestCacheIdMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(3, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestCacheIdMessageDeployer")
+            .hasSourceEquivalentTo(javaFile("TestCacheIdMessageDeployer.java"));
+    }
+
+    /** Verifies a {@code DeployableMessage}'s generated deployer delegates to its custom {@code deploy}. */
+    @Test
+    public void testDeployerDelegatesToCustomDeployment() {
+        Compilation compilation = compile("TestDeployableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestDeployableMessageDeployer")
+            .hasSourceEquivalentTo(javaFile("TestDeployableMessageDeployer.java"));
+    }
+
+    /** Verifies a nested {@link GridCacheMessage} field is deployed by delegating to the static facade entry point. */
+    @Test
+    public void testDeployerHandlesNestedMessage() {
+        Compilation compilation = compile("TestNestedDeployMessage.java", "TestCacheIdMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestNestedDeployMessageDeployer")
+            .hasSourceEquivalentTo(javaFile("TestNestedDeployMessageDeployer.java"));
+    }
+
+    /** Verifies the generator fails fast when a deployable message cannot resolve a cache context. */
+    @Test
+    public void testDeployerFailsWithoutCacheContext() {
+        Compilation compilation = compile("TestNoCacheCtxMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Cannot resolve cache context");
+    }
+
+    /** Verifies the processor rejects a {@code NonMarshallableMessage} with declared marshalling logic. */
+    @Test
+    public void testNonMarshallableWithMarshalledFieldFailed() {
+        Compilation compilation = compile("WrongNonMarshallableMessage.java");
+
+        assertThat(compilation).failed();
+
+        assertThat(compilation).hadErrorContaining("NonMarshallableMessage must not implement MarshallableMessage, " +
+            "nor declare @Marshalled fields");
+    }
+
+    /** Test that {@code @Marshalled} annotation on {@link Message} field will fail generation. */
+    @Test
+    public void testMarshalledOnMessageFieldFailGeneration() {
+        List<String> cases = Arrays.asList(
+            "IncorrectMarshalledOnMessage.java",
+            "IncorrectMarshalledOnMessageCollection.java",
+            "IncorrectMarshalledOnMessageCollection2.java",
+            "IncorrectMarshalledOnMessageCollection3.java",
+            "IncorrectMarshalledOnMessageCollection4.java",
+            "IncorrectMarshalledOnMessageMap.java",
+            "IncorrectMarshalledOnMessageMap2.java",
+            "IncorrectMarshalledOnMessageMap3.java",
+            "IncorrectMarshalledOnMessageMap4.java",
+            "IncorrectMarshalledOnMessageArray.java",
+            "IncorrectMarshalledOnMessageCollectionArray.java",
+            "IncorrectMarshalledOnMessageSet.java",
+            "IncorrectMarshalledOnMessageList.java",
+            "IncorrectMarshalledOnMessageList2.java"
+        );
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Message must be written by dedicated message serializers");
+        }
+    }
+
+    /** Test that {@code @Marshalled} annotation on raw {@link Collection} or {@link Map} fail generation. */
+    @Test
+    public void testRawClassesFailGeneration() {
+        List<String> cases = Arrays.asList("IncorrectRawListMessage.java", "IncorrectRawCollectionMessage.java");
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Raw collection not supported");
+        }
+
+        cases = Arrays.asList("IncorrectRawListMessage2.java", "IncorrectRawCollectionMessage2.java", "IncorrectRawMapMessage2.java");
+
+        for (String file : cases) {
+            Compilation compilation = compile("TestMessage.java", file);
+
+            assertThat(compilation).failed();
+            assertThat(compilation).hadErrorContaining("Raw types not supported");
+        }
+
+        Compilation compilation = compile("TestMessage.java", "IncorrectRawMapMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Raw Map not supported");
+    }
+
     /** */
     private Compilation compile(String... srcFiles) {
+        return compile(new MessageProcessor(), srcFiles);
+    }
+
+    /** */
+    static Compilation compile(Processor proc, String... srcFiles) {
         List<JavaFileObject> input = new ArrayList<>();
 
         for (String srcFile: srcFiles)
             input.add(javaFile(srcFile));
 
-        File igniteCoreJar = jarForClass(Message.class);
+        File igniteCoreJar = jarForClass(IgniteUtils.class);
         File igniteCodegenJar = jarForClass(Order.class);
         File igniteBinaryApiJar = jarForClass(IgniteUuid.class);
+        File igniteCommonsJar = jarForClass(CommonUtils.class);
+        File igniteNioJar = jarForClass(Message.class);
 
         return Compiler.javac()
-            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar))
-            .withProcessors(new MessageProcessor())
+            .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar, igniteNioJar))
+            .withProcessors(proc)
             .compile(input);
     }
 
     /** */
-    private JavaFileObject javaFile(String srcName) {
+    static JavaFileObject javaFile(String srcName) {
         return JavaFileObjects.forResource("codegen/" + srcName);
     }
 
     /** */
-    private File jarForClass(Class<?> clazz) {
+    private static File jarForClass(Class<?> clazz) {
         try {
             URI jar = clazz
                 .getProtectionDomain()
@@ -183,5 +754,22 @@ public class MessageProcessorTest {
         catch (Exception e) {
             throw new RuntimeException("Unable to locate JAR for: " + clazz.getName(), e);
         }
+    }
+
+    /** Verifies that {@code @JdkMarshalled} makes the generated companion take the JDK marshaller of the node. */
+    @Test
+    public void testJdkMarshalledMessage() {
+        Compilation compilation = compile("TestJdkMarshalledMessage.java", "TestJdkMarshalledChildMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestJdkMarshalledMessageMarshaller.java"));
+
+        // The pin belongs to the message, so a subclass marshals the inherited fields the same way.
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledChildMessageMarshaller")
+            .hasSourceEquivalentTo(javaFile("TestJdkMarshalledChildMessageMarshaller.java"));
     }
 }

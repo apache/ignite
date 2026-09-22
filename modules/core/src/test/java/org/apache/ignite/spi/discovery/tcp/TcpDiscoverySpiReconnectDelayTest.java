@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -32,6 +31,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -399,24 +399,37 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
         /** */
         private final AtomicInteger failReconReq = new AtomicInteger();
 
+        /** */
+        private final ReceivedMessagesTracker msgTracker = new ReceivedMessagesTracker();
+
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
 
-            if (!onMessage(sock, msg))
+            if (!onMessage(ses.socket(), msg))
                 return;
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
+        @Override protected <T extends Message> T readMessage(
+            TcpDiscoveryIoSession ses,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            return msgTracker.track(ses, super.readMessage(ses, timeout));
+        }
 
-            if (msg instanceof TcpDiscoveryJoinRequestMessage && failJoinReqRes.getAndDecrement() > 0)
+        /** {@inheritDoc} */
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            if (msgTracker.lastFor(ses) instanceof TcpDiscoveryJoinRequestMessage && failJoinReqRes.getAndDecrement() > 0)
                 res = RES_WAIT;
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /**

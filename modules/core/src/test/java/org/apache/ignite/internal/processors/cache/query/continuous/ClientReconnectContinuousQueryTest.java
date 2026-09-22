@@ -31,12 +31,8 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.util.nio.GridNioServer;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -122,13 +118,13 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
             assertTrue(updaterReceived.await(10_000, TimeUnit.MILLISECONDS));
 
-            skipRead(client, true);
+            GridTestUtils.skipCommNioServerRead(client, true);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     assertTrue(disconLatch.await(10_000, TimeUnit.MILLISECONDS));
 
-                    skipRead(client, false);
+                    GridTestUtils.skipCommNioServerRead(client, false);
 
                     return null;
                 }
@@ -202,19 +198,5 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < cnt; i++)
             srvCache.put(0, i);
-    }
-
-    /**
-     * @param igniteClient Ignite client.
-     * @param skip Skip.
-     */
-    private void skipRead(IgniteEx igniteClient, boolean skip) {
-        GridIoManager ioMgr = igniteClient.context().io();
-
-        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)((Object[])U.field(ioMgr, "spis"))[0];
-
-        GridNioServer nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
-
-        GridTestUtils.setFieldValue(nioSrvr, "skipRead", skip);
     }
 }

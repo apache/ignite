@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -178,6 +179,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     @Nullable
     private final PeriodicHistogramMetricImpl pageTsHistogram;
 
+    /** Metric indicating whether page eviction has started. */
+    private final AtomicBoolean evictionsStarted = new AtomicBoolean();
+
     /**
      * Same as {@link #DataRegionMetricsImpl(DataRegionConfiguration, GridKernalContext, DataRegionMetricsProvider)}
      * but uses a no-op implementation for the {@link DataRegionMetricsProvider}.
@@ -280,6 +284,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
             .value(dataRegionCfg.getMaxSize());
+
+        mreg.register("EvictionsStarted", evictionsStarted::get,
+            "True if page eviction was triggered due to data region memory pressure.");
 
         if (persistenceEnabled) {
             // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
@@ -874,5 +881,15 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             U.currentTimeMillis(), vals[vals.length - 1]));
 
         return list;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEvictionsStarted() {
+        return evictionsStarted.get();
+    }
+
+    /** @return {@code True} if eviction has started for the first time. */
+    public boolean onPageEvictionsStarted() {
+        return evictionsStarted.compareAndSet(false, true);
     }
 }

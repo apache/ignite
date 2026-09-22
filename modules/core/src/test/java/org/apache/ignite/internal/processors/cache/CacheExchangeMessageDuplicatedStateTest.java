@@ -229,13 +229,12 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, CachePartitionFullCountersMap> partCntrs =
-            getFieldValue(getFieldValue(msg, "partCntrs"), "map");
+        Map<Integer, CachePartitionFullCountersMap> partCntrs = getFieldValue(msg, "partCntrs");
 
         if (partCntrs != null) {
             for (CachePartitionFullCountersMap cntrs : partCntrs.values()) {
-                long[] initUpdCntrs = getFieldValue(cntrs, "initialUpdCntrs");
-                long[] updCntrs = getFieldValue(cntrs, "updCntrs");
+                long[] initUpdCntrs = cntrs.initialUpdateCounters();
+                long[] updCntrs = cntrs.updateCounters();
 
                 for (int i = 0; i < initUpdCntrs.length; i++) {
                     assertEquals(0, initUpdCntrs[i]);

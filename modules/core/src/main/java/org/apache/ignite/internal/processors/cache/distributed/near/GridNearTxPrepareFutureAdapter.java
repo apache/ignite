@@ -38,10 +38,13 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 
@@ -191,6 +194,61 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /**
+     * Creates {@link GridNearTxPrepareRequest} and prepares as {@link Message} to send to another node. Affects
+     * {@code writes} and {@code reads} (if aren't empty).
+     *
+     * @param txNodes Transaction nodes mapping.
+     * @param mapping Distributed transaction mapping.
+     * @param reads Read entries.
+     * @param writes Write entries.
+     * @param timeout Transaction timeout.
+     * @param last {@code True} if this last prepare request for node.
+     * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
+     * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
+     */
+    protected GridNearTxPrepareRequest createNearPrepareRequest(
+        Map<UUID, Collection<UUID>> txNodes,
+        GridDistributedTxMapping mapping,
+        @Nullable Collection<IgniteTxEntry> reads,
+        Collection<IgniteTxEntry> writes,
+        long timeout,
+        boolean last,
+        boolean firstClientReq,
+        boolean allowWaitTopFut
+    ) {
+        // Of all tx messages, only the near prepare request transfers entry expiry policies.
+        if (!F.isEmpty(writes)) {
+            for (IgniteTxEntry we : writes)
+                we.transferExpiryPolicy(true);
+        }
+
+        if (!F.isEmpty(reads)) {
+            for (IgniteTxEntry re : reads)
+                re.transferExpiryPolicy(true);
+        }
+
+        return new GridNearTxPrepareRequest(
+            futId,
+            tx.topologyVersion(),
+            tx,
+            timeout,
+            reads,
+            writes,
+            mapping.hasNearCacheEntries(),
+            txNodes,
+            last,
+            tx.onePhaseCommit(),
+            tx.needReturnValue() && tx.implicit(),
+            tx.implicitSingle(),
+            mapping.explicitLock(),
+            tx.taskNameHash(),
+            firstClientReq,
+            allowWaitTopFut,
+            tx.txState().recovery()
+        );
+    }
+
+    /**
      * @param m Mapping.
      * @param res Response.
      * @param updateMapping Update mapping flag.
@@ -208,8 +266,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         UUID nodeId = m.primary().id();
 
-        for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
-            IgniteTxEntry txEntry = tx.entry(entry.getKey());
+        for (KeyedVersionedValue tup : res.ownedValues()) {
+            IgniteTxEntry txEntry = tx.entry(tup.txKey());
 
             assert txEntry != null;
 
@@ -220,8 +278,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                     if (cacheCtx.isNear()) {
                         GridNearCacheEntry nearEntry = (GridNearCacheEntry)txEntry.cached();
 
-                        CacheVersionedValue tup = entry.getValue();
-
                         nearEntry.resetFromPrimary(tup.value(),
                             tx.xidVersion(),
                             tup.version(),
@@ -230,8 +286,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                     }
                     else if (txEntry.cached().detached()) {
                         GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
-
-                        CacheVersionedValue tup = entry.getValue();
 
                         detachedEntry.resetFromPrimary(tup.value(), tx.xidVersion());
                     }
@@ -247,7 +301,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         tx.implicitSingleResult(res.returnValue());
 
-        for (IgniteTxKey key : res.filterFailedKeys()) {
+        for (IgniteTxKey key : F.emptyIfNull(res.filterFailedKeys())) {
             IgniteTxEntry txEntry = tx.entry(key);
 
             assert txEntry != null : "Missing tx entry for write key: " + key;
@@ -280,7 +334,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 if (map != null)
                     map.dhtVersion(res.dhtVersion(), writeVer);
 
-                tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
+                tx.readyNearLocks(m, F.emptyIfNull(res.pending()), F.emptyIfNull(res.committedVersions()),
+                    F.emptyIfNull(res.rolledbackVersions()));
             }
         }
     }

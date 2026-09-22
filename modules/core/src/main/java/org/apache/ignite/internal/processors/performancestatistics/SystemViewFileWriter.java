@@ -39,6 +39,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_BUFFER_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.DFLT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION;
@@ -100,12 +101,19 @@ class SystemViewFileWriter extends GridWorker {
             "metrics",
             "caches",
             "sql.queries",
-            "nodes");
+            "nodes",
+            "cacheGroupPageLists",
+            "dataRegionPageLists",
+            "partitionStates",
+            "statisticsPartitionData",
+            "metastorage",
+            "distributed.metastorage");
         sysViewPredicate = view -> !ignoredViews.contains(view.name());
 
         doWrite(buf -> {
             buf.put(OperationType.VERSION.id());
             buf.putShort(FILE_FORMAT_VERSION);
+            writeString(buf, VER_STR, false);
         });
     }
 

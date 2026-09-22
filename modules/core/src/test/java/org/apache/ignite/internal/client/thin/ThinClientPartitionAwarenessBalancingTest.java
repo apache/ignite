@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.BitSet;
-import java.util.List;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
 
 /**
@@ -39,12 +36,13 @@ public class ThinClientPartitionAwarenessBalancingTest extends ThinClientAbstrac
         for (int i = 0; i < 100; i++)
             client.cacheNames(); // Non-affinity requests should be randomly distributed among connections.
 
-        List<TestTcpClientChannel> channelList = F.asList(channels);
+        while (true) {
+            int channelIdx = nextOpChannelIdx();
 
-        while (!opsQueue.isEmpty()) {
-            T2<TestTcpClientChannel, ClientOperation> op = opsQueue.poll();
+            if (channelIdx < 0)
+                break;
 
-            usedConnections.set(channelList.indexOf(op.get1()));
+            usedConnections.set(channelIdx);
         }
 
         assertEquals(BitSet.valueOf(new byte[] {7}), usedConnections); // 7 = set of {0, 1, 2}

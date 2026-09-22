@@ -280,22 +280,13 @@ public class SqlStatisticsUserQueriesFastTest extends UserQueriesTestBase {
             "success");
     }
 
-    /**
-     * Check general failure metric if local select failed.
-     *
-     */
+    /** Check general failure metric if local select failed. */
     @Test
     public void testLocalSelectFailed() {
-        // Lazy query fails on `getAll`.
-        // `getAll' don't wrap IgniteSQLException with CacheException.
-        Class<? extends Throwable> expErr = GridTestUtils.getFieldValue(SqlFieldsQuery.class, "DFLT_LAZY")
-            ? IgniteSQLException.class
-            : CacheException.class;
-
         assertMetricsIncrementedOnlyOnReducer(() -> GridTestUtils.assertThrows(
             log,
             () -> cache.query(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID = failFunction()").setLocal(true)).getAll(),
-            expErr,
+            IgniteSQLException.class,
             null),
             "failed");
     }

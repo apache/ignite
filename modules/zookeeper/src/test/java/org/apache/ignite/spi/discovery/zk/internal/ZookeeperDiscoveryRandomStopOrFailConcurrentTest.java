@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.TestZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
@@ -233,7 +233,7 @@ public class ZookeeperDiscoveryRandomStopOrFailConcurrentTest extends ZookeeperD
     /** */
     private DiscoverySpiMBean getMbean(IgniteEx grid) {
         ZookeeperDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
-            ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
+            TestZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
         assertNotNull(bean);
 

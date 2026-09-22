@@ -1,0 +1,104 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.distributed;
+
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+/**
+ * Lock request message.
+ */
+public class GridNearUnlockRequest extends GridDistributedBaseMessage {
+    /** Keys. */
+    @GridToStringInclude
+    @Order(0)
+    public List<KeyCacheObject> keys;
+
+    /** Savepoint rollback flag. */
+    @Order(1)
+    public boolean forSavepoint;
+
+    /**
+     * Empty constructor.
+     */
+    public GridNearUnlockRequest() {
+        /* No-op. */
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param keyCnt Key count.
+     */
+    public GridNearUnlockRequest(int cacheId, int keyCnt) {
+        super(keyCnt, false);
+
+        this.cacheId = cacheId;
+    }
+
+    /**
+     * @return Keys.
+     */
+    public List<KeyCacheObject> keys() {
+        return keys;
+    }
+
+    /**
+     * @return {@code True} if unlock request is sent during rollback to savepoint.
+     */
+    public boolean forSavepoint() {
+        return forSavepoint;
+    }
+
+    /**
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    public void forSavepoint(boolean forSavepoint) {
+        this.forSavepoint = forSavepoint;
+    }
+
+    /**
+     * @param key Key.
+     */
+    public void addKey(KeyCacheObject key) {
+        if (keys == null)
+            keys = new ArrayList<>(keysCount());
+
+        keys.add(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int stripeIdx() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : ANY_STRIPE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
+        return ctx.txLockMessageLogger();
+    }
+    
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearUnlockRequest.class, this, "super", super.toString());
+    }
+}

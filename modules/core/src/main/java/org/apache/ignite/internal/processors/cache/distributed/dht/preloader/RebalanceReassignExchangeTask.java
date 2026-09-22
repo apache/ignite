@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 
 /**
  *
  */
-public class RebalanceReassignExchangeTask extends AbstractCachePartitionExchangeWorkerTask {
+public class RebalanceReassignExchangeTask implements CachePartitionExchangeWorkerTask {
     /** */
     private final GridDhtPartitionExchangeId exchId;
 
@@ -31,17 +30,13 @@ public class RebalanceReassignExchangeTask extends AbstractCachePartitionExchang
     private final GridDhtPartitionsExchangeFuture exchFut;
 
     /**
-     * @param secCtx Security context in which current task must be executed.
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
      */
     public RebalanceReassignExchangeTask(
-        SecurityContext secCtx,
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut
     ) {
-        super(secCtx);
-
         assert exchId != null;
         assert exchFut != null;
 

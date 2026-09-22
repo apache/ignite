@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -183,7 +184,10 @@ public class PartitionsExchangeAwareTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+            @Override public void onDoneBeforeTopologyUnlock(
+                GridDhtPartitionsExchangeFuture fut,
+                @Nullable Throwable err
+            ) {
                 try {
                     onDoneBeforeUnlockReachedLatch.countDown();
                     onDoneBeforeUnlockWaitLatch.await();

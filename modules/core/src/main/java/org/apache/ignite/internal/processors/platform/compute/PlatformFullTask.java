@@ -57,9 +57,6 @@ public final class PlatformFullTask extends PlatformAbstractTask {
     /** Cluster group. */
     private final ClusterGroup grp;
 
-    /** Platform task name. */
-    private final String taskName;
-
     /** {@code true} if distribution of the session attributes should be enabled. */
     private final boolean taskSesFullSupport;
 

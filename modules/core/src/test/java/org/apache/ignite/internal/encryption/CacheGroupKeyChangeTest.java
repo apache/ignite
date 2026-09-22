@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.encryption;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
@@ -1029,7 +1029,7 @@ public class CacheGroupKeyChangeTest extends AbstractEncryptionTest {
             if (!(customMsg instanceof InitMessage))
                 return;
 
-            InitMessage<Serializable> msg = (InitMessage<Serializable>)customMsg;
+            InitMessage<Message> msg = (InitMessage<Message>)customMsg;
 
             if (msg.type() != type.ordinal())
                 return;

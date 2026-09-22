@@ -17,14 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.junit.Test;
 
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /**
  * Tests for Rex simplification.
@@ -91,7 +105,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 0 and c3 = 1) or " +
                 "(c1 = 0 and c2 = 0 and c3 = 2)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))".equals(s.condition().toString())));
+                .and(satisfyCondition("AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))")));
 
         // Disjunction equality first operand removal.
         assertPlan("SELECT * FROM t1 WHERE " +
@@ -115,7 +129,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 0 and c3 = 1) or " +
                 "(c1 = 0 and c2 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
+                .and(satisfyCondition("AND(=($t0, 0), =($t1, 0))")));
 
         // Disjunction all operands removal.
         assertPlan("SELECT * FROM t1 WHERE " +
@@ -143,7 +157,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(c1 = 0 and c2 = 0) or " +
                 "(c2 = 0 and c1 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0))".equals(s.condition().toString())));
+                .and(satisfyCondition("AND(=($t0, 0), =($t1, 0))")));
 
         // Commutes and duplicates.
         assertPlan("SELECT * FROM t1 WHERE " +
@@ -151,7 +165,7 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 "(0 = c2 and c3 = 1 and c1 = 0 and c2 = 0) or " +
                 "(c2 = 0 and c3 = 2 and c1 = 0 and c2 = 0)", schema,
             isIndexScan("T1", "IDX1")
-                .and(s -> "AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))".equals(s.condition().toString())));
+                .and(satisfyCondition("AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[0, 1, 2]))")));
 
         // Simple join.
         assertPlan("SELECT * FROM t1 JOIN t2 ON (" +
@@ -192,5 +206,88 @@ public class RexSimplificationPlannerTest extends AbstractPlannerTest {
                 .and(s -> "OR(AND(=($t0, 0), =($t1, 1)), AND(=($t0, 0), =($t2, 2)), AND(=($t0, 1), =($t1, $t2)))"
                     .equals(s.condition().toString()))
         );
+    }
+
+    /** */
+    @Test
+    public void testFunctionFilterReduction() throws Exception {
+        IgniteSchema publicSchema = createSchema(createTable("T", single(), "ID", INTEGER));
+
+        // Deterministic echo.
+        publicSchema.addFunction("ECHO", IgniteScalarFunction.create(
+            Types.lookupMethod(RexSimplificationPlannerTest.class, "echo", int.class), true));
+
+        // Non-deterministic echo.
+        publicSchema.addFunction("ECHO_ND", IgniteScalarFunction.create(
+            Types.lookupMethod(RexSimplificationPlannerTest.class, "echo", int.class), false));
+
+        // Deterministic function with literal reduced (always-true).
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(1) = 1", publicSchema, isTableScan("T")
+            .and(s -> "=($t0, 0)".equals(s.condition().toString())));
+
+        // Deterministic function with literal reduced (always-false).
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(0) = 1", publicSchema, isInstanceOf(IgniteValues.class)
+            .and(v -> v.getTuples().isEmpty()));
+
+        // Deterministic function with another deterministic function reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(echo(1)) = 1", publicSchema, isTableScan("T")
+            .and(s -> "=($t0, 0)".equals(s.condition().toString())));
+
+        // Deterministic function with column not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(id) = 1", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO($t0), 1))".equals(s.condition().toString())));
+
+        // Deterministic function with dynamic param not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(?::int) = ?", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO(CAST(?0):INTEGER), ?1))".equals(s.condition().toString())));
+
+        // Non-deterministic function not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo_nd(1) = 1", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO_ND(1), 1))".equals(s.condition().toString())));
+
+        // Deterministic function with non-deterministic function not reduced.
+        assertPlan("SELECT * FROM t WHERE id = 0 AND echo(echo_nd(1)) = 1", publicSchema, isTableScan("T")
+            .and(s -> "AND(=($t0, 0), =(ECHO(ECHO_ND(1)), 1))".equals(s.condition().toString())));
+    }
+
+    /** */
+    @Test
+    public void testSearchOperandsGrouping() throws Exception {
+        IgniteSchema publicSchema = createSchema(createTable("T", single(), "ID", INTEGER));
+
+        String in = IntStream.range(1, RexUtils.SEARCH_EXPAND_OPERANDS_LIMIT * 3)
+            .mapToObj(Integer::toString).collect(Collectors.joining(", "));
+
+        assertPlan("SELECT * FROM t WHERE id IN (" + in + ")", publicSchema, isTableScan("T")
+            .and(checkOperandsLimit()));
+
+        assertPlan("SELECT * FROM t WHERE id NOT IN (" + in + ")", publicSchema, isTableScan("T")
+            .and(checkOperandsLimit()));
+    }
+
+    /** */
+    private Predicate<IgniteTableScan> checkOperandsLimit() {
+        return n -> {
+            RexNode expandedSearch = RexUtils.expandSearchNullableRecursive(Commons.emptyCluster().getRexBuilder(),
+                null, n.condition());
+
+            RexVisitor<Void> operandsChecker = new RexVisitorImpl<>(true) {
+                @Override public Void visitCall(RexCall call) {
+                    assertTrue("Unexpected operands count: " + call.getOperands().size(),
+                        call.getOperands().size() <= RexUtils.SEARCH_EXPAND_OPERANDS_LIMIT);
+
+                    return super.visitCall(call);
+                }
+            };
+
+            expandedSearch.accept(operandsChecker);
+
+            return true;
+        };
+    }
+
+    /** */
+    public static int echo(int val) {
+        return val;
     }
 }

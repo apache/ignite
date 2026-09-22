@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.plan.AbstractRelOptPlanner;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
@@ -45,6 +48,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -61,6 +65,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -167,6 +172,7 @@ public class TraitUtils {
                 RelOptRule.convert(
                     rel,
                     rel.getTraitSet()
+                        .replace(RewindabilityTrait.ONE_WAY)
                         .replace(CorrelationTrait.UNCORRELATED)
                 ),
                 toTrait);
@@ -378,6 +384,10 @@ public class TraitUtils {
             @Override public List<SearchBounds> getSearchBounds(String tag) {
                 return ((RelInputEx)input).getSearchBounds(tag);
             }
+
+            @Override public Window.Group getWindowGroup(String tag) {
+                return ((RelInputEx)input).getWindowGroup(tag);
+            }
         };
     }
 
@@ -419,7 +429,47 @@ public class TraitUtils {
 
         assert traits.size() <= 1;
 
+        if (!traits.isEmpty() && traits.get(0).left.satisfies(requiredTraits)) {
+            // Return most relaxed parent traits.
+            return Pair.of(requiredTraits, traits.get(0).right);
+        }
+
         return F.first(traits);
+    }
+
+    /** */
+    public static List<RelTraitSet> removeDuplicates(List<RelTraitSet> traits) {
+        BitSet duplicates = null;
+
+        for (int i = 0; i < traits.size() - 1; i++) {
+            if (duplicates != null && duplicates.get(i))
+                continue;
+
+            for (int j = i + 1; j < traits.size(); j++) {
+                if (duplicates != null && duplicates.get(j))
+                    continue;
+
+                // Return most strict child traits.
+                if (traits.get(i).satisfies(traits.get(j)))
+                    (duplicates == null ? duplicates = new BitSet() : duplicates).set(j);
+                else if (traits.get(j).satisfies(traits.get(i))) {
+                    (duplicates == null ? duplicates = new BitSet() : duplicates).set(i);
+                    break;
+                }
+            }
+        }
+
+        if (duplicates == null)
+            return traits;
+
+        List<RelTraitSet> newTraits = new ArrayList<>(traits.size() - duplicates.cardinality());
+
+        for (int i = 0; i < traits.size(); i++) {
+            if (!duplicates.get(i))
+                newTraits.add(traits.get(i));
+        }
+
+        return newTraits;
     }
 
     /** */
@@ -427,7 +477,10 @@ public class TraitUtils {
         assert !F.isEmpty(inTraits);
 
         RelTraitSet outTraits = rel.getCluster().traitSetOf(IgniteConvention.INSTANCE);
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations = combinations(outTraits, inTraits);
+
+        inTraits = Commons.transform(inTraits, TraitUtils::removeDuplicates);
+
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations = combinations(rel, outTraits, inTraits);
 
         if (combinations.isEmpty())
             return ImmutableList.of();
@@ -448,14 +501,19 @@ public class TraitUtils {
     }
 
     /** */
-    private static Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits) {
-        Set<Pair<RelTraitSet, List<RelTraitSet>>> out = new HashSet<>();
-        fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()], 0);
+    private static Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations(
+        TraitsAwareIgniteRel rel,
+        RelTraitSet outTraits,
+        List<List<RelTraitSet>> inTraits
+    ) {
+        Set<Pair<RelTraitSet, List<RelTraitSet>>> out = new LinkedHashSet<>();
+        fillRecursive(rel, outTraits, inTraits, out, new RelTraitSet[inTraits.size()], 0);
         return out;
     }
 
     /** */
     private static boolean fillRecursive(
+        TraitsAwareIgniteRel rel,
         RelTraitSet outTraits,
         List<List<RelTraitSet>> inTraits,
         Set<Pair<RelTraitSet, List<RelTraitSet>>> result,
@@ -463,6 +521,13 @@ public class TraitUtils {
         int idx
     ) throws ControlFlowException {
         boolean processed = false, last = idx == inTraits.size() - 1;
+
+        if (last) {
+            assert rel.getCluster().getPlanner() instanceof AbstractRelOptPlanner;
+
+            ((AbstractRelOptPlanner)rel.getCluster().getPlanner()).checkCancel();
+        }
+
         for (RelTraitSet t : inTraits.get(idx)) {
             assert t.getConvention() == IgniteConvention.INSTANCE;
 
@@ -471,7 +536,7 @@ public class TraitUtils {
 
             if (last)
                 result.add(Pair.of(outTraits, ImmutableList.copyOf(combination)));
-            else if (!fillRecursive(outTraits, inTraits, result, combination, idx + 1))
+            else if (!fillRecursive(rel, outTraits, inTraits, result, combination, idx + 1))
                 return false;
         }
         return processed;

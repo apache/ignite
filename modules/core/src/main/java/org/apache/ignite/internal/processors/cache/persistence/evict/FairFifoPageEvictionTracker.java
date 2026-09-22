@@ -55,7 +55,12 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void touchPage(long pageId) throws IgniteCheckedException {
+    @Override protected void initPage(long pageId) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void touchPage(long pageId) {
         pageUsageList.addLast(PageIdUtils.pageIndex(pageId));
     }
 
@@ -65,7 +70,7 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void forgetPage(long pageId) throws IgniteCheckedException {
+    @Override public synchronized void forgetPage(long pageId) {
         // No-op.
     }
 

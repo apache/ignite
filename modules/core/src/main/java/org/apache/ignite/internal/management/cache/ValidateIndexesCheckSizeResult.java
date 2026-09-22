@@ -17,17 +17,13 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.internal.util.IgniteUtils.readCollection;
-import static org.apache.ignite.internal.util.IgniteUtils.writeCollection;
 
 /**
  * Result of checking size cache and index.
@@ -37,11 +33,13 @@ public class ValidateIndexesCheckSizeResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache size. */
-    private long cacheSize;
+    @Order(0)
+    long cacheSize;
 
     /** Issues. */
+    @Order(1)
     @GridToStringExclude
-    private Collection<ValidateIndexesCheckSizeIssue> issues;
+    Collection<ValidateIndexesCheckSizeIssue> issues;
 
     /**
      * Default constructor.
@@ -77,18 +75,6 @@ public class ValidateIndexesCheckSizeResult extends IgniteDataTransferObject {
      */
     public long cacheSize() {
         return cacheSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(cacheSize);
-        writeCollection(out, issues);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheSize = in.readLong();
-        issues = readCollection(in);
     }
 
     /** {@inheritDoc} */

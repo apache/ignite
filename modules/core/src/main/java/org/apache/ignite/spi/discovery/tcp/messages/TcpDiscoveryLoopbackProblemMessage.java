@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -26,14 +27,18 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * This means that remote node is configured to use loopback address, but joining node is not, or vise versa.
  */
 public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Remote node addresses. */
-    private final Collection<String> addrs;
+    @Order(0)
+    Collection<String> addrs;
 
     /** Remote node host names. */
-    private final Collection<String> hostNames;
+    @Order(1)
+    Collection<String> hostNames;
+
+    /** */
+    public TcpDiscoveryLoopbackProblemMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.

@@ -19,17 +19,17 @@ package org.apache.ignite.internal.managers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteDiagnosticRequest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -85,11 +85,11 @@ public class IgniteDiagnosticPartitionReleaseFutureLimitTest extends GridCommonA
 
         TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(grid(1));
         spi1.blockMessages((node, msg) -> msg instanceof GridDhtAtomicDeferredUpdateResponse);
-        spi1.record(IgniteDiagnosticMessage.class);
+        spi1.record(IgniteDiagnosticRequest.class);
 
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(grid(2));
         spi2.blockMessages((node, msg) -> msg instanceof GridDhtAtomicDeferredUpdateResponse);
-        spi2.record(IgniteDiagnosticMessage.class);
+        spi2.record(IgniteDiagnosticRequest.class);
 
         // Populate the cache in async manner. We don't want to wait for completion all cache operations.
         // The big number of updates is needed for to enlist a huge number of cache futures into the partition release future.
@@ -147,7 +147,7 @@ public class IgniteDiagnosticPartitionReleaseFutureLimitTest extends GridCommonA
         AtomicBoolean stop
     ) {
         IgniteInternalFuture<List<T4<Long, Integer, Integer, String>>> futExec = GridTestUtils.runAsync(() -> {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)node.context().pools().getSystemExecutorService();
+            IgniteThreadPoolExecutor exec = node.context().pools().getSystemExecutorService();
 
             List<T4<Long, Integer, Integer, String>> inf = new ArrayList<>();
 

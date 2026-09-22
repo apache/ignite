@@ -35,7 +35,10 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.Marshalled;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -44,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -58,27 +62,40 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
  * <tt>public</tt> due to certain limitations of Java technology.
  */
 public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
-    Comparable<TcpDiscoveryNode>, Externalizable {
+    Comparable<TcpDiscoveryNode>, Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    private volatile UUID id;
+    @Order(0)
+    volatile UUID id;
 
     /** Consistent ID. */
     @GridToStringInclude
-    private Object consistentId;
+    @Marshalled("consistentIdBytes")
+    Object consistentId;
+
+    /** Serialized {@link #consistentId}. */
+    @Order(1)
+    byte[] consistentIdBytes;
 
     /** Node attributes. */
     @GridToStringExclude
-    private Map<String, Object> attrs;
+    @Marshalled("attrsBytes")
+    Map<String, Object> attrs;
+
+    /** Serialized {@link #attrs}. */
+    @Order(2)
+    byte[] attrsBytes;
 
     /** Internal discovery addresses as strings. */
     @GridToStringInclude
-    private Collection<String> addrs;
+    @Order(3)
+    Collection<String> addrs;
 
     /** Internal discovery host names as strings. */
-    private Collection<String> hostNames;
+    @Order(4)
+    Collection<String> hostNames;
 
     /** */
     @GridToStringInclude
@@ -86,21 +103,25 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringInclude
-    private int discPort;
+    @Order(5)
+    int discPort;
 
     /** Node metrics. */
     @GridToStringExclude
-    private volatile ClusterMetrics metrics;
+    @Order(6)
+    volatile ClusterMetricsSnapshot clusterMetricsSnapshot;
 
     /** Node cache metrics. */
     @GridToStringExclude
-    private volatile Map<Integer, CacheMetrics> cacheMetrics;
+    private volatile Map<Integer, CacheMetrics> cacheMetricsSnapshot;
 
     /** Node order in the topology. */
-    private volatile long order;
+    @Order(7)
+    volatile long order;
 
     /** Node order in the topology (internal). */
-    private volatile long intOrder;
+    @Order(8)
+    volatile long intOrder;
 
     /** The most recent time when metrics update message was received from the node. */
     @GridToStringExclude
@@ -122,7 +143,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private boolean loc;
 
     /** Version. */
-    private IgniteProductVersion ver;
+    @Order(9)
+    IgniteProductVersion ver;
 
     /** Alive check time (used by clients). */
     @GridToStringExclude
@@ -130,7 +152,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** Client router node ID. */
     @GridToStringExclude
-    private UUID clientRouterNodeId;
+    @Order(10)
+    UUID clientRouterNodeId;
+
+    /** Node features. */
+    @GridToStringExclude
+    @Order(11)
+    IgniteNodeFeatureSet features;
 
     /** */
     @GridToStringExclude
@@ -161,6 +189,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param metricsProvider Metrics provider.
      * @param ver Version.
      * @param consistentId Node consistent ID.
+     * @param features Node features.
      */
     public TcpDiscoveryNode(UUID id,
         Collection<String> addrs,
@@ -168,11 +197,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId
+        Serializable consistentId,
+        IgniteNodeFeatureSet features
     ) {
         assert id != null;
         assert metricsProvider != null;
         assert ver != null;
+        assert features != null;
 
         this.id = id;
 
@@ -185,11 +216,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         this.discPort = discPort;
         this.metricsProvider = metricsProvider;
         this.ver = ver;
+        this.features = features;
 
         this.consistentId = consistentId != null ? consistentId : U.consistentId(sortedAddrs, discPort);
 
-        metrics = metricsProvider.metrics();
-        cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
@@ -258,6 +288,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
+
+        // Invalidate the @Marshalled cache: attrs are mutated after the first marshal (auth adds the security
+        // subject on join), and a stale attrsBytes would propagate the pre-auth attributes.
+        attrsBytes = null;
     }
 
     /**
@@ -271,40 +305,31 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
-        if (metricsProvider != null) {
-            ClusterMetrics metrics0 = metricsProvider.metrics();
+        assert clusterMetricsSnapshot != null || metricsProvider != null;
 
-            metrics = metrics0;
-
-            return metrics0;
-        }
-
-        return metrics;
+        return metricsProvider == null ? clusterMetricsSnapshot : metricsProvider.metrics();
     }
 
     /** {@inheritDoc} */
     @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
-        this.metrics = metrics;
+        this.clusterMetricsSnapshot = ClusterMetricsSnapshot.of(metrics);
     }
 
     /** {@inheritDoc} */
     @Override public Map<Integer, CacheMetrics> cacheMetrics() {
         if (metricsProvider != null) {
-            Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
-
-            cacheMetrics = cacheMetrics0;
-
-            return cacheMetrics0;
+            // TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-28965
+            cacheMetricsSnapshot = metricsProvider.cacheMetrics();
         }
 
-        return cacheMetrics;
+        return cacheMetricsSnapshot;
     }
 
     /** {@inheritDoc} */
     @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
-        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
+        this.cacheMetricsSnapshot = cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
     }
 
     /**
@@ -342,6 +367,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet features() {
+        return features;
     }
 
     /**
@@ -463,7 +493,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** {@inheritDoc} */
     @Override public boolean isClient() {
         if (!cacheCliInit) {
-            Boolean clientModeAttr = ((ClusterNode)this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+            Boolean clientModeAttr = (Boolean)attrs.get(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
             cacheCli = clientModeAttr != null && clientModeAttr;
 
@@ -529,7 +559,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public TcpDiscoveryNode clientReconnectNode(Map<String, Object> nodeAttrs) {
         TcpDiscoveryNode node = new TcpDiscoveryNode(
-            id, addrs, hostNames, discPort, metricsProvider, ver, null
+            id,
+            addrs,
+            hostNames,
+            discPort,
+            metricsProvider,
+            ver,
+            null,
+            features
         );
 
         node.attrs = Collections.unmodifiableMap(new HashMap<>(nodeAttrs));
@@ -565,7 +602,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         // Cluster metrics
         byte[] mtr = null;
 
-        ClusterMetrics metrics = this.metrics;
+        var metrics = this.clusterMetricsSnapshot;
 
         if (metrics != null)
             mtr = ClusterMetricsSnapshot.serialize(metrics);
@@ -596,7 +633,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
-            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
+            clusterMetricsSnapshot = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
         // Legacy: Cache metrics
         int size = in.readInt();
@@ -629,7 +666,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryNode.class, this, "isClient", isClient());
+        return S.toString(TcpDiscoveryNode.class, this, "isClient", isClient(), "dataCenterId", dataCenterId());
     }
 
     /**

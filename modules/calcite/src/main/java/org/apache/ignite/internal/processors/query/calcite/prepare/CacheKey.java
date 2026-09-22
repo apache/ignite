@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.ignite.internal.util.typedef.X;
 
 /**
  *
@@ -50,14 +49,6 @@ public class CacheKey {
         this.contextKey = contextKey;
         paramTypes = params.length == 0 ? null :
             Arrays.stream(params).map(p -> (p != null) ? p.getClass() : Void.class).toArray(Class[]::new);
-    }
-
-    /**
-     * @param schemaName Schema name.
-     * @param query Query string.
-     */
-    public CacheKey(String schemaName, String query) {
-        this(schemaName, query, null, X.EMPTY_OBJECT_ARRAY);
     }
 
     /** {@inheritDoc} */

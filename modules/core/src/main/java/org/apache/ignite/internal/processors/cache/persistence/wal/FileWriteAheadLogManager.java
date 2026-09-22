@@ -128,7 +128,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -2180,7 +2179,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(archiver).start();
+            U.newThread(archiver).start();
         }
 
         /**
@@ -2320,7 +2319,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
 
         /**
@@ -2684,7 +2683,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
     }
 
@@ -3383,7 +3382,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             isCancelled.set(false);
 
-            new IgniteThread(this).start();
+            U.newThread(this).start();
         }
     }
 
@@ -3631,13 +3630,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) {
             assert timeoutRolloverMux != null;
 
+            GridTimeoutProcessor timeOutProc = cctx.time();
+
             synchronized (timeoutRolloverMux) {
                 TimeoutRollover timeoutRollover = this.timeoutRollover;
 
                 if (timeoutRollover != null) {
                     timeoutRollover.cancel();
 
-                    cctx.time().removeTimeoutObject(timeoutRollover);
+                    timeOutProc.removeTimeoutObject(timeoutRollover);
 
                     this.timeoutRollover = null;
                 }

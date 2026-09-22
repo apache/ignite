@@ -17,88 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 
 /**
  * Message related to particular cache.
  */
-public abstract class GridCacheIdMessage extends GridCacheMessage {
+public abstract class GridCacheIdMessage extends GridCacheMessage implements CacheIdAware {
     /** Cache ID. */
     @GridToStringInclude
-    protected int cacheId;
-
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
+    @Order(0)
+    public int cacheId;
 
     /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
+    @Override public int cacheId() {
         return cacheId;
     }
 

@@ -18,139 +18,136 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
-import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.IGNITE_UUID;
 
 /**
  * Job execution request.
  */
-public class GridJobExecuteRequest implements ExecutorAwareMessage {
+@SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
+public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnmarshalMessage {
     /** */
-    private IgniteUuid sesId;
+    @Order(0)
+    IgniteUuid sesId;
 
     /** */
-    private IgniteUuid jobId;
-
-    /** */
-    @GridToStringExclude
-    private byte[] jobBytes;
-
-    /** */
-    @GridToStringExclude
-    @GridDirectTransient
-    private ComputeJob job;
-
-    /** */
-    private long startTaskTime;
-
-    /** */
-    private long timeout;
-
-    /** */
-    private String taskName;
-
-    /** */
-    private String userVer;
-
-    /** */
-    private String taskClsName;
-
-    /** Node class loader participants. */
-    @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
-    private Map<UUID, IgniteUuid> ldrParticipants;
+    @Order(1)
+    IgniteUuid jobId;
 
     /** */
     @GridToStringExclude
-    private byte[] sesAttrsBytes;
+    @Order(2)
+    byte[] jobBytes;
 
     /** */
     @GridToStringExclude
-    @GridDirectTransient
-    private Map<Object, Object> sesAttrs;
+    @Marshalled("jobBytes")
+    ComputeJob job;
+
+    /** */
+    @Order(3)
+    long startTaskTime;
+
+    /** */
+    @Order(4)
+    long timeout;
+
+    /** */
+    @Order(5)
+    String taskName;
+
+    /** Deployment of the task classes. */
+    @Order(6)
+    GridDeploymentInfoMessage depInfo;
+
+    /** */
+    @Order(7)
+    String taskClsName;
 
     /** */
     @GridToStringExclude
-    private byte[] jobAttrsBytes;
+    @Order(8)
+    byte[] sesAttrsBytes;
 
     /** */
     @GridToStringExclude
-    @GridDirectTransient
-    private Map<? extends Serializable, ? extends Serializable> jobAttrs;
+    @Marshalled("sesAttrsBytes")
+    Map<Object, Object> sesAttrs;
+
+    /** */
+    @GridToStringExclude
+    @Order(9)
+    byte[] jobAttrsBytes;
+
+    /** */
+    @GridToStringExclude
+    @Marshalled("jobAttrsBytes")
+    Map<? extends Serializable, ? extends Serializable> jobAttrs;
 
     /** Checkpoint SPI name. */
-    private String cpSpi;
+    @Order(10)
+    String cpSpi;
 
     /** */
-    @GridDirectTransient
-    private Collection<ComputeJobSibling> siblings;
-
-    /** */
-    private byte[] siblingsBytes;
+    @Order(11)
+    @Nullable IgniteUuid[] siblingJobsIds;
 
     /** Transient since needs to hold local creation time. */
-    @GridDirectTransient
-    private long createTime = U.currentTimeMillis();
+    private final long createTime = U.currentTimeMillis();
 
     /** */
-    private IgniteUuid clsLdrId;
+    @Order(12)
+    boolean forceLocDep;
 
     /** */
-    private DeploymentMode depMode;
+    @Order(13)
+    boolean sesFullSup;
 
     /** */
-    private boolean dynamicSiblings;
+    @Order(14)
+    boolean internal;
 
     /** */
-    private boolean forceLocDep;
+    @Order(15)
+    Collection<UUID> top;
 
     /** */
-    private boolean sesFullSup;
+    @Marshalled("topPredBytes")
+    IgnitePredicate<ClusterNode> topPred;
 
     /** */
-    private boolean internal;
+    @Order(16)
+    byte[] topPredBytes;
 
     /** */
-    @GridDirectCollection(UUID.class)
-    private Collection<UUID> top;
+    @Order(17)
+    int[] cacheIds;
 
     /** */
-    @GridDirectTransient
-    private IgnitePredicate<ClusterNode> topPred;
+    @Order(18)
+    int part;
 
     /** */
-    private byte[] topPredBytes;
+    @Order(19)
+    AffinityTopologyVersion topVer;
 
     /** */
-    private int[] idsOfCaches;
-
-    /** */
-    private int part;
-
-    /** */
-    private AffinityTopologyVersion topVer;
-
-    /** */
-    private String execName;
+    @Order(20)
+    String execName;
 
     /**
      * Default constructor.
@@ -163,26 +160,18 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
      * @param sesId Task session ID.
      * @param jobId Job ID.
      * @param taskName Task name.
-     * @param userVer Code version.
+     * @param depInfo Deployment of the task classes.
      * @param taskClsName Fully qualified task name.
-     * @param jobBytes Job serialized body.
      * @param job Job.
      * @param startTaskTime Task execution start time.
      * @param timeout Task execution timeout.
      * @param top Topology.
      * @param topPred Topology predicate.
-     * @param topPredBytes Marshalled topology predicate.
-     * @param siblingsBytes Serialized collection of split siblings.
      * @param siblings Collection of split siblings.
-     * @param sesAttrsBytes Map of session attributes.
      * @param sesAttrs Session attributes.
-     * @param jobAttrsBytes Job context attributes.
      * @param jobAttrs Job attributes.
      * @param cpSpi Collision SPI.
-     * @param clsLdrId Task local class loader id.
-     * @param depMode Task deployment mode.
      * @param dynamicSiblings {@code True} if siblings are dynamic.
-     * @param ldrParticipants Other node class loader IDs that can also load classes.
      * @param forceLocDep {@code True} If remote node should ignore deployment settings.
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
@@ -195,26 +184,18 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
             IgniteUuid sesId,
             IgniteUuid jobId,
             String taskName,
-            String userVer,
+            GridDeploymentInfo depInfo,
             String taskClsName,
-            byte[] jobBytes,
             ComputeJob job,
             long startTaskTime,
             long timeout,
             @Nullable Collection<UUID> top,
             @Nullable IgnitePredicate<ClusterNode> topPred,
-            byte[] topPredBytes,
-            byte[] siblingsBytes,
             Collection<ComputeJobSibling> siblings,
-            byte[] sesAttrsBytes,
             Map<Object, Object> sesAttrs,
-            byte[] jobAttrsBytes,
             Map<? extends Serializable, ? extends Serializable> jobAttrs,
             String cpSpi,
-            IgniteUuid clsLdrId,
-            DeploymentMode depMode,
             boolean dynamicSiblings,
-            Map<UUID, IgniteUuid> ldrParticipants,
             boolean forceLocDep,
             boolean sesFullSup,
             boolean internal,
@@ -226,88 +207,70 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         assert jobId != null;
         assert taskName != null;
         assert taskClsName != null;
-        assert job != null || jobBytes != null;
-        assert sesAttrs != null || sesAttrsBytes != null || !sesFullSup;
-        assert jobAttrs != null || jobAttrsBytes != null;
-        assert top != null || topPred != null || topPredBytes != null;
-        assert clsLdrId != null;
-        assert userVer != null;
-        assert depMode != null;
+        assert job != null;
+        assert sesAttrs != null || !sesFullSup;
+        assert jobAttrs != null;
+        assert top != null || topPred != null;
+        assert depInfo != null;
 
         this.sesId = sesId;
         this.jobId = jobId;
         this.taskName = taskName;
-        this.userVer = userVer;
+        this.depInfo = new GridDeploymentInfoMessage(depInfo);
         this.taskClsName = taskClsName;
-        this.jobBytes = jobBytes;
         this.job = job;
         this.startTaskTime = startTaskTime;
         this.timeout = timeout;
         this.top = top;
         this.topVer = topVer;
         this.topPred = topPred;
-        this.topPredBytes = topPredBytes;
-        this.siblingsBytes = siblingsBytes;
-        this.siblings = siblings;
-        this.sesAttrsBytes = sesAttrsBytes;
         this.sesAttrs = sesAttrs;
-        this.jobAttrsBytes = jobAttrsBytes;
         this.jobAttrs = jobAttrs;
-        this.clsLdrId = clsLdrId;
-        this.depMode = depMode;
-        this.dynamicSiblings = dynamicSiblings;
-        this.ldrParticipants = ldrParticipants;
         this.forceLocDep = forceLocDep;
         this.sesFullSup = sesFullSup;
         this.internal = internal;
-        this.idsOfCaches = cacheIds;
+        this.cacheIds = cacheIds;
         this.part = part;
         this.topVer = topVer;
         this.execName = execName;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
+
+        if (!dynamicSiblings && !F.isEmpty(siblings))
+            siblingJobsIds = siblings.stream().map(ComputeJobSibling::getJobId).toArray(IgniteUuid[]::new);
     }
-    
+
     /**
      * @return Task session ID.
      */
-    public IgniteUuid getSessionId() {
+    public IgniteUuid sessionId() {
         return sesId;
     }
 
     /**
      * @return Job session ID.
      */
-    public IgniteUuid getJobId() {
+    public IgniteUuid jobId() {
         return jobId;
     }
 
+    /** @return Deployment of the task classes. */
+    public GridDeploymentInfo deploymentInfo() {
+        return depInfo;
+    }
+
     /**
-     * @return Task version.
+     * @return Task class name.
      */
-    public String getTaskClassName() {
+    public String taskClassName() {
         return taskClsName;
     }
 
     /**
      * @return Task name.
      */
-    public String getTaskName() {
+    public String taskName() {
         return taskName;
-    }
-
-    /**
-     * @return Task version.
-     */
-    public String getUserVersion() {
-        return userVer;
-    }
-
-    /**
-     * @return Serialized job bytes.
-     */
-    public byte[] getJobBytes() {
-        return jobBytes;
     }
 
     /**
@@ -320,14 +283,14 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /**
      * @return Task start time.
      */
-    public long getStartTaskTime() {
+    public long startTaskTime() {
         return startTaskTime;
     }
 
     /**
      * @return Timeout.
      */
-    public long getTimeout() {
+    public long timeout() {
         return timeout;
     }
 
@@ -341,24 +304,10 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @return Serialized collection of split siblings.
+     * @return Siblings jobs ids.
      */
-    public byte[] getSiblingsBytes() {
-        return siblingsBytes;
-    }
-
-    /**
-     * @return Job siblings.
-     */
-    public Collection<ComputeJobSibling> getSiblings() {
-        return siblings;
-    }
-
-    /**
-     * @return Session attributes.
-     */
-    public byte[] getSessionAttributesBytes() {
-        return sesAttrsBytes;
+    public @Nullable IgniteUuid[] siblingJobsIds() {
+        return siblingJobsIds;
     }
 
     /**
@@ -371,13 +320,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /**
      * @return Job attributes.
      */
-    public byte[] getJobAttributesBytes() {
-        return jobAttrsBytes;
-    }
-
-    /**
-     * @return Job attributes.
-     */
     public Map<? extends Serializable, ? extends Serializable> getJobAttributes() {
         return jobAttrs;
     }
@@ -385,44 +327,14 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /**
      * @return Checkpoint SPI name.
      */
-    public String getCheckpointSpi() {
+    public String checkpointSpi() {
         return cpSpi;
-    }
-
-    /**
-     * @return Task local class loader id.
-     */
-    public IgniteUuid getClassLoaderId() {
-        return clsLdrId;
-    }
-
-    /**
-     * @return Deployment mode.
-     */
-    public DeploymentMode getDeploymentMode() {
-        return depMode;
-    }
-
-    /**
-     * Returns true if siblings list is dynamic, i.e. task is continuous.
-     *
-     * @return True if siblings list is dynamic.
-     */
-    public boolean isDynamicSiblings() {
-        return dynamicSiblings;
-    }
-
-    /**
-     * @return Node class loader participant map.
-     */
-    public Map<UUID, IgniteUuid> getLoaderParticipants() {
-        return ldrParticipants;
     }
 
     /**
      * @return Returns {@code true} if deployment should always be used.
      */
-    public boolean isForceLocalDeployment() {
+    public boolean forceLocalDeployment() {
         return forceLocDep;
     }
 
@@ -441,37 +353,30 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * @return Marshalled topology predicate.
-     */
-    public byte[] getTopologyPredicateBytes() {
-        return topPredBytes;
-    }
-
-    /**
      * @return {@code True} if session attributes are enabled.
      */
-    public boolean isSessionFullSupport() {
+    public boolean sessionFullSupport() {
         return sesFullSup;
     }
 
     /**
      * @return {@code True} if internal job.
      */
-    public boolean isInternal() {
+    public boolean internal() {
         return internal;
     }
 
     /**
      * @return Caches' identifiers to reserve specified partition for job execution.
      */
-    public int[] getCacheIds() {
-        return idsOfCaches;
+    public int[] cacheIds() {
+        return cacheIds;
     }
 
     /**
-     * @return Partitions to lock for job execution.
+     * @return Partition to lock for job execution.
      */
-    public int getPartition() {
+    public int partition() {
         return part;
     }
 
@@ -483,403 +388,13 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /**
      * @return Affinity version which was used to map job
      */
-    public AffinityTopologyVersion getTopVer() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(clsLdrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString(cpSpi))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeBoolean(dynamicSiblings))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeString(execName))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeBoolean(forceLocDep))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeIntArray(idsOfCaches))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeBoolean(internal))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeByteArray(jobAttrsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeByteArray(jobBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeIgniteUuid(jobId))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeMap(ldrParticipants, MessageCollectionItemType.UUID, IGNITE_UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeInt(part))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeByteArray(sesAttrsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeBoolean(sesFullSup))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeIgniteUuid(sesId))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeByteArray(siblingsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeLong(startTaskTime))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeString(taskClsName))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeString(taskName))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeLong(timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
-                if (!writer.writeCollection(top, MessageCollectionItemType.UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeByteArray(topPredBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeString(userVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                clsLdrId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                cpSpi = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                byte depModeOrd;
-
-                depModeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                depMode = DeploymentMode.fromOrdinal(depModeOrd);
-
-                reader.incrementState();
-
-            case 3:
-                dynamicSiblings = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                execName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                forceLocDep = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                idsOfCaches = reader.readIntArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                internal = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                jobAttrsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                jobBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                jobId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                part = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                sesAttrsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                sesFullSup = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                sesId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                siblingsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                startTaskTime = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                taskClsName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                taskName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                timeout = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 21:
-                top = reader.readCollection(MessageCollectionItemType.UUID);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                topPredBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                userVer = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 1;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridJobExecuteRequest.class, this);
     }
+
 }

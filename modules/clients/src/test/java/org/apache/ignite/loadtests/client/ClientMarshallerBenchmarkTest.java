@@ -22,14 +22,11 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,15 +45,10 @@ public class ClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /**
      */
     public ClientMarshallerBenchmarkTest() {
-        try {
-            marshallers = new GridClientMarshaller[] {
-                new GridClientJdkMarshaller(MarshallerUtils.classNameFilter(this.getClass().getClassLoader())),
-                new GridClientOptimizedMarshaller()
-            };
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        marshallers = new GridClientMarshaller[]{
+            new GridClientJdkMarshaller(),
+            new GridClientOptimizedMarshaller()
+        };
     }
 
     /**

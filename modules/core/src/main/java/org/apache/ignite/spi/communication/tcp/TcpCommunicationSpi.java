@@ -19,7 +19,6 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.util.BitSet;
 import java.util.Collection;
@@ -47,7 +46,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -55,7 +53,7 @@ import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteFuture;
@@ -69,14 +67,13 @@ import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.ClusterStateProvider;
+import org.apache.ignite.spi.communication.tcp.internal.CommunicationConnectionStateHandler;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationDiscoveryEventListener;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils;
-import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectGateway;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
@@ -94,6 +91,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage.UNDEFINED_CONNECTION_INDEX;
 
@@ -195,6 +193,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionInde
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
+@GridToStringInclude
 public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
@@ -264,18 +263,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
-    /** Node ID message type. */
-    public static final short NODE_ID_MSG_TYPE = -1;
-
-    /** Recovery last received ID message type. */
-    public static final short RECOVERY_LAST_ID_MSG_TYPE = -2;
-
-    /** Handshake message type. */
-    public static final short HANDSHAKE_MSG_TYPE = -3;
-
-    /** Handshake wait message type. */
-    public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
-
     /** Communication metrics group name. */
     public static final String COMMUNICATION_METRICS_GROUP_NAME = MetricUtils.metricName("communication", "tcp");
 
@@ -338,7 +325,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     private volatile ConnectionClientPool clientPool;
 
     /** Recovery and idle clients handler. */
-    private volatile CommunicationWorker commWorker;
+    private volatile CommunicationConnectionStateHandler conStateHnd;
 
     /** Server listener. */
     private volatile InboundConnectionHandler srvLsnr;
@@ -372,6 +359,17 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     @Deprecated
     @Override public void setListener(CommunicationListener<Message> lsnr) {
         this.lsnr = lsnr;
+    }
+
+    /**
+     * @param metricName Metric name.
+     * @return {@code True} if the metric name is a pure TCP Communication metric. {@code False} if is other metric or
+     * metric of other TCP Communication component.
+     */
+    public static boolean isCommunicationMetrics(String metricName) {
+        return metricName.startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)
+            && !metricName.startsWith(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME + SEPARATOR)
+            && !metricName.equals(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
     }
 
     /** {@inheritDoc} */
@@ -412,9 +410,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        GridNioServer<Message> srv = nioSrvWrapper.nio();
+        if (metricsLsnr == null)
+            return 0;
 
-        return srv != null ? srv.outboundMessagesQueueSize() : 0;
+        return metricsLsnr.outboundMessagesQueueSize();
     }
 
     /** {@inheritDoc} */
@@ -597,7 +596,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         }
 
         if (cfg.connectionsPerNode() > 1)
-            connPlc = new RoundRobinConnectionPolicy(cfg);
+            connPlc = new RoundRobinConnectionPolicy(cfg.connectionsPerNode());
         else
             connPlc = new FirstConnectionPolicy();
 
@@ -608,7 +607,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             locNodeSupplier,
             stateProvider,
             clientPool,
-            commWorker,
+            conStateHnd,
             connectGate,
             failureProcSupplier,
             attributeNames,
@@ -617,7 +616,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             ctxInitLatch,
             client,
             igniteExSupplier,
-            new CommunicationListener<Message>() {
+            new CommunicationListener<>() {
                 @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
                     notifyListener(nodeId, msg, msgC);
                 }
@@ -639,20 +638,19 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             log,
             cfg,
             attributeNames,
-            tracing,
             nodeGetter,
             locNodeSupplier,
             connectGate,
             stateProvider,
             this::getExceptionRegistry,
-            commWorker,
+            conStateHnd,
             ignite.configuration(),
             this.srvLsnr,
-            getName(),
+            igniteInstanceName,
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
             this::createTcpClient,
-            new CommunicationListenerEx<Message>() {
+            new CommunicationListenerEx<>() {
                 @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
                     notifyListener(nodeId, msg, msgC);
                 }
@@ -684,7 +682,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             this,
             stateProvider,
             nioSrvWrapper,
-            getName()
+            getName(),
+            ((IgniteEx)ignite).context().metric()
         ));
 
         this.srvLsnr.setClientPool(clientPool);
@@ -758,7 +757,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         nioSrvWrapper.start();
 
-        this.commWorker = new CommunicationWorker(
+        this.conStateHnd = new CommunicationConnectionStateHandler(
             igniteInstanceName,
             log,
             cfg,
@@ -773,14 +772,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             getName()
         );
 
-        this.srvLsnr.communicationWorker(commWorker);
-        this.nioSrvWrapper.communicationWorker(commWorker);
+        this.srvLsnr.communicationConnectionStateHandler(conStateHnd);
+        this.nioSrvWrapper.communicationConnectionStateHnd(conStateHnd);
 
-        new IgniteSpiThread(igniteInstanceName, commWorker.name(), log) {
-            @Override protected void body() {
-                commWorker.run();
-            }
-        }.start();
+        conStateHnd.start();
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -807,6 +802,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
 
         ctxInitLatch.countDown();
+    }
+
+    /** @return {@code true} if {@code IgniteSpiContext} is initialized. */
+    public boolean spiContextInitialized() {
+        return ctxInitLatch.getCount() == 0;
     }
 
     /** {@inheritDoc} */
@@ -839,10 +839,10 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (nioSrvWrapper != null)
             nioSrvWrapper.stop();
 
-        if (commWorker != null) {
-            commWorker.stop();
-            U.cancel(commWorker);
-            U.join(commWorker, log);
+        if (conStateHnd != null) {
+            conStateHnd.stop();
+            U.cancel(conStateHnd);
+            U.join(conStateHnd, log);
         }
 
         if (srvLsnr != null)
@@ -1120,8 +1120,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
      * @param msgC Closure to call when message processing finished.
      */
     protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
-        MTC.span().addLog(() -> "Communication listeners notified");
-
         if (this.lsnr != null)
             // Notify listener of a new message.
             this.lsnr.onMessage(sndId, msg, msgC);
@@ -1143,39 +1141,20 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (nioSrvWrapper.nio() != null)
             nioSrvWrapper.nio().stop();
 
-        if (commWorker != null)
-            U.interrupt(commWorker.runner());
+        if (conStateHnd != null)
+            U.interrupt(conStateHnd.runner());
 
-        U.join(commWorker, log);
+        U.join(conStateHnd, log);
 
         clientPool.forceClose();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpCommunicationSpi.class, this);
-    }
-
-    /**
-     * Write message type to byte buffer.
-     *
-     * @param buf Byte buffer.
-     * @param type Message type.
-     */
-    public static void writeMessageType(ByteBuffer buf, short type) {
-        buf.put((byte)(type & 0xFF));
-        buf.put((byte)((type >> 8) & 0xFF));
-    }
-
-    /**
-     * Concatenates the two parameter bytes to form a message type value.
-     *
-     * @param b0 The first byte.
-     * @param b1 The second byte.
-     * @return Message type.
-     */
-    public static short makeMessageType(byte b0, byte b1) {
-        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
+        return "TcpCommunicationSpi [" +
+                "ctxInitLatch=" + ctxInitLatch.getCount() +
+                ", stopping=" + stopping +
+                "]";
     }
 
     /**

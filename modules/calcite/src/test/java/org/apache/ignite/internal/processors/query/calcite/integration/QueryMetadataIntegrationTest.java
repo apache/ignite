@@ -23,9 +23,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
@@ -40,9 +43,9 @@ import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
 public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
-    public void testJoin() throws Exception {
-        executeSql("CREATE TABLE tbl1 (id DECIMAL(10, 2), val VARCHAR, val2 BIGINT, ts TIMESTAMP(14), PRIMARY KEY(id, val))");
-        executeSql("CREATE TABLE tbl2 (id DECIMAL(10, 2) NOT NULL, val VARCHAR, val2 BIGINT, ts TIMESTAMP(14), " +
+    public void testJoin() {
+        sql("CREATE TABLE tbl1 (id DECIMAL(10, 2), val VARCHAR, val2 BIGINT, ts TIMESTAMP(14), PRIMARY KEY(id, val))");
+        sql("CREATE TABLE tbl2 (id DECIMAL(10, 2) NOT NULL, val VARCHAR, val2 BIGINT, ts TIMESTAMP(14), " +
             "PRIMARY KEY(id, val))");
 
         checker("select * from tbl1 inner join tbl2 on (tbl1.id > tbl2.id and tbl1.id <> ?) " +
@@ -67,9 +70,9 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testMultipleConditions() throws Exception {
-        executeSql("CREATE TABLE tbl (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
-        executeSql("CREATE INDEX tbl_val_idx ON tbl(val)");
+    public void testMultipleConditions() {
+        sql("CREATE TABLE tbl (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
+        sql("CREATE INDEX tbl_val_idx ON tbl(val)");
 
         checker("select * from tbl where id in (?, ?) or (id > ? and id <= ?) or (val <> ?)")
             .addMeta(
@@ -87,9 +90,9 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testMultipleQueries() throws Exception {
-        executeSql("CREATE TABLE tbl (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
-        executeSql("CREATE INDEX tbl_val_idx ON tbl(val)");
+    public void testMultipleQueries() {
+        sql("CREATE TABLE tbl (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
+        sql("CREATE INDEX tbl_val_idx ON tbl(val)");
 
         checker("insert into tbl(id, val) values (?, ?); select * from tbl where id > ?")
             .addMeta(
@@ -111,9 +114,30 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testDml() throws Exception {
-        executeSql("CREATE TABLE tbl1 (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
-        executeSql("CREATE TABLE tbl2 (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
+    public void testLimitOffsetParameterMetadata() {
+        RelDataTypeSystem typeSys = IgniteTypeSystem.INSTANCE;
+
+        for (String qry : new String[] {
+            "SELECT 1 LIMIT ?",
+            "SELECT 1 OFFSET ?",
+            "SELECT 1 FETCH FIRST ? ROWS ONLY"
+        }) {
+            checker(qry)
+                .addMeta(
+                    builder -> builder
+                        .add(null, null, int.class, "1", typeSys.getDefaultPrecision(SqlTypeName.INTEGER), 0, false),
+                    builder -> builder
+                        .add(null, null, Long.class, "?0", typeSys.getDefaultPrecision(SqlTypeName.BIGINT), 0, true)
+                )
+                .check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testDml() {
+        sql("CREATE TABLE tbl1 (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
+        sql("CREATE TABLE tbl2 (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
 
         checker("insert into tbl1(id, val) values (?, ?)")
             .addMeta(
@@ -150,8 +174,8 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testDdl() throws Exception {
-        executeSql("CREATE TABLE tbl1 (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
+    public void testDdl() {
+        sql("CREATE TABLE tbl1 (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
 
         checker("CREATE TABLE tbl2 (id BIGINT, val VARCHAR, PRIMARY KEY(id))")
             .addMeta(builder -> {}, builder -> {})
@@ -166,8 +190,8 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testExplain() throws Exception {
-        executeSql("CREATE TABLE tbl (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
+    public void testExplain() {
+        sql("CREATE TABLE tbl (id BIGINT, val VARCHAR, PRIMARY KEY(id))");
 
         checker("explain plan for select * from tbl where id in (?, ?) or (id > ? and id <= ?) or (val <> ?)")
             .addMeta(
@@ -227,7 +251,7 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
         }
 
         /** */
-        public void check() throws Exception {
+        public void check() {
             List<List<GridQueryFieldMetadata>> actualRsMeta = qryEngine.resultSetMetaData(null, schema, sql);
             List<List<GridQueryFieldMetadata>> actualParamMeta = qryEngine.parameterMetaData(null, schema, sql);
 

@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
+
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
@@ -35,29 +33,18 @@ public class KillSqlCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(description = "Query identifier")
-    private String queryId;
+    String queryId;
 
     /** */
-    private UUID nodeId;
+    @Order(1)
+    UUID nodeId;
 
     /** */
-    private long qryId;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, queryId);
-        U.writeUuid(out, nodeId);
-        out.writeLong(qryId);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        queryId = U.readString(in);
-        nodeId = U.readUuid(in);
-        qryId = in.readLong();
-    }
+    @Order(2)
+    long qryId;
 
     /** */
     public UUID nodeId() {

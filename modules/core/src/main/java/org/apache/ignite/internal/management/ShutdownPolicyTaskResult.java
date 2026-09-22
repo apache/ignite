@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.ShutdownPolicy;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -31,7 +29,8 @@ public class ShutdownPolicyTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Shutdown policy on result. */
-    private ShutdownPolicy shutdown;
+    @Order(0)
+    ShutdownPolicy shutdown;
 
     /**
      * Get policy.
@@ -49,16 +48,5 @@ public class ShutdownPolicyTaskResult extends IgniteDataTransferObject {
      */
     public void setShutdown(ShutdownPolicy shutdown) {
         this.shutdown = shutdown;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(shutdown == null ? -1 : shutdown.index());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        shutdown = ShutdownPolicy.fromOrdinal(in.readInt());
-
     }
 }

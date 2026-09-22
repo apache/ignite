@@ -100,7 +100,7 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     /**
      * For awaiting of eviction start.
      */
-    private static final CountDownLatch LATCH = new CountDownLatch(1);
+    private static CountDownLatch LATCH;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -138,7 +138,13 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
         while (idx <= backupsCount)
             ig = ignitionStart(idx++);
 
+        awaitPartitionMapExchange();
+
         loadData(ig, 0, NUM_ENTITIES);
+
+        assertEquals(NUM_ENTITIES, ig.cache(POI_CACHE_NAME).size());
+
+        LATCH = new CountDownLatch(1);
 
         ignitionStart(idx);
 

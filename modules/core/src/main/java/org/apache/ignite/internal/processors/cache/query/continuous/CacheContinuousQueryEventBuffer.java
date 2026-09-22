@@ -178,7 +178,7 @@ public class CacheContinuousQueryEventBuffer {
      * @return Collected entries to pass to listener (single entry or entries list).
      */
     @Nullable Object processEntry(CacheContinuousQueryEntry e, boolean backup) {
-        return process0(e.updateCounter(), e, backup);
+        return process0(e.updateCounter(), e.copyWithDataReset(), backup);
     }
 
     /**
@@ -236,7 +236,7 @@ public class CacheContinuousQueryEventBuffer {
 
                             // Discard messages on backup and send to client if primary.
                             if (!backup)
-                                res = addResult(res, entry0.copyWithDataReset(), backup);
+                                res = addResult(res, entry0, backup);
 
                             iter.remove();
                             pendingCurrSize.decrementAndGet();
@@ -489,8 +489,6 @@ public class CacheContinuousQueryEventBuffer {
             synchronized (this) {
                 if (entries == null)
                     return RETRY;
-
-                entry = entry.copyWithDataReset();
 
                 entries[pos] = entry;
 

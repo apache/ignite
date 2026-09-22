@@ -312,17 +312,17 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
-     * @return Lazy query execution flag.
+     * @return Local query flag.
      */
-    public boolean isLazy() {
-        return props.isLazy();
+    public boolean isLocal() {
+        return props.isLocal();
     }
 
     /**
-     * @param lazy Lazy query execution flag.
+     * @param loc Local query flag.
      */
-    public void setLazy(boolean lazy) {
-        props.setLazy(lazy);
+    public void setLocal(boolean loc) {
+        props.setLocal(loc);
     }
 
     /**

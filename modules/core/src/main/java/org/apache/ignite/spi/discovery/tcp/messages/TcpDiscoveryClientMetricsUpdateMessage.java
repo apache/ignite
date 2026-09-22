@@ -20,7 +20,9 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Metrics update message.
@@ -29,10 +31,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    ClusterMetricsSnapshot metricsMsg;
 
-    /** */
-    private final byte[] metrics;
+    /** Constructor for {@link MessageFactory}. */
+    public TcpDiscoveryClientMetricsUpdateMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -43,16 +48,16 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics) {
         super(creatorNodeId);
 
-        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
+        metricsMsg = new ClusterMetricsSnapshot(metrics);
     }
 
     /**
-     * Gets metrics map.
+     * Gets the metrics message.
      *
-     * @return Metrics map.
+     * @return Metrics holder message.
      */
-    public ClusterMetrics metrics() {
-        return ClusterMetricsSnapshot.deserialize(metrics, 0);
+    public ClusterMetricsSnapshot metricsMessage() {
+        return metricsMsg;
     }
 
     /** {@inheritDoc} */

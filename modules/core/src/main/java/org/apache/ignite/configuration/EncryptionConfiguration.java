@@ -18,11 +18,14 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Encryption configuration.
  */
+@GridToStringExclude
 public class EncryptionConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;

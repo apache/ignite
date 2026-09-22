@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public final class QueryContext {
@@ -36,10 +37,10 @@ public final class QueryContext {
     }
 
     /**
-     * Finds an instance of an interface implemented by this object,
-     * or returns null if this object does not support that interface.
+     * Finds an instance of an interface implemented by this object
+     * or returns {@code null} if this object does not support that interface.
      */
-    public <C> C unwrap(Class<C> aClass) {
+    public <C> @Nullable C unwrap(Class<C> aClass) {
         if (Object[].class == aClass)
             return aClass.cast(params);
 
@@ -50,12 +51,12 @@ public final class QueryContext {
      * @param params Context parameters.
      * @return Query context.
      */
-    public static QueryContext of(Object... params) {
+    public static QueryContext of(@Nullable Object... params) {
         return !F.isEmpty(params) ? new QueryContext(build(null, params).toArray()) : new QueryContext(EMPTY);
     }
 
     /** */
-    private static List<Object> build(List<Object> dst, Object[] src) {
+    private static List<Object> build(List<Object> dst, @Nullable Object[] src) {
         if (dst == null)
             dst = new ArrayList<>();
 

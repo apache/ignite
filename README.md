@@ -4,7 +4,7 @@
 
 [![Build Status](https://travis-ci.org/apache/ignite.svg?branch=master)](https://travis-ci.org/apache/ignite)
 [![GitHub](https://img.shields.io/github/license/apache/ignite?color=blue)](https://www.apache.org/licenses/LICENSE-2.0.html)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.apache.ignite/ignite-core/badge.svg)](https://search.maven.org/search?q=org.apache.ignite)
+[![Maven Central](https://img.shields.io/maven-central/v/org.apache.ignite/ignite-core?label=Maven%20Central&versionPrefix=2)](https://search.maven.org/search?q=org.apache.ignite)
 [![GitHub release](https://img.shields.io/badge/release-download-brightgreen.svg)](https://ignite.apache.org/download.cgi)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/apache/ignite)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ApacheIgnite?style=social)](https://twitter.com/ApacheIgnite)
@@ -21,7 +21,7 @@ Apache Ignite is a distributed database for high-performance computing with in-m
 
 <p align="center">
     <a href="https://ignite.apache.org">
-        <img src="https://github.com/apache/ignite-website/blob/master/docs/2.9.0/images/ignite_clustering.png" width="400px"/>
+        <img src="https://github.com/apache/ignite-website/blob/master/docs/ignite2/2.9.0/images/ignite_clustering.png" width="400px"/>
     </a>
 </p>
 

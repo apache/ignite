@@ -18,24 +18,22 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.io.Externalizable;
-import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class to implement discovery messages.
  */
-public abstract class TcpDiscoveryAbstractMessage implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public abstract class TcpDiscoveryAbstractMessage implements Message {
     /** */
     protected static final int CLIENT_FLAG_POS = 0;
 
@@ -46,19 +44,17 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** */
-    protected static final int CHANGE_TOPOLOGY_FLAG_POS = 3;
+    protected static final int OP_CTX_ATTACHED_FLAG_POS = 3;
 
     /** */
-    protected static final int CLIENT_ACK_FLAG_POS = 4;
+    protected static final int FORCE_FAIL_FLAG_POS = 4;
 
-    /** */
-    protected static final int FORCE_FAIL_FLAG_POS = 8;
-
-    /** Sender of the message (transient). */
-    private transient UUID sndNodeId;
+    /** Sender of the message. */
+    private UUID sndNodeId;
 
     /** Message ID. */
-    private IgniteUuid id;
+    @Order(0)
+    IgniteUuid id;
 
     /**
      * Verifier node ID.
@@ -67,21 +63,27 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      * left message are processed by other nodes only after coordinator
      * verification.
      */
-    private UUID verifierNodeId;
+    @Order(1)
+    UUID verifierNodeId;
 
     /** Topology version. */
-    private long topVer;
+    @Order(2)
+    long topVer;
 
     /** Flags. */
     @GridToStringExclude
-    private int flags;
-
-    /** Pending message index. */
-    private short pendingIdx;
+    @Order(3)
+    int flags;
 
     /** */
     @GridToStringInclude
-    private Set<UUID> failedNodes;
+    @Order(4)
+    Set<UUID> failedNodes;
+
+    /** Operation context snapshot message. */
+    @GridToStringInclude
+    @Order(5)
+    public @Nullable OperationContextSnapshotMessage opCtxSnp;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
@@ -103,11 +105,11 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      * @param msg Message.
      */
     protected TcpDiscoveryAbstractMessage(TcpDiscoveryAbstractMessage msg) {
-        this.id = msg.id;
-        this.verifierNodeId = msg.verifierNodeId;
-        this.topVer = msg.topVer;
-        this.flags = msg.flags;
-        this.pendingIdx = msg.pendingIdx;
+        id = msg.id;
+        verifierNodeId = msg.verifierNodeId;
+        topVer = msg.topVer;
+        flags = msg.flags;
+        opCtxSnp = msg.opCtxSnp;
     }
 
     /**
@@ -176,7 +178,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      *
      * @param verifierNodeId Verifier node ID.
      */
-    public void verify(UUID verifierNodeId) {
+    public void verifierNodeId(UUID verifierNodeId) {
         this.verifierNodeId = verifierNodeId;
     }
 
@@ -234,18 +236,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         setFlag(FORCE_FAIL_FLAG_POS, force);
     }
 
-    /**
-     * @return Pending message index.
-     */
-    public short pendingIndex() {
-        return pendingIdx;
-    }
+    /** @param opCtxSnp Operation context snapshot.  */
+    public void attachOperationContextSnapshot(@Nullable OperationContextSnapshotMessage opCtxSnp) {
+        if (!getFlag(OP_CTX_ATTACHED_FLAG_POS)) {
+            this.opCtxSnp = opCtxSnp;
 
-    /**
-     * @param pendingIdx Pending message index.
-     */
-    public void pendingIndex(short pendingIdx) {
-        this.pendingIdx = pendingIdx;
+            setFlag(OP_CTX_ATTACHED_FLAG_POS, true);
+        }
     }
 
     /**
@@ -306,7 +303,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /**
      * @return Failed nodes IDs.
      */
-    @Nullable public Collection<UUID> failedNodes() {
+    @Nullable public Set<UUID> failedNodes() {
         return failedNodes;
     }
 

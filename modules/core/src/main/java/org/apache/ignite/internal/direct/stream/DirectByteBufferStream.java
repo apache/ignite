@@ -19,26 +19,47 @@ package org.apache.ignite.internal.direct.stream;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.StringWriter;
+import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageType;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -212,6 +233,10 @@ public class DirectByteBufferStream {
     @GridToStringExclude
     private final MessageFactory msgFactory;
 
+    /** Is required to instantiate {@link CacheObject} while reading messages. */
+    @GridToStringExclude
+    private final IgniteCacheObjectProcessor cacheObjProc;
+
     /** */
     @GridToStringExclude
     protected ByteBuffer buf;
@@ -313,10 +338,47 @@ public class DirectByteBufferStream {
     private int topVerMinor;
 
     /**
+     * This field represents a phase of reading or writing {@code CacheObject} object enabling ser/des mechanism to keep
+     * track of fields that are already read/written.
+     */
+    private byte cacheObjState;
+
+    /** */
+    private byte[] cacheObjArr;
+
+    /** */
+    private int keyCacheObjPart;
+
+    /** */
+    private byte cacheObjType;
+
+    /** */
+    private CompressedMessage compressedMsg;
+
+    /** */
+    private boolean serializeFinished;
+
+    /**
+     * Constructror for stream used for writing messages.
+     *
      * @param msgFactory Message factory.
      */
     public DirectByteBufferStream(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
+
+        // Is not used while writing messages.
+        cacheObjProc = null;
+    }
+
+    /**
+     * Constructror for stream used for reading messages.
+     *
+     * @param msgFactory Message factory.
+     * @param cacheObjProc Cache object processor.
+     */
+    public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+        this.msgFactory = msgFactory;
+        this.cacheObjProc = cacheObjProc;
     }
 
     /**
@@ -345,6 +407,36 @@ public class DirectByteBufferStream {
      */
     public boolean lastFinished() {
         return lastFinished;
+    }
+
+    /**
+     * @return Compressed message.
+     */
+    public CompressedMessage compressedMessage() {
+        assert compressedMsg != null;
+
+        return compressedMsg;
+    }
+
+    /**
+     * @param compressedMsg Compressed message.
+     */
+    public void compressedMessage(CompressedMessage compressedMsg) {
+        this.compressedMsg = compressedMsg;
+    }
+
+    /**
+     * @return Whether last object was fully serialized.
+     */
+    public boolean serializeFinished() {
+        return serializeFinished;
+    }
+
+    /**
+     * @param serializeFinished {@code True} if last object was fully serialized.
+     */
+    public void serializeFinished(boolean serializeFinished) {
+        this.serializeFinished = serializeFinished;
     }
 
     /**
@@ -643,8 +735,12 @@ public class DirectByteBufferStream {
      */
     public void writeString(String val) {
         if (val != null) {
-            if (curStrBackingArr == null)
-                curStrBackingArr = val.getBytes();
+            if (curStrBackingArr == null) {
+                curStrBackingArr = StringWriter.latin1Value(val);
+
+                if (curStrBackingArr == null || StringWriter.hasNegatives(curStrBackingArr))
+                    curStrBackingArr = val.getBytes(StandardCharsets.UTF_8);
+            }
 
             writeByteArray(curStrBackingArr);
 
@@ -752,21 +848,95 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @param obj Cache object.
+     */
+    public void writeCacheObject(CacheObject obj) {
+        try {
+            if (obj != null) {
+                switch (cacheObjState) {
+                    case 0:
+                        writeByte(obj.cacheObjectType());
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState++;
+
+                    case 1:
+                        writeByteArray(obj.valueBytes(null));
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState = 0;
+                }
+            }
+            else
+                writeByte((byte)-1);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param keyObj Key cache object.
+     */
+    public void writeKeyCacheObject(KeyCacheObject keyObj) {
+        try {
+            if (keyObj != null) {
+                switch (cacheObjState) {
+                    case 0:
+                        writeByte(keyObj.cacheObjectType());
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState++;
+
+                    case 1:
+                        writeByteArray(keyObj.valueBytes(null));
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState++;
+
+                    case 2:
+                        writeInt(keyObj.partition());
+
+                        if (!lastFinished)
+                            return;
+
+                        cacheObjState = 0;
+                }
+            }
+            else
+                writeByte((byte)-1);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param val Value.
+     */
+    public void writeGridLongList(@Nullable GridLongList val) {
+        if (val != null)
+            writeLongArray(val.array(), val.size());
+        else
+            writeInt(-1);
+    }
+
+    /**
      * @param msg Message.
      * @param writer Writer.
      */
     public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
-            if (buf.hasRemaining()) {
-                try {
-                    writer.beforeInnerMessageWrite();
-
-                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
-                }
-                finally {
-                    writer.afterInnerMessageWrite(lastFinished);
-                }
-            }
+            if (buf.hasRemaining())
+                nestedWrite(writer, () -> MessageSerialization.writeTo(msgFactory, msg, writer));
             else
                 lastFinished = false;
         }
@@ -776,10 +946,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param arr Array.
-     * @param itemType Component type.
+     * @param type Type.
      * @param writer Writer.
      */
-    public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
+    public <T> void writeObjectArray(T[] arr, MessageArrayType type, MessageWriter writer) {
         if (arr != null) {
             int len = arr.length;
 
@@ -796,7 +966,7 @@ public class DirectByteBufferStream {
                 if (arrCur == NULL)
                     arrCur = arr[arrPos++];
 
-                write(itemType, arrCur, writer);
+                write(type.valueType(), arrCur, writer);
 
                 if (!lastFinished)
                     return;
@@ -812,13 +982,13 @@ public class DirectByteBufferStream {
 
     /**
      * @param col Collection.
-     * @param itemType Component type.
+     * @param type Type.
      * @param writer Writer.
      */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer) {
+    public <T> void writeCollection(Collection<T> col, MessageCollectionType type, MessageWriter writer) {
         if (col != null) {
             if (col instanceof List && col instanceof RandomAccess)
-                writeRandomAccessList((List<T>)col, itemType, writer);
+                writeRandomAccessList((List<T>)col, type, writer);
             else {
                 if (it == null) {
                     writeInt(col.size());
@@ -833,7 +1003,7 @@ public class DirectByteBufferStream {
                     if (cur == NULL)
                         cur = it.next();
 
-                    write(itemType, cur, writer);
+                    write(type.valueType(), cur, writer);
 
                     if (!lastFinished)
                         return;
@@ -850,10 +1020,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param list List.
-     * @param itemType Component type.
+     * @param type Type.
      * @param writer Writer.
      */
-    private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer) {
+    private <T> void writeRandomAccessList(List<T> list, MessageCollectionType type, MessageWriter writer) {
         assert list instanceof RandomAccess;
 
         int size = list.size();
@@ -871,7 +1041,7 @@ public class DirectByteBufferStream {
             if (arrCur == NULL)
                 arrCur = list.get(arrPos++);
 
-            write(itemType, arrCur, writer);
+            write(type.valueType(), arrCur, writer);
 
             if (!lastFinished)
                 return;
@@ -884,11 +1054,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param map Map.
-     * @param keyType Key type.
-     * @param valType Value type.
+     * @param type Type.
      * @param writer Writer.
      */
-    public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType, MessageWriter writer) {
+    public <K, V> void writeMap(Map<K, V> map, MessageMapType type, MessageWriter writer) {
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -908,7 +1077,7 @@ public class DirectByteBufferStream {
                 e = (Map.Entry<K, V>)mapCur;
 
                 if (!keyDone) {
-                    write(keyType, e.getKey(), writer);
+                    write(type.keyType(), e.getKey(), writer);
 
                     if (!lastFinished)
                         return;
@@ -916,7 +1085,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(valType, e.getValue(), writer);
+                write(type.valueType(), e.getValue(), writer);
 
                 if (!lastFinished)
                     return;
@@ -1199,7 +1368,7 @@ public class DirectByteBufferStream {
     public String readString() {
         byte[] arr = readByteArray();
 
-        return arr != null ? new String(arr) : null;
+        return arr != null ? new String(arr, StandardCharsets.UTF_8) : null;
     }
 
     /**
@@ -1314,6 +1483,83 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @return Value.
+     */
+    public KeyCacheObject readKeyCacheObject() {
+        switch (cacheObjState) {
+            case 0:
+                cacheObjType = readByte();
+
+                if (!lastFinished || cacheObjType == (byte)-1)
+                    return null;
+
+                cacheObjState++;
+
+            case 1:
+                cacheObjArr = readByteArray();
+
+                if (!lastFinished)
+                    return null;
+
+                cacheObjState++;
+
+            case 2:
+                keyCacheObjPart = readInt();
+
+                if (!lastFinished)
+                    return null;
+
+                cacheObjState = 0;
+        }
+
+        try {
+            KeyCacheObject key = cacheObjProc.toKeyCacheObject(null, cacheObjType, cacheObjArr);
+
+            if (keyCacheObjPart != -1)
+                key.partition(keyCacheObjPart);
+
+            return key;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @return Value.
+     */
+    public CacheObject readCacheObject() {
+        switch (cacheObjState) {
+            case 0:
+                cacheObjType = readByte();
+
+                if (!lastFinished || cacheObjType == (byte)-1)
+                    return null;
+
+                cacheObjState++;
+
+            case 1:
+                cacheObjArr = readByteArray();
+
+                if (!lastFinished)
+                    return null;
+
+                cacheObjState = 0;
+        }
+
+        return cacheObjProc.toCacheObject(null, cacheObjType, cacheObjArr);
+    }
+
+    /**
+     * @return Value.
+     */
+    public GridLongList readGridLongList() {
+        long[] arr = readLongArray();
+
+        return arr != null ? new GridLongList(arr) : null;
+    }
+
+    /**
      * @param reader Reader.
      * @return Message.
      */
@@ -1334,12 +1580,12 @@ public class DirectByteBufferStream {
 
         if (msg != null) {
             try {
-                reader.beforeInnerMessageRead();
+                reader.beforeNestedRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, buf, reader);
+                lastFinished = MessageSerialization.readFrom(msgFactory, msg, reader);
             }
             finally {
-                reader.afterInnerMessageRead(lastFinished);
+                reader.afterNestedRead(lastFinished);
             }
         }
         else
@@ -1358,12 +1604,11 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param itemType Item type.
-     * @param itemCls Item class.
+     * @param type Item type.
      * @param reader Reader.
      * @return Array.
      */
-    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls, MessageReader reader) {
+    public <T> T[] readObjectArray(MessageArrayType type, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1375,10 +1620,10 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (objArr == null)
-                objArr = itemCls != null ? (Object[])Array.newInstance(itemCls, readSize) : new Object[readSize];
+                objArr = type.clazz() != null ? (Object[])Array.newInstance(type.clazz(), readSize) : new Object[readSize];
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType, reader);
+                Object item = read(type.valueType(), reader);
 
                 if (!lastFinished)
                     return null;
@@ -1401,11 +1646,13 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param itemType Item type.
+     * Reads collection either as an {@link ArrayList}, a {@link HashSet} or an {@link EnumSet}.
+     *
+     * @param type Item type.
      * @param reader Reader.
-     * @return Collection.
+     * @return {@link ArrayList}, {@link HashSet} or {@link EnumSet}.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader) {
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1417,10 +1664,10 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (col == null)
-                col = new ArrayList<>(readSize);
+                col = newCollection(type);
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = read(itemType, reader);
+                Object item = read(type.valueType(), reader);
 
                 if (!lastFinished)
                     return null;
@@ -1442,15 +1689,22 @@ public class DirectByteBufferStream {
         return col0;
     }
 
+    /** */
+    @SuppressWarnings("unchecked")
+    private Collection<Object> newCollection(MessageCollectionType type) {
+        return switch (type.collectionImplementationType()) {
+            case ENUM_SET -> (Collection<Object>)((MessageEnumType<?>)type.valueType()).newEnumSet();
+            case HASH_SET -> U.newHashSet(readSize);
+            case ARRAY_LIST -> new ArrayList<>(readSize);
+        };
+    }
+
     /**
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @param linked Whether linked map should be created.
+     * @param type Value type.
      * @param reader Reader.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
-                                           boolean linked, MessageReader reader) {
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1462,11 +1716,11 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (map == null)
-                map = linked ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
+                map = type.linked() ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = read(keyType, reader);
+                    Object key = read(type.keyType(), reader);
 
                     if (!lastFinished)
                         return null;
@@ -1475,7 +1729,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = read(valType, reader);
+                Object val = read(type.valueType(), reader);
 
                 if (!lastFinished)
                     return null;
@@ -1756,8 +2010,8 @@ public class DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    protected void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
-        switch (type) {
+    protected <K, V> void write(MessageType type, Object val, MessageWriter writer) {
+        switch (type.type()) {
             case BYTE:
                 writeByte((Byte)val);
 
@@ -1858,21 +2112,53 @@ public class DirectByteBufferStream {
 
                 break;
 
+            case GRID_CACHE_VERSION:
+                writeGridCacheVersion((GridCacheVersion)val);
+
+                break;
+
             case AFFINITY_TOPOLOGY_VERSION:
                 writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
                 break;
-            case MSG:
-                try {
-                    if (val != null)
-                        writer.beforeInnerMessageWrite();
 
-                    writeMessage((Message)val, writer);
-                }
-                finally {
-                    if (val != null)
-                        writer.afterInnerMessageWrite(lastFinished);
-                }
+            case KEY_CACHE_OBJECT:
+                writeKeyCacheObject((KeyCacheObject)val);
+
+                break;
+
+            case CACHE_OBJECT:
+                writeCacheObject((CacheObject)val);
+
+                break;
+
+            case GRID_LONG_LIST:
+                writeGridLongList((GridLongList)val);
+
+                break;
+
+            case MAP:
+                nestedWrite(writer, () -> writer.writeMap((Map<K, V>)val, (MessageMapType)type));
+
+                break;
+
+            case COLLECTION:
+                nestedWrite(writer, () -> writer.writeCollection((Collection<V>)val, (MessageCollectionType)type));
+
+                break;
+
+            case ARRAY:
+                nestedWrite(writer, () -> writer.writeObjectArray((V[])val, (MessageArrayType)type));
+
+                break;
+
+            case ENUM:
+                writeByte(((MessageEnumType)type).encode((Enum<?>)val));
+
+                break;
+
+            case MSG:
+                writeMessage((Message)val, writer);
 
                 break;
 
@@ -1881,13 +2167,25 @@ public class DirectByteBufferStream {
         }
     }
 
+    /** Performs a nested write with proper writer state enter/exit handling. */
+    private void nestedWrite(MessageWriter writer, BooleanSupplier s) {
+        try {
+            writer.beforeNestedWrite();
+
+            lastFinished = s.getAsBoolean();
+        }
+        finally {
+            writer.afterNestedWrite(lastFinished);
+        }
+    }
+
     /**
      * @param type Type.
      * @param reader Reader.
      * @return Value.
      */
-    protected Object read(MessageCollectionItemType type, MessageReader reader) {
-        switch (type) {
+    protected Object read(MessageType type, MessageReader reader) {
+        switch (type.type()) {
             case BYTE:
                 return readByte();
 
@@ -1948,14 +2246,54 @@ public class DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case GRID_CACHE_VERSION:
+                return readGridCacheVersion();
+
             case AFFINITY_TOPOLOGY_VERSION:
                 return readAffinityTopologyVersion();
+
+            case KEY_CACHE_OBJECT:
+                return readKeyCacheObject();
+
+            case CACHE_OBJECT:
+                return readCacheObject();
+
+            case GRID_LONG_LIST:
+                return readGridLongList();
+
+            case MAP:
+                return nestedRead(reader, () -> reader.readMap((MessageMapType)type));
+
+            case COLLECTION:
+                return nestedRead(reader, () -> reader.readCollection((MessageCollectionType)type));
+
+            case ARRAY:
+                return nestedRead(reader, () -> reader.readObjectArray((MessageArrayType)type));
+
+            case ENUM:
+                return ((MessageEnumType)type).decode(readByte());
 
             case MSG:
                 return readMessage(reader);
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
+        }
+    }
+
+    /** Performs a nested read with proper reader state management. */
+    private <R> R nestedRead(MessageReader reader, Supplier<R> s) {
+        try {
+            reader.beforeNestedRead();
+
+            R r = s.get();
+
+            lastFinished = reader.isLastRead();
+
+            return r;
+        }
+        finally {
+            reader.afterNestedRead(lastFinished);
         }
     }
 
@@ -2000,6 +2338,297 @@ public class DirectByteBufferStream {
                 uuidMost = GridUnsafe.getLong(heapArr, off);
                 uuidLeast = GridUnsafe.getLong(heapArr, off + 8);
             }
+        }
+    }
+
+    /** */
+    public void writeIgniteProductVersion(IgniteProductVersion ver) {
+        if (ver == null) {
+            writeByte((byte)0);
+
+            return;
+        }
+
+        switch (uuidState) {
+            case 0:
+                writeByte((byte)1);
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 1:
+                writeByte(ver.major());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 2:
+                writeByte(ver.minor());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 3:
+                writeByte(ver.maintenance());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 4:
+                writeLong(ver.revisionTimestamp());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 5:
+                writeByteArray(ver.revisionHash());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+
+                return;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
+        }
+    }
+
+    /** */
+    public IgniteProductVersion readIgniteProductVersion() {
+        switch (uuidState) {
+            case 0:
+                byte notNull = readByte();
+
+                if (!lastFinished)
+                    return null;
+
+                if (notNull == 0)
+                    return null;
+
+                cur = new IgniteProductVersionEx();
+
+                uuidState++;
+            case 1:
+                ((IgniteProductVersionEx)cur).major(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 2:
+                ((IgniteProductVersionEx)cur).minor(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 3:
+                ((IgniteProductVersionEx)cur).maintenance(readByte());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 4:
+                ((IgniteProductVersionEx)cur).revisionTimestamp(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+
+            case 5:
+                ((IgniteProductVersionEx)cur).revisionHash(readByteArray());
+
+                if (!lastFinished)
+                    return null;
+
+                IgniteProductVersionEx res = (IgniteProductVersionEx)cur;
+
+                cur = NULL;
+                uuidState = 0;
+
+                return res;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
+        }
+    }
+
+    /** */
+    public void writeGridCacheVersion(GridCacheVersion ver) {
+        if (ver == null) {
+            writeByte((byte)0);
+
+            return;
+        }
+
+        switch (uuidState) {
+            case 0:
+                byte type;
+
+                if (ver.conflictVersion() == ver)
+                    type = (byte)1;
+                else if (ver instanceof GridCacheVersionEx)
+                    type = (byte)2;
+                else
+                    throw new IllegalArgumentException("Unknown GridCacheVersion child: " + ver);
+
+                writeByte(type);
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 1:
+                writeInt(ver.topologyVersion());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 2:
+                writeInt(ver.nodeOrderAndDrIdRaw());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 3:
+                writeLong(ver.order());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 4:
+                if (ver.conflictVersion() == ver) {
+                    lastFinished = true;
+
+                    uuidState = 0;
+
+                    return;
+                }
+
+                writeInt(ver.conflictVersion().topologyVersion());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 5:
+                writeInt(ver.conflictVersion().nodeOrderAndDrIdRaw());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+            case 6:
+                writeLong(ver.conflictVersion().order());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+
+                return;
+
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
+        }
+    }
+
+    /** */
+    public GridCacheVersion readGridCacheVersion() {
+        GridCacheVersion ver = cur != NULL ? (GridCacheVersion)cur : null;
+
+        switch (uuidState) {
+            case 0:
+                byte type = readByte();
+
+                if (!lastFinished)
+                    return null;
+
+                // 0 -> NULL
+                // 1 -> GridCacheVersion
+                // 2 -> GridCacheVersionEx
+                if (type == 0)
+                    return null;
+                else if (type == 1)
+                    ver = new GridCacheVersion();
+                else if (type == 2) {
+                    ver = new GridCacheVersionEx();
+
+                    ((GridCacheVersionEx)ver).conflictVersion(new GridCacheVersion());
+                }
+                else
+                    throw new IllegalArgumentException("Unknown GridCacheVersion type: " + type);
+
+                cur = ver;
+
+                uuidState++;
+
+            case 1:
+                ver.topologyVersion(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 2:
+                ver.nodeOrderAndDrIdRaw(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 3:
+                ver.order(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 4:
+                if (ver.conflictVersion() == ver) {
+                    cur = NULL;
+                    uuidState = 0;
+
+                    return ver;
+                }
+
+                ver.conflictVersion().topologyVersion(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 5:
+                ver.conflictVersion().nodeOrderAndDrIdRaw(readInt());
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+            case 6:
+                ver.conflictVersion().order(readLong());
+
+                if (!lastFinished)
+                    return null;
+
+                cur = NULL;
+                uuidState = 0;
+
+                return ver;
+            default:
+                throw new IllegalStateException("Unexpected state: " + uuidState);
         }
     }
 

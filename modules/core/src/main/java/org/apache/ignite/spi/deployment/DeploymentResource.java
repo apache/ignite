@@ -19,7 +19,11 @@ package org.apache.ignite.spi.deployment;
 
 /**
  * Generic abstraction over deployed resource containing resource's name, class and corresponding class loader.
+ *
+ * @deprecated Will be replaced with the
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
+@Deprecated
 public interface DeploymentResource {
     /**
      * Gets resource name, either class name or alias name, such as alias

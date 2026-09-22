@@ -17,29 +17,24 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.internal.cache.query.index.Order;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Defines a signle index key.
  */
-public class IndexKeyDefinition implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Index key type. {@link IndexKeyType}. */
-    private IndexKeyType idxType;
+public class IndexKeyDefinition implements Message {
+    /** Index key type. */
+    @Order(0)
+    IndexKeyType idxType;
 
     /** Order. */
-    private Order order;
+    @Order(1)
+    boolean asc;
 
     /** Precision for variable length key types. */
-    private int precision;
+    @Order(2)
+    int precision;
 
     /** */
     public IndexKeyDefinition() {
@@ -47,9 +42,10 @@ public class IndexKeyDefinition implements Externalizable {
     }
 
     /** */
-    public IndexKeyDefinition(int idxTypeCode, Order order, long precision) {
+    public IndexKeyDefinition(int idxTypeCode, long precision, boolean asc) {
         idxType = IndexKeyType.forCode(idxTypeCode);
-        this.order = order;
+
+        this.asc = asc;
 
         // Workaround due to wrong type conversion (int -> long).
         if (precision >= Integer.MAX_VALUE)
@@ -59,12 +55,12 @@ public class IndexKeyDefinition implements Externalizable {
     }
 
     /** */
-    public Order order() {
-        return order;
+    public boolean ascending() {
+        return asc;
     }
 
     /** */
-    public IndexKeyType idxType() {
+    public IndexKeyType indexKeyType() {
         return idxType;
     }
 
@@ -73,16 +69,4 @@ public class IndexKeyDefinition implements Externalizable {
         return precision;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // Send only required info for using in MergeSort algorithm.
-        out.writeInt(idxType.code());
-        U.writeEnum(out, order.sortOrder());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        idxType = IndexKeyType.forCode(in.readInt());
-        order = new Order(U.readEnum(in, SortOrder.class), null);
-    }
 }

@@ -7,7 +7,7 @@ Instructions on how to start examples can be found in [README.txt](README.txt).
 How to start examples in the developer's environment, please see [DEVNOTES.txt](DEVNOTES.txt).
 
 ## Running examples
-Ignite uses proprietary SDK APIs that are not available by default. See also [How to run Ignite](https://ignite.apache.org/docs/latest/setup#running-ignite-with-java-11-or-later)
+Ignite uses proprietary SDK APIs that are not available by default. See also [How to run Ignite](https://ignite.apache.org/docs/latest/setup#running-ignite-with-java-17-or-later)
 
 To set up local IDE to easier access to examples, it is possible to add following options as default for all applications
 

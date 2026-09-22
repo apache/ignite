@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.internal.managers.communication.AbstractCommunicationMessageSerializationTest;
+import org.apache.ignite.internal.managers.AbstractMessageSerializationTest;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /** */
-public class CalciteCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
+public class CalciteCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new CalciteMessageFactory();
+        CalciteMessageFactory msgFactory = new CalciteMessageFactory();
+
+        return msgFactory;
     }
 }

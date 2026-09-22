@@ -14,70 +14,91 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//tag::warm-all-regions[]
-IgniteConfiguration cfg = new IgniteConfiguration();
+package org.apache.ignite.snippets;
 
-DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
+import org.apache.ignite.configuration.NoOpWarmUpConfiguration;
 
-//Changing the default warm-up strategy for all data regions
-storageCfg.setDefaultWarmUpConfiguration(new LoadAllWarmUpConfiguration());
+public class WarmUpStrategy {
+    public void warmAllRegions() {
+        //tag::warm-all-regions[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
-cfg.setDataStorageConfiguration(storageCfg);
-//end::warm-all-regions[]
-//tag::warm-specific-region[]
-IgniteConfiguration cfg = new IgniteConfiguration();
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        //Changing the default warm-up strategy for all data regions
+        storageCfg.setDefaultWarmUpConfiguration(new LoadAllWarmUpConfiguration());
 
-//Setting another warm-up strategy for a custom data region
-DataRegionConfiguration myNewDataRegion = new DataRegionConfiguration();
+        cfg.setDataStorageConfiguration(storageCfg);
+        //end::warm-all-regions[]
+    }
 
-myNewDataRegion.setName("NewDataRegion");
+    public void warmSpecificRegion() {
+        //tag::warm-specific-region[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
-//You can tweak the initial size as well as other settings
-myNewDataRegion.setInitialSize(100 * 1024 * 1024);
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-//Performing data loading from disk in DRAM on restarts.
-myNewDataRegion.setWarmUpConfiguration(new LoadAllWarmUpConfiguration());
+        //Setting another warm-up strategy for a custom data region
+        DataRegionConfiguration myNewDataRegion = new DataRegionConfiguration();
 
-//Enabling Ignite persistence. Ignite reads data from disk when queried for tables/caches from this region.
-myNewDataRegion.setPersistenceEnabled(true);
+        myNewDataRegion.setName("NewDataRegion");
 
-//Applying the configuration.
-storageCfg.setDataRegionConfigurations(myNewDataRegion);
+        //You can tweak the initial size as well as other settings
+        myNewDataRegion.setInitialSize(100 * 1024 * 1024);
 
-cfg.setDataStorageConfiguration(storageCfg);
-//end::warm-specific-region[]
-//tag::disable-all-regions[]
-IgniteConfiguration cfg = new IgniteConfiguration();
+        //Performing data loading from disk in DRAM on restarts.
+        myNewDataRegion.setWarmUpConfiguration(new LoadAllWarmUpConfiguration());
 
-DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        //Enabling Ignite persistence. Ignite reads data from disk when queried for tables/caches from this region.
+        myNewDataRegion.setPersistenceEnabled(true);
 
-storageCfg.setDefaultWarmUpConfiguration(new NoOpWarmUpConfiguration());
+        //Applying the configuration.
+        storageCfg.setDataRegionConfigurations(myNewDataRegion);
 
-cfg.setDataStorageConfiguration(storageCfg);
-//end::disable-all-regions[]
-//tag::disable-specific-region[]
-IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setDataStorageConfiguration(storageCfg);
+        //end::warm-specific-region[]
+    }
 
-DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+    public void disableAllRegions() {
+        //tag::disable-all-regions[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
-//Setting another warm-up strategy for a custom data region
-DataRegionConfiguration myNewDataRegion = new DataRegionConfiguration();
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-myNewDataRegion.setName("NewDataRegion");
+        storageCfg.setDefaultWarmUpConfiguration(new NoOpWarmUpConfiguration());
 
-//You can tweak the initial size as well as other settings
-myNewDataRegion.setInitialSize(100 * 1024 * 1024);
+        cfg.setDataStorageConfiguration(storageCfg);
+        //end::disable-all-regions[]
+    }
 
-//Skip data loading from disk in DRAM on restarts.
-myNewDataRegion.setWarmUpConfiguration(new NoOpWarmUpConfiguration());
+    public void disableSpecificRegion() {
+        //tag::disable-specific-region[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
-//Enabling Ignite persistence. Ignite reads data from disk when queried for tables/caches from this region.
-myNewDataRegion.setPersistenceEnabled(true);
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-//Applying the configuration.
-storageCfg.setDataRegionConfigurations(myNewDataRegion);
+        //Setting another warm-up strategy for a custom data region
+        DataRegionConfiguration myNewDataRegion = new DataRegionConfiguration();
 
-cfg.setDataStorageConfiguration(storageCfg);
-//end::disable-specific-region[]
+        myNewDataRegion.setName("NewDataRegion");
+
+        //You can tweak the initial size as well as other settings
+        myNewDataRegion.setInitialSize(100 * 1024 * 1024);
+
+        //Skip data loading from disk in DRAM on restarts.
+        myNewDataRegion.setWarmUpConfiguration(new NoOpWarmUpConfiguration());
+
+        //Enabling Ignite persistence. Ignite reads data from disk when queried for tables/caches from this region.
+        myNewDataRegion.setPersistenceEnabled(true);
+
+        //Applying the configuration.
+        storageCfg.setDataRegionConfigurations(myNewDataRegion);
+
+        cfg.setDataStorageConfiguration(storageCfg);
+        //end::disable-specific-region[]
+    }
+}

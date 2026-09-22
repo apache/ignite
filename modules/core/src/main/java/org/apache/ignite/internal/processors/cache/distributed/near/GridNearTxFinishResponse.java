@@ -17,35 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Reply for synchronous phase 2.
  */
-public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
-    /** Heuristic error. */
-    @GridDirectTransient
-    private Throwable err;
-
-    /** Serialized error. */
-    private byte[] errBytes;
+public final class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
+    /** Error message. */
+    @Order(0)
+    @Nullable ErrorMessage errMsg;
 
     /** Mini future ID. */
-    private int miniId;
+    @Order(1)
+    int miniId;
 
     /** Near tx thread ID. */
-    private long nearThreadId;
+    @Order(2)
+    long nearThreadId;
 
     /**
      * Empty constructor.
@@ -75,122 +69,17 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
 
         this.nearThreadId = nearThreadId;
         this.miniId = miniId;
-        this.err = err;
+        errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Throwable error() {
-        return err;
+        return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Near thread ID.
-     */
-    public long threadId() {
-        return nearThreadId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 7:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(nearThreadId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 7:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                nearThreadId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 54;
     }
 
     /** {@inheritDoc} */

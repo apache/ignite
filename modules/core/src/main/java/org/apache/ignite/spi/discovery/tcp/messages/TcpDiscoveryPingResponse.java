@@ -18,17 +18,21 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Ping response.
  */
 public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Whether pinged client exists. */
-    private boolean clientExists;
+    @Order(0)
+    boolean clientExists;
+
+    /** */
+    public TcpDiscoveryPingResponse() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.

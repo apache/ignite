@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -27,7 +26,6 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -35,9 +33,9 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -181,74 +179,47 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
      */
     private class TestDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
+        ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            return super.openSocket(sockAddr, timeoutHelper);
+            return super.openSession(sock, sockAddr, timeoutHelper);
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
-            Socket sock,
-            InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
+            byte[] data,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
-            awaitLatch();
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
+        @Override protected void writeMessage(
+            TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            super.writeToSocket(sock, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            ClusterNode node,
-            Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
+            int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            super.writeToSocket(node, sock, out, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            awaitLatch();
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout) throws IOException {
-            awaitLatch();
-
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /**

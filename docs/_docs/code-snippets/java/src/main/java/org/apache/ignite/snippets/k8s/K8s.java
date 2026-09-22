@@ -19,7 +19,9 @@ package org.apache.ignite.snippets.k8s;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.ThinClientKubernetesAddressFinder;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 
 public class K8s {
 
@@ -47,7 +49,7 @@ public class K8s {
         ClientConfiguration ccfg = new ClientConfiguration();
         ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(kcfg));
 
-        IgniteClient client = Ignition.startClient(cfg);
+        IgniteClient client = Ignition.startClient(ccfg);
 
         ClientCache<Integer, String> cache = client.getOrCreateCache("test_cache");
 

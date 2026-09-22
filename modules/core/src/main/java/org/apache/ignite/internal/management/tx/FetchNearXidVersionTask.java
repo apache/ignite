@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -78,7 +79,7 @@ public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxInfoCommandArg
 
             for (IgniteInternalTx tx : transactions) {
                 if (tx.xid().equals(arg.uuid()) ||
-                    tx.nearXidVersion().asIgniteUuid().equals(arg.uuid()) ||
+                    BinaryUtils.asIgniteUuid(tx.nearXidVersion()).equals(arg.uuid()) ||
                     tx.xidVersion().equals(arg.gridCacheVersion()) ||
                     tx.nearXidVersion().equals(arg.gridCacheVersion()))
                     return tx.nearXidVersion();

@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -32,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -39,8 +43,10 @@ import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -84,6 +90,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
     /** Indicates whether we need to make the topology stale */
     private static boolean needStaleTop = false;
+
+    /** Distinct updaters sent since the current test started: the serialized bytes, or the built-in constant. */
+    private static final Set<Object> SENT_UPDATERS = Collections.synchronizedSet(new HashSet<>());
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -137,6 +146,71 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         for (IgniteFuture fut : futures)
             assertTrue(fut.isDone());
+    }
+
+    /**
+     * The receiver does not change between batches, so it is marshalled once: every request carries the very bytes
+     * produced for the first one.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReceiverMarshalledOncePerStreamer() throws Exception {
+        startGridsAndStream(new TestReceiver());
+
+        assertEquals("The receiver was marshalled more than once", 1, SENT_UPDATERS.size());
+
+        assertTrue("A custom receiver must be sent, not named", F.first(SENT_UPDATERS) instanceof byte[]);
+    }
+
+    /**
+     * Every built-in updater is sent as a name rather than as a copy, and the data still lands.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBuiltInUpdaterIsNotSent() throws Exception {
+        for (DataStreamerBuiltInUpdater builtIn : DataStreamerBuiltInUpdater.values()) {
+            startGridsAndStream(builtIn.updater());
+
+            assertEquals("Expected " + builtIn + " to be sent as a name", Collections.singleton(builtIn),
+                SENT_UPDATERS);
+
+            IgniteCache<Object, Object> cache = grid(1).cache(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < KEYS_COUNT; i++)
+                assertEquals(i, cache.get(i));
+
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Starts two nodes and streams {@link #KEYS_COUNT} entries from the first one, a request per entry, collecting
+     * the updaters they carry, custom or built-in. Waits for the partition map first: until it is ready every
+     * partition is primary here, and a streamer that overwrites sends nothing to the remote node.
+     *
+     * @param rcvr Receiver to stream with.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void startGridsAndStream(StreamReceiver<?, ?> rcvr) throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        SENT_UPDATERS.clear();
+
+        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            ldr.receiver((StreamReceiver<Object, Object>)rcvr);
+
+            ldr.perNodeBufferSize(1);
+
+            for (int i = 0; i < KEYS_COUNT; i++)
+                ldr.addData(i, i);
+        }
     }
 
     /**
@@ -661,12 +735,33 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         return cacheCfg;
     }
 
+    /** A custom receiver: unlike the built-in ones, it is sent with the requests. */
+    private static class TestReceiver implements StreamReceiver<Object, Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache<Object, Object> cache, Collection<Map.Entry<Object, Object>> entries) {
+            for (Map.Entry<Object, Object> e : entries)
+                cache.put(e.getKey(), e.getValue());
+        }
+    }
+
     /**
      * Simulate stale (not up-to-date) topology
      */
     private static class StaleTopologyCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) {
+            Message sentMsg = msg instanceof GridIoMessage ? ((GridIoMessage)msg).message() : null;
+
+            // Already marshalled at this point.
+            if (sentMsg instanceof DataStreamerRequest) {
+                DataStreamerReceiverMessage updaterMsg = ((DataStreamerRequest)sentMsg).updaterMsg;
+
+                SENT_UPDATERS.add(updaterMsg.customUpdater() ? updaterMsg.rcvrBytes : updaterMsg.builtIn);
+            }
+
             // Send stale topology only in the first request to avoid indefinitely getting failures.
             if (needStaleTop) {
                 if (msg instanceof GridIoMessage) {
@@ -687,31 +782,35 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
                         appMsg = new DataStreamerRequest(
                             req.requestId(),
-                            req.responseTopicBytes(),
+                            req.resTopicId,
                             req.cacheName(),
-                            req.updaterBytes(),
+                            req.updaterMsg,
                             req.entries(),
                             req.ignoreDeploymentOwnership(),
                             req.skipStore(),
                             req.keepBinary(),
-                            req.deploymentMode(),
+                            req.deploymentInfo(),
                             req.sampleClassName(),
-                            req.userVersion(),
-                            req.participants(),
-                            req.classLoaderId(),
                             req.forceLocalDeployment(),
                             staleTop,
                             -1);
 
                         msg = new GridIoMessage(
                             GridTestUtils.<Byte>getFieldValue(ioMsg, "plc"),
-                            GridTestUtils.getFieldValue(ioMsg, "topic"),
-                            GridTestUtils.<Integer>getFieldValue(ioMsg, "topicOrd"),
+                            GridTopicMessage.topic(GridTestUtils.getFieldValue(ioMsg, "topicMsg")),
                             appMsg,
                             GridTestUtils.<Boolean>getFieldValue(ioMsg, "ordered"),
                             ioMsg.timeout(),
-                            ioMsg.skipOnTimeout()
+                            ioMsg.skipOnTimeout(),
+                            null
                         );
+
+                        try {
+                            CommunicationMarshalling.marshal(msg, ((IgniteEx)ignite).context(), null);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new RuntimeException(e);
+                        }
 
                         needStaleTop = false;
                     }

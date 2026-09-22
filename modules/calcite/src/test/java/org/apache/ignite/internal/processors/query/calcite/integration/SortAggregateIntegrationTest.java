@@ -28,6 +28,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -138,6 +139,46 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
         List<List<?>> cursors = executeSql("SELECT PK FROM TBL1 WHERE col0 IN (SELECT col0 FROM TBL1)");
 
         assertEquals(ROWS, cursors.size());
+    }
+
+    /** */
+    @Test
+    public void testNullsReordering() {
+        sql("CREATE TABLE t(a INTEGER, b INTEGER) WITH " + atomicity());
+        sql("INSERT INTO t VALUES (1, 1), (2, 2), (1, 3), (3, 4), (NULL, 1), (1, NULL)");
+
+        assertQuery("SELECT a, SUM(b), COUNT(b), COUNT(*) FROM t GROUP BY a ORDER BY a NULLS LAST")
+            .ordered()
+            .returns(1, 4L, 2L, 3L)
+            .returns(2, 2L, 1L, 1L)
+            .returns(3, 4L, 1L, 1L)
+            .returns(null, 1L, 1L, 1L)
+            .check();
+    }
+
+    /**
+     * Tests that sort aggregate node correctly handles the case when input data
+     * ends exactly when the requested number of rows is satisfied.
+     */
+    @Test
+    public void testRequestRowsAfterInputEnds() {
+        /**
+         * With input rows count equals to the buffer size, the last row completes both
+         * the input data and the requested count in the same cycle. This triggers
+         * a synchronous request() call from within push() to fill the buffer, and
+         * the node must properly handle the termination on the subsequent request()
+         * call rather than on end().
+         */
+        int bufSize = AbstractNode.IN_BUFFER_SIZE;
+
+        sql("CREATE TABLE t0(a INTEGER PRIMARY KEY, b INTEGER) WITH template=replicated," + atomicity());
+
+        for (int i = 0; i < bufSize; i++)
+            sql("INSERT INTO t0 VALUES (?, ?)", i, i);
+
+        assertQuery("SELECT t1.a FROM t0 AS t1 JOIN (SELECT a, count(a) FROM t0 GROUP BY a) AS t2 ON t1.a = t2.a")
+            .resultSize(bufSize)
+            .check();
     }
 
     /**

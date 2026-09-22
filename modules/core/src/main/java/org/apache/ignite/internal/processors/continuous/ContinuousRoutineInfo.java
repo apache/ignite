@@ -17,45 +17,53 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-class ContinuousRoutineInfo implements Serializable {
+/** */
+public final class ContinuousRoutineInfo implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(0)
     UUID srcNodeId;
 
     /** */
-    final UUID routineId;
+    @Order(1)
+    UUID routineId;
 
     /** */
-    final byte[] hnd;
+    @Order(2)
+    GridContinuousHandler hnd;
 
     /** */
-    final byte[] nodeFilter;
+    @Order(3)
+    byte[] nodeFilter;
 
     /** */
-    final int bufSize;
+    @Order(4)
+    int bufSize;
 
     /** */
-    final long interval;
+    @Order(5)
+    long interval;
 
     /** */
-    final boolean autoUnsubscribe;
+    @Order(6)
+    boolean autoUnsubscribe;
 
-    /** */
-    transient boolean disconnected;
+    /** Transient. */
+    boolean disconnected;
+
+    /** Empty constructor for serialization purposes. */
+    public ContinuousRoutineInfo() {
+        // No-op.
+    }
 
     /**
      * @param srcNodeId Source node ID.
      * @param routineId Routine ID.
-     * @param hnd Marshalled handler.
+     * @param hnd Handler.
      * @param nodeFilter Marshalled node filter.
      * @param bufSize Handler buffer size.
      * @param interval Time interval.
@@ -64,7 +72,7 @@ class ContinuousRoutineInfo implements Serializable {
     ContinuousRoutineInfo(
         UUID srcNodeId,
         UUID routineId,
-        byte[] hnd,
+        GridContinuousHandler hnd,
         byte[] nodeFilter,
         int bufSize,
         long interval,

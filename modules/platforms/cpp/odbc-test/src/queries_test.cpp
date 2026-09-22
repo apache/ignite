@@ -1958,7 +1958,7 @@ BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQueryExpires)
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
-    SQLCHAR req[] = "select delay(5000)";
+    SQLCHAR req[] = "select sleep(5000)";
 
     ret = SQLExecDirect(stmt, req, SQL_NTS);
 

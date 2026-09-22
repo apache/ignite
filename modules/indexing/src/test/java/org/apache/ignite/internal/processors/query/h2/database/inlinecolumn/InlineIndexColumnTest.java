@@ -284,7 +284,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             int off = 0;
 
             IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
-                .inlineObjHash(inlineObjHash)
+                .inlineObjectHash(inlineObjHash)
                 .stringOptimizedCompare(true);
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.forCode(wrap(v1, cls).getType()), keyTypeSettings);
@@ -355,7 +355,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             int off = 0;
 
             IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
-                .inlineObjHash(false)
+                .inlineObjectHash(false)
                 .stringOptimizedCompare(false);
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.STRING, keyTypeSettings);
@@ -408,7 +408,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             int off = 0;
 
             IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
-                .inlineObjHash(false)
+                .inlineObjectHash(false)
                 .stringOptimizedCompare(false);
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.BYTES, keyTypeSettings);
@@ -472,7 +472,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             int off = 0;
 
             IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
-                .inlineObjHash(false)
+                .inlineObjectHash(false)
                 .stringOptimizedCompare(false);
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.JAVA_OBJECT, keyTypeSettings);
@@ -892,7 +892,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             int max = 255;
 
             IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
-                .inlineObjHash(false)
+                .inlineObjectHash(false)
                 .stringOptimizedCompare(false);
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(IndexKeyType.forCode(v1.getType()), keyTypeSettings);

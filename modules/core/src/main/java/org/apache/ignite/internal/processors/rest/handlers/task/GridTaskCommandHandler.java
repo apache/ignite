@@ -132,10 +132,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                         if (err != null)
                             res.error(err.getMessage());
-                        else {
-                            res.result(desc.result());
-                            res.resultBytes(U.marshal(ctx, desc.result()));
-                        }
+                        else
+                            res.res = desc.result();
                     }
                     else
                         res.found(false);
@@ -431,13 +429,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 else
                     // Sender and message type are fine.
                     res = (GridTaskResultResponse)msg;
-
-                try {
-                    res.result(U.unmarshal(ctx, res.resultBytes(), U.resolveClassLoader(ctx.config())));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal task result: " + res, e);
-                }
 
                 lock.lock();
 

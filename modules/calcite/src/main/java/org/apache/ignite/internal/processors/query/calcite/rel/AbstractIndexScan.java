@@ -27,6 +27,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
@@ -67,12 +68,13 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         RelTraitSet traitSet,
         RelOptTable table,
         String idxName,
+        @Nullable RelDataType rowType,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
         @Nullable ImmutableBitSet reqColumns
     ) {
-        super(cluster, traitSet, Collections.emptyList(), table, proj, cond, reqColumns);
+        super(cluster, traitSet, Collections.emptyList(), table, rowType, proj, cond, reqColumns);
 
         this.idxName = idxName;
         this.searchBounds = searchBounds;

@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheContentionCommandArg extends IgniteDataTransferObject {
@@ -32,33 +29,22 @@ public class CacheContentionCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** Min queue size. */
+    @Order(0)
     @Positional
     @Argument(example = "minQueueSize")
-    private int minQueueSize;
+    int minQueueSize;
 
     /** Node id. */
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "nodeId")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Max print. */
+    @Order(2)
     @Positional
     @Argument(optional = true, example = "maxPrint")
-    private int maxPrint = 10;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(minQueueSize);
-        U.writeUuid(out, nodeId);
-        out.writeInt(maxPrint);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        minQueueSize = in.readInt();
-        nodeId = U.readUuid(in);
-        maxPrint = in.readInt();
-    }
+    int maxPrint = 10;
 
     /** */
     public UUID nodeId() {

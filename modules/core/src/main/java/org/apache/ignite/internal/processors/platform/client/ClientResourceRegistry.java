@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * Per-connection resource registry.
@@ -30,6 +31,17 @@ public class ClientResourceRegistry {
 
     /** ID generator. */
     private final AtomicLong idGen = new AtomicLong();
+
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /**
+     * Logger for cleanup errors logging.
+     * @param log Logger.
+     */
+    public ClientResourceRegistry(IgniteLogger log) {
+        this.log = log;
+    }
 
     /**
      * Allocates server handle for an object.
@@ -85,8 +97,23 @@ public class ClientResourceRegistry {
      * Cleans all handles and closes all ClientCloseableResources.
      */
     public void clean() {
-        for (Map.Entry e : res.entrySet())
-            closeIfNeeded(e.getValue());
+        for (Map.Entry<Long, Object> e : res.entrySet()) {
+            Long id = e.getKey();
+            Object obj = e.getValue();
+
+            try {
+                closeIfNeeded(obj);
+            }
+            catch (Exception ex) {
+                if (log != null && log.isDebugEnabled())
+                    log.debug("Failed to close client resource on disconnect [id=" + id +
+                        ", res=" + obj +
+                        ", err=" + ex.getClass().getSimpleName() + ": " + ex.getMessage() + ']');
+            }
+            finally {
+                res.remove(id, obj);
+            }
+        }
     }
 
     /**

@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -34,7 +31,8 @@ public class ViewCacheTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache infos. */
-    private List<CacheInfo> cacheInfos;
+    @Order(0)
+    List<CacheInfo> cacheInfos;
 
     /**
      * @param cacheInfos Cache infos.
@@ -54,16 +52,6 @@ public class ViewCacheTaskResult extends IgniteDataTransferObject {
      */
     public Collection<CacheInfo> cacheInfos() {
         return cacheInfos;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, cacheInfos);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheInfos = U.readList(in);
     }
 
     /** {@inheritDoc} */

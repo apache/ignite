@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -75,6 +74,11 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        RelCollation collation = TraitUtils.collation(sole(inputs).getTraitSet());
+
+        assert collation.satisfies(TraitUtils.collation(traitSet))
+            : "Unexpected collations: input=" + collation + ", traitSet=" + TraitUtils.collation(traitSet);
+
         return new IgniteReduceSortAggregate(
             getCluster(),
             traitSet,
@@ -83,7 +87,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
             groupSets,
             aggCalls,
             rowType,
-            TraitUtils.collation(traitSet)
+            collation
         );
     }
 

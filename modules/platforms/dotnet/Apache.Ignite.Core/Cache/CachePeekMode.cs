@@ -66,7 +66,6 @@ namespace Apache.Ignite.Core.Cache
         /// Peeks value from local native .NET cache
         /// (see <see cref="CacheConfiguration.PlatformCacheConfiguration"/>). 
         /// </summary>
-        [IgniteExperimental]
         Platform = 0x1000
     }
 }

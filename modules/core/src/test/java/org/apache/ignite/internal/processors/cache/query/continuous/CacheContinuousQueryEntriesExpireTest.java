@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
+import org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -57,7 +57,7 @@ public class CacheContinuousQueryEntriesExpireTest extends GridCommonAbstractTes
         for (int i = 0; i < 1_000; i++)
             cache.put(i, i);
 
-        ConcurrentMap<UUID, GridContinuousProcessor.LocalRoutineInfo> locInfos =
+        ConcurrentMap<UUID, ContinousRoutineLocalInfo> locInfos =
             getFieldValue(srv1.context().continuous(), "locInfos");
 
         assertEquals(1, locInfos.size());

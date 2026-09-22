@@ -111,6 +111,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param keepBinary Keep binary flag.
      * @param remapCnt Maximum number of retries.
      * @param appAttrs Application attributes.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext cctx,
@@ -127,10 +128,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         final CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean keepBinaryInInterceptor
     ) {
         super(
             cctx,
@@ -143,10 +146,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             filter,
             taskNameHash,
             skipStore,
+            skipReadThrough,
             keepBinary,
             recovery,
             remapCnt,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
@@ -412,11 +417,11 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                 if (op == TRANSFORM) {
                     if (ret != null) {
-                        assert ret.value() == null || ret.value() instanceof Map : ret.value();
+                        assert ret.value(cctx) == null || ret.value(cctx) instanceof Map : ret.value(cctx);
 
-                        if (ret.value() != null) {
+                        if (ret.value(cctx) != null) {
                             if (opRes != null)
-                                opRes.mergeEntryProcessResults(ret);
+                                opRes.mergeEntryProcessResults(cctx, ret);
                             else
                                 opRes = ret;
                         }
@@ -991,14 +996,16 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             PrimaryRequestState mapped = pendingMappings.get(nodeId);
 
             if (mapped == null) {
-                byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+                short flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
                     topLocked,
                     retval,
                     mappingKnown,
                     needPrimaryRes,
                     skipStore,
                     keepBinary,
-                    recovery);
+                    recovery,
+                    skipReadThrough,
+                    keepBinaryInInterceptor);
 
                 GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
                     cctx.cacheId(),
@@ -1012,7 +1019,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     filter,
                     taskNameHash,
                     flags,
-                    cctx.deploymentEnabled(),
                     keys.size());
 
                 mapped = new PrimaryRequestState(req, nodes, false);
@@ -1104,14 +1110,16 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         boolean needPrimaryRes = !mappingKnown || primary.isLocal() || nodes.size() == 1 || nearEnabled;
 
-        byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+        short flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
             topLocked,
             retval,
             mappingKnown,
             needPrimaryRes,
             skipStore,
             keepBinary,
-            recovery);
+            recovery,
+            skipReadThrough,
+            keepBinaryInInterceptor);
 
         GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
             cctx.cacheId(),
@@ -1125,7 +1133,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             filter,
             taskNameHash,
             flags,
-            cctx.deploymentEnabled(),
             1);
 
         req.addUpdateEntry(cacheKey,

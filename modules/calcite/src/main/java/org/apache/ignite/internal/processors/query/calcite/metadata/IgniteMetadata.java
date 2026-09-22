@@ -46,6 +46,7 @@ public class IgniteMetadata {
                 IgniteMdCumulativeCost.SOURCE,
                 IgniteMdNonCumulativeCost.SOURCE,
                 IgniteMdRowCount.SOURCE,
+                IgniteMdMinRowCount.SOURCE,
                 IgniteMdPredicates.SOURCE,
                 IgniteMdCollation.SOURCE,
                 IgniteMdSelectivity.SOURCE,

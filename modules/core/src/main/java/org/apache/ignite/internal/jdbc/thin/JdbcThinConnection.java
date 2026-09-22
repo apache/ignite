@@ -53,7 +53,6 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
@@ -86,6 +85,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -114,20 +114,23 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSetTxParametersRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxEndRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxSavepointRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTxSavepointResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcUpdateBinarySchemaResult;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -180,6 +183,9 @@ public class JdbcThinConnection implements Connection {
 
     /** No retries. */
     public static final int NO_RETRIES = 0;
+
+    /** Savepoint name generator. */
+    private static final AtomicLong SAVEPOINT_ID_GEN = new AtomicLong();
 
     /** Default isolation level. */
     public static final int DFLT_ISOLATION = TRANSACTION_READ_COMMITTED;
@@ -316,6 +322,14 @@ public class JdbcThinConnection implements Connection {
 
         holdability = isTxAwareQueriesSupported ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = defaultTransactionIsolation();
+
+        if (connProps.isLocal()) {
+            if (connProps.getAddresses().length != 1
+                || connProps.getAddresses()[0].portFrom() != connProps.getAddresses()[0].portTo()) {
+                LOG.warning("Local flag is supposed to be used only when exactly one address is specified, " +
+                    "otherwise the local query may be executed on an unexpected node");
+            }
+        }
     }
 
     /** Create new binary context. */
@@ -362,6 +376,11 @@ public class JdbcThinConnection implements Connection {
     /** @return {@code True} if transactions supported by the server, {@code false} otherwise. */
     boolean txSupportedByServer() {
         return isTxAwareQueriesSupported;
+    }
+
+    /** @return {@code True} if savepoints supported by the server, {@code false} otherwise. */
+    boolean savepointsSupportedByServer() {
+        return defaultIo().isSavepointsSupported();
     }
 
     /** @return {@code True} if certain isolation level supported by the server, {@code false} otherwise. */
@@ -801,7 +820,11 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        String name = "JDBC_SAVEPOINT_" + SAVEPOINT_ID_GEN.incrementAndGet();
+
+        savepoint(JdbcTxSavepointRequest.SAVEPOINT, name);
+
+        return new JdbcThinSavepoint(name, false);
     }
 
     /** {@inheritDoc} */
@@ -814,7 +837,9 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        savepoint(JdbcTxSavepointRequest.SAVEPOINT, name);
+
+        return new JdbcThinSavepoint(name, true);
     }
 
     /** {@inheritDoc} */
@@ -827,7 +852,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Auto-commit mode.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        savepoint(JdbcTxSavepointRequest.ROLLBACK_TO_SAVEPOINT, savepointName(savepoint));
     }
 
     /** {@inheritDoc} */
@@ -837,7 +862,9 @@ public class JdbcThinConnection implements Connection {
         if (savepoint == null)
             throw new SQLException("Savepoint cannot be null.");
 
-        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        savepoint(JdbcTxSavepointRequest.RELEASE_SAVEPOINT, savepointName(savepoint));
+
+        ((JdbcThinSavepoint)savepoint).release();
     }
 
     /** {@inheritDoc} */
@@ -1055,6 +1082,52 @@ public class JdbcThinConnection implements Connection {
     /** @return Current transaction id. */
     public int txId() {
         return txCtx == null ? NONE_TX : txCtx.txId;
+    }
+
+    /**
+     * Execute savepoint operation.
+     *
+     * @param op Operation.
+     * @param name Savepoint name.
+     * @throws SQLException If failed.
+     */
+    private void savepoint(byte op, String name) throws SQLException {
+        if (!savepointsSupportedByServer())
+            throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+
+        if (!txEnabledForConnection()) {
+            logTransactionWarning();
+
+            throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
+        }
+
+        if (txCtx == null && op != JdbcTxSavepointRequest.SAVEPOINT)
+            throw new SQLException("Transaction not found");
+
+        JdbcResultWithIo res = sendRequest(new JdbcTxSavepointRequest(txId(), op, name), null,
+            txCtx == null ? null : txCtx.txIo);
+
+        JdbcTxSavepointResult savepointRes = res.response();
+
+        if (txCtx == null)
+            txCtx = new TxContext(res.cliIo(), savepointRes.txId());
+        else if (txCtx.txId != savepointRes.txId()) {
+            throw new IllegalStateException("Unexpected transaction id for savepoint operation [" +
+                "txCtx.txId=" + txCtx.txId +
+                ", res.txId=" + savepointRes.txId() + ']');
+        }
+    }
+
+    /**
+     * @param savepoint Savepoint.
+     * @return Savepoint name.
+     * @throws SQLException If savepoint is invalid.
+     */
+    private static String savepointName(Savepoint savepoint) throws SQLException {
+        if (!(savepoint instanceof JdbcThinSavepoint))
+            throw new SQLException("Invalid savepoint.");
+
+        return ((JdbcThinSavepoint)savepoint).name();
     }
 
     /**
@@ -1976,74 +2049,78 @@ public class JdbcThinConnection implements Connection {
      */
     private IgniteProductVersion connectInBestEffortAffinityMode(
         IgniteProductVersion baseEndpointVer) throws SQLException {
-        List<Exception> exceptions = null;
+        try {
+            List<Exception> exceptions = null;
 
-        for (int i = 0; i < connProps.getAddresses().length; i++) {
-            HostAndPortRange srv = connProps.getAddresses()[i];
+            for (int i = 0; i < connProps.getAddresses().length; i++) {
+                HostAndPortRange srv = connProps.getAddresses()[i];
 
-            try {
-                InetAddress[] addrs = InetAddress.getAllByName(srv.host());
+                try {
+                    InetAddress[] addrs = InetAddress.getAllByName(srv.host());
 
-                for (InetAddress addr : addrs) {
-                    for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
-                        try {
-                            JdbcThinTcpIo cliIo =
-                                new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
+                    for (InetAddress addr : addrs) {
+                        for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                            try {
+                                JdbcThinTcpIo cliIo =
+                                    new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
 
-                            if (!cliIo.isPartitionAwarenessSupported()) {
-                                cliIo.close();
+                                if (!cliIo.isPartitionAwarenessSupported()) {
+                                    cliIo.close();
 
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Node doesn't support partition awareness mode.",
-                                    INTERNAL_ERROR);
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
+                                        "Node doesn't support partition awareness mode.",
+                                        INTERNAL_ERROR);
+                                }
+
+                                IgniteProductVersion endpointVer = cliIo.igniteVersion();
+
+                                if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
+                                    cliIo.close();
+
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
+                                        "the node version [" + endpointVer + "] " +
+                                        "is smaller than the base one [" + baseEndpointVer + "].",
+                                        INTERNAL_ERROR);
+                                }
+
+                                cliIo.timeout(netTimeout);
+
+                                JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
+
+                                // This can happen if the same node has several IPs or if connection manager background
+                                // timer task runs concurrently.
+                                if (ioToSameNode != null)
+                                    cliIo.close();
+                                else
+                                    connCnt.incrementAndGet();
+
+                                return cliIo.igniteVersion();
                             }
+                            catch (Exception exception) {
+                                if (exceptions == null)
+                                    exceptions = new ArrayList<>();
 
-                            IgniteProductVersion endpointVer = cliIo.igniteVersion();
-
-                            if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
-                                cliIo.close();
-
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
-                                    "the node version [" + endpointVer + "] " +
-                                    "is smaller than the base one [" + baseEndpointVer + "].",
-                                    INTERNAL_ERROR);
+                                exceptions.add(exception);
                             }
-
-                            cliIo.timeout(netTimeout);
-
-                            JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
-
-                            // This can happen if the same node has several IPs or if connection manager background
-                            // timer task runs concurrently.
-                            if (ioToSameNode != null)
-                                cliIo.close();
-                            else
-                                connCnt.incrementAndGet();
-
-                            return cliIo.igniteVersion();
-                        }
-                        catch (Exception exception) {
-                            if (exceptions == null)
-                                exceptions = new ArrayList<>();
-
-                            exceptions.add(exception);
                         }
                     }
                 }
-            }
-            catch (Exception exception) {
-                if (exceptions == null)
-                    exceptions = new ArrayList<>();
+                catch (Exception exception) {
+                    if (exceptions == null)
+                        exceptions = new ArrayList<>();
 
-                exceptions.add(exception);
+                    exceptions.add(exception);
+                }
             }
+
+            handleConnectExceptions(exceptions);
         }
-
-        handleConnectExceptions(exceptions);
-
-        isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        finally {
+            if (!ios.isEmpty())
+                isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        }
 
         return null;
     }
@@ -2345,12 +2422,15 @@ public class JdbcThinConnection implements Connection {
         /** */
         private final Set<String> sysTypes = new HashSet<>();
 
+        /** JDK marshaller. */
+        private final JdkMarshaller jdkMarsh = Marshallers.jdk();
+
         /**
          * Default constructor.
          */
         public JdbcMarshallerContext() {
             try {
-                processSystemClasses(U.gridClassLoader(), null, sysTypes::add);
+                processSystemClasses(sysTypes::add);
             }
             catch (IOException e) {
                 throw new IgniteException("Unable to initialize marshaller context", e);
@@ -2397,7 +2477,7 @@ public class JdbcThinConnection implements Connection {
         @Override public Class getClass(int typeId, ClassLoader ldr)
             throws ClassNotFoundException, IgniteCheckedException {
 
-            return U.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr, null);
+            return ClassLoaderUtils.forName(getClassName(MarshallerPlatformIds.JAVA_ID, typeId), ldr);
         }
 
         /** {@inheritDoc} */
@@ -2452,13 +2532,8 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** {@inheritDoc} */
-        @Override public IgnitePredicate<String> classNameFilter() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return jdkMarsh;
         }
     }
 
@@ -2579,7 +2654,7 @@ public class JdbcThinConnection implements Connection {
      */
     private abstract class BlockingJdbcChannel {
         /** Request ID -> Jdbc result map. */
-        private Map<Long, CompletableFuture<JdbcResult>> results = new ConcurrentHashMap<>();
+        private Map<Long, IgniteCompletableFuture<JdbcResult>> results = new ConcurrentHashMap<>();
 
         /**
          * Do request in blocking style. It just call
@@ -2594,9 +2669,9 @@ public class JdbcThinConnection implements Connection {
             R res;
 
             if (isStream()) {
-                CompletableFuture<JdbcResult> resFut = new CompletableFuture<>();
+                IgniteCompletableFuture<JdbcResult> resFut = new IgniteCompletableFuture<>();
 
-                CompletableFuture<JdbcResult> oldFut = results.put(req.requestId(), resFut);
+                IgniteCompletableFuture<JdbcResult> oldFut = results.put(req.requestId(), resFut);
 
                 assert oldFut == null : "Another request with the same id is waiting for result.";
 
@@ -2619,7 +2694,7 @@ public class JdbcThinConnection implements Connection {
         boolean handleResult(long reqId, JdbcResult res) {
             boolean handled = false;
 
-            CompletableFuture<JdbcResult> fut = results.remove(reqId);
+            IgniteCompletableFuture<JdbcResult> fut = results.remove(reqId);
 
             if (fut != null) {
                 fut.complete(res);
@@ -2680,6 +2755,59 @@ public class JdbcThinConnection implements Connection {
                 return;
 
             stmts.remove(stmt);
+        }
+    }
+
+    /** JDBC thin savepoint. */
+    private static class JdbcThinSavepoint implements Savepoint {
+        /** Savepoint name. */
+        private final String name;
+
+        /** Named savepoint flag. */
+        private final boolean named;
+
+        /** Released flag. */
+        private boolean released;
+
+        /**
+         * @param name Savepoint name used by Ignite transaction.
+         * @param named Whether savepoint was created as named JDBC savepoint.
+         */
+        private JdbcThinSavepoint(String name, boolean named) {
+            this.name = name;
+            this.named = named;
+        }
+
+        /** @return Savepoint name used by Ignite transaction. */
+        private String name() throws SQLException {
+            if (released)
+                throw new SQLException("Savepoint has been released.");
+
+            return name;
+        }
+
+        /** Mark savepoint as released. */
+        private void release() {
+            released = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getSavepointId() throws SQLException {
+            if (named)
+                throw new SQLException("Named savepoint does not have an id.");
+
+            if (released)
+                throw new SQLException("Savepoint has been released.");
+
+            return (int)Long.parseLong(name.substring("JDBC_SAVEPOINT_".length()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSavepointName() throws SQLException {
+            if (!named)
+                throw new SQLException("Unnamed savepoint does not have a name.");
+
+            return name();
         }
     }
 

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -35,11 +34,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -49,6 +51,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -78,7 +81,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
     protected IgniteLogger log;
 
     /** Ignite instance. */
-    protected Ignite ignite;
+    protected IgniteEx ignite;
 
     /** Ignite instance name. */
     protected String igniteInstanceName;
@@ -265,7 +268,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      */
     @IgniteInstanceResource
     protected void injectResources(Ignite ignite) {
-        this.ignite = ignite;
+        this.ignite = (IgniteEx)ignite;
 
         if (ignite != null && igniteInstanceName == null)
             igniteInstanceName = ignite.name();
@@ -750,17 +753,17 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
             this.locNode = locNode;
             this.stopping = stopping;
 
-            MessageFactory msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
+            MessageFactory<? extends Message> msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
             MessageFormatter msgFormatter0 = spiCtx != null ? spiCtx.messageFormatter() : null;
 
             if (msgFactory0 == null) {
-                msgFactory0 = new MessageFactory() {
-                    @Override public void register(short directType, Supplier<Message> supplier) throws IgniteException {
-                        throw new IgniteException("Failed to register message, node is not started.");
-                    }
-
-                    @Override public void register(short directType, Supplier<Message> supplier,
-                        MessageSerializer serializer) throws IgniteException {
+                msgFactory0 = new IgniteMessageFactory<>() {
+                    @Override public void register(
+                        short directType,
+                        MessageSerializer<Message> serializer,
+                        @Nullable MessageMarshaller<Message> marshaller,
+                        @Nullable GridCacheMessageDeployer<GridCacheMessage> deployer
+                    ) throws IgniteException {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
 
@@ -768,7 +771,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
 
-                    @Override public MessageSerializer serializer(short type) {
+                    @Override public MessageSerializer<Message> serializer(short type) {
+                        throw new IgniteException("Failed to register message, node is not started.");
+                    }
+
+                    @Nullable @Override public MessageMarshaller<Message> marshaller(short type) {
+                        throw new IgniteException("Failed to register message, node is not started.");
+                    }
+
+                    @Nullable @Override public GridCacheMessageDeployer<GridCacheMessage> deployer(short type) {
                         throw new IgniteException("Failed to register message, node is not started.");
                     }
                 };
@@ -776,11 +787,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             if (msgFormatter0 == null) {
                 msgFormatter0 = new MessageFormatter() {
-                    @Override public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) {
+                    @Override public MessageWriter writer(MessageFactory<? extends Message> msgFactory) {
                         throw new IgniteException("Failed to write message, node is not started.");
                     }
 
-                    @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                    @Override public MessageReader reader(MessageFactory<? extends Message> msgFactory) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
@@ -952,22 +963,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
         /** {@inheritDoc} */
         @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
-            Ignite ignite0 = ignite;
-
-            if (!(ignite0 instanceof IgniteKernal))
-                throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
-
-            ((IgniteEx)ignite0).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
+            context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
         @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
-            Ignite ignite0 = ignite;
-
-            if (!(ignite0 instanceof IgniteKernal))
-                throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
-
-            ((IgniteEx)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+            context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
@@ -1003,6 +1004,16 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
             // No-op.
+        }
+
+        /** */
+        private GridKernalContext context() {
+            Ignite ignite0 = ignite;
+
+            if (ignite0 == null)
+                throw new IgniteSpiException(isStopping() ? "The node is stopping" : "The node is not yet started");
+
+            return ((IgniteEx)ignite0).context();
         }
     }
 }

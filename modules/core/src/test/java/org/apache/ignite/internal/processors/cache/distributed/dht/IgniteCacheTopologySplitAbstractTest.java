@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -36,8 +35,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -208,52 +207,45 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
+            InetSocketAddress remAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteCheckedException {
             checkSegmented(remAddr, timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
 
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            return super.openSession(sock, remAddr, timeoutHelper);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
             byte[] data,
             long timeout
-        ) throws IOException {
-            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
+        ) throws IOException, IgniteCheckedException {
+            checkSegmented((InetSocketAddress)ses.socket().getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
+            checkSegmented((InetSocketAddress)ses.socket().getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
+            int res,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
+            checkSegmented((InetSocketAddress)ses.socket().getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
-            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
-
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
     }
 

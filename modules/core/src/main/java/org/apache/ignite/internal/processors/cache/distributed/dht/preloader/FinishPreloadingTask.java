@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 
 /**
  * A task for finishing preloading future in exchange worker thread.
  */
-public class FinishPreloadingTask extends AbstractCachePartitionExchangeWorkerTask {
+public class FinishPreloadingTask implements CachePartitionExchangeWorkerTask {
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
 
@@ -35,12 +34,9 @@ public class FinishPreloadingTask extends AbstractCachePartitionExchangeWorkerTa
     private final long rebalanceId;
 
     /**
-     * @param secCtx Security context in which current task must be executed.
      * @param topVer Topology version.
      */
-    public FinishPreloadingTask(SecurityContext secCtx, AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
-        super(secCtx);
-
+    public FinishPreloadingTask(AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
         this.grpId = grpId;
         this.topVer = topVer;
         this.rebalanceId = rebalanceId;

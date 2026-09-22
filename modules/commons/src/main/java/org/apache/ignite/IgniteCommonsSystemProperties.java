@@ -17,11 +17,15 @@
 
 package org.apache.ignite;
 
+import java.io.Serializable;
+import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
+import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
@@ -31,6 +35,12 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * These properties and variables can be used to affect the behavior of Ignite.
  */
 public class IgniteCommonsSystemProperties {
+    /** Default value of {@link IgniteCommonsSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
+
+    /** Default value of {@link IgniteCommonsSystemProperties#IGNITE_BINARY_STRING_ZERO_COPY}. */
+    public static final boolean DFLT_ZERO_COPY = true;
+
     /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
@@ -84,6 +94,136 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty(value = "Per thread binary allocator chunk pool size",
         type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE)
     public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
+
+    /**
+     * Manages {@code OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
+     * {@link Serializable} classes.
+     */
+    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
+        "for Serializable classes")
+    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
+        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
+
+    /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    @SystemProperty("Enables development environments warnings")
+    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
+
+    /** Max amount of remembered errors for {@link GridLogThrottle}. */
+    @SystemProperty(value = "Max amount of remembered errors for GridLogThrottle", type = Integer.class,
+        defaults = "" + DFLT_LOG_THROTTLE_CAPACITY)
+    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
+
+    /** Defines Ignite installation folder. */
+    @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
+    public static final String IGNITE_HOME = "IGNITE_HOME";
+
+    /**
+     * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.
+     * Should be used for cases when a String contains a surrogate symbol without its pair one. This is frequently used
+     * in algorithms that encrypts data in String format.
+     */
+    @SystemProperty("Manages type of serialization mechanism for String that is " +
+        "marshalled/unmarshalled by BinaryMarshaller. Should be used for cases when a String contains a surrogate " +
+        "symbol without its pair one. This is frequently used in algorithms that encrypts data in String format")
+    public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
+        "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+    /**
+     * Enables zero-copy UTF-8 serialization of {@link String} values.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(value = "Enables zero-copy UTF-8 serialization of String values", defaults = "" + DFLT_ZERO_COPY)
+    public static final String IGNITE_BINARY_STRING_ZERO_COPY = "IGNITE_BINARY_STRING_ZERO_COPY";
+
+    /**
+     * Enables storage of typed arrays.
+     * The default value is {@code BinaryUtils#DFLT_IGNITE_USE_BINARY_ARRAYS}.
+     */
+    @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
+        defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
+    public static final String IGNITE_USE_BINARY_ARRAYS = "IGNITE_USE_BINARY_ARRAYS";
+
+    /**
+     * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
+     * the natural order is used.
+     * <p>
+     * NOTICE: Should be the default in Apache Ignite 3.0
+     */
+    @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
+        "By default, the natural order is used")
+    public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
+
+    /**
+     * Flag that will force Ignite to fill memory block with some recognisable pattern right before
+     * this memory block is released. This will help to recognize cases when already released memory is accessed.
+     */
+    @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
+        "memory block is released. This will help to recognize cases when already released memory is accessed")
+    public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
+
+    /** Human-readable ID of a data center where the node is running. */
+    @IgniteExperimental
+    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
+        type = String.class)
+    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
+
+    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
+
+    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
+    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
+        type = String.class)
+    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
+
+    /**
+     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
+     * current JVM it is running in.
+     * Default value is {@code true}.
+     */
+    @SystemProperty(
+        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
+            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
+            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
+            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
+            " serialization mechanisms",
+        defaults = "true"
+    )
+    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
+
+    /**
+     * Enables default selected keys set to be used inside {@code GridNioServer}.
+     * <p>
+     * Default value is {@code false}. Should be switched to {@code true} if there are
+     * any problems in communication layer.
+     */
+    @SystemProperty("Enables default selected keys set to be used inside GridNioServer " +
+        "which lead to some extra garbage generation when processing selected keys. " +
+        "Should be switched to true if there are any problems in communication layer")
+    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
+
+    /** Default IO balance period. */
+    public static final int DFLT_IO_BALANCE_PERIOD = 5000;
+
+    /** */
+    @SystemProperty(value = "IO balance period in milliseconds", type = Long.class,
+        defaults = "" + DFLT_IO_BALANCE_PERIOD)
+    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
+
+    /** Default timeout for TCP client recovery descriptor reservation. */
+    public static final int DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT = 5_000;
+
+    /**
+     * Sets timeout for TCP client recovery descriptor reservation.
+     */
+    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
+        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
+    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
+            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
 
     /**
      * @param enumCls Enum type.

@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
 import javax.cache.configuration.Factory;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -31,9 +32,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.objectweb.jotm.Current;
-import org.objectweb.jotm.Jotm;
-import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -45,8 +43,8 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
  */
 @RunWith(Parameterized.class)
 public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
-    /** Java Open Transaction Manager facade. */
-    private static Jotm jotm;
+    /** Transaction manager. */
+    private static TransactionManager txMgr;
 
     /**
      * @return Test parameters.
@@ -77,16 +75,9 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        jotm = new Jotm(true, false, new RmiLocalConfiguration());
-
-        Current.setAppServer(false);
+        txMgr = new TransactionManagerImple();
 
         startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        jotm.stop();
     }
 
     /**
@@ -102,7 +93,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = jotm.getTransactionManager();
+            TransactionManager jtaTm = txMgr;
 
             IgniteCache<Integer, String> cache = jcache();
 
@@ -120,7 +111,20 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
 
             assertEquals(Integer.toString(1), cache.get(1));
 
+            org.apache.ignite.transactions.Transaction igniteTx = grid().transactions().tx();
+
             jtaTm.suspend();
+
+            // Narayana's TransactionManagerImple.suspend() only detaches the JTA transaction from the
+            // current thread context without calling XAResource.end(xid, TMSUSPEND) on enlisted
+            // XA resources. This behavior is fully compliant with the JTA specification: the spec
+            // defines TransactionManager.suspend() as "suspend the current transaction and return
+            // it" without requiring end() callbacks on XA resources.
+            // The previous JTA provider (JOTM) called end(TMSUSPEND) as an implementation detail
+            // (not because the spec required it), which is why this test worked out of the box
+            // with JOTM. To compensate for Narayana's spec-compliant behavior, we must explicitly
+            // suspend the Ignite transaction to detach it from the thread.
+            igniteTx.suspend();
 
             assertNull(grid().transactions().tx());
 
@@ -147,6 +151,16 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             assertEquals(Integer.toString(2), cache.get(2));
 
             jtaTm.resume(tx1);
+
+            // Narayana's TransactionManagerImple.resume() only reattaches the JTA transaction to the
+            // current thread context without calling XAResource.start(xid, TMRESUME) on previously
+            // enlisted XA resources. This is also fully compliant with the JTA specification:
+            // TransactionManager.resume() is defined as "resume a previously suspended transaction"
+            // without requiring start() callbacks on XA resources.
+            // Similarly to suspend(), JOTM called start(TMRESUME) as an implementation detail,
+            // not because the spec required it. To compensate for Narayana's behavior, we must
+            // explicitly resume the Ignite transaction to reattach it to the thread.
+            igniteTx.resume();
 
             assertNotNull(grid().transactions().tx());
 
@@ -177,7 +191,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = jotm.getTransactionManager();
+            TransactionManager jtaTm = txMgr;
 
             IgniteCache<Integer, String> cache = jcache();
 
@@ -231,7 +245,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public TransactionManager create() {
-            return jotm.getTransactionManager();
+            return txMgr;
         }
     }
 }

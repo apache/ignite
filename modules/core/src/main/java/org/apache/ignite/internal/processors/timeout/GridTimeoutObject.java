@@ -37,4 +37,9 @@ public interface GridTimeoutObject {
      * Timeout callback.
      */
     void onTimeout();
+
+    /** The name of the timeout object. Used to distinguish objects belonging to different subsystems. */
+    default String name() {
+        return getClass().getName();
+    }
 }

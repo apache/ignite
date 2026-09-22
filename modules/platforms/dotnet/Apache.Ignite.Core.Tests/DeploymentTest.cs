@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("ERROR: Apache.Ignite.Core.Common.IgniteException: Java class is not found " +
                             "(did you set IGNITE_HOME environment variable?): " +
                             "org/apache/ignite/internal/processors/platform/utils/PlatformUtils",
-                reader.GetOutput().First());
+                reader.GetOutputWithoutJavaWarnings().First());
         }
 
         /// <summary>
@@ -170,6 +170,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.Fail("Node failed to start: " + string.Join("\n", reader.GetOutput()));
             }
 
+            Assert.IsFalse(proc.HasExited, "Node process died: " + string.Join("\n", reader.GetOutput()));
+
             VerifyNodeStarted(exePath);
         }
 
@@ -191,7 +193,7 @@ namespace Apache.Ignite.Core.Tests
             // Copy jars.
             var home = IgniteHome.Resolve();
 
-            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\"};
+            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\", @"\ignite-spring-"};
 
             var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
                 .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();

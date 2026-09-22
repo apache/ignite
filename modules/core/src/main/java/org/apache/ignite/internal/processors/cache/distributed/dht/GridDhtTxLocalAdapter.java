@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
@@ -389,6 +390,23 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * Removes tx entry from local DHT transaction state and all DHT/near mappings.
+     *
+     * @param key Tx key.
+     */
+    public void clearEntry(IgniteTxKey key) {
+        IgniteTxEntry txEntry = entry(key);
+
+        if (txEntry == null)
+            return;
+
+        removeEntryFromMappings(txEntry, dhtMap);
+        removeEntryFromMappings(txEntry, nearMap);
+
+        txState().removeEntry(key);
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param entry Entry to remove.
      * @param map Map to remove from.
@@ -416,6 +434,19 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         }
         else
             return map.remove(nodeId) != null;
+    }
+
+    /**
+     * @param txEntry Entry.
+     * @param map Mappings.
+     */
+    private void removeEntryFromMappings(IgniteTxEntry txEntry, Map<UUID, GridDistributedTxMapping> map) {
+        for (Map.Entry<UUID, GridDistributedTxMapping> e : map.entrySet()) {
+            GridDistributedTxMapping mapping = e.getValue();
+
+            if (mapping.removeEntry(txEntry) && mapping.empty())
+                map.remove(e.getKey(), mapping);
+        }
     }
 
     /**
@@ -465,7 +496,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         assert state == PREPARING : "Invalid tx state for " +
             "adding entry [msgId=" + msgId + ", e=" + e + ", tx=" + this + ']';
 
-        e.unmarshal(cctx, false, cctx.deploy().globalLoader());
+        e.initializeContext(cctx, topVer, false);
 
         checkInternal(e.txKey());
 
@@ -530,6 +561,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param accessTtl TTL for read operation.
      * @param needRetVal Return value flag.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param nearCache {@code True} if near cache enabled on originating node.
      * @return Lock future.
@@ -544,7 +577,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary,
+        long waitTimeout,
         boolean nearCache
     ) {
         try {
@@ -616,6 +652,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             -1L,
                             null,
                             skipStore,
+                            skipReadThrough,
+                            keepBinaryInInterceptor,
                             keepBinary,
                             nearCache);
 
@@ -659,7 +697,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary);
+                skipReadThrough,
+                keepBinaryInInterceptor,
+                keepBinary,
+                waitTimeout);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -677,6 +718,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Future for lock acquisition.
      */
     private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
@@ -688,7 +731,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final long createTtl,
         final long accessTtl,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
+        boolean keepBinary,
+        long waitTimeout) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
 
@@ -710,6 +756,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             timeout,
+            waitTimeout,
             this,
             isInvalidate(),
             read,
@@ -718,24 +765,39 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             createTtl,
             accessTtl,
             skipStore,
+            skipReadThrough,
+            keepBinaryInInterceptor,
             keepBinary);
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn>(ret) {
+            new PLC1<GridCacheReturn>(ret, true, !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
-                    if (log.isDebugEnabled())
-                        log.debug("Acquired transaction lock on keys: " + passedKeys);
+                    assert fut.error() == null : "Lock future completed with an error: " + fut.error();
 
-                    postLockWrite(cacheCtx,
-                        passedKeys,
-                        ret,
-                        /*remove*/false,
-                        /*retval*/false,
-                        /*read*/read,
-                        accessTtl,
-                        CU.empty0(),
-                        /*computeInvoke*/false);
+                    boolean success = Boolean.TRUE.equals(fut.get());
+
+                    ret.success(success);
+
+                    if (log.isDebugEnabled()) {
+                        if (ret.success())
+                            log.debug("Successfully acquired transaction lock on keys: " + passedKeys);
+                        else
+                            log.debug("Failed to acquire transaction lock on keys: " + passedKeys);
+                    }
+
+                    if (ret.success()) {
+                        postLockWrite(cacheCtx,
+                            passedKeys,
+                            ret,
+                            /*remove*/false,
+                            /*retval*/false,
+                            /*read*/read,
+                            accessTtl,
+                            CU.empty0(),
+                            /*computeInvoke*/false,
+                            /*skipIfLockLost*/CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout));
+                    }
 
                     return ret;
                 }

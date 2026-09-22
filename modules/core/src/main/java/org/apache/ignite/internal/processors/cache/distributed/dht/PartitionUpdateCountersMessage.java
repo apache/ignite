@@ -17,40 +17,51 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Partition update counters message.
+ *
+ * @see #finishUpdating()
  */
-@IgniteCodeGeneratingFail
 public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
-    /** */
-    private byte data[];
+    /**
+     * Views over {@link #data}. The byte order is pinned instead of following the host, so that the bytes a node puts
+     * on the wire do not depend on the architecture it runs on. Item fields are not naturally aligned, which the plain
+     * {@code get}/{@code set} access modes used here allow.
+     */
+    private static final VarHandle INT_VIEW = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
 
     /** */
-    private int cacheId;
+    private static final VarHandle LONG_VIEW = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
 
     /** */
-    @GridDirectTransient
-    private int size;
+    @Order(0)
+    int cacheId;
+
+    /** Byte representation of partition counters. */
+    @Order(1)
+    byte[] data;
+
+    /** */
+    @Order(2)
+    int size;
 
     /** Used for assigning counters to cache entries during tx finish. */
-    @GridDirectTransient
     private Map<Integer, Long> counters;
 
-    /** */
+    /** Empty constructor for a {@link MessageFactory}. */
     public PartitionUpdateCountersMessage() {
         // No-op.
     }
@@ -88,9 +99,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE;
-
-        return GridUnsafe.getInt(data, off);
+        return (int)INT_VIEW.get(data, idx * ITEM_SIZE);
     }
 
     /**
@@ -101,9 +110,7 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 4;
-
-        return GridUnsafe.getLong(data, off);
+        return (long)LONG_VIEW.get(data, idx * ITEM_SIZE + 4);
     }
 
     /**
@@ -114,24 +121,33 @@ public class PartitionUpdateCountersMessage implements Message {
         if (idx >= size)
             throw new ArrayIndexOutOfBoundsException();
 
-        long off = GridUnsafe.BYTE_ARR_OFF + idx * ITEM_SIZE + 12;
-
-        return GridUnsafe.getLong(data, off);
+        return (long)LONG_VIEW.get(data, idx * ITEM_SIZE + 12);
     }
 
     /**
      * @param part Partition number.
      * @param init Init partition counter.
      * @param updatesCnt Update counter delta.
+     *
+     * @see #finishUpdating()
      */
     public void add(int part, long init, long updatesCnt) {
         ensureSpace(size + 1);
 
-        long off = GridUnsafe.BYTE_ARR_OFF + size++ * ITEM_SIZE;
+        int off = size++ * ITEM_SIZE;
 
-        GridUnsafe.putInt(data, off, part); off += 4;
-        GridUnsafe.putLong(data, off, init); off += 8;
-        GridUnsafe.putLong(data, off, updatesCnt);
+        INT_VIEW.set(data, off, part);
+        LONG_VIEW.set(data, off + 4, init);
+        LONG_VIEW.set(data, off + 12, updatesCnt);
+    }
+
+    /** Optimizes the memory used after adding counters with {@link #add(int, long, long)}. */
+    public void finishUpdating() {
+        if (data != null && data.length != size * ITEM_SIZE) {
+            assert data.length > size * ITEM_SIZE;
+
+            data = Arrays.copyOf(data, size * ITEM_SIZE);
+        }
     }
 
     /**
@@ -153,13 +169,6 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
-     * Clears message.
-     */
-    public void clear() {
-        size = 0;
-    }
-
-    /**
      * Check if there is enough space is allocated.
      *
      * @param newSize Size to ensure.
@@ -167,75 +176,9 @@ public class PartitionUpdateCountersMessage implements Message {
     private void ensureSpace(int newSize) {
         int req = newSize * ITEM_SIZE;
 
+        // Growth alone may fall short of the request: 1.33 of a one-item array is still less than two items.
         if (data.length < req)
-            data = Arrays.copyOf(data, data.length << 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(data, 0, size * ITEM_SIZE))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                data = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                size = data.length / ITEM_SIZE;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 157;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+            data = Arrays.copyOf(data, Math.max(req, (int)(data.length * 1.33f)));
     }
 
     /** {@inheritDoc} */

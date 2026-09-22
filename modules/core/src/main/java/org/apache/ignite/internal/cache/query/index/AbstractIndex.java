@@ -26,17 +26,13 @@ public abstract class AbstractIndex implements Index {
     /** Whether index is rebuilding now. */
     private final AtomicBoolean rebuildInProgress = new AtomicBoolean(false);
 
-    /**
-     * @param val Mark or unmark index to rebuild.
-     */
-    public void markIndexRebuild(boolean val) {
+    /** {@inheritDoc} */
+    @Override public void markIndexRebuild(boolean val) {
         rebuildInProgress.compareAndSet(!val, val);
     }
 
-    /**
-     * @return Whether index is rebuilding now.
-     */
-    public boolean rebuildInProgress() {
+    /** {@inheritDoc} */
+    @Override public boolean rebuildInProgress() {
         return rebuildInProgress.get();
     }
 

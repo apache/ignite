@@ -18,20 +18,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message indicating a failure occurred during processing snapshot files request.
  */
 public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
-    /** Snapshot response message type (value is {@code 179}). */
-    public static final short TYPE_CODE = 179;
-
     /** Exception message which is occurred during snapshot request processing. */
-    private String errMsg;
+    @Order(0)
+    String errMsg;
 
     /**
      * Empty constructor.
@@ -57,63 +53,6 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
         return errMsg;
     }
 
-    /**
-     * @param errMsg Response error message.
-     * @return {@code this} for chaining.
-     */
-    public SnapshotFilesFailureMessage errorMessage(String errMsg) {
-        this.errMsg = errMsg;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        if (writer.state() == 1) {
-            if (!writer.writeString(errMsg))
-                return false;
-
-            writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        if (reader.state() == 1) {
-            errMsg = reader.readString();
-
-            if (!reader.isLastRead())
-                return false;
-
-            reader.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

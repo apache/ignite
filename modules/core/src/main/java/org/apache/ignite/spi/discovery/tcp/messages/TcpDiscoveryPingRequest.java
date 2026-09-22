@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,11 +26,14 @@ import org.jetbrains.annotations.Nullable;
  * Ping request.
  */
 public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Pinged client node ID. */
-    private final UUID clientNodeId;
+    @Order(0)
+    @Nullable UUID clientNodeId;
+
+    /** */
+    public TcpDiscoveryPingRequest() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.

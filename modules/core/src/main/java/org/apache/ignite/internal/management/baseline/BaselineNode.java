@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,19 +36,23 @@ public class BaselineNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String consistentId;
+    @Order(0)
+    String consistentId;
 
     /** */
-    private Map<String, Object> attrs;
+    @Order(1)
+    Map<String, Object> attrs;
 
     /** */
-    private @Nullable Long order;
+    @Order(2)
+    @Nullable Long order;
 
     /**
      * Resolved list of (ip, hostname) pairs
      * (if ip has no resolved host, hostname will be the string representation of ip).
      */
-    private @NotNull Collection<ResolvedAddresses> addrs = Collections.emptyList();
+    @Order(3)
+    @NotNull Collection<ResolvedAddresses> addrs = Collections.emptyList();
 
     /**
      * Default constructor.
@@ -107,26 +108,6 @@ public class BaselineNode extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, consistentId);
-        U.writeMap(out, attrs);
-        out.writeObject(order);
-        U.writeCollection(out, addrs);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        consistentId = U.readString(in);
-        attrs = U.readMap(in);
-        order = (Long)in.readObject();
-
-        Collection<ResolvedAddresses> inputAddrs = U.readCollection(in);
-
-        if (inputAddrs != null)
-            addrs = inputAddrs;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BaselineNode.class, this);
     }
@@ -139,10 +120,12 @@ public class BaselineNode extends IgniteDataTransferObject {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private String hostname;
+        @Order(0)
+        String hostname;
 
         /** Textual representation of IP address. */
-        private String addr;
+        @Order(1)
+        String addr;
 
         /**
          * @param inetAddr Inet address.
@@ -156,19 +139,6 @@ public class BaselineNode extends IgniteDataTransferObject {
          * Default constructor.
          */
         public ResolvedAddresses() {
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeString(out, hostname);
-            U.writeString(out, addr);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in)
-            throws IOException, ClassNotFoundException {
-            hostname = U.readString(in);
-            addr = U.readString(in);
         }
 
         /**

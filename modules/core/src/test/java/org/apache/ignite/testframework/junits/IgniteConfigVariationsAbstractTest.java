@@ -385,7 +385,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     private VariationsTestsConfig dummyCfg() {
         return new VariationsTestsConfig(
             new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(), new int[] {0}),
-            "Dummy config", false, null, 1, false);
+            "Dummy config",
+            true,
+            null,
+            1,
+            false
+        );
     }
 
     /**

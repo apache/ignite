@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -62,9 +64,6 @@ public class H2QueryInfo implements TrackableQuery {
     /** Join batch enabled (distributed join). */
     private final boolean distributedJoin;
 
-    /** Lazy mode. */
-    private final boolean lazy;
-
     /** Prepared statement. */
     private final Prepared stmt;
 
@@ -72,7 +71,10 @@ public class H2QueryInfo implements TrackableQuery {
     private final UUID nodeId;
 
     /** Query id. */
-    private final long queryId;
+    private final long qryId;
+
+    /** Query initiator ID. */
+    private final String initiatorId;
 
     /** Query SQL plan. */
     private volatile String plan;
@@ -82,16 +84,18 @@ public class H2QueryInfo implements TrackableQuery {
      * @param stmt Query statement.
      * @param sql Query statement.
      * @param nodeId Originator node id.
-     * @param queryId Query id.
+     * @param qryId Query id.
+     * @param initiatorId Query initiator id.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long queryId) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long qryId, String initiatorId) {
         try {
             assert stmt != null;
 
             this.type = type;
             this.sql = sql;
             this.nodeId = nodeId;
-            this.queryId = queryId;
+            this.qryId = qryId;
+            this.initiatorId = initiatorId;
 
             beginTs = U.currentTimeMillis();
 
@@ -101,7 +105,6 @@ public class H2QueryInfo implements TrackableQuery {
 
             enforceJoinOrder = s.isForceJoinOrder();
             distributedJoin = s.isJoinBatchEnabled();
-            lazy = s.isLazyQueryExecution();
             this.stmt = GridSqlQueryParser.prepared(stmt);
         }
         catch (SQLException e) {
@@ -116,7 +119,7 @@ public class H2QueryInfo implements TrackableQuery {
 
     /** */
     public long queryId() {
-        return queryId;
+        return qryId;
     }
 
     /** */
@@ -124,8 +127,18 @@ public class H2QueryInfo implements TrackableQuery {
         if (plan == null) {
             String plan0 = stmt.getPlanSQL();
 
-            plan = (plan0 != null) ? planWithoutScanCount(plan0) : "";
+            plan = (plan0 != null) ? normalizePlan(plan0) : "";
         }
+
+        return plan;
+    }
+
+    /**
+     * @param plan Plan.
+     */
+    private String normalizePlan(String plan) {
+        plan = planWithoutScanCount(plan);
+        plan = planWithoutSystemAliases(plan);
 
         return plan;
     }
@@ -183,10 +196,10 @@ public class H2QueryInfo implements TrackableQuery {
     @Override public String queryInfo(@Nullable String additionalInfo) {
         StringBuilder msgSb = new StringBuilder();
 
-        if (queryId == RunningQueryManager.UNDEFINED_QUERY_ID)
+        if (qryId == RunningQueryManager.UNDEFINED_QUERY_ID)
             msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
         else
-            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
+            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, qryId));
 
         if (additionalInfo != null)
             msgSb.append(", ").append(additionalInfo);
@@ -195,8 +208,8 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", type=").append(type)
                 .append(", distributedJoin=").append(distributedJoin)
                 .append(", enforceJoinOrder=").append(enforceJoinOrder)
-                .append(", lazy=").append(lazy)
                 .append(", schema=").append(schema)
+                .append(", initiatorId=").append(initiatorId)
                 .append(", sql='").append(sql)
                 .append("', plan=").append(plan());
 
@@ -236,17 +249,107 @@ public class H2QueryInfo implements TrackableQuery {
      * @return SQL plan without the scanCount suffix.
      */
     public String planWithoutScanCount(String plan) {
-        String res = null;
+        if (!plan.contains("scanCount:"))
+            return plan;
 
-        int start = plan.indexOf("\n    /* scanCount");
+        StringBuilder res = new StringBuilder(plan);
 
-        if (start != -1) {
-            int end = plan.indexOf("*/", start);
+        removeLineWithPattern(res, "/* scanCount:", "*/");
+        removeLineWithPattern(res, "/++ scanCount:", "++/");
 
-            res = plan.substring(0, start) + plan.substring(end + 2);
+        return res.toString();
+    }
+
+    /**
+     * @param sb StringBuilder.
+     * @param startPattern Start pattern.
+     * @param endMarker End marker.
+     */
+    private void removeLineWithPattern(StringBuilder sb, String startPattern, String endMarker) {
+        int start = sb.indexOf(startPattern, 0);
+
+        while (start != -1) {
+            while (start > 0 && sb.charAt(start - 1) == ' ')
+                --start;
+
+            if (start > 0 && sb.charAt(start - 1) == '\n')
+                --start;
+
+            int end = sb.indexOf(endMarker, start);
+
+            if (end == -1)
+                break;
+
+            sb.delete(start, end + endMarker.length());
+
+            start = sb.indexOf(startPattern, start);
+        }
+    }
+
+    /**
+     * Normalizes H2 auto-generated numeric aliases (e.g. "_1", "_4") in a plan to make plan history stable
+     * across repeated executions of the same logical query.
+     */
+    private String planWithoutSystemAliases(String plan) {
+        if (plan.indexOf('_') < 0)
+            return plan;
+
+        int n = plan.length();
+
+        Map<String, String> aliasMap = new HashMap<>();
+
+        StringBuilder out = new StringBuilder(n);
+
+        for (int l = 0; l < n; ) {
+            char c = plan.charAt(l);
+
+            if (c != '_') {
+                out.append(c);
+                ++l;
+                continue;
+            }
+
+            if (l > 0) {
+                char prev = plan.charAt(l - 1);
+
+                if (Character.isLetterOrDigit(prev) || prev == '_' || prev == '"') {
+                    out.append(c);
+                    ++l;
+                    continue;
+                }
+            }
+
+            int r = l + 1;
+
+            if (r >= n || !Character.isDigit(plan.charAt(r))) {
+                out.append(c);
+                ++l;
+                continue;
+            }
+
+            while (r < n && Character.isDigit(plan.charAt(r)))
+                ++r;
+
+            if (r < n) {
+                char next = plan.charAt(r);
+
+                if (next != '.' && !Character.isWhitespace(next)) {
+                    out.append(c);
+                    ++l;
+                    continue;
+                }
+            }
+
+            String token = plan.substring(l, r);
+
+            String repl = aliasMap.computeIfAbsent(token, k -> "__IGNITE_H2_ALIAS_" + aliasMap.size());
+
+            out.append(repl);
+
+            l = r;
         }
 
-        return (res == null) ? plan : res;
+        return out.toString();
     }
 
     /**

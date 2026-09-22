@@ -141,7 +141,7 @@ public class InlineIndexKeyTypeRegistry {
      * Checks whether specified type support inlining.
      */
     private static boolean supportInline(IndexKeyType type, IndexKeyTypeSettings keyTypeSettings) {
-        if (type == IndexKeyType.JAVA_OBJECT && !keyTypeSettings.inlineObjSupported())
+        if (type == IndexKeyType.JAVA_OBJECT && !keyTypeSettings.inlineObjectSupported())
             return false;
 
         return typeMapping.containsKey(type);
@@ -151,7 +151,7 @@ public class InlineIndexKeyTypeRegistry {
      * Get key type for the POJO type.
      */
     private static InlineIndexKeyType javaObjectType(IndexKeyTypeSettings keyTypeSettings) {
-        if (keyTypeSettings.inlineObjHash())
+        if (keyTypeSettings.inlineObjectHash())
             return hashObjectType;
 
         return keyTypeSettings.binaryUnsigned() ? bytesObjectType : signedBytesObjectType;
@@ -178,10 +178,10 @@ public class InlineIndexKeyTypeRegistry {
         List<InlineIndexKeyType> keyTypes = new ArrayList<>();
 
         for (IndexKeyDefinition keyDef: keyDefs) {
-            if (!supportInline(keyDef.idxType(), settings))
+            if (!supportInline(keyDef.indexKeyType(), settings))
                 break;
 
-            keyTypes.add(type(keyDef.idxType(), settings));
+            keyTypes.add(type(keyDef.indexKeyType(), settings));
         }
 
         return Collections.unmodifiableList(keyTypes);

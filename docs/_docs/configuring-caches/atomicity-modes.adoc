@@ -47,6 +47,7 @@ For more information about transactions, see link:key-value-api/transactions[Per
 [discrete]
 === Performance Considerations
 The `TRANSACTIONAL` mode adds a performance cost to cache operations and should be enabled only if you need transactions.
+====
 |===
 
 

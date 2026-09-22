@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -46,6 +50,23 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
     /** Transaction timeout. */
     private static final long TX_TIMEOUT = 500L;
+
+    /** */
+    private static Ignite client;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        client = startClientGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        client.transactions().resetMetrics();
+    }
 
     /**
      * @throws Exception If failed.
@@ -243,6 +264,54 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      * @throws Exception If failed.
      */
     @Test
+    public void testPessimisticReadCommittedDeadlocks() throws Exception {
+        testDeadlocks(PESSIMISTIC, READ_COMMITTED, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticRepeatableReadDeadlocks() throws Exception {
+        testDeadlocks(PESSIMISTIC, REPEATABLE_READ, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticSerializableDeadlocks() throws Exception {
+        testDeadlocks(PESSIMISTIC, SERIALIZABLE, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticReadCommittedDeadlocksOnClient() throws Exception {
+        testDeadlocks(PESSIMISTIC, READ_COMMITTED, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticRepeatableReadDeadlocksOnClient() throws Exception {
+        testDeadlocks(PESSIMISTIC, REPEATABLE_READ, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPessimisticSerializableDeadlocksOnClient() throws Exception {
+        testDeadlocks(PESSIMISTIC, SERIALIZABLE, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testOptimisticSuspendedReadCommittedTxTimeoutRollbacks() throws Exception {
         doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, READ_COMMITTED);
     }
@@ -390,6 +459,64 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
                 assertEquals(0, metrics.txRollbacks());
                 assertEquals(0, cacheMetrics.getCacheTxRollbacks());
             }
+        }
+    }
+
+    /**
+     * @param concurrency Concurrency control.
+     * @param isolation Isolation level.
+     * @param useClient Use client node as transaction coordinator.
+     * @throws Exception If failed.
+     */
+    private void testDeadlocks(
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        boolean useClient
+    ) throws Exception {
+        Ignite ignite = useClient ? client : grid(0);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+        long txTimeout = 500;
+
+        CountDownLatch key0locked = new CountDownLatch(1);
+        CountDownLatch key1locked = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut0 = GridTestUtils.runAsync(() -> {
+            Transaction tx = ignite.transactions().txStart(concurrency, isolation, txTimeout, 0);
+
+            cache.put(0, 0);
+
+            key0locked.countDown();
+            key1locked.await();
+
+            cache.put(1, 1);
+        });
+
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(() -> {
+            Transaction tx = ignite.transactions().txStart(concurrency, isolation, txTimeout * 2, 0);
+
+            cache.put(1, 0);
+
+            key1locked.countDown();
+            key0locked.await();
+
+            cache.put(0, 1);
+
+            tx.commit();
+        });
+
+        try {
+            fut0.get();
+        }
+        catch (Exception ignore) {
+            // Expected.
+        }
+
+        fut1.get();
+
+        for (Ignite g : G.allGrids()) {
+            assertEquals(g == ignite ? 1 : 0, g.transactions().metrics().txRollbacks());
+            assertEquals(g == ignite ? 1 : 0, g.transactions().metrics().txDeadlocks());
         }
     }
 

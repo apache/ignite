@@ -1,0 +1,129 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.managers.deployment;
+
+import java.io.Serializable;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+
+/**
+ * Deployment of classes, as it travels inside the messages carrying them.
+ */
+public final class GridDeploymentInfoMessage implements Message, GridDeploymentInfo, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    @Order(0)
+    IgniteUuid clsLdrId;
+
+    /** */
+    @Order(1)
+    DeploymentMode depMode;
+
+    /** */
+    @Order(2)
+    String userVer;
+
+    /** Node class loader participant map. */
+    @GridToStringInclude
+    @Order(3)
+    Map<UUID, IgniteUuid> participants;
+
+    /**
+     * Empty constructor for a message factory.
+     */
+    public GridDeploymentInfoMessage() {
+        /* No-op. */
+    }
+
+    /**
+     * @param clsLdrId Class loader ID.
+     * @param userVer User version.
+     * @param depMode Deployment mode.
+     * @param participants Participants.
+     */
+    public GridDeploymentInfoMessage(
+        IgniteUuid clsLdrId,
+        String userVer,
+        DeploymentMode depMode,
+        Map<UUID, IgniteUuid> participants
+    ) {
+        this.clsLdrId = clsLdrId;
+        this.depMode = depMode;
+        this.userVer = userVer;
+        this.participants = participants;
+    }
+
+    /**
+     * @param dep Grid deployment.
+     */
+    public GridDeploymentInfoMessage(GridDeploymentInfo dep) {
+        clsLdrId = dep.classLoaderId();
+        depMode = dep.deployMode();
+        userVer = dep.userVersion();
+        participants = dep.participants();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid classLoaderId() {
+        return clsLdrId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DeploymentMode deployMode() {
+        return depMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String userVersion() {
+        return userVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long sequenceNumber() {
+        return clsLdrId.localId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<UUID, IgniteUuid> participants() {
+        return participants;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return clsLdrId.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return o == this || o instanceof GridDeploymentInfoMessage &&
+            clsLdrId.equals(((GridDeploymentInfoMessage)o).clsLdrId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDeploymentInfoMessage.class, this);
+    }
+}

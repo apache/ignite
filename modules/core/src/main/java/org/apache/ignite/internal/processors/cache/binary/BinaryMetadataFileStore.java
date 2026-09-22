@@ -21,10 +21,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -40,13 +39,15 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -61,9 +62,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 class BinaryMetadataFileStore {
     /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File metadataDir;
-
-    /** */
-    private final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache;
 
     /** */
     private final GridKernalContext ctx;
@@ -81,7 +79,6 @@ class BinaryMetadataFileStore {
     private BinaryMetadataAsyncWriter writer;
 
     /**
-     * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
      * @param metadataDir Path to binary metadata store configured by user, should include binary_meta
@@ -89,13 +86,11 @@ class BinaryMetadataFileStore {
      * @param forceEnabled If {@code true} then will write files even if persistence and CDC disabled.
      */
     BinaryMetadataFileStore(
-        final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
         final File metadataDir,
         final boolean forceEnabled
     ) throws IgniteCheckedException {
-        this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
 
         enabled = forceEnabled || enabled(ctx.config());
@@ -125,7 +120,7 @@ class BinaryMetadataFileStore {
 
         writer = new BinaryMetadataAsyncWriter();
 
-        new IgniteThread(writer).start();
+        writer.start();
     }
 
     /**
@@ -206,30 +201,33 @@ class BinaryMetadataFileStore {
 
     /**
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
+     *
+     * @param consumer Callback invoked on restored binary metadata.
      */
-    void restoreMetadata() {
+    void restoreMetadata(Consumer<BinaryMetadata> consumer) {
         if (!enabled)
             return;
 
         for (File file : metadataDir.listFiles(NodeFileTree::notTmpFile))
-            restoreMetadata(file);
+            restoreMetadata(file, consumer);
     }
 
     /**
      * Restores single type metadata.
      *
      * @param typeId Type identifier.
+     * @param consumer Callback invoked on restored binary metadata.
      */
-    void restoreMetadata(int typeId) {
-        restoreMetadata(new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId)));
+    void restoreMetadata(int typeId, Consumer<BinaryMetadata> consumer) {
+        restoreMetadata(new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId)), consumer);
     }
 
     /** */
-    private void restoreMetadata(File file) {
+    private void restoreMetadata(File file, Consumer<BinaryMetadata> consumer) {
         try (FileInputStream in = new FileInputStream(file)) {
             BinaryMetadata meta = U.unmarshal(ctx.marshaller(), in, U.resolveClassLoader(ctx.config()));
 
-            metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
+            consumer.accept(meta);
         }
         catch (Exception e) {
             U.warn(log, "Failed to restore metadata from file: " + file.getName() +
@@ -392,15 +390,8 @@ class BinaryMetadataFileStore {
         return CU.isPersistenceEnabled(cfg) || CU.isCdcEnabled(cfg);
     }
 
-    /**
-     *
-     */
-    private class BinaryMetadataAsyncWriter extends GridWorker {
-        /**
-         * Queue of write tasks submitted for execution.
-         */
-        private final BlockingQueue<OperationTask> queue = new LinkedBlockingQueue<>();
-
+    /** */
+    private class BinaryMetadataAsyncWriter extends IgniteAsyncObjectHandler<OperationTask> {
         /**
          * Write operation tasks prepared for writing (but not yet submitted to execution (actual writing).
          */
@@ -408,8 +399,7 @@ class BinaryMetadataFileStore {
 
         /** */
         BinaryMetadataAsyncWriter() {
-            super(ctx.igniteInstanceName(), "binary-metadata-writer",
-                BinaryMetadataFileStore.this.log, ctx.workersRegistry());
+            super(ctx.igniteInstanceName(), "binary-metadata-writer", BinaryMetadataFileStore.this.log, ctx.workersRegistry());
         }
 
         /**
@@ -430,7 +420,7 @@ class BinaryMetadataFileStore {
                             ", typeVersion=" + typeVer + ']'
                     );
 
-                queue.add(task);
+                addToQueue(task);
             }
             else {
                 if (log.isDebugEnabled())
@@ -446,7 +436,7 @@ class BinaryMetadataFileStore {
         @Override public synchronized void cancel() {
             super.cancel();
 
-            queue.clear();
+            clearQueue();
 
             IgniteCheckedException err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
@@ -482,27 +472,30 @@ class BinaryMetadataFileStore {
 
         /** */
         private void body0() throws InterruptedException {
-            OperationTask task;
+            OperationContextAwareWrapper<OperationTask> contextualTask = takeQueuedElement();
 
-            blockingSectionBegin();
+            try (Scope ignored = OperationContext.restoreSnapshot(contextualTask.contextSnapshot())) {
+                OperationTask task = contextualTask.delegate();
 
-            try {
-                task = queue.take();
-
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled()) {
                     log.debug(
                         "Starting write operation for" +
                             " [typeId=" + task.typeId() +
                             ", typeVer=" + task.typeVersion() + ']'
                     );
+                }
 
-                task.execute(BinaryMetadataFileStore.this);
-            }
-            finally {
-                blockingSectionEnd();
-            }
+                blockingSectionBegin();
 
-            finishWriteFuture(task.typeId(), task.typeVersion(), task);
+                try {
+                    task.execute(BinaryMetadataFileStore.this);
+                }
+                finally {
+                    blockingSectionEnd();
+                }
+
+                finishWriteFuture(task.typeId(), task.typeVersion(), task);
+            }
         }
 
         /**

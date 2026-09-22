@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
 public class GridCacheLocalFieldsQueryFuture
     extends GridCacheLocalQueryFuture<Object, Object, List<Object>>
     implements GridCacheQueryMetadataAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Meta data future. */
     private final GridFutureAdapter<List<GridQueryFieldMetadata>> metaFut;
 
@@ -53,17 +50,15 @@ public class GridCacheLocalFieldsQueryFuture
 
     /**
      * @param nodeId Sender node ID.
-     * @param metaData Meta data.
      * @param data Page data.
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onFieldsPage(@Nullable UUID nodeId, @Nullable List<GridQueryFieldMetadata> metaData,
-        @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
+    public void onFieldsPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         onPage(nodeId, null, data, err, finished);
 
         if (!metaFut.isDone())
-            metaFut.onDone(metaData);
+            metaFut.onDone((List)null);
     }
 
     /** {@inheritDoc} */

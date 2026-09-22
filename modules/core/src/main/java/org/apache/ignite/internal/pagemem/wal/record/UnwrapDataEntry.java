@@ -79,7 +79,7 @@ public class UnwrapDataEntry extends DataEntry {
             return unwrapKey(key, keepBinary, cacheObjValCtx);
         }
         catch (Exception e) {
-            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+            cacheObjValCtx.log(UnwrapDataEntry.class)
                 .error("Unable to convert key [" + key + "]", e);
 
             return null;
@@ -97,7 +97,7 @@ public class UnwrapDataEntry extends DataEntry {
             return unwrapValue(val, keepBinary, cacheObjValCtx);
         }
         catch (Exception e) {
-            cacheObjValCtx.kernalContext().log(UnwrapDataEntry.class)
+            cacheObjValCtx.log(UnwrapDataEntry.class)
                 .error("Unable to convert value [" + value() + "]", e);
             return null;
         }

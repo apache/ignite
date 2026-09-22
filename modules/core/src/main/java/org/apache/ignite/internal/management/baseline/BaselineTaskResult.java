@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -33,11 +30,11 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result for {@link BaselineTask}.
@@ -47,25 +44,32 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster state. */
-    private ClusterState clusterState;
+    @Order(0)
+    ClusterState clusterState;
 
     /** Current topology version. */
-    private long topVer;
+    @Order(1)
+    long topVer;
 
     /** Current baseline nodes. */
-    private Map<String, BaselineNode> baseline;
+    @Order(2)
+    TreeMap<String, BaselineNode> baseline;
 
     /** Current server nodes. */
-    private Map<String, BaselineNode> servers;
+    @Order(3)
+    TreeMap<String, BaselineNode> servers;
 
     /** Baseline autoadjustment settings. */
-    private BaselineAutoAdjustSettings autoAdjustSettings;
+    @Order(4)
+    BaselineAutoAdjustSettings autoAdjustSettings;
 
     /** Time to next baseline adjust. */
-    private long remainingTimeToBaselineAdjust = -1;
+    @Order(5)
+    long remainingTimeToBaselineAdjust = -1;
 
     /** Is baseline adjust in progress? */
-    private boolean baselineAdjustInProgress = false;
+    @Order(6)
+    boolean baselineAdjustInProgress = false;
 
     /**
      * Default constructor.
@@ -78,11 +82,11 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
      * @param nodes Nodes to process.
      * @return Map of DTO objects.
      */
-    private static Map<String, BaselineNode> toMap(Collection<? extends org.apache.ignite.cluster.BaselineNode> nodes) {
+    private static TreeMap<String, BaselineNode> toMap(Collection<? extends org.apache.ignite.cluster.BaselineNode> nodes) {
         if (F.isEmpty(nodes))
             return null;
 
-        Map<String, BaselineNode> map = new TreeMap<>();
+        TreeMap<String, BaselineNode> map = new TreeMap<>();
 
         for (org.apache.ignite.cluster.BaselineNode node : nodes) {
             BaselineNode dto = new BaselineNode(node, Collections.emptyList());
@@ -97,13 +101,13 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
      * @param nodes Nodes to process.
      * @return Map of DTO objects, with resolved ip->hostname pairs.
      */
-    private static Map<String, BaselineNode> toMapWithResolvedAddresses(
+    private static TreeMap<String, BaselineNode> toMapWithResolvedAddresses(
         Collection<? extends org.apache.ignite.cluster.BaselineNode> nodes
     ) {
         if (F.isEmpty(nodes))
             return null;
 
-        Map<String, BaselineNode> map = new TreeMap<>();
+        TreeMap<String, BaselineNode> map = new TreeMap<>();
 
         for (org.apache.ignite.cluster.BaselineNode node : nodes) {
             Collection<BaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
@@ -243,28 +247,6 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
      */
     public boolean isBaselineAdjustInProgress() {
         return baselineAdjustInProgress;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(topVer);
-        U.writeMap(out, baseline);
-        U.writeMap(out, servers);
-        out.writeObject(autoAdjustSettings);
-        out.writeLong(remainingTimeToBaselineAdjust);
-        out.writeBoolean(baselineAdjustInProgress);
-        U.writeEnum(out, clusterState);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        topVer = in.readLong();
-        baseline = U.readTreeMap(in);
-        servers = U.readTreeMap(in);
-        autoAdjustSettings = (BaselineAutoAdjustSettings)in.readObject();
-        remainingTimeToBaselineAdjust = in.readLong();
-        baselineAdjustInProgress = in.readBoolean();
-        clusterState = U.readEnum(in, ClusterState.class);
     }
 
     /** {@inheritDoc} */

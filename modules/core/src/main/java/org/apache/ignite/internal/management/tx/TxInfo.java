@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.TimeZone;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -48,48 +46,62 @@ public class TxInfo extends IgniteDataTransferObject {
     private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     /** */
-    private IgniteUuid xid;
+    @Order(0)
+    IgniteUuid xid;
 
     /**
      * Transaction start time.
      */
-    private long startTime;
+    @Order(1)
+    long startTime;
 
     /** */
-    private long duration;
+    @Order(2)
+    long duration;
 
     /** */
-    private TransactionIsolation isolation;
+    @Order(3)
+    TransactionIsolation isolation;
 
     /** */
-    private TransactionConcurrency concurrency;
+    @Order(4)
+    TransactionConcurrency concurrency;
 
     /** */
-    private long timeout;
+    @Order(5)
+    long timeout;
 
     /** */
-    private String lb;
+    @Order(6)
+    String lb;
 
     /** */
-    private Collection<UUID> primaryNodes;
+    @Order(7)
+    Collection<UUID> primaryNodes;
 
     /** */
-    private TransactionState state;
+    @Order(8)
+    TransactionState state;
 
     /** */
-    private int size;
+    @Order(9)
+    int size;
 
     /** */
-    private IgniteUuid nearXid;
+    @Order(10)
+    IgniteUuid nearXid;
 
     /** */
-    private Collection<UUID> masterNodeIds;
+    @Order(11)
+    Collection<UUID> masterNodeIds;
 
     /** */
-    private AffinityTopologyVersion topVer;
+    @Order(12)
+    AffinityTopologyVersion topVer;
 
     /** Tx verbose info. */
-    private TxVerboseInfo txVerboseInfo;
+    @Order(13)
+    TxVerboseInfo txVerboseInfo;
 
     /**
      * Default constructor.
@@ -217,49 +229,6 @@ public class TxInfo extends IgniteDataTransferObject {
      */
     public TxVerboseInfo getTxVerboseInfo() {
         return txVerboseInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeIgniteUuid(out, xid);
-        out.writeLong(duration);
-        U.writeEnum(out, isolation);
-        U.writeEnum(out, concurrency);
-        out.writeLong(timeout);
-        U.writeString(out, lb);
-        U.writeCollection(out, primaryNodes);
-        U.writeEnum(out, state);
-        out.writeInt(size);
-        U.writeIgniteUuid(out, nearXid);
-        U.writeCollection(out, masterNodeIds);
-        out.writeLong(startTime);
-        out.writeLong(topVer == null ? -1 : topVer.topologyVersion());
-        out.writeInt(topVer == null ? -1 : topVer.minorTopologyVersion());
-        out.writeObject(txVerboseInfo);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        xid = U.readIgniteUuid(in);
-        duration = in.readLong();
-        isolation = TransactionIsolation.fromOrdinal(in.readByte());
-        concurrency = TransactionConcurrency.fromOrdinal(in.readByte());
-        timeout = in.readLong();
-        lb = U.readString(in);
-        primaryNodes = U.readCollection(in);
-        state = TransactionState.fromOrdinal(in.readByte());
-        size = in.readInt();
-        nearXid = U.readIgniteUuid(in);
-        masterNodeIds = U.readCollection(in);
-        startTime = in.readLong();
-
-        long topVer = in.readLong();
-        int minorTopVer = in.readInt();
-
-        if (topVer != -1)
-            this.topVer = new AffinityTopologyVersion(topVer, minorTopVer);
-
-        txVerboseInfo = (TxVerboseInfo)in.readObject();
     }
 
     /**

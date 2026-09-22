@@ -17,33 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Transactions recovery check response.
  */
 public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** Future ID. */
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Flag indicating if all remote transactions were prepared. */
-    private boolean success;
+    @Order(2)
+    boolean success;
 
     /** Transient TX state. */
-    @GridDirectTransient
     private IgniteTxState txState;
 
     /**
@@ -74,23 +73,17 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
         this.addDepInfo = addDepInfo;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public IgniteUuid miniId() {
         return miniId;
     }
 
-    /**
-     * @return {@code True} if all remote transactions were prepared.
-     */
+    /** @return {@code True} if all remote transactions were prepared. */
     public boolean success() {
         return success;
     }
@@ -110,85 +103,6 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
         return ctx.txRecoveryMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 8:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeIgniteUuid(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeBoolean(success))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 8:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                miniId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                success = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 17;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

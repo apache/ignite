@@ -28,14 +28,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -75,9 +71,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     /** Connection policy. */
     protected ConnectionPolicy connPlc = new FirstConnectionPolicy();
 
-    /** Tracing. */
-    protected Tracing tracing;
-
     /**
      * Sets address resolver.
      *
@@ -114,7 +107,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
         if (ignite != null) { // null when service is destroying.
             setAddressResolver(ignite.configuration().getAddressResolver());
             setLocalAddress(ignite.configuration().getLocalHost());
-            tracing = ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().tracing() : new NoopTracing();
         }
     }
 
@@ -552,7 +544,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     }
 
     /** */
-    @IgniteExperimental
     public void setConnectionRequestor(ConnectionRequestor connectionRequestor) {
         cfg.connectionRequestor(connectionRequestor);
     }
@@ -731,7 +722,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      *
      * @see #setForceClientToServerConnections(boolean)
      */
-    @IgniteExperimental
     public boolean forceClientToServerConnections() {
         return cfg.forceClientToSrvConnections();
     }
@@ -742,7 +732,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      * In this mode, when server needs the connection with client, it uses {@link DiscoverySpi} protocol to notify
      * client about it. After that client opens the required connection from its side.
      */
-    @IgniteExperimental
     @IgniteSpiConfiguration(optional = true)
     public TcpCommunicationSpi setForceClientToServerConnections(boolean forceClientToSrvConnections) {
         cfg.forceClientToSrvConnections(forceClientToSrvConnections);

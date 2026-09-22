@@ -17,39 +17,34 @@
 
 package org.apache.ignite.internal.processors.marshaller;
 
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Is sent as an acknowledgement for successfully proposed new mapping (see {@link MappingProposedMessage}).
- *
+ * <p>
  * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
  */
-public class MappingAcceptedMessage implements DiscoveryCustomMessage {
+public class MappingAcceptedMessage extends DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    MarshallerMappingItem item;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** */
-    private final MarshallerMappingItem item;
+    public MappingAcceptedMessage() {
+        // No-op.
+    }
 
     /**
      * @param item Item.
      */
     MappingAcceptedMessage(MarshallerMappingItem item) {
-        this.item = item;
-    }
+        super(IgniteUuid.randomUuid());
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        this.item = item;
     }
 
     /** {@inheritDoc} */
@@ -57,19 +52,8 @@ public class MappingAcceptedMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
     /** */
-    MarshallerMappingItem getMappingItem() {
+    public MarshallerMappingItem getMappingItem() {
         return item;
     }
 

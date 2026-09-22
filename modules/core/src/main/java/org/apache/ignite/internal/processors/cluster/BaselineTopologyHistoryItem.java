@@ -18,40 +18,39 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
-/**
- *
- */
-public class BaselineTopologyHistoryItem implements Serializable {
+/** */
+public class BaselineTopologyHistoryItem implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final int id;
+    @Order(0)
+    int id;
 
     /** */
-    private final Collection<Object> consIds;
+    @Order(1)
+    List<Long> branchingHistory;
 
-    /** */
-    private final List<Long> branchingHistory;
-
-    /**
-     * @param id Id.
-     * @param consIds Consistent IDs.
-     * @param branchingHistory Activation history.
-     */
-    private BaselineTopologyHistoryItem(int id, Collection<Object> consIds, List<Long> branchingHistory) {
-        this.id = id;
-        this.consIds = consIds;
-        this.branchingHistory = branchingHistory;
+    /** Default constructor for {@link MessageFactory}. */
+    public BaselineTopologyHistoryItem() {
+        // No-op.
     }
 
     /**
-     * @param blt Baseline Topology.
+     * @param id Id.
+     * @param branchingHistory Activation history.
      */
+    private BaselineTopologyHistoryItem(int id, List<Long> branchingHistory) {
+        this.id = id;
+        this.branchingHistory = branchingHistory;
+    }
+
+    /** @param blt Baseline Topology. */
     public static BaselineTopologyHistoryItem fromBaseline(BaselineTopology blt) {
         if (blt == null)
             return null;
@@ -60,19 +59,15 @@ public class BaselineTopologyHistoryItem implements Serializable {
 
         fullActivationHistory.addAll(blt.branchingHistory());
 
-        return new BaselineTopologyHistoryItem(blt.id(), U.arrayList(blt.consistentIds()), fullActivationHistory);
+        return new BaselineTopologyHistoryItem(blt.id(), fullActivationHistory);
     }
 
-    /**
-     * @return ID.
-     */
+    /** @return ID. */
     public int id() {
         return id;
     }
 
-    /**
-     *
-     */
+    /** */
     public List<Long> branchingHistory() {
         return branchingHistory;
     }

@@ -52,10 +52,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -63,6 +63,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.topology.MdcTopologyValidator;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
@@ -78,12 +79,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
-public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
+public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> implements CacheConfigurationDefaults {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Maximum number of partitions. */
-    public static final int MAX_PARTITIONS_COUNT = 65000;
 
     /**
      * Default size of rebalance thread pool.
@@ -113,27 +111,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     @Deprecated
     public static final long DFLT_REBALANCE_THROTTLE = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 
-    /** Default number of backups. */
-    public static final int DFLT_BACKUPS = 0;
-
-    /** Default caching mode. */
-    public static final CacheMode DFLT_CACHE_MODE = CacheMode.PARTITIONED;
-
-    /** Default atomicity mode. */
-    public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
-
-    /**
-      * Default lock timeout.
-      * @deprecated Default lock timeout configuration property has no effect.
-      */
-    @Deprecated
-    public static final long DFLT_LOCK_TIMEOUT = 0;
-
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
-
-    /** Default maximum inline size for sql indexes. */
-    public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
 
     /** Initial default near cache size. */
     public static final int DFLT_NEAR_START_SIZE = 1500000 / 4;
@@ -141,21 +120,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
 
-    /** Default rebalance mode for distributed cache. */
-    public static final CacheRebalanceMode DFLT_REBALANCE_MODE = CacheRebalanceMode.ASYNC;
-
     /**
      * Default rebalance batch size in bytes.
      * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE} instead.
      */
     @Deprecated
     public static final int DFLT_REBALANCE_BATCH_SIZE = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
-
-    /** Default value for eager ttl flag. */
-    public static final boolean DFLT_EAGER_TTL = true;
-
-    /** Default value for 'maxConcurrentAsyncOps'. */
-    public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
     /** Default value for 'writeBehindEnabled' flag. */
     public static final boolean DFLT_WRITE_BEHIND_ENABLED = false;
@@ -178,14 +148,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default write coalescing for write-behind cache store. */
     public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
 
-    /** Default maximum number of query iterators that can be stored. */
-    public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
-
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
-
-    /** Default value for 'readFromBackup' flag. */
-    public static final boolean DFLT_READ_FROM_BACKUP = true;
 
     /** Filter that accepts all nodes. */
     public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgniteAllNodesPredicate();
@@ -194,21 +158,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     @Deprecated
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
-    /** Default number of queries detail metrics to collect. */
-    public static final int DFLT_QRY_DETAIL_METRICS_SIZE = 0;
-
     /** Default value for keep binary in store behavior . */
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
     public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
-
-    /** Default partition loss policy. */
-    public static final PartitionLossPolicy DFLT_PARTITION_LOSS_POLICY = PartitionLossPolicy.IGNORE;
-
-    /** Default query parallelism. */
-    public static final int DFLT_QUERY_PARALLELISM = 1;
 
     /** Default value for events disabled flag. */
     public static final boolean DFLT_EVENTS_DISABLED = false;
@@ -272,9 +227,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Platform cache configuration. Enables native cache in platforms (.NET, ...). */
     private PlatformCacheConfiguration platformCfg;
-
-    /** Default value for 'copyOnRead' flag. */
-    public static final boolean DFLT_COPY_ON_READ = true;
 
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSync;
@@ -810,7 +762,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Platform cache configuration or null.
      */
-    @IgniteExperimental
     public PlatformCacheConfiguration getPlatformCacheConfiguration() {
         return platformCfg;
     }
@@ -831,7 +782,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param platformCfg Platform cache configuration.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public CacheConfiguration<K, V> setPlatformCacheConfiguration(PlatformCacheConfiguration platformCfg) {
         this.platformCfg = platformCfg;
 
@@ -943,8 +893,29 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether value should be loaded from store if it is not in the cache
-     * for following cache operations:
+     * Indicates whether a value should be loaded from storage if it's missing in the cache during
+     * SQL Data Manipulation Language (DML) operations or specific cache methods:
+     * <ul>
+     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
+     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
+     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
+     *</ul>
+     * Default value is {@link #DFLT_LOAD_PREV_VAL}.
+     *
+     * @return Load previous value flag.
+     */
+    public boolean isLoadPreviousValue() {
+        return loadPrevVal;
+    }
+
+    /**
+     * Indicates whether a value should be loaded from storage if it's missing in the cache during
+     * SQL Data Manipulation Language (DML) operations or specific cache methods:
      * <ul>
      *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
      *     <li>{@link IgniteCache#replace(Object, Object)}</li>
@@ -956,25 +927,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
      *</ul>
      *
-     * @return Load previous value flag.
-     */
-    public boolean isLoadPreviousValue() {
-        return loadPrevVal;
-    }
-
-    /**
-     * Sets flag indicating whether value should be loaded from store if it is not in the cache
-     * for following cache operations:
-     * <ul>
-     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
-     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
-     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
-     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
-     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
-     *</ul>
      * When not set, default value is {@link #DFLT_LOAD_PREV_VAL}.
      *
      * @param loadPrevVal Load previous value flag.
@@ -2032,7 +1984,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 qryEntities.add(newEntity);
 
             // Set key configuration if needed.
-            String affFieldName = CU.affinityFieldName(keyCls);
+            String affFieldName = BinaryUtils.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
                 CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
@@ -2219,6 +2171,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setTopologyValidator(TopologyValidator topValidator) {
+        try {
+            if (topValidator instanceof MdcTopologyValidator)
+                ((MdcTopologyValidator)topValidator).checkConfiguration();
+        }
+        catch (Exception e) {
+            throw new CacheException(e);
+        }
+
         this.topValidator = topValidator;
 
         return this;

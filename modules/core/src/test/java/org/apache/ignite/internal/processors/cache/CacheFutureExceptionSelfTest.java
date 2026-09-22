@@ -45,8 +45,7 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return new IgniteConfiguration()
-            .setIgniteInstanceName(igniteInstanceName)
+        return super.getConfiguration(igniteInstanceName)
             .setFailureHandler(new StopNodeFailureHandler());
     }
 

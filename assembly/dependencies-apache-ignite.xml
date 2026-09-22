@@ -119,6 +119,9 @@
                 <exclude>${project.groupId}:ignite-commons</exclude>
                 <exclude>${project.groupId}:ignite-binary-api</exclude>
                 <exclude>${project.groupId}:ignite-binary-impl</exclude>
+                <exclude>${project.groupId}:ignite-thin-client-api</exclude>
+                <exclude>${project.groupId}:ignite-thin-client-impl</exclude>
+                <exclude>${project.groupId}:ignite-nio</exclude>
                 <exclude>${project.groupId}:ignite-clients</exclude>
                 <exclude>${project.groupId}:ignite-spring</exclude>
                 <exclude>${project.groupId}:ignite-tools</exclude>
@@ -129,7 +132,6 @@
                 <exclude>${project.groupId}:ignite-examples</exclude>
                 <exclude>${project.groupId}:ignite-indexing</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
-                <exclude>${project.groupId}:ignite-codegen2</exclude>
                 <exclude>${project.groupId}:ignite-schedule</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>

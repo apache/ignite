@@ -37,20 +37,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
-import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
-import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_UPDATES;
-import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CACHE_UPDATE;
+import static org.apache.ignite.internal.processors.query.QueryUtils.cacheForDML;
 
 /**
  * Batch sender class.
@@ -198,30 +193,22 @@ public class DmlBatchSender {
      * @param batch Batch.
      */
     private void sendBatch(Batch batch) {
-        try (
-            TraceSurroundings ignored = MTC.support(cctx.kernalContext().tracing()
-                .create(SQL_CACHE_UPDATE, MTC.span())
-                .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(batch.size())))
-        ) {
-            DmlPageProcessingResult pageRes = processPage(cctx, batch);
+        DmlPageProcessingResult pageRes = processPage(cctx, batch);
 
-            batch.clear();
+        batch.clear();
 
-            updateCnt += pageRes.count();
+        updateCnt += pageRes.count();
 
-            if (failedKeys == null)
-                failedKeys = new ArrayList<>();
+        if (failedKeys == null)
+            failedKeys = new ArrayList<>();
 
-            failedKeys.addAll(F.asList(pageRes.errorKeys()));
+        failedKeys.addAll(F.asList(pageRes.errorKeys()));
 
-            if (pageRes.error() != null) {
-                MTC.span().addTag(ERROR, pageRes.error()::getMessage);
-
-                if (err == null)
-                    err = pageRes.error();
-                else
-                    err.setNextException(pageRes.error());
-            }
+        if (pageRes.error() != null) {
+            if (err == null)
+                err = pageRes.error();
+            else
+                err.setNextException(pageRes.error());
         }
     }
 
@@ -237,7 +224,7 @@ public class DmlBatchSender {
         Map<Object, EntryProcessorResult<Boolean>> res;
 
         try {
-            res = cctx.cache().invokeAll(batch.rowProcessors());
+            res = cacheForDML(cctx.cache()).invokeAll(batch.rowProcessors());
         }
         catch (IgniteCheckedException e) {
             for (Integer rowNum : batch.rowNumbers().values()) {
@@ -279,7 +266,7 @@ public class DmlBatchSender {
      * Process errors of entry processor - split the keys into duplicated/concurrently modified and those whose
      * processing yielded an exception.
      *
-     * @param res Result of {@link GridCacheAdapter#invokeAll)}
+     * @param res Result of {@link org.apache.ignite.internal.processors.cache.GridCacheAdapter#invokeAll)}
      * @param batch Batch.
      * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
      * null if all keys are duplicates/concurrently modified ones).
@@ -447,7 +434,7 @@ public class DmlBatchSender {
         @Override public int compare(Object first, Object second) {
             // We assume that only simple types or BinaryObjectImpl are possible. The latter comes from the fact
             // that we use BinaryObjectBuilder which produces only on-heap binary objects.
-            return BinaryUtils.compareForDml(first, second);
+            return BinaryUtils.binariesFactory.compareForDml(first, second);
         }
     }
 }

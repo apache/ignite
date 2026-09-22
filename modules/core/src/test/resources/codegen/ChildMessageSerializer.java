@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.codegen;
+package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.AbstractMessage;
+import org.apache.ignite.internal.ChildMessage;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.internal.ChildMessage;
 
 /**
  * This class is generated automatically.
  *
- * @see org.apache.ignite.codegen.MessageSerializerGenerator
+ * @see org.apache.ignite.internal.MessageProcessor
  */
-public class ChildMessageSerializer implements MessageSerializer {
+public final class ChildMessageSerializer implements MessageSerializer<ChildMessage> {
     /** */
-    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
-        ChildMessage msg = (ChildMessage)m;
-
-        writer.setBuffer(buf);
-
+    @Override public final boolean writeTo(ChildMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -45,31 +40,38 @@ public class ChildMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt(msg.id()))
+                if (!writer.writeInt(((AbstractMessage)msg).id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString(msg.str()))
+                if (!writer.writeByte(((AbstractMessage)msg).flags))
                     return false;
 
                 writer.incrementState();
 
+            case 2:
+                if (!writer.writeString(msg.str))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeByte(msg.flags))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
     }
 
     /** */
-    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
-        ChildMessage msg = (ChildMessage)m;
-
-        reader.setBuffer(buf);
-
+    @Override public final boolean readFrom(ChildMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                msg.id(reader.readInt());
+                ((AbstractMessage)msg).id = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -77,15 +79,35 @@ public class ChildMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                msg.str(reader.readString());
+                ((AbstractMessage)msg).flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
+            case 2:
+                msg.str = reader.readString();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                msg.flags = reader.readByte();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final ChildMessage createMessage() {
+        return new ChildMessage();
     }
 }

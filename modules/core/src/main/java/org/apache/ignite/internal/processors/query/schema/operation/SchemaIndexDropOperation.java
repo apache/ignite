@@ -18,20 +18,23 @@
 package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Schema index drop operation.
  */
 public class SchemaIndexDropOperation extends SchemaIndexAbstractOperation {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Index name. */
-    private final String idxName;
+    @Order(0)
+    String idxName;
 
     /** Ignore operation if index doesn't exist. */
-    private final boolean ifExists;
+    @Order(1)
+    boolean ifExists;
+
+    /** */
+    public SchemaIndexDropOperation() {}
 
     /**
      * Constructor.
@@ -65,4 +68,5 @@ public class SchemaIndexDropOperation extends SchemaIndexAbstractOperation {
     @Override public String toString() {
         return S.toString(SchemaIndexDropOperation.class, this, "parent", super.toString());
     }
+
 }

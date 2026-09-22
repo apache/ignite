@@ -27,7 +27,7 @@ public class CacheResetLostPartitionsCommand
     implements ComputeCommand<CacheResetLostPartitionsCommandArg, CacheResetLostPartitionsTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Reset the state of lost partitions for the specified caches";
+        return "Reset the state of lost partitions for the specified cache groups";
     }
 
     /** {@inheritDoc} */

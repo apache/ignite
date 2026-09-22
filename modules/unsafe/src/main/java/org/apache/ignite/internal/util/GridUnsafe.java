@@ -1354,6 +1354,19 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * @param ptr Address.
+     * @param size Size.
+     * @return Bytes.
+     */
+    public static byte[] copyMemory(long ptr, int size) {
+        byte[] res = new byte[size];
+
+        copyMemory(null, ptr, res, BYTE_ARR_OFF, size);
+
+        return res;
+    }
+
+    /**
      * Frees memory.
      *
      * @param addr Address.
@@ -1571,6 +1584,19 @@ public abstract class GridUnsafe {
     /** Calculate size with alignment. */
     public static long align(long size) {
         return (size + (OBJ_ALIGN - 1L)) & (-OBJ_ALIGN);
+    }
+
+    /**
+     * @param src Buffer to copy from (length included).
+     * @param off Offset in source buffer.
+     * @param resBuf Result buffer.
+     * @param resOff Result offset.
+     * @param len Number of bytes to copy from src to resBuf.
+     */
+    public static void arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
+        assert resBuf.length >= resOff + len;
+
+        copyMemory(src, BYTE_ARR_OFF + off, resBuf, BYTE_ARR_OFF + resOff, len);
     }
 
     /**

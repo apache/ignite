@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,6 +73,7 @@ import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.RebuildIndexWorkflowCallback;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -118,6 +118,8 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaSqlViewManager;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.message.QueryInlineSizesDataBagItem;
+import org.apache.ignite.internal.processors.query.schema.message.QueryProposalsDataBagItem;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
@@ -152,7 +154,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -182,9 +183,6 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaOperation
  */
 @SuppressWarnings("rawtypes")
 public class GridQueryProcessor extends GridProcessorAdapter {
-    /** */
-    private static final String INLINE_SIZES_DISCO_BAG_KEY = "inline_sizes";
-
     /** Warn message if some indexes have different inline sizes on the nodes. */
     public static final String INLINE_SIZES_DIFFER_WARN_MSG_FORMAT = "Inline sizes on local node and node %s are different. " +
         "Please drop and create again these indexes to avoid performance problems with SQL queries. Problem indexes: %s";
@@ -205,9 +203,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
-
-    /** JDK marshaller to serialize errors. */
-    private final JdkMarshaller marsh;
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -254,8 +249,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Coordinator node (initialized lazily). */
     private ClusterNode crd;
 
-    /** Registered cache names. */
-    private final Collection<String> cacheNames = ConcurrentHashMap.newKeySet();
+    /** Registered cache names to schema mapping. */
+    private final Map<String, String> cacheNamesToSchema = new ConcurrentHashMap();
 
     /** ID history for index create/drop discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
@@ -360,7 +355,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
         txAwareQueriesEnabled = U.isTxAwareQueriesEnabled(ctx);
-        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /** {@inheritDoc} */
@@ -478,80 +472,60 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> proposals;
+        QueryProposalsDataBagItem proposalsItem;
 
         // Collect active proposals.
         synchronized (stateMux) {
-            proposals = new LinkedHashMap<>(activeProposals);
+            proposalsItem = new QueryProposalsDataBagItem(new LinkedHashMap<>(activeProposals));
         }
 
-        dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), proposals);
+        dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), proposalsItem);
 
         // We should send inline index sizes information only to server nodes.
         if (!dataBag.isJoiningNodeClient()) {
-            HashMap<String, Serializable> nodeSpecificMap = new HashMap<>();
-
-            Serializable oldVal = nodeSpecificMap.put(INLINE_SIZES_DISCO_BAG_KEY, collectSecondaryIndexesInlineSize());
-
-            assert oldVal == null : oldVal;
-
-            dataBag.addNodeSpecificData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), nodeSpecificMap);
+            dataBag.addNodeSpecificData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(),
+                new QueryInlineSizesDataBagItem(secondaryIndexesInlineSize()));
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        if (data.hasJoiningNodeData() && data.joiningNodeData() instanceof Map) {
-            Map<String, Serializable> nodeSpecificDataMap = (Map<String, Serializable>)data.joiningNodeData();
+        QueryInlineSizesDataBagItem inlineSizesItem = data.joiningNodeData();
 
-            if (nodeSpecificDataMap.containsKey(INLINE_SIZES_DISCO_BAG_KEY)) {
-                Serializable serializable = nodeSpecificDataMap.get(INLINE_SIZES_DISCO_BAG_KEY);
-
-                assert serializable instanceof Map : serializable;
-
-                Map<String, Integer> joiningNodeIndexesInlineSize = (Map<String, Integer>)serializable;
-
-                checkInlineSizes(secondaryIndexesInlineSize(), joiningNodeIndexesInlineSize, data.joiningNodeId());
-            }
-        }
+        if (inlineSizesItem != null)
+            checkInlineSizes(secondaryIndexesInlineSize(), inlineSizesItem.sizes(), data.joiningNodeId());
     }
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        HashMap<String, Serializable> dataMap = new HashMap<>();
-
-        dataMap.put(INLINE_SIZES_DISCO_BAG_KEY, collectSecondaryIndexesInlineSize());
-
-        dataBag.addJoiningNodeData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), dataMap);
+        dataBag.addJoiningNodeData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(),
+            new QueryInlineSizesDataBagItem(secondaryIndexesInlineSize()));
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         // Preserve proposals.
-        LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals =
-            (LinkedHashMap<UUID, SchemaProposeDiscoveryMessage>)data.commonData();
+        QueryProposalsDataBagItem proposalsItem = data.commonData();
 
         // Process proposals as if they were received as regular discovery messages.
-        if (!F.isEmpty(activeProposals)) {
+        if (proposalsItem != null && !F.isEmpty(proposalsItem.activeProposals())) {
             synchronized (stateMux) {
-                for (SchemaProposeDiscoveryMessage activeProposal : activeProposals.values())
+                for (SchemaProposeDiscoveryMessage activeProposal : proposalsItem.activeProposals().values())
                     onSchemaProposeDiscovery0(activeProposal);
             }
         }
 
-        if (!F.isEmpty(data.nodeSpecificData())) {
+        Map<UUID, QueryInlineSizesDataBagItem> nodedSpecificData = data.nodeSpecificData();
+
+        if (!F.isEmpty(nodedSpecificData)) {
             Map<String, Integer> indexesInlineSize = secondaryIndexesInlineSize();
 
             if (!F.isEmpty(indexesInlineSize)) {
-                for (UUID nodeId : data.nodeSpecificData().keySet()) {
-                    Serializable serializable = data.nodeSpecificData().get(nodeId);
+                for (UUID nodeId : nodedSpecificData.keySet()) {
+                    QueryInlineSizesDataBagItem inlineSizesItem = nodedSpecificData.get(nodeId);
 
-                    assert serializable instanceof Map : serializable;
-
-                    Map<String, Serializable> nodeSpecificData = (Map<String, Serializable>)serializable;
-
-                    if (nodeSpecificData.containsKey(INLINE_SIZES_DISCO_BAG_KEY))
-                        checkInlineSizes(indexesInlineSize, (Map<String, Integer>)nodeSpecificData.get(INLINE_SIZES_DISCO_BAG_KEY), nodeId);
+                    if (inlineSizesItem != null)
+                        checkInlineSizes(indexesInlineSize, inlineSizesItem.sizes(), nodeId);
                 }
             }
         }
@@ -697,16 +671,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             log.warning(String.format(INLINE_SIZES_DIFFER_WARN_MSG_FORMAT, remoteNodeId, sb));
         }
-    }
-
-    /**
-     * @return Serializable information about secondary indexes inline size.
-     * @see #secondaryIndexesInlineSize()
-     */
-    private Serializable collectSecondaryIndexesInlineSize() {
-        Map<String, Integer> map = secondaryIndexesInlineSize();
-
-        return map instanceof Serializable ? (Serializable)map : new HashMap<>(map);
     }
 
     /**
@@ -914,9 +878,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            // Propose message will be used from exchange thread to
-            msg.proposeMessage(proposeMsg);
-
             if (exchangeReady) {
                 SchemaOperation op = schemaOps.get(proposeMsg.schemaName());
 
@@ -968,6 +929,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param schemaOp Schema operation.
      */
+    @SuppressWarnings("unchecked")
     private void startSchemaChange(SchemaOperation schemaOp) {
         assert Thread.holdsLock(stateMux);
         assert !schemaOp.started();
@@ -981,7 +943,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         boolean cacheExists = cacheDesc != null && Objects.equals(msg.deploymentId(), cacheDesc.deploymentId());
 
-        boolean cacheRegistered = cacheExists && cacheNames.contains(cacheName);
+        boolean cacheRegistered = cacheExists && cacheNamesToSchema.containsKey(cacheName);
 
         // Validate schema state and decide whether we should proceed or not.
         SchemaAbstractOperation op = msg.operation();
@@ -1025,6 +987,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         schemaOp.manager(mgr);
 
         mgr.start();
+
+        worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture fut) {
+                synchronized (stateMux) {
+                    mgr.onLocalNodeFinished(fut);
+                }
+            }
+        });
 
         // Unwind pending IO messages.
         if (!ctx.clientNode() && coordinator().isLocal())
@@ -1506,7 +1476,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
             CacheObjectBinaryProcessorImpl binProc = (CacheObjectBinaryProcessorImpl)cacheObjProc;
 
-            Class<?> cls = U.box(U.classForName(clsName, null, true));
+            Class<?> cls = U.box(ClassLoaderUtils.classForNameWithPrimitives(clsName));
 
             if (cls != null) {
                 if (!platformOnly)
@@ -1701,8 +1671,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         else if (op instanceof SchemaAddQueryEntityOperation) {
-            if (cacheNames.contains(op.cacheName()))
-                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, op.cacheName());
+            String cacheSchema = cacheNamesToSchema.get(cacheName);
+
+            if (cacheSchema != null) {
+                if (!Objects.equals(cacheSchema, op.schemaName()))
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INVALID_SCHEMA, op.schemaName());
+                else {
+                    for (QueryTypeIdKey t : types.keySet()) {
+                        if (Objects.equals(t.cacheName(), cacheName)) {
+                            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, cacheName);
+
+                            break;
+                        }
+                    }
+                }
+            }
         }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
@@ -1750,8 +1733,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         SchemaOperationException err = null;
 
         if (op instanceof SchemaAddQueryEntityOperation) {
-            if (cacheSupportSql(desc.cacheConfiguration()))
+            CacheConfiguration<?, ?> ccfg = desc.cacheConfiguration();
+
+            if (!F.isEmpty(ccfg.getQueryEntities()))
                 err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, desc.cacheName());
+            else if (!F.isEmpty(ccfg.getSqlSchema()) && !Objects.equals(ccfg.getSqlSchema(), op.schemaName()))
+                err = new SchemaOperationException(SchemaOperationException.CODE_INVALID_SCHEMA, op.schemaName());
 
             return new T2<>(nop, err);
         }
@@ -1918,7 +1905,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCoordinatorFinished(SchemaAbstractOperation op, @Nullable SchemaOperationException err, boolean nop) {
         synchronized (stateMux) {
-            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, err, nop);
+            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, nop);
+
+            if (err != null)
+                msg.onError(err);
 
             try {
                 ctx.discovery().sendCustomEvent(msg);
@@ -2178,15 +2168,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else if (op instanceof SchemaAddQueryEntityOperation) {
                 SchemaAddQueryEntityOperation op0 = (SchemaAddQueryEntityOperation)op;
 
-                if (!cacheNames.contains(op0.cacheName())) {
-                    cacheInfo.onSchemaAddQueryEntity(op0);
+                cacheInfo.onSchemaAddQueryEntity(op0);
 
-                    T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
-                        candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
-                        op0.isSqlEscape());
+                T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+                    candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo, op0.entities(),
+                    op0.isSqlEscape());
 
-                    registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
-                }
+                registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
 
                 if (idxRebuildFutStorage.prepareRebuildIndexes(singleton(cacheInfo.cacheId()), null).isEmpty())
                     rebuildIndexesFromHash0(cacheInfo.cacheContext(), false, cancelTok);
@@ -2355,7 +2343,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean isSql
     ) throws IgniteCheckedException {
         synchronized (stateMux) {
-            if (moduleEnabled()) {
+            if (moduleEnabled() && !cacheNamesToSchema.containsKey(cacheName)) {
                 ctx.indexProcessor().idxRowCacheRegistry().onCacheRegistered(cacheInfo);
 
                 schemaMgr.onCacheCreated(cacheName, schemaName, cacheInfo.config().getSqlFunctionClasses());
@@ -2396,7 +2384,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         schemaMgr.onCacheTypeCreated(cacheInfo, desc, isSql);
                 }
 
-                cacheNames.add(CU.mask(cacheName));
+                cacheNamesToSchema.putIfAbsent(CU.mask(cacheName), schemaName);
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 onCacheStop0(cacheInfo, true, true);
@@ -2415,7 +2403,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clearIdx Clear flag.
      */
     public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy, boolean clearIdx) {
-        if (!moduleEnabled() || !cacheNames.contains(cacheInfo.name()))
+        if (!moduleEnabled() || !cacheNamesToSchema.containsKey(cacheInfo.name()))
             return;
 
         String cacheName = cacheInfo.name();
@@ -2467,7 +2455,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to clear schema manager on cache unregister (will ignore): " + cacheName, e);
             }
 
-            cacheNames.remove(cacheName);
+            cacheNamesToSchema.remove(cacheName);
 
             Iterator<Long> missedCacheTypeIter = missedCacheTypes.iterator();
 
@@ -3532,7 +3520,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qryParallelism != null && qryParallelism > 1 && cfg.getCacheMode() != PARTITIONED)
             throw new IgniteSQLException("Segmented indices are supported for PARTITIONED mode only.");
 
-        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(ctx, entity, sqlEscape);
+        QueryEntity entity0 = QueryUtils.normalizeQueryEntity(ctx.recoveryMode(), entity, sqlEscape);
 
         SchemaAddQueryEntityOperation op = new SchemaAddQueryEntityOperation(
                 UUID.randomUUID(),
@@ -3903,15 +3891,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param err Error.
      * @param nop No-op flag.
      */
-    public void sendStatusMessage(UUID destNodeId, UUID opId, SchemaOperationException err, boolean nop) {
+    public void sendStatusMessage(UUID destNodeId, UUID opId, @Nullable SchemaOperationException err, boolean nop) {
         if (log.isDebugEnabled())
             log.debug("Sending schema operation status message [opId=" + opId + ", crdNode=" + destNodeId +
                 ", err=" + err + ", nop=" + nop + ']');
 
         try {
-            byte[] errBytes = marshalSchemaError(opId, err);
-
-            SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(opId, errBytes, nop);
+            SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(
+                opId,
+                err != null ? err.code() : -1,
+                err != null ? err.getMessage() : null,
+                nop
+            );
 
             // Messages must go to dedicated schema pool. We cannot push them to query pool because in this case
             // they could be blocked with other query requests.
@@ -3952,7 +3943,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         log.debug("Received status message [opId=" + msg.operationId() +
                             ", sndNodeId=" + msg.senderNodeId() + ']');
 
-                    op.manager().onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()), msg.nop());
+                    op.manager().onNodeFinished(msg.senderNodeId(), schemaError(msg), msg.nop());
 
                     return;
                 }
@@ -3982,7 +3973,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             SchemaOperationStatusMessage msg = it.next();
 
             if (Objects.equals(msg.operationId(), opId)) {
-                mgr.onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()), msg.nop());
+                mgr.onNodeFinished(msg.senderNodeId(), schemaError(msg), msg.nop());
 
                 it.remove();
             }
@@ -3990,50 +3981,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Marshal schema error.
-     *
-     * @param err Error.
-     * @return Error bytes.
+     * @param msg Status message.
+     * @return SchemaOperationException or null.
      */
-    @Nullable private byte[] marshalSchemaError(UUID opId, @Nullable SchemaOperationException err) {
-        if (err == null)
-            return null;
-
-        try {
-            return U.marshal(marsh, err);
-        }
-        catch (Exception e) {
-            U.warn(log, "Failed to marshal schema operation error [opId=" + opId + ", err=" + err + ']', e);
-
-            try {
-                return U.marshal(marsh, new SchemaOperationException("Operation failed, but error cannot be " +
-                    "serialized (see local node log for more details) [opId=" + opId + ", nodeId=" +
-                    ctx.localNodeId() + ']'));
-            }
-            catch (Exception e0) {
-                assert false; // Impossible situation.
-
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Unmarshal schema error.
-     *
-     * @param errBytes Error bytes.
-     * @return Error.
-     */
-    @Nullable private SchemaOperationException unmarshalSchemaError(@Nullable byte[] errBytes) {
-        if (errBytes == null)
-            return null;
-
-        try {
-            return U.unmarshal(marsh, errBytes, U.resolveClassLoader(ctx.config()));
-        }
-        catch (Exception e) {
-            return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
-        }
+    @Nullable private SchemaOperationException schemaError(SchemaOperationStatusMessage msg) {
+        return msg.errorMessage() != null ? new SchemaOperationException(msg.errorMessage(), msg.errorCode()) : null;
     }
 
     /**
@@ -4441,5 +4393,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** @return Default query engine. */
     public QueryEngine defaultQueryEngine() {
         return dfltQryEngine;
+    }
+
+    /** */
+    public boolean isLockedByCurrentThread() {
+        return Thread.holdsLock(stateMux);
     }
 }

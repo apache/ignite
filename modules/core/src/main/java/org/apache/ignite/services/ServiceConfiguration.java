@@ -20,12 +20,13 @@ package org.apache.ignite.services;
 import java.io.Externalizable;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
@@ -36,14 +37,14 @@ import org.apache.ignite.lang.IgnitePredicate;
  * <pre name="code" class="java">
  * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
- * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg1 = new ServiceConfiguration();
  *
  * svcCfg1.setName("myClusterSingletonService");
  * svcCfg1.setMaxPerNodeCount(1);
  * svcCfg1.setTotalCount(1);
  * svcCfg1.setService(new MyClusterSingletonService());
  *
- * GridServiceConfiguration svcCfg2 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg2 = new ServiceConfiguration();
  *
  * svcCfg2.setName("myNodeSingletonService");
  * svcCfg2.setMaxPerNodeCount(1);
@@ -88,6 +89,19 @@ public class ServiceConfiguration implements Serializable {
     /** Interceptor. */
     @GridToStringExclude
     protected ServiceCallInterceptor[] interceptors;
+
+    /**
+     * Node local start order.
+     * Note:
+     * <p>
+     * In case static service configuration {@link IgniteConfiguration#setServiceConfiguration(ServiceConfiguration...)}
+     * order will be applied on node start.
+     * </p>
+     * <p>
+     * In case deploying by the {@link IgniteServices#deployAll(Collection)}, order will be applied for deployed services.
+     * </p>
+     */
+    protected int locStartOrder;
 
     /**
      * Gets service name.
@@ -303,7 +317,6 @@ public class ServiceConfiguration implements Serializable {
      *
      * @return Service call interceptors.
      */
-    @IgniteExperimental
     public ServiceCallInterceptor[] getInterceptors() {
         return interceptors;
     }
@@ -314,9 +327,36 @@ public class ServiceConfiguration implements Serializable {
      * @param interceptors Service call interceptors.
      * @return {@code this} for chaining.
      */
-    @IgniteExperimental
     public ServiceConfiguration setInterceptors(ServiceCallInterceptor... interceptors) {
         this.interceptors = interceptors;
+
+        return this;
+    }
+
+    /**
+     * <p>
+     * In case static service configuration {@link IgniteConfiguration#setServiceConfiguration(ServiceConfiguration...)}
+     * order will be applied on node start.
+     * </p>
+     * <p>
+     * In case deploying by the {@link IgniteServices#deployAll(Collection)}, order will be applied for deployed services.
+     * </p>
+     *
+     * @return Node local start order. Greater value means service started later.
+     */
+    public int getLocalStartOrder() {
+        return locStartOrder;
+    }
+
+    /**
+     * Sets node local start order.
+     * Greater value means service started later.
+     *
+     * @param locStartOrder Node local start order.
+     * @return {@code this} for chaining.
+     */
+    public ServiceConfiguration setLocalStartOrder(int locStartOrder) {
+        this.locStartOrder = locStartOrder;
 
         return this;
     }
@@ -373,6 +413,9 @@ public class ServiceConfiguration implements Serializable {
         if (svc != null ? !svc.getClass().equals(that.svc.getClass()) : that.svc != null)
             return false;
 
+        if (locStartOrder != that.locStartOrder)
+            return false;
+
         return Arrays.deepEquals(interceptors, that.interceptors);
     }
 
@@ -386,6 +429,9 @@ public class ServiceConfiguration implements Serializable {
         String svcCls = svc == null ? "" : svc.getClass().getSimpleName();
         String nodeFilterCls = nodeFilter == null ? "" : nodeFilter.getClass().getSimpleName();
 
-        return S.toString(ServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);
+        return S.toString(ServiceConfiguration.class, this,
+            "svcCls", svcCls,
+            "nodeFilterCls", nodeFilterCls,
+            "localStartOrder", locStartOrder);
     }
 }

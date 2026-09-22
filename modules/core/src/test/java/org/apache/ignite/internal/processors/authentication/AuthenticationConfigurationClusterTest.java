@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginPro
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -131,8 +132,8 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     private void checkNodeJoinFailed(boolean client, boolean authEnabled) throws Exception {
         startGrid(configuration(0, authEnabled, false));
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<>() {
+                @Override public @Nullable Object call() throws Exception {
                     startGrid(configuration(1, !authEnabled, client));
 
                     return null;

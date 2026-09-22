@@ -18,12 +18,12 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.AbstractDiscoverySelfTest;
@@ -262,11 +262,12 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         /** */
         private volatile IgniteSpiOperationTimeoutException err;
 
-
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(Socket sock, InetSocketAddress sockAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper)
-            throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
+            InetSocketAddress sockAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteCheckedException {
 
             if (openSockTimeout) {
                 err = new IgniteSpiOperationTimeoutException("Timeout: openSocketTimeout");
@@ -290,7 +291,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 }
             }
 
-            super.openSocket(sock, sockAddr, timeoutHelper);
+            TcpDiscoveryIoSession ses = super.openSession(sock, sockAddr, timeoutHelper);
 
             try {
                 Thread.sleep(1500);
@@ -299,17 +300,17 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 // No-op.
             }
 
-            return sock;
+            return ses;
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (!(msg instanceof TcpDiscoveryPingRequest)) {
                 if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                     connCheckStatusMsgCntSent++;
 
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
 
                 return;
             }
@@ -329,16 +330,20 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 }
             }
             else
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
-            throws IOException {
+        @Override protected <T extends Message> T readMessage(
+            TcpDiscoveryIoSession ses,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            T msg = super.readMessage(ses, timeout);
+
             if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                 connCheckStatusMsgCntReceived++;
 
-            super.writeToSocket(msg, sock, res, timeout);
+            return msg;
         }
 
         /**

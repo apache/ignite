@@ -67,10 +67,16 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     private static final String CIPHER_SUITE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
 
     /** Cipher suite not supported by cluster nodes. */
-    private static final String UNSUPPORTED_CIPHER_SUITE = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+    private static final String UNSUPPORTED_CIPHER_SUITE = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256";
+
+    /** Local client host. */
+    private static final String LOCAL_CLIENT_HOST = "127.0.0.1";
+
+    /** Local client port. */
+    private static final String LOCAL_CLIENT_PORT = "10800";
 
     /** Local server address. */
-    private static final String LOCAL_CLIENT_ADDRESS = "127.0.0.1:10800";
+    private static final String LOCAL_CLIENT_ADDRESS = LOCAL_CLIENT_HOST + ":" + LOCAL_CLIENT_PORT;
 
     /** Metric timeout. */
     private static final long TIMEOUT = 7_000;
@@ -252,7 +258,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
                 startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class);
 
-        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
+        assertLocalClientAddressPresent(ex.getMessage());
 
         checkSslCommunicationMetrics(reg, 2, 0, 1);
 
@@ -262,7 +268,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             ClientConnectionException.class
         );
 
-        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
+        assertLocalClientAddressPresent(ex.getMessage());
 
         checkSslCommunicationMetrics(reg, 3, 0, 2);
 
@@ -272,7 +278,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             ClientConnectionException.class
         );
 
-        assertContains(log, ex.getMessage(), LOCAL_CLIENT_ADDRESS);
+        assertLocalClientAddressPresent(ex.getMessage());
 
         checkSslCommunicationMetrics(reg, 4, 0, 3);
     }
@@ -394,6 +400,16 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         assertTrue(
             "Metric " + name + " expected greater or equal than " + expected + " but was " + supplier.get(),
                 waitForCondition(() -> expected <= supplier.get(), TIMEOUT));
+    }
+
+    /**
+     * Checks that local client host and port are present in the message regardless of address rendering format.
+     *
+     * @param msg Exception message.
+     */
+    private void assertLocalClientAddressPresent(String msg) {
+        assertContains(log, msg, LOCAL_CLIENT_HOST);
+        assertContains(log, msg, LOCAL_CLIENT_PORT);
     }
 
     /** Creates {@link SslContextFactory} with specified options. */

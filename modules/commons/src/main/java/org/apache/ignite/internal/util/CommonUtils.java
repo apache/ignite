@@ -20,25 +20,105 @@ package org.apache.ignite.internal.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UTFDataFormatException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.net.DatagramSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.security.ProtectionDomain;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridTuple;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Objects.isNull;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
 
 /**
  * Collection of utility methods used in 'ignite-commons' and throughout the system.
  */
 public abstract class CommonUtils {
+    /** Empty longs array. */
+    public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Network packet header (corresponds to {@code 0x0149474E}). */
+    public static final byte[] IGNITE_HEADER = new byte[] {0x01, 0x49, 0x47, 0x4E};
+
+    /** */
+    public static final long KB = 1024L;
+
+    /** */
+    public static final long MB = 1024L * 1024;
+
+    /** */
+    public static final long GB = 1024L * 1024 * 1024;
+
+    /** Dev only logging disabled. */
+    private static final boolean devOnlyLogDisabled =
+        IgniteCommonsSystemProperties.getBoolean(IgniteCommonsSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
+
     /**
      * The maximum size of array to allocate.
      * Some VMs reserve some header words in an array.
@@ -72,6 +152,9 @@ public abstract class CommonUtils {
     /** Version of the JDK. */
     static String jdkVer;
 
+    /** Project home directory. */
+    private static volatile GridTuple<String> ggHome;
+
     /** */
     static volatile long curTimeMillis = System.currentTimeMillis();
 
@@ -81,10 +164,128 @@ public abstract class CommonUtils {
     /** Grid counter. */
     static int gridCnt;
 
+    /** Indicates whether current OS is some version of Windows. */
+    private static boolean win;
+
+    /** Indicates whether current OS is UNIX flavor. */
+    private static boolean unix;
+
+    /** Indicates whether current OS is Linux flavor. */
+    private static boolean linux;
+
+    /** Indicates whether current OS is Mac OS. */
+    private static boolean mac;
+
+    /** Empty URL array. */
+    private static final URL[] EMPTY_URL_ARR = new URL[0];
+
+    /** Builtin class loader class.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Class bltClsLdrCls = defaultClassLoaderClass();
+
+    /** Url class loader field.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Field urlClsLdrField = urlClassLoaderField();
+
+    /** JDK9: jdk.internal.loader.URLClassPath. */
+    private static Class clsURLClassPath;
+
+    /** JDK9: URLClassPath#getURLs. */
+    private static Method mthdURLClassPathGetUrls;
+
     /** Mutex. */
     static final Object mux = new Object();
 
+    /** Empty local Ignite name. */
+    public static final String LOC_IGNITE_NAME_EMPTY = new String();
+
+    /** Local Ignite name thread local. */
+    private static final ThreadLocal<String> LOC_IGNITE_NAME = new ThreadLocal<String>() {
+        @Override protected String initialValue() {
+            return LOC_IGNITE_NAME_EMPTY;
+        }
+    };
+
+    /** Ignite package. */
+    public static final String IGNITE_PKG = "org.apache.ignite.";
+
+    /** Default data structures group name. */
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Thin client handshake (connection type) code. */
+    public static final byte THIN_CLIENT = 2;
+
+    /** Handshake request command code. */
+    public static final int HANDSHAKE = 1;
+
+    /** Default client connector port. */
+    public static final int DFLT_PORT = 10800;
+
+    /** Default client connector port range. */
+    public static final int DFLT_PORT_RANGE = 100;
+
+    /**
+     * Short date format pattern for log messages in "quiet" mode.
+     * Only time is included since we don't expect "quiet" mode to be used
+     * for longer runs.
+     */
+    public static final DateTimeFormatter SHORT_DATE_FMT =
+        DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault());
+
+    /** Exception converters. */
+    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters = new HashMap<>();
+
+    /** Class loader used to load Ignite. */
+    private static final ClassLoader gridClassLoader = CommonUtils.class.getClassLoader();
+
+    /** */
+    private static final Class<?> GEOMETRY_CLASS;
+
+    /** Boxed class map. */
+    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
+
+    /** Field name for key. */
+    public static final String KEY_FIELD_NAME = "_KEY";
+
+    /** Field name for value. */
+    public static final String VAL_FIELD_NAME = "_VAL";
+
+    /** Byte bit-mask. */
+    private static final int MASK = 0xf;
+
+    /** */
+    private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
     static {
+        Class<?> geomCls = null;
+
+        try {
+            geomCls = Class.forName("org.locationtech.jts.geom.Geometry");
+        }
+        catch (ClassNotFoundException ignore) {
+            // Ignore.
+        }
+
+        GEOMETRY_CLASS = geomCls;
+
+        boxedClsMap.put(byte.class, Byte.class);
+        boxedClsMap.put(short.class, Short.class);
+        boxedClsMap.put(int.class, Integer.class);
+        boxedClsMap.put(long.class, Long.class);
+        boxedClsMap.put(float.class, Float.class);
+        boxedClsMap.put(double.class, Double.class);
+        boxedClsMap.put(char.class, Character.class);
+        boxedClsMap.put(boolean.class, Boolean.class);
+        boxedClsMap.put(void.class, Void.class);
+
         try {
             OBJECT_CTOR = Object.class.getConstructor();
         }
@@ -111,7 +312,39 @@ public abstract class CommonUtils {
         CTOR_FACTORY = ctorFac;
         SUN_REFLECT_FACTORY = refFac;
 
-        CommonUtils.jdkVer = System.getProperty("java.specification.version");
+        jdkVer = System.getProperty("java.specification.version");
+
+        String osName = System.getProperty("os.name");
+        String osLow = osName.toLowerCase();
+
+        // OS type detection.
+        if (osLow.contains("win"))
+            win = true;
+        else if (osLow.contains("mac os"))
+            mac = true;
+        else {
+            // UNIXs flavors tokens.
+            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
+                if (osLow.contains(os)) {
+                    unix = true;
+
+                    break;
+                }
+
+            if (osLow.contains("inux"))
+                linux = true;
+        }
+
+        addExceptionConverters(exceptionConverters());
+
+        try {
+            clsURLClassPath = Class.forName("jdk.internal.loader.URLClassPath");
+            mthdURLClassPathGetUrls = clsURLClassPath.getMethod("getURLs");
+        }
+        catch (ReflectiveOperationException e) {
+            clsURLClassPath = null;
+            mthdURLClassPathGetUrls = null;
+        }
     }
 
     /**
@@ -361,27 +594,27 @@ public abstract class CommonUtils {
 
     /**
      * Starts clock timer if grid is first.
+     *
+     * @param igniteInstanceName Ignite instance name.
      */
-    public static void onGridStart() {
+    @SuppressWarnings({"BusyWait"})
+    public static void onGridStart(String igniteInstanceName) {
         synchronized (mux) {
             if (gridCnt == 0) {
                 assert timer == null;
 
-                timer = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait"})
-                    @Override public void run() {
-                        while (true) {
-                            curTimeMillis = System.currentTimeMillis();
+                timer = new IgniteThread(igniteInstanceName, "ignite-clock", () -> {
+                    while (!IgniteThread.currentThread().isInterrupted()) {
+                        curTimeMillis = System.currentTimeMillis();
 
-                            try {
-                                Thread.sleep(10);
-                            }
-                            catch (InterruptedException ignored) {
-                                break;
-                            }
+                        try {
+                            Thread.sleep(10);
+                        }
+                        catch (InterruptedException ignored) {
+                            break;
                         }
                     }
-                }, "ignite-clock");
+                });
 
                 timer.setDaemon(true);
 
@@ -454,5 +687,1906 @@ public abstract class CommonUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Get current Ignite name.
+     *
+     * @return Current Ignite name.
+     */
+    @Nullable public static String getCurrentIgniteName() {
+        return LOC_IGNITE_NAME.get();
+    }
+
+    /**
+     * Check if current Ignite name is set.
+     *
+     * @param name Name to check.
+     * @return {@code True} if set.
+     */
+    @SuppressWarnings("StringEquality")
+    public static boolean isCurrentIgniteNameSet(@Nullable String name) {
+        return name != LOC_IGNITE_NAME_EMPTY;
+    }
+
+    /**
+     * Set current Ignite name.
+     *
+     * @param newName New name.
+     * @return Old name.
+     */
+    @SuppressWarnings("StringEquality")
+    @Nullable public static String setCurrentIgniteName(@Nullable String newName) {
+        String oldName = LOC_IGNITE_NAME.get();
+
+        if (oldName != newName)
+            LOC_IGNITE_NAME.set(newName);
+
+        return oldName;
+    }
+
+    /**
+     * Restore old Ignite name.
+     *
+     * @param oldName Old name.
+     * @param curName Current name.
+     */
+    @SuppressWarnings("StringEquality")
+    public static void restoreOldIgniteName(@Nullable String oldName, @Nullable String curName) {
+        if (oldName != curName)
+            LOC_IGNITE_NAME.set(oldName);
+    }
+
+    /**
+     * @return Class loader used to load Ignite itself.
+     */
+    public static ClassLoader gridClassLoader() {
+        return gridClassLoader;
+    }
+
+    /**
+     * @param ldr Custom class loader.
+     * @param cfgLdr Class loader from config.
+     * @return ClassLoader passed as param in case it is not null or cfgLdr  in case it is not null or ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(@Nullable ClassLoader ldr, @Nullable ClassLoader cfgLdr) {
+        return (ldr != null && ldr != gridClassLoader)
+            ? ldr
+            : cfgLdr != null
+                ? cfgLdr
+                : gridClassLoader;
+    }
+
+    /**
+     * Tests whether given class is loadable with provided class loader.
+     *
+     * @param clsName Class name to test.
+     * @param ldr Class loader to test with. If {@code null} - we'll use system class loader instead.
+     *      If System class loader is not set - this method will return {@code false}.
+     * @return {@code True} if class is loadable, {@code false} otherwise.
+     */
+    public static boolean isLoadableBy(String clsName, @Nullable ClassLoader ldr) {
+        assert clsName != null;
+
+        if (ldr == null)
+            ldr = gridClassLoader;
+
+        String lambdaParent = lambdaEnclosingClassName(clsName);
+
+        try {
+            ldr.loadClass(lambdaParent == null ? clsName : lambdaParent);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
+        }
+    }
+
+    /**
+     * Extracts full name of enclosing class from JDK8 lambda class name.
+     *
+     * @param clsName JDK8 lambda class name.
+     * @return Full name of enclosing class for JDK8 lambda class name or
+     *      {@code null} if passed in name is not related to lambda.
+     */
+    @Nullable public static String lambdaEnclosingClassName(String clsName) {
+        int idx0 = clsName.indexOf("$$Lambda$"); // Java 8+
+        int idx1 = clsName.indexOf("$$Lambda/"); // Java 21+
+
+        if (idx0 == idx1)
+            return null;
+
+        return clsName.substring(0, idx0 >= 0 ? idx0 : idx1);
+    }
+
+    /**
+     * Returns {@code true} if class is a lambda.
+     *
+     * @param objectClass Class.
+     * @return {@code true} if class is a lambda, {@code false} otherwise.
+     */
+    public static boolean isLambda(Class<?> objectClass) {
+        return !objectClass.isPrimitive() && !objectClass.isArray()
+            // Order is crucial here, isAnonymousClass and isLocalClass may fail if
+            // class' outer class was loaded with different classloader.
+            && objectClass.isSynthetic()
+            && !objectClass.isAnonymousClass() && !objectClass.isLocalClass()
+            && classCannotBeLoadedByName(objectClass);
+    }
+
+    /**
+     * Returns {@code true} if class can not be loaded by name.
+     *
+     * @param objectClass Class.
+     * @return {@code true} if class can not be loaded by name, {@code false} otherwise.
+     */
+    public static boolean classCannotBeLoadedByName(Class<?> objectClass) {
+        try {
+            Class.forName(objectClass.getName());
+            return false;
+        }
+        catch (ClassNotFoundException e) {
+            return true;
+        }
+    }
+
+    /**
+     * Creates new {@link HashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> HashMap<K, V> newHashMap(int expSize) {
+        return new HashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashMap} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <K> Type of map keys.
+     * @param <V> Type of map values.
+     * @return New map.
+     */
+    public static <K, V> LinkedHashMap<K, V> newLinkedHashMap(int expSize) {
+        return new LinkedHashMap<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link HashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> HashSet<T> newHashSet(int expSize) {
+        return new HashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new {@link LinkedHashSet} with expected size.
+     *
+     * @param expSize Expected size of created map.
+     * @param <T> Type of elements.
+     * @return New set.
+     */
+    public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
+        return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new map that limited by size.
+     *
+     * @param limit Limit for size.
+     */
+    public static <K, V> Map<K, V> limitedMap(int limit) {
+        if (limit == 0)
+            return Collections.emptyMap();
+
+        if (limit < 5)
+            return new GridLeanMap<>(limit);
+
+        return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
+     * @param col non-null collection with one element
+     * @return a SingletonList containing the element in the original collection
+     */
+    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
+        if (col.size() != 1) {
+            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
+        }
+        return Collections.singletonList(col.iterator().next());
+    }
+
+    /**
+     * Closes given resource logging possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable AutoCloseable rsrc, @Nullable IgniteLogger log) {
+        if (rsrc != null) {
+            try {
+                rsrc.close();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to close resource: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * Closes given socket logging possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
+        if (sock == null || sock.isClosed())
+            return;
+
+        try {
+            // Closing output and input first to avoid tls 1.3 incompatibility
+            // https://bugs.openjdk.java.net/browse/JDK-8208526
+            if (!sock.isOutputShutdown())
+                sock.shutdownOutput();
+            if (!sock.isInputShutdown())
+                sock.shutdownInput();
+        }
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to shutdown socket", ex);
+        }
+        catch (Exception e) {
+            warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
+        }
+
+        try {
+            sock.close();
+        }
+        catch (ClosedChannelException | SocketException ex) {
+            LT.warn(log, "Failed to close socket", ex);
+        }
+        catch (Exception e) {
+            warn(log, "Failed to close socket: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Closes given resource logging possible checked exceptions.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable SelectionKey rsrc, @Nullable IgniteLogger log) {
+        if (rsrc != null)
+            // This apply will automatically deregister the selection key as well.
+            close(rsrc.channel(), log);
+    }
+
+    /**
+     * Closes given resource.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void close(@Nullable DatagramSocket rsrc) {
+        if (rsrc != null)
+            rsrc.close();
+    }
+
+    /**
+     * Closes given resource logging possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable Selector rsrc, @Nullable IgniteLogger log) {
+        if (rsrc != null)
+            try {
+                if (rsrc.isOpen())
+                    rsrc.close();
+            }
+            catch (IOException e) {
+                warn(log, "Failed to close resource: " + e.getMessage());
+            }
+    }
+
+    /**
+     * Closes class loader logging possible checked exception.
+     *
+     * @param clsLdr Class loader. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable URLClassLoader clsLdr, @Nullable IgniteLogger log) {
+        if (clsLdr != null) {
+            try {
+                clsLdr.close();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to close resource: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Depending on whether log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
+     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void warn(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        String s = msg.toString();
+
+        warn(log, s, null);
+    }
+
+    /**
+     * Depending on whether log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
+     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log using normal logger.
+     * @param e Optional exception.
+     */
+    public static void warn(@Nullable IgniteLogger log, Object msg, @Nullable Throwable e) {
+        assert msg != null;
+
+        if (log != null)
+            log.warning(compact(msg.toString()), e);
+        else {
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
+                compact(msg.toString()));
+
+            if (e != null)
+                e.printStackTrace(System.err);
+            else
+                X.printerrln();
+        }
+    }
+
+    /**
+     * Logs warning message in both verbose and quiet modes.
+     *
+     * @param log Logger to use.
+     * @param msg Message to log.
+     */
+    public static void quietAndWarn(IgniteLogger log, Object msg) {
+        quietAndWarn(log, msg, msg);
+    }
+
+    /**
+     * Logs warning message in both verbose and quiet modes.
+     *
+     * @param log Logger to use.
+     * @param shortMsg Short message.
+     * @param msg Message to log.
+     */
+    public static void quietAndWarn(IgniteLogger log, Object msg, Object shortMsg) {
+        warn(log, msg);
+
+        if (log.isQuiet())
+            quiet(false, shortMsg);
+    }
+
+    /**
+     * Logs warning message in both verbose and quiet modes.
+     *
+     * @param log Logger to use.
+     * @param msg Message to log.
+     * @param e Optional exception.
+     */
+    public static void quietAndWarn(IgniteLogger log, Object msg, @Nullable Throwable e) {
+        warn(log, msg, e);
+
+        if (log.isQuiet())
+            quiet(false, msg);
+    }
+
+    /**
+     * Depending on whether log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
+     * or in QUIET mode it will add {@code (err)} prefix to the message.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void error(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        if (msg instanceof Throwable) {
+            Throwable t = (Throwable)msg;
+
+            error(log, t.getMessage(), t);
+        }
+        else {
+            String s = msg.toString();
+
+            error(log, s, s, null);
+        }
+    }
+
+    /**
+     * Depending on whether log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
+     * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * If property {@link IgniteCommonsSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
+     * is set to true, the message will not be logged.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void warnDevOnly(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        // don't log message if DEV_ONLY messages are disabled
+        if (devOnlyLogDisabled)
+            return;
+
+        if (log != null)
+            log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
+        else
+            X.println("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (wrn) " +
+                compact(msg.toString()));
+    }
+
+    /**
+     * Depending on whether log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log INFO message.
+     * <p>
+     * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
+     * therefore no logging will happen - using this method the log will be written
+     * always either via INFO log or quiet mode.
+     * <p>
+     * <b>USE IT APPROPRIATELY.</b>
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param longMsg Message to log using normal logger.
+     * @param shortMsg Message to log using quiet logger.
+     */
+    public static void log(@Nullable IgniteLogger log, Object longMsg, Object shortMsg) {
+        assert longMsg != null;
+        assert shortMsg != null;
+
+        if (log != null) {
+            if (log.isInfoEnabled())
+                log.info(compact(longMsg.toString()));
+        }
+        else
+            quiet(false, shortMsg);
+    }
+
+    /**
+     * Depending on whether log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log INF0 message.
+     * <p>
+     * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
+     * therefore no logging will happen - using this method the log will be written
+     * always either via INFO log or quiet mode.
+     * <p>
+     * <b>USE IT APPROPRIATELY.</b>
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void log(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        String s = msg.toString();
+
+        log(log, s, s);
+    }
+
+    /**
+     * Depending on whether log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
+     * or in QUIET mode it will add {@code (err)} prefix to the message.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param longMsg Message to log using normal logger.
+     * @param shortMsg Message to log using quiet logger.
+     * @param e Optional exception.
+     */
+    public static void error(@Nullable IgniteLogger log, Object longMsg, Object shortMsg, @Nullable Throwable e) {
+        assert longMsg != null;
+        assert shortMsg != null;
+
+        if (log != null) {
+            if (e == null)
+                log.error(compact(longMsg.toString()));
+            else
+                log.error(compact(longMsg.toString()), e);
+        }
+        else {
+            X.printerr("[" + SHORT_DATE_FMT.format(Instant.now()) + "] (err) " +
+                compact(shortMsg.toString()));
+
+            if (e != null)
+                e.printStackTrace(System.err);
+            else
+                X.printerrln();
+        }
+    }
+
+    /**
+     * Shortcut for {@link #error(org.apache.ignite.IgniteLogger, Object, Object, Throwable)}.
+     *
+     * @param log Optional logger.
+     * @param shortMsg Message to log using quiet logger.
+     * @param e Optional exception.
+     */
+    public static void error(@Nullable IgniteLogger log, Object shortMsg, @Nullable Throwable e) {
+        assert shortMsg != null;
+
+        String s = shortMsg.toString();
+
+        error(log, s, s, e);
+    }
+
+    /**
+     *
+     * @param err Whether to print to {@code System.err}.
+     * @param objs Objects to log in quiet mode.
+     */
+    public static void quiet(boolean err, Object... objs) {
+        assert objs != null;
+
+        String time = SHORT_DATE_FMT.format(Instant.now());
+
+        SB sb = new SB();
+
+        for (Object obj : objs)
+            sb.a('[').a(time).a("] ").a(obj.toString()).a(NL);
+
+        PrintStream ps = err ? System.err : System.out;
+
+        ps.print(compact(sb.toString()));
+    }
+
+    /**
+     *
+     * @param err Whether to print to {@code System.err}.
+     * @param multiline Multiple lines string to print.
+     */
+    public static void quietMultipleLines(boolean err, String multiline) {
+        assert multiline != null;
+
+        quiet(err, multiline.split(NL));
+    }
+
+    /**
+     * Prints out the message in quiet and info modes.
+     *
+     * @param log Logger.
+     * @param msg Message to print.
+     */
+    public static void quietAndInfo(IgniteLogger log, String msg) {
+        if (log.isQuiet())
+            quiet(false, msg);
+
+        if (log.isInfoEnabled())
+            log.info(msg);
+    }
+
+    /**
+     * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
+     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.},
+     * {@code org.apache.ignite.internal.visor.} with {@code o.a.i.i.v.} and
+     *
+     * @param s String to replace in.
+     * @return Replaces string.
+     */
+    public static String compact(String s) {
+        return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
+            replace("org.apache.ignite.internal.", "o.a.i.i.").
+            replace(IGNITE_PKG, "o.a.i.");
+    }
+
+    /**
+     * Check if given class represents a Enum.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if this is a Enum class.
+     */
+    public static boolean isEnum(Class cls) {
+        if (cls.isEnum())
+            return true;
+
+        Class sCls = cls.getSuperclass();
+
+        return sCls != null && sCls.isEnum();
+    }
+
+    /**
+     * Returns a first non-null value, if such is present.
+     *
+     * @param first First value.
+     * @param second Second value.
+     * @return First non-null value, or {@code null}, if both {@code null}.
+     */
+    @Nullable public static <T> T firstNotNull(@Nullable T first, @Nullable T second) {
+        return first != null ? first : second;
+    }
+
+    /**
+     * @param cls Class to check.
+     * @return {@code True} if class is final.
+     */
+    public static boolean isFinal(Class<?> cls) {
+        return Modifier.isFinal(cls.getModifiers());
+    }
+
+    /**
+     * Checks if given class is of {@code Ignite} type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if given class is of {@code Ignite} type.
+     */
+    public static boolean isIgnite(Class<?> cls) {
+        String name = cls.getName();
+
+        return name.startsWith("org.apache.ignite") || name.startsWith("org.jsr166");
+    }
+
+    /**
+     * Checks if given class is of {@code Grid} type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if given class is of {@code Grid} type.
+     */
+    public static boolean isGrid(Class<?> cls) {
+        return cls.getName().startsWith("org.apache.ignite.internal");
+    }
+
+    /**
+     * Check if given class is of JDK type.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if object is JDK type.
+     */
+    public static boolean isJdk(Class<?> cls) {
+        if (cls.isPrimitive())
+            return true;
+
+        String s = cls.getName();
+
+        return s.startsWith("java.") || s.startsWith("javax.");
+    }
+
+    /**
+     * Finds a non-static and non-abstract method from the class it parents.
+     *
+     * Method.getMethod() does not return non-public method.
+     *
+     * @param cls Target class.
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method findInheritableMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        Method mtd = null;
+
+        Class<?> cls0 = cls;
+
+        while (cls0 != null) {
+            try {
+                mtd = cls0.getDeclaredMethod(name, paramTypes);
+
+                break;
+            }
+            catch (NoSuchMethodException e) {
+                cls0 = cls0.getSuperclass();
+            }
+        }
+
+        if (mtd == null)
+            return null;
+
+        mtd.setAccessible(true);
+
+        int mods = mtd.getModifiers();
+
+        if ((mods & (Modifier.STATIC | Modifier.ABSTRACT)) != 0)
+            return null;
+        else if ((mods & (Modifier.PUBLIC | Modifier.PROTECTED)) != 0)
+            return mtd;
+        else if ((mods & Modifier.PRIVATE) != 0)
+            return cls == cls0 ? mtd : null;
+        else {
+            ClassLoader clsLdr = cls.getClassLoader();
+
+            ClassLoader clsLdr0 = cls0.getClassLoader();
+
+            return clsLdr == clsLdr0 && packageName(cls).equals(packageName(cls0)) ? mtd : null;
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @return Package name.
+     */
+    public static String packageName(Class<?> cls) {
+        Package pkg = cls.getPackage();
+
+        return pkg == null ? "" : pkg.getName();
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values.
+     * <p>
+     * Limitation for max string lenght of <code>65535</code> bytes is caused by {@link DataOutput#writeUTF}
+     * used under the hood to perform an actual write.
+     * </p>
+     * <p>
+     * If longer string is passes a {@link UTFDataFormatException} exception will be thrown.
+     * </p>
+     * <p>
+     * To write longer strings use {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
+     * encoded characters.
+     * To read the value back {@link #readLongString(DataInput)} should be used.
+     * </p>
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeString(DataOutput out, String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(s == null);
+
+        if (s != null)
+            out.writeUTF(s);
+    }
+
+    /**
+     * Reads string from input stream accounting for {@code null} values.
+     *
+     * Method enables to read strings shorter than <code>65535</code> bytes in UTF-8 otherwise an exception will be thrown.
+     *
+     * Strings written by {@link #writeString(DataOutput, String)} can be read by this method.
+     *
+     * @see #writeString(DataOutput, String) for more information about writing strings.
+     *
+     * @param in Stream to read from.
+     * @return Read string, possibly {@code null}.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static String readString(DataInput in) throws IOException {
+        // If value is not null, then read it. Otherwise return null.
+        return !in.readBoolean() ? in.readUTF() : null;
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values. <br/>
+     *
+     * This method can write string of any length, limit of <code>65535</code> is not applied.
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeLongString(DataOutput out, @Nullable String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(isNull(s));
+
+        if (isNull(s))
+            return;
+
+        int sLen = s.length();
+
+        // Write string length.
+        out.writeInt(sLen);
+
+        // Write byte array.
+        for (int i = 0; i < sLen; i++) {
+            char c = s.charAt(i);
+            int utfBytes = utfBytes(c);
+
+            if (utfBytes == 1)
+                out.writeByte((byte)c);
+            else if (utfBytes == 3) {
+                out.writeByte((byte)(0xE0 | (c >> 12) & 0x0F));
+                out.writeByte((byte)(0x80 | (c >> 6) & 0x3F));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+            else {
+                out.writeByte((byte)(0xC0 | ((c >> 6) & 0x1F)));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+        }
+    }
+
+    /**
+     * Reads string from input stream accounting for {@code null} values. <br/>
+     *
+     * This method can read string of any length, limit of <code>65535</code> is not applied.
+     *
+     * @param in Stream to read from.
+     * @return Read string, possibly {@code null}.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static String readLongString(DataInput in) throws IOException {
+        // Check null value.
+        if (in.readBoolean())
+            return null;
+
+        // Read string length.
+        int sLen = in.readInt();
+
+        StringBuilder strBuilder = new StringBuilder(sLen);
+
+        // Read byte array.
+        for (int i = 0, b0, b1, b2; i < sLen; i++) {
+            b0 = in.readByte() & 0xff;
+
+            switch (b0 >> 4) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:   // 1 byte format: 0xxxxxxx
+                    strBuilder.append((char)b0);
+                    break;
+
+                case 12:
+                case 13:  // 2 byte format: 110xxxxx 10xxxxxx
+                    b1 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x1F) << 6) | (b1 & 0x3F)));
+                    break;
+
+                case 14:  // 3 byte format: 1110xxxx 10xxxxxx 10xxxxxx
+                    b1 = in.readByte();
+                    b2 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80 || (b2 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)));
+                    break;
+
+                default:  // 10xx xxxx, 1111 xxxx
+                    throw new UTFDataFormatException();
+            }
+        }
+
+        return strBuilder.toString();
+    }
+
+    /**
+     * Writes byte array to output stream accounting for <tt>null</tt> values.
+     *
+     * @param out Output stream to write to.
+     * @param arr Array to write, possibly <tt>null</tt>.
+     * @throws java.io.IOException If write failed.
+     */
+    public static void writeByteArray(DataOutput out, @Nullable byte[] arr) throws IOException {
+        if (arr == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(arr.length);
+
+            out.write(arr);
+        }
+    }
+
+    /**
+     * Reads byte array from input stream accounting for <tt>null</tt> values.
+     *
+     * @param in Stream to read from.
+     * @return Read byte array, possibly <tt>null</tt>.
+     * @throws java.io.IOException If read failed.
+     */
+    @Nullable public static byte[] readByteArray(DataInput in) throws IOException {
+        int len = in.readInt();
+
+        if (len == -1)
+            return null; // Value "-1" indicates null.
+
+        byte[] res = new byte[len];
+
+        in.readFully(res);
+
+        return res;
+    }
+
+    /**
+     * Get number of bytes for {@link DataOutput#writeUTF},
+     * depending on character: <br/>
+     *
+     * One byte - If a character <code>c</code> is in the range
+     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br/>
+     *
+     * Two bytes - If a character <code>c</code> is <code>&#92;u0000</code> or
+     * is in the range <code>&#92;u0080</code> through <code>&#92;u07ff</code>.
+     * <br/>
+     *
+     * Three bytes - If a character <code>c</code> is in the range
+     * <code>&#92;u0800</code> through <code>uffff</code>.
+     *
+     * @param c Character.
+     * @return Number of bytes.
+     */
+    public static int utfBytes(char c) {
+        return (c >= 0x0001 && c <= 0x007F) ? 1 : (c > 0x07FF) ? 3 : 2;
+    }
+
+    /**
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
+     * properties or from environment in that order.
+     *
+     * @return {@code IGNITE_HOME} property.
+     */
+    @Nullable public static String getIgniteHome() {
+        GridTuple<String> ggHomeTup = ggHome;
+
+        String ggHome0;
+
+        if (ggHomeTup == null) {
+            synchronized (CommonUtils.class) {
+                // Double check.
+                ggHomeTup = ggHome;
+
+                if (ggHomeTup == null) {
+                    // Resolve Ignite installation home directory.
+                    ggHome = F.t(ggHome0 = resolveProjectHome());
+
+                    if (ggHome0 != null)
+                        System.setProperty(IGNITE_HOME, ggHome0);
+                }
+                else
+                    ggHome0 = ggHomeTup.get();
+            }
+        }
+        else
+            ggHome0 = ggHomeTup.get();
+
+        return ggHome0;
+    }
+
+    /**
+     * Resolve project home directory based on source code base.
+     *
+     * @return Project home directory (or {@code null} if it cannot be resolved).
+     */
+    @Nullable private static String resolveProjectHome() {
+        assert Thread.holdsLock(CommonUtils.class);
+
+        // Resolve Ignite home via environment variables.
+        String ggHome0 = IgniteCommonsSystemProperties.getString(IGNITE_HOME);
+
+        if (!F.isEmpty(ggHome0))
+            return ggHome0;
+
+        String appWorkDir = System.getProperty("user.dir");
+
+        if (appWorkDir != null) {
+            ggHome0 = findProjectHome(new File(appWorkDir));
+
+            if (ggHome0 != null)
+                return ggHome0;
+        }
+
+        URI classesUri;
+
+        Class<CommonUtils> cls = CommonUtils.class;
+
+        try {
+            ProtectionDomain domain = cls.getProtectionDomain();
+
+            // Should not happen, but to make sure our code is not broken.
+            if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
+                logResolveFailed(cls, null);
+
+                return null;
+            }
+
+            // Resolve path to class-file.
+            classesUri = domain.getCodeSource().getLocation().toURI();
+
+            // Overcome UNC path problem on Windows (http://www.tomergabel.com/JavaMishandlesUNCPathsOnWindows.aspx)
+            if (isWindows() && classesUri.getAuthority() != null)
+                classesUri = new URI(classesUri.toString().replace("file://", "file:/"));
+        }
+        catch (URISyntaxException | SecurityException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        File classesFile;
+
+        try {
+            classesFile = new File(classesUri);
+        }
+        catch (IllegalArgumentException e) {
+            logResolveFailed(cls, e);
+
+            return null;
+        }
+
+        return findProjectHome(classesFile);
+    }
+
+    /**
+     * Tries to find project home starting from specified directory and moving to root.
+     *
+     * @param startDir First directory in search hierarchy.
+     * @return Project home path or {@code null} if it wasn't found.
+     */
+    private static String findProjectHome(File startDir) {
+        for (File cur = startDir.getAbsoluteFile(); cur != null; cur = cur.getParentFile()) {
+            // Check 'cur' is project home directory.
+            if (!new File(cur, "bin").isDirectory() ||
+                !new File(cur, "config").isDirectory())
+                continue;
+
+            return cur.getPath();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cls Class.
+     * @param e Exception.
+     */
+    private static void logResolveFailed(Class cls, Exception e) {
+        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
+            "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
+    }
+
+    /**
+     * @param path Ignite home. May be {@code null}.
+     */
+    public static void setIgniteHome(@Nullable String path) {
+        GridTuple<String> ggHomeTup = ggHome;
+
+        String ggHome0;
+
+        if (ggHomeTup == null) {
+            synchronized (CommonUtils.class) {
+                // Double check.
+                ggHomeTup = ggHome;
+
+                if (ggHomeTup == null) {
+                    if (F.isEmpty(path))
+                        System.clearProperty(IGNITE_HOME);
+                    else
+                        System.setProperty(IGNITE_HOME, path);
+
+                    ggHome = F.t(path);
+
+                    return;
+                }
+                else
+                    ggHome0 = ggHomeTup.get();
+            }
+        }
+        else
+            ggHome0 = ggHomeTup.get();
+
+        if (ggHome0 != null && !ggHome0.equals(path)) {
+            try {
+                Path path0 = new File(ggHome0).toPath();
+
+                Path path1 = new File(path).toPath();
+
+                if (!Files.isSameFile(path0, path1))
+                    throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
+                        "[igniteHome=" + path0 + ", newIgniteHome=" + path1 + ']');
+            }
+            catch (IOException ignore) {
+                // Throw an exception if failed to follow symlinks.
+                throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
+                    "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
+            }
+        }
+    }
+
+    /**
+     * Nullifies Ignite home directory. For test purposes only.
+     */
+    public static void nullifyHomeDirectory() {
+        ggHome = null;
+    }
+
+    /**
+     * Indicates whether current OS is Linux flavor.
+     *
+     * @return {@code true} if current OS is Linux - {@code false} otherwise.
+     */
+    public static boolean isLinux() {
+        return linux;
+    }
+
+    /**
+     * Indicates whether current OS is Mac OS.
+     *
+     * @return {@code true} if current OS is Mac OS - {@code false} otherwise.
+     */
+    public static boolean isMacOs() {
+        return mac;
+    }
+
+    /**
+     * Indicates whether current OS is UNIX flavor.
+     *
+     * @return {@code true} if current OS is UNIX - {@code false} otherwise.
+     */
+    public static boolean isUnix() {
+        return unix;
+    }
+
+    /**
+     * Indicates whether current OS is Windows.
+     *
+     * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
+     */
+    public static boolean isWindows() {
+        return win;
+    }
+
+    /**
+     * Returns URLs of class loader
+     *
+     * @param clsLdr Class loader.
+     */
+    public static URL[] classLoaderUrls(ClassLoader clsLdr) {
+        if (clsLdr == null)
+            return EMPTY_URL_ARR;
+        else if (clsLdr instanceof URLClassLoader)
+            return ((URLClassLoader)clsLdr).getURLs();
+        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
+            try {
+                synchronized (urlClsLdrField) {
+                    // Backup accessible field state.
+                    boolean accessible = urlClsLdrField.isAccessible();
+
+                    try {
+                        if (!accessible)
+                            urlClsLdrField.setAccessible(true);
+
+                        Object ucp = urlClsLdrField.get(clsLdr);
+
+                        if (ucp instanceof URLClassLoader)
+                            return ((URLClassLoader)ucp).getURLs();
+                        else if (clsURLClassPath != null && clsURLClassPath.isInstance(ucp))
+                            return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
+                        else
+                            throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
+                    }
+                    finally {
+                        // Recover accessible field state.
+                        if (!accessible)
+                            urlClsLdrField.setAccessible(false);
+                    }
+                }
+            }
+            catch (InvocationTargetException | IllegalAccessException e) {
+                e.printStackTrace(System.err);
+
+                return EMPTY_URL_ARR;
+            }
+        }
+        else
+            return EMPTY_URL_ARR;
+    }
+
+    /** */
+    @Nullable private static Class defaultClassLoaderClass() {
+        try {
+            return Class.forName("jdk.internal.loader.BuiltinClassLoader");
+        }
+        catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    /** */
+    @Nullable private static Field urlClassLoaderField() {
+        try {
+            Class cls = defaultClassLoaderClass();
+
+            return cls == null ? null : cls.getDeclaredField("ucp");
+        }
+        catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Calculate a hashCode for an array.
+     *
+     * @param obj Object.
+     */
+    public static int hashCode(Object obj) {
+        if (obj == null)
+            return 0;
+
+        if (obj.getClass().isArray()) {
+            if (obj instanceof byte[])
+                return Arrays.hashCode((byte[])obj);
+            if (obj instanceof short[])
+                return Arrays.hashCode((short[])obj);
+            if (obj instanceof int[])
+                return Arrays.hashCode((int[])obj);
+            if (obj instanceof long[])
+                return Arrays.hashCode((long[])obj);
+            if (obj instanceof float[])
+                return Arrays.hashCode((float[])obj);
+            if (obj instanceof double[])
+                return Arrays.hashCode((double[])obj);
+            if (obj instanceof char[])
+                return Arrays.hashCode((char[])obj);
+            if (obj instanceof boolean[])
+                return Arrays.hashCode((boolean[])obj);
+
+            int result = 1;
+
+            for (Object element : (Object[])obj)
+                result = 31 * result + hashCode(element);
+
+            return result;
+        }
+        else
+            return obj.hashCode();
+    }
+
+    /**
+     * Gets IgniteClosure for an IgniteCheckedException class.
+     *
+     * @param clazz Class.
+     * @return The IgniteClosure mapped to this exception class, or null if none.
+     */
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+        return exceptionConverters.get(clazz);
+    }
+
+    /**
+     * @param converters Converters to add.
+     */
+    protected static void addExceptionConverters(
+        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> converters
+    ) {
+        exceptionConverters.putAll(converters);
+    }
+
+    /**
+     * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
+     *
+     * @return Exception converters.
+     */
+    private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> exceptionConverters() {
+        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
+
+        m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
+            }
+        });
+
+        m.put(IgniteFutureCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureCancelledException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteFutureTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteClientDisconnectedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteClientDisconnectedException(
+                    ((IgniteClientDisconnectedCheckedException)e).reconnectFuture(),
+                    e.getMessage(),
+                    e);
+            }
+        });
+
+        return m;
+    }
+
+    /**
+     * Converts exception, but unlike {@link #convertException(IgniteCheckedException)}
+     * does not wrap passed in exception if none suitable converter found.
+     *
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = getExceptionConverter(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (Exception)e.getCause();
+
+        return e;
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static IgniteException convertException(IgniteCheckedException e) {
+        IgniteClientDisconnectedException e0 = e.getCause(IgniteClientDisconnectedException.class);
+
+        if (e0 != null) {
+            assert e0.reconnectFuture() != null : e0;
+
+            throw e0;
+        }
+
+        IgniteClientDisconnectedCheckedException disconnectedErr =
+            e.getCause(IgniteClientDisconnectedCheckedException.class);
+
+        if (disconnectedErr != null) {
+            assert disconnectedErr.reconnectFuture() != null : disconnectedErr;
+
+            e = disconnectedErr;
+        }
+
+        C1<IgniteCheckedException, IgniteException> converter = getExceptionConverter(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (IgniteException)e.getCause();
+
+        return new IgniteException(e.getMessage(), e);
+    }
+
+    /**
+     * Checks if the given class is GEOMETRY.
+     *
+     * @param cls Class.
+     * @return {@code true} If this is geometry.
+     */
+    public static boolean isGeometryClass(Class<?> cls) {
+        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+    }
+
+    /**
+     * Gets wrapper class for a primitive type.
+     *
+     * @param cls Class. If {@code null}, method is no-op.
+     * @return Wrapper class or original class if it is non-primitive.
+     */
+    @Nullable public static Class<?> box(@Nullable Class<?> cls) {
+        if (cls == null)
+            return null;
+
+        if (!cls.isPrimitive())
+            return cls;
+
+        return boxedClsMap.get(cls);
+    }
+
+    /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public static boolean isSqlType(Class<?> cls) {
+        cls = box(cls);
+
+        return SQL_TYPES.contains(cls) || isGeometryClass(cls);
+    }
+
+    /**
+     * @param timeout Timeout.
+     * @param timeUnit Time unit.
+     * @return Converted time.
+     */
+    public static int validateTimeout(int timeout, TimeUnit timeUnit) {
+        A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
+            "timeUnit minimal resolution is millisecond.");
+
+        A.ensure(timeout >= 0, "timeout value should be non-negative.");
+
+        long tmp = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+
+        return (int)tmp;
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr) {
+        return byteArray2HexString(arr, true);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param toUpper If {@code true} returns upper cased result.
+     * @return Hex string.
+     */
+    public static String byteArray2HexString(byte[] arr, boolean toUpper) {
+        StringBuilder sb = new StringBuilder(arr.length << 1);
+
+        for (byte b : arr)
+            addByteAsHex(sb, b);
+
+        return toUpper ? sb.toString().toUpperCase() : sb.toString();
+    }
+
+    /**
+     * @param sb String builder.
+     * @param b Byte to add in hexadecimal format.
+     */
+    protected static void addByteAsHex(StringBuilder sb, byte b) {
+        sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
+    }
+
+    /**
+     * Converts an array of characters representing hexidecimal values into an
+     * array of bytes of those same values. The returned array will be half the
+     * length of the passed array, as it takes two characters to represent any
+     * given byte. An exception is thrown if the passed char array has an odd
+     * number of elements.
+     *
+     * @param data An array of characters containing hexidecimal digits
+     * @return A byte array containing binary data decoded from
+     *         the supplied char array.
+     * @throws IgniteCheckedException Thrown if an odd number or illegal of characters is supplied.
+     */
+    public static byte[] decodeHex(char[] data) throws IgniteCheckedException {
+        int len = data.length;
+
+        if ((len & 0x01) != 0)
+            throw new IgniteCheckedException("Odd number of characters.");
+
+        byte[] out = new byte[len >> 1];
+
+        // Two characters form the hex value.
+        for (int i = 0, j = 0; j < len; i++) {
+            int f = toDigit(data[j], j) << 4;
+
+            j++;
+
+            f |= toDigit(data[j], j);
+
+            j++;
+
+            out[i] = (byte)(f & 0xFF);
+        }
+
+        return out;
+    }
+
+    /**
+     * Converts a hexadecimal character to an integer.
+     *
+     * @param ch A character to convert to an integer digit
+     * @param idx The index of the character in the source
+     * @return An integer
+     * @throws IgniteCheckedException Thrown if ch is an illegal hex character
+     */
+    public static int toDigit(char ch, int idx) throws IgniteCheckedException {
+        int digit = Character.digit(ch, 16);
+
+        if (digit == -1)
+            throw new IgniteCheckedException("Illegal hexadecimal character " + ch + " at index " + idx);
+
+        return digit;
+    }
+
+    /**
+     * Creates SQL types set.
+     *
+     * @return SQL types set.
+     */
+    @NotNull private static Set<Class<?>> createSqlTypes() {
+        Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
+            Integer.class,
+            Boolean.class,
+            Byte.class,
+            Short.class,
+            Long.class,
+            BigDecimal.class,
+            Double.class,
+            Float.class,
+            Time.class,
+            Timestamp.class,
+            Date.class,
+            java.sql.Date.class,
+            LocalTime.class,
+            LocalDate.class,
+            LocalDateTime.class,
+            String.class,
+            UUID.class,
+            byte[].class
+        ));
+
+        return sqlClasses;
+    }
+
+    /**
+     * Quietly closes given resource ignoring possible checked exception.
+     *
+     * @param rsrc Resource to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable AutoCloseable rsrc) {
+        if (rsrc != null)
+            try {
+                rsrc.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+    }
+
+    /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Socket sock) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        try {
+            sock.close();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Utility method to add the given throwable error to the given throwable root error. If the given
+     * suppressed throwable is an {@code Error}, but the root error is not, will change the root to the {@code Error}.
+     *
+     * @param root Root error to add suppressed error to.
+     * @param err Error to add.
+     * @return New root error.
+     */
+    public static <T extends Throwable> T addSuppressed(T root, T err) {
+        assert err != null;
+
+        if (root == null)
+            return err;
+
+        if (err instanceof Error && !(root instanceof Error)) {
+            err.addSuppressed(root);
+
+            root = err;
+        }
+        else
+            root.addSuppressed(err);
+
+        return root;
+    }
+
+    /**
+     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Integer.
+     * @return Absolute value.
+     */
+    public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return safeAbs(key.hashCode() % parts);
+    }
+
+    /**
+     * Unwraps closure exceptions.
+     *
+     * @param t Exception.
+     * @return Unwrapped exception.
+     */
+    public static Exception unwrap(Throwable t) {
+        assert t != null;
+
+        while (true) {
+            if (t instanceof Error)
+                throw (Error)t;
+
+            if (t instanceof GridClosureException) {
+                t = ((GridClosureException)t).unwrap();
+
+                continue;
+            }
+
+            return (Exception)t;
+        }
+    }
+
+    /**
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
+     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
+     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
+     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
+     * is returned.
+     *
+     * @param t Throwable to cast.
+     * @return {@code t} cast to {@link IgniteCheckedException}.
+     */
+    public static IgniteCheckedException cast(Throwable t) {
+        assert t != null;
+
+        t = unwrap(t);
+
+        return t instanceof IgniteCheckedException
+            ? (IgniteCheckedException)t
+            : new IgniteCheckedException(t);
+    }
+
+    /**
+     * Gets type name by class name.
+     *
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    public static String typeName(String clsName) {
+        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
+
+        if (genericStart >= 0)
+            clsName = clsName.substring(0, genericStart);
+
+        int pkgEnd = clsName.lastIndexOf('.');
+
+        if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
+            clsName = clsName.substring(pkgEnd + 1);
+
+        if (clsName.endsWith("[]"))
+            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
+
+        int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        parentEnd = clsName.lastIndexOf('+');   // .NET parent
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        return clsName;
+    }
+
+    /**
+     * Gets type name by class.
+     *
+     * @param cls Class.
+     * @return Type name.
+     */
+    public static String typeName(Class<?> cls) {
+        String typeName = cls.getSimpleName();
+
+        // To protect from failure on anonymous classes.
+        if (typeName.isEmpty()) {
+            String pkg = cls.getPackage().getName();
+
+            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
+        }
+
+        if (cls.isArray()) {
+            assert typeName.endsWith("[]");
+
+            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
+        }
+
+        return typeName;
+    }
+
+    /**
+     * Cancels given runnable.
+     *
+     * @param w Worker to cancel - it's no-op if runnable is {@code null}.
+     */
+    public static void cancel(@Nullable GridWorker w) {
+        if (w != null)
+            w.cancel();
+    }
+
+    /**
+     * Cancels collection of runnables.
+     *
+     * @param ws Collection of workers - it's no-op if collection is {@code null}.
+     */
+    public static void cancel(Iterable<? extends GridWorker> ws) {
+        if (ws != null)
+            for (GridWorker w : ws)
+                w.cancel();
+    }
+
+    /**
+     * Joins runnable.
+     *
+     * @param w Worker to join.
+     * @param log The logger to possible exception.
+     * @return {@code true} if worker has not been interrupted, {@code false} if it was interrupted.
+     */
+    public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
+        if (w != null)
+            try {
+                w.join();
+            }
+            catch (InterruptedException ignore) {
+                warn(log, "Got interrupted while waiting for completion of runnable: " + w);
+
+                Thread.currentThread().interrupt();
+
+                return false;
+            }
+
+        return true;
+    }
+
+    /**
+     * Joins given collection of runnables.
+     *
+     * @param ws Collection of workers to join.
+     * @param log The logger to possible exceptions.
+     * @return {@code true} if none of the worker have been interrupted,
+     *      {@code false} if at least one was interrupted.
+     */
+    public static boolean join(Iterable<? extends GridWorker> ws, IgniteLogger log) {
+        boolean retval = true;
+
+        if (ws != null)
+            for (GridWorker w : ws)
+                if (!join(w, log))
+                    retval = false;
+
+        return retval;
+    }
+
+    /**
+     * Creates thread with given worker.
+     *
+     * @param worker Runnable to create thread with.
+     */
+    public static IgniteThread newThread(GridWorker worker) {
+        return new IgniteThread(worker.igniteInstanceName(), worker.name(), worker);
+    }
+
+    /**
+     * Sleeps for given number of milliseconds.
+     *
+     * @param ms Time to sleep.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     */
+    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
+        try {
+            Thread.sleep(ms);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedCheckedException(e);
+        }
+    }
+
+    /**
+     * Safely write buffer fully to blocking socket channel.
+     * Will throw assert if non blocking channel passed.
+     *
+     * @param sockCh WritableByteChannel.
+     * @param buf Buffer.
+     * @throws IOException IOException.
+     */
+    public static void writeFully(SocketChannel sockCh, ByteBuffer buf) throws IOException {
+        int totalWritten = 0;
+
+        assert sockCh.isBlocking() : "SocketChannel should be in blocking mode " + sockCh;
+
+        while (buf.hasRemaining()) {
+            int written = sockCh.write(buf);
+
+            if (written < 0)
+                throw new IOException("Error writing buffer to channel " +
+                    "[written = " + written + ", buf " + buf + ", totalWritten = " + totalWritten + "]");
+
+            totalWritten += written;
+        }
+    }
+
+    /**
+     * @param a First byte array.
+     * @param aOff First byte array offset.
+     * @param b Second byte array.
+     * @param bOff Second byte array offset.
+     * @param len Number of bytes to compare.
+     * @return {@code True} if the specified sub-arrays are equal.
+     */
+    public static boolean bytesEqual(byte[] a, int aOff, byte[] b, int bOff, int len) {
+        if (aOff + len > a.length || bOff + len > b.length)
+            return false;
+        else {
+            for (int i = 0; i < len; i++)
+                if (a[aOff + i] != b[bOff + i])
+                    return false;
+
+            return true;
+        }
+    }
+
+    /**
+     * Concatenates the two parameter bytes to form a message type value.
+     *
+     * @param b0 The first byte.
+     * @param b1 The second byte.
+     * @return Message type.
+     */
+    public static short makeMessageType(byte b0, byte b1) {
+        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
     }
 }

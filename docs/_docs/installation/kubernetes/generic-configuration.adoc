@@ -340,11 +340,11 @@ To scale your StatefulSet, run the following command:
 {command} scale sts ignite-cluster --replicas=3 -n ignite
 ----
 
-After scaling the cluster, link:control-script#activation-deactivation-and-topology-management[change the baseline topology] accordingly.
+After scaling the cluster, link:tools/control-script#activation-deactivation-and-topology-management[change the baseline topology] accordingly.
 
 --
 
-CAUTION: If you reduce the number of nodes by more than the link:configuring-caches/configuring-backups[number of partition backups], you may lose data. The proper way to scale down is to redistribute the data after removing a node by changing the link:control-script#removing-nodes-from-baseline-topology[baseline topology].
+CAUTION: If you reduce the number of nodes by more than the link:configuring-caches/configuring-backups[number of partition backups], you may lose data. The proper way to scale down is to redistribute the data after removing a node by changing the link:tools/control-script#removing-nodes-from-baseline-topology[baseline topology].
 
 == Connecting to the Cluster
 

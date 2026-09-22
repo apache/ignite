@@ -67,6 +67,8 @@ import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -75,14 +77,15 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  *
@@ -137,6 +140,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Kernal gateway.
      */
     public GridKernalGateway gateway();
+
+    /** @return Local node features. */
+    public IgniteNodeFeatureSet localNodeFeatures();
 
     /**
      * Gets grid instance managed by kernal.
@@ -209,6 +215,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public MaintenanceRegistry maintenanceRegistry();
 
     /**
+     * Gets core message factory.
+     *
+     * @return Core message factory.
+     */
+    public MessageFactory messageFactory();
+
+    /**
+     * Gets the distributed operation context dispatcher.
+     *
+     * @return The distributed operation context dispatcher.
+     */
+    public OperationContextDispatcher operationContextDispatcher();
+
+    /**
      * Gets transformation processor.
      *
      * @return Transformation processor.
@@ -249,13 +269,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Distributed configuration processor.
      */
     public DistributedConfigurationProcessor distributedConfiguration();
-
-    /**
-     * Gets tracing processor.
-     *
-     * @return Tracing processor.
-     */
-    public Tracing tracing();
 
     /**
      * Gets task session processor.
@@ -311,7 +324,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Data streamer processor.
      */
-    public <K, V> DataStreamProcessor<K, V> dataStream();
+    public DataStreamProcessor dataStream();
 
     /**
      * Gets event continuous processor.
@@ -639,6 +652,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Performance statistics processor.
      */
     public PerformanceStatisticsProcessor performanceStatistics();
+
+    /**
+     * Gets Rolling upgrade processor.
+     *
+     * @return Rolling upgrade processor.
+     */
+    public RollingUpgradeProcessor rollingUpgrade();
 
     /**
      * Executor that is in charge of processing user async continuations.

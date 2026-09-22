@@ -26,6 +26,7 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,9 +45,9 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      * Default constructor.
      */
     public GridClientOptimizedMarshaller() {
-        opMarsh = new OptimizedMarshaller();
+        opMarsh = Marshallers.optimizedForSerializable();
 
-        opMarsh.setContext(new MarshallerContextImpl(null, null));
+        opMarsh.setContext(new MarshallerContextImpl(null));
     }
 
     /**
@@ -55,9 +56,9 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      * @param plugins Plugins.
      */
     public GridClientOptimizedMarshaller(@Nullable List<PluginProvider> plugins) {
-        opMarsh = new OptimizedMarshaller();
+        opMarsh = Marshallers.optimizedForSerializable();
 
-        opMarsh.setContext(new MarshallerContextImpl(plugins, null));
+        opMarsh.setContext(new MarshallerContextImpl(plugins));
     }
 
     /** {@inheritDoc} */

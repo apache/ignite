@@ -37,9 +37,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -88,6 +90,8 @@ import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
@@ -97,20 +101,21 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
 
 /**
  * Dummy context for offline utilities. All grid components registered in the standalone context
@@ -119,6 +124,10 @@ import org.jetbrains.annotations.Nullable;
  * @see org.apache.ignite.internal.GridComponent#stop(boolean)
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
+    static {
+        GridBinaryMarshaller.binaryContextSupplier(() -> IgnitionEx.localIgnite().context().cacheObjects().binaryContext());
+    }
+
     /** Config for fake Ignite instance. */
     private final IgniteConfiguration cfg;
 
@@ -168,6 +177,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Marshaller. */
     private final BinaryMarshaller marsh;
 
+    /** Operation context dispacther. */
+    private final OperationContextDispatcher opCtxDispatcher = new OperationContextDispatcher();
+
     /**
      * @param log Logger.
      * @param ft Node file tree.
@@ -193,7 +205,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         this.ft = ft;
         this.marsh = new BinaryMarshaller();
 
-        marshallerCtx = new MarshallerContextImpl(null, MarshallerUtils.classNameFilter(getClass().getClassLoader()));
+        marshallerCtx = new MarshallerContextImpl(null);
         cfg = prepareIgniteConfiguration();
 
         try {
@@ -309,6 +321,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet localNodeFeatures() {
+        return LOCAL_CORE_FEATURES;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         final IgniteEx kernal = new IgniteKernal() {
             /**
@@ -407,11 +424,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Tracing tracing() {
-        return new NoopTracing();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridTaskSessionProcessor session() {
         return null;
     }
@@ -442,6 +454,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public MessageFactory messageFactory() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public OperationContextDispatcher operationContextDispatcher() {
+        return opCtxDispatcher;
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObjectTransformerProcessor transformer() {
         return transProc;
     }
@@ -457,7 +479,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
+    @Override public DataStreamProcessor dataStream() {
         return null;
     }
 
@@ -717,7 +739,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public LongJVMPauseDetector longJvmPauseDetector() {
-        return new LongJVMPauseDetector(log);
+        return new LongJVMPauseDetector("standalone-ignite-kernal", log);
     }
 
     /** {@inheritDoc} */
@@ -732,6 +754,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PerformanceStatisticsProcessor performanceStatistics() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RollingUpgradeProcessor rollingUpgrade() {
         return null;
     }
 

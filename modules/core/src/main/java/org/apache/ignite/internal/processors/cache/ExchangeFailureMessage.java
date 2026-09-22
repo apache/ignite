@@ -18,45 +18,52 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * This class represents discovery message that is used to provide information about dynamic cache start failure.
  */
-public class ExchangeFailureMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ExchangeFailureMessage extends DiscoveryCustomMessage {
     /** Cache names. */
     @GridToStringInclude
-    private final Collection<String> cacheNames;
-
-    /** Custom message ID. */
-    private final IgniteUuid id;
+    @Order(0)
+    Collection<String> cacheNames;
 
     /** */
-    private final GridDhtPartitionExchangeId exchId;
+    @Order(1)
+    GridDhtPartitionExchangeId exchId;
 
     /** */
     @GridToStringInclude
-    private final Map<UUID, Exception> exchangeErrors;
+    @Order(2)
+    Map<UUID, ErrorMessage> exchangeErrors;
 
     /** Actions to be done to rollback changes done before the exchange failure. */
-    private transient ExchangeActions exchangeRollbackActions;
+    private ExchangeActions exchangeRollbackActions;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public ExchangeFailureMessage() {
+        // No-op.
+    }
 
     /**
      * Creates new DynamicCacheChangeFailureMessage instance.
@@ -68,22 +75,19 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     public ExchangeFailureMessage(
         ClusterNode locNode,
         GridDhtPartitionExchangeId exchId,
-        Map<UUID, Exception> exchangeErrors,
+        Map<UUID, Throwable> exchangeErrors,
         Collection<String> cacheNames
     ) {
+        super(IgniteUuid.randomUuid());
+
         assert exchId != null;
         assert !F.isEmpty(exchangeErrors);
         assert !F.isEmpty(cacheNames) : cacheNames;
 
-        this.id = IgniteUuid.fromUuid(locNode.id());
         this.exchId = exchId;
         this.cacheNames = cacheNames;
-        this.exchangeErrors = exchangeErrors;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        this.exchangeErrors = exchangeErrors.entrySet().stream().collect(
+            Collectors.toMap(Map.Entry::getKey, e -> new ErrorMessage(e.getValue()), (a, b) -> a, HashMap::new));
     }
 
     /**
@@ -94,8 +98,8 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    public Map<UUID, Exception> exchangeErrors() {
-        return exchangeErrors;
+    public Map<UUID, Throwable> exchangeErrors() {
+        return F.viewReadOnly(exchangeErrors, e -> ErrorMessage.error(e));
     }
 
     /**
@@ -123,8 +127,8 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     public IgniteCheckedException createFailureCompoundException() {
         IgniteCheckedException ex = new IgniteCheckedException("Failed to complete exchange process.");
 
-        for (Map.Entry<UUID, Exception> entry : exchangeErrors.entrySet())
-            U.addSuppressed(ex, entry.getValue());
+        for (Throwable err : exchangeErrors().values())
+            U.addSuppressed(ex, err);
 
         return ex;
     }
@@ -139,11 +143,6 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
     }
 
     /** {@inheritDoc} */

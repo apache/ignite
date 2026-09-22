@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.client.message;
 
 import java.util.Arrays;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -82,7 +83,7 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
         if (arr == null)
             arr = new byte[PACKET_SIZE];
 
-        U.arrayCopy(buf, 0, arr, off, len);
+        GridUnsafe.arrayCopy(buf, 0, arr, off, len);
     }
 
     /**

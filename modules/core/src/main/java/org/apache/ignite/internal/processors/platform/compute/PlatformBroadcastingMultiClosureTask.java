@@ -84,5 +84,8 @@ public class PlatformBroadcastingMultiClosureTask extends PlatformAbstractTask {
      */
     public void jobs(Collection<PlatformJob> jobs) {
         this.jobs = jobs;
+
+        if (!F.isEmpty(jobs))
+            this.taskName = jobs.iterator().next().name();
     }
 }

@@ -350,7 +350,7 @@ public class CommandProcessor extends SqlCommandProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             getTypeClassName(col),
-                            col.column().isNullable(), col.defaultValue(),
+                            col.column().isNullable(),
                             col.precision(), col.scale());
 
                         cols.add(field);
@@ -450,6 +450,7 @@ public class CommandProcessor extends SqlCommandProcessor {
         QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(createTbl.tableName());
+        res.sql(true);
 
         Set<String> notNullFields = null;
 
@@ -655,7 +656,7 @@ public class CommandProcessor extends SqlCommandProcessor {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         BulkLoadProcessor proc = new BulkLoadProcessor(inputParser, dataConverter, outputWriter,
-            idx.runningQueryManager(), qryId, ctx.tracing());
+            idx.runningQueryManager(), qryId);
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 

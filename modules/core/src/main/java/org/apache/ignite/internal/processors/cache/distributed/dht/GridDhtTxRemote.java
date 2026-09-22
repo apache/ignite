@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -226,12 +226,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> masterNodeIds() {
-        Collection<UUID> res = new ArrayList<>(2);
-
-        res.add(nearNodeId);
-        res.add(nodeId);
-
-        return res;
+        return List.of(nearNodeId, nodeId);
     }
 
     /** {@inheritDoc} */
@@ -276,7 +271,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void addWrite(IgniteTxEntry entry, ClassLoader ldr) throws IgniteCheckedException {
-        entry.unmarshal(cctx, false, ldr);
+        entry.initializeContext(cctx, topVer, false);
 
         GridCacheContext cacheCtx = entry.context();
 
@@ -300,6 +295,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      */
     public void addWrite(GridCacheContext cacheCtx,
         GridCacheOperation op,
@@ -308,6 +304,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         checkInternal(key);
 
@@ -325,6 +322,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             cached,
             null,
             skipStore,
+            skipReadThrough,
             keepBinary);
 
         txEntry.entryProcessors(entryProcessors);

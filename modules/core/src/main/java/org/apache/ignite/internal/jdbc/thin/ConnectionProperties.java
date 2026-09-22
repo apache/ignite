@@ -147,16 +147,6 @@ public interface ConnectionProperties {
     public void setTcpNoDelay(boolean tcpNoDelay);
 
     /**
-     * @return Lazy query execution flag.
-     */
-    public boolean isLazy();
-
-    /**
-     * @param lazy Lazy query execution flag.
-     */
-    public void setLazy(boolean lazy);
-
-    /**
      * @return Skip reducer on update flag.
      */
     public boolean isSkipReducerOnUpdate();
@@ -597,4 +587,14 @@ public interface ConnectionProperties {
      * @param transactionLabel Transaction label.
      */
     public void setTransactionLabel(String transactionLabel);
+
+    /**
+     * @return Local flag.
+     */
+    public boolean isLocal();
+
+    /**
+     * @param loc Local flag.
+     */
+    public void setLocal(boolean loc);
 }

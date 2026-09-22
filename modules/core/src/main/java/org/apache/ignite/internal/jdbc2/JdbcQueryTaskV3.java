@@ -47,15 +47,14 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce joins order flag.
-     * @param lazy Lazy query execution flag.
      * @param updateMeta Update metadata on demand.
      * @param skipReducerOnUpdate Flkag to enable server side updates.
      */
     public JdbcQueryTaskV3(Ignite ignite, String cacheName, String schemaName, String sql, Boolean isQry, boolean loc,
         Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy, boolean updateMeta, boolean skipReducerOnUpdate) {
+        boolean enforceJoinOrder, boolean updateMeta, boolean skipReducerOnUpdate) {
         super(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize, uuid, locQry,
-            collocatedQry, distributedJoins, enforceJoinOrder, lazy);
+            collocatedQry, distributedJoins, enforceJoinOrder);
 
         this.updateMeta = updateMeta;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
@@ -85,7 +84,6 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce joins order flag.
-     * @param lazy Lazy query execution flag.
      * @param updateMeta Update metadata on demand.
      * @param skipReducerOnUpdate Update on server flag.
      * @return Appropriate task JdbcQueryTask or JdbcQueryTaskV2.
@@ -93,13 +91,13 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
     public static JdbcQueryTask createTask(Ignite ignite, String cacheName, String schemaName, String sql,
         Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid, boolean locQry,
         boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy, boolean updateMeta, boolean skipReducerOnUpdate) {
+        boolean enforceJoinOrder, boolean updateMeta, boolean skipReducerOnUpdate) {
 
         if (updateMeta || skipReducerOnUpdate)
             return new JdbcQueryTaskV3(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
-                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy, updateMeta, skipReducerOnUpdate);
+                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, updateMeta, skipReducerOnUpdate);
         else
             return JdbcQueryTaskV2.createTask(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
-                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy);
+                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder);
     }
 }

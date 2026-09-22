@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
@@ -33,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -302,70 +302,50 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      */
     private class FailDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
-            assertNotFailedNode(sock);
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
+            byte[] data,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            assertNotFailedNode(ses.socket());
 
-            if (isDrop(msg))
+            if (isDrop())
                 return;
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            assertNotFailedNode(sock);
+            assertNotFailedNode(ses.socket());
 
-            if (isDrop(msg))
-                return;
-
-            super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
-            TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-            assertNotFailedNode(sock);
-
-            if (isDrop(msg))
-                return;
-
-            super.writeToSocket(node, sock, out, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            assertNotFailedNode(sock);
-
-            if (isDrop(msg))
-                return;
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-
-        /**
-         *
-         */
-        private boolean isDrop(TcpDiscoveryAbstractMessage msg) {
-            boolean drop = failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
-
-            if (drop)
+            if (isDrop()) {
                 ignite.log().info(">> Drop message " + msg);
 
-            return drop;
+                return;
+            }
+
+            super.writeMessage(ses, msg, timeout);
+        }
+
+        /** */
+        private boolean isDrop() {
+            return failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
-            assertNotFailedNode(sock);
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            assertNotFailedNode(ses.socket());
 
-            if (isDrop(msg))
+            if (isDrop())
                 return;
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /**

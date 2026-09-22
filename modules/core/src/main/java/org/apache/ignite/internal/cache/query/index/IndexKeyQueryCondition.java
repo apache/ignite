@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.IndexQueryProcessor.rangeDesc;
-import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
 
 /**
  * IndexQuery condition for single indexed key. It accumulates user defined criteria (with Object as parameters)
@@ -343,8 +341,6 @@ class IndexKeyQueryCondition {
 
     /** */
     boolean desc() {
-        IndexKeyDefinition keyDef = idx.indexDefinition().indexKeyDefinitions().get(fldName);
-
-        return keyDef.order().sortOrder() == DESC;
+        return !idx.indexDefinition().indexKeyDefinitions().get(fldName).ascending();
     }
 }

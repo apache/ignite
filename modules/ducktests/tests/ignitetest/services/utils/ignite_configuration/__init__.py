@@ -74,6 +74,7 @@ class IgniteConfiguration(NamedTuple):
     auto_activation_enabled: bool = None
     transaction_configuration: TransactionConfiguration = None
     sql_configuration: Bean = None
+    network_timeout: int = 5_000
 
     def prepare_ssl(self, test_globals, shared_root):
         """

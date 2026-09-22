@@ -1,0 +1,75 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite to Ignite cross-cluster replication
+
+== Ignite to Java Thin Client CDC streamer
+This streamer starts link:thin-clients/java-thin-client[Java Thin Client] which connects to destination cluster.
+After connection is established, all changes captured by CDC will be replicated to destination cluster.
+
+NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on each server node of source cluster to capture all changes.
+
+image:../../assets/images/integrations/CDC-ignite2igniteClient.svg[]
+
+=== Configuration
+
+[cols="20%,45%,35%",opts="header"]
+|===
+|Name |Description | Default value
+| `caches` | Set of cache names to replicate. | null
+| `destinationClientConfiguration` | Client configuration of thin client that will connect to destination cluster to replicate changes. | null
+| `onlyPrimary` | Flag to handle changes only on primary node. | `false`
+| `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
+|===
+
+=== Metrics
+
+[cols="25%,75%",opts="header"]
+|===
+|Name |Description
+| `EventsCount` | Count of messages applied to destination cluster.
+| `LastEventTime` | Timestamp of last applied event to destination cluster.
+| `TypesCount` | Count of binary types events applied to destination cluster.
+| `MappingsCount` | Count of mappings events applied to destination cluster
+|===
+
+== Ignite to Ignite CDC streamer
+This streamer starts client node which connects to destination cluster.
+After connection is established, all changes captured by CDC will be replicated to destination cluster.
+
+NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on each server node of source cluster to capture all changes.
+
+image:../../assets/images/integrations/CDC-ignite2ignite.svg[]
+
+=== Configuration
+
+[cols="20%,45%,35%",opts="header"]
+|===
+|Name |Description | Default value
+| `caches` | Set of cache names to replicate. | null
+| `destinationIgniteConfiguration` | Ignite configuration of client nodes that will connect to destination cluster to replicate changes. | null
+| `onlyPrimary` | Flag to handle changes only on primary node. | `false`
+| `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
+|===
+
+=== Metrics
+
+[cols="25%,75%",opts="header"]
+|===
+|Name |Description
+| `EventsCount` | Count of messages applied to destination cluster.
+| `LastEventTime` | Timestamp of last applied event to destination cluster.
+| `TypesCount` | Count of binary types events applied to destination cluster.
+| `MappingsCount` | Count of mappings events applied to destination cluster
+|===

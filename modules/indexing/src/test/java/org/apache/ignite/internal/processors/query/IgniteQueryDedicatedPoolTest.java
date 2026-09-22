@@ -30,7 +30,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -157,31 +156,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
                 }));
 
             assertEquals(1, cursor.getAll().size());
-
-            cursor.close();
-        }
-    }
-
-    /**
-     * Tests that SPI queries are executed in dedicated pool
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSpiQueryUsesDedicatedThreadPool() throws Exception {
-        startGrid("server");
-
-        try (Ignite client = startClientGrid("client")) {
-            IgniteCache<Byte, Byte> cache = client.cache(CACHE_NAME);
-
-            for (byte b = 0; b < Byte.MAX_VALUE; ++b)
-                cache.put(b, b);
-
-            QueryCursor<Cache.Entry<Byte, Byte>> cursor = cache.query(new SpiQuery<Byte, Byte>());
-
-            List<Cache.Entry<Byte, Byte>> all = cursor.getAll();
-
-            assertEquals(1, all.size());
-            assertEquals(GridIoPolicy.QUERY_POOL, (byte)all.get(0).getValue());
 
             cursor.close();
         }

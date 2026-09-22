@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -632,6 +633,40 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
         checkDumpCleared(ign);
 
         cache.put(keyToFail, valToFail);
+    }
+
+    /** */
+    @Test
+    public void testOnlyConfigDump() throws Exception {
+        IgniteEx ign = startGridAndFillCaches();
+
+        ign.context().cache().context().snapshotMgr()
+            .createSnapshot(DMP_NAME, null, null, false, onlyPrimary, true, false, encrypted, false, true).get();
+
+        checkDump(ign, DMP_NAME, null, Set.of(DEFAULT_CACHE_NAME, CACHE_0, CACHE_1), 0, 0, 0, true, false);
+
+        SnapshotFileTree sft = snapshotFileTree(ign, DMP_NAME);
+        Set<String> expGrps = Set.of(DEFAULT_CACHE_NAME, GRP);
+
+        sft.existingCacheDirs().forEach(cacheDir -> {
+            assertTrue(expGrps.contains(NodeFileTree.cacheName(cacheDir)));
+            assertTrue(F.isEmpty(sft.existingCachePartitionFiles(cacheDir, true, false)));
+        });
+
+        Dump dump = dump(ign, DMP_NAME);
+
+        for (SnapshotMetadata meta : dump.metadata()) {
+            List<Integer> grpIds = expGrps.stream().map(CU::cacheId).collect(Collectors.toList());
+
+            assertTrue(grpIds.containsAll(meta.cacheGroupIds()));
+        }
+
+        for (SnapshotFileTree sft0 : dump.fileTrees()) {
+            for (String grp : expGrps) {
+                assertTrue(dump.partitions(sft0.folderName(), CU.cacheId(grp)).isEmpty());
+                assertFalse(dump.configs(sft0.folderName(), CU.cacheId(grp), null).isEmpty());
+            }
+        }
     }
 
     /** */

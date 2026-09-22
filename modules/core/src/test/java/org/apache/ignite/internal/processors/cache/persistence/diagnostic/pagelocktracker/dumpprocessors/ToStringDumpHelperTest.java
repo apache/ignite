@@ -28,6 +28,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest.createSharedPageLockTracker;
+
 /**
  * Unit tests for {@link ToStringDumpHelper}.
  */
@@ -38,7 +40,7 @@ public class ToStringDumpHelperTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void toStringSharedPageLockTrackerTest() throws Exception {
-        SharedPageLockTracker pageLockTracker = new SharedPageLockTracker();
+        SharedPageLockTracker pageLockTracker = createSharedPageLockTracker(log);
 
         PageLockListener tracker = pageLockTracker.registerStructure("dummy");
 

@@ -18,35 +18,45 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake request.
  */
 public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    @Nullable UUID prevNodeId;
 
     /** */
-    private UUID prevNodeId;
+    @Order(1)
+    @Nullable String dcId;
+
+    /** */
+    @Order(2)
+    IgniteNodeFeatureSet nodeFeatures;
+
+    /**
+     * Default constructor for {@link MessageFactory}.
+     */
+    public TcpDiscoveryHandshakeRequest() {
+        // No-op.
+    }
 
     /**
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
+     * @param locNodeFeatures Local node features.
      */
-    public TcpDiscoveryHandshakeRequest(UUID creatorNodeId) {
+    public TcpDiscoveryHandshakeRequest(UUID creatorNodeId, IgniteNodeFeatureSet locNodeFeatures) {
         super(creatorNodeId);
-    }
 
-    /**
-     * Gets topology change flag.<br>
-     * {@code True} means node intent to fail nodes in a ring.
-     *
-     * @return Change topology flag.
-     */
-    public boolean changeTopology() {
-        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
+        this.nodeFeatures = locNodeFeatures;
     }
 
     /**
@@ -54,24 +64,37 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
      *
      * @return Previous node ID to check.
      */
-    public UUID checkPreviousNodeId() {
+    public @Nullable UUID previousNodeId() {
         return prevNodeId;
     }
 
     /**
-     * Sets topology change flag and previous node ID to check.<br>
+     * Sets topology change request and previous node ID to check.<br>
      *
-     * @param prevNodeId If not {@code null}, will set topology check flag and set node ID to check.
+     * @param prevNodeId If not {@code null}, will set topology check request and node ID to check.
      */
-    public void changeTopology(UUID prevNodeId) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeId != null);
-
+    public void previousNodeId(@Nullable UUID prevNodeId) {
         this.prevNodeId = prevNodeId;
+    }
+
+    /** @return DataCenter id. */
+    @Nullable public String dcId() {
+        return dcId;
+    }
+
+    /** @param dcId DataCenter id. */
+    public void dcId(String dcId) {
+        this.dcId = dcId;
+    }
+
+    /** @return Features supported by the sender node. */
+    public IgniteNodeFeatureSet nodeFeatures() {
+        return nodeFeatures;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString(),
-            "isChangeTopology", changeTopology());
+            "isChangeTopology", prevNodeId != null);
     }
 }

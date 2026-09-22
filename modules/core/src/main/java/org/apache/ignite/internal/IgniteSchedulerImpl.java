@@ -27,8 +27,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteScheduler;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -183,7 +183,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** */
-    private class SecurityAwareClosure<T> implements GridPlainRunnable, GridPlainCallable<T>, GridInternalWrapper<Object> {
+    private class SecurityAwareClosure<T> implements GridPlainRunnable, GridPlainCallable<T>, IgniteInternalWrapper<Object> {
         /** Security subject id. */
         private final UUID secSubjId;
 
@@ -211,7 +211,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         @Override public void run() {
             assert runnable != null;
 
-            try (OperationSecurityContext c = ctx.security().withContext(secSubjId)) {
+            try (Scope ignored = ctx.security().withContext(secSubjId)) {
                 runnable.run();
             }
         }
@@ -220,13 +220,13 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         @Override public T call() throws Exception {
             assert call != null;
 
-            try (OperationSecurityContext c = ctx.security().withContext(secSubjId)) {
+            try (Scope ignored = ctx.security().withContext(secSubjId)) {
                 return call.call();
             }
         }
 
         /** {@inheritDoc} */
-        @Override public Object userObject() {
+        @Override public Object delegate() {
             return runnable != null ? runnable : call;
         }
     }

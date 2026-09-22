@@ -25,7 +25,7 @@ import java.io.Writer;
 import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -285,7 +285,7 @@ public class JdbcClob implements Clob {
 
                 int encodedChunkSize = Math.min(len - i, buf.length - bufPos);
 
-                U.arrayCopy(buf, bufPos, b, off + i, encodedChunkSize);
+                GridUnsafe.arrayCopy(buf, bufPos, b, off + i, encodedChunkSize);
 
                 bufPos += encodedChunkSize;
                 i += encodedChunkSize;

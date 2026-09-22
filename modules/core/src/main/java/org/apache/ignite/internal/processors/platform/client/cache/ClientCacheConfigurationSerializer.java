@@ -33,6 +33,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -40,6 +42,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeatur
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 
@@ -146,6 +151,9 @@ public class ClientCacheConfigurationSerializer {
     /** */
     private static final short IDX_PATH = 409;
 
+    /** */
+    private static final short AFFINITY_CFG = 410;
+
     /**
      * Writes the cache configuration.
      * @param writer Writer.
@@ -222,6 +230,13 @@ public class ClientCacheConfigurationSerializer {
         if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.CACHE_STORAGES)) {
             writer.writeStringArray(cfg.getStoragePaths());
             writer.writeString(cfg.getIndexPath());
+        }
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.CACHE_AFFINITY_CFG)) {
+            AffinityFunction aff = cfg.getAffinity();
+            writer.writeInt(aff instanceof RendezvousAffinityFunction ? aff.partitions() : -1);
+            writer.writeBoolean(aff instanceof RendezvousAffinityFunction
+                && ((RendezvousAffinityFunction)aff).isExcludeNeighbors());
         }
 
         // Write length (so that part of the config can be skipped).
@@ -306,7 +321,9 @@ public class ClientCacheConfigurationSerializer {
      * @param protocolCtx Client protocol context.
      * @return Configuration.
      */
-    static CacheConfiguration read(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
+    static T2<CacheConfiguration, Boolean> read(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
+        boolean sql = protocolCtx.isFeatureSupported(ClientBitmaskFeature.SQL_CACHE_CREATION) && reader.readBoolean();
+
         reader.readInt();  // Skip length.
 
         short propCnt = reader.readShort();
@@ -467,13 +484,21 @@ public class ClientCacheConfigurationSerializer {
                 case IDX_PATH:
                     cfg.setIndexPath(reader.readString());
                     break;
+
+                case AFFINITY_CFG:
+                    int parts = reader.readInt();
+                    boolean exclNeighbors = reader.readBoolean();
+
+                    cfg.setAffinity(CU.createDefaultAffinity(exclNeighbors, parts));
+
+                    break;
             }
         }
 
         if (cfg.getCacheMode() == null)
             throw new ClientException("Unsupported cache mode");
 
-        return cfg;
+        return new T2<>(cfg, sql);
     }
 
     /**

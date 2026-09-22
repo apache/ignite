@@ -114,8 +114,7 @@ public class FunctionalQueryTest {
                 }
             }
 
-            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, true);
-            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, false);
+            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp);
         }
     }
 
@@ -125,14 +124,17 @@ public class FunctionalQueryTest {
      * @param pageSize Page size.
      * @param expSize The size of the expected results.
      * @param exp Expected results.
-     * @param lazy Lazy mode flag.
      */
-    private void checkSqlFieldsQuery(ClientCache<Integer, Person> cache, int minId, int pageSize, int expSize,
-        Map<Integer, Person> exp, boolean lazy) {
+    private void checkSqlFieldsQuery(
+        ClientCache<Integer, Person> cache,
+        int minId,
+        int pageSize,
+        int expSize,
+        Map<Integer, Person> exp
+    ) {
         SqlFieldsQuery qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
             .setArgs(minId)
-            .setPageSize(pageSize)
-            .setLazy(lazy);
+            .setPageSize(pageSize);
 
         try (QueryCursor<List<?>> cur = cache.query(qry)) {
             List<List<?>> res = cur.getAll();
@@ -314,6 +316,30 @@ public class FunctionalQueryTest {
                 SqlParseException.class, "Failed to parse SQL");
 
             assertThrows(null, () -> client.query(empty).getAll(), ClientException.class, "Failed to parse SQL");
+        }
+    }
+
+    /** Tests {@link SqlFieldsQuery} initiator ID parameter. */
+    @Test
+    public void testQueryInitiatorId() {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        ) {
+            String initiatorId = "test";
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("SELECT INITIATOR_ID FROM SYS.SQL_QUERIES").setQueryInitiatorId(initiatorId);
+
+            List<List<?>> res = client.query(qry).getAll();
+
+            assertEquals(1, res.size());
+            assertEquals(initiatorId, res.get(0).get(0));
+
+            ClientCache<Object, Object> cache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+            res = cache.query(qry).getAll();
+
+            assertEquals(1, res.size());
+            assertEquals(initiatorId, res.get(0).get(0));
         }
     }
 

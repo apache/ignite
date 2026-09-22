@@ -1,0 +1,77 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
+
+/** */
+public class ClusterCacheGroupRecoveryData implements Externalizable, Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    @Order(0)
+    long clusterBaselineTopVer;
+
+    /** */
+    @Order(1)
+    Map<Integer, CacheGroupRecoveryState> grpStates;
+
+    /** */
+    public ClusterCacheGroupRecoveryData() {
+        // No-op.
+    }
+
+    /** */
+    public ClusterCacheGroupRecoveryData(long clusterBaselineTopVer, Collection<CacheGroupContext> grps) {
+        this.clusterBaselineTopVer = clusterBaselineTopVer;
+        grpStates = grps.stream().collect(Collectors.toMap(CacheGroupContext::groupId, CacheGroupRecoveryState::new));
+    }
+
+    /** */
+    public boolean isMoreRelevantThan(ClusterCacheGroupRecoveryData data) {
+        return clusterBaselineTopVer > data.clusterBaselineTopVer;
+    }
+
+    /** */
+    @Nullable public CacheGroupRecoveryState cacheGroupRecoveryState(int grpId) {
+        return grpStates.get(grpId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeLong(clusterBaselineTopVer);
+        U.writeMap(out, grpStates);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        clusterBaselineTopVer = in.readLong();
+        grpStates = U.readHashMap(in);
+    }
+}

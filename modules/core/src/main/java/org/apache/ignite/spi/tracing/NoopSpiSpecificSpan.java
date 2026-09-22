@@ -19,7 +19,11 @@ package org.apache.ignite.spi.tracing;
 
 /**
  * Noop and null-safe implementation of {@link SpiSpecificSpan}.
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public class NoopSpiSpecificSpan implements SpiSpecificSpan {
     /** Instance. */
     public static final NoopSpiSpecificSpan INSTANCE = new NoopSpiSpecificSpan();

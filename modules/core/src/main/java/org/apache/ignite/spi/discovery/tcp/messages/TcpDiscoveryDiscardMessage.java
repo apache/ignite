@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -26,14 +27,18 @@ import org.apache.ignite.lang.IgniteUuid;
  * nodes should discard this and all preceding messages in local buffers.
  */
 public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** ID of the message to discard (this and all preceding). */
-    private final IgniteUuid msgId;
+    @Order(0)
+    IgniteUuid msgId;
 
     /** True if this is discard ID for custom event message. */
-    private final boolean customMsgDiscard;
+    @Order(1)
+    boolean customMsgDiscard;
+
+    /** */
+    public TcpDiscoveryDiscardMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -54,7 +59,7 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
      *
      * @return Message ID.
      */
-    public IgniteUuid msgId() {
+    public IgniteUuid messageId() {
         return msgId;
     }
 

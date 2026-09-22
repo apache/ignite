@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -44,13 +45,6 @@ public class NoOpIgniteSecurityProcessor extends IgniteSecurityAdapter {
     /** Error message that occurs when trying to perform security operations if security disabled. */
     public static final String SECURITY_DISABLED_ERROR_MSG = "Operation cannot be performed: Ignite security disabled.";
 
-    /** No operation security context. */
-    private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null) {
-        @Override public void close() {
-            // No-op.
-        }
-    };
-
     /** Instance of IgniteSandbox. */
     private final IgniteSandbox sandbox = new NoOpSandbox();
 
@@ -62,13 +56,13 @@ public class NoOpIgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public OperationSecurityContext withContext(SecurityContext secCtx) {
-        return opSecCtx;
+    @Override public Scope withContext(SecurityContext secCtx) {
+        return Scope.NOOP_SCOPE;
     }
 
     /** {@inheritDoc} */
-    @Override public OperationSecurityContext withContext(UUID nodeId) {
-        return opSecCtx;
+    @Override public Scope withContext(UUID nodeId) {
+        return Scope.NOOP_SCOPE;
     }
 
     /** {@inheritDoc} */

@@ -17,43 +17,35 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Deployment request.
- */
+import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
+
+/** Deployment request. */
 public class GridDeploymentRequest implements Message {
-    /** Response topic. Response should be sent back to this topic. */
-    @GridDirectTransient
-    private Object resTopic;
-
-    /** Serialized topic. */
-    private byte[] resTopicBytes;
+    /** ID of the node waiting for the response. */
+    @Order(0)
+    @Nullable IgniteUuid resTopicId;
 
     /** Requested class name. */
-    private String rsrcName;
+    @Order(1)
+    String rsrcName;
 
     /** Class loader ID. */
-    private IgniteUuid ldrId;
-
-    /** Undeploy flag. */
-    private boolean isUndeploy;
+    @Order(2)
+    @Nullable IgniteUuid ldrId;
 
     /** Nodes participating in request (chain). */
+    @Order(3)
     @GridToStringInclude
-    @GridDirectCollection(UUID.class)
-    private Collection<UUID> nodeIds;
+    Collection<UUID> nodeIds;
 
     /**
      * Default constructor.
@@ -63,22 +55,25 @@ public class GridDeploymentRequest implements Message {
     }
 
     /**
-     * Creates new request.
+     * Creates deploy request.
      *
-     * @param resTopic Response topic.
+     * @param resTopicId ID of the node waiting for the response.
      * @param ldrId Class loader ID.
      * @param rsrcName Resource name that should be found and sent back.
-     * @param isUndeploy Undeploy property.
      */
-    GridDeploymentRequest(Object resTopic, IgniteUuid ldrId, String rsrcName, boolean isUndeploy) {
-        assert isUndeploy || resTopic != null;
-        assert isUndeploy || ldrId != null;
-        assert rsrcName != null;
-
-        this.resTopic = resTopic;
+    GridDeploymentRequest(IgniteUuid resTopicId, IgniteUuid ldrId, String rsrcName) {
+        this.resTopicId = resTopicId;
         this.ldrId = ldrId;
         this.rsrcName = rsrcName;
-        this.isUndeploy = isUndeploy;
+    }
+
+    /**
+     * Creates undeploy request.
+     *
+     * @param rsrcName Resource name that should be found and sent back.
+     */
+    GridDeploymentRequest(String rsrcName) {
+        this.rsrcName = rsrcName;
     }
 
     /**
@@ -86,29 +81,8 @@ public class GridDeploymentRequest implements Message {
      *
      * @return Response topic name.
      */
-    Object responseTopic() {
-        return resTopic;
-    }
-
-    /**
-     * @param resTopic Response topic.
-     */
-    void responseTopic(Object resTopic) {
-        this.resTopic = resTopic;
-    }
-
-    /**
-     * @return Serialized topic.
-     */
-    byte[] responseTopicBytes() {
-        return resTopicBytes;
-    }
-
-    /**
-     * @param resTopicBytes Serialized topic.
-     */
-    void responseTopicBytes(byte[] resTopicBytes) {
-        this.resTopicBytes = resTopicBytes;
+    @Nullable Object responseTopic() {
+        return undeploy() ? null : TOPIC_CLASSLOAD.topic(resTopicId);
     }
 
     /**
@@ -123,9 +97,9 @@ public class GridDeploymentRequest implements Message {
     /**
      * Gets property ldrId.
      *
-     * @return Property ldrId.
+     * @return Property class loader ID.
      */
-    IgniteUuid classLoaderId() {
+    @Nullable IgniteUuid classLoaderId() {
         return ldrId;
     }
 
@@ -134,131 +108,18 @@ public class GridDeploymentRequest implements Message {
      *
      * @return Property undeploy.
      */
-    boolean isUndeploy() {
-        return isUndeploy;
+    boolean undeploy() {
+        return resTopicId == null;
     }
 
-    /**
-     * @return Node IDs chain which is updated as request jumps
-     *      from node to node.
-     */
-    public Collection<UUID> nodeIds() {
+    /** @return Node IDs chain which is updated as request jumps from node to node. */
+    Collection<UUID> nodeIds() {
         return nodeIds;
     }
 
-    /**
-     * @param nodeIds Node IDs chain which is updated as request jumps
-     *      from node to node.
-     */
-    public void nodeIds(Collection<UUID> nodeIds) {
+    /** @param nodeIds Node IDs chain which is updated as request jumps from node to node. */
+    void nodeIds(Collection<UUID> nodeIds) {
         this.nodeIds = nodeIds;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeBoolean(isUndeploy))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(ldrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeCollection(nodeIds, MessageCollectionItemType.UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByteArray(resTopicBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeString(rsrcName))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                isUndeploy = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                ldrId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                nodeIds = reader.readCollection(MessageCollectionItemType.UUID);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                resTopicBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                rsrcName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 11;
     }
 
     /** {@inheritDoc} */

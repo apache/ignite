@@ -42,11 +42,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
-    using WalMode = Apache.Ignite.Core.PersistentStore.WalMode;
 
     /// <summary>
     /// Tests code-based configuration.
@@ -69,7 +67,6 @@ namespace Apache.Ignite.Core.Tests
         public void TestDefaultConfigurationProperties()
         {
             CheckDefaultProperties(new IgniteConfiguration());
-            CheckDefaultProperties(new PersistentStoreConfiguration());
             CheckDefaultProperties(new DataStorageConfiguration());
             CheckDefaultProperties(new DataRegionConfiguration());
             CheckDefaultProperties(new ClientConnectorConfiguration());
@@ -97,11 +94,8 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
             CheckDefaultValueAttributes(new MemoryEventStorageSpi());
-            CheckDefaultValueAttributes(new MemoryConfiguration());
-            CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
             CheckDefaultValueAttributes(new SqlConnectorConfiguration());
             CheckDefaultValueAttributes(new ClientConnectorConfiguration());
-            CheckDefaultValueAttributes(new PersistentStoreConfiguration());
             CheckDefaultValueAttributes(new IgniteClientConfiguration());
             CheckDefaultValueAttributes(new TransactionClientConfiguration());
             CheckDefaultValueAttributes(new QueryIndex());
@@ -563,34 +557,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.DataStreamerThreadPoolSize);
             Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.UtilityCacheThreadPoolSize);
             Assert.AreEqual(IgniteConfiguration.DefaultThreadPoolSize, cfg.QueryThreadPoolSize);
-        }
-
-        /// <summary>
-        /// Checks the default properties.
-        /// </summary>
-        /// <param name="cfg">Config.</param>
-        private static void CheckDefaultProperties(PersistentStoreConfiguration cfg)
-        {
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultTlbSize, cfg.TlbSize);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingFrequency, cfg.CheckpointingFrequency);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingThreads, cfg.CheckpointingThreads);
-            Assert.AreEqual(default(long), cfg.CheckpointingPageBufferSize);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultLockWaitTime, cfg.LockWaitTime);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFlushFrequency, cfg.WalFlushFrequency);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFsyncDelayNanos, cfg.WalFsyncDelayNanos);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalHistorySize, cfg.WalHistorySize);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalRecordIteratorBufferSize,
-                cfg.WalRecordIteratorBufferSize);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalSegmentSize, cfg.WalSegmentSize);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalSegments, cfg.WalSegments);
-            Assert.AreEqual(WalMode.Default, cfg.WalMode);
-            Assert.IsFalse(cfg.MetricsEnabled);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultSubIntervals, cfg.SubIntervals);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultRateTimeInterval, cfg.RateTimeInterval);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalStorePath, cfg.WalStorePath);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
         }
 
         /// <summary>

@@ -17,81 +17,66 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Near cache prepare response.
  */
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
-    /** Tx onePhaseCommit flag on primary node. */
-    private static final int NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK = 0x01;
-
-    /** Collection of versions that are pending and less than lock version. */
+    /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pending;
+    @Order(0)
+    @Nullable Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
-    private IgniteUuid futId;
+    @Order(1)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    private int miniId;
+    @Order(2)
+    int miniId;
 
     /** DHT version. */
-    private GridCacheVersion dhtVer;
+    @Order(3)
+    GridCacheVersion dhtVer;
 
     /** Write version. */
-    private GridCacheVersion writeVer;
+    @Order(4)
+    GridCacheVersion writeVer;
 
-    /** Map of owned values to set on near node. */
+    /** Owned values to set on near node. */
+    @Order(5)
     @GridToStringInclude
-    @GridDirectTransient
-    private Map<IgniteTxKey, CacheVersionedValue> ownedVals;
-
-    /** OwnedVals' keys for marshalling. */
-    @GridToStringExclude
-    @GridDirectCollection(IgniteTxKey.class)
-    private Collection<IgniteTxKey> ownedValKeys;
-
-    /** OwnedVals' values for marshalling. */
-    @GridToStringExclude
-    @GridDirectCollection(CacheVersionedValue.class)
-    private Collection<CacheVersionedValue> ownedValVals;
+    @Nullable Collection<KeyedVersionedValue> ownedVals;
 
     /** Cache return value. */
-    private GridCacheReturn retVal;
+    @Order(6)
+    GridCacheReturn retVal;
 
-    /** Filter failed keys. */
-    @GridDirectCollection(IgniteTxKey.class)
-    private Collection<IgniteTxKey> filterFailedKeys;
+    /** Keys that did not pass the filter. */
+    @Order(7)
+    @Nullable Collection<IgniteTxKey> filterFailedKeys;
 
-    /** Not {@code null} if client node should remap transaction. */
-    private AffinityTopologyVersion clientRemapVer;
+    /** Topology version, which is set when client node should remap lock request. */
+    @Order(8)
+    @Nullable AffinityTopologyVersion clientRemapVer;
+
+    /** One-phase commit on primary flag. */
+    @Order(9)
+    boolean onePhaseCommit;
 
     /**
      * Empty constructor.
@@ -120,8 +105,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         GridCacheVersion dhtVer,
         GridCacheVersion writeVer,
         GridCacheReturn retVal,
-        Throwable err,
-        AffinityTopologyVersion clientRemapVer,
+        @Nullable Throwable err,
+        @Nullable AffinityTopologyVersion clientRemapVer,
         boolean onePhaseCommit,
         boolean addDepInfo
     ) {
@@ -136,67 +121,49 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.writeVer = writeVer;
         this.retVal = retVal;
         this.clientRemapVer = clientRemapVer;
-
-        if (onePhaseCommit)
-            flags |= NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK;
+        this.onePhaseCommit = onePhaseCommit;
     }
 
-    /**
-     * @return One-phase commit state on primary node.
-     */
+    /** @return One-phase commit on primary flag. */
     public boolean onePhaseCommit() {
-        return isFlag(NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK);
+        return onePhaseCommit;
     }
 
-    /**
-     * @return {@code True} if client node should remap transaction.
-     */
-    @Nullable AffinityTopologyVersion clientRemapVersion() {
+    /** @return Topology version, which is set when client node should remap lock request. */
+    @Nullable public AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
     }
 
     /**
-     * Gets pending versions that are less than {@link #version()}.
-     *
-     * @return Pending versions.
+     * @return Versions that are less than lock version ({@link #version()}).
      */
-    public Collection<GridCacheVersion> pending() {
-        return pending == null ? Collections.emptyList() : pending;
+    public @Nullable Collection<GridCacheVersion> pending() {
+        return pending;
     }
 
     /**
-     * Sets pending versions that are less than {@link #version()}.
-     *
-     * @param pending Pending versions.
+     * @param pending New versions that are less than lock version ({@link #version()}).
      */
-    public void pending(Collection<GridCacheVersion> pending) {
+    public void pending(@Nullable Collection<GridCacheVersion> pending) {
         this.pending = pending;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @return DHT version.
-     */
+    /** @return DHT version. */
     public GridCacheVersion dhtVersion() {
         return dhtVer;
     }
 
-    /**
-     * @return Write version.
-     */
+    /** @return Write version. */
     public GridCacheVersion writeVersion() {
         return writeVer;
     }
@@ -213,304 +180,35 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             return;
 
         if (ownedVals == null)
-            ownedVals = new HashMap<>();
+            ownedVals = new ArrayList<>();
 
-        CacheVersionedValue oVal = new CacheVersionedValue(val, ver);
-
-        ownedVals.put(key, oVal);
+        ownedVals.add(new KeyedVersionedValue(key, val, ver));
     }
 
     /**
-     * @return Owned values map.
+     * @return Owned values to set on near node.
      */
-    public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
-        return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
+    public Collection<KeyedVersionedValue> ownedValues() {
+        return ownedVals == null ? Collections.emptyList() : Collections.unmodifiableCollection(ownedVals);
     }
 
-    /**
-     * @return Return value.
-     */
+    /** @return Cache return value. */
     public GridCacheReturn returnValue() {
         return retVal;
     }
 
     /**
-     * @param filterFailedKeys Collection of keys that did not pass the filter.
+     * @param filterFailedKeys Keys that did not pass the filter.
      */
-    public void filterFailedKeys(Collection<IgniteTxKey> filterFailedKeys) {
+    public void filterFailedKeys(@Nullable Collection<IgniteTxKey> filterFailedKeys) {
         this.filterFailedKeys = filterFailedKeys;
     }
 
     /**
-     * @return Collection of keys that did not pass the filter.
+     * @return New keys that did not pass the filter.
      */
-    public Collection<IgniteTxKey> filterFailedKeys() {
-        return filterFailedKeys == null ? Collections.emptyList() : filterFailedKeys;
-    }
-
-    /**
-     * @param key Key.
-     * @return {@code True} if response has owned value for given key.
-     */
-    public boolean hasOwnedValue(IgniteTxKey key) {
-        return ownedVals != null && ownedVals.containsKey(key);
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (ownedVals != null && ownedValKeys == null) {
-            ownedValKeys = ownedVals.keySet();
-
-            ownedValVals = ownedVals.values();
-
-            for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : ownedVals.entrySet()) {
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
-
-                entry.getKey().prepareMarshal(cacheCtx);
-
-                entry.getValue().prepareMarshal(cacheCtx.cacheObjectContext());
-            }
-        }
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.prepareMarshal(cctx);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.prepareMarshal(cctx);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (ownedValKeys != null && ownedVals == null) {
-            ownedVals = U.newHashMap(ownedValKeys.size());
-
-            assert ownedValKeys.size() == ownedValVals.size();
-
-            Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
-
-            Iterator<CacheVersionedValue> valIter = ownedValVals.iterator();
-
-            while (keyIter.hasNext()) {
-                IgniteTxKey key = keyIter.next();
-
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                CacheVersionedValue val = valIter.next();
-
-                key.finishUnmarshal(cctx, ldr);
-
-                val.finishUnmarshal(cctx, ldr);
-
-                ownedVals.put(key, val);
-            }
-        }
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.finishUnmarshal(cctx, ldr);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key :filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.finishUnmarshal(cctx, ldr);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 11:
-                if (!writer.writeAffinityTopologyVersion(clientRemapVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeMessage(dhtVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeCollection(filterFailedKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeCollection(ownedValKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeCollection(ownedValVals, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeCollection(pending, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeMessage(retVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeMessage(writeVer))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 11:
-                clientRemapVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                dhtVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                filterFailedKeys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                ownedValKeys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                ownedValVals = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                pending = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                retVal = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                writeVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 56;
+    public @Nullable Collection<IgniteTxKey> filterFailedKeys() {
+        return filterFailedKeys;
     }
 
     /** {@inheritDoc} */

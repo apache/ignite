@@ -17,53 +17,78 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
-/** */
-public class FragmentDescription implements MarshalableMessage {
+/**
+ * Query fragment description. <br>
+ * Has to be prepared to send to another node and restored after receiving from another node.
+ *
+ * @see #preparedToSend()
+ * @see #received()
+ */
+public class FragmentDescription implements Message {
     /** */
-    private long fragmentId;
-
-    /** */
-    private FragmentMapping mapping;
-
-    /** */
-    private ColocationGroup target;
-
-    /** */
-    @GridDirectTransient
-    private Map<Long, List<UUID>> remoteSources;
+    @Order(0)
+    long fragmentId;
 
     /** */
-    @GridDirectMap(keyType = Long.class, valueType = Message.class)
-    private Map<Long, UUIDCollectionMessage> remoteSources0;
+    @Order(1)
+    FragmentMapping mapping;
+
+    /** */
+    @Order(2)
+    Map<Long, List<UUID>> remoteSources;
+
+    /** */
+    @Order(3)
+    @Nullable ColocationGroup target;
+
+    /** Transient flag of {@link #received()}-once-invoked. */
+    boolean received;
 
     /** */
     public FragmentDescription() {
+        // No-op.
     }
 
     /** */
-    public FragmentDescription(long fragmentId, FragmentMapping mapping, ColocationGroup target,
+    public FragmentDescription(long fragmentId, FragmentMapping mapping, @Nullable ColocationGroup target,
         Map<Long, List<UUID>> remoteSources) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
-        this.target = target;
         this.remoteSources = remoteSources;
+
+        if (target != null)
+            this.target = target.explicitMapping();
+    }
+
+    /** Prepares this fragment description to send to another node. */
+    public FragmentDescription preparedToSend() {
+        if (target != null)
+            target.prepareToSend();
+
+        mapping.colocationGrps.forEach(ColocationGroup::prepareToSend);
+
+        return this;
+    }
+
+    /** Properly unwraps fragment description after receiving from another node. */
+    public FragmentDescription received() {
+        if (!received) {
+            if (target != null)
+                target.afterReceive();
+
+            mapping.colocationGrps.forEach(ColocationGroup::afterReceive);
+
+            received = true;
+        }
+
+        return this;
     }
 
     /** */
@@ -72,13 +97,23 @@ public class FragmentDescription implements MarshalableMessage {
     }
 
     /** */
+    public void fragmentId(long fragmentId) {
+        this.fragmentId = fragmentId;
+    }
+
+    /** */
     public List<UUID> nodeIds() {
         return mapping.nodeIds();
     }
 
     /** */
-    public ColocationGroup target() {
+    public @Nullable ColocationGroup target() {
         return target;
+    }
+
+    /** */
+    public void target(ColocationGroup target) {
+        this.target = target;
     }
 
     /** */
@@ -91,126 +126,8 @@ public class FragmentDescription implements MarshalableMessage {
         return mapping;
     }
 
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.FRAGMENT_DESCRIPTION;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong(fragmentId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage(mapping))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeMap(remoteSources0, MessageCollectionItemType.LONG, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeMessage(target))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                fragmentId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                mapping = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                remoteSources0 = reader.readMap(MessageCollectionItemType.LONG, MessageCollectionItemType.MSG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                target = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (mapping != null)
-            mapping.prepareMarshal(ctx);
-
-        if (target != null) {
-            target = target.explicitMapping();
-
-            target.prepareMarshal(ctx);
-        }
-
-        if (remoteSources0 == null && remoteSources != null) {
-            remoteSources0 = U.newHashMap(remoteSources.size());
-
-            for (Map.Entry<Long, List<UUID>> e : remoteSources.entrySet())
-                remoteSources0.put(e.getKey(), new UUIDCollectionMessage(e.getValue()));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (mapping != null)
-            mapping.prepareUnmarshal(ctx);
-
-        if (target != null)
-            target.prepareUnmarshal(ctx);
-
-        if (remoteSources == null && remoteSources0 != null) {
-            remoteSources = U.newHashMap(remoteSources0.size());
-
-            for (Map.Entry<Long, UUIDCollectionMessage> e : remoteSources0.entrySet())
-                remoteSources.put(e.getKey(), new ArrayList<>(e.getValue().uuids()));
-        }
+    /** */
+    public void mapping(FragmentMapping mapping) {
+        this.mapping = mapping;
     }
 }

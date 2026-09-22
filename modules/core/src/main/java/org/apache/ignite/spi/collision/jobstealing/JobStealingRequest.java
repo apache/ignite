@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class JobStealingRequest implements Message {
     /** Delta. */
     @Order(0)
-    private int delta;
+    int delta;
 
     /**
      * Empty constructor.
@@ -50,22 +50,6 @@ public class JobStealingRequest implements Message {
         return delta;
     }
 
-    /**
-     * @param delta New delta.
-     */
-    public void delta(int delta) {
-        this.delta = delta;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 82;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

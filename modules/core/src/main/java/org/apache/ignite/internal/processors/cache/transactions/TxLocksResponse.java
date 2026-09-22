@@ -17,65 +17,56 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Transactions lock list response.
  */
 public class TxLocksResponse extends GridCacheMessage {
     /** Future ID. */
-    @Order(value = 3, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** Locks for near txKeys of near transactions. */
     @GridToStringInclude
-    private final Map<IgniteTxKey, TxLockList> nearTxKeyLocks = new HashMap<>();
+    @Marshalled(keys = "nearTxKeysArr", values = "locksArr")
+    final Map<IgniteTxKey, List<TxLock>> nearTxKeyLocks = new HashMap<>();
 
-    /** Remote keys involved into transactions. Doesn't include near keys. */
+    /**
+     * Remote keys involved into transactions, near keys excluded. Deduplicated by the sender. Not a {@code Set}:
+     * the reader would fill one while reading, and {@link IgniteTxKey#hashCode()} throws until the key's cache
+     * object is resolved, which happens later.
+     */
+    @Order(2)
     @GridToStringInclude
-    private Set<IgniteTxKey> txKeys;
+    Collection<IgniteTxKey> txKeys;
 
     /** Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(value = 4, method = "nearTxKeysArray")
-    private IgniteTxKey[] nearTxKeysArr;
-
-    /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
-    @Order(value = 5, method = "txKeysArray")
-    private IgniteTxKey[] txKeysArr;
+    @Order(1)
+    IgniteTxKey[] nearTxKeysArr;
 
     /** Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    @Order(value = 6, method = "locksArray")
-    private TxLockList[] locksArr;
+    @Order(3)
+    List<TxLock>[] locksArr;
 
     /**
      * Default constructor.
      */
     public TxLocksResponse() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
     }
 
     /**
@@ -93,51 +84,9 @@ public class TxLocksResponse extends GridCacheMessage {
     }
 
     /**
-     * @return Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public IgniteTxKey[] nearTxKeysArray() {
-        return nearTxKeysArr;
-    }
-
-    /**
-     * @param nearTxKeysArr Array of txKeys from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public void nearTxKeysArray(IgniteTxKey[] nearTxKeysArr) {
-        this.nearTxKeysArr = nearTxKeysArr;
-    }
-
-    /**
-     * @return Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public IgniteTxKey[] txKeysArray() {
-        return txKeysArr;
-    }
-
-    /**
-     * @param txKeysArr Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
-     */
-    public void txKeysArray(IgniteTxKey[] txKeysArr) {
-        this.txKeysArr = txKeysArr;
-    }
-
-    /**
-     * @return Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public TxLockList[] locksArray() {
-        return locksArr;
-    }
-
-    /**
-     * @param locksArr Array of locksArr from {@link #nearTxKeyLocks}. Used during marshalling and unmarshalling.
-     */
-    public void locksArray(TxLockList[] locksArr) {
-        this.locksArr = locksArr;
-    }
-
-    /**
      * @return Lock lists for all tx nearTxKeysArr.
      */
-    public Map<IgniteTxKey, TxLockList> txLocks() {
+    public Map<IgniteTxKey, List<TxLock>> txLocks() {
         return nearTxKeyLocks;
     }
 
@@ -145,7 +94,7 @@ public class TxLocksResponse extends GridCacheMessage {
      * @param txKey Tx key.
      * @return Lock list for given tx key.
      */
-    public TxLockList txLocks(IgniteTxKey txKey) {
+    public List<TxLock> txLocks(IgniteTxKey txKey) {
         return nearTxKeyLocks.get(txKey);
     }
 
@@ -154,10 +103,7 @@ public class TxLocksResponse extends GridCacheMessage {
      * @param txLock Tx lock.
      */
     public void addTxLock(IgniteTxKey txKey, TxLock txLock) {
-        TxLockList lockList = nearTxKeyLocks.get(txKey);
-
-        if (lockList == null)
-            nearTxKeyLocks.put(txKey, lockList = new TxLockList());
+        List<TxLock> lockList = nearTxKeyLocks.computeIfAbsent(txKey, k -> new ArrayList<>());
 
         lockList.add(txLock);
     }
@@ -165,7 +111,7 @@ public class TxLocksResponse extends GridCacheMessage {
     /**
      * @return Remote txKeys involved into tx.
      */
-    public Set<IgniteTxKey> keys() {
+    public Collection<IgniteTxKey> keys() {
         return txKeys;
     }
 
@@ -187,82 +133,5 @@ public class TxLocksResponse extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TxLocksResponse.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (nearTxKeyLocks != null && !nearTxKeyLocks.isEmpty()) {
-            int len = nearTxKeyLocks.size();
-
-            nearTxKeysArr = new IgniteTxKey[len];
-            locksArr = new TxLockList[len];
-
-            int i = 0;
-
-            for (Map.Entry<IgniteTxKey, TxLockList> entry : nearTxKeyLocks.entrySet()) {
-                IgniteTxKey key = entry.getKey();
-
-                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
-                nearTxKeysArr[i] = key;
-                locksArr[i] = entry.getValue();
-
-                i++;
-            }
-        }
-
-        if (txKeys != null && !txKeys.isEmpty()) {
-            txKeysArr = new IgniteTxKey[txKeys.size()];
-
-            int i = 0;
-
-            for (IgniteTxKey key : txKeys) {
-                key.prepareMarshal(ctx.cacheContext(key.cacheId()));
-
-                txKeysArr[i++] = key;
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        try {
-            super.finishUnmarshal(ctx, ldr);
-
-            if (nearTxKeysArr != null) {
-                for (int i = 0; i < nearTxKeysArr.length; i++) {
-                    IgniteTxKey txKey = nearTxKeysArr[i];
-
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
-                    txLocks().put(txKey, locksArr[i]);
-                }
-
-                nearTxKeysArr = null;
-                locksArr = null;
-            }
-
-            if (txKeysArr != null) {
-                txKeys = U.newHashSet(txKeysArr.length);
-
-                for (IgniteTxKey txKey : txKeysArr) {
-                    txKey.key().finishUnmarshal(ctx.cacheObjectContext(txKey.cacheId()), ldr);
-
-                    txKeys.add(txKey);
-                }
-
-                txKeysArr = null;
-            }
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -23;
     }
 }

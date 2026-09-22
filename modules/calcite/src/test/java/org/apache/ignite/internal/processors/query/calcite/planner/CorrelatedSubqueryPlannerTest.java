@@ -253,12 +253,10 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
 
             List<LogicalCorrelate> correlates = findNodes(rel, byClass(LogicalCorrelate.class));
 
-            assertEquals(4, correlates.size());
+            assertEquals(2, correlates.size());
 
             // There are collisions by correlation id.
             assertEquals(correlates.get(0).getCorrelationId(), correlates.get(1).getCorrelationId());
-            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(2).getCorrelationId());
-            assertEquals(correlates.get(0).getCorrelationId(), correlates.get(3).getCorrelationId());
 
             rel = planner.replaceCorrelatesCollisions(rel);
 
@@ -336,8 +334,8 @@ public class CorrelatedSubqueryPlannerTest extends AbstractPlannerTest {
         // Correlate on top of another join.
         sql = "SELECT a FROM ta1 WHERE ta1.a IN (SELECT a FROM th1) AND EXISTS (SELECT 1 FROM ta2 WHERE ta2.b = ta1.a)";
         assertPlan(sql, schema, hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
-            .and(input(0, isInstanceOf(AbstractIgniteJoin.class)))
-            .and(input(1, isInstanceOf(IgniteColocatedAggregateBase.class)
+            .and(input(0, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class))))
+            .and(input(1, nodeOrAnyChild(isInstanceOf(IgniteColocatedAggregateBase.class))
                 .and(hasChildThat(isInstanceOf(IgniteExchange.class)).negate())
         ))));
 

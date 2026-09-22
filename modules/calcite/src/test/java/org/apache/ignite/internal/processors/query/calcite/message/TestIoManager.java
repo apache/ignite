@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
@@ -29,7 +30,7 @@ public class TestIoManager {
     private final Map<UUID, MessageServiceImpl> srvcMap = new ConcurrentHashMap<>();
 
     /** */
-    public void send(UUID senderId, UUID nodeId, CalciteMessage msg) {
+    public void send(UUID senderId, UUID nodeId, Message msg) {
         srvcMap.get(nodeId).onMessage(senderId, msg);
     }
 

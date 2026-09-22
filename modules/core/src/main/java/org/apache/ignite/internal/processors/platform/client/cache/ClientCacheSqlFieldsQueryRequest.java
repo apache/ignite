@@ -29,8 +29,8 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
+import org.apache.ignite.internal.processors.platform.client.ClientRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.X;
@@ -52,6 +52,9 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
 
     /** Update batch size. */
     private final Integer updateBatchSize;
+
+    /** Query initiator ID. */
+    private final String initiatorId;
 
     /**
      * Ctor.
@@ -75,7 +78,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
         boolean replicatedOnly = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
         boolean collocated = reader.readBoolean();
-        boolean lazy = reader.readBoolean();
+        reader.readBoolean();  // Lazy flag.
         int timeout = (int)reader.readLong();
         includeFieldNames = reader.readBoolean();
 
@@ -90,8 +93,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
                 .setLocal(loc)
                 .setReplicatedOnly(replicatedOnly)
                 .setEnforceJoinOrder(enforceJoinOrder)
-                .setCollocated(collocated)
-                .setLazy(lazy);
+                .setCollocated(collocated);
 
         // Zero value of the timeout from the old client is interpreted as a 'default'.
         // So, old clients cannot disable default timeout by explicit set timeout to 0.
@@ -120,6 +122,11 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
             partitions = null;
             updateBatchSize = null;
         }
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.QRY_INITIATOR_ID))
+            initiatorId = reader.readString();
+        else
+            initiatorId = null;
     }
 
     /** {@inheritDoc} */
@@ -132,7 +139,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
         ctx.incrementCursors();
 
         try {
-            qry.setQueryInitiatorId(ctx.clientDescriptor());
+            qry.setQueryInitiatorId(initiatorId == null ? ctx.clientDescriptor() : initiatorId);
 
             // If cacheId is provided, we must check the cache for existence.
             if (cacheId() != 0) {
@@ -167,7 +174,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
             SecurityException securityEx = X.cause(e, SecurityException.class);
 
             if (securityEx != null)
-                throw IgniteClientException.wrapAuthorizationExeption(securityEx);
+                throw ClientRequestHandler.wrapAuthorizationExeption(securityEx);
 
             throw e;
         }

@@ -94,9 +94,6 @@ namespace ignite
                     /** Default value for collocated attribute. */
                     static const bool collocated;
 
-                    /** Default value for lazy attribute. */
-                    static const bool lazy;
-
                     /** Default value for skipReducerOnUpdate attribute. */
                     static const bool skipReducerOnUpdate;
 
@@ -415,27 +412,6 @@ namespace ignite
                 bool IsCollocatedSet() const;
 
                 /**
-                 * Check lazy flag.
-                 *
-                 * @return True if lazy is enabled.
-                 */
-                bool IsLazy() const;
-
-                /**
-                 * Set lazy.
-                 *
-                 * @param val Value to set.
-                 */
-                void SetLazy(bool val);
-
-                /**
-                 * Check if the value set.
-                 *
-                 * @return @true if the value set.
-                 */
-                bool IsLazySet() const;
-
-                /**
                  * Check update on server flag.
                  *
                  * @return True if update on server.
@@ -608,9 +584,6 @@ namespace ignite
 
                 /** Collocated flag. */
                 SettableValue<bool> collocated;
-
-                /** Lazy flag. */
-                SettableValue<bool> lazy;
 
                 /** Skip reducer on update flag. */
                 SettableValue<bool> skipReducerOnUpdate;

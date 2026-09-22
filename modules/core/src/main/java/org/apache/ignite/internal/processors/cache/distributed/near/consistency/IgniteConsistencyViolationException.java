@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.future.GridCompoundFuture.SkipLoggingException;
 
 /**
  * Consistency violation exception.
  */
-public abstract class IgniteConsistencyViolationException extends IgniteCheckedException {
+public abstract class IgniteConsistencyViolationException extends IgniteCheckedException implements SkipLoggingException {
     /**
      * Inconsistent entries keys.
      */

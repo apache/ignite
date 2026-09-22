@@ -17,27 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
     public static final int INVALID_PART_FLAG_MASK = 0x1;
 
@@ -45,23 +42,24 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     public static final int CONTAINS_VAL_FLAG_MASK = 0x2;
 
     /** Future ID. */
-    private long futId;
+    @Order(0)
+    long futId;
 
-    /** */
-    private Message res;
+    /** Result. */
+    @Order(1)
+    Message res;
 
-    /** */
-    private AffinityTopologyVersion topVer;
+    /** Topology version. */
+    @Order(2)
+    AffinityTopologyVersion topVer;
 
-    /** Error. */
-    @GridDirectTransient
-    private IgniteCheckedException err;
+    /** Error message. */
+    @Order(3)
+    ErrorMessage errMsg;
 
-    /** Serialized error. */
-    private byte[] errBytes;
-
-    /** */
-    private byte flags;
+    /** Flags. */
+    @Order(4)
+    byte flags;
 
     /**
      * Empty constructor.
@@ -99,13 +97,13 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
     /**
      * @param err Error.
      */
-    public void error(IgniteCheckedException err) {
-        this.err = err;
+    public void error(Throwable err) {
+        this.errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
-        return err;
+    @Override public Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /**
@@ -136,169 +134,28 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
         flags |= CONTAINS_VAL_FLAG_MASK;
     }
 
-    /**
-     * @return Result.
-     */
+    /** @return Result. */
     public Message result() {
         return res;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public long futureId() {
         return futId;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (res != null) {
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        if (res instanceof CacheObject) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
-            if (res instanceof CacheObject)
-                prepareMarshalCacheObject((CacheObject)res, cctx);
-            else if (res instanceof CacheVersionedValue)
-                ((CacheVersionedValue)res).prepareMarshal(cctx.cacheObjectContext());
-            else if (res instanceof GridCacheEntryInfo)
-                ((GridCacheEntryInfo)res).marshal(cctx);
+            deployCacheObject((CacheObject)res, cctx);
         }
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (res != null) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId());
-
-            if (res instanceof CacheObject)
-                ((CacheObject)res).finishUnmarshal(cctx.cacheObjectContext(), ldr);
-            else if (res instanceof CacheVersionedValue)
-                ((CacheVersionedValue)res).finishUnmarshal(cctx, ldr);
-            else if (res instanceof GridCacheEntryInfo)
-                ((GridCacheEntryInfo)res).unmarshal(cctx, ldr);
-        }
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeMessage(res))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                res = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 117;
     }
 
     /** {@inheritDoc} */

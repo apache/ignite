@@ -131,4 +131,7 @@ public interface CacheContinuousQueryListener<K, V> {
      * @return {@code True} if this listener should be called on events on primary partitions only.
      */
     public boolean isPrimaryOnly();
+
+    /** @return {@code true} if this listener belongs to a local continuous query. */
+    public boolean isLocalOnly();
 }

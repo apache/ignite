@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerificationTask.HashHolder;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerify.HashHolder;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -123,7 +123,7 @@ public class IdleVerifyUtility {
 
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
                 if (cancelled != null && cancelled.getAsBoolean())
-                    throw new IgniteException();
+                    throw new IgniteException("Checking of partitions page CRC sum has been cancelled.");
 
                 buf.clear();
 
@@ -311,7 +311,7 @@ public class IdleVerifyUtility {
 
         while (it.hasNextX()) {
             if (cancelled != null && cancelled.getAsBoolean())
-                throw new IgniteCheckedException("Caclulate partition hash cancelled.");
+                throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
 
             CacheDataRow row = it.nextX();
 

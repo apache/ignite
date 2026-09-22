@@ -17,24 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,17 +38,21 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
     @GridToStringInclude
+    @Order(1)
     protected CacheObject val;
 
     /** Previous value. */
     @GridToStringInclude
+    @Order(2)
     protected CacheObject prevVal;
 
     /** Partition. */
+    @Order(3)
     protected long updateCntr;
 
     /**
@@ -73,11 +69,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param writeVer Write version for cache values.
-     * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
      * @param taskNameHash Task name hash code.
-     * @param addDepInfo Deployment info.
      * @param keepBinary Keep binary flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param skipStore Skip store flag.
      * @param readRepairRecovery Recovery on Read Repair flag.
      */
@@ -86,11 +81,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         UUID nodeId,
         long futId,
         GridCacheVersion writeVer,
-        CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean skipStore,
         boolean readRepairRecovery
     ) {
@@ -98,11 +92,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             nodeId,
             futId,
             writeVer,
-            syncMode,
             topVer,
             taskNameHash,
-            addDepInfo,
             keepBinary,
+            keepBinaryInInterceptor,
             skipStore,
             readRepairRecovery);
     }
@@ -110,7 +103,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -121,7 +113,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      */
     @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -129,7 +120,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         @Nullable CacheObject prevVal,
         long updateCntr,
         GridCacheOperation cacheOp) {
-        assert entryProcessor == null;
         assert ttl <= 0 : ttl;
         assert conflictExpireTime <= 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
@@ -166,16 +156,13 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
     @Override public void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long expireTime) {
-        assert entryProcessor == null;
         assert ttl <= 0 : ttl;
         assert key.partition() >= 0 : key;
 
@@ -192,11 +179,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public boolean forceTransformBackups() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() {
         return key != null ? near() ? 0 : 1 : 0;
     }
@@ -204,11 +186,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public int nearSize() {
         return key != null ? near() ? 1 : 0 : 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasKey(KeyCacheObject key) {
-        return !near() && Objects.equals(this.key, key);
     }
 
     /** {@inheritDoc} */
@@ -231,7 +208,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         int p = key.partition();
 
         assert p >= 0;
@@ -275,20 +252,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
-        assert idx == 0 : idx;
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
-        assert idx == 0 : idx;
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
         assert idx == 0 : idx;
 
@@ -304,9 +267,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public long nearTtl(int idx) {
-        assert idx == 0 : idx;
-
-        return CU.TTL_NOT_CHANGED;
+        return ttl(idx);
     }
 
     /** {@inheritDoc} */
@@ -318,151 +279,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public long nearExpireTime(int idx) {
-        assert idx == 0 : idx;
-
-        return CU.EXPIRE_TIME_CALCULATE;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public Object[] invokeArguments() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalObject(key, cctx);
-
-        prepareMarshalObject(val, cctx);
-
-        prepareMarshalObject(prevVal, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalObject(key, cctx, ldr);
-
-        finishUnmarshalObject(val, cctx, ldr);
-
-        finishUnmarshalObject(prevVal, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 12:
-                if (!writer.writeMessage(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeMessage(prevVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeLong(updateCntr))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeMessage(val))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 12:
-                key = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                prevVal = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                updateCntr = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                val = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /**
-     * @param obj CacheObject to marshal
-     * @param ctx context
-     * @throws IgniteCheckedException if error
-     */
-    private void prepareMarshalObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
-        if (obj != null)
-            obj.prepareMarshal(ctx.cacheObjectContext());
-    }
-
-    /**
-     * @param obj CacheObject un to marshal
-     * @param ctx context
-     * @param ldr class loader
-     * @throws IgniteCheckedException if error
-     */
-    private void finishUnmarshalObject(@Nullable CacheObject obj, GridCacheContext ctx,
-        ClassLoader ldr) throws IgniteCheckedException {
-        if (obj != null)
-            obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+        return conflictExpireTime(idx);
     }
 
     /**
@@ -473,10 +290,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         prevVal = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -36;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -453,6 +453,65 @@ For example, to cancel the transactions that have been running for more than 100
 control.sh --tx --min-duration 100 --kill
 ----
 
+== Mass Cancellation of Queries
+
+The control script allows you to mass cancel SQL queries, scan queries, index queries and continuous queries that match specific criteria.
+
+The syntax for the mass cancellation command is as follows:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --kill all <target> [--node-id <nodeId>] [--min-duration <seconds>]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --kill all <target> [--node-id <nodeId>] [--min-duration <seconds>]
+----
+--
+
+The following target types are supported:
+
+[cols="1,3",opts="header"]
+|===
+|Target | Description
+|`sql`| SQL queries
+|`scan`| Scan queries
+|`index`| Index queries
+|`continuous`| Continuous queries
+|===
+
+Parameters:
+
+[cols="2,5",opts="header"]
+|===
+|Parameter | Description
+|--nodeId <nodeId>| Optional. UUID of the originator node to filter targets.
+|--min-duration <seconds>| Optional. Minimum duration in seconds. Only objects that have been running longer than the specified value will be cancelled.
+|===
+
+Example commands:
+
+[source, shell]
+----
+# Cancel all SQL queries that have been running for more than 60 seconds
+control.sh --kill all sql --min-duration 60
+
+# Cancel scan queries that have been running for more than 30 seconds on a specific node
+control.sh --kill all scan --nodeId <uuid> --min-duration 30
+
+# Cancel index queries on a specific node
+control.sh --kill all index --nodeId <uuid>
+
+# Cancel continuous queries
+control.sh --kill all continuous
+----
+
+To cancel specific individual objects (without mass filtering) see link:sql-reference/operational-commands[Operational Commands] section.
+
 == Contention Detection in Transactions
 
 The `contention` command detects when multiple transactions are in contention to create a lock for the same key. The command is useful if you have long-running or hanging transactions.
@@ -629,12 +688,12 @@ control.sh|bat --cache scan cache1 --limit 10
 
 == Resetting Lost Partitions
 
-You can use the control script to reset lost partitions for specific caches.
+You can use the control script to reset lost partitions for specific cache groups.
 Refer to link:configuring-caches/partition-loss-policy[Partition Loss Policy] for details.
 
 [source, shell]
 ----
-control.sh --cache reset_lost_partitions cacheName1,cacheName2,...
+control.sh --cache reset_lost_partitions cacheGroupName1,cacheGroupName2,...
 ----
 
 
@@ -689,6 +748,24 @@ Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97595430, up
 All updates should be stopped when `idle_verify` calculates hashes, otherwise it may show false positive error results. It's impossible to compare big datasets in a distributed system if they are being constantly updated​.
 ====
 
+To cancel a running `idle_verify` operation, use the `--cancel` argument:
+
+[source, shell]
+----
+control.sh --cache idle_verify --cancel
+----
+
+[NOTE]
+====
+[discrete]
+`idle_verify` command uses its own utility thread pool of default size `Total CPUs - 2` with the minimum of `4` threads.
+The pool size might be adjusted at node startup with the system property
+
+`-DIGNITE_IDLE_VERIFY_POOL_SIZE=...`.
+[discrete]
+These pool threads expire after some time being unused.
+====
+
 === Repairing cache consistency
 [WARNING]
 ====
@@ -697,15 +774,6 @@ All updates should be stopped when `idle_verify` calculates hashes, otherwise it
 The command may not work on some special/unique configurations or even cause a cluster/node failure.
 
 Command execution MUST be checked on the test environment using the data/configuration similar to the production before the execution on the real production environment.
-====
-
-[WARNING]
-====
-[discrete]
-===  Additional configuration required
-The command uses special link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/events/EventType.html#EVT_CONSISTENCY_VIOLATION[Consistency Violation Event] to detect the consistency violations. This event must be enabled before the command execution.
-
-Please, refer to the link:events/listening-to-events#enabling-events[Enabling Events] section for details.
 ====
 
 `idle_verify` command provides the inconsistent cache group names and partitions list as a result.
@@ -765,6 +833,11 @@ tab:Window[]
 control.bat --enable-experimental --consistency status
 ----
 --
+
+[NOTE]
+====
+Consistency `repair` uses the same thread pool as `idle_verify`.
+====
 
 === Partition update counters finalization
 
@@ -909,79 +982,6 @@ Index(es):
 [8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
 ----
 
-== Tracing Configuration
-
-You can enable or disable sampling of traces for a specific API by using the `--tracing-configuration` command.
-Refer to the link:monitoring-metrics/tracing[Tracing] section for details.
-
-Before using the command, enable experimental features of the control script:
-
-[source, shell]
-----
-export IGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
-----
-
-To view the current tracing configuration, execute the following command:
-
-[source, shell]
-----
-control.sh --tracing-configuration
-----
-
-To enable trace sampling for a specific API:
-
-
-[source, shell]
-----
-control.sh --tracing-configuration set --scope <scope> --sampling-rate <rate> --label <label>
-----
-
-Parameters:
-
-[cols="1,3",opts="header"]
-|===
-| Parameter | Description
-| `--scope` a| The API you want to trace:
-
-* `DISCOVERY`: discovery events
-* `EXCHANGE`: exchange events
-* `COMMUNICATION`: communication events
-* `TX`: transactions
-
-| `--sampling-rate` a|  The probabilistic sampling rate, a number between `0.0` and `1.0` inclusive.
- `0` means no sampling (default), `1` means always sampling. Ex. `0.5` means every trace is sampled with the probability of 50%.
-
-| `--label` | Only applicable to the `TX` scope. The parameter defines the sampling rate for the transactions with the given label.
-When the `--label` parameter is specified, Ignite will trace transactions with the given label. You can configure different sampling rates for different labels.
-
-Transaction traces with no label will be sampled at the default sampling rate.
-The default rate for the `TX` scope can be set by using this command without the `--label` parameter.
-|===
-
-
-Examples:
-
-* Trace all discovery events:
-+
-[source, shell]
-----
-control.sh --tracing-configuration set --scope DISCOVER --sampling-rate 1
-----
-* Trace all transactions:
-+
-[source, shell]
-----
-control.sh --tracing-configuration set --scope TX --sampling-rate 1
-----
-* Trace transactions with label "report" at a 50% rate:
-+
-[source, shell]
-----
-control.sh --tracing-configuration set --scope TX --sampling-rate 0.5
-----
-
-
-
 == Cluster ID and Tag
 
 A cluster ID is a unique identifier of the cluster that is generated automatically when the cluster starts for the first time. Read link:monitoring-metrics/cluster-id[Cluster ID and Tag] for more information.
@@ -1053,9 +1053,9 @@ control.bat --metric sys
 
 Example of the metric output:
 [source, text]
-control.sh --metric sysCurrentThreadCpuTime
+control.sh --metric sys.CurrentThreadCpuTime
 Command [METRIC] started
-Arguments: --metric sys
+Arguments: --metric sys.CurrentThreadCpuTime
 --------------------------------------------------------------------------------
 metric                          value
 sys.CurrentThreadCpuTime        17270000
@@ -1066,7 +1066,7 @@ Example of the metric registry output:
 [source, text]
 control.sh --metric io.dataregion.default
 Command [METRIC] started
-Arguments: --metric sys
+Arguments: --metric io.dataregion.default
 --------------------------------------------------------------------------------
 metric                          value
 io.dataregion.default.TotalAllocatedSize          0
@@ -1262,6 +1262,273 @@ TASKS                          SYS       Running compute tasks
 Command [SYSTEM-VIEW] finished with code: 0
 
 
+== Network I/O Diagnostics
+
+The `--io-test` commands actively measure network latency between cluster nodes.
+
+=== Communication SPI Diagnostic
+
+The `communication` test sends request-response messages from the selected source node to every remote server node through the
+Communication SPI.
+The source node specified by `--node-id` and at least one remote server node must be available.
+The first failed or timed-out request aborts the test.
+
+Optional parameters:
+
+* `--warmup` - warm-up period before samples are recorded, in milliseconds (`0` to `3600000`; default: `5000`).
+* `--duration` - sampling period after warm-up, in milliseconds (`1` to `3600000`; default: `30000`).
+* `--threads` - number of concurrent test threads (`1` to `64`; default: `1`).
+* `--payload-size` - payload in each request and response, in bytes (`0` to `1048576`; default: `0`).
+* `--process-in-nio-thread` - processes requests and responses in network I/O threads instead of the system pool.
+
+[source,shell]
+----
+control.sh --io-test communication --node-id <source-node-id>
+----
+
+=== Discovery SPI Diagnostic
+
+The `discovery` test measures how custom messages traverse the server ring and is executed on the cluster coordinator.
+It requires `TcpDiscoverySpi` on the coordinator and at least two server nodes.
+
+Optional parameters:
+
+* `--samples` - number of full-ring samples (`1` to `100`; default: `10`).
+* `--interval` - delay between samples, in milliseconds (`10` to `60000`; default: `100`).
+* `--payload-size` - discovery message payload, in bytes (`0` to `65536`; default: `100`).
+
+[source,shell]
+----
+control.sh --io-test discovery
+----
+
+WARNING: These tests generate network traffic and consume CPU on participating nodes. High thread counts, long durations, or large
+payloads can affect cluster workloads.
+The `--process-in-nio-thread` communication option handles test messages directly on network I/O threads and should only be used
+during controlled diagnostic runs because it can delay normal network processing.
+
+NOTE: Estimated one-way Communication SPI delivery times and per-hop Discovery SPI delays use the operating system wall clock
+(`System.currentTimeMillis`) on different nodes and therefore require synchronized clocks.
+RTT and full-ring latency use a monotonic clock and do not require clock synchronization.
+
+
+== Working With Persistence Data
+
+[WARNING]
+====
+All `--persistence` commands below function exclusively in link:maintenance-mode[Maintenance Mode]
+====
+
+=== Displaying Information About Damaged Caches
+
+Use the `--persistence info` option to display information about potentially damaged caches in the local node:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence info
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence info
+----
+--
+
+=== Cleaning Up Damaged Caches
+
+Use the `--persistence clean corrupted` option to clear directories containing caches with corrupted data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence clean corrupted
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence clean corrupted
+----
+--
+
+=== Clearing All Caches
+
+Use the `--persistence clean all` option to delete all cache directories:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence clean all
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence clean all
+----
+--
+
+=== Clearing Specific Caches
+
+Use the `--persistence clean caches` option to delete specific listed caches:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence clean caches cache1,cache2,cache3
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence clean caches cache1,cache2,cache3
+----
+--
+
+where `cache1,cache2,cache3` are comma-separated cache names.
+
+=== Backing Up Damaged Files
+
+Use the `--persistence backup corrupted` option to back up corrupted data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence backup corrupted
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence backup corrupted
+----
+--
+
+=== Backing Up All Cache Files
+
+Use the `--persistence backup all` option to back up all cache data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence backup all
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence backup all
+----
+--
+
+=== Backing Up Specific Cache Files
+
+Use the `--persistence backup caches` option to back up specified cache data files:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --persistence backup caches cache1,cache2,cache3
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --persistence backup caches cache1,cache2,cache3
+----
+--
+
+where `cache1,cache2,cache3` are comma-separated cache names.
+
+The layout these backup files are stored is `{IGNITE_WORK_DIR}/db/{nodeId}/backup_cache-{CACHE_NAME}`.
+
+[WARNING]
+====
+Backup files created via the `./control.sh --persistence backup ...` commands should not be regarded as snapshot recovery mechanisms.
+These are exact copies of folders containing caches intended for subsequent analysis of the causes of corruption or attempts to recover data, but it's important to remember that these operations require specialized knowledge, and there are no universal methods for analyzing and recovering corrupted caches.
+====
+
+After completing all manipulations with the copied corrupted data backed up or if they become unnecessary, they can be manually deleted from the above-specified directory.
+
+== Defragmentation
+
+=== Scheduling Defragmentation
+
+Use the `--defragmentation schedule` option to schedule Persistent Data Store (PDS) defragmentation:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --defragmentation schedule --nodes consistentId0,consistentId1 [--caches cache1,cache2,cache3]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --defragmentation schedule --nodes consistentId0,consistentId1 [--caches cache1,cache2,cache3]
+----
+--
+
+As a result, the next node start-up will occur in Maintenance Mode, during which the defragmentation will be performed automatically.
+To exit Maintenance Mode afterward, simply restart the node.
+
+=== Checking Defragmentation Status
+
+[WARNING]
+====
+Available Exclusively in link:maintenance-mode[Maintenance Mode]
+====
+
+Use the `--defragmentation status` option to retrieve the status of ongoing defragmentation processes:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --defragmentation status
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --defragmentation status
+----
+--
+
+=== Canceling Defragmentation
+
+[WARNING]
+====
+Available Exclusively in link:maintenance-mode[Maintenance Mode]
+====
+
+Use the `--defragmentation cancel` option to cancel either a scheduled or active Persistent Data Store (PDS) defragmentation:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --defragmentation cancel
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --defragmentation cancel
+----
+--
+
+
 == Performance Statistics
 
 Ignite provides a built-in tool for cluster profiling. Read link:monitoring-metrics/performance-statistics[Performance Statistics] for more information.
@@ -1294,7 +1561,7 @@ Parameters:
 
 == Working with Cluster Properties
 
-The `control.sh|bat` script provides an ability to work with link:SQL/sql-statistics[SQL statistics,window=_blank] functionality.
+The `control.sh|bat` script allows administrators to view and modify cluster-wide properties.
 
 To get the full list of available properties, use the `--property list` command. This command returns the list of all available properties to work with:
 
@@ -1308,7 +1575,7 @@ control.sh --property list
 tab:Windows[]
 [source,shell]
 ----
-control.bat  --property list
+control.bat --property list
 ----
 --
 
@@ -1324,7 +1591,7 @@ control.sh --property set --name 'statistics.usage.state' --val 'ON'
 tab:Windows[]
 [source,shell]
 ----
-control.bat  --property set --name 'statistics.usage.state' --val 'ON'
+control.bat --property set --name 'statistics.usage.state' --val 'ON'
 ----
 --
 
@@ -1341,6 +1608,44 @@ tab:Windows[]
 [source,shell]
 ----
 control.bat --property get --name 'statistics.usage.state'
+----
+--
+
+NOTE: Available values depend on the property.
+For example, link:SQL/sql-statistics[SQL statistics,window=_blank] use `ON|OFF|NO_UPDATE`, while link:#managing_cluster_connection_properties[Cluster Connection Properties,window=_blank]
+use `true|false`.
+
+=== Managing Cluster Connection Properties
+
+You can control whether new client or server connections are accepted by the cluster setting the cluster-wide properties.
+
+The following properties are available:
+
+[cols="3,5,2,2", opts="header"]
+|===
+|Property | Description | Available values | Default value
+|newClientNodeConnectionsEnabled | If true then new client node connections allowed. | true / false | true
+|newServerNodeConnectionsEnabled | If true then new server node connections allowed. | true / false | true
+|newThinConnectionsEnabled | If true then new thin client connections allowed. | true / false | true
+|newJdbcConnectionsEnabled | If true then new JDBC connections allowed. | true / false | true
+|newOdbcConnectionsEnabled | If true then new ODBC connections allowed. | true / false | true
+|===
+
+NOTE: Setting a property to `false` affects only new connections. Existing connections remain active.
+
+For example, the following command disables new thin client connections:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name newThinConnectionsEnabled --val false
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property set --name newThinConnectionsEnabled --val false
 ----
 --
 
@@ -1374,7 +1679,7 @@ control.sh|bat --cache metrics enable --caches cache-2,cache-1
 
 == Rebuild index
 
-The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for specified caches or cache groups. Target caches or cache groups must be in Maintenance Mode.
+The `schedule_indexes_rebuild` command instructs Apache Ignite to schedule the rebuild of indexes for the specified caches or cache groups. This will result in the specified nodes being scheduled to start in link:maintenance-mode[Maintenance Mode] during the next startup.
 
 [source, shell]
 ----
@@ -1389,3 +1694,56 @@ Parameters:
 |--node-id | A list of nodes to rebuild indexes on. If not specified, schedules rebuild on all nodes.
 |--cache-names | Comma-separated list of cache names, optionally with indexes. If indexes are not specified, all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
 |--group-names | Comma-separated list of cache group names. Can be used simultaneously with cache names.
+|===
+
+
+== Event management
+
+The control utility provides commands to enable, disable and check the status of events on all server nodes.
+
+=== Enable/disable events
+
+To enable or disable events on all server nodes, use the `--event enable/disable` command.
+
+[source, shell]
+----
+control.sh|bat --event enable|disable event1[,...,eventN]
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `event1[,...,eventN]`| Specifies a comma-separated list of events to enable/disable.
+|===
+
+Examples:
+[source, shell]
+----
+control.sh|bat --event enable EVT_CACHE_STARTED,EVT_CACHE_STOPPED
+control.sh|bat --event disable EVT_CACHE_STARTED,EVT_CACHE_STOPPED
+----
+
+=== Events list and status
+
+To get the list and status of available events, use the `--event list` command.
+
+[source, shell]
+----
+control.sh|bat --event list [--enabled]
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--enabled`| List only enabled evente.
+|===
+
+Examples:
+[source, shell]
+----
+control.sh|bat --event list --enabled
+----

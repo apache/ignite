@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -216,13 +217,25 @@ public class DataStorageConfiguration implements Serializable {
 
     /** 
      * Additional directories where index and partition files are stored.
-     * User may want to use dedicated storage for cache is server has several physical disks.
+     * User may want to use dedicated storage for cache if server has several physical disks.
      * Spreading load across several disks can improve performance.
      *
+     * @see #getStoragePath()
      * @see CacheConfiguration#setStoragePaths(String...)
      */
     @IgniteExperimental
     private String[] extraStoragePaths;
+
+    /**
+     * Additional directories where snapshot files are stored.
+     * User may want to use dedicated storage for cache if server has several physical disks.
+     * Spreading snapshot across several disks can improve performance.
+     *
+     * @see IgniteConfiguration#getSnapshotPath()
+     * @see CacheConfiguration#setStoragePaths(String...)
+     */
+    @IgniteExperimental
+    private String[] extraSnapshotPaths;
 
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -289,6 +302,7 @@ public class DataStorageConfiguration implements Serializable {
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
 
     /** Factory to provide I/O interface for data storage files */
+    @GridToStringExclude
     private FileIOFactory fileIOFactory =
         IgniteSystemProperties.getBoolean(IGNITE_USE_ASYNC_FILE_IO_FACTORY, DFLT_USE_ASYNC_FILE_IO_FACTORY) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
@@ -575,6 +589,14 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * @return Additional directories for snapshots.
+     */
+    @IgniteExperimental
+    public String[] getExtraSnapshotPaths() {
+        return extraSnapshotPaths;
+    }
+
+    /**
      * Sets a path to the root directory where the Persistent Store will persist data and indexes.
      * By default, the Persistent Store's files are located under Ignite work directory.
      *
@@ -597,6 +619,20 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setExtraStoragePaths(String... extraStoragePaths) {
         this.extraStoragePaths = extraStoragePaths;
+
+        return this;
+    }
+
+    /**
+     * Sets a paths to the root directories where the snapshot files stored.
+     * By default, {@link IgniteConfiguration#getSnapshotPath()} used.
+     * Length of {@code extraSnapshotPaths} must be equal to the length of {@link #getExtraStoragePaths()}.
+     *
+     * @param extraSnapshotPaths Extra snapshot paths where snapshot files can be stored.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setExtraSnapshotPaths(String... extraSnapshotPaths) {
+        this.extraSnapshotPaths = extraSnapshotPaths;
 
         return this;
     }

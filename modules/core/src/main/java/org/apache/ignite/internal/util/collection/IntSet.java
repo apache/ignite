@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.collection;
 
+import java.util.BitSet;
 import java.util.Set;
 
 /**
@@ -32,6 +33,9 @@ public interface IntSet extends Set<Integer> {
     /** Removes the specified element from this set. */
     boolean remove(int element);
 
-    /** Returns array with primitive types **/
+    /** Returns array with primitive types. **/
     int[] toIntArray();
+
+    /** Returns BitSet. **/
+    BitSet toBitSet();
 }

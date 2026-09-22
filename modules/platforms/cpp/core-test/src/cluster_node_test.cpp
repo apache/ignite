@@ -119,12 +119,6 @@ BOOST_AUTO_TEST_CASE(IgniteGetAttribute)
     BOOST_REQUIRE(nodes[0].IsAttributeSet(ATTR_GRID_NAME));
     std::string gridName = nodes[0].GetAttribute<std::string>(ATTR_GRID_NAME);
     BOOST_REQUIRE(!gridName.empty());
-
-
-    const std::string ATTR_PHY_RAM = "org.apache.ignite.phy.ram";
-    BOOST_REQUIRE(nodes[0].IsAttributeSet(ATTR_PHY_RAM));
-    int64_t phyRam = nodes[0].GetAttribute<int64_t>(ATTR_PHY_RAM);
-    BOOST_REQUIRE(phyRam > 0);
 }
 
 BOOST_AUTO_TEST_CASE(IgniteGetAttributes)

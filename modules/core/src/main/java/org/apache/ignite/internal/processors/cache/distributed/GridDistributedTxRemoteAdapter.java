@@ -195,16 +195,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean activeCachesDeploymentEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
-        throw new UnsupportedOperationException("Remote tx doesn't support deployment.");
-    }
-
-    /** {@inheritDoc} */
     @Override public void addActiveCache(GridCacheContext<?, ?> cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
     }
@@ -627,6 +617,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                                 true,
                                                 true,
                                                 txEntry.keepBinary(),
+                                                txEntry.keepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -648,6 +639,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                                 true,
                                                 true,
                                                 txEntry.keepBinary(),
+                                                txEntry.keepBinaryInInterceptor(),
                                                 txEntry.hasOldValue(),
                                                 txEntry.oldValue(),
                                                 topVer,
@@ -685,6 +677,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                             true,
                                             true,
                                             txEntry.keepBinary(),
+                                            txEntry.keepBinaryInInterceptor(),
                                             txEntry.hasOldValue(),
                                             txEntry.oldValue(),
                                             topVer,

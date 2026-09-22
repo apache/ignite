@@ -90,7 +90,7 @@ public class SystemWorkersTerminationTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteThread thread = new IgniteThread(worker);
+        IgniteThread thread = U.newThread(worker);
 
         failureHndThreadName = null;
 

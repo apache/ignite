@@ -1,6 +1,150 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite distributed database for high-performance computing 2.18.0
+-----------------------------------------------------------
+(!) WARNINGS:
+* Removed deprecated GridClient.
+* Removed deprecated SpiQuery.
+* Removed setSharedMemoryPort from TcpCommunicationSpi.
+
+* SqlFieldsQuery#setLazy/isLazy marked as deprecated.
+* DeploymentSPI marked as deprecated.
+
+No longer experimental parts and components:
+* Calcite-based query engine.
+* Performance statistics.
+* System views.
+* Tracing instrumentation.
+* .Net platform cache.
+* СDC.
+* Service Middleware.
+* JDBC driver partition awareness.
+* IndexQuery API.
+* DumpReader consumer and DumpReaderConfiguration.
+* Metric registry filter based on regular expression.
+* System properties:
+    IGNITE_WAIT_FOR_BACKUPS_ON_SHUTDOWN
+    IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION
+    IGNITE_SNAPSHOT_SEQUENTIAL_WRITE
+    IGNITE_CONFIGURATION_VIEW_PACKAGES
+* Control utility commands:
+    Print metadata
+    Print list of binary metadata types
+    Print detailed info about specified binary type
+    Removed the metadata of the specified type
+    Update cluster metadata from specified file
+    Print tracing configuration
+    Reset all specific tracing configuration
+    Set new tracing configuration
+
+Ignite:
+* Added SessionContext API.
+* Added store crash recovery data to checkpoint recovery files.
+* Added support for multiple storage paths per cache.
+* Added TCP connection pool metrics.
+* Added support for partition loss detection after cluster inactivity.
+* Added system views recording to perfStat report.
+* Added cache storage support for --persistence commands.
+* Added cache names filter to dump reader.
+* Added metrics to improve node network unavailability detection.
+* Added authorization for Compute Job cancellation.
+* Added metrics for bytes inserted/removed from/to cache groups.
+* Added capturing of cluster node certificates during join process.
+* Added tx deadlocks count metric.
+* Added ability to create tables for already existing cache with defined schema.
+* Added performance statistics for putAllConflict, removeAllConflict operations.
+* Added a warning if the index inline size is too large.
+* Added LastArchivedSegment metric.
+* Added CODEOWNERS for platforms.
+* Added a client router node metric.
+* Added data center ID to the ClusterNodeView.
+* Added an affinity backup filter that assigns partition copies evenly between data centers.
+* Added filtering capabilities to "metastorage" and "distributedMetastorage" system views.
+* Fixed in-memory cluster hangs when an error is thrown on activation.
+* Fixed hangs in put operations with RANDOM_LRU and RANDOM_2_LRU eviction policies.
+* Fixed read-through skipping in DML operations.
+* Fixed an issue where IndexQuery couldn't use an index until data population completed.
+* Fixed a memory leak in HeavyQueriesTracker.
+* Fixed freelist corruption in JDK 17 with Shenandoah GC and assertions turned off.
+* Fixed query entity configuration merge on node join.
+* Fixed NullPointerException when getting the cluster name on an inactive cluster.
+* Fixed CdcCommandLineStartup interruption.
+* Fixed snapshot restore failures due to non-serializable cache group names collections.
+* Fixed a binary compatibility issue with the dcId property.
+* Fixed transaction closing on explicit rollback or commit.
+* Fixed snapshot restoration when indexPath was equal to storagePath.
+* Fixed reading of empty unsupported system views in perfStat.
+* Fixed inconsistent behavior on concurrent commit and timeout with 1PC.
+* Fixed suboptimal expire shift calculation.
+* Fixed the corrupted tree exception on expiration.
+* Fixed H2 UNION query diagnostic plans (normalization added).
+* Fixed primitive column descriptor problem with alias on key or val field.
+* Fixed CdcMain to clear corrupted cdc state files.
+* Optimized cache warmup by using multiple threads.
+* Optimized discovery for multi-DC scenarios.
+* Optimized rebalancing in multi-DC mode.
+* Optimized the Cache API for multi-DC.
+* Optimized SQL Calcite-related operations for multi-DC.
+* Optimized the Java thin client for multi-DC scenarios.
+* Updated jetty-server dependency version to 11.0.25.
+* Updated commons-lang3 dependency version to 3.18.0.
+
+SQL:
+* Added a system view for SQL query plan history.
+* Added initiatorId to the SQL_QUERY_HISTORY system view.
+* Added information about query initiator id to log.
+* Fixed node crash after SQL query with WITH clause.
+* Fixed indexed field validation.
+
+SQL Calcite:
+* Added support of user-defined table functions.
+* Added UNNEST operator support.
+* Added HASH join type support.
+* Added a query blocking tasks executor (enables SQL execution inside UDFs).
+* Added non-equi condition support for LEFT/RIGHT/FULL/ANTI HASH JOIN.
+* Added heuristics to optimize join order, limit joins number to commute in planning.
+* Added dynamic configuration to disable a rule globally.
+* Added thread pool starvation warning, add UDF query warning.
+* Added number of passed query parameters validation.
+* Fixed MergeJoin/NestedLoopJoin buffers overflow.
+* Fixed merge filter to scan after trimmed fields.
+* Fixed incorrect processing of IS NOT DISTINCT condition in MergeJoin.
+* Fixed cast of dynamic parameters.
+* Fixed wider type for fixed chars coercion.
+* Fixed NVL/COALESCE failure with correlated subquery as parameter.
+* Fixed excessive log output on planning error.
+* Fixed assertion on planning for filter with double correlate.
+* Fixed function with schema serialization.
+* Fixed "field names not distinct" assertion error.
+* Optimized memory consumption for hash-table based operators.
+* Optimized IN statement with literals.
+* Optimized Row reusing for non-storing accumulators.
+* Optimized scans with filter.
+* Updated Calcite version to 1.40.
+
+Control utility:
+* Added support for interactive input of sensitive command arguments.
+* Added rolling upgrade commands.
+* Added WAL state/enable/disable commands.
+* Added checkpoint command to control utility.
+* Added offline command support to the control utility.
+* Fixed authorization for the --kill compute command and authorization error propagation.
+* Fixed cache list command if mapped to a client node.
+* Removed redundant permission check to cancel services.
+
+Java thin client:
+* Added thin client API to create SQL caches.
+* Added SqlFieldsQuery initiator ID support.
+* Added handshake timeout configuration for java thin client.
+* Fixed multi-key operations unordered map/set warnings in server logs.
+* Fixed duplicate channel handling in the thin client.
+* Fixed management client connection if the 'newThinConnectionsEnabled' property is set.
+* Fixed binary meta sending on reconnect.
+
+JDBC:
+* Added JDBC local query flag.
+
 Apache Ignite In-Memory Distributed Database 2.17.0
 -----------------------------------------------------------
 

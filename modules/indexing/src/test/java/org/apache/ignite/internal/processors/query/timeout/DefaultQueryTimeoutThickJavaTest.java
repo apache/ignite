@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -33,33 +32,26 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class DefaultQueryTimeoutThickJavaTest extends AbstractDefaultQueryTimeoutTest {
-    /** Lazy mode. */
-    @Parameterized.Parameter(value = 0)
-    public boolean lazy;
-
     /** Execute update queries. */
-    @Parameterized.Parameter(value = 1)
+    @Parameterized.Parameter()
     public boolean update;
 
     /** Execute local queries. */
-    @Parameterized.Parameter(value = 2)
+    @Parameterized.Parameter(1)
     public boolean local;
 
     /** */
-    @Parameterized.Parameters(name = "lazy={0}, update={1}, local={2}")
+    @Parameterized.Parameters(name = "update={0}, local={1}")
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
         boolean[] arrBool = new boolean[] {true, false};
+        for (boolean update0 : arrBool) {
+            for (boolean local0 : arrBool) {
+                if (local0 && update0)
+                    continue;
 
-        for (boolean lazy0 : arrBool) {
-            for (boolean update0 : arrBool) {
-                for (boolean local0 : arrBool) {
-                    if (local0 && update0)
-                        continue;
-
-                    params.add(new Object[] {lazy0, update0, local0});
-                }
+                params.add(new Object[] {update0, local0});
             }
         }
 
@@ -97,7 +89,6 @@ public class DefaultQueryTimeoutThickJavaTest extends AbstractDefaultQueryTimeou
 
     /** */
     private void executeQuery0(SqlFieldsQuery qry) throws Exception {
-        qry.setLazy(lazy);
         qry.setLocal(local);
 
         IgniteEx ign = local ? grid(0) : grid("cli");

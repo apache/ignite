@@ -26,14 +26,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -252,6 +253,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ClusterState.ACTIVE);
 
+        createDataStructures();
+
         putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1));
 
         return ign;
@@ -284,7 +287,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 if (ign.configuration().isClientMode() == Boolean.TRUE)
                     continue;
 
-                if (((ThreadPoolExecutor)((IgniteEx)ign).context().pools().getSnapshotExecutorService()).getTaskCount() <= 1)
+                if (((IgniteEx)ign).context().pools().getSnapshotExecutorService().getTaskCount() <= 1)
                     return false;
             }
 
@@ -522,7 +525,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGrpNames, boolean comprParts) {
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(name, null, cacheGrpNames, false, onlyPrimary, true, comprParts, encrypted).get();
+            .createSnapshot(name, null, cacheGrpNames, false, onlyPrimary, true, comprParts, encrypted, false, false).get();
     }
 
     /** */
@@ -731,5 +734,19 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertTrue(cacheCfgCb);
             assertTrue(stopped);
         }
+    }
+
+    /**
+     * Creates some data structures in cluster.
+     * Cache group filter must exclude ds groups from dump.
+     */
+    private void createDataStructures() {
+        IgniteCountDownLatch latch = cli.countDownLatch("testSeq", 2, true, true);
+
+        latch.countDown();
+
+        IgniteAtomicSequence seq = cli.atomicSequence("testSeq", 0, true);
+
+        seq.incrementAndGet();
     }
 }

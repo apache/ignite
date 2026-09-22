@@ -241,4 +241,11 @@ public interface DataRegionMetrics {
      * @return Total used offheap size in bytes.
      */
     public long getOffheapUsedSize();
+
+    /**
+     * Data region eviction-started flag.
+     *
+     * @return {@code true} if page eviction was triggered due to data region memory pressure.
+     */
+    public boolean isEvictionsStarted();
 }

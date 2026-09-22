@@ -44,6 +44,8 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_DESC;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_DESC;
@@ -105,6 +107,9 @@ public class TcpCommunicationMetricsListener {
     /** Received messages count metric. */
     private final LongAdderMetric rcvdMsgsMetric;
 
+    /** Outbound messages queue size metric. */
+    private final LongAdderMetric outboundMessagesQueueSizeMetric;
+
     /** Counters of sent and received messages by direct type. */
     private final IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> msgCntrsByType;
 
@@ -146,9 +151,14 @@ public class TcpCommunicationMetricsListener {
         sentMsgsMetric = mreg.longAdderMetric(SENT_MESSAGES_METRIC_NAME, SENT_MESSAGES_METRIC_DESC);
         rcvdMsgsMetric = mreg.longAdderMetric(RECEIVED_MESSAGES_METRIC_NAME, RECEIVED_MESSAGES_METRIC_DESC);
 
+        outboundMessagesQueueSizeMetric = mreg.longAdderMetric(
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        );
+
         spiCtx.addMetricRegistryCreationListener(mreg -> {
-            // Metrics for the specific nodes.
-            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
+            // Metrics for the specific nodes or other communication metrics.
+            if (!TcpCommunicationSpi.isCommunicationMetrics(mreg.name()))
                 return;
 
             ((MetricRegistryImpl)mreg).longAdderMetric(
@@ -277,6 +287,15 @@ public class TcpCommunicationMetricsListener {
     }
 
     /**
+     * Gets outbound messages queue size.
+     *
+     * @return Outbound messages queue size.
+     */
+    public int outboundMessagesQueueSize() {
+        return (int)outboundMessagesQueueSizeMetric.value();
+    }
+
+    /**
      * Gets received messages counts (grouped by type).
      *
      * @return Map containing message types and respective counts.
@@ -380,7 +399,7 @@ public class TcpCommunicationMetricsListener {
         }
 
         for (ReadOnlyMetricRegistry mreg : spiCtx.metricRegistries()) {
-            if (mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)) {
+            if (TcpCommunicationSpi.isCommunicationMetrics(mreg.name())) {
                 mreg.findMetric(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME).reset();
 
                 mreg.findMetric(RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME).reset();

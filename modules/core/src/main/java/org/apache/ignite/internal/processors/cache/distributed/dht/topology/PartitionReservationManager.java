@@ -36,8 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,7 +45,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_PARTITIONS_RESERVE;
 
 /**
  * Class responsible for partition reservation for queries executed on local node. Prevents partitions from being
@@ -107,40 +104,38 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
         UUID nodeId,
         long reqId
     ) throws IgniteCheckedException {
-        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_PARTITIONS_RESERVE, MTC.span()))) {
-            assert reqTopVer != null;
+        assert reqTopVer != null;
 
-            AffinityTopologyVersion topVer = ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(reqTopVer);
+        AffinityTopologyVersion topVer = ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(reqTopVer);
 
-            if (F.isEmpty(cacheIds))
-                return new PartitionReservation(Collections.emptyList());
+        if (F.isEmpty(cacheIds))
+            return new PartitionReservation(Collections.emptyList());
 
-            Collection<Integer> partIds = partsToCollection(explicitParts);
+        Collection<Integer> partIds = partsToCollection(explicitParts);
 
-            List<GridReservable> reserved = new ArrayList<>();
+        List<GridReservable> reserved = new ArrayList<>();
 
-            for (int i = 0; i < cacheIds.size(); i++) {
-                GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds.get(i));
+        for (int i = 0; i < cacheIds.size(); i++) {
+            GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds.get(i));
 
-                // Cache was not found, probably was not deployed yet.
-                if (cctx == null) {
-                    return new PartitionReservation(reserved,
-                        String.format("Failed to reserve partitions for query (cache is not " +
-                                "found on local node) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s]",
-                            ctx.localNodeId(), nodeId, reqId, topVer, cacheIds.get(i)));
-                }
-
-                if (!cctx.rebalanceEnabled())
-                    continue;
-
-                String err = reservePartitions(reserved, cctx, partIds, topVer, nodeId, "reqId=" + reqId);
-
-                if (err != null)
-                    return new PartitionReservation(reserved, err);
+            // Cache was not found, probably was not deployed yet.
+            if (cctx == null) {
+                return new PartitionReservation(reserved,
+                    String.format("Failed to reserve partitions for query (cache is not " +
+                            "found on local node) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s]",
+                        ctx.localNodeId(), nodeId, reqId, topVer, cacheIds.get(i)));
             }
 
-            return new PartitionReservation(reserved);
+            if (!cctx.rebalanceEnabled())
+                continue;
+
+            String err = reservePartitions(reserved, cctx, partIds, topVer, nodeId, "reqId=" + reqId);
+
+            if (err != null)
+                return new PartitionReservation(reserved, err);
         }
+
+        return new PartitionReservation(reserved);
     }
 
     /**
@@ -159,19 +154,17 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
         UUID nodeId,
         String qryInfo
     ) throws IgniteCheckedException {
-        try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_PARTITIONS_RESERVE, MTC.span()))) {
-            assert reqTopVer != null;
+        assert reqTopVer != null;
 
-            AffinityTopologyVersion topVer = ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(reqTopVer);
+        AffinityTopologyVersion topVer = ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(reqTopVer);
 
-            Collection<Integer> partIds = partsToCollection(explicitParts);
+        Collection<Integer> partIds = partsToCollection(explicitParts);
 
-            List<GridReservable> reserved = new ArrayList<>();
+        List<GridReservable> reserved = new ArrayList<>();
 
-            String err = reservePartitions(reserved, cctx, partIds, topVer, nodeId, qryInfo);
+        String err = reservePartitions(reserved, cctx, partIds, topVer, nodeId, qryInfo);
 
-            return new PartitionReservation(reserved, err);
-        }
+        return new PartitionReservation(reserved, err);
     }
 
     /**
@@ -232,9 +225,6 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
 
                     // Mark that we checked this replicated cache.
                     reservations.putIfAbsent(grpKey, REPLICATED_RESERVABLE);
-
-                    MTC.span().addLog(() -> "Cache partitions were reserved [cache=" + cctx.name() +
-                        ", partitions=[0.." + partsCnt + ']');
                 }
             }
             else { // Reserve primary partitions for partitioned cache (if no explicit given).
@@ -302,9 +292,6 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                 finally {
                     top.readUnlock();
                 }
-
-                MTC.span().addLog(() -> "Cache partitions were reserved [cache=" + cctx.name() +
-                    ", partitions=" + partIds + ", topology=" + topVer + ']');
 
                 if (explicitParts == null && reservedCnt > 0) {
                     // We reserved all the primary partitions for cache, attempt to add group reservation.
@@ -420,8 +407,6 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
             }
 
             reserved.add(grpReservation);
-
-            MTC.span().addLog(() -> "Cache partitions were reserved " + grpReservation);
         }
 
         return null;

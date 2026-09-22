@@ -22,11 +22,17 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.cache.Cache;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -193,5 +199,51 @@ public class DistributedComputing {
     }
 
     // end::access-data[]
+
+    // tag::local-scan-query[]
+    public static class AverageAgeTask implements IgniteCallable<long[]> {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        @Override
+        public long[] call() throws Exception {
+            IgniteCache<Long, Person> cache = ignite.cache("person");
+            Affinity<Long> affinity = ignite.affinity("person");
+            ClusterNode localNode = ignite.cluster().localNode();
+
+            long[] sumAndCount = new long[2];
+
+            try (QueryCursor<Cache.Entry<Long, Person>> cursor = cache
+                    .query(new ScanQuery<Long, Person>().setLocal(true))) {
+                for (Cache.Entry<Long, Person> entry : cursor) {
+                    if (affinity.isPrimary(localNode, entry.getKey())) {
+                        sumAndCount[0] += entry.getValue().getAge();
+                        sumAndCount[1]++;
+                    }
+                }
+            }
+
+            return sumAndCount;
+        }
+    }
+
+    void calculateAverageAge(Ignite ignite) {
+        Collection<long[]> results = ignite.compute(ignite.cluster().forDataNodes("person"))
+                .broadcast(new AverageAgeTask());
+
+        long totalAge = 0;
+        long totalCount = 0;
+
+        for (long[] result : results) {
+            totalAge += result[0];
+            totalCount += result[1];
+        }
+
+        double averageAge = totalCount == 0 ? 0 : (double) totalAge / totalCount;
+
+        System.out.println("Average age: " + averageAge);
+    }
+
+    // end::local-scan-query[]
 
 }

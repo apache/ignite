@@ -124,4 +124,9 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
     @Override public void spiStop() throws IgniteSpiException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "NoopEncryptionSpi";
+    }
 }

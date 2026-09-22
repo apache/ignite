@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtEmbeddedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -205,6 +204,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         skipVals,
                         false,
                         opCtx != null && opCtx.skipStore(),
+                        opCtx != null && opCtx.skipReadThrough(),
+                        opCtx != null && opCtx.keepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -307,6 +308,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         skipVals,
                         false,
                         opCtx != null && opCtx.skipStore(),
+                        opCtx != null && opCtx.skipReadThrough(),
+                        opCtx != null && opCtx.keepBinaryInInterceptor(),
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -636,6 +639,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(
         Collection<KeyCacheObject> keys,
         long timeout,
+        long waitTimeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
@@ -656,9 +660,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             isRead,
             retval,
             timeout,
+            waitTimeout,
             createTtl,
             accessTtl,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.skipReadThrough(),
+            opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
@@ -733,8 +740,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                    ctx.deploymentEnabled()));
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                                 req.version(ver);
                             }
@@ -764,7 +770,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridDistributedUnlockRequest req = mapping.getValue();
+                GridNearUnlockRequest req = mapping.getValue();
 
                 assert !n.isLocal();
 
@@ -837,8 +843,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     GridNearUnlockRequest req = map.get(primary);
 
                     if (req == null) {
-                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                            ctx.deploymentEnabled()));
+                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                         req.version(ver);
                     }
@@ -868,7 +873,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
             ClusterNode n = mapping.getKey();
 
-            GridDistributedUnlockRequest req = mapping.getValue();
+            GridNearUnlockRequest req = mapping.getValue();
 
             if (!F.isEmpty(req.keys())) {
                 req.completedVersions(committed, rolledback);
@@ -899,9 +904,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param txRead Tx read.
      * @param retval Return value flag.
      * @param timeout Lock timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Lock future.
      */
     IgniteInternalFuture<Exception> lockAllAsync(
@@ -914,9 +922,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean txRead,
         final boolean retval,
         final long timeout,
+        final long waitTimeout,
         final long createTtl,
         final long accessTtl,
         final boolean skipStore,
+        final boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         final boolean keepBinary
     ) {
         assert keys != null;
@@ -938,9 +949,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 txRead,
                 retval,
                 timeout,
+                waitTimeout,
                 createTtl,
                 accessTtl,
                 skipStore,
+                skipReadThrough,
+                keepBinaryInInterceptor,
                 keepBinary);
         }
         else {
@@ -959,9 +973,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             txRead,
                             retval,
                             timeout,
+                            waitTimeout,
                             createTtl,
                             accessTtl,
                             skipStore,
+                            skipReadThrough,
+                            keepBinaryInInterceptor,
                             keepBinary);
                     }
                 }
@@ -979,9 +996,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param txRead Tx read.
      * @param retval Return value flag.
      * @param timeout Lock timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Lock future.
      */
     private IgniteInternalFuture<Exception> lockAllAsync0(
@@ -994,9 +1014,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean txRead,
         boolean retval,
         final long timeout,
+        long waitTimeout,
         final long createTtl,
         final long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean keepBinary) {
         int cnt = keys.size();
 
@@ -1009,11 +1032,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 txRead,
                 retval,
                 timeout,
+                waitTimeout,
                 tx,
                 threadId,
                 createTtl,
                 accessTtl,
                 skipStore,
+                skipReadThrough,
+                keepBinaryInInterceptor,
                 keepBinary);
 
             // Add before mapping.
@@ -1060,7 +1086,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     @Override public Exception apply(Boolean b, Exception e) {
                         if (e != null)
                             e = U.unwrap(e);
-                        else if (!b)
+                        else if (!b && !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                             e = new GridCacheLockTimeoutException(ver);
 
                         return e;
@@ -1082,7 +1108,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary);
+                skipReadThrough,
+                keepBinaryInInterceptor,
+                keepBinary,
+                waitTimeout);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {
@@ -1090,8 +1119,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         Exception e) {
                         if (e != null)
                             e = U.unwrap(e);
-
-                        assert !tx.empty();
+                        else if (ret != null && !ret.success())
+                            e = new GridCacheLockTimeoutException(ver);
 
                         return e;
                     }

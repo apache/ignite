@@ -193,7 +193,7 @@ public class IgniteDynamicCacheStartCoordinatorFailoverTest extends GridCommonAb
 
                     GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg0.message();
 
-                    Exception err = singleMsg.getError();
+                    Throwable err = singleMsg.getError();
 
                     if (Boolean.TRUE.equals(attr) && err != null) {
                         // skip message

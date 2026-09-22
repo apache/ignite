@@ -17,54 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Force keys response. Contains absent keys.
  */
 public class GridDhtForceKeysResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
-    /** Error. */
-    @GridDirectTransient
-    private volatile IgniteCheckedException err;
-
-    /** Serialized error. */
-    private byte[] errBytes;
+    /** Error message. */
+    @Order(2)
+    @Nullable volatile ErrorMessage errMsg;
 
     /** Missed (not found) keys. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> missedKeys;
+    @Order(3)
+    List<KeyCacheObject> missedKeys;
 
     /** Cache entries. */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheEntryInfo.class)
-    private List<GridCacheEntryInfo> infos;
+    @Order(4)
+    List<GridCacheEntryInfo> infos;
 
     /**
      * Empty constructor.
@@ -77,56 +70,39 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @param cacheId Cache ID.
      * @param futId Request id.
      * @param miniId Mini-future ID.
-     * @param addDepInfo Deployment info flag.
+     * @param err Error.
      */
-    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, IgniteCheckedException err) {
         assert futId != null;
         assert miniId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
-        this.addDepInfo = addDepInfo;
-    }
-
-    /**
-     * Sets error.
-     *
-     * @param err Error.
-     */
-    public void error(IgniteCheckedException err) {
-        this.err = err;
+        this.errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
-        return err;
+    @Override public @Nullable Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return Keys.
-     */
+    /** @return Keys. */
     public Collection<KeyCacheObject> missedKeys() {
-        return missedKeys == null ? Collections.<KeyCacheObject>emptyList() : missedKeys;
+        return F.emptyIfNull(missedKeys);
     }
 
-    /**
-     * @return Forced entries.
-     */
+    /** @return Forced entries. */
     public Collection<GridCacheEntryInfo> forcedInfos() {
-        return infos == null ? Collections.<GridCacheEntryInfo>emptyList() : infos;
+        return F.emptyIfNull(infos);
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @return Mini-future ID.
-     */
+    /** @return Mini-future ID. */
     public IgniteUuid miniId() {
         return miniId;
     }
@@ -154,152 +130,8 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (missedKeys != null)
-            prepareMarshalCacheObjects(missedKeys, cctx);
-
-        if (infos != null) {
-            for (GridCacheEntryInfo info : infos)
-                info.marshal(cctx.cacheObjectContext());
-        }
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (missedKeys != null)
-            finishUnmarshalCacheObjects(missedKeys, cctx, ldr);
-
-        if (infos != null) {
-            for (GridCacheEntryInfo info : infos)
-                info.unmarshal(cctx.cacheObjectContext(), ldr);
-        }
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCollection(infos, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeIgniteUuid(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeCollection(missedKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                infos = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                miniId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                missedKeys = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 43;
     }
 
     /** {@inheritDoc} */

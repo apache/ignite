@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Movi
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PreloadingRestartWhileClearingPartitionTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.RentingPartitionIsOwnedDuringEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteLostPartitionsOnLeaveBaselineSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteLostPartitionsRecoveryTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicPartitionCounterStateConsistencyHistoryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicPartitionCounterStateConsistencyTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicVolatilePartitionCounterStateConsistencyTest;
@@ -46,6 +47,9 @@ import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheMapO
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheRemoteMultiplePartitionReservationTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryConcurrentTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryWithConcurrentRollbackTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointItTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointNearCacheVisibilityTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxSavepointParameterizedTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithKeyContentionSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -79,6 +83,7 @@ public class IgniteCacheTestSuite12 {
         GridTestUtils.addTestIfNeeded(suite, CachePartitionLostAfterSupplierHasLeftTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CachePartitionLossWithPersistenceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteLostPartitionsOnLeaveBaselineSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteLostPartitionsRecoveryTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxCrossCacheMapOnInvalidTopologyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxCrossCacheRemoteMultiplePartitionReservationTest.class, ignoredTests);
@@ -107,6 +112,10 @@ public class IgniteCacheTestSuite12 {
         GridTestUtils.addTestIfNeeded(suite, MovingPartitionIsEvictedDuringClearingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, EvictionWhilePartitionGroupIsReservedTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DelayedOwningDuringExchangeTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TxSavepointItTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxSavepointNearCacheVisibilityTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxSavepointParameterizedTest.class, ignoredTests);
 
         return suite;
     }

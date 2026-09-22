@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -25,7 +24,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -42,6 +40,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -69,7 +68,7 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
  * @see InitMessage
  * @see FullMessage
  */
-public class DistributedProcess<I extends Serializable, R extends Serializable> {
+public class DistributedProcess<I extends Message, R extends Message> {
     /** Process type. */
     private final DistributedProcessType type;
 
@@ -97,7 +96,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     public DistributedProcess(
         GridKernalContext ctx,
         DistributedProcessType type,
-        Function<I, IgniteInternalFuture<R>> exec,
+        BiFunction<UUID, I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish
     ) {
         this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req, false));
@@ -113,7 +112,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     public DistributedProcess(
         GridKernalContext ctx,
         DistributedProcessType type,
-        Function<I, IgniteInternalFuture<R>> exec,
+        BiFunction<UUID, I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
@@ -150,7 +149,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 initCoordinator(p, topVer);
 
             try {
-                IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
+                IgniteInternalFuture<R> fut = exec.apply(msg.processId(), (I)msg.request());
 
                 fut.listen(() -> {
                     if (fut.error() != null)
@@ -489,6 +488,36 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Incremental snapshot restore start phase.
          */
-        RESTORE_INCREMENTAL_SNAPSHOT_START
+        RESTORE_INCREMENTAL_SNAPSHOT_START,
+
+        /**
+         * Snapshot metadatas check.
+         */
+        CHECK_SNAPSHOT_METAS,
+
+        /**
+         * Snapshot partitions validation.
+         */
+        CHECK_SNAPSHOT_PARTS,
+
+        /**
+         * Cluster version Rolling Upgrade enable process.
+         */
+        RU_ENABLE,
+
+        /**
+         * Cluster version finalization prepare phase.
+         */
+        RU_PREPARE_VERSION_FINALIZATION,
+
+        /**
+         * Cluster version finalization complete phase.
+         */
+        RU_COMPLETE_VERSION_FINALIZATION,
+
+        /**
+         * Cluster version finalization abort process.
+         */
+        RU_ABORT_VERSION_FINALIZATION,
     }
 }

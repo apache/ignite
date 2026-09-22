@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.thread.OomExceptionHandler;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -61,7 +62,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
@@ -601,7 +601,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                                     // not-yet-flushed dirty pages have been logged.
                                     WalStateChangeWorker worker = new WalStateChangeWorker(msg, cpFut);
 
-                                    IgniteThread thread = new IgniteThread(worker);
+                                    IgniteThread thread = U.newThread(worker);
 
                                     thread.setUncaughtExceptionHandler(new OomExceptionHandler(
                                         cctx.kernalContext()));

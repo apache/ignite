@@ -17,29 +17,56 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
  */
 public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    long order;
 
     /** */
-    private long order;
+    @Order(1)
+    boolean prevNodeAliveFlag;
+
+    /** Redirect addresses messages serialization holder. */
+    @Order(2)
+    @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
+
+    /** */
+    @Order(3)
+    IgniteNodeFeatureSet nodeFeatures;
+
+    /**
+     * Default constructor for {@link MessageFactory}.
+     */
+    public TcpDiscoveryHandshakeResponse() {
+        // No-op.
+    }
 
     /**
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
      * @param locNodeOrder Local node order.
+     * @param locNodeFeatures Local node features.
      */
-    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder) {
+    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder, IgniteNodeFeatureSet locNodeFeatures) {
         super(creatorNodeId);
 
         order = locNodeOrder;
+
+        this.nodeFeatures = locNodeFeatures;
     }
 
     /**
@@ -49,17 +76,17 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
      * @return previous node alive flag.
      */
     public boolean previousNodeAlive() {
-        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
+        return prevNodeAliveFlag;
     }
 
     /**
      * Sets topology change flag.<br>
      * {@code True} means node has connectivity to it's previous node in a ring.
      *
-     * @param prevNodeAlive previous node alive flag.
+     * @param prevNodeAliveFlag previous node alive flag.
      */
-    public void previousNodeAlive(boolean prevNodeAlive) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeAlive);
+    public void previousNodeAlive(boolean prevNodeAliveFlag) {
+        this.prevNodeAliveFlag = prevNodeAliveFlag;
     }
 
     /**
@@ -71,27 +98,23 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         return order;
     }
 
-    /**
-     * Sets order of the node sent the response.
-     *
-     * @param order Order of the node sent the response.
-     */
-    public void order(long order) {
-        this.order = order;
+    /** @return Socket addresses list for redirect. */
+    public @Nullable Collection<InetSocketAddress> redirectAddresses() {
+        return F.isEmpty(redirectAddrsMsgs)
+            ? null
+            : F.transform(redirectAddrsMsgs, msg -> new InetSocketAddress(msg.address(), msg.port()));
     }
 
-    /**
-     * @return {@code True} if server supports client message acknowledge.
-     */
-    public boolean clientAck() {
-        return getFlag(CLIENT_ACK_FLAG_POS);
+    /** @param sockAddrs Socket addresses list for redirect. */
+    public void redirectAddresses(@Nullable Collection<InetSocketAddress> sockAddrs) {
+        redirectAddrsMsgs = sockAddrs == null
+            ? null
+            : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
     }
 
-    /**
-     * @param clientAck {@code True} if server supports client message acknowledge.
-     */
-    public void clientAck(boolean clientAck) {
-        setFlag(CLIENT_ACK_FLAG_POS, clientAck);
+    /** @return Features supported by the sender node. */
+    public IgniteNodeFeatureSet nodeFeatures() {
+        return nodeFeatures;
     }
 
     /** {@inheritDoc} */

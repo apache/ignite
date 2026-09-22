@@ -21,9 +21,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP;
-import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
-import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -137,7 +134,5 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
         assertEquals(4, ver.revisionTimestamp());
         assertArrayEquals(new byte[]{24, -27, -89, -20, -98, 50, 2, 18, 106, 105, -68, 35, 26, 107, -106, 91, -63, -41, 61, -18},
             ver.revisionHash());
-
-        IgniteProductVersion.fromString(VER_STR + '-' + BUILD_TSTAMP + '-' + REV_HASH_STR);
     }
 }

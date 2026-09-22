@@ -76,6 +76,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Number of transaction rollbacks. */
     private final IntMetricImpl txRollbacks;
 
+    /** Number of detected deadlocks. */
+    private final IntMetricImpl txDeadlocks;
+
     /** Last commit time. */
     private final AtomicLongMetric commitTime;
 
@@ -104,21 +107,22 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
         txCommits = mreg.intMetric("txCommits", "Number of transaction commits.");
         txRollbacks = mreg.intMetric("txRollbacks", "Number of transaction rollbacks.");
+        txDeadlocks = mreg.intMetric("txDeadlocks", "Number of transaction deadlocks.");
         commitTime = mreg.longMetric("commitTime", "Last commit time.");
         rollbackTime = mreg.longMetric("rollbackTime", "Last rollback time.");
-        totalTxSystemTime = mreg.longAdderMetric(METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node.");
-        totalTxUserTime = mreg.longAdderMetric(METRIC_TOTAL_USER_TIME, "Total transactions user time on node.");
+        totalTxSystemTime = mreg.longAdderMetric(METRIC_TOTAL_SYSTEM_TIME, "Total transactions system time on node, in milliseconds.");
+        totalTxUserTime = mreg.longAdderMetric(METRIC_TOTAL_USER_TIME, "Total transactions user time on node, in milliseconds.");
 
         txSystemTimeHistogram = mreg.histogram(
             METRIC_SYSTEM_TIME_HISTOGRAM,
             METRIC_TIME_BUCKETS,
-            "Transactions system times on node represented as histogram."
+            "Transactions system times on node represented as histogram, in milliseconds."
         );
 
         txUserTimeHistogram = mreg.histogram(
             METRIC_USER_TIME_HISTOGRAM,
             METRIC_TIME_BUCKETS,
-            "Transactions user times on node represented as histogram."
+            "Transactions user times on node represented as histogram, in milliseconds."
         );
     }
 
@@ -162,6 +166,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** {@inheritDoc} */
     @Override public int txRollbacks() {
         return txRollbacks.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int txDeadlocks() {
+        return txDeadlocks.value();
     }
 
     /** {@inheritDoc} */
@@ -218,6 +227,13 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     }
 
     /**
+     * Transaction deadlock callback.
+     */
+    public void onTxDeadlock() {
+        txDeadlocks.increment();
+    }
+
+    /**
      * Callback for completion of near transaction. Writes metrics of single near transaction.
      *
      * @param systemTime Transaction system time.
@@ -245,6 +261,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         txCommits.reset();
         rollbackTime.reset();
         txRollbacks.reset();
+        txDeadlocks.reset();
     }
 
     /** @return Current metrics values. */
@@ -403,6 +420,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         /** Number of transaction rollbacks. */
         private volatile int txRollbacks;
 
+        /** Number of transaction deadlocks. */
+        private volatile int txDeadlocks;
+
         /** Last commit time. */
         private volatile long commitTime;
 
@@ -442,6 +462,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         /** {@inheritDoc} */
         @Override public int txRollbacks() {
             return adapter != null ? adapter.txRollbacks() : txRollbacks;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int txDeadlocks() {
+            return adapter != null ? adapter.txDeadlocks() : txDeadlocks;
         }
 
         /** {@inheritDoc} */
@@ -485,6 +510,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             out.writeLong(rollbackTime);
             out.writeInt(txCommits);
             out.writeInt(txRollbacks);
+            out.writeInt(txDeadlocks);
         }
 
         /** {@inheritDoc} */
@@ -493,6 +519,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             rollbackTime = in.readLong();
             txCommits = in.readInt();
             txRollbacks = in.readInt();
+            txDeadlocks = in.readInt();
         }
     }
 }

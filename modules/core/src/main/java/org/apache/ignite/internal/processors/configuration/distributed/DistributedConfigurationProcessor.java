@@ -92,7 +92,6 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 //Register and actualize properties waited for this service.
                 isp.getDistributedConfigurationListeners()
                     .forEach(listener -> listener.onReadyToRegister(DistributedConfigurationProcessor.this));
-
             }
 
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {

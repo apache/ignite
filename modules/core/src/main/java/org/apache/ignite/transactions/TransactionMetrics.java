@@ -52,6 +52,13 @@ public interface TransactionMetrics {
     public int txRollbacks();
 
     /**
+     * Gets total number of transaction deadlocks.
+     *
+     * @return Number of transaction deadlocks.
+     */
+    public int txDeadlocks();
+
+    /**
      * Gets a map of all transactions for which the local node is the originating node.
      *
      * @return Map of local node owning transactions.

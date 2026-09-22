@@ -40,6 +40,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -51,6 +52,9 @@ import static org.junit.Assume.assumeFalse;
 public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** Snapshot group name. */
     private static final String SNAPSHOT_GROUP = "Snapshot";
+
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -262,7 +266,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage
+            && ((SingleNodeMessage)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
 
         fut = srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME));
 
@@ -283,7 +288,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
             awaitPartitionMapExchange();
 
-            spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+            spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage
+                && ((SingleNodeMessage)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_START.ordinal());
 
             fut = srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME), 1);
 

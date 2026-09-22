@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -59,13 +60,13 @@ public class MoveBinaryMetadataCompatibility extends IgnitePersistenceCompatibil
     public void test() throws Exception {
         String typeName = "TestBinaryType";
 
-        String fieldName = "testField";
-
-        String fieldVal = "testVal";
+        String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
 
         String cacheName = "testCache";
 
         String objKey = "obj";
+
+        String fieldOrderKey = "fieldOrder";
 
         String consid = "node1";
 
@@ -83,11 +84,17 @@ public class MoveBinaryMetadataCompatibility extends IgnitePersistenceCompatibil
 
             IgniteBinary binary = ignite.binary();
 
-            BinaryObject test = binary.builder(typeName).setField(fieldName, fieldVal).build();
+            BinaryObjectBuilder builder = binary.builder(typeName);
+
+            for (String fieldName : fieldNames)
+                builder.setField(fieldName, fieldName);
+
+            BinaryObject test = builder.build();
 
             IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cacheName).withKeepBinary();
 
             cache.put(objKey, test);
+            cache.put(fieldOrderKey, String.join(",", binary.type(typeName).fieldNames()));
         });
 
         stopAllGrids();
@@ -103,9 +110,13 @@ public class MoveBinaryMetadataCompatibility extends IgnitePersistenceCompatibil
         // check that binary object is still available in new version of grid
         BinaryObject obj = (BinaryObject)cache.get(objKey);
 
-        assertTrue(obj.hasField(fieldName));
+        for (String fieldName : fieldNames) {
+            assertTrue(obj.hasField(fieldName));
 
-        assertEquals(fieldVal, obj.field(fieldName));
+            assertEquals(fieldName, obj.field(fieldName));
+        }
+
+        assertEquals(cache.get(fieldOrderKey), String.join(",", obj.type().fieldNames()));
 
         newGrid.close();
     }

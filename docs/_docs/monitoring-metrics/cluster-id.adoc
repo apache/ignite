@@ -23,7 +23,7 @@ The length of the tag is limited by 280 characters.
 
 You can use the following methods to view the cluster ID and view or change the cluster tag:
 
-* Via the link:control-script#cluster-id-and-tag[control script].
+* Via the link:tools/control-script#cluster-id-and-tag[control script].
 * JMX Bean:
 +
 --

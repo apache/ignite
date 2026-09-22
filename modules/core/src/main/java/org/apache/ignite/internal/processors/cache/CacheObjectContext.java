@@ -24,10 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class CacheObjectContext implements CacheObjectValueContext {
-    /** */
-    private final GridKernalContext kernalCtx;
-
+public class CacheObjectContext extends AbstractCacheObjectContext {
     /** */
     private final String cacheName;
 
@@ -44,9 +41,6 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /** */
     private final boolean storeVal;
 
-    /** */
-    private final boolean addDepInfo;
-
     /** Binary enabled flag. */
     private final boolean binaryEnabled;
 
@@ -55,7 +49,6 @@ public class CacheObjectContext implements CacheObjectValueContext {
      * @param dfltAffMapper Default affinity mapper.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
-     * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
      * @param binaryEnabled Binary enabled flag.
      */
     @SuppressWarnings("deprecation")
@@ -65,15 +58,13 @@ public class CacheObjectContext implements CacheObjectValueContext {
         boolean customAffMapper,
         boolean cpyOnGet,
         boolean storeVal,
-        boolean addDepInfo,
         boolean binaryEnabled) {
-        this.kernalCtx = kernalCtx;
+        super(kernalCtx);
         this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
         this.customAffMapper = customAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
-        this.addDepInfo = addDepInfo;
         this.binaryEnabled = binaryEnabled;
     }
 
@@ -86,7 +77,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -112,11 +103,6 @@ public class CacheObjectContext implements CacheObjectValueContext {
      */
     public boolean customAffinityMapper() {
         return customAffMapper;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridKernalContext kernalContext() {
-        return kernalCtx;
     }
 
     /** {@inheritDoc} */

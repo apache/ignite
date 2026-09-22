@@ -17,28 +17,28 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
+    @Order(0)
     @GridToStringInclude
-    protected KeyCacheObject key;
+    public KeyCacheObject key;
 
     /** */
+    @Order(1)
     @GridToStringInclude
-    protected CacheObject val;
+    public CacheObject val;
 
     /**
      *
@@ -95,70 +95,6 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
         };
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage(val))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                key = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                val = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 95;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

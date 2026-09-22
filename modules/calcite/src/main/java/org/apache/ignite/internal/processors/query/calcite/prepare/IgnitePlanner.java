@@ -21,14 +21,18 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
@@ -80,6 +84,7 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
@@ -361,7 +366,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+        SqlValidator validator = createSqlValidator(catalogReader);
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator, catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         root = root.withRel(sqlToRelConverter.decorrelate(sqlNode, root.rel));
@@ -419,10 +424,19 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return w.toString();
     }
 
+    /** Returns whether the SELECT changes row cardinality using aggregation. */
+    @SuppressWarnings("deprecation")
+    public boolean isAggregate(SqlSelect select, @Nullable SqlNodeList orderList) {
+        SqlValidator validator = validator();
+
+        return validator.isAggregate(select)
+            || (orderList != null && validator.isAggregate(orderList));
+    }
+
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = new IgniteSqlValidator(operatorTbl, catalogReader, typeFactory, validatorCfg, ctx.parameters());
+            validator = createSqlValidator();
 
         return validator;
     }
@@ -635,7 +649,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 if (!condition.isA(SqlKind.OR))
                     return condition;
 
-                Set<RexNode> commonPart = new HashSet<>();
+                // Insertion order matters: RexNode hash codes are not stable across JVMs, so a hash-ordered set
+                // would make the order of the extracted conjuncts (and the resulting plan) differ from run to run.
+                Set<RexNode> commonPart = new LinkedHashSet<>();
 
                 List<RexNode> orOps = ((RexCall)condition).getOperands();
 
@@ -724,16 +740,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         if (F.isEmpty(disabledRuleNames))
             return;
 
-        ctx.addRulesFilter(rulesSet -> {
-            List<RelOptRule> newSet = new ArrayList<>();
-
-            for (RelOptRule r : rulesSet) {
-                if (!disabledRuleNames.contains(shortRuleName(r.toString())))
-                    newSet.add(r);
-            }
-
-            return RuleSets.ofList(newSet);
-        });
+        ctx.addRulesFilter(new DisabledRuleFilter(disabledRuleNames));
     }
 
     /** */
@@ -744,6 +751,34 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             return ruleDesc;
 
         return ruleDesc.substring(0, pos);
+    }
+
+    /** */
+    public static final class DisabledRuleFilter implements Function<RuleSet, RuleSet> {
+        /** */
+        private final Set<String> ruleNames;
+
+        /** */
+        public DisabledRuleFilter(Collection<String> ruleNames) {
+            this.ruleNames = ruleNames.stream().map(ruleName -> ruleName.trim().toUpperCase()).collect(Collectors.toSet());
+        }
+
+        /** */
+        public DisabledRuleFilter(String[] ruleNames) {
+            this(Arrays.asList(ruleNames));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RuleSet apply(RuleSet rules) {
+            List<RelOptRule> newSet = new ArrayList<>();
+
+            for (RelOptRule r : rules) {
+                if (!ruleNames.contains(shortRuleName(r.toString()).toUpperCase()))
+                    newSet.add(r);
+            }
+
+            return RuleSets.ofList(newSet);
+        }
     }
 
     /** */
@@ -774,5 +809,22 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             super.checkCancel();
         }
+    }
+
+    /** */
+    private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
+        return new IgniteSqlValidator(
+            operatorTbl,
+            catalogReader,
+            typeFactory,
+            validatorCfg,
+            ctx.parameters(),
+            ctx.unwrap(IgniteSqlSemantics.class)
+        );
+    }
+
+    /** */
+    private SqlValidator createSqlValidator() {
+        return createSqlValidator(catalogReader);
     }
 }

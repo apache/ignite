@@ -23,24 +23,28 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Map of partitions demanded during rebalancing.
  */
-public class IgniteDhtDemandedPartitionsMap implements Serializable {
+public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
-    private CachePartitionPartialCountersMap historical;
+    @Order(0)
+    CachePartitionPartialCountersMap historical;
 
-    /** Set of partitions that will be preloaded from all it's current data. */
+    /** Set of partitions that require full rebalancing. */
+    @Order(1)
     @GridToStringInclude
-    private Set<Integer> full;
+    Set<Integer> full;
 
     /**
      * @param historical Historical partition set.
@@ -100,15 +104,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
         if (full != null && full.remove(partId))
             return true;
 
-        if (historical != null && historical.remove(partId))
-            return true;
-
-        return false;
-    }
-
-    /** */
-    public boolean hasPartition(int partId) {
-        return hasHistorical(partId) || hasFull(partId);
+        return historical != null && historical.remove(partId);
     }
 
     /** */
@@ -186,4 +182,5 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     @Override public String toString() {
         return S.toString(IgniteDhtDemandedPartitionsMap.class, this);
     }
+
 }

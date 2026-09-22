@@ -19,42 +19,43 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
-public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
+/** */
+public class ChangeGlobalStateFinishMessage extends DiscoveryCustomMessage {
     /** State change request ID. */
-    private final UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** New cluster state. */
-    private final ClusterState state;
+    @Order(1)
+    ClusterState state;
 
     /** State change error. */
-    private Boolean transitionRes;
+    @Order(2)
+    boolean transitionRes;
+
+    /** Constructor. */
+    public ChangeGlobalStateFinishMessage() {
+        // No-op.
+    }
 
     /**
      * @param reqId State change request ID.
      * @param state New cluster state.
+     * @param transitionRes State change error.
      */
     public ChangeGlobalStateFinishMessage(
         UUID reqId,
         ClusterState state,
-        Boolean transitionRes
+        boolean transitionRes
     ) {
+        super(IgniteUuid.randomUuid());
+
         assert reqId != null;
         assert state != null;
 
@@ -83,7 +84,7 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      * @return Transition success status.
      */
     public boolean success() {
-        return transitionRes == null ? state.active() : transitionRes;
+        return transitionRes;
     }
 
     /**
@@ -94,24 +95,8 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

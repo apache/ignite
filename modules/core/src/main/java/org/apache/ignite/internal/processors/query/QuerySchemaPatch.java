@@ -25,11 +25,11 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Query schema patch which contains {@link SchemaAbstractOperation} operations for changing query entities.
- * This patch is high level path on {@link org.apache.ignite.cache.QueryEntityPatch} but
+ * This patch is high level path on {@link QueryEntityPatch} but
  * it has operations for all {@link QueryEntity} in schema
  * and also contains {@link QueryEntity} for adding to schema by whole.
  *
- * @see org.apache.ignite.cache.QueryEntityPatch
+ * @see QueryEntityPatch
  */
 public class QuerySchemaPatch {
     /** Message which described conflicts during creating this patch. */

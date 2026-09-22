@@ -19,6 +19,7 @@ package org.apache.ignite.marshaller.jdk;
 
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
@@ -28,6 +29,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 public class GridJdkMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {
-        return new JdkMarshaller();
+        return Marshallers.jdk();
     }
 }

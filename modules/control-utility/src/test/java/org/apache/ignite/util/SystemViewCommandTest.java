@@ -61,9 +61,9 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestO
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.metric.SystemViewExecutorsTest.TestRunnable;
+import org.apache.ignite.internal.metric.SystemViewQueriesTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewQueriesTest.TestTransformer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.TestAffinityFunction;
@@ -71,7 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -93,8 +93,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
+import static org.apache.ignite.internal.metric.SystemViewQueriesTest.TEST_PREDICATE;
+import static org.apache.ignite.internal.metric.SystemViewQueriesTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
@@ -336,18 +336,23 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         srvcCfg.setMaxPerNodeCount(1);
         srvcCfg.setService(new DummyService());
 
-        ignite0.services().deploy(srvcCfg);
+        try {
+            ignite0.services().deploy(srvcCfg);
 
-        List<List<String>> srvsView = systemView(ignite0, SVCS_VIEW);
+            List<List<String>> srvsView = systemView(ignite0, SVCS_VIEW);
 
-        assertEquals(1, srvsView.size());
+            assertEquals(1, srvsView.size());
 
-        List<String> sysView = srvsView.get(0);
+            List<String> sysView = srvsView.get(0);
 
-        assertEquals(srvcCfg.getName(), sysView.get(1)); // name
-        assertEquals(DummyService.class.getName(), sysView.get(2)); // serviceClass
-        assertEquals(Integer.toString(srvcCfg.getMaxPerNodeCount()), sysView.get(6)); // maxPerNodeCount
-        assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
+            assertEquals(srvcCfg.getName(), sysView.get(1)); // name
+            assertEquals(DummyService.class.getName(), sysView.get(2)); // serviceClass
+            assertEquals(Integer.toString(srvcCfg.getMaxPerNodeCount()), sysView.get(6)); // maxPerNodeCount
+            assertEquals(F.first(ignite0.services().serviceDescriptors()).topologySnapshot().toString(), sysView.get(10));
+        }
+        finally {
+            ignite0.services().cancel("service");
+        }
     }
 
     /** */
@@ -496,7 +501,10 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "DS_SEMAPHORES",
             "DS_QUEUES",
             "PAGES_TIMESTAMP_HISTOGRAM",
-            "SQL_PLANS_HISTORY"
+            "SQL_PLANS_HISTORY",
+            "IGNITE_PLUGINS",
+            "CACHE_EXPLICIT_LOCKS",
+            "CACHE_LOCKS"
         ));
 
         Set<String> viewNames = new TreeSet<>();
@@ -593,7 +601,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
                 InetSocketAddress.class.getName()),
             asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
             asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
-            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName())
+            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1", String.class.getName()),
+            asList("DATA_CENTER_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", "true", "-1", "-1",
+                String.class.getName())
         ));
 
         Set<List<String>> sqlViewColumnsView = systemView(ignite0, SQL_VIEW_COLS_VIEW).stream()
@@ -833,7 +843,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @param view System view name.
      * @param poolName Executor name.
      */
-    private void checkStripeExecutorView(StripedExecutor execSvc, String view, String poolName) throws Exception {
+    private void checkStripeExecutorView(IgniteStripedExecutor execSvc, String view, String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
         execSvc.execute(0, new TestRunnable(latch, 0));
@@ -1181,6 +1191,18 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         checkNodesResult(F.asList(ignite0, ignite1, client), NODE_IDS);
 
         checkNodesResult(F.viewReadOnly(G.allGrids(), node -> (IgniteEx)node), ALL_NODES);
+    }
+
+    /** Checks the situation when a view (metastorage, snapshot, etc.) is missing on some nodes, i.e., thick clients. */
+    @Test
+    public void testViewParticularlyRegistered() {
+        Map<UUID, List<List<String>>> views = systemView(F.viewReadOnly(G.allGrids(), n -> (IgniteEx)n), SNAPSHOT_SYS_VIEW, ALL_NODES);
+
+        assertNotNull(views);
+        assertEquals(2, views.size());
+        assertNotNull(views.get(ignite0.localNode().id()));
+        assertNotNull(views.get(ignite1.localNode().id()));
+        assertNull(views.get(client.localNode().id()));
     }
 
     /** */

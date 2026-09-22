@@ -71,6 +71,21 @@ The following classes are never converted (e.g., the `toBinary(Object)` method r
 * `Enums` and array of enums
 * Maps, collections and arrays of objects (but the objects inside them are reconverted if they are binary)
 
+`CacheInterceptor` also take into account cache `keepBinary` mode and process a value appropriately.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/WorkingWithBinaryObjects.java[tag=keepBinaryWithCacheInterceptor,indent=0]
+----
+
+tab:C#/.NET[unsupported]
+
+tab:C++[unsupported]
+--
+
 tab:C#/.NET[]
 [source,csharp]
 ----
@@ -176,7 +191,6 @@ tab:C#/.NET[unsupported]
 
 tab:C++[unsupported]
 --
-
 
 == Recommendations on Binary Objects Tuning
 

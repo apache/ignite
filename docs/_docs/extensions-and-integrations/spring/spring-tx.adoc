@@ -155,6 +155,13 @@ of the Apache Ignite and Spring.
 | 1.0.0 | All versions since 2.11.0 | All versions since 4.3.0
 |===
 
+[NOTE]
+====
+Starting with Apache Ignite 2.19, Spring integration is based on Spring Framework 6 and Jakarta EE APIs.
+If your application uses `ignite-jta` transaction manager lookup classes, compile custom lookup code against
+`jakarta.transaction.TransactionManager` instead of the legacy `javax.transaction.TransactionManager`.
+====
+
 == Apache Ignite Node Transaction Manager Configuration
 This chapter shows how to set up `SpringTransactionManager` that relies on Apache Ignite node to connect to the cluster
 and to manage transactions. The configuration consists of two steps -

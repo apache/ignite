@@ -68,7 +68,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
@@ -273,7 +272,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteCacheProxy<K, V> cacheNoGate() {
-        return new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), false);
+        return new GatewayProtectedCacheProxy<>(this, CacheOperationContext.instance(), false);
     }
 
     /**
@@ -283,7 +282,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (cachedProxy != null)
             return cachedProxy;
 
-        cachedProxy = new GatewayProtectedCacheProxy<>(this, new CacheOperationContext(), true);
+        cachedProxy = new GatewayProtectedCacheProxy<>(this, CacheOperationContext.instance(), true);
 
         return cachedProxy;
     }
@@ -522,19 +521,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute();
-                    }
-                }, false);
-        }
-        else if (query instanceof SpiQuery) {
-            qry = ctx.queries().createSpiQuery(isKeepBinary);
-
-            if (grp != null)
-                qry.projection(grp);
-
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, query.getClass().getSimpleName(),
-                ctx, new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
-                        return qry.execute(((SpiQuery)query).getArgs());
                     }
                 }, false);
         }
@@ -867,11 +853,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             convertToBinary(sqlQry.getArgs());
         }
-        else if (qry instanceof SpiQuery) {
-            final SpiQuery spiQry = (SpiQuery)qry;
-
-            convertToBinary(spiQry.getArgs());
-        }
         else if (qry instanceof SqlFieldsQuery) {
             final SqlFieldsQuery fieldsQry = (SqlFieldsQuery)qry;
 
@@ -905,7 +886,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         if (!QueryUtils.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
             !(qry instanceof ContinuousQuery) && !(qry instanceof ContinuousQueryWithTransformer) &&
-            !(qry instanceof SpiQuery) && !(qry instanceof SqlQuery) && !(qry instanceof SqlFieldsQuery) &&
+            !(qry instanceof SqlQuery) && !(qry instanceof SqlFieldsQuery) &&
             !(qry instanceof IndexQuery))
             throw new CacheException("Indexing is disabled for cache: " + cacheName +
                     ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");

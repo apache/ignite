@@ -34,7 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -79,8 +77,10 @@ import org.apache.ignite.internal.processors.query.h2.twostep.ReducePartitionMap
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -196,25 +196,23 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                if (msg instanceof CustomMessageWrapper) {
-                    DiscoveryCustomMessage delegate = ((CustomMessageWrapper)msg).delegate();
+                DiscoveryCustomMessage delegate = U.unwrapCustomMessage(msg);
 
-                    if (delegate instanceof DynamicCacheChangeBatch) {
-                        try {
-                            awaitTimeout();
-                        }
-                        catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        }
-
+                if (delegate instanceof DynamicCacheChangeBatch) {
+                    try {
+                        awaitTimeout();
                     }
-                    else if (delegate instanceof SchemaProposeDiscoveryMessage) {
-                        try {
-                            awaitTimeout();
-                        }
-                        catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        }
+                    catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                    }
+
+                }
+                else if (delegate instanceof SchemaProposeDiscoveryMessage) {
+                    try {
+                        awaitTimeout();
+                    }
+                    catch (Exception e) {
+                        log.error(e.getMessage(), e);
                     }
                 }
 
@@ -638,7 +636,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
     @Test
     public void testCancelBeforeIteratorObtained() throws Exception {
         FieldsQueryCursor<List<?>> cur = ignite.context().query()
-            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(false), false);
+            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer"), false);
 
         Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
 
@@ -655,7 +653,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
     @Test
     public void testCancelAfterIteratorObtained() throws Exception {
         FieldsQueryCursor<List<?>> cur = ignite.context().query()
-            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(false), false);
+            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer"), false);
 
         cur.iterator();
 
@@ -674,64 +672,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
     @Test
     public void testCancelAfterResultSetPartiallyRead() throws Exception {
         FieldsQueryCursor<List<?>> cur = ignite.context().query()
-            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(false), false);
-
-        Iterator<List<?>> it = cur.iterator();
-
-        it.next();
-
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
-
-        igniteForKillRequest.context().query()
-            .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
-
-        if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testCancelBeforeIteratorObtainedLazy() throws Exception {
-        FieldsQueryCursor<List<?>> cur = ignite.context().query()
-            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(true), false);
-
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
-
-        igniteForKillRequest.context().query()
-            .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
-
-        if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testCancelAfterIteratorObtainedLazy() throws Exception {
-        FieldsQueryCursor<List<?>> cur = ignite.context().query()
-            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(true), false);
-
-        cur.iterator();
-
-        Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
-
-        igniteForKillRequest.context().query()
-            .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
-
-        if (asyncCancel)
-            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testCancelAfterResultSetPartiallyReadLazy() throws Exception {
-        FieldsQueryCursor<List<?>> cur = ignite.context().query()
-            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(true), false);
+            .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer"), false);
 
         Iterator<List<?>> it = cur.iterator();
 
@@ -782,30 +723,6 @@ public class KillQueryTest extends GridCommonAbstractTest {
                 new SqlFieldsQuery("select * from Integer where _key in " +
                     "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledMoreThan(128)")
                     .setLocal(true)
-                    .setLazy(false)
-            ).getAll();
-
-            return null;
-        }, QueryCancelledException.class, "The query was cancelled while executing.");
-
-        // Ensures that there were no exceptions within async cancellation process.
-        cancelRes.get(CHECK_RESULT_TIMEOUT);
-    }
-
-    /**
-     * Check that local query can be canceled either using async or non-async method. Local query is performed using
-     * cache.query() API with "local" property "true".
-     */
-    @Test
-    public void testCancelLocalLazyQueryNative() throws Exception {
-        IgniteInternalFuture cancelRes = cancel(1, asyncCancel);
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-            ignite.cache(DEFAULT_CACHE_NAME).query(
-                new SqlFieldsQuery("select * from Integer where _key in " +
-                    "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledMoreThan(128)")
-                    .setLocal(true)
-                    .setLazy(true)
             ).getAll();
 
             return null;
@@ -1064,7 +981,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      * no queries are executed at the moment; {@code false} otherwise.
      */
     private boolean queryPoolIsEmpty(IgniteEx node) {
-        ThreadPoolExecutor qryPool = (ThreadPoolExecutor)node.context().pools().getQueryExecutorService();
+        IgniteThreadPoolExecutor qryPool = node.context().pools().getQueryExecutorService();
 
         return qryPool.getQueue().isEmpty() && qryPool.getActiveCount() == 0;
     }

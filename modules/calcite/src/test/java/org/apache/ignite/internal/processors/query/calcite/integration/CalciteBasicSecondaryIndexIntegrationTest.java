@@ -978,8 +978,14 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
             .returns(21, "Cacciapaglia", 20, "", -1)
             .returns(22, "Prokofiev", 21, "", -1)
             .returns(23, "Musorgskii", 22, "", -1)
-
-            .ordered()
+            .withResultChecker(res -> {
+                // Check rows are ordered by depId, can't use ordered() method, since there are rows exist with
+                // duplicated depId and order is not determided for them.
+                for (int i = 1; i < res.size(); i++) {
+                    assertTrue("Unexpected rows order: " + res.get(i - 1) + ", " + res.get(i),
+                        (int)res.get(i - 1).get(2) <= (int)res.get(i).get(2));
+                }
+            })
             .check();
     }
 

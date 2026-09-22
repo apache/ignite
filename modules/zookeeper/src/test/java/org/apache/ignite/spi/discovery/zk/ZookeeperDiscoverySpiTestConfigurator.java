@@ -69,7 +69,7 @@ public class ZookeeperDiscoverySpiTestConfigurator {
             if (testingCluster == null)
                 throw new IllegalStateException("Test Zookeeper cluster is not started.");
 
-            ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+            ZookeeperDiscoverySpi zkSpi = new TestZookeeperDiscoverySpi();
 
             DiscoverySpi spi = cfg.getDiscoverySpi();
 

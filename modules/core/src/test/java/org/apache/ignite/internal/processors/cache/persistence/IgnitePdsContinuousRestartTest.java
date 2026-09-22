@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -52,6 +55,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -61,6 +66,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
  */
+@RunWith(Parameterized.class)
 public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
@@ -71,8 +77,47 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /** */
     protected static final String CACHE_NAME = "cache1";
 
+    /** Restart delay. */
+    @Parameterized.Parameter
+    public int restartDelay;
+
     /** Checkpoint delay. */
-    private volatile int checkpointDelay = -1;
+    @Parameterized.Parameter(1)
+    public int cpDelay;
+
+    /** Load threads count. */
+    @Parameterized.Parameter(2)
+    public int threads;
+
+    /** Batch size. */
+    @Parameterized.Parameter(3)
+    public int batchSize;
+
+    /** */
+    @Parameterized.Parameters(name = "restartDelay={0}, cpDelay={1}, threads={2}, batchSize={3}")
+    public static Collection<Object[]> data() {
+        List<Object[]> params = new ArrayList<>();
+
+        params.add(new Object[] {4000, 4000, 2, 4});
+
+        for (int threads: new int[] { 1, 2 }) {
+            for (int batchSize: new int[] { 1, 4 }) {
+                // Covered scenarios:
+                // 1. Frequent restarts with no checkpoint.
+                params.add(new Object[] {10, 20000, threads, batchSize});
+                // 2. Frequent restarts while trying checkpointing.
+                params.add(new Object[] {10, 10, threads, batchSize});
+                // 3. Restart after single checkpoint.
+                params.add(new Object[] {1000, 500, threads, batchSize});
+                // 4. Restart after multiple checkpoints.
+                params.add(new Object[] {4000, 500, threads, batchSize});
+                // 5. Restart while trying checkpointing with more data.
+                params.add(new Object[] {4000, 4000, threads, batchSize});
+            }
+        }
+
+        return params;
+    }
 
     /** */
     private boolean cancel = false;
@@ -102,7 +147,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                     .setMaxSize(400L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-            .setCheckpointFrequency(checkpointDelay);
+            .setCheckpointFrequency(cpDelay);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -137,112 +182,8 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testRebalancingDuringLoad_1000_500_1_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(500), 1, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_8000_500_1_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(500), 1, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_1000_20000_1_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(20000), 1, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_8000_8000_1_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(8000), 1, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_1000_500_8_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(500), 8, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_8000_500_8_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(500), 8, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_1000_20000_8_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(20000), 8, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_8000_8000_8_1() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(8000), 8, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_1000_500_8_16() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(500), 8, 16);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_8000_500_8_16() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(500), 8, 16);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_1000_20000_8_16() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(1000), SF.apply(20000), 8, 16);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_8000_8000_8_16() throws Exception {
-        checkRebalancingDuringLoad(SF.apply(8000), SF.apply(8000), 8, 16);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_10_10_1_1() throws Exception {
-        checkRebalancingDuringLoad(10, 10, 1, 1);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testRebalancingDuringLoad_10_500_8_16() throws Exception {
-        checkRebalancingDuringLoad(10, 500, 8, 16);
+    public void testRebalancingDuringLoad() throws Exception {
+        checkRebalancingDuringLoad(SF.apply(restartDelay), SF.apply(cpDelay), threads, batchSize);
     }
 
     /**
@@ -254,7 +195,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         int threads,
         final int batch
     ) throws Exception {
-        this.checkpointDelay = checkpointDelay;
+        this.cpDelay = checkpointDelay;
 
         startGrids(GRID_CNT);
 
@@ -331,7 +272,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
             }
         }, threads, "updater");
 
-        long end = System.currentTimeMillis() + SF.apply(90000);
+        long end = System.currentTimeMillis() + SF.apply(30000);
 
         Random rnd = ThreadLocalRandom.current();
 
@@ -399,7 +340,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgnitePersistentStoreCacheGroupsTest.Person person = (IgnitePersistentStoreCacheGroupsTest.Person)o;
+            Person person = (Person)o;
 
             return Objects.equals(fName, person.fName) && Objects.equals(lName, person.lName);
         }

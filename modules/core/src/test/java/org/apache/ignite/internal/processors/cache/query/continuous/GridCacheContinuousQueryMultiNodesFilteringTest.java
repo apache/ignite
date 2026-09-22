@@ -58,6 +58,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /** */
 @SuppressWarnings("unchecked")
@@ -176,7 +177,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
                     }
 
                     if (!set.add(e.getValue()))
-                        doubleNtfFail.set(false);
+                        doubleNtfFail.set(true);
                 }
             }
         };
@@ -419,7 +420,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            return pattern.matcher(clusterNode.id().toString()).matches();
+            return pattern.matcher(clusterNode.attribute(ATTR_IGNITE_INSTANCE_NAME)).matches();
         }
     }
 }

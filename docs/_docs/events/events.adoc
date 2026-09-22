@@ -360,7 +360,7 @@ Events related to node validation failures are instances of the link:{events_url
 == Management Task Events
 
 Management task events represent the tasks that are executed by Visor or Web Console.
-This event type can be used to monitor a link:security/cluster-monitor-audit[Web Console activity].
+This event type can be used to monitor Web Console activity.
 
 [cols="2,5,3",opts="header"]
 |===

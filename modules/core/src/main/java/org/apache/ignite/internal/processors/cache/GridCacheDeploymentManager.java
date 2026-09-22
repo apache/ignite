@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,22 +25,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,9 +56,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Cache class loader */
     private volatile ClassLoader globalLdr;
-
-    /** Undeploys. */
-    private final Map<String, List<CA>> undeploys = new HashMap<>();
 
     /** Per-thread deployment context. */
     private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps = new ConcurrentHashMap<>();
@@ -171,177 +158,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         ignoreOwnership.set(ignore);
 
         return old;
-    }
-
-    /**
-     * Undeploy all queued up closures.
-     *
-     * @param ctx Cache context.
-     */
-    public void unwind(GridCacheContext ctx) {
-        List<CA> q;
-
-        synchronized (undeploys) {
-            q = undeploys.remove(ctx.name());
-        }
-
-        if (q == null)
-            return;
-
-        int cnt = 0;
-
-        for (CA c : q) {
-            c.apply();
-
-            cnt++;
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Unwound undeploys count: " + cnt);
-    }
-
-    /**
-     * Undeploys given class loader.
-     *
-     * @param ldr Class loader to undeploy.
-     * @param ctx Grid cache context.
-     */
-    public void onUndeploy(final ClassLoader ldr, final GridCacheContext<K, V> ctx) {
-        assert ldr != null;
-
-        if (log.isDebugEnabled())
-            log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
-
-        synchronized (undeploys) {
-            List<CA> queue = undeploys.get(ctx.name());
-
-            if (queue == null)
-                undeploys.put(ctx.name(), queue = new ArrayList<>());
-
-            queue.add(new CA() {
-                @Override public void apply() {
-                    onUndeploy0(ldr, ctx);
-                }
-            });
-        }
-    }
-
-    /**
-     * @param ldr Loader.
-     * @param cacheCtx Cache context.
-     */
-    private void onUndeploy0(final ClassLoader ldr, final GridCacheContext<K, V> cacheCtx) {
-        GridCacheAdapter<K, V> cache = cacheCtx.cache();
-
-        Collection<KeyCacheObject> keys = new ArrayList<>();
-
-        addEntries(ldr, keys, cache);
-
-        if (cache.isNear())
-            addEntries(ldr, keys, (((GridNearCacheAdapter)cache).dht()));
-
-        if (log.isDebugEnabled())
-            log.debug("Finished searching keys for undeploy [keysCnt=" + keys.size() + ']');
-
-        cache.clearLocally(keys, true);
-
-        if (cacheCtx.isNear())
-            cacheCtx.near().dht().clearLocally(keys, true);
-
-        // Examine swap for entries to undeploy.
-        int swapUndeployCnt = cacheCtx.offheap().onUndeploy(ldr);
-
-        if (cacheCtx.userCache() && (!keys.isEmpty() || swapUndeployCnt != 0)) {
-            U.quietAndWarn(log, "");
-            U.quietAndWarn(
-                log,
-                "Cleared all cache entries for undeployed class loader [cacheName=" + cacheCtx.name() +
-                    ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt +
-                    ", clsLdr=" + ldr.getClass().getName() + ']');
-            U.quietAndWarn(
-                log,
-                "  ^-- Cache auto-undeployment happens in SHARED deployment mode " +
-                    "(to turn off, switch to CONTINUOUS mode)");
-            U.quietAndWarn(log, "");
-        }
-
-        // Avoid class caching issues inside classloader.
-        globalLdr = new CacheClassLoader();
-    }
-
-    /**
-     * @param ldr Class loader.
-     * @param keys Keys.
-     * @param cache Cache.
-     */
-    private void addEntries(ClassLoader ldr, Collection<KeyCacheObject> keys, GridCacheAdapter cache) {
-        GridCacheContext cacheCtx = cache.context();
-
-        for (GridCacheEntryEx e : (Iterable<GridCacheEntryEx>)cache.entries()) {
-            boolean undeploy = cacheCtx.isNear() ?
-                undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
-                undeploy(ldr, e, cacheCtx.cache());
-
-            if (undeploy)
-                keys.add(e.key());
-        }
-    }
-
-    /**
-     * @param ldr Class loader.
-     * @param e Entry.
-     * @param cache Cache.
-     * @return {@code True} if need to undeploy.
-     */
-    private boolean undeploy(ClassLoader ldr, GridCacheEntryEx e, GridCacheAdapter cache) {
-        KeyCacheObject key = e.key();
-
-        GridCacheEntryEx entry = cache.peekEx(key);
-
-        if (entry == null)
-            return false;
-
-        Object key0;
-        Object val0;
-
-        try {
-            CacheObject v = entry.peek();
-
-            key0 = key.value(cache.context().cacheObjectContext(), false);
-
-            assert key0 != null : "Key cannot be null for cache entry: " + e;
-
-            val0 = CU.value(v, cache.context(), false);
-        }
-        catch (GridCacheEntryRemovedException ignore) {
-            return false;
-        }
-        catch (BinaryInvalidTypeException ex) {
-            log.error("An attempt to undeploy cache with binary objects.", ex);
-
-            return false;
-        }
-        catch (IgniteCheckedException | IgniteException ignore) {
-            // Peek can throw runtime exception if unmarshalling failed.
-            return true;
-        }
-
-        ClassLoader keyLdr = U.detectObjectClassLoader(key0);
-        ClassLoader valLdr = U.detectObjectClassLoader(val0);
-
-        boolean res = Objects.equals(ldr, keyLdr) || Objects.equals(ldr, valLdr);
-
-        if (log.isDebugEnabled())
-            log.debug(S.toString("Finished examining entry",
-                "entryCls", e.getClass(), true,
-                "key", key0, true,
-                "keyCls", key0.getClass(), true,
-                "valCls", (val0 != null ? val0.getClass() : "null"), true,
-                "keyLdr", keyLdr, false,
-                "valLdr", valLdr, false,
-                "res", res, false));
-
-        return res;
     }
 
     /**
@@ -579,14 +395,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         // Only set deployment info if it was not set automatically.
         if (deployable.deployInfo() == null) {
-            GridDeploymentInfoBean dep = globalDeploymentInfo();
+            GridDeploymentInfoMessage dep = globalDeploymentInfo();
 
             if (dep == null) {
                 GridDeployment locDep0 = locDep.get();
 
                 if (locDep0 != null) {
                     // Will copy sequence number to bean.
-                    dep = new GridDeploymentInfoBean(locDep0);
+                    dep = new GridDeploymentInfoMessage(locDep0);
 
                     checkDeploymentIsCorrect(dep, deployable, false);
                 }
@@ -595,7 +411,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 checkDeploymentIsCorrect(dep, deployable, true);
 
             if (dep != null)
-                deployable.prepare(dep);
+                deployable.deploy(dep);
 
             if (log.isDebugEnabled())
                 log.debug("Prepared grid cache deployable [dep=" + dep + ", deployable=" + deployable + ']');
@@ -610,7 +426,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param failIfNotCorrect Flag determining whether to throw exception or just warn.
      * @throws IgnitePeerToPeerClassLoadingException If deployment is incorrect.
      */
-    private void checkDeploymentIsCorrect(GridDeploymentInfoBean deployment, GridCacheDeployable deployable,
+    private void checkDeploymentIsCorrect(GridDeploymentInfoMessage deployment, GridCacheDeployable deployable,
         boolean failIfNotCorrect)
         throws IgnitePeerToPeerClassLoadingException {
         if (deployment.participants() == null
@@ -629,25 +445,25 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @return First global deployment.
      */
-    @Nullable public GridDeploymentInfoBean globalDeploymentInfo() {
+    @Nullable public GridDeploymentInfoMessage globalDeploymentInfo() {
         assert depEnabled;
 
         // Do not return info if mode is CONTINUOUS.
-        // In this case deployment info will be set by GridCacheMessage.prepareObject().
+        // In this case deployment info will be set by GridCacheMessage.deployObject().
         if (cctx.gridConfig().getDeploymentMode() == CONTINUOUS)
             return null;
 
         IgniteUuid locLdrId0 = localLdrId.get();
 
         if (locLdrId0 != null) {
-            GridDeploymentInfoBean deploymentInfoBean = getDepBean(deps.get(localLdrId.get()));
+            GridDeploymentInfoMessage deploymentInfoBean = getDepBean(deps.get(localLdrId.get()));
 
             if (deploymentInfoBean != null)
                 return deploymentInfoBean;
         }
 
         for (CachedDeploymentInfo<K, V> d : deps.values()) {
-            GridDeploymentInfoBean deploymentInfoBean = getDepBean(d);
+            GridDeploymentInfoMessage deploymentInfoBean = getDepBean(d);
             if (deploymentInfoBean != null)
                 return deploymentInfoBean;
         }
@@ -656,7 +472,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /** */
-    @Nullable private GridDeploymentInfoBean getDepBean(CachedDeploymentInfo<K, V> d) {
+    @Nullable private GridDeploymentInfoMessage getDepBean(CachedDeploymentInfo<K, V> d) {
         if (d == null || cctx.discovery().node(d.senderId()) == null)
             // Sender has left.
             return null;
@@ -668,7 +484,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             for (UUID id : participants.keySet()) {
                 if (cctx.discovery().node(id) != null) {
                     // At least 1 participant is still in the grid.
-                    return new GridDeploymentInfoBean(
+                    return new GridDeploymentInfoMessage(
                         d.loaderId(),
                         d.userVersion(),
                         d.mode(),
@@ -685,7 +501,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     @Override public void printMemoryStats() {
         X.println(">>> ");
         X.println(">>> Cache deployment manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
-        X.println(">>>   Undeploys: " + undeploys.size());
         X.println(">>>   Cached deployments: " + deps.size());
     }
 
@@ -829,8 +644,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 userVer,
                 sndId,
                 ldrId,
-                participants,
-                F.<ClusterNode>alwaysTrue());
+                participants);
 
             return d != null ? d.deployedClass(name) : null;
         }

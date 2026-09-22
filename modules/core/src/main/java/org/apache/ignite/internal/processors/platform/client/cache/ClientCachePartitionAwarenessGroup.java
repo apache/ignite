@@ -74,7 +74,7 @@ class ClientCachePartitionAwarenessGroup {
                 writeCacheKeyConfiguration(writer, proc, entry.getValue().getKeyConfiguration());
             }
 
-            mapping.write(writer);
+            mapping.write(cpctx, writer);
 
             if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
                 writer.writeBoolean(dfltAffinity);

@@ -52,7 +52,7 @@ public interface CdcEvent extends Serializable {
 
     /**
      * Ignite split dataset into smaller chunks to distribute them across the cluster.
-     * {@link CdcConsumer} implementations can use {@link #partition()} to split changes processing
+     * {@link CdcConsumer} implementations can use {@code #partition()} to split changes processing
      * in the same way as it done for the cache.
      *
      * @return Partition number.

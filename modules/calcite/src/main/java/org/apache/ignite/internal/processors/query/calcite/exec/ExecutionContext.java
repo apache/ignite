@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -145,6 +145,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     private Object[] correlations = new Object[16];
 
+    /** Entries holder per execution thread. */
+    private static final ThreadLocal<Collection<QueryTxEntry>> txEntriesHolder = new ThreadLocal<>();
+
     /**
      * @param qctx Parent base query context.
      * @param qryId Query ID.
@@ -182,7 +185,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.ioTracker = ioTracker;
         this.params = params;
         this.timeout = timeout;
-        this.qryTxEntries = qryTxEntries;
+        this.qryTxEntries = qryTxEntries == null ? txEntriesHolder.get() : qryTxEntries;
 
         startTs = U.currentTimeMillis();
 
@@ -369,16 +372,12 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
      */
     public <R> TransactionChanges<R> transactionChanges(
         int cacheId,
-        int[] parts,
+        BitSet parts,
         Function<CacheDataRow, R> mapper,
         @Nullable Comparator<R> cmp
     ) {
         if (F.isEmpty(qryTxEntries))
             return TransactionChanges.empty();
-
-        // Expecting parts are sorted or almost sorted and amount of transaction entries are relatively small.
-        if (parts != null && !F.isSorted(parts))
-            Arrays.sort(parts);
 
         Set<KeyCacheObject> changedKeys = new HashSet<>(qryTxEntries.size());
         List<R> newAndUpdatedRows = new ArrayList<>(qryTxEntries.size());
@@ -391,7 +390,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
             if (e.cacheId() != cacheId)
                 continue;
 
-            if (parts != null && Arrays.binarySearch(parts, part) < 0)
+            if (parts != null && !parts.get(part))
                 continue;
 
             changedKeys.add(e.key());
@@ -425,13 +424,16 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
 
         executor.execute(qryId, fragmentId(), () -> {
             try {
+                txEntriesHolder.set(qryTxEntries);
+
                 if (!isCancelled())
                     task.run();
             }
             catch (Throwable e) {
                 onError.accept(e);
-
-                throw new IgniteException("Unexpected exception", e);
+            }
+            finally {
+                txEntriesHolder.remove();
             }
         });
     }

@@ -19,8 +19,8 @@ package org.apache.ignite.jvmtest;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 /**
@@ -38,7 +38,7 @@ public class RegExpTest {
         byte[] b1 = new byte[200];
         byte[] b2 = normal.getBytes();
 
-        U.arrayCopy(b2, 0, b1, 30, b2.length);
+        GridUnsafe.arrayCopy(b2, 0, b1, 30, b2.length);
 
         CharSequence corrupt = new String(b1);
 

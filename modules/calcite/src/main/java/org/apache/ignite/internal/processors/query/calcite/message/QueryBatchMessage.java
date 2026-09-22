@@ -17,47 +17,41 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
+import org.apache.ignite.internal.Order;
 
-/**
- *
- */
-public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
+/** */
+public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
-    private UUID qryId;
+    @Order(0)
+    UUID qryId;
 
     /** */
-    private long fragmentId;
+    @Order(1)
+    long fragmentId;
 
     /** */
-    private long exchangeId;
+    @Order(2)
+    long exchangeId;
 
     /** */
-    private int batchId;
+    @Order(3)
+    int batchId;
 
     /** */
-    private boolean last;
+    @Order(4)
+    boolean last;
 
     /** */
-    @GridDirectTransient
-    private List<Object> rows;
-
-    /** */
-    @GridDirectCollection(ValueMessage.class)
-    private List<ValueMessage> mRows;
+    @Order(5)
+    List<GenericValueMessage> mRows;
 
     /** */
     public QueryBatchMessage() {
+        // No-op.
     }
 
     /** */
@@ -67,7 +61,11 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.last = last;
-        this.rows = rows;
+
+        mRows = new ArrayList<>(rows.size());
+
+        for (Object row : rows)
+            mRows.add(row == null ? null : new GenericValueMessage(row));
     }
 
     /** {@inheritDoc} */
@@ -105,156 +103,11 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
      * @return Rows.
      */
     public List<Object> rows() {
+        List<Object> rows = new ArrayList<>(mRows.size());
+
+        for (GenericValueMessage mRow : mRows)
+            rows.add(mRow == null ? null : mRow.value());
+
         return rows;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (mRows != null || rows == null)
-            return;
-
-        mRows = new ArrayList<>(rows.size());
-
-        for (Object row : rows) {
-            ValueMessage mRow = CalciteMessageFactory.asMessage(row);
-
-            assert mRow != null;
-
-            mRow.prepareMarshal(ctx);
-
-            mRows.add(mRow);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (rows != null || mRows == null)
-            return;
-
-        rows = new ArrayList<>(mRows.size());
-
-        for (ValueMessage mRow : mRows) {
-            assert mRow != null;
-
-            mRow.prepareUnmarshal(ctx);
-
-            rows.add(mRow.value());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(batchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(exchangeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(fragmentId))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeBoolean(last))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeCollection(mRows, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeUuid(qryId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                batchId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                exchangeId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                fragmentId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                last = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                mRows = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                qryId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_BATCH_MESSAGE;
     }
 }

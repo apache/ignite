@@ -18,36 +18,30 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public abstract class AbstractContinuousMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 2781778657738703012L;
-
+public abstract class AbstractContinuousMessage extends DiscoveryCustomMessage {
     /** Routine ID. */
-    protected final UUID routineId;
+    @Order(0)
+    UUID routineId;
 
-    /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    /** */
+    protected AbstractContinuousMessage() {
+        // No-op.
+    }
 
     /**
      * @param id Id.
      */
     protected AbstractContinuousMessage(UUID id) {
-        routineId = id;
-    }
+        super(IgniteUuid.randomUuid());
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        routineId = id;
     }
 
     /**
@@ -55,16 +49,5 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
      */
     public UUID routineId() {
         return routineId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 }

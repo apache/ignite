@@ -100,7 +100,7 @@ public class ObjectSizeCalculator<Row> {
         // Assume objects is not deserialized.
         BinaryUtils.unwrapFuncForSizeCalc().forEach((cls, unwrapFunc) ->
             addSysClsSize(cls, (c, bo) -> c.sizeOf0(unwrapFunc.apply(bo), true)));
-        BinaryUtils.sizeProviders().forEach((cls, szFunc) ->
+        BinaryUtils.binariesFactory.sizeProviders().forEach((cls, szFunc) ->
             addSysClsSize(cls, (c, bo) -> szFunc.applyAsInt(bo)));
 
         // Other.

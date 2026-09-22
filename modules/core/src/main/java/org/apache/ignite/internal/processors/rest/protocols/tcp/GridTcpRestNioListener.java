@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestWarmUpRequest;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -304,7 +304,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                             res.errorMessage("Failed to process client request: " + e.getMessage());
                         }
 
-                        GridNioFuture<?> sf = ses.send(res);
+                        IgniteInternalFuture<?> sf = ses.send(res);
 
                         // Check if send failed.
                         sf.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -340,7 +340,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         GridClientTaskRequest taskReq = (GridClientTaskRequest)msg;
 
         try {
-            return U.hasAnnotation(U.forName(taskReq.taskName(), null), InterruptibleVisorTask.class);
+            return U.hasAnnotation(ClassLoaderUtils.forName(taskReq.taskName()), InterruptibleVisorTask.class);
         }
         catch (ClassNotFoundException e) {
             log.warning("Task closure can't be found: [task=" + taskReq.taskName() + ']', e);

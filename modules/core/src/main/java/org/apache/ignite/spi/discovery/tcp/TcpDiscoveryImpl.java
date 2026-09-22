@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,11 +34,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.tracing.NoopTracing;
-import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
+import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
+import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -46,12 +50,15 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 
 /**
@@ -79,6 +86,9 @@ abstract class TcpDiscoveryImpl {
 
     /** */
     protected final TcpDiscoverySpi spi;
+
+    /** */
+    protected final GridKernalContext ctx;
 
     /** */
     protected final IgniteLogger log;
@@ -127,20 +137,8 @@ abstract class TcpDiscoveryImpl {
         }
     };
 
-    /** Tracing. */
-    protected Tracing tracing;
-
-    /**
-     * Upcasts collection type.
-     *
-     * @param c Initial collection.
-     * @return Resulting collection.
-     */
-    protected static <T extends R, R> Collection<R> upcast(Collection<T> c) {
-        A.notNull(c, "c");
-
-        return (Collection<R>)c;
-    }
+    /** Distributed operation context dispatcher. */
+    protected final OperationContextDispatcher operationCtxDispatcher;
 
     /**
      * @param spi Adapter.
@@ -150,10 +148,9 @@ abstract class TcpDiscoveryImpl {
 
         log = spi.log;
 
-        if (spi.ignite() instanceof IgniteEx)
-            tracing = ((IgniteEx)spi.ignite()).context().tracing();
-        else
-            tracing = new NoopTracing();
+        ctx = ((IgniteEx)spi.ignite()).context();
+
+        operationCtxDispatcher = ctx.operationContextDispatcher();
     }
 
     /**
@@ -401,27 +398,55 @@ abstract class TcpDiscoveryImpl {
     }
 
     /** */
-    public void processMsgCacheMetrics(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
-        for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
-            UUID nodeId = e.getKey();
+    protected void clearNodeSensitiveData(TcpDiscoveryNode node) {
+        Map<String, Object> attrs = new HashMap<>(node.attributes());
 
-            TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
+        attrs.remove(ATTR_NODE_CERTIFICATES);
+        attrs.remove(ATTR_SECURITY_CREDENTIALS);
 
-            Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
-                msg.cacheMetrics().get(nodeId) : Collections.emptyMap();
+        node.setAttributes(attrs);
+    }
 
-            if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis()
-                && cacheMetrics.size() >= METRICS_QNT_WARN) {
+    /** */
+    public void processCacheMetricsMessage(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
+        for (Map.Entry<UUID, NodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
+            UUID srvrId = e.getKey();
+            Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();
+            ClusterMetricsSnapshot srvrMetricsMsg = e.getValue().nodeMetricsMessage();
+
+            assert srvrMetricsMsg != null;
+
+            Map<Integer, CacheMetrics> cacheMetrics;
+
+            if (!F.isEmpty(cacheMetricsMsgs)) {
+                cacheMetrics = U.newHashMap(cacheMetricsMsgs.size());
+
+                cacheMetricsMsgs.forEach((cacheId, cacheMetricsMsg) ->
+                    cacheMetrics.put(cacheId, new CacheMetricsSnapshot(cacheMetricsMsg)));
+            }
+            else
+                cacheMetrics = Collections.emptyMap();
+
+            if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis() && cacheMetrics.size() >= METRICS_QNT_WARN) {
                 log.warning("The Discovery message has metrics for " + cacheMetrics.size() + " caches.\n" +
                     "To prevent Discovery blocking use -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true option.");
 
                 endTimeMetricsSizeProcessWait = U.currentTimeMillis() + LOG_WARN_MSG_TIMEOUT;
             }
 
-            updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tsNanos);
+            updateMetrics(srvrId, new ClusterMetricsSnapshot(srvrMetricsMsg), cacheMetrics, tsNanos);
 
-            for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
-                updateMetrics(t.get1(), t.get2(), cacheMetrics, tsNanos);
+            TcpDiscoveryClientNodesMetricsMessage clientsMetricsMsg = F.isEmpty(msg.connectedClientsMetricsMessages())
+                ? null
+                : msg.connectedClientsMetricsMessages().get(srvrId);
+
+            if (clientsMetricsMsg == null)
+                continue;
+
+            assert clientsMetricsMsg.nodesMetricsMessages() != null;
+
+            clientsMetricsMsg.nodesMetricsMessages().forEach((clientId, clientNodeMetricsMsg) ->
+                updateMetrics(clientId, new ClusterMetricsSnapshot(clientNodeMetricsMsg), cacheMetrics, tsNanos));
         }
     }
 
@@ -445,6 +470,19 @@ abstract class TcpDiscoveryImpl {
      */
     protected final DebugLogger messageLogger(TcpDiscoveryAbstractMessage msg) {
         return msg.traceLogLevel() ? traceLog : debugLog;
+    }
+
+    /**
+     * Upcasts type of map's collection value.
+     *
+     * @param <K> Map key type.
+     * @param <P> Parent type.
+     * @param <C> Child type.
+     * @param m Initial map of collections.
+     * @return Resulting map.
+     */
+    protected static <K, P, C extends P> Map<K, Collection<P>> upcast(Map<K, Collection<C>> m) {
+        return (Map<K, Collection<P>>)(Map)m;
     }
 
     /**

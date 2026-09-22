@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSc
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetDataCenterNodesRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
@@ -312,6 +313,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS = 5102;
+
+    /** */
+    private static final short OP_CLUSTER_GET_DATA_CENTER_NODES = 5103;
 
     /* Compute operations. */
     /** */
@@ -640,6 +644,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS:
                 return new ClientClusterGroupGetNodesEndpointsRequest(reader);
+
+            case OP_CLUSTER_GET_DATA_CENTER_NODES:
+                return new ClientClusterGetDataCenterNodesRequest(reader);
 
             case OP_COMPUTE_TASK_EXECUTE:
                 return new ClientExecuteTaskRequest(reader);

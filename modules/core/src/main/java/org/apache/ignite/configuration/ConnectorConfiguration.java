@@ -21,6 +21,7 @@ import java.net.Socket;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -40,7 +41,7 @@ public class ConnectorConfiguration {
     public static final boolean DFLT_TCP_DIRECT_BUF = false;
 
     /** Default REST idle timeout. */
-    public static final int DFLT_IDLE_TIMEOUT = 7000;
+    public static final int DFLT_IDLE_TIMEOUT = GridNioServer.DFLT_IDLE_TIMEOUT;
 
     /** Default rest port range. */
     public static final int DFLT_PORT_RANGE = 100;

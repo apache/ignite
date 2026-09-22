@@ -17,22 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * DHT atomic cache backup update response.
@@ -42,18 +37,21 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future version. */
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** */
-    private UpdateErrors errs;
+    @Order(1)
+    UpdateErrors errs;
 
     /** Evicted readers. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> nearEvicted;
+    @Order(2)
+    List<KeyCacheObject> nearEvicted;
 
     /** */
-    private int partId;
+    @Order(3)
+    int partId;
 
     /**
      * Empty constructor.
@@ -66,13 +64,11 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
      * @param cacheId Cache ID.
      * @param partId Partition.
      * @param futId Future ID.
-     * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId, boolean addDepInfo) {
+    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId) {
         this.cacheId = cacheId;
         this.partId = partId;
         this.futId = futId;
-        this.addDepInfo = addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -80,9 +76,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         return CACHE_MSG_IDX;
     }
 
-    /**
-     * @return Future version.
-     */
+    /** @return Future version. */
     public long futureId() {
         return futId;
     }
@@ -96,18 +90,18 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         if (errs == null)
             errs = new UpdateErrors();
 
-        errs.onError(err);
+        errs.error(err);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
+    @Override public Throwable error() {
         return errs != null ? errs.error() : null;
     }
 
     /**
      * @return Evicted readers.
      */
-    Collection<KeyCacheObject> nearEvicted() {
+    public Collection<KeyCacheObject> nearEvicted() {
         return nearEvicted;
     }
 
@@ -119,35 +113,8 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return partId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
-        if (cctx != null) {
-            prepareMarshalCacheObjects(nearEvicted, cctx);
-
-            if (errs != null)
-                errs.prepareMarshal(this, cctx);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
-
-        if (errs != null)
-            errs.finishUnmarshal(this, cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -160,99 +127,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeMessage(errs))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCollection(nearEvicted, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeInt(partId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                errs = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                nearEvicted = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                partId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 39;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

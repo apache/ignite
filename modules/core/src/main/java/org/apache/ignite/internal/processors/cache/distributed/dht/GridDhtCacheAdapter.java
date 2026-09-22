@@ -215,7 +215,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 ctx.cacheId(),
                 msg.futureId(),
                 msg.miniId(),
-                ctx.deploymentEnabled());
+                null);
 
             GridDhtPartitionTopology top = ctx.topology();
 
@@ -1214,9 +1214,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                 res0 = info;
                             }
                             else if (req.needVersion())
-                                res0 = new CacheVersionedValue(info.value(), info.version());
+                                res0 = new CacheVersionedValue(info.value(), info.version(), info.cacheId());
                             else
-                                res0 = info.value();
+                                res0 = new CacheVersionedValue(info.value(), null, info.cacheId());
                         }
 
                         res = new GridNearSingleGetResponse(
@@ -1289,7 +1289,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
             getDhtAsync(nodeId,
                 req.messageId(),
-                req.keys(),
+                req.keyMap(),
                 req.addReaders(),
                 req.readThrough(),
                 req.topologyVersion(),
