@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.jta.reflect;
 
 import java.lang.reflect.InvocationTargetException;
-import javax.transaction.TransactionManager;
+import jakarta.transaction.TransactionManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.jta.CacheTmLookup;
 import org.apache.ignite.internal.util.typedef.internal.A;

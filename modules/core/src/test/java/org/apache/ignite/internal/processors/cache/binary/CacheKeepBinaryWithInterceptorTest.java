@@ -73,11 +73,11 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         ignite(0).createCache(ccfg);
 
         try {
-            TestInterceptor1.onAfterRmv = 0;
-            TestInterceptor1.onBeforeRmv = 0;
-            TestInterceptor1.onAfterPut = 0;
-            TestInterceptor1.onBeforePut = 0;
-            TestInterceptor1.onGet = 0;
+            TestBOInterceptor.onAfterRmv = 0;
+            TestBOInterceptor.onBeforeRmv = 0;
+            TestBOInterceptor.onAfterPut = 0;
+            TestBOInterceptor.onBeforePut = 0;
+            TestBOInterceptor.onGet = 0;
 
             IgniteCache cache = ignite(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
@@ -106,11 +106,11 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
             assertTrue(cache.remove(new TestKey(1)));
 
-            assertTrue(TestInterceptor1.onAfterRmv > 0);
-            assertTrue(TestInterceptor1.onBeforeRmv > 0);
-            assertTrue(TestInterceptor1.onAfterPut > 0);
-            assertTrue(TestInterceptor1.onBeforePut > 0);
-            assertTrue(TestInterceptor1.onGet > 0);
+            assertTrue(TestBOInterceptor.onAfterRmv > 0);
+            assertTrue(TestBOInterceptor.onBeforeRmv > 0);
+            assertTrue(TestBOInterceptor.onAfterPut > 0);
+            assertTrue(TestBOInterceptor.onBeforePut > 0);
+            assertTrue(TestBOInterceptor.onGet > 0);
         }
         finally {
             ignite(0).destroyCache(ccfg.getName());
@@ -124,11 +124,11 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         ignite(0).createCache(ccfg);
 
         try {
-            TestInterceptor2.onAfterRmv = 0;
-            TestInterceptor2.onBeforeRmv = 0;
-            TestInterceptor2.onAfterPut = 0;
-            TestInterceptor2.onBeforePut = 0;
-            TestInterceptor2.onGet = 0;
+            TestTypeSpecifiedInterceptor.onAfterRmv = 0;
+            TestTypeSpecifiedInterceptor.onBeforeRmv = 0;
+            TestTypeSpecifiedInterceptor.onAfterPut = 0;
+            TestTypeSpecifiedInterceptor.onBeforePut = 0;
+            TestTypeSpecifiedInterceptor.onGet = 0;
 
             IgniteCache cache = ignite(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
@@ -157,11 +157,11 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
             assertTrue(cache.remove(1));
 
-            assertTrue(TestInterceptor2.onAfterRmv > 0);
-            assertTrue(TestInterceptor2.onBeforeRmv > 0);
-            assertTrue(TestInterceptor2.onAfterPut > 0);
-            assertTrue(TestInterceptor2.onBeforePut > 0);
-            assertTrue(TestInterceptor2.onGet > 0);
+            assertTrue(TestTypeSpecifiedInterceptor.onAfterRmv > 0);
+            assertTrue(TestTypeSpecifiedInterceptor.onBeforeRmv > 0);
+            assertTrue(TestTypeSpecifiedInterceptor.onAfterPut > 0);
+            assertTrue(TestTypeSpecifiedInterceptor.onBeforePut > 0);
+            assertTrue(TestTypeSpecifiedInterceptor.onGet > 0);
         }
         finally {
             ignite(0).destroyCache(ccfg.getName());
@@ -177,7 +177,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setInterceptor(testPrimitives ? new TestInterceptor2() : new TestInterceptor1());
+        ccfg.setInterceptor(testPrimitives ? new TestTypeSpecifiedInterceptor() : new TestBOInterceptor());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(1);
 
@@ -187,7 +187,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class TestInterceptor1 implements CacheInterceptor<BinaryObject, BinaryObject> {
+    static class TestBOInterceptor implements CacheInterceptor<BinaryObject, BinaryObject> {
         /** */
         static int onGet;
 
@@ -266,7 +266,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class TestInterceptor2 implements CacheInterceptor<Integer, Integer> {
+    static class TestTypeSpecifiedInterceptor implements CacheInterceptor<Integer, Integer> {
         /** */
         static int onGet;
 
@@ -379,7 +379,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
      */
     static class TestValue {
         /** */
-        private int val;
+        @SuppressWarnings("unused")
+        private final int val;
 
         /**
          * @param val Value.

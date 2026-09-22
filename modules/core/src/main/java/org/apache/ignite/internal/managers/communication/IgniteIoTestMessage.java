@@ -17,560 +17,136 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.MarshallableMessage;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.marshaller.Marshaller;
 
-/**
- *
- */
-@IgniteCodeGeneratingFail
-public class IgniteIoTestMessage implements Message {
-    /** */
-    private static byte FLAG_PROC_FROM_NIO = 1;
+/** Communication SPI test message. */
+public class IgniteIoTestMessage implements MarshallableMessage {
+    /** Test ID. */
+    @Order(0)
+    long id;
 
-    /** */
-    private long id;
+    /** Process message in NIO thread. */
+    @Order(1)
+    boolean processInNioThread;
 
-    /** */
-    private byte flags;
+    /** Request flag. */
+    @Order(2)
+    boolean req;
 
-    /** */
-    private boolean req;
+    /** Payload. */
+    @Order(3)
+    byte[] payload;
 
-    /** */
-    private byte payload[];
+    /** Request pre-send marshalling timestamp from the source node wall clock. */
+    @Order(4)
+    long reqSndTsMillis;
 
-    /** */
-    private long reqCreateTs;
+    /** Request pre-listener unmarshalling timestamp from the target node wall clock. */
+    @Order(5)
+    long reqRcvTsMillis;
 
-    /** */
-    private long reqSndTs;
+    /** Response pre-send marshalling timestamp from the target node wall clock. */
+    @Order(6)
+    long resSndTsMillis;
 
-    /** */
-    private long reqSndTsMillis;
+    /** Response pre-listener unmarshalling timestamp from the source node wall clock. */
+    @Order(7)
+    long resRcvTsMillis;
 
-    /** */
-    private long reqRcvTs;
+    /** End-to-end RTT measured by the source node. */
+    private long rttNanos;
 
-    /** */
-    private long reqRcvTsMillis;
-
-    /** */
-    private long reqProcTs;
-
-    /** */
-    private long resSndTs;
-
-    /** */
-    private long resSndTsMillis;
-
-    /** */
-    private long resRcvTs;
-
-    /** */
-    private long resRcvTsMillis;
-
-    /** */
-    private long resProcTs;
-
-    /** */
-    @GridDirectTransient
-    private UUID sndNodeId;
-
-    /**
-     *
-     */
+    /** Required by the message factory. */
     public IgniteIoTestMessage() {
         // No-op.
     }
 
-    /**
-     * @param id Message ID.
-     * @param req Request flag.
-     * @param payload Payload.
-     */
-    public IgniteIoTestMessage(long id, boolean req, byte[] payload) {
+    /** Request constructor. */
+    public IgniteIoTestMessage(long id, byte[] payload, boolean processInNioThread) {
         this.id = id;
-        this.req = req;
         this.payload = payload;
+        this.processInNioThread = processInNioThread;
 
-        reqCreateTs = System.nanoTime();
+        req = true;
     }
 
-    /**
-     * @return {@code True} if message should be processed from NIO thread
-     * (otherwise message is submitted to system pool).
-     */
-    public boolean processFromNioThread() {
-        return isFlag(FLAG_PROC_FROM_NIO);
+    /** Response constructor. */
+    public IgniteIoTestMessage(IgniteIoTestMessage req) {
+        id = req.id;
+        payload = req.payload;
+        processInNioThread = req.processInNioThread;
+        reqSndTsMillis = req.reqSndTsMillis;
+        reqRcvTsMillis = req.reqRcvTsMillis;
     }
 
-    /**
-     * @param procFromNioThread {@code True} if message should be processed from NIO thread.
-     */
-    public void processFromNioThread(boolean procFromNioThread) {
-        setFlag(procFromNioThread, FLAG_PROC_FROM_NIO);
+    /** @return {@code True} to process this message in NIO thread. */
+    public boolean processInNioThread() {
+        return processInNioThread;
     }
 
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * Sets flag mask.
-     *
-     * @param flag Set or clear.
-     * @param mask Mask.
-     */
-    private void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
-    }
-
-    /**
-     * Reads flag mask.
-     *
-     * @param mask Mask to read.
-     * @return Flag value.
-     */
-    private boolean isFlag(int mask) {
-        return (flags & mask) != 0;
-    }
-
-    /**
-     * @return {@code true} if this is request.
-     */
+    /** @return {@code True} if this is a request. */
     public boolean request() {
         return req;
     }
 
-    /**
-     * @return ID.
-     */
-    public long id() {
+    /** @return Test ID. */
+    public long testId() {
         return id;
     }
 
-    /**
-     * @return Request create timestamp.
-     */
-    public long requestCreateTs() {
-        return reqCreateTs;
+    /** Sets end-to-end RTT measured by the source node. */
+    void roundTripNanos(long rttNanos) {
+        this.rttNanos = rttNanos;
+    }
+
+    /** @return End-to-end RTT in nanoseconds. */
+    long roundTripNanos() {
+        return rttNanos;
     }
 
     /**
-     * @return Request send timestamp.
+     * @return Estimated one-way request delivery delay from pre-send marshalling on the source to pre-listener
+     *     unmarshalling on the target, in milliseconds. Requires synchronized wall clocks.
      */
-    public long requestSendTs() {
-        return reqSndTs;
+    long requestDeliveryTimeMillis() {
+        return reqRcvTsMillis - reqSndTsMillis;
     }
 
     /**
-     * @return Request receive timestamp.
+     * @return Estimated one-way response delivery delay from pre-send marshalling on the target to pre-listener
+     *     unmarshalling on the source, in milliseconds. Requires synchronized wall clocks.
      */
-    public long requestReceiveTs() {
-        return reqRcvTs;
+    long responseDeliveryTimeMillis() {
+        return resRcvTsMillis - resSndTsMillis;
     }
 
-    /**
-     * @return Request process started timestamp.
-     */
-    public long requestProcessTs() {
-        return reqProcTs;
+    /** Records the first pre-send marshalling of this request or response. */
+    @Override public void marshal(Marshaller marsh) {
+        recordSendTimestamp();
     }
 
-    /**
-     * @return Response send timestamp.
-     */
-    public long responseSendTs() {
-        return resSndTs;
+    /** Records the synthetic pre-send hook for local delivery, which bypasses marshalling. */
+    void onBeforeLocalSend() {
+        recordSendTimestamp();
     }
 
-    /**
-     * @return Response receive timestamp.
-     */
-    public long responseReceiveTs() {
-        return resRcvTs;
-    }
-
-    /**
-     * @return Response process timestamp.
-     */
-    public long responseProcessTs() {
-        return resProcTs;
-    }
-
-    /**
-     * @return Request send timestamp (millis).
-     */
-    public long requestSendTsMillis() {
-        return reqSndTsMillis;
-    }
-
-    /**
-     * @return Request received timestamp (millis).
-     */
-    public long requestReceivedTsMillis() {
-        return reqRcvTsMillis;
-    }
-
-    /**
-     * @return Response send timestamp (millis).
-     */
-    public long responseSendTsMillis() {
-        return resSndTsMillis;
-    }
-
-    /**
-     * @return Response received timestamp (millis).
-     */
-    public long responseReceivedTsMillis() {
-        return resRcvTsMillis;
-    }
-
-    /**
-     * This method is called to initialize tracing variables.
-     * TODO: introduce direct message lifecycle API?
-     */
-    public void onAfterRead() {
-        if (req && reqRcvTs == 0) {
-            reqRcvTs = System.nanoTime();
-
-            reqRcvTsMillis = System.currentTimeMillis();
-        }
-
-        if (!req && resRcvTs == 0) {
-            resRcvTs = System.nanoTime();
-
-            resRcvTsMillis = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * This method is called to initialize tracing variables.
-     * TODO: introduce direct message lifecycle API?
-     */
-    public void onBeforeWrite() {
-        if (req && reqSndTs == 0) {
-            reqSndTs = System.nanoTime();
-
+    /** Records the first pre-send timestamp. */
+    private void recordSendTimestamp() {
+        if (req && reqSndTsMillis == 0)
             reqSndTsMillis = System.currentTimeMillis();
-        }
-
-        if (!req && resSndTs == 0) {
-            resSndTs = System.nanoTime();
-
+        else if (!req && resSndTsMillis == 0)
             resSndTsMillis = System.currentTimeMillis();
-        }
     }
 
-    /**
-     *
-     */
-    public void copyDataFromRequest(IgniteIoTestMessage req) {
-        reqCreateTs = req.reqCreateTs;
-
-        reqSndTs = req.reqSndTs;
-        reqSndTsMillis = req.reqSndTsMillis;
-
-        reqRcvTs = req.reqRcvTs;
-        reqRcvTsMillis = req.reqRcvTsMillis;
-    }
-
-    /**
-     *
-     */
-    public void onRequestProcessed() {
-        reqProcTs = System.nanoTime();
-    }
-
-    /**
-     *
-     */
-    public void onResponseProcessed() {
-        resProcTs = System.nanoTime();
-    }
-
-    /**
-     * @return Response processed timestamp.
-     */
-    public long responseProcessedTs() {
-        return resProcTs;
-    }
-
-    /**
-     * @return Sender node ID.
-     */
-    public UUID senderNodeId() {
-        return sndNodeId;
-    }
-
-    /**
-     * @param sndNodeId Sender node ID.
-     */
-    public void senderNodeId(UUID sndNodeId) {
-        this.sndNodeId = sndNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        onBeforeWrite();
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(id))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(payload))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeBoolean(req))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeLong(reqCreateTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(reqProcTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong(reqRcvTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeLong(reqRcvTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeLong(reqSndTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(reqSndTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeLong(resProcTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeLong(resRcvTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeLong(resRcvTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeLong(resSndTs))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeLong(resSndTsMillis))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                id = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                payload = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                req = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                reqCreateTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                reqProcTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                reqRcvTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                reqRcvTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                reqSndTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                reqSndTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                resProcTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                resRcvTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                resRcvTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                resSndTs = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                resSndTsMillis = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        onAfterRead();
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -43;
+    /** Records pre-listener unmarshalling of this request or response. */
+    @Override public void unmarshal(Marshaller marsh, ClassLoader clsLdr) {
+        if (req && reqRcvTsMillis == 0)
+            reqRcvTsMillis = System.currentTimeMillis();
+        else if (!req && resRcvTsMillis == 0)
+            resRcvTsMillis = System.currentTimeMillis();
     }
 
     /** {@inheritDoc} */

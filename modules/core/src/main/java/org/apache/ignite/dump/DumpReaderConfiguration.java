@@ -22,7 +22,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
  * @see DumpReader
  * @see DumpConsumer
  */
-@IgniteExperimental
 public class DumpReaderConfiguration {
     /** Default timeout. */
     public static final Duration DFLT_TIMEOUT = Duration.ofDays(7);

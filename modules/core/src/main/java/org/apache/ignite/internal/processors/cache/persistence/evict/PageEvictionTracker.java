@@ -28,9 +28,8 @@ public interface PageEvictionTracker extends LifecycleAware {
      * Call this method when data page is accessed.
      *
      * @param pageId Page id.
-     * @throws IgniteCheckedException In case of page memory error.
      */
-    public void touchPage(long pageId) throws IgniteCheckedException;
+    public void touchPage(long pageId);
 
     /**
      * Check if page eviction is required according to the configured policy.
@@ -53,9 +52,8 @@ public interface PageEvictionTracker extends LifecycleAware {
      * Call this method when last entry is removed from data page.
      *
      * @param pageId Page id.
-     * @throws IgniteCheckedException In case of page memory error.
      */
-    public void forgetPage(long pageId) throws IgniteCheckedException;
+    public void forgetPage(long pageId);
 
     /**
      * Call this method when data page containing fragment of row is written.
@@ -63,7 +61,6 @@ public interface PageEvictionTracker extends LifecycleAware {
      * @param pageId     Page id.
      * @param prevPageId Page id of previous fragment.  0 if called for the tail fragment (written first).
      * @param isHeadPage True if head fragment (written last) of row is written, False otherwise.
-     * @throws IgniteCheckedException In case of page memory error.
      */
-    public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) throws IgniteCheckedException;
+    public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage);
 }

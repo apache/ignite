@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -32,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
@@ -76,25 +74,32 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     @Nullable private transient volatile IgniteLogger log;
 
     /** Unique id. */
-    private String uid;
+    @Order(0)
+    String uid;
 
     /** Cache group name. */
-    @Nullable private String grpName;
+    @Order(1)
+    @Nullable String grpName;
 
     /** Cache name. */
-    private String cacheName;
+    @Order(2)
+    String cacheName;
 
     /** Index name. */
-    private String idxName;
+    @Order(3)
+    String idxName;
 
     /** Old name of underlying index tree name. */
-    private String oldTreeName;
+    @Order(4)
+    String oldTreeName;
 
     /** New name of underlying index tree name. */
-    private String newTreeName;
+    @Order(5)
+    String newTreeName;
 
     /** Number of segments. */
-    private int segments;
+    @Order(6)
+    int segments;
 
     /** Need to rename index root pages. */
     private transient volatile boolean needToRen;
@@ -151,28 +156,6 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      */
     public DurableBackgroundCleanupIndexTreeTaskV2() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeLongString(out, uid);
-        U.writeLongString(out, grpName);
-        U.writeLongString(out, cacheName);
-        U.writeLongString(out, idxName);
-        U.writeLongString(out, oldTreeName);
-        U.writeLongString(out, newTreeName);
-        out.writeInt(segments);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        uid = U.readLongString(in);
-        grpName = U.readLongString(in);
-        cacheName = U.readLongString(in);
-        idxName = U.readLongString(in);
-        oldTreeName = U.readLongString(in);
-        newTreeName = U.readLongString(in);
-        segments = in.readInt();
     }
 
     /** {@inheritDoc} */

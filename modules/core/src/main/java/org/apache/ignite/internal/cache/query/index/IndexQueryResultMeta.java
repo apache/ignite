@@ -35,11 +35,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class IndexQueryResultMeta implements Message {
     /** Index key settings. */
     @Order(0)
-    private IndexKeyTypeSettings keyTypeSettings;
+    IndexKeyTypeSettings keyTypeSettings;
 
     /** Index key definitions. */
-    @Order(value = 1, method = "keyDefinitions")
-    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
+    @Order(1)
+    LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -61,30 +61,13 @@ public class IndexQueryResultMeta implements Message {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 18;
-    }
-
     /** */
     public IndexKeyTypeSettings keyTypeSettings() {
         return keyTypeSettings;
     }
 
-    /** */
-    public void keyTypeSettings(IndexKeyTypeSettings keyTypeSettings) {
-        this.keyTypeSettings = keyTypeSettings;
-    }
-
-    /** */
-    public Map<String, IndexKeyDefinition> keyDefinitions() {
+    /** @return Map of index key definitions. */
+    public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
         return keyDefs;
-    }
-
-    /** */
-    public void keyDefinitions(Map<String, IndexKeyDefinition> keyDefs) {
-        this.keyDefs = keyDefs == null
-            ? null
-            : keyDefs instanceof LinkedHashMap ? (LinkedHashMap)keyDefs : new LinkedHashMap<>(keyDefs);
     }
 }

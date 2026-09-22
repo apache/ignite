@@ -29,14 +29,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -45,11 +52,12 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -58,6 +66,12 @@ import static org.junit.Assert.assertThat;
 
 /** */
 public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setBinaryConfiguration(
+            new BinaryConfiguration().setNameMapper(new BinaryBasicNameMapper(true)));
+    }
+
     /**
      * Creates table with two columns, where the first column is PK,
      * and verifies created cache.
@@ -347,13 +361,208 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         sql("create table if not exists my_table (id int, val varchar)");
     }
 
+    /** Test that it's impossible to create tables with same name regardless of key/value wrapping settings. */
+    @Test
+    public void createTableWithWrappedKeyVal() {
+        {
+            sql("create table t1 (id int primary key) WITH \"wrap_value=false\"");
+            sql("create table t2 (id1 int, id2 int, primary key(id1, id2)) WITH \"wrap_value=false\"");
+
+            sql("DROP TABLE t1; DROP TABLE t2");
+        }
+        {
+            sql("create table my_table (id int, val varchar)");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            //  WRAP_KEY, by default, this flag is set to false
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+
+        {
+            sql("create table my_table (id int, val varchar) WITH \"wrap_key=true\"");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+
+        {
+            sql("create table my_table (id int, val varchar) WITH \"wrap_value=false\"");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
+                "Table already exists: MY_TABLE");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+
+        {
+            sql("create table my_table (id int, val varchar) WITH \"wrap_key=true, wrap_value=false\"");
+
+            assertThrowsSqlException("create table my_table (id int, val varchar)",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_key=true\"",
+                "Table already exists: MY_TABLE");
+
+            // WRAP_VALUE, by default, this flag is set to true
+            assertThrowsSqlException("create table my_table (id int, val varchar) WITH \"wrap_value=false\"",
+                "Table already exists: MY_TABLE");
+
+            sql("DROP TABLE my_table");
+        }
+    }
+
+    /** Tests wrap=false is forbidden when key or value has more than one column. */
+    @Test
+    public void testWrappingAlwaysOnWithComplexKV() {
+        assertThrowsSqlException("create table a (id int, x varchar, c bigint, primary key(id, c)) with \"wrap_key=false\"",
+            "WRAP_KEY parameter cannot be \"false\" when composite primary key exists.");
+
+        assertThrowsSqlException(
+            "create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_key=false, key_type=custom\"",
+            "WRAP_KEY parameter cannot be \"false\" when KEY_TYPE is defined.");
+
+        assertThrowsSqlException("create table a (id int, x varchar, c bigint, primary key(id)) with \"wrap_value=false\"",
+            "WRAP_VALUE parameter cannot be \"false\" with multiple columns.");
+
+        assertThrowsSqlException(
+            "create table a (id int, x varchar, primary key(id)) with \"wrap_value=false, value_type=custom\"",
+            "WRAP_VALUE parameter cannot be \"false\" when VALUE_TYPE is defined.");
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails.
+     */
+    @Test
+    public void testAlterTableFailOnSingleCacheValue() {
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("ints");
+        ccfg
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setSqlSchema(QueryUtils.DFLT_SCHEMA);
+
+        try {
+            client.getOrCreateCache(ccfg);
+
+            doTestAlterTableOnFlatValue("INTEGER");
+        }
+        finally {
+            client.destroyCache("ints");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails.
+     */
+    @Test
+    public void testAlterTableFailOnSingleTableValue() {
+        try {
+            sql("CREATE TABLE TEST (id INT PRIMARY KEY, x VARCHAR) with \"wrap_value=false\"");
+
+            doTestAlterTableOnFlatValue("TEST");
+        }
+        finally {
+            sql("DROP TABLE TEST");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for tables that have single value.
+     *
+     * @param tblName table name.
+     */
+    private void doTestAlterTableOnFlatValue(String tblName) {
+        assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar", IgniteSQLException.class,
+            "Cannot add column(s) because table was created");
+    }
+
+    /**
+     * Test single column PK with different wrapping params calculate correct inline size.
+     * PK index is always unwrapped if table was created via DDL.
+     */
+    @Test
+    public void testInlineSizeKeyWrapParam() {
+        String qry = "CREATE TABLE IF NOT EXISTS T ( " +
+            "  id varchar(15), " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id) ) ";
+
+        try {
+            for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"", qry + "WITH \"wrap_key=false\"")) {
+                sql(ddl);
+
+                assertEquals("Unexpected result for query [ddl=" + ddl + ']', 18, sql(
+                    "select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+
+                sql("DROP TABLE IF EXISTS T");
+            }
+        }
+        finally {
+            sql("DROP TABLE IF EXISTS T");
+        }
+    }
+
+    /**
+     * Test two column PK with different wrapping params calculate correct inline size.
+     * PK index is always unwrapped if table was created via DDL.
+     */
+    @Test
+    public void testInlineSizeMultiKeyWrapParam() {
+        String qry = "CREATE TABLE IF NOT EXISTS T ( " +
+            "  id varchar(15), " +
+            "  id2 uuid, " +
+            "  col varchar(100), " +
+            "  PRIMARY KEY(id, id2) ) ";
+
+        try {
+            for (String ddl : F.asList(qry, qry + "WITH \"wrap_key=true\"")) {
+                sql(ddl);
+
+                assertEquals("Unexpected result for query [ddl=" + ddl + ']', 35,
+                    sql("select INLINE_SIZE from SYS.INDEXES where TABLE_NAME = 'T' and IS_PK = true").get(0).get(0));
+
+                sql("DROP TABLE IF EXISTS T");
+            }
+        }
+        finally {
+            sql("DROP TABLE IF EXISTS T");
+        }
+    }
+
     /**
      * Create table using reserved word
      */
     @Test
     public void createTableUseReservedWord() {
         assertThrows("create table table (id int primary key, val varchar)", IgniteSQLException.class,
-            "Failed to parse query. Encountered \"table table\"");
+            "Failed to parse query. Encountered \" \"TABLE\" \"table \"  \"TABLE\" \"table \"\"");
 
         sql("create table \"table\" (id int primary key, val varchar)");
 
@@ -884,7 +1093,6 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Alter table from server and client nodes.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16292")
     public void alterTableServerAndClient() throws Exception {
         sql(grid(0), "create table my_table (id int primary key, val varchar)");
 
@@ -918,7 +1126,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         awaitPartitionMapExchange();
 
-        res = sql("select * from my_table ");
+        res = sql(grid(0), "select * from my_table ");
 
         assertEquals(1, res.size());
         assertEquals(2, res.get(0).size());
@@ -1045,6 +1253,91 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
             assertEquals(i, row.get(0));
             assertEquals("test" + i, row.get(1));
         }
+    }
+
+    /**
+     * Tests that type id collisions for autogenerated types are automatically resolved.
+     */
+    @Test
+    public void testAutogeneratedTypeIdCollision() {
+        BinaryContext binCtx = client.context().cacheObjects().binaryContext();
+
+        binCtx.registerUserClassName(binCtx.typeId("TestTypeName"), "TestTypeName", false, true, JAVA_ID);
+
+        MarshallerContextImpl marshCtx = (MarshallerContextImpl)binCtx.marshaller().getContext();
+
+        Map<Integer, MappedName> mappings = marshCtx.getCachedMappings().get(JAVA_ID);
+
+        MappedName dummyName = new MappedName("Dummy", true);
+
+        // Maximize probability of collision.
+        for (int i = 0; i < 20_000_000; i++)
+            mappings.putIfAbsent(i, dummyName);
+        try {
+            for (int i = 0; i < 100; i++) {
+                sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2))");
+                sql("INSERT INTO test VALUES (0, 0, 0)");
+                sql("DROP TABLE test");
+            }
+        }
+        finally {
+            mappings.values().removeIf(v -> v == dummyName);
+        }
+    }
+
+    /**
+     * Tests that table with explicitly provided types with type id collisions cannot be created.
+     */
+    @Test
+    public void testExplicitTypeIdCollision() {
+        IgniteBinary bin = client.binary();
+        String type0 = "TestType";
+
+        // Register user binary type.
+        bin.builder(type0).build();
+
+        // Check that explicit type can be used.
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH KEY_TYPE=\"" + type0 + "\"");
+        sql("INSERT INTO test VALUES (0, 0, 0)");
+        sql("DROP TABLE test");
+
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH VALUE_TYPE=\"" + type0 + "\"");
+        sql("INSERT INTO test VALUES (0, 0, 0)");
+        sql("DROP TABLE test");
+
+        // Check that explicit different types mapped with name mapper to the same type can be used.
+        String pkg = "org.apache.ignite.";
+        String type1 = pkg + type0;
+        String type2 = pkg.toUpperCase() + type0;
+
+        // Use default type ID mapper, which use lowercase chars for type ID generation, but name mapper with "simple name" flag.
+        // So both "org.apache.ignite.TestType" and "ORG.APACHE.IGNITE.TestType" types are converted to the "TestType"
+        // by name mapper, and have the same type ID, but have different type ID with "TestType".
+        assertNotSame(bin.typeId(type0), bin.typeId(type1));
+        assertEquals(bin.typeId(type1), bin.typeId(type2));
+
+        bin.builder(type1).build();
+
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH KEY_TYPE=\"" + type2 + "\"");
+        sql("INSERT INTO test VALUES (0, 0, 0)");
+        sql("DROP TABLE test");
+
+        sql("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) WITH VALUE_TYPE=\"" + type2 + "\"");
+        sql("INSERT INTO test VALUES (0, 0, 0)");
+        sql("DROP TABLE test");
+
+        // Check that duplicated type can't be used.
+        String duplicatedType = "SQL_PUBLIC_T1_85fe3916_800f_40de_9e8f_8dbbae60c04d_KEY";
+
+        assertEquals(client.binary().typeId(TransactionConcurrency.class.getName()), client.binary().typeId(duplicatedType));
+
+        assertThrows("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) " +
+                "WITH KEY_TYPE=\"" + duplicatedType + '\"',
+            IgniteSQLException.class, "Duplicate ID");
+
+        assertThrows("CREATE TABLE test (id1 int, id2 int, val int, primary key (id1, id2)) " +
+                "WITH VALUE_TYPE=\"" + duplicatedType + '\"',
+            IgniteSQLException.class, "Duplicate ID");
     }
 
     /**

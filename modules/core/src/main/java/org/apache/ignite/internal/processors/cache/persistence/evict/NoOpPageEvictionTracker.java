@@ -16,7 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.evict;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 
 /**
@@ -34,17 +33,17 @@ public class NoOpPageEvictionTracker implements PageEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void touchPage(long pageId) throws IgniteCheckedException {
+    @Override public void touchPage(long pageId) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void evictDataPage() throws IgniteCheckedException {
+    @Override public void evictDataPage() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void forgetPage(long pageId) throws IgniteCheckedException {
+    @Override public void forgetPage(long pageId) {
         // No-op.
     }
 
@@ -54,7 +53,7 @@ public class NoOpPageEvictionTracker implements PageEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) throws IgniteCheckedException {
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
         // No-op.
     }
 }

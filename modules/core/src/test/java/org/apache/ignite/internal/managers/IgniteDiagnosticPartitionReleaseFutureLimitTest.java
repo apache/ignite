@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -147,7 +147,7 @@ public class IgniteDiagnosticPartitionReleaseFutureLimitTest extends GridCommonA
         AtomicBoolean stop
     ) {
         IgniteInternalFuture<List<T4<Long, Integer, Integer, String>>> futExec = GridTestUtils.runAsync(() -> {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)node.context().pools().getSystemExecutorService();
+            IgniteThreadPoolExecutor exec = node.context().pools().getSystemExecutorService();
 
             List<T4<Long, Integer, Integer, String>> inf = new ArrayList<>();
 

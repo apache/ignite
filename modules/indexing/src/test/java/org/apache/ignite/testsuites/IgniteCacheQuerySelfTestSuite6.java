@@ -34,12 +34,14 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBin
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationStoreEnabledTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryMarshallerTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryUserCodeExceptionTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryMultiNodesFilteringTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionAtomicOneNodeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryPartitionedOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicOneNodeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.LocalContinuousQueryWithNodeFailureTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsQueryTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSystemViewTablesTest;
 import org.apache.ignite.internal.processors.query.DropTableAfterCteSqlQueryTest;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.processors.query.IgniteInsertNullableDuplicate
 import org.apache.ignite.internal.processors.query.IgniteSqlSinglePartitionMultiParallelismTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
 import org.apache.ignite.internal.processors.query.QueryEntityAliasesTest;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessageSerializationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -86,6 +89,9 @@ import org.junit.runners.Suite;
     QueryEntityAliasesTest.class,
     CacheContinuousQueryEntriesExpireTest.class,
     DropTableAfterCteSqlQueryTest.class,
+    LocalContinuousQueryWithNodeFailureTest.class,
+    ContinuousQueryUserCodeExceptionTest.class,
+    QueryEntityMessageSerializationTest.class,
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

@@ -106,7 +106,7 @@ import static org.junit.Assert.fail;
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private static final transient ConcurrentMap<String, IgniteProcessProxy> gridProxies = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, IgniteProcessProxy> gridProxies = new ConcurrentHashMap<>();
 
     /** Property that specify alternative {@code JAVA_HOME}. */
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";

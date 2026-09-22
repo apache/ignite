@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.visor.misc;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
@@ -31,13 +29,16 @@ public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID id;
+    @Order(0)
+    UUID id;
 
     /** */
-    private String tag;
+    @Order(1)
+    String tag;
 
     /** */
-    private String clusterName;
+    @Order(2)
+    String clusterName;
 
     /** Default constructor. */
     public VisorIdAndTagViewTaskResult() {
@@ -53,20 +54,6 @@ public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
         this.id = id;
         this.tag = tag;
         this.clusterName = clusterName;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(id);
-        out.writeObject(tag);
-        out.writeObject(clusterName);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = (UUID)in.readObject();
-        tag = (String)in.readObject();
-        clusterName = (String)in.readObject();
     }
 
     /** */

@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
@@ -33,32 +30,36 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(
         example = "nodeId",
         optional = true,
         description = "Specify node for job execution. If not specified explicitly, node will be chosen by grid")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
+    @Order(1)
     @Argument(
         example = "grpRegExp",
         optional = true,
         description = "Regular expression allowing filtering by cache group name")
-    private String groupName;
+    String groupName;
 
     /** */
+    @Order(2)
     @Argument(
         example = "cacheRegExp",
         optional = true,
         description = "Regular expression allowing filtering by cache name")
-    private String cacheName;
+    String cacheName;
 
     /** */
+    @Order(3)
     @Argument(
         example = "idxNameRegExp",
         optional = true,
         description = "Regular expression allowing filtering by index name")
-    private String indexName;
+    String indexName;
 
     /**
      * @param regex Regex to validate
@@ -73,22 +74,6 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
         catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid " + name + " name regex: " + regex);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-        U.writeString(out, groupName);
-        U.writeString(out, cacheName);
-        U.writeString(out, indexName);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-        groupName = U.readString(in);
-        cacheName = U.readString(in);
-        indexName = U.readString(in);
     }
 
     /** */

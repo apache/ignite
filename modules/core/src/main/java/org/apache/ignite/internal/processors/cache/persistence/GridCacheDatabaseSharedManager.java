@@ -62,7 +62,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
@@ -138,10 +137,11 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.systemview.MetastorageViewWalker;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -210,7 +210,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @SystemProperty(value = "Enables log checkpoint read lock holders")
     public static final String IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS = "IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS";
 
-    /** MemoryPolicyConfiguration name reserved for meta store. */
+    /** {@link DataRegionConfiguration} name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
     /** Name of the system view for a system {@link MetaStorage}. */
@@ -387,13 +387,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Registers system view. */
     private void registerSystemView() {
-        cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC,
-            new MetastorageViewWalker(), () -> {
+        cctx.kernalContext().systemView().registerFiltrableView(METASTORE_VIEW, METASTORE_VIEW_DESC,
+            new MetastorageViewWalker(), filter -> {
                 try {
+                    String name = (String)filter.get(MetastorageViewWalker.NAME_FILTER);
+
                     List<MetastorageView> data = new ArrayList<>();
 
-                    metaStorage.iterate("", (key, valBytes) -> {
+                    metaStorage.iterate(name == null ? "" : name, (key, valBytes) -> {
                         try {
+                            if (name != null && !name.equals(key))
+                                return;
+
                             Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
 
                             data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
@@ -859,6 +864,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         prepareCacheDefragmentation(fromStore(task).cacheNames());
 
                         return new DefragmentationWorkflowCallback(
+                            cctx.igniteInstanceName(),
                             cctx.kernalContext()::log,
                             defrgMgr,
                             cctx.kernalContext().failure()
@@ -1121,7 +1127,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (defrgMgr != null)
             defrgMgr.cancel();
 
-        checkpointManager.stop(cancel);
+        if (checkpointManager != null)
+            checkpointManager.stop(cancel);
 
         super.onKernalStop0(cancel);
 
@@ -2912,7 +2919,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long cpTs,
         UUID cpId,
         WALPointer walPtr,
-        StripedExecutor exec
+        IgniteStripedExecutor exec
     ) throws IgniteCheckedException {
         assert checkpointManager != null : "Checkpoint is null";
 

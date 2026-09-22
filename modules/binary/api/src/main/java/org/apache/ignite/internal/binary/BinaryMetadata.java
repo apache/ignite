@@ -26,7 +26,6 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +52,7 @@ public class BinaryMetadata implements Externalizable {
     @GridToStringInclude(sensitive = true)
     private String typeName;
 
-    /** Recorded object fields. */
+    /** Recorded object fields in initial registration order. */
     @GridToStringInclude(sensitive = true)
     private Map<String, BinaryFieldMetadata> fields;
 
@@ -117,7 +116,7 @@ public class BinaryMetadata implements Externalizable {
 
         this.typeId = typeId;
         this.typeName = typeName;
-        this.fields = fields;
+        this.fields = fields == null ? null : new LinkedHashMap<>(fields);
         this.affKeyFieldName = affKeyFieldName;
         this.schemas = schemas;
 
@@ -304,7 +303,7 @@ public class BinaryMetadata implements Externalizable {
         if (fieldsSize == -1)
             fields = null;
         else {
-            fields = new HashMap<>();
+            fields = new LinkedHashMap<>();
 
             for (int i = 0; i < fieldsSize; i++) {
                 String fieldName = CommonUtils.readString(in);

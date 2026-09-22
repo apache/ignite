@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -130,12 +129,10 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCach
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
 import static org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler.DFLT_MAX_TASK_RESULTS;
+import static org.apache.ignite.internal.thread.pool.IgniteStripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
 import static org.apache.ignite.internal.util.GridReflectionCache.DFLT_REFLECTION_CACHE_SIZE;
 import static org.apache.ignite.internal.util.IgniteExceptionRegistry.DEFAULT_QUEUE_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLASS_LOADER_ID;
-import static org.apache.ignite.internal.util.StripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
-import static org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor.DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
-import static org.apache.ignite.internal.util.nio.GridNioServer.DFLT_IO_BALANCE_PERIOD;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -722,15 +719,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "parse the statement")
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
-    /**
-     *  Force all SQL queries to be processed lazily regardless of what clients request.
-     *
-     * @deprecated Since version 2.8.
-     */
-    @Deprecated
-    @SystemProperty("Force all SQL queries to be processed lazily regardless of what clients request")
-    public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
-
     /** Disable SQL system views. */
     @SystemProperty("Disables SQL system views")
     public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
@@ -752,12 +740,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Maximum size for discovery messages history", type = Integer.class,
         defaults = "" + DFLT_DISCOVERY_HISTORY_SIZE)
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
-
-    /** Human-readable ID of a data center where the node is running. */
-    @IgniteExperimental
-    @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
-        type = String.class)
-    public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
 
     /** Maximum number of discovery message history used to support client reconnect. */
     @SystemProperty(value = "Maximum number of discovery message history used to support client reconnect",
@@ -822,44 +804,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     /** Indicating whether local store keeps primary only. Backward compatibility flag. */
     @SystemProperty("Enables local store keeps primary only. Backward compatibility flag")
     public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
-
-    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes allowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
-
-    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
-    @SystemProperty(value = "Path to the file that contains list of classes disallowed to safe deserialization",
-        type = String.class)
-    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
-
-    /**
-     * If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter instance for the
-     * current JVM it is running in.
-     * Default value is {@code true}.
-     */
-    @SystemProperty(
-        value = "If this parameter is set to true, Ignite will automatically configure an ObjectInputFilter" +
-            " instance for the current JVM it is running in. Filtering is based on class lists defined by the" +
-            " `IGNITE_MARSHALLER_WHITELIST` and `IGNITE_MARSHALLER_BLACKLIST` system properties or their default values." +
-            " Disabling it is not recommended because the Ignite host may be vulnerable to RCE attacks based on Java" +
-            " serialization mechanisms",
-        defaults = "true"
-    )
-    public static final String IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION = "IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION";
-
-    /**
-     * If set to {@code true}, then default selected keys set is used inside
-     * {@code GridNioServer} which lead to some extra garbage generation when
-     * processing selected keys.
-     * <p>
-     * Default value is {@code false}. Should be switched to {@code true} if there are
-     * any problems in communication layer.
-     */
-    @SystemProperty("Enables default selected keys set to be used inside GridNioServer " +
-        "which lead to some extra garbage generation when processing selected keys. " +
-        "Should be switched to true if there are any problems in communication layer")
-    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
 
     /**
      * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
@@ -934,11 +878,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Ignores local address's hostname if IGNITE_LOCAL_HOST is defined "
         + "when resolving local node's addresses", defaults = "true")
     public static final String IGNITE_IGNORE_LOCAL_HOST_NAME = "IGNITE_IGNORE_LOCAL_HOST_NAME";
-
-    /** */
-    @SystemProperty(value = "IO balance period in milliseconds", type = Long.class,
-        defaults = "" + DFLT_IO_BALANCE_PERIOD)
-    public static final String IGNITE_IO_BALANCE_PERIOD = "IGNITE_IO_BALANCE_PERIOD";
 
     /**
      * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
@@ -1050,10 +989,13 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * <p>
      *     Default is {@code false}, which means that service security permissions will be respected.
      * </p>
+     *
+     * @deprecated Has no usage.
      */
     @SystemProperty("Enables Ignite to switch to compatibility mode with versions that " +
         "don't support service security permissions. In this case security permissions will be ignored (if they set)." +
         " Default is false, which means that service security permissions will be respected")
+    @Deprecated
     public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
 
     /** Ignite cluster name. Defaults to {@link IgniteCluster#id()}. */
@@ -1360,13 +1302,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION =
         "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
 
-    /**
-     * Sets timeout for TCP client recovery descriptor reservation.
-     */
-    @SystemProperty(value = "Timeout for TCP client recovery descriptor reservation in milliseconds",
-        type = Long.class, defaults = "" + DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT)
-    public static final String IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT =
-            "IGNITE_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT";
 
     /**
      * When set to {@code true}, Ignite will skip partitions sizes check on partition validation after rebalance has finished.
@@ -1804,7 +1739,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @deprecated Use {@link ShutdownPolicy} instead.
      */
     @Deprecated
-    @IgniteExperimental
     @SystemProperty("Enables node to wait until all of its data is backed up before " +
         "shutting down. Please note that it will completely prevent last node in cluster from shutting down if any " +
         "caches exist that have backups configured")
@@ -1815,7 +1749,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * If enabled, subquery will be rewritten to JOIN where possible.
      * Default is {@code true}.
      */
-    @IgniteExperimental
     @SystemProperty("Enables subquery rewriting optimization. " +
         "If enabled, subquery will be rewritten to JOIN where possible")
     public static final String IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION = "IGNITE_ENABLE_SUBQUERY_REWRITE_OPTIMIZATION";
@@ -1829,6 +1762,15 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty("Enables setting attribute value of TcpCommunicationSpi#ATTR_HOST_NAMES " +
         "when value IgniteConfiguration#getLocalHost is ip, for backward compatibility")
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
+
+    /**
+     * When set to positive number warning will be produced when outgoing message queue size of TCP communication SPI
+     * exeeds provided value.
+     * Default is {@code 0} (do not print warning).
+     */
+    @SystemProperty(value = "When set to positive number warning will be produced when outgoing message queue size of " +
+        "TCP communication SPI exeeds provided value. Default is 0 (do not print warning)", type = Integer.class)
+    public static final String IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE = "IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE";
 
     /**
      * When above zero, prints tx key collisions once per interval.
@@ -1958,7 +1900,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      */
     @SystemProperty(value = "Flag to indicate that disk writes during snapshot process should be in a sequential " +
         "manner when possible. This generates extra disk space usage", defaults = "" + DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE)
-    @IgniteExperimental
     public static final String IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = "IGNITE_SNAPSHOT_SEQUENTIAL_WRITE";
 
     /**
@@ -1968,8 +1909,11 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * @see org.apache.ignite.spi.systemview.view.ConfigurationView
      */
     @SystemProperty(value = "Packages list to expose in configuration view")
-    @IgniteExperimental
     public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
+
+    /** Enables the assertion that a message is finish-unmarshalled at most once. For tests; off in production. */
+    @SystemProperty("Enables the message finish-unmarshal-once self-check (tests only)")
+    public static final String IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK = "IGNITE_MESSAGE_UNMARSHAL_ONCE_CHECK";
 
     /**
      * Enforces singleton.

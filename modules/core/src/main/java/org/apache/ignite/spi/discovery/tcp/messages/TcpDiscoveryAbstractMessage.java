@@ -18,24 +18,22 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.io.Externalizable;
-import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class to implement discovery messages.
  */
-public abstract class TcpDiscoveryAbstractMessage implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public abstract class TcpDiscoveryAbstractMessage implements Message {
     /** */
     protected static final int CLIENT_FLAG_POS = 0;
 
@@ -46,14 +44,17 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** */
+    protected static final int OP_CTX_ATTACHED_FLAG_POS = 3;
+
+    /** */
     protected static final int FORCE_FAIL_FLAG_POS = 4;
 
-    /** Sender of the message (transient). */
-    private transient UUID sndNodeId;
+    /** Sender of the message. */
+    private UUID sndNodeId;
 
     /** Message ID. */
     @Order(0)
-    private IgniteUuid id;
+    IgniteUuid id;
 
     /**
      * Verifier node ID.
@@ -63,21 +64,26 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      * verification.
      */
     @Order(1)
-    private UUID verifierNodeId;
+    UUID verifierNodeId;
 
     /** Topology version. */
-    @Order(value = 2, method = "topologyVersion")
-    private long topVer;
+    @Order(2)
+    long topVer;
 
     /** Flags. */
     @GridToStringExclude
     @Order(3)
-    private int flags;
+    int flags;
 
     /** */
     @GridToStringInclude
     @Order(4)
-    private Set<UUID> failedNodes;
+    Set<UUID> failedNodes;
+
+    /** Operation context snapshot message. */
+    @GridToStringInclude
+    @Order(5)
+    public @Nullable OperationContextSnapshotMessage opCtxSnp;
 
     /**
      * Default no-arg constructor for {@link Externalizable} interface.
@@ -103,6 +109,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         verifierNodeId = msg.verifierNodeId;
         topVer = msg.topVer;
         flags = msg.flags;
+        opCtxSnp = msg.opCtxSnp;
     }
 
     /**
@@ -128,15 +135,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     public IgniteUuid id() {
         return id;
-    }
-
-    /**
-     * Sets message ID.
-     *
-     * @param id Message ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
     }
 
     /**
@@ -238,6 +236,15 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         setFlag(FORCE_FAIL_FLAG_POS, force);
     }
 
+    /** @param opCtxSnp Operation context snapshot.  */
+    public void attachOperationContextSnapshot(@Nullable OperationContextSnapshotMessage opCtxSnp) {
+        if (!getFlag(OP_CTX_ATTACHED_FLAG_POS)) {
+            this.opCtxSnp = opCtxSnp;
+
+            setFlag(OP_CTX_ATTACHED_FLAG_POS, true);
+        }
+    }
+
     /**
      * @param pos Flag position.
      * @return Flag value.
@@ -298,20 +305,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     @Nullable public Set<UUID> failedNodes() {
         return failedNodes;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public int flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags New flags.
-     */
-    public void flags(int flags) {
-        this.flags = flags;
     }
 
     /** {@inheritDoc} */

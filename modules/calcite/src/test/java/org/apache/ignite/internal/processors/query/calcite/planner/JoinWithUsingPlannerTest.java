@@ -151,9 +151,8 @@ public class JoinWithUsingPlannerTest extends AbstractPlannerTest {
             hasColumns("EMPID", "DEPTID", "NAME", "D"));
 
         // Double join.
-        // TODO https://issues.apache.org/jira/browse/CALCITE-4921
-        //assertPlan("SELECT * FROM T1 NATURAL JOIN T2 NATURAL JOIN OTHER.T3", schemas,
-        //    hasColumns("DEPTID", "EMPTID", "NAME", "PARENTID", "D"));
+        assertPlan("SELECT * FROM T1 NATURAL JOIN T2 NATURAL JOIN OTHER.T3", schemas,
+            hasColumns("EMPID", "DEPTID", "NAME", "PARENTID", "D"));
 
         // Join table with subquery.
         assertPlan("SELECT * FROM T1 NATURAL JOIN (SELECT * FROM T2)", schemas,
@@ -164,7 +163,7 @@ public class JoinWithUsingPlannerTest extends AbstractPlannerTest {
             hasColumns("DEPTID", "NAME", "EMPID", "PARENTID"));
 
         // Select explicit columns, system columns. Columns not ambiguous.
-        // TODO https://issues.apache.org/jira/browse/CALCITE-4915
+        // TODO https://issues.apache.org/jira/browse/CALCITE-4923
         //assertPlan("SELECT DEPTID, T1._KEY, T2.NAME FROM T1 NATURAL JOIN T2", schemas,
         //    hasColumns("DEPTID", "_KEY", "NAME"));
 

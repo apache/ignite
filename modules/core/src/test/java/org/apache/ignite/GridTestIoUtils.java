@@ -27,6 +27,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.marshaller.Marshaller;
@@ -316,5 +317,25 @@ public final class GridTestIoUtils {
      */
     private GridTestIoUtils() {
         // No-op.
+    }
+
+    /**
+     * Reads whole stream content and returns it as a string.
+     * Uses JDK-only implementation to avoid external dependencies.
+     *
+     * @param inputStream Stream to read.
+     * @return Stream content as a string.
+     * @throws IOException If something goes wrong.
+     */
+    public static String readStream(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        byte[] buf = new byte[4096];
+        int len;
+
+        while ((len = inputStream.read(buf)) != -1)
+            baos.write(buf, 0, len);
+
+        return new String(baos.toByteArray(), StandardCharsets.UTF_8);
     }
 }

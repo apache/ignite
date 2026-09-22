@@ -48,12 +48,14 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -62,9 +64,9 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
@@ -76,12 +78,14 @@ import static org.apache.ignite.events.EventType.EVT_BASELINE_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGED;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.EVENT_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -100,9 +104,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
     /** Recordable events arrays length. */
     private final int len;
-
-    /** Marshaller. */
-    private final Marshaller marsh;
 
     /** Request listener. */
     private RequestListener msgLsnr;
@@ -137,8 +138,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      */
     public GridEventStorageManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getEventStorageSpi());
-
-        marsh = ctx.marshaller();
 
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
@@ -384,10 +383,19 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to enable.
      */
-    public synchronized void enableEvents(int[] types) {
-        assert types != null;
-
+    public void enableEvents(int[] types) {
         ctx.security().authorize(SecurityPermission.EVENTS_ENABLE);
+
+        enableEvents0(types);
+    }
+
+    /**
+     * Enables provided events (without authorization).
+     *
+     * @param types Events to enable.
+     */
+    private synchronized void enableEvents0(int[] types) {
+        assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -426,10 +434,19 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to disable.
      */
-    public synchronized void disableEvents(int[] types) {
-        assert types != null;
-
+    public void disableEvents(int[] types) {
         ctx.security().authorize(SecurityPermission.EVENTS_DISABLE);
+
+        disableEvents0(types);
+    }
+
+    /**
+     * Disables provided events (without authorization).
+     *
+     * @param types Events to disable.
+     */
+    private synchronized void disableEvents0(int[] types) {
+        assert types != null;
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -439,12 +456,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         int userTypesLen = 0;
 
         for (int type : types) {
-            if (binarySearch(cfgInclEvtTypes, type)) {
-                U.warn(log, "Can't disable event since it was enabled in configuration: " + U.gridEventName(type));
-
-                continue;
-            }
-
             if (type < len) {
                 userRecordableEvts0[type] = false;
 
@@ -527,6 +538,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             case EVT_CLUSTER_DEACTIVATED:
             case EVT_BASELINE_CHANGED:
             case EVT_CLUSTER_STATE_CHANGED:
+            case EVT_CONSISTENCY_VIOLATION:
                 return true;
 
             default:
@@ -1015,28 +1027,13 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 assert nodeId != null;
                 assert msg != null;
 
-                if (!(msg instanceof GridEventStorageMessage)) {
+                if (!(msg instanceof GridEventStorageResponse)) {
                     U.error(log, "Received unknown message: " + msg);
 
                     return;
                 }
 
-                GridEventStorageMessage res = (GridEventStorageMessage)msg;
-
-                try {
-                    if (res.eventsBytes() != null)
-                        res.events(U.<Collection<Event>>unmarshal(marsh, res.eventsBytes(),
-                            U.resolveClassLoader(ctx.config())));
-
-                    if (res.exceptionBytes() != null)
-                        res.exception(U.<Throwable>unmarshal(marsh, res.exceptionBytes(),
-                            U.resolveClassLoader(ctx.config())));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal events query response: " + msg, e);
-
-                    return;
-                }
+                GridEventStorageResponse res = (GridEventStorageResponse)msg;
 
                 synchronized (qryMux) {
                     if (uids.remove(nodeId)) {
@@ -1056,7 +1053,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             }
         };
 
-        Object resTopic = TOPIC_EVENT.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        IgniteUuid resTopicId = IgniteUuid.fromUuid(ctx.localNodeId());
+
+        Object resTopic = TOPIC_EVENT.topic(resTopicId);
 
         try {
             addLocalEventListener(evtLsnr, new int[] {
@@ -1066,21 +1065,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             ioMgr.addMessageListener(resTopic, resLsnr);
 
-            byte[] serFilter = U.marshal(marsh, p);
-
             GridDeployment dep = ctx.deploy().deploy(p.getClass(), U.detectClassLoader(p.getClass()));
 
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + p);
 
-            GridEventStorageMessage msg = new GridEventStorageMessage(
-                resTopic,
-                serFilter,
-                p.getClass().getName(),
-                dep.classLoaderId(),
-                dep.deployMode(),
-                dep.userVersion(),
-                dep.participants());
+            GridEventStorageRequest msg = new GridEventStorageRequest(resTopicId, p, dep);
 
             sendMessage(nodes, TOPIC_EVENT, msg, PUBLIC_POOL);
 
@@ -1145,7 +1135,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @throws IgniteCheckedException If sending failed.
      */
     private void sendMessage(Collection<? extends ClusterNode> nodes, GridTopic topic,
-        GridEventStorageMessage msg, byte plc) throws IgniteCheckedException {
+        GridEventStorageRequest msg, byte plc) throws IgniteCheckedException {
         ClusterNode locNode = F.find(nodes, null, localNode(ctx.localNodeId()));
 
         Collection<? extends ClusterNode> rmtNodes = F.view(nodes, remoteNodes(ctx.localNodeId()));
@@ -1153,11 +1143,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         if (locNode != null)
             ctx.io().sendToGridTopic(locNode, topic, msg, plc);
 
-        if (!rmtNodes.isEmpty()) {
-            msg.responseTopicBytes(U.marshal(marsh, msg.responseTopic()));
-
+        if (!rmtNodes.isEmpty())
             ctx.io().sendToGridTopic(rmtNodes, topic, msg, plc);
-        }
     }
 
     /**
@@ -1168,6 +1155,52 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         assert arr != null;
 
         return Arrays.copyOf(arr, arr.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.EVENT_MGR;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        EventsDataBagItem evtsItem = data.commonData();
+
+        if (evtsItem == null)
+            return;
+
+        if (ctx.clientNode())
+            return;
+
+        GridIntList clusterData = new GridIntList(evtsItem.enabledEvts);
+        GridIntList nodeData = new GridIntList(enabledEvents());
+
+        GridIntList toEnable = new GridIntList(clusterData.size());
+        GridIntList toDisable = new GridIntList(nodeData.size());
+
+        for (int i = 0; i < clusterData.size(); i++) {
+            if (!nodeData.contains(clusterData.get(i)))
+                toEnable.add(clusterData.get(i));
+        }
+
+        for (int i = 0; i < nodeData.size(); i++) {
+            if (!clusterData.contains(nodeData.get(i)))
+                toDisable.add(nodeData.get(i));
+        }
+
+        if (!toEnable.isEmpty())
+            enableEvents0(toEnable.arrayCopy());
+
+        if (!toDisable.isEmpty())
+            disableEvents0(toDisable.arrayCopy());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (dataBag.isJoiningNodeClient() && dataBag.commonDataCollectedFor(EVENT_MGR.ordinal()))
+            return;
+
+        dataBag.addGridCommonData(EVENT_MGR.ordinal(), new EventsDataBagItem(enabledEvents()));
     }
 
     /**
@@ -1183,13 +1216,13 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 return;
 
             try {
-                if (!(msg instanceof GridEventStorageMessage)) {
+                if (!(msg instanceof GridEventStorageRequest)) {
                     U.warn(log, "Received unknown message: " + msg);
 
                     return;
                 }
 
-                GridEventStorageMessage req = (GridEventStorageMessage)msg;
+                GridEventStorageRequest req = (GridEventStorageRequest)msg;
 
                 ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -1209,24 +1242,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    if (req.responseTopicBytes() != null)
-                        req.responseTopic(U.unmarshal(marsh, req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
+                    CommunicationMarshalling.unmarshal(req, ctx, null,
+                        ctx.deploy().classLoader(req.deploymentInfo(), req.filterClassName(), nodeId));
 
-                    GridDeployment dep = ctx.deploy().getGlobalDeployment(
-                        req.deploymentMode(),
-                        req.filterClassName(),
-                        req.filterClassName(),
-                        req.userVersion(),
-                        nodeId,
-                        req.classLoaderId(),
-                        req.loaderParticipants(),
-                        null);
+                    filter = (IgnitePredicate<Event>)req.filter();
 
-                    if (dep == null)
-                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
-                            "(is peer class loading turned on?): " + req);
-
-                    filter = U.unmarshal(marsh, req.filter(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    GridDeployment dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.filterClassName(), nodeId);
 
                     // Resource injection.
                     ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()).get1(), filter);
@@ -1254,16 +1275,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 }
 
                 // Response message.
-                GridEventStorageMessage res = new GridEventStorageMessage(evts, ex);
+                GridEventStorageResponse res = new GridEventStorageResponse(evts, ex);
 
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending event query response to node [nodeId=" + nodeId + "res=" + res + ']');
-
-                    if (!ctx.localNodeId().equals(nodeId)) {
-                        res.eventsBytes(U.marshal(marsh, res.events()));
-                        res.exceptionBytes(U.marshal(marsh, res.exception()));
-                    }
 
                     ctx.io().sendToCustomTopic(node, req.responseTopic(), res, PUBLIC_POOL);
                 }

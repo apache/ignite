@@ -100,8 +100,11 @@ public class TcpDiscoveryDeadNodeAddressResolvingTest extends GridCommonAbstract
 
         ClusterNode clusterNode = node.get();
 
-        Object sockAddrs = GridTestUtils.getFieldValue(clusterNode, "sockAddrs");
-        assertNull(sockAddrs);
+        if (clusterNode instanceof TcpDiscoveryNode) {
+            Object sockAddrs = GridTestUtils.getFieldValue(clusterNode, "sockAddrs");
+
+            assertNull(sockAddrs);
+        }
     }
 
     /**

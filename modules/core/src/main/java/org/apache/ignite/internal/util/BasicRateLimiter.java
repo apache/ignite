@@ -171,7 +171,7 @@ public class BasicRateLimiter {
             long idleTime = passed - nextFreeTicketNanos;
 
             // This is the number of permits we can give for free because we've been inactive longer than expected.
-            storedPermits = idleTime > MAX_IDLE_TIMEOUT ? 0 : min(getRate(), storedPermits + (idleTime / stableIntervalNanos));;
+            storedPermits = idleTime > MAX_IDLE_TIMEOUT ? 0 : min(getRate(), storedPermits + (idleTime / stableIntervalNanos));
 
             nextFreeTicketNanos = passed;
         }

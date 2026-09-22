@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.GridMarshallerTestInheritedBean;
 import org.apache.ignite.marshaller.Marshaller;
@@ -52,9 +53,16 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      * @return Marshaller.
      */
     private OptimizedMarshaller marshaller() {
-        U.clearClassCache();
+        return marshaller(true);
+    }
 
-        OptimizedMarshaller marsh = Marshallers.optimized();
+    /**
+     * @return Marshaller.
+     */
+    private OptimizedMarshaller marshaller(boolean requireSer) {
+        ClassLoaderUtils.clearClassCache();
+
+        OptimizedMarshaller marsh = requireSer ? Marshallers.optimizedForSerializable() : Marshallers.optimizedForAllClasses();
 
         marsh.setContext(new MarshallerContextTestImpl());
 
@@ -68,9 +76,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonSerializable() throws IgniteCheckedException {
-        OptimizedMarshaller marsh = marshaller();
-
-        marsh.setRequireSerializable(false);
+        OptimizedMarshaller marsh = marshaller(false);
 
         NonSerializable outObj = marsh.unmarshal(marsh.marshal(new NonSerializable(null)), null);
 
@@ -84,9 +90,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonSerializable1() throws IgniteCheckedException {
-        OptimizedMarshaller marsh = marshaller();
-
-        marsh.setRequireSerializable(false);
+        OptimizedMarshaller marsh = marshaller(false);
 
         byte[] bytes = marsh.marshal(new TcpDiscoveryVmIpFinder());
 
@@ -106,9 +110,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonSerializable2() throws IgniteCheckedException {
-        OptimizedMarshaller marsh = marshaller();
-
-        marsh.setRequireSerializable(false);
+        OptimizedMarshaller marsh = marshaller(false);
 
         TcpDiscoveryIpFinderAdapter ipFinder = new TcpDiscoveryIpFinderAdapter() {
             @Override public Collection<InetSocketAddress> getRegisteredAddresses() {
@@ -140,9 +142,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonSerializable3() throws IgniteCheckedException {
-        OptimizedMarshaller marsh = marshaller();
-
-        marsh.setRequireSerializable(false);
+        OptimizedMarshaller marsh = marshaller(false);
 
         byte[] bytes = marsh.marshal(new TestTcpDiscoveryIpFinderAdapter());
 
@@ -158,9 +158,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonSerializable4() throws IgniteCheckedException {
-        OptimizedMarshaller marsh = marshaller();
-
-        marsh.setRequireSerializable(false);
+        OptimizedMarshaller marsh = marshaller(false);
 
         byte[] bytes = marsh.marshal(new GridMarshallerTestInheritedBean());
 
@@ -237,14 +235,10 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertNotNull(outObj1);
     }
 
-    /**
-     * Tests {@link OptimizedMarshaller#setRequireSerializable(boolean)}.
-     */
+    /** */
     @Test
     public void testRequireSerializable() {
         OptimizedMarshaller marsh = marshaller();
-
-        marsh.setRequireSerializable(true);
 
         try {
             marsh.marshal(new NonSerializable(null));
@@ -263,9 +257,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testProxy() throws IgniteCheckedException {
-        OptimizedMarshaller marsh = marshaller();
-
-        marsh.setRequireSerializable(false);
+        OptimizedMarshaller marsh = marshaller(false);
 
         SomeItf inItf = (SomeItf)Proxy.newProxyInstance(
             OptimizedMarshallerTest.class.getClassLoader(), new Class[] {SomeItf.class},

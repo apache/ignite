@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,13 +55,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlocki
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -86,7 +87,10 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected static final String PARAMS_STRING = "Task executor = {0}, Execution strategy = {1}";
 
     /** */
-    protected static final int IN_BUFFER_SIZE = AbstractNode.IN_BUFFER_SIZE;
+    public static final int IN_BUFFER_SIZE = AbstractNode.IN_BUFFER_SIZE;
+
+    /** */
+    public static final int MODIFY_BATCH_SIZE = AbstractNode.MODIFY_BATCH_SIZE;
 
     /** */
     private Throwable lastE;
@@ -247,7 +251,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** Task reordering executor. */
-    private static class IgniteTestStripedThreadPoolExecutor extends org.apache.ignite.thread.IgniteStripedThreadPoolExecutor {
+    private static class IgniteTestStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {
         /** */
         final Deque<T2<Runnable, Integer>> tasks = new ArrayDeque<>();
 
@@ -337,6 +341,11 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** */
+    protected ExecutionContext<Object[]> executionContext() {
+        return executionContext(nodes.get(new Random().nextInt(nodesCnt)), UUID.randomUUID(), 0);
+    }
+
+    /** */
     protected ExecutionContext<Object[]> executionContext(UUID nodeId, UUID qryId, long fragmentId) {
         FragmentDescription fragmentDesc = new FragmentDescription(fragmentId, null, null, null);
         return new ExecutionContext<>(
@@ -382,23 +391,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(UUID nodeId, CalciteMessage msg) {
+        @Override public void send(UUID nodeId, Message msg) {
             mgr.send(localNodeId(), nodeId, msg);
         }
 
         /** {@inheritDoc} */
         @Override public boolean alive(UUID nodeId) {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareMarshal(Message msg) {
-            // No-op;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareUnmarshal(Message msg) {
-            // No-op;
         }
     }
 

@@ -17,47 +17,46 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.JdkMarshalled;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
  * Used internally to track version counters (see javadoc for {@link MetadataUpdateProposedMessage} for more details).
  * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
  * It can be updated dynamically from different nodes and threads on the same node.
+ * <p>
+ * Travels both transports: Discovery in the data bag, Communication in the {@link MetadataResponseMessage}.
  */
+@JdkMarshalled
 public final class BinaryMetadataVersionInfo implements Serializable, Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 505;
-
     /** */
     private static final long serialVersionUID = 0L;
 
     /** The actual binary metadata. */
-    private BinaryMetadata metadata;
+    @Marshalled("metadataBytes")
+    BinaryMetadata metadata;
 
     /** Serialized binary metadata. */
     @Order(0)
-    private transient byte[] metadataBytes;
+    transient byte[] metadataBytes;
 
     /**
      * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
      * for this type. When a metadata update is proposed, this version is incremented.
      */
-    @Order(value = 1, method = "pendingVersion")
-    private int pendingVer;
+    @Order(1)
+    int pendingVer;
 
     /**
      * The version of metadata that has been accepted by the entire cluster.
      * This represents the number of updates that have been confirmed across all nodes.
      */
-    @Order(value = 2, method = "acceptedVersion")
-    private int acceptedVer;
+    @Order(2)
+    int acceptedVer;
 
     /** A flag indicating whether the metadata is currently being removed. */
     private final transient boolean removing;
@@ -120,13 +119,6 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param pendingVer The version of metadata that has been proposed for update.
-     */
-    public void pendingVersion(int pendingVer) {
-        this.pendingVer = pendingVer;
-    }
-
-    /**
      * @return The version of metadata that has been accepted by the entire cluster.
      */
     public int acceptedVersion() {
@@ -134,55 +126,10 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param acceptedVer The version of metadata that has been accepted by the entire cluster.
-     */
-    public void acceptedVersion(int acceptedVer) {
-        this.acceptedVer = acceptedVer;
-    }
-
-    /**
      * @return {@code true} is the metadata is removing now.
      */
     boolean removing() {
         return removing;
-    }
-
-    /**
-     * @return Serialized binary metadata.
-     */
-    public byte[] metadataBytes() {
-        return metadataBytes;
-    }
-
-    /**
-     * @param metadataBytes Serialized binary metadata.
-     */
-    public void metadataBytes(byte[] metadataBytes) {
-        this.metadataBytes = metadataBytes;
-    }
-
-    /**
-     * Marshals binary metadata to byte array.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void marshalMetadata() throws IgniteCheckedException {
-        if (metadataBytes == null)
-            metadataBytes = U.marshal(jdk(), metadata);
-    }
-
-    /**
-     * Unmarshals binary metadata from byte array.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void unmarshalMetadata() throws IgniteCheckedException {
-        if (metadata == null && metadataBytes != null) {
-            metadata = U.unmarshal(jdk(), metadataBytes, U.gridClassLoader());
-
-            // It is not required anymore.
-            metadataBytes = null;
-        }
     }
 
     /** {@inheritDoc} */
@@ -194,8 +141,4 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
             "]";
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

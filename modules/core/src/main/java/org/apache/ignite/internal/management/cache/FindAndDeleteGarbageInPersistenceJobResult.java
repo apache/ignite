@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,8 +32,9 @@ public class FindAndDeleteGarbageInPersistenceJobResult extends IgniteDataTransf
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
+    @Order(0)
     @GridToStringInclude
-    private Map<Integer, Map<Integer, Long>> result;
+    Map<Integer, Map<Integer, Long>> result;
 
     /**
      * @param result Results with founded garbage (GroupId -> (CacheId, Count of keys)).
@@ -63,16 +61,6 @@ public class FindAndDeleteGarbageInPersistenceJobResult extends IgniteDataTransf
      */
     public boolean hasGarbage() {
         return result != null && !result.isEmpty();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, result);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        result = U.readMap(in);
     }
 
     /** {@inheritDoc} */

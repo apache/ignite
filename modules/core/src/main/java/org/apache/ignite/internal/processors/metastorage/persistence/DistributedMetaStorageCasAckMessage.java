@@ -18,19 +18,24 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.UUID;
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
-class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageUpdateAckMessage {
+public class DistributedMetaStorageCasAckMessage extends DistributedMetaStorageUpdateAckMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    boolean updated;
+
+    /** Empty constructor of {@link CoreMessagesProvider}. */
+    public DistributedMetaStorageCasAckMessage() {
+        // No-op.
+    }
 
     /** */
-    private final boolean updated;
-
-    /** */
-    public DistributedMetaStorageCasAckMessage(UUID reqId, String errorMsg, boolean updated) {
-        super(reqId, errorMsg);
+    public DistributedMetaStorageCasAckMessage(UUID reqId, boolean updated) {
+        super(reqId);
 
         this.updated = updated;
     }

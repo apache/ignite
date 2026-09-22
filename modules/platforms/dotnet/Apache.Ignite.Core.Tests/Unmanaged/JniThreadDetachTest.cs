@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Unmanaged
         {
             return Ignite.GetCompute()
                 .ExecuteJavaTask<string[]>("org.apache.ignite.platform.PlatformThreadNamesTask", null)
-                .Where(x => !x.StartsWith("pub-#") && !x.StartsWith("jvm-"))
+                .Where(x => !x.StartsWith("pub-#") && !x.StartsWith("jvm-") && !x.StartsWith("mgmt-"))
                 .OrderBy(x => x)
                 .ToArray();
         }

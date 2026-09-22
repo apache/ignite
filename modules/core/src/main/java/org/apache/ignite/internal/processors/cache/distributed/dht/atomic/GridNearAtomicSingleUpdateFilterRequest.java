@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.Arrays;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,8 +33,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
     /** Filter. */
-    @Order(12)
-    private CacheEntryPredicate[] filter;
+    @Order(0)
+    CacheEntryPredicate[] filter;
 
     /**
      * Empty constructor.
@@ -58,7 +55,6 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
      * @param filter Optional filter for atomic check.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
@@ -69,8 +65,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         GridCacheOperation op,
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
-        short flags,
-        boolean addDepInfo
+        short flags
     ) {
         super(
             cacheId,
@@ -80,8 +75,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
 
         assert filter != null && filter.length > 0;
@@ -89,55 +83,9 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         this.filter = filter;
     }
 
-    /** */
-    public void filter(CacheEntryPredicate[] filter) {
-        this.filter = filter;
-    }
-
     /** {@inheritDoc} */
     @Override @Nullable public CacheEntryPredicate[] filter() {
         return filter;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (filter != null) {
-            boolean hasFilter = false;
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null) {
-                    hasFilter = true;
-
-                    p.prepareMarshal(cctx);
-                }
-            }
-
-            if (!hasFilter)
-                filter = null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (filter != null) {
-            GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-            for (CacheEntryPredicate p : filter) {
-                if (p != null)
-                    p.finishUnmarshal(cctx, ldr);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 127;
     }
 
     /** {@inheritDoc} */

@@ -276,7 +276,7 @@ public class GridServiceProxy<T> implements Serializable {
                 }
 
                 if (waitTimeout > 0 && U.currentTimeMillis() - startTime >= waitTimeout)
-                    throw new IgniteException("Service acquire timeout was reached, stopping. [timeout=" + waitTimeout + "]");
+                    throw new IgniteException("Service acquire timeout was reached, stopping [timeout=" + waitTimeout + "]");
             }
         }
         finally {
@@ -397,7 +397,9 @@ public class GridServiceProxy<T> implements Serializable {
         if (snapshot.size() == 1) {
             UUID nodeId = snapshot.keySet().iterator().next();
 
-            return prj.node(nodeId);
+            ClusterNode node = getAliveNode(nodeId);
+
+            return prj.predicate().apply(node) ? node : null;
         }
 
         Collection<ClusterNode> nodes = prj.nodes();
@@ -419,7 +421,7 @@ public class GridServiceProxy<T> implements Serializable {
             for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
                 if (i++ >= idx) {
                     if (e.getValue() > 0)
-                        return ctx.discovery().node(e.getKey());
+                        return getAliveNode(e.getKey());
                 }
             }
 
@@ -428,7 +430,7 @@ public class GridServiceProxy<T> implements Serializable {
             // Circle back.
             for (Map.Entry<UUID, Integer> e : snapshot.entrySet()) {
                 if (e.getValue() > 0)
-                    return ctx.discovery().node(e.getKey());
+                    return getAliveNode(e.getKey());
 
                 if (i++ == idx)
                     return null;
@@ -460,6 +462,16 @@ public class GridServiceProxy<T> implements Serializable {
      */
     T proxy() {
         return proxy;
+    }
+
+    /** */
+    public ClusterNode getAliveNode(UUID nodeId) throws ClusterTopologyCheckedException {
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            throw new ClusterTopologyCheckedException("The node holding the service left the cluster [nodeId=" + nodeId + ']');
+
+        return node;
     }
 
     /**

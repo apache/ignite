@@ -77,5 +77,8 @@ public class PlatformBalancingSingleClosureTask extends PlatformAbstractTask {
      */
     public void job(PlatformJob job) {
         this.job = job;
+
+        if (job != null)
+            this.taskName = job.name();
     }
 }

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -180,7 +182,10 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 cctx.cache().name(), type.schemaName(), tblName, pk)).unwrap(InlineIndex.class).totalCount());
             res.a(U.nl());
 
-            for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
+            TreeSet<GridQueryIndexDescriptor> idxDescs = new TreeSet<>(Comparator.comparing(GridQueryIndexDescriptor::name));
+            idxDescs.addAll(type.indexes().values());
+
+            for (GridQueryIndexDescriptor descriptor : idxDescs) {
                 long size = idxProc.index(new IndexName(
                     cctx.cache().name(), type.schemaName(), tblName, pk)).unwrap(InlineIndex.class).totalCount();
 

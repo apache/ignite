@@ -36,8 +36,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
@@ -86,7 +86,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         try {
             for (Ignite node : G.allGrids()) {
-                Collection<IgniteInternalTx> txs = ((IgniteKernal)node).context().cache().context().tm().activeTransactions();
+                Collection<IgniteInternalTx> txs = ((IgniteEx)node).context().cache().context().tm().activeTransactions();
 
                 assertTrue("Unfinished txs [node=" + node.name() + ", txs=" + txs + ']', txs.isEmpty());
             }
@@ -379,7 +379,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Integer> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 log.info("Start put");
 
                 clientCache.put(key, 2);

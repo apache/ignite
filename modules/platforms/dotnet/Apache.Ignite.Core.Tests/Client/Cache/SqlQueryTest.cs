@@ -110,7 +110,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // Filter.
             qry = new SqlFieldsQuery("select Name from Person where Id = ?", 1)
             {
-                Lazy = true,
                 PageSize = 5,
             };
             Assert.AreEqual("Person 1", cache.Query(qry).Single().Single());

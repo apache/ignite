@@ -222,7 +222,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
             ClusterNode clientNode = grid(3).context().discovery().node(clientNodeId);
 
-            grid(3).context().io().sendIoTest(clientNode, new byte[10], false);
+            grid(3).context().io().ioTest().sendIoTest(clientNode, new byte[10], false);
         });
 
         doSleep(2000L); // Client failover timeout is 8 seconds.
@@ -308,7 +308,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
+            srv.context().io().ioTest().sendIoTest(clientNode, new byte[10], false).get()
         );
 
         assertTrue(GridTestUtils.waitForCondition(fut::isDone, 30_000));
@@ -360,7 +360,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         CommunicationWorkerThreadUtils.onNodeLeft(spi, clientNode.consistentId(), clientNode.id());
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode, new byte[10], false).get()
+            srv.context().io().ioTest().sendIoTest(clientNode, new byte[10], false).get()
         );
 
         assertTrue(GridTestUtils.waitForCondition(clientFailedEvtFlag::get, 10_000));

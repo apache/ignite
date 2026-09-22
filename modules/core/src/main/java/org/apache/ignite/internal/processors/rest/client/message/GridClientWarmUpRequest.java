@@ -40,18 +40,6 @@ public class GridClientWarmUpRequest extends GridClientNodeStateBeforeStartReque
         return stopWarmUp;
     }
 
-    /**
-     * Set need to stop warm-up.
-     *
-     * @param stopWarmUp {@code true} to stop warm-up.
-     * @return {@code this} instance.
-     */
-    public GridClientWarmUpRequest stopWarmUp(boolean stopWarmUp) {
-        this.stopWarmUp = stopWarmUp;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);

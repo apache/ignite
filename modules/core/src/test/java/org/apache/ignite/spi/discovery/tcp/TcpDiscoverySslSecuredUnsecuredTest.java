@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -174,7 +175,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(final TcpDiscoveryIoSession ses,
+        @Override protected <T extends Message> T readMessage(final TcpDiscoveryIoSession ses,
             final long timeout) throws IOException, IgniteCheckedException {
             if (cnt-- > 0) {
                 if (plain)

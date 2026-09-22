@@ -62,7 +62,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -713,16 +712,6 @@ public class CacheQuery<T> {
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
 
-        if (cctx.deploymentEnabled()) {
-            try {
-                cctx.deploy().registerClasses(filter, rmtReducer);
-                cctx.deploy().registerClasses(args);
-            }
-            catch (IgniteCheckedException e) {
-                return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
-            }
-        }
-
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
@@ -776,9 +765,6 @@ public class CacheQuery<T> {
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
-
-        if (cctx.deploymentEnabled())
-            cctx.deploy().registerClasses(filter);
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
@@ -840,9 +826,12 @@ public class CacheQuery<T> {
     }
 
     /**
+     * Collects query data nodes matching specified {@code prj} and {@code part}.
+     *
      * @param cctx Cache context.
      * @param prj Projection (optional).
-     * @return Collection of data nodes in provided projection (if any).
+     * @param part Partition (optional).
+     * @return Collection of data nodes matching specified {@code prj} and {@code part}.
      * @throws IgniteCheckedException If partition number is invalid.
      */
     private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
@@ -856,19 +845,14 @@ public class CacheQuery<T> {
         if (prj == null && part == null)
             return affNodes;
 
-        if (part != null && part >= cctx.affinity().partitions())
-            throw new IgniteCheckedException("Invalid partition number: " + part);
+        if (part != null) {
+            if (part >= cctx.affinity().partitions())
+                throw new IgniteCheckedException("Invalid partition number: " + part);
 
-        final Set<ClusterNode> owners =
-            part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
+            affNodes = cctx.topology().nodes(part, topVer);
+        }
 
-        return F.view(affNodes, new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
-                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
-                    (prj == null || prj.node(n.id()) != null) &&
-                    (part == null || owners.contains(n));
-            }
-        });
+        return prj == null ? affNodes : F.view(affNodes, n -> prj.node(n.id()) != null);
     }
 
     /** */

@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -354,17 +353,23 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
      */
     private class DiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
-            if (blockAll || block && sock.getPort() == 47500)
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
+            byte[] data,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            if (blockAll || block && ses.socket().getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
+        @Override protected void writeMessage(
+            TcpDiscoveryIoSession ses,
+            TcpDiscoveryAbstractMessage msg,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             if (blockAll || block && ses.socket().getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
@@ -372,21 +377,27 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
-            if (blockAll || block && sock.getPort() == 47500)
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            if (blockAll || block && ses.socket().getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-            if (blockAll || block && sock.getPort() == 47500)
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
+            InetSocketAddress remAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteCheckedException {
+            if (blockAll || block && remAddr.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            return super.openSession(sock, remAddr, timeoutHelper);
         }
     }
 }

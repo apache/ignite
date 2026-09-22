@@ -83,7 +83,7 @@ public class GridTotallyUnreachableClientTest extends GridCommonAbstractTest {
         ClusterNode clientNode1 = client1.localNode();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() ->
-            srv.context().io().sendIoTest(clientNode1, new byte[10], false).get()
+            srv.context().io().ioTest().sendIoTest(clientNode1, new byte[10], false).get()
         );
 
         fut.get(30, TimeUnit.SECONDS);
@@ -94,7 +94,7 @@ public class GridTotallyUnreachableClientTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
             return GridTestUtils.runAsync(() ->
-                client2.context().io().sendIoTest(clientNode1, new byte[10], false).get()
+                client2.context().io().ioTest().sendIoTest(clientNode1, new byte[10], false).get()
             ).get(30, TimeUnit.SECONDS);
         }, IgniteSpiException.class, "Cannot send");
     }

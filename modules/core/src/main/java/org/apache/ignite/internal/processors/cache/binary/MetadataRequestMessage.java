@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 public class MetadataRequestMessage implements Message {
     /** */
     @Order(0)
-    private int typeId;
+    int typeId;
 
     /**
      * Default constructor.
@@ -49,23 +49,11 @@ public class MetadataRequestMessage implements Message {
         this.typeId = typeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 80;
-    }
-
     /**
      * @return Type ID.
      */
     public int typeId() {
         return typeId;
-    }
-
-    /**
-     * @param typeId Type ID.
-     */
-    public void typeId(int typeId) {
-        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */

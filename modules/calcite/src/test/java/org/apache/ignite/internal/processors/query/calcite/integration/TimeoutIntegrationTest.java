@@ -23,9 +23,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -66,8 +71,12 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
         cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true),
             new IndexingQueryEngineConfiguration()); // Add both engines to check common properties sharing.
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setMaxOpenCursorsPerConnection(1));
 
         return cfg;
     }
@@ -94,6 +103,32 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
     @Test
     public void testRemoteTimeoutSetByFieldsQuery() {
         checkTimeoutSetByFieldsQuery(client);
+    }
+
+    /** */
+    @Test
+    public void testThinClientCursorReleasedOnTimeout() {
+        sql("CREATE TABLE person (id int, val varchar)");
+
+        try {
+            replaceWithSlowTable();
+
+            for (int i = 0; i < ROW_CNT; i++)
+                sql("INSERT INTO person (id, val) VALUES (?, ?)", i, "val" + i);
+
+            try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
+                GridTestUtils.assertThrows(log,
+                    () -> cli.query(new SqlFieldsQuery("SELECT * FROM person")
+                        .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS))
+                        .getAll(),
+                    ClientException.class, "The query was cancelled while executing.");
+
+                assertEquals(1, cli.query(new SqlFieldsQuery("SELECT 1")).getAll().size());
+            }
+        }
+        finally {
+            sql("DROP TABLE person");
+        }
     }
 
     /** */
@@ -125,9 +160,7 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
         });
     }
 
-    /**
-     *
-     */
+    /** */
     private void checkTimeout(IgniteEx node, IgniteClosureX<String, List<List<?>>> qryExecutor) {
         MetricRegistryImpl mreg = node.context().metric().registry(SQL_USER_QUERIES_REG_NAME);
         mreg.reset();
@@ -135,25 +168,7 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
         sql("CREATE TABLE person (id int, val varchar)");
 
         try {
-            CalciteQueryProcessor srvEngine = queryProcessor(grid(0));
-
-            IgniteCacheTable oldTbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("PERSON");
-
-            IgniteCacheTable newTbl = new CacheTableImpl(grid(0).context(), oldTbl.descriptor()) {
-                @Override public <Row> Iterable<Row> scan(
-                    ExecutionContext<Row> execCtx,
-                    ColocationGroup grp,
-                    @Nullable ImmutableBitSet usedColumns
-                ) {
-                    return F.iterator(super.scan(execCtx, grp, usedColumns), r -> {
-                        doSleep(SLEEP_PER_ROW);
-                        return r;
-                    }, true);
-                }
-            };
-
-            // Replace original table on server node to "slow" table.
-            srvEngine.schemaHolder().schema("PUBLIC").add("PERSON", newTbl);
+            replaceWithSlowTable();
 
             String qry = "SELECT * FROM person";
 
@@ -174,5 +189,27 @@ public class TimeoutIntegrationTest extends AbstractBasicIntegrationTest {
         }
 
         assertEquals(1, ((LongMetric)mreg.findMetric("canceled")).value());
+    }
+
+    /** */
+    private void replaceWithSlowTable() {
+        CalciteQueryProcessor srvEngine = queryProcessor(grid(0));
+
+        IgniteCacheTable oldTbl = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("PERSON");
+
+        IgniteCacheTable newTbl = new CacheTableImpl(grid(0).context(), oldTbl.descriptor()) {
+            @Override public <Row> Iterable<Row> scan(
+                ExecutionContext<Row> execCtx,
+                ColocationGroup grp,
+                @Nullable ImmutableBitSet usedColumns
+            ) {
+                return F.iterator(super.scan(execCtx, grp, usedColumns), r -> {
+                    doSleep(SLEEP_PER_ROW);
+                    return r;
+                }, true);
+            }
+        };
+
+        srvEngine.schemaHolder().schema("PUBLIC").add("PERSON", newTbl);
     }
 }

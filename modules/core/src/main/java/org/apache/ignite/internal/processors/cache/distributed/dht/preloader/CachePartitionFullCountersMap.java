@@ -28,16 +28,13 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 public class CachePartitionFullCountersMap implements Message {
-    /** Type code. */
-    public static final short TYPE_CODE = 506;
+    /** */
+    @Order(0)
+    long[] initUpdCntrs;
 
     /** */
-    @Order(value = 0, method = "initialUpdateCounters")
-    private long[] initUpdCntrs;
-
-    /** */
-    @Order(value = 1, method = "updateCounters")
-    private long[] updCntrs;
+    @Order(1)
+    long[] updCntrs;
 
     /**
      * Default constructor.
@@ -60,16 +57,6 @@ public class CachePartitionFullCountersMap implements Message {
     public CachePartitionFullCountersMap(int partsCnt) {
         initUpdCntrs = new long[partsCnt];
         updCntrs = new long[partsCnt];
-    }
-
-    /**
-     * Gets an initial update counter by the partition ID.
-     *
-     * @param p Partition ID.
-     * @return Initial update counter for the partition with the given ID.
-     */
-    public long initialUpdateCounter(int p) {
-        return initUpdCntrs[p];
     }
 
     /**
@@ -130,28 +117,10 @@ public class CachePartitionFullCountersMap implements Message {
     }
 
     /**
-     * @param initUpdCntrs Initial update counters.
-     */
-    public void initialUpdateCounters(long[] initUpdCntrs) {
-        this.initUpdCntrs = initUpdCntrs;
-    }
-
-    /**
      * @return Update counters.
      */
     public long[] updateCounters() {
         return updCntrs;
     }
 
-    /**
-     * @param updCntrs Update counters.
-     */
-    public void updateCounters(long[] updCntrs) {
-        this.updCntrs = updCntrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

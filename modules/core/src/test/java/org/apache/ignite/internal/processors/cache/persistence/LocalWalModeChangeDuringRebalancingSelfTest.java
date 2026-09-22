@@ -328,11 +328,20 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
 
         assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
-        assertEquals(0, checkpointsBeforeRebalance);
+
+        if (disableWalDuringRebalancing) {
+            // A rebalance manually starts only for the partitioned cache,
+            // but a rebalance for the replicated cache starts just after the exchange finishes
+            // and triggers a checkpoint on switching WAL.
+            // So the checkpoint might occur between newIgniteStartedTimestamp and rebalanceStartedTimestamp.
+            assertTrue(checkpointsBeforeRebalance <= 1);
+        }
+        else
+            assertEquals(0, checkpointsBeforeRebalance);
 
         // Expecting a checkpoint for each group.
         assertEquals(disableWalDuringRebalancing ? newIgnite.context().cache().cacheGroups().size() : 0,
-            checkpointsAfterRebalance); // checkpoint if WAL was re-activated
+            checkpointsBeforeRebalance + checkpointsAfterRebalance); // checkpoint if WAL was re-activated
     }
 
     /**

@@ -18,14 +18,11 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 
@@ -55,35 +52,31 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
 
         TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
 
-        DiscoveryCustomMessage delegate;
-
         try {
-            DiscoverySpiCustomMessage custMsg = cm.message(marshaller(), U.resolveClassLoader(ignite().configuration()));
-
-            assertNotNull(custMsg);
-
-            delegate = ((CustomMessageWrapper)custMsg).delegate();
-
+            assertNotNull(cm.message());
         }
         catch (Throwable throwable) {
             throw new RuntimeException(throwable);
         }
 
         if (clo != null)
-            clo.apply(addr, delegate);
+            clo.apply(addr, U.unwrapCustomMessage(cm.message()));
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeToSocket(
-        Socket sock,
-        TcpDiscoveryAbstractMessage msg,
+    @Override protected void write(
+        TcpDiscoveryIoSession ses,
         byte[] data,
         long timeout
-    ) throws IOException {
-        if (spiCtx != null)
-            apply(spiCtx.localNode(), msg);
+    ) throws IOException, IgniteCheckedException {
+        if (spiCtx != null) {
+            TcpDiscoveryAbstractMessage msg = decodeMessage(ignite.context(), data);
 
-        super.writeToSocket(sock, msg, data, timeout);
+            if (msg != null)
+                apply(spiCtx.localNode(), msg);
+        }
+
+        super.write(ses, data, timeout);
     }
 
     /** {@inheritDoc} */

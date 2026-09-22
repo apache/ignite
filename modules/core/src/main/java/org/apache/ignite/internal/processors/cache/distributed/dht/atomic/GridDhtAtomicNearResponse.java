@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -39,26 +37,26 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** */
-    @Order(value = 4, method = "partition")
-    private int partId;
+    @Order(0)
+    int partId;
 
     /** */
-    @Order(value = 5, method = "futureId")
-    private long futId;
+    @Order(1)
+    long futId;
 
     /** */
-    @Order(6)
-    private UUID primaryId;
+    @Order(2)
+    UUID primaryId;
 
     /** */
-    @Order(7)
+    @Order(3)
     @GridToStringExclude
-    private byte flags;
+    byte flags;
 
     /** */
-    @Order(value = 8, method = "errors")
+    @Order(4)
     @GridToStringInclude
-    private UpdateErrors errs;
+    UpdateErrors errs;
 
     /**
      *
@@ -103,44 +101,19 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         this.errs = errs;
     }
 
-    /**
-     * @return Primary node ID.
-     */
+    /** @return Primary node ID. */
     public UUID primaryId() {
         return primaryId;
     }
 
-    /**
-     * @param primaryId Primary node ID.
-     */
-    public void primaryId(UUID primaryId) {
-        this.primaryId = primaryId;
-    }
-
-    /**
-     * @return Flags.
-     */
+    /** @return Flags. */
     public byte flags() {
         return flags;
     }
 
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return partId;
-    }
-
-    /**
-     * @param partId Partition ID.
-     */
-    public void partition(int partId) {
-        this.partId = partId;
     }
 
     /**
@@ -180,18 +153,9 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         return (flags & mask) != 0;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public long futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /** {@inheritDoc} */
@@ -199,30 +163,10 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         return CACHE_MSG_IDX;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -48;
-    }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (errs != null)
-            errs.prepareMarshal(this, ctx.cacheContext(cacheId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (errs != null)
-            errs.finishUnmarshal(this, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */

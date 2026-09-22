@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -47,7 +46,7 @@ public class IgniteMetricsOverflowTest extends GridCommonAbstractTest {
     private CountDownLatch slowDownLatch;
 
     /**
-     * Period of time, for which {@link TcpDiscoverySpi#readReceipt(Socket, long)} execution is delayed on the node
+     * Period of time, for which {@link TcpDiscoverySpi#readReceipt(TcpDiscoveryIoSession, long)} execution is delayed on the node
      * with a slow {@link DiscoverySpi}.
      */
     private volatile int readReceiptDelay;
@@ -153,7 +152,7 @@ public class IgniteMetricsOverflowTest extends GridCommonAbstractTest {
     /** */
     private class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected int readReceipt(Socket sock, long timeout) throws IOException {
+        @Override protected int readReceipt(TcpDiscoveryIoSession ses, long timeout) throws IOException {
             if (readReceiptDelay > 0) {
                 slowDownLatch.countDown();
 
@@ -165,7 +164,7 @@ public class IgniteMetricsOverflowTest extends GridCommonAbstractTest {
                 }
             }
 
-            return super.readReceipt(sock, timeout);
+            return super.readReceipt(ses, timeout);
         }
     }
 }

@@ -68,15 +68,17 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTransactio
     @Test
     public void testHashSpoolCondition() {
         executeSql("CREATE TABLE t(i INTEGER) WITH " + atomicity());
-        executeSql("INSERT INTO t VALUES (0), (1), (2)");
+        executeSql("INSERT INTO t VALUES (0), (1), (2), (3), (4)");
 
-        String sql = "SELECT i, (SELECT i FROM t WHERE i=t1.i AND i-1=0) FROM t AS t1";
+        String sql = "SELECT i, (SELECT i FROM t WHERE i=t1.i AND i-1>0) FROM t AS t1";
 
         assertQuery(sql)
             .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
             .returns(0, null)
-            .returns(1, 1)
-            .returns(2, null)
+            .returns(1, null)
+            .returns(2, 2)
+            .returns(3, 3)
+            .returns(4, 4)
             .check();
     }
 

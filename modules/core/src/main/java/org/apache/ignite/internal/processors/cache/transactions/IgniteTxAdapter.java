@@ -41,6 +41,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -628,7 +629,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Finalization status.
      */
-    @Override @Nullable public FinalizationStatus finalizationStatus() {
+    @Override public FinalizationStatus finalizationStatus() {
         return finalizing;
     }
 
@@ -693,7 +694,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public IgniteUuid xid() {
-        return xidVer.asIgniteUuid();
+        return BinaryUtils.asIgniteUuid(xidVer);
     }
 
     /** {@inheritDoc} */

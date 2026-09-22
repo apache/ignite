@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import org.apache.commons.io.FileUtils;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -363,7 +362,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
                 File nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().fileTree().nodeStorage();
 
                 if (nodeFolder != null)
-                    pers += FileUtils.sizeOfDirectory(nodeFolder);
+                    pers += GridTestUtils.sizeOfDirectory(nodeFolder);
 
                 if (mode != ConsumptionTestMode.PERSISTENT)
                     assertEquals(0, pers);

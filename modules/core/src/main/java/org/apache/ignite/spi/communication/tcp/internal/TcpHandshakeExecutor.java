@@ -25,7 +25,8 @@ import java.util.UUID;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,15 +34,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpiContext;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
 import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
 
 /**
@@ -159,10 +158,10 @@ public class TcpHandshakeExecutor {
                 if (readBytes >= DIRECT_TYPE_SIZE) {
                     short msgType = makeMessageType(buf.get(0), buf.get(1));
 
-                    if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
+                    if (msgType == CoreMessagesProvider.HANDSHAKE_WAIT_MSG_TYPE)
                         return null;
 
-                    assert msgType == TcpCommunicationSpi.NODE_ID_MSG_TYPE;
+                    assert msgType == CoreMessagesProvider.NODE_ID_MSG_TYPE;
                 }
 
                 totalBytes += readBytes;
@@ -173,7 +172,7 @@ public class TcpHandshakeExecutor {
             NodeIdMessage nodeIdMsg = new NodeIdMessage();
             reader.setBuffer(buf);
 
-            msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, reader);
+            MessageSerialization.readFrom(msgFactory, nodeIdMsg, reader);
             reader.reset();
 
             return nodeIdMsg.nodeId();
@@ -192,7 +191,7 @@ public class TcpHandshakeExecutor {
 
             writer.setBuffer(buf);
 
-            msgFactory.serializer(msg.directType()).writeTo(msg, writer);
+            MessageSerialization.writeTo(msgFactory, msg, writer);
 
             buf.flip();
 
@@ -211,8 +210,6 @@ public class TcpHandshakeExecutor {
             boolean fininshed = false;
 
             RecoveryLastReceivedMessage msg = new RecoveryLastReceivedMessage();
-            RecoveryLastReceivedMessageSerializer msgSer =
-                (RecoveryLastReceivedMessageSerializer)msgFactory.serializer(msg.directType());
 
             short msgType = 0;
             int readPos = 0;
@@ -244,7 +241,7 @@ public class TcpHandshakeExecutor {
 
                 reader.setBuffer(buf);
 
-                fininshed = msgSer.readFrom(msg, reader);
+                fininshed = MessageSerialization.readFrom(msgFactory, msg, reader);
 
                 readPos = buf.position();
             }

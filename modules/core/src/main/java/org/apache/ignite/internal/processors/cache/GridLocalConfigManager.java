@@ -354,9 +354,9 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If failed.
      */
     public CacheJoinNodeDiscoveryData restoreCacheConfigurations() throws IgniteCheckedException {
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = new HashMap<>();
+        Map<String, CacheJoinInfo> caches = new HashMap<>();
 
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates = new HashMap<>();
+        Map<String, CacheJoinInfo> templates = new HashMap<>();
 
         restoreCaches(caches, templates, ctx.config());
 
@@ -488,8 +488,8 @@ public class GridLocalConfigManager {
      * @param igniteCfg Ignite configuration.
      */
     private void restoreCaches(
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
+        Map<String, CacheJoinInfo> caches,
+        Map<String, CacheJoinInfo> templates,
         IgniteConfiguration igniteCfg
     ) throws IgniteCheckedException {
         CacheConfiguration[] cfgs = igniteCfg.getCacheConfiguration();
@@ -567,7 +567,7 @@ public class GridLocalConfigManager {
      * @param isStaticallyConfigured Statically configured flag.
      */
     private void addStoredCache(
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
+        Map<String, CacheJoinInfo> caches,
         StoredCacheData cacheData,
         String cacheName,
         CacheType cacheType,
@@ -581,7 +581,7 @@ public class GridLocalConfigManager {
                 stopSeq.addFirst(cacheName);
         }
 
-        caches.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(),
+        caches.put(cacheName, new CacheJoinInfo(cacheData, cacheType, cacheData.sql(),
             persistedBefore ? 1 : 0, isStaticallyConfigured));
     }
 
@@ -595,8 +595,8 @@ public class GridLocalConfigManager {
     private void addCacheFromConfiguration(
         CacheConfiguration<?, ?> cfg,
         boolean sql,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates
+        Map<String, CacheJoinInfo> caches,
+        Map<String, CacheJoinInfo> templates
     ) throws IgniteCheckedException {
         String cacheName = cfg.getName();
 
@@ -604,7 +604,7 @@ public class GridLocalConfigManager {
 
         Collection<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>(caches.size());
 
-        for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : caches.values())
+        for (CacheJoinInfo cacheInfo : caches.values())
             ccfgs.add(cacheInfo.cacheData().config());
 
         String err = validateIncomingConfiguration(ccfgs, cfg);
@@ -631,7 +631,7 @@ public class GridLocalConfigManager {
         cfg = splitCfg.get1();
 
         if (GridCacheUtils.isCacheTemplateName(cacheName))
-            templates.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0, true));
+            templates.put(cacheName, new CacheJoinInfo(cacheData, CacheType.USER, false, 0, true));
         else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +

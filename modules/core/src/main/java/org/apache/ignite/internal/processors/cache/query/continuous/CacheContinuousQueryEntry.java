@@ -17,29 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.nio.ByteBuffer;
 import javax.cache.event.EventType;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridCodegenConverter;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
-public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
+public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, CacheIdAware {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 
@@ -50,62 +45,52 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private static final byte KEEP_BINARY = 0b0100;
 
     /** */
-    private static final EventType[] EVT_TYPE_VALS = EventType.values();
+    @Order(0)
+    EventType evtType;
 
-    /**
-     * @param ord Event type ordinal value.
-     * @return Event type.
-     */
-    @Nullable public static EventType eventTypeFromOrdinal(int ord) {
-        return ord >= 0 && ord < EVT_TYPE_VALS.length ? EVT_TYPE_VALS[ord] : null;
-    }
+    /** Flags. */
+    @Order(1)
+    byte flags;
 
-    /** */
-    @GridCodegenConverter(
-        type = byte.class,
-        get = "evtType != null ? (byte)evtType.ordinal() : -1",
-        set = "eventTypeFromOrdinal($val$)"
-    )
-    private EventType evtType;
-
-    /** Key. */
+    /** Key. {@code null} for a filtered entry. */
+    @Order(2)
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : key")
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
-    /** New value. */
+    /** New value. {@code null} for a filtered entry. */
+    @Order(3)
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : newVal")
-    private CacheObject newVal;
+    CacheObject newVal;
 
-    /** Old value. */
+    /** Old value. {@code null} for a filtered entry. */
+    @Order(4)
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
-    private CacheObject oldVal;
+    CacheObject oldVal;
 
     /** Cache name. */
-    private int cacheId;
+    @Order(5)
+    int cacheId;
 
     /** Deployment info. */
     @GridToStringExclude
-    @GridDirectTransient
     private GridDeploymentInfo depInfo;
 
     /** Partition. */
-    private int part;
+    @Order(6)
+    int part;
 
     /** Update counter. */
-    private long updateCntr;
-
-    /** Flags. */
-    private byte flags;
+    @Order(7)
+    long updateCntr;
 
     /** */
     @GridToStringInclude
-    private AffinityTopologyVersion topVer;
+    @Order(8)
+    AffinityTopologyVersion topVer;
 
     /** */
-    private long filteredCnt;
+    @Order(9)
+    long filteredCnt;
 
     /**
      * Empty constructor.
@@ -198,10 +183,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         return topVer;
     }
 
-    /**
-     * @return Cache ID.
-     */
-    int cacheId() {
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
         return cacheId;
     }
 
@@ -239,13 +222,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     void markFiltered() {
         flags |= FILTERED_ENTRY;
         depInfo = null;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**
@@ -307,39 +283,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
-     * @param cctx Cache context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void prepareMarshal(GridCacheContext cctx) throws IgniteCheckedException {
-        if (key != null)
-            key.prepareMarshal(cctx.cacheObjectContext());
-
-        if (newVal != null)
-            newVal.prepareMarshal(cctx.cacheObjectContext());
-
-        if (oldVal != null)
-            oldVal.prepareMarshal(cctx.cacheObjectContext());
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        if (!isFiltered()) {
-            if (key != null)
-                key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (newVal != null)
-                newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-            if (oldVal != null)
-                oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-        }
-    }
-
-    /**
      * @return Key.
      */
     KeyCacheObject key() {
@@ -361,185 +304,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepare(GridDeploymentInfo depInfo) {
+    @Override public void deploy(GridDeploymentInfo depInfo) {
         this.depInfo = depInfo;
     }
 
     /** {@inheritDoc} */
     @Override public GridDeploymentInfo deployInfo() {
         return depInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 96;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(evtType != null ? (byte)evtType.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(filteredCnt))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeKeyCacheObject(isFiltered() ? null : key))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeCacheObject(isFiltered() ? null : newVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCacheObject(isFiltered() ? null : oldVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeInt(part))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(updateCntr))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                evtType = eventTypeFromOrdinal(reader.readByte());
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                filteredCnt = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                key = reader.readKeyCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                newVal = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                oldVal = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                part = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                updateCntr = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

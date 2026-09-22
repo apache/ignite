@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /** */
-    private static final long TEST_TIME = 60_000;
+    private static final long TEST_TIME = GridTestUtils.SF.applyLB(60_000, 10_000);
 
     /** */
     private static final int SRVS = 3;
@@ -56,7 +56,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     private static final int CLIENTS = 1;
 
     /** */
-    private static final int KEYS = 100_000;
+    private static final int KEYS = GridTestUtils.SF.applyLB(100_000, 10_000);
 
     /** */
     private ThreadLocal<Boolean> client = new ThreadLocal<>();

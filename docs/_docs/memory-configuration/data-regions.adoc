@@ -88,7 +88,7 @@ Ignite does not require you to warm memory up from disk on restarts. As soon as 
 
 Presently, the Ignite warm-up strategy implies loading data into all or specific data regions of Ignite, starting with indexes, until it runs out of free space. It can be configured both for all regions (by default) or for each region separately.
 
-To warm up all data regions, pass the configuration parameter `LoadAllWarmUpStrategy` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
+To warm up all data regions, pass the configuration parameter `LoadAllWarmUpConfiguration` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
 
 :xmlFile: code-snippets/xml/warm-up-strategy.xml
 :javaFile: {javaCodeDir}/WarmUpStrategy.java
@@ -111,7 +111,7 @@ tab:C++[unsupported]
 --
 
 
-To warm up a specific data region, pass the configuration parameter `LoadAllWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
+To warm up a specific data region, pass the configuration parameter `LoadAllWarmUpConfiguration` to the `DataRegionConfiguration#setWarmUpConfiguration` as follows:
 
 
 [tabs]
@@ -153,7 +153,7 @@ tab:C++[unsupported]
 --
 
 
-To stop the warm-up for a specific data region, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
+To stop the warm-up for a specific data region, pass the configuration parameter `NoOpWarmUpConfiguration` to the `DataRegionConfiguration#setWarmUpConfiguration` as follows:
 
 [tabs]
 --

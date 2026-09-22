@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -43,6 +44,9 @@ import org.junit.Test;
  * trust stores. SSL for all three transports are enabled at the same time.
  */
 public class MultipleSSLContextsTest extends GridCommonAbstractTest {
+    /** */
+    private static final int SRV_NODES_CNT = 3;
+
     /** */
     private boolean clientMode = false;
 
@@ -102,15 +106,14 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param addr Address of a node to connect to.
+     * @param port Port to connect to.
      * @return {@link ClientConfiguration} that can be used to start a thin client.
      */
-    private ClientConfiguration clientConfiguration(String addr) {
-        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses(addr);
-        clientCfg.setSslContextFactory(thinClientSSLFactory());
-        clientCfg.setSslMode(SslMode.REQUIRED);
-
-        return clientCfg;
+    private ClientConfiguration clientConfiguration(int port) {
+        return new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + port)
+            .setSslContextFactory(thinClientSSLFactory())
+            .setSslMode(SslMode.REQUIRED);
     }
 
     /**
@@ -123,7 +126,8 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         clientMode = false;
-        startGrids(3);
+
+        startGrids(SRV_NODES_CNT);
     }
 
     /**
@@ -171,14 +175,10 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Checks that thin clients with SSL enabled can join the cluster and perform some work on it.
-     *
-     * @throws Exception If failed.
-     */
+    /** Checks that thin clients with SSL enabled can join the cluster and perform some work on it. */
     @Test
-    public void testThinClients() throws Exception {
-        int clientsNum = 3;
+    public void testThinClients() {
+        int clientsNum = SRV_NODES_CNT;
         int keysNum = 1000;
         String cacheName = "thinClientCache";
 
@@ -186,7 +186,7 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 0; i < clientsNum; i++) {
-                IgniteClient client = Ignition.startClient(clientConfiguration("127.0.0.1:1080" + i));
+                IgniteClient client = connectIgniteClientTo(grid(i));
 
                 clients.add(client);
             }
@@ -238,5 +238,10 @@ public class MultipleSSLContextsTest extends GridCommonAbstractTest {
 
             assertEquals("Cache contains an unexpected value for a key=" + key, expVal, actVal);
         }
+    }
+
+    /** */
+    private IgniteClient connectIgniteClientTo(IgniteEx ignite) {
+        return Ignition.startClient(clientConfiguration(ignite.context().clientListener().port()));
     }
 }

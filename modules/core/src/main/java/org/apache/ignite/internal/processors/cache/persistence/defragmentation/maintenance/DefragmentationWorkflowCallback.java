@@ -41,16 +41,22 @@ public class DefragmentationWorkflowCallback implements MaintenanceWorkflowCallb
     /** Failure processor. */
     private final FailureProcessor failureProc;
 
+    /** */
+    private final String igniteInstanceName;
+
     /**
+     * @param igniteInstanceName Ignite instance name.
      * @param logProvider Logger provider.
      * @param defrgMgr Defragmentation manager.
      * @param failureProc Failure processor.
      */
     public DefragmentationWorkflowCallback(
+        String igniteInstanceName,
         Function<Class<?>, IgniteLogger> logProvider,
         CachePartitionDefragmentationManager defrgMgr,
         FailureProcessor failureProc
     ) {
+        this.igniteInstanceName = igniteInstanceName;
         this.defrgMgr = defrgMgr;
         this.logProvider = logProvider;
         this.failureProc = failureProc;
@@ -68,6 +74,6 @@ public class DefragmentationWorkflowCallback implements MaintenanceWorkflowCallb
 
     /** {@inheritDoc} */
     @Override public @Nullable MaintenanceAction<Boolean> automaticAction() {
-        return new ExecuteDefragmentationAction(logProvider, defrgMgr, failureProc);
+        return new ExecuteDefragmentationAction(igniteInstanceName, logProvider, defrgMgr, failureProc);
     }
 }

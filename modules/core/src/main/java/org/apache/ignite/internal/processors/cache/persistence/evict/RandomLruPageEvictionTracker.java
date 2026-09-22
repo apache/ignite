@@ -82,14 +82,30 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void touchPage(long pageId) throws IgniteCheckedException {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
+    @Override public void touchPage(long pageId) {
+        long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L;
 
-        long res = compactTimestamp(U.currentTimeMillis());
+        boolean success;
 
-        assert res >= 0 && res < Integer.MAX_VALUE;
+        do {
+            int trackingData = GridUnsafe.getIntVolatile(null, trackingPtr);
 
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4L, (int)res);
+            if (trackingData <= 0) // Concurrently evicted.
+                return;
+
+            long ts = compactTimestamp(U.currentTimeMillis());
+
+            assert ts >= 0 && ts < Integer.MAX_VALUE;
+
+            success = GridUnsafe.compareAndSwapInt(null, trackingPtr, trackingData, (int)ts);
+        } while (!success);
+    }
+
+    /** */
+    @Override protected void initPage(long pageId) {
+        int ts = (int)compactTimestamp(U.currentTimeMillis());
+
+        GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L, 0, ts);
     }
 
     /** {@inheritDoc} */

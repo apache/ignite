@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.management.wal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class WalStateCommandArg extends IgniteDataTransferObject {
@@ -30,21 +27,12 @@ public class WalStateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(
         description = "Comma-separated list of cache groups. If not set action applied to all groups",
         optional = true
     )
-    private String[] groups;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, groups);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        groups = U.readArray(in, String.class);
-    }
+    String[] groups;
 
     /** */
     public String[] groups() {

@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -30,15 +27,15 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Node sends this message when it wants to propose new marshaller mapping and to ensure that there are no conflicts
  * with this mapping on other nodes in cluster.
- *
+ * <p>
  * After sending this message to the cluster sending node gets blocked until mapping is either accepted or rejected.
- *
+ * <p>
  * When it completes a pass around the cluster ring with no conflicts observed,
  * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
  */
-public class MappingProposedMessage implements DiscoveryCustomMessage {
+public class MappingProposedMessage extends DiscoveryCustomMessage {
     /** */
-    private enum ProposalStatus {
+    enum ProposalStatus {
         /** */
         SUCCESSFUL,
         /** */
@@ -48,59 +45,50 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    UUID origNodeId;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(1)
+    MarshallerMappingItem mappingItem;
 
     /** */
-    private final UUID origNodeId;
+    @Order(2)
+    ProposalStatus status;
 
     /** */
-    @GridToStringInclude
-    private final MarshallerMappingItem mappingItem;
+    @Order(3)
+    String conflictingClsName;
 
     /** */
-    private ProposalStatus status = ProposalStatus.SUCCESSFUL;
-
-    /** */
-    private String conflictingClsName;
+    public MappingProposedMessage() {
+        // No-op.
+    }
 
     /**
      * @param mappingItem Mapping item.
      * @param origNodeId Orig node id.
      */
     MappingProposedMessage(MarshallerMappingItem mappingItem, UUID origNodeId) {
+        super(IgniteUuid.randomUuid());
+
         assert origNodeId != null;
 
         this.mappingItem = mappingItem;
         this.origNodeId = origNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        status = ProposalStatus.SUCCESSFUL;
     }
 
     /**
      * {@inheritDoc}
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        if (status == ProposalStatus.SUCCESSFUL)
-            return new MappingAcceptedMessage(mappingItem);
-        else
-            return null;
+        return status == ProposalStatus.SUCCESSFUL ? new MappingAcceptedMessage(mappingItem()) : null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 
     /** */

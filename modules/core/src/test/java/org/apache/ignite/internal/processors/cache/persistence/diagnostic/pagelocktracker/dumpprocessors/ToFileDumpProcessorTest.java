@@ -27,23 +27,20 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerDump;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.After;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest.createSharedPageLockTracker;
 
 /**
  *
  */
-public class ToFileDumpProcessorTest {
+public class ToFileDumpProcessorTest extends GridCommonAbstractTest {
     /** */
     private Path file;
 
-    /** */
-    @After
-    public void afterTest() throws IOException {
+    /** {@inheritDoc} */
+    @Override public void afterTest() throws IOException {
         if (file != null)
             Files.delete(file);
     }
@@ -55,7 +52,7 @@ public class ToFileDumpProcessorTest {
 
         System.out.println("IGNITE_HOME:" + homeDir);
 
-        SharedPageLockTracker pageLockTracker = new SharedPageLockTracker();
+        SharedPageLockTracker pageLockTracker = createSharedPageLockTracker(log);
 
         try (PageLockListener tracker = pageLockTracker.registerStructure("dummy")) {
             tracker.onBeforeReadLock(1, 2, 3);

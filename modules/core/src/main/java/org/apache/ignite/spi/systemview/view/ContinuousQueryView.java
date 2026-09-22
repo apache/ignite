@@ -25,16 +25,18 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RoutineInfo;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
  * Continuous query representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class ContinuousQueryView {
     /** Routine info. */
     private final RoutineInfo qry;

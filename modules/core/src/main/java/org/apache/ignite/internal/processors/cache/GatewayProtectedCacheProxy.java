@@ -166,7 +166,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (skip)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setSkipStore(true), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.withSkipStore(), lock);
         }
         finally {
             onLeave(opGate);
@@ -180,7 +180,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setApplicationAttributes(appAttrs), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.withApplicationAttributes(appAttrs), lock);
         }
         finally {
             onLeave(opGate);
@@ -197,7 +197,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (noRetries)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setNoRetries(true), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.withNoRetries(), lock);
         }
         finally {
             onLeave(opGate);
@@ -214,7 +214,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (recovery)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setRecovery(true), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.withRecovery(), lock);
         }
         finally {
             onLeave(opGate);
@@ -244,7 +244,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (opCtx.readRepairStrategy() == strategy)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setReadRepairStrategy(strategy), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.withReadRepairStrategy(strategy), lock);
         }
         finally {
             onLeave(opGate);
@@ -261,7 +261,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>)delegate, opCtx.keepBinary(), lock);
+            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>)delegate, opCtx.withKeepBinary(), lock);
         }
         finally {
             onLeave(opGate);
@@ -278,7 +278,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (prevDataCenterId != null && dataCenterId == prevDataCenterId)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setDataCenterId(dataCenterId), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.withDataCenterId(dataCenterId), lock);
         }
         finally {
             onLeave(opGate);

@@ -21,7 +21,9 @@ import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcConnectionEn
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcLocalFlagTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInfoCacheInterceptorTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInfoTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinConnectionSavepointTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -33,8 +35,10 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     JdbcQueryTest.class,
     JdbcCrossEngineTest.class,
+    JdbcThinConnectionSavepointTest.class,
     JdbcThinTransactionalSelfTest.class,
     JdbcSetClientInfoTest.class,
+    JdbcSetClientInfoCacheInterceptorTest.class,
     JdbcConnectionEnabledPropertyTest.class,
     JdbcLocalFlagTest.class,
 })

@@ -267,7 +267,7 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
     }
 
     /**
-     * Tests atomic long operation provided by the the given {@code clo}.
+     * Tests atomic long operation provided by the given {@code clo}.
      *
      * @param atomicName Name of atomic long.
      * @param op Closure that represents an operation.
@@ -301,7 +301,7 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
     }
 
     /**
-     * Tests atomic reference operation provided by the the given {@code clo}.
+     * Tests atomic reference operation provided by the given {@code clo}.
      *
      * @param atomicName Name of atomic.
      * @param op Closure that represents an operation.
@@ -335,7 +335,7 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
     }
 
     /**
-     * Tests atomic stamped operation provided by the the given {@code clo}.
+     * Tests atomic stamped operation provided by the given {@code clo}.
      *
      * @param atomicName Name of atomic.
      * @param op Closure that represents an operation.
@@ -379,7 +379,7 @@ public class IgniteClientReconnectAtomicsWithLostPartitionsTest extends IgniteCl
     }
 
     /**
-     * Tests atomic sequence operation provided by the the given {@code clo}.
+     * Tests atomic sequence operation provided by the given {@code clo}.
      *
      * @param atomicName Name of atomic sequnce.
      * @param op Closure that represents an operation.

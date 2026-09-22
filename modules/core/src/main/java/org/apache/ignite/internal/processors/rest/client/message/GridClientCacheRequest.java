@@ -214,15 +214,6 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * Set cache flags bit map.
-     *
-     * @param cacheFlagsOn Bit representation of cache flags.
-     */
-    public void cacheFlagsOn(int cacheFlagsOn) {
-        this.cacheFlagsOn = cacheFlagsOn;
-    }
-
-    /**
      * Get cache flags bit map.
      * @return Bit representation of cache flags.
      */

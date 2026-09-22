@@ -300,11 +300,11 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
      * @param deAct Expected deActivation counter.
      */
     private void checkPlugin(Ignite ig, int act, int deAct) {
-        IgnitePlugin pl = ig.plugin(StanByClusterTestProvider.NAME);
+        IgnitePlugin pl = ig.plugin(StandByClusterTestProvider.NAME);
 
         assertNotNull(pl);
 
-        StanByClusterTestProvider plugin = (StanByClusterTestProvider)pl;
+        StandByClusterTestProvider plugin = (StandByClusterTestProvider)pl;
 
         assertEquals(act, plugin.actCnt.get());
         assertEquals(deAct, plugin.deActCnt.get());
@@ -333,10 +333,10 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public static class StanByClusterTestProvider extends AbstractTestPluginProvider implements IgnitePlugin,
+    public static class StandByClusterTestProvider extends AbstractTestPluginProvider implements IgnitePlugin,
         IgniteChangeGlobalStateSupport {
         /** */
-        static final String NAME = "StanByClusterTestProvider";
+        static final String NAME = "StandByClusterTestProvider";
 
         /** */
         final AtomicInteger actCnt = new AtomicInteger();

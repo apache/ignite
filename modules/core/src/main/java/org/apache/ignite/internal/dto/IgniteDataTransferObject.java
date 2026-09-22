@@ -23,9 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
+import org.apache.ignite.internal.codegen.idto.IDTOSerializerFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,43 +49,12 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         return null;
     }
 
-    /**
-     * @param col Source collection.
-     * @param <T> Collection type.
-     * @return List based on passed collection.
-     */
-    @Nullable protected static <T> Set<T> toSet(Collection<T> col) {
-        if (col != null)
-            return new LinkedHashSet<>(col);
-
-        return null;
-    }
-
-    /**
-     * Save object's specific data content.
-     *
-     * @param out Output object to write data content.
-     * @throws IOException If I/O errors occur.
-     */
-    protected abstract void writeExternalData(ObjectOutput out) throws IOException;
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
 
-        try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
-            writeExternalData(dtout);
-        }
+        writeIgniteDataTransferObject(out);
     }
-
-    /**
-     * Load object's specific data content.
-     *
-     * @param in Input object to load data content.
-     * @throws IOException If I/O errors occur.
-     * @throws ClassNotFoundException If the class for an object being restored cannot be found.
-     */
-    protected abstract void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException;
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -96,8 +64,24 @@ public abstract class IgniteDataTransferObject implements Externalizable {
             throw new IOException("Unexpected IgniteDataTransferObject header " +
                 "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
 
+        readIgniteDataTransferObject(in);
+    }
+
+    /** */
+    protected void writeIgniteDataTransferObject(ObjectOutput out) throws IOException {
+        try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
+            IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
+
+            serializer.writeExternal(this, dtout);
+        }
+    }
+
+    /** */
+    protected void readIgniteDataTransferObject(ObjectInput in) throws IOException, ClassNotFoundException {
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
-            readExternalData(dtin);
+            IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
+
+            serializer.readExternal(this, dtin);
         }
     }
 }

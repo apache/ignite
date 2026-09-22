@@ -125,11 +125,13 @@ public class PlannerHelper {
 
             rel = planner.replaceCorrelatesCollisions(rel);
 
+            rel = planner.transform(PlannerPhase.HEP_WINDOW_SPLIT, rel.getTraitSet(), rel);
+
             rel = planner.extractConjunctionOverDisjunctionCommonPart(rel);
 
-            rel = planner.trimUnusedFields(root.withRel(rel)).rel;
-
             rel = planner.transform(PlannerPhase.HEP_FILTER_PUSH_DOWN, rel.getTraitSet(), rel);
+
+            rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             // The following pushed down project can erase top-level hints. We store them to reassign hints for join nodes.
             // Clear the inherit pathes to consider the hints as not propogated ones.

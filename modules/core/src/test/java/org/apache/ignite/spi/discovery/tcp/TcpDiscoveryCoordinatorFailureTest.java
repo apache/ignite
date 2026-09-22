@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -149,7 +148,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
 
             stallSpi.startStall();
 
-            // At this point startGrid(3) cannot proceed as well because openSocket() is blocked.
+            // At this point startGrid(3) cannot proceed as well because openSession() is blocked.
             assertFalse(fut3.isDone());
 
             fut4.get();
@@ -167,6 +166,8 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 2, grid(3).cluster().localNode().order());
         }
         finally {
+            stallSpi.stopStall();
+
             stopAllGrids();
         }
     }
@@ -204,24 +205,14 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         private volatile CountDownLatch stallLatch;
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
+        ) throws IOException, IgniteCheckedException {
             checkStall();
 
-            return super.openSocket(sockAddr, timeoutHelper);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Socket openSocket(
-            Socket sock,
-            InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
-            checkStall();
-
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            return super.openSession(sock, sockAddr, timeoutHelper);
         }
 
         /**
@@ -285,22 +276,6 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            byte[] data,
-            long timeout
-        ) throws IOException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
         @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
@@ -313,22 +288,6 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             }
 
             super.writeMessage(ses, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
-            int res,
-            long timeout
-        ) throws IOException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(msg, sock, res, timeout);
         }
 
         /**

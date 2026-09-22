@@ -154,7 +154,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
     @Test
     public void testSameCipherSuite() throws Exception {
         String ciphers = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
-            "TLS_RSA_WITH_AES_128_GCM_SHA256," +
+            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256," +
             "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
 
         activate(ciphers, ciphers, EXIT_CODE_OK);
@@ -165,7 +165,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
      */
     @Test
     public void testOneCommonCipherSuite() throws Exception {
-        String nodeCipherSuites = "TLS_RSA_WITH_AES_128_GCM_SHA256," +
+        String nodeCipherSuites = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256," +
             "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
 
         String utilityCipherSuites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
@@ -179,7 +179,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
      */
     @Test
     public void testNoCommonCipherSuite() throws Exception {
-        String nodeCipherSuites = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+        String nodeCipherSuites = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256";
 
         String utilityCipherSuites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
             "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";

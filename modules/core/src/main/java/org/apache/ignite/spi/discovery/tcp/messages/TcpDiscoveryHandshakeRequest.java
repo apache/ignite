@@ -19,28 +19,29 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake request.
  */
-public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    @Nullable UUID prevNodeId;
 
     /** */
-    @Order(value = 5, method = "previousNodeId")
-    private @Nullable UUID prevNodeId;
+    @Order(1)
+    @Nullable String dcId;
 
     /** */
-    @Order(6)
-    private @Nullable String dcId;
+    @Order(2)
+    IgniteNodeFeatureSet nodeFeatures;
 
     /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
+     * Default constructor for {@link MessageFactory}.
      */
     public TcpDiscoveryHandshakeRequest() {
         // No-op.
@@ -50,9 +51,12 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
+     * @param locNodeFeatures Local node features.
      */
-    public TcpDiscoveryHandshakeRequest(UUID creatorNodeId) {
+    public TcpDiscoveryHandshakeRequest(UUID creatorNodeId, IgniteNodeFeatureSet locNodeFeatures) {
         super(creatorNodeId);
+
+        this.nodeFeatures = locNodeFeatures;
     }
 
     /**
@@ -83,9 +87,9 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
         this.dcId = dcId;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 8;
+    /** @return Features supported by the sender node. */
+    public IgniteNodeFeatureSet nodeFeatures() {
+        return nodeFeatures;
     }
 
     /** {@inheritDoc} */

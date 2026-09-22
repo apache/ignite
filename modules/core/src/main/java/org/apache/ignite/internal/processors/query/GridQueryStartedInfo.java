@@ -52,9 +52,6 @@ public class GridQueryStartedInfo {
     /** Enforce join order query flag. */
     private boolean enforceJoinOrder;
 
-    /** Lazy query flag. */
-    private boolean lazy;
-
     /** Distributed joins query flag. */
     private boolean distributedJoins;
 
@@ -73,7 +70,6 @@ public class GridQueryStartedInfo {
      * @param cancellable Query cancellable flag.
      * @param loc Local query flag.
      * @param enforceJoinOrder Local query flag.
-     * @param lazy Local query flag.
      * @param distributedJoins Local query flag.
      * @param qryInitiatorId Query's initiator identifier.
      */
@@ -87,7 +83,6 @@ public class GridQueryStartedInfo {
         boolean cancellable,
         boolean loc,
         boolean enforceJoinOrder,
-        boolean lazy,
         boolean distributedJoins,
         String qryInitiatorId
     ) {
@@ -100,7 +95,6 @@ public class GridQueryStartedInfo {
         this.cancellable = cancellable;
         this.loc = loc;
         this.enforceJoinOrder = enforceJoinOrder;
-        this.lazy = lazy;
         this.distributedJoins = distributedJoins;
         this.qryInitiatorId = qryInitiatorId;
     }
@@ -166,13 +160,6 @@ public class GridQueryStartedInfo {
      */
     public boolean enforceJoinOrder() {
         return enforceJoinOrder;
-    }
-
-    /**
-     * @return Lazy flag.
-     */
-    public boolean lazy() {
-        return lazy;
     }
 
     /**

@@ -396,7 +396,7 @@ namespace ignite
                 writer.WriteBool(false); // Replicated only
                 writer.WriteBool(qry.enforceJoinOrder);
                 writer.WriteBool(qry.collocated);
-                writer.WriteBool(qry.lazy);
+                writer.WriteBool(true); // Lazy flag.
                 writer.WriteInt64(qry.timeout);
                 writer.WriteBool(true); // Include field names
 

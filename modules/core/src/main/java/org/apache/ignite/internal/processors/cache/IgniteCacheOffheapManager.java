@@ -223,12 +223,6 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
-     * @param ldr Class loader.
-     * @return Number of undeployed entries.
-     */
-    public int onUndeploy(ClassLoader ldr);
-
-    /**
      * @param cacheId Cache ID.
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.

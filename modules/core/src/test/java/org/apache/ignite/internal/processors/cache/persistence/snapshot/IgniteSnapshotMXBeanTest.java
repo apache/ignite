@@ -53,6 +53,9 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** Snapshot group name. */
     private static final String SNAPSHOT_GROUP = "Snapshot";
 
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)

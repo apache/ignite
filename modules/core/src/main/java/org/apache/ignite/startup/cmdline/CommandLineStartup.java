@@ -58,12 +58,12 @@ import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
+import static java.time.ZoneOffset.UTC;
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.IgniteVersionUtils.RELEASE_DATE;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
@@ -177,8 +177,12 @@ public final class CommandLineStartup {
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER_STR,
-                            RELEASE_DATE, COPYRIGHT);
+                        AboutDialog.centerShow(
+                            "Ignite Node",
+                            bannerUrl.toExternalForm(),
+                            VER_STR,
+                            VER.buildTime().atZone(UTC).toLocalDate(),
+                            COPYRIGHT);
 
                         return null;
                     }
@@ -315,7 +319,7 @@ public final class CommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("Ignite Command Line Startup, ver. " + ACK_VER_STR);
+            X.println("Ignite Command Line Startup, ver. " + VER);
             X.println(COPYRIGHT);
             X.println();
         }

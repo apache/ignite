@@ -39,6 +39,8 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
+import org.apache.ignite.internal.managers.communication.GridIoManager.SendRetryPolicy;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -68,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -114,11 +117,36 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** Common message handler identifier that does not correspond to any particular cache. */
     public static final int COMMON_MESSAGE_HANDLER_ID = 0;
 
-    /** Delay in milliseconds between retries. */
-    private long retryDelay;
-
     /** Number of retries using to send messages. */
     private int retryCnt;
+
+    /** Retry policy of {@link #send(ClusterNode, GridCacheMessage, byte)}: pings the node and retries up to {@link #retryCnt} times. */
+    private final SendRetryPolicy sendRetryPlc = (node, e, attempt) -> {
+        if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
+            throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
+
+        if (attempt > retryCnt || cctx.kernalContext().isStopping())
+            return false;
+
+        if (log.isDebugEnabled())
+            log.debug("Failed to send message to node (will retry): " + node.id());
+
+        return true;
+    };
+
+    /** Retry policy of {@link #sendOrderedMessage}: retries up to {@link #retryCnt} times while the node stays in topology. */
+    private final SendRetryPolicy orderedSendRetryPlc = (node, e, attempt) -> {
+        if (cctx.discovery().node(node.id()) == null)
+            throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
+
+        if (attempt > retryCnt)
+            return false;
+
+        if (log.isDebugEnabled())
+            log.debug("Failed to send message to node (will retry): " + node.id());
+
+        return true;
+    };
 
     /** */
     private final MessageHandlers cacheHandlers = new MessageHandlers();
@@ -417,9 +445,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nearEvicted.add(req.nearKey(i));
 
                 GridDhtAtomicUpdateResponse dhtRes = new GridDhtAtomicUpdateResponse(req.cacheId(),
-                    req.partition(),
-                    req.futureId(),
-                    false);
+                    req.stripeIdx(),
+                    req.futureId());
 
                 dhtRes.nearEvicted(nearEvicted);
 
@@ -431,7 +458,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 if (req.nearNodeId() != null) {
                     GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
-                        req.partition(),
+                        req.stripeIdx(),
                         req.nearFutureId(),
                         nodeId,
                         req.flags());
@@ -489,7 +516,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
         retryCnt = cctx.gridConfig().getNetworkSendRetryCount();
 
         depEnabled = cctx.gridDeploy().enabled();
@@ -741,346 +767,283 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param plc Message policy.
      * @throws IgniteCheckedException If failed.
      */
-    private void processFailedMessage(UUID nodeId,
+    public void processFailedMessage(
+        UUID nodeId,
         GridCacheMessage msg,
         IgniteBiInClosure<UUID, GridCacheMessage> c,
         byte plc)
         throws IgniteCheckedException {
         assert msg != null;
 
-        switch (msg.directType()) {
-            case 30: {
-                GridDhtLockRequest req = (GridDhtLockRequest)msg;
+        if (msg instanceof GridDhtLockRequest) {
+            GridDhtLockRequest req = (GridDhtLockRequest)msg;
 
-                GridDhtLockResponse res = new GridDhtLockResponse(
-                    req.cacheId(),
-                    req.version(),
-                    req.futureId(),
-                    req.miniId(),
-                    0,
-                    false);
+            GridDhtLockResponse res = new GridDhtLockResponse(
+                req.cacheId(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                0);
 
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-            }
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridDhtTxPrepareRequest) {
+            GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
-            break;
+            GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
+                req.stripeIdx(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                req.deployInfo() != null);
 
-            case 34: {
-                GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
+            res.error(req.classError());
 
-                GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
-                    req.partition(),
-                    req.version(),
-                    req.futureId(),
-                    req.miniId(),
-                    req.deployInfo() != null);
+            sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
+        }
+        else if (msg instanceof GridDhtAtomicUpdateRequest) {
+            GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
 
-                res.error(req.classError());
+            GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
+                req.cacheId(),
+                req.stripeIdx(),
+                req.futureId());
 
-                sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
-            }
+            res.onError(req.classError());
 
-            break;
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
 
-            case 38: {
-                GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
-
-                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
-                    req.cacheId(),
-                    req.partition(),
-                    req.futureId(),
-                    false);
-
-                res.onError(req.classError());
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-
-                if (req.nearNodeId() != null) {
-                    GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
-                        req.partition(),
-                        req.nearFutureId(),
-                        nodeId,
-                        req.flags());
-
-                    nearRes.errors(new UpdateErrors(req.classError()));
-
-                    sendResponseOnFailedMessage(req.nearNodeId(), nearRes, cctx, plc);
-                }
-            }
-
-            break;
-
-            case 40: {
-                GridNearAtomicFullUpdateRequest req = (GridNearAtomicFullUpdateRequest)msg;
-
-                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    req.cacheId(),
+            if (req.nearNodeId() != null) {
+                GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
+                    req.stripeIdx(),
+                    req.nearFutureId(),
                     nodeId,
-                    req.futureId(),
-                    req.partition(),
-                    false,
-                    false);
+                    req.flags());
 
-                res.error(req.classError());
+                nearRes.errors(new UpdateErrors(req.classError()));
 
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+                sendResponseOnFailedMessage(req.nearNodeId(), nearRes, cctx, plc);
+            }
+        }
+        else if (msg instanceof GridNearAtomicFullUpdateRequest) {
+            GridNearAtomicFullUpdateRequest req = (GridNearAtomicFullUpdateRequest)msg;
+
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
+                req.cacheId(),
+                nodeId,
+                req.futureId(),
+                req.stripeIdx(),
+                false);
+
+            res.error(req.classError());
+
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridDhtForceKeysRequest) {
+            GridDhtForceKeysRequest req = (GridDhtForceKeysRequest)msg;
+
+            GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
+                req.cacheId(),
+                req.futureId(),
+                req.miniId(),
+                req.classError()
+            );
+
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridNearGetRequest) {
+            GridNearGetRequest req = (GridNearGetRequest)msg;
+
+            GridNearGetResponse res = new GridNearGetResponse(
+                req.cacheId(),
+                req.futureId(),
+                req.miniId(),
+                req.version(),
+                req.deployInfo() != null);
+
+            res.error(req.classError());
+
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridNearGetResponse) {
+            GridNearGetResponse res = (GridNearGetResponse)msg;
+
+            CacheGetFuture fut = (CacheGetFuture)cctx.mvcc().future(res.futureId());
+
+            if (fut == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+                return;
             }
 
-            break;
+            res.error(res.classError());
 
-            case 42: {
-                GridDhtForceKeysRequest req = (GridDhtForceKeysRequest)msg;
+            fut.onResult(nodeId, res);
+        }
+        else if (msg instanceof GridNearLockRequest) {
+            GridNearLockRequest req = (GridNearLockRequest)msg;
 
-                GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
-                    req.cacheId(),
-                    req.futureId(),
-                    req.miniId(),
-                    false
-                );
+            GridNearLockResponse res = new GridNearLockResponse(
+                req.cacheId(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                false,
+                0,
+                req.classError(),
+                null,
+                false);
 
-                res.error(req.classError());
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridNearTxPrepareRequest) {
+            GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+            GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                req.stripeIdx(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                req.version(),
+                req.version(),
+                null,
+                null,
+                null,
+                false,
+                req.deployInfo() != null);
+
+            res.error(req.classError());
+
+            sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
+        }
+        else if (msg instanceof GridCacheQueryRequest) {
+            GridCacheQueryRequest req = (GridCacheQueryRequest)msg;
+
+            GridCacheQueryResponse res = new GridCacheQueryResponse(
+                req.cacheId(),
+                req.id(),
+                req.classError(),
+                cctx.deploymentEnabled());
+
+            ClusterNode node = cctx.node(nodeId);
+
+            if (node == null) {
+                U.error(log, "Failed to send message because node left grid [nodeId=" + nodeId +
+                    ", msg=" + msg + ']');
+            }
+            else {
+                cctx.io().sendOrderedMessage(
+                    node,
+                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
+                    res,
+                    plc,
+                    Long.MAX_VALUE);
+            }
+        }
+        else if (msg instanceof GridNearSingleGetRequest) {
+            GridNearSingleGetRequest req = (GridNearSingleGetRequest)msg;
+
+            GridNearSingleGetResponse res = new GridNearSingleGetResponse(
+                req.cacheId(),
+                req.futureId(),
+                req.topologyVersion(),
+                null,
+                false,
+                req.deployInfo() != null);
+
+            res.error(req.classError());
+
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridNearSingleGetResponse) {
+            GridNearSingleGetResponse res = (GridNearSingleGetResponse)msg;
+
+            GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)cctx.mvcc()
+                .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
+
+            if (fut == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+                return;
             }
 
-            break;
+            res.error(res.classError());
 
-            case 49: {
-                GridNearGetRequest req = (GridNearGetRequest)msg;
+            fut.onResult(nodeId, res);
+        }
+        else if (msg instanceof GridNearAtomicSingleUpdateRequest) {
+            GridNearAtomicSingleUpdateRequest req = (GridNearAtomicSingleUpdateRequest)msg;
 
-                GridNearGetResponse res = new GridNearGetResponse(
-                    req.cacheId(),
-                    req.futureId(),
-                    req.miniId(),
-                    req.version(),
-                    req.deployInfo() != null);
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
+                req.cacheId(),
+                nodeId,
+                req.futureId(),
+                req.stripeIdx(),
+                false);
 
-                res.error(req.classError());
+            res.error(req.classError());
 
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-            }
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridNearAtomicSingleUpdateInvokeRequest) {
+            GridNearAtomicSingleUpdateInvokeRequest req = (GridNearAtomicSingleUpdateInvokeRequest)msg;
 
-            break;
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
+                req.cacheId(),
+                nodeId,
+                req.futureId(),
+                req.stripeIdx(),
+                false);
 
-            case 50: {
-                GridNearGetResponse res = (GridNearGetResponse)msg;
+            res.error(req.classError());
 
-                CacheGetFuture fut = (CacheGetFuture)cctx.mvcc().future(res.futureId());
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridNearAtomicSingleUpdateFilterRequest) {
+            GridNearAtomicSingleUpdateFilterRequest req = (GridNearAtomicSingleUpdateFilterRequest)msg;
 
-                if (fut == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
+                req.cacheId(),
+                nodeId,
+                req.futureId(),
+                req.stripeIdx(),
+                false);
 
-                    return;
-                }
+            res.error(req.classError());
 
-                res.error(res.classError());
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+        }
+        else if (msg instanceof GridDhtAtomicSingleUpdateRequest) {
+            GridDhtAtomicSingleUpdateRequest req = (GridDhtAtomicSingleUpdateRequest)msg;
 
-                fut.onResult(nodeId, res);
-            }
+            GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
+                req.cacheId(),
+                req.stripeIdx(),
+                req.futureId());
 
-            break;
+            res.onError(req.classError());
 
-            case 51: {
-                GridNearLockRequest req = (GridNearLockRequest)msg;
+            sendResponseOnFailedMessage(nodeId, res, cctx, plc);
 
-                GridNearLockResponse res = new GridNearLockResponse(
-                    req.cacheId(),
-                    req.version(),
-                    req.futureId(),
-                    req.miniId(),
-                    false,
-                    0,
-                    req.classError(),
-                    null,
-                    false,
-                    false);
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-            }
-
-            break;
-
-            case 55: {
-                GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
-
-                GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-                    req.partition(),
-                    req.version(),
-                    req.futureId(),
-                    req.miniId(),
-                    req.version(),
-                    req.version(),
-                    null,
-                    null,
-                    null,
-                    false,
-                    req.deployInfo() != null);
-
-                res.error(req.classError());
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
-            }
-
-            break;
-
-            case 58: {
-                GridCacheQueryRequest req = (GridCacheQueryRequest)msg;
-
-                GridCacheQueryResponse res = new GridCacheQueryResponse(
-                    req.cacheId(),
-                    req.id(),
-                    req.classError(),
-                    cctx.deploymentEnabled());
-
-                ClusterNode node = cctx.node(nodeId);
-
-                if (node == null) {
-                    U.error(log, "Failed to send message because node left grid [nodeId=" + nodeId +
-                        ", msg=" + msg + ']');
-                }
-                else {
-                    cctx.io().sendOrderedMessage(
-                        node,
-                        TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
-                        res,
-                        plc,
-                        Long.MAX_VALUE);
-                }
-            }
-
-            break;
-
-            case 114:
-            case 120: {
-                processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
-            }
-
-                break;
-
-            case 116: {
-                GridNearSingleGetRequest req = (GridNearSingleGetRequest)msg;
-
-                GridNearSingleGetResponse res = new GridNearSingleGetResponse(
-                    req.cacheId(),
-                    req.futureId(),
-                    req.topologyVersion(),
-                    null,
-                    false,
-                    req.deployInfo() != null);
-
-                res.error(req.classError());
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-            }
-
-            break;
-
-            case 117: {
-                GridNearSingleGetResponse res = (GridNearSingleGetResponse)msg;
-
-                GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)cctx.mvcc()
-                    .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
-
-                if (fut == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
-
-                    return;
-                }
-
-                res.error(res.classError());
-
-                fut.onResult(nodeId, res);
-            }
-
-            break;
-
-            case 125: {
-                GridNearAtomicSingleUpdateRequest req = (GridNearAtomicSingleUpdateRequest)msg;
-
-                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    req.cacheId(),
+            if (req.nearNodeId() != null) {
+                GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
+                    req.stripeIdx(),
+                    req.nearFutureId(),
                     nodeId,
-                    req.futureId(),
-                    req.partition(),
-                    false,
-                    false);
+                    req.flags());
 
-                res.error(req.classError());
+                nearRes.errors(new UpdateErrors(req.classError()));
 
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
+                sendResponseOnFailedMessage(req.nearNodeId(), nearRes, cctx, plc);
             }
-
-            break;
-
-            case 126: {
-                GridNearAtomicSingleUpdateInvokeRequest req = (GridNearAtomicSingleUpdateInvokeRequest)msg;
-
-                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    req.cacheId(),
-                    nodeId,
-                    req.futureId(),
-                    req.partition(),
-                    false,
-                    false);
-
-                res.error(req.classError());
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-            }
-
-            break;
-
-            case 127: {
-                GridNearAtomicSingleUpdateFilterRequest req = (GridNearAtomicSingleUpdateFilterRequest)msg;
-
-                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
-                    req.cacheId(),
-                    nodeId,
-                    req.futureId(),
-                    req.partition(),
-                    false,
-                    false);
-
-                res.error(req.classError());
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-            }
-
-            break;
-
-            case -36: {
-                GridDhtAtomicSingleUpdateRequest req = (GridDhtAtomicSingleUpdateRequest)msg;
-
-                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
-                    req.cacheId(),
-                    req.partition(),
-                    req.futureId(),
-                    false);
-
-                res.onError(req.classError());
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-
-                if (req.nearNodeId() != null) {
-                    GridDhtAtomicNearResponse nearRes = new GridDhtAtomicNearResponse(req.cacheId(),
-                        req.partition(),
-                        req.nearFutureId(),
-                        nodeId,
-                        req.flags());
-
-                    nearRes.errors(new UpdateErrors(req.classError()));
-
-                    sendResponseOnFailedMessage(req.nearNodeId(), nearRes, cctx, plc);
-                }
-            }
-
-            break;
-
-            default:
-                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
-                    + msg + "]", msg.classError());
+        }
+        else if (msg instanceof GridDhtPartitionSupplyMessage)
+            processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
+        else {
+            throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
+                + msg + "]", msg.classError());
         }
     }
 
@@ -1159,7 +1122,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             msg.messageId(idGen.incrementAndGet());
 
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
-            msg.prepareMarshal(cctx);
+            GridCacheMessageDeployer.deploy(cctx.kernalContext().messageFactory(), msg, cctx);
 
             if (msg instanceof GridCacheDeployable && msg.addDeploymentInfo())
                 cctx.deploy().prepare((GridCacheDeployable)msg);
@@ -1200,32 +1163,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
-        int cnt = 0;
+        cctx.gridIO().sendWithRetry(node, TOPIC_CACHE, msg, plc, false, 0, false, sendRetryPlc);
 
-        while (true) {
-            try {
-                cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
-
-                if (log.isDebugEnabled())
-                    log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
-
-                return;
-            }
-            catch (ClusterTopologyCheckedException e) {
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
-                    throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
-
-                if (cnt++ >= retryCnt || cctx.kernalContext().isStopping())
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to send message to node (will retry): " + node.id());
-            }
-
-            U.sleep(retryDelay);
-        }
+        if (log.isDebugEnabled())
+            log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
     }
 
     /**
@@ -1261,33 +1202,16 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
 
-        int cnt = 0;
+        if (node.isLocal()) {
+            cctx.gridIO().sendOrderedMessage(node, topic, msg, plc, timeout, false);
 
-        while (true) {
-            try {
-                cctx.gridIO().sendOrderedMessage(node, topic, msg, plc, timeout, false);
-
-                if (log.isDebugEnabled())
-                    log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +
-                        ", nodeId=" + node.id() + ']');
-
-                return;
-            }
-            catch (ClusterTopologyCheckedException e) {
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                if (cctx.discovery().node(node.id()) == null)
-                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
-
-                if (cnt++ >= retryCnt)
-                    throw e;
-                else if (log.isDebugEnabled())
-                    log.debug("Failed to send message to node (will retry): " + node.id());
-            }
-
-            U.sleep(retryDelay);
+            return;
         }
+
+        cctx.gridIO().sendWithRetry(node, topic, msg, plc, true, timeout, false, orderedSendRetryPlc);
+
+        if (log.isDebugEnabled())
+            log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg + ", nodeId=" + node.id() + ']');
     }
 
     /**
@@ -1615,12 +1539,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
             }
 
-            cacheMsg.finishUnmarshal(cctx, cctx.deploy().globalLoader());
+            CommunicationMarshalling.unmarshal(cacheMsg, cctx.kernalContext(), null, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
             cacheMsg.onClassError(e);
         }
-        catch (BinaryObjectException e) {
+        catch (BinaryObjectException | CacheObjectNotResolvedException e) {
             cacheMsg.onClassError(new IgniteCheckedException(e));
         }
         catch (Error e) {

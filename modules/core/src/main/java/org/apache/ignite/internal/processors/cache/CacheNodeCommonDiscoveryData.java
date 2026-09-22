@@ -17,55 +17,56 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Cache information sent in discovery data to joining node.
- */
-public class CacheNodeCommonDiscoveryData implements Serializable {
+/** Cache information sent in discovery data to joining node. */
+public class CacheNodeCommonDiscoveryData implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(0)
     @GridToStringInclude
-    private final Map<String, CacheData> caches;
+    Map<String, CacheData> caches;
 
     /** */
+    @Order(1)
     @GridToStringInclude
-    private final Map<String, CacheData> templates;
+    Map<String, CacheData> templates;
 
     /** */
+    @Order(2)
     @GridToStringInclude
-    private final Map<Integer, CacheGroupData> cacheGrps;
+    Map<Integer, CacheGroupData> cacheGrps;
 
     /** */
-    private final Map<String, Map<UUID, Boolean>> clientNodesMap;
+    @Order(3)
+    Map<String, Map<UUID, Boolean>> clientNodesMap;
 
     /** */
-    private final Collection<String> restartingCaches;
+    @Order(4)
+    @Nullable ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData;
 
-    /** */
-    @Nullable private final ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData;
+    /** Default constructor for {@link MessageFactory}. */
+    public CacheNodeCommonDiscoveryData() {
+        // No-op.
+    }
 
     /**
      * @param caches Started caches.
      * @param templates Configured templates.
      * @param cacheGrps Started cache groups.
      * @param clientNodesMap Information about cache client nodes.
-     * @param restartingCaches Collection of cache names that is being restarted.
      * @param clusterCacheGrpRecoveryData Cluster cache group recovery data.
      */
     public CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
         Map<Integer, CacheGroupData> cacheGrps,
         Map<String, Map<UUID, Boolean>> clientNodesMap,
-        Collection<String> restartingCaches,
         @Nullable ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData
     ) {
         assert caches != null;
@@ -77,13 +78,10 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         this.templates = templates;
         this.cacheGrps = cacheGrps;
         this.clientNodesMap = clientNodesMap;
-        this.restartingCaches = restartingCaches;
         this.clusterCacheGrpRecoveryData = clusterCacheGrpRecoveryData;
     }
 
-    /**
-     * @return Started cache groups.
-     */
+    /** @return Started cache groups. */
     Map<Integer, CacheGroupData> cacheGroups() {
         return cacheGrps;
     }
@@ -93,32 +91,19 @@ public class CacheNodeCommonDiscoveryData implements Serializable {
         return clusterCacheGrpRecoveryData;
     }
 
-    /**
-     * @return Started caches.
-     */
+    /** @return Started caches. */
     public Map<String, CacheData> caches() {
         return caches;
     }
 
-    /**
-     * @return Configured templates.
-     */
+    /** @return Configured templates. */
     public Map<String, CacheData> templates() {
         return templates;
     }
 
-    /**
-     * @return Information about cache client nodes.
-     */
+    /** @return Information about cache client nodes. */
     public Map<String, Map<UUID, Boolean>> clientNodesMap() {
         return clientNodesMap;
-    }
-
-    /**
-     * @return A collection of restarting cache names.
-     */
-    Collection<String> restartingCaches() {
-        return restartingCaches;
     }
 
     /** {@inheritDoc} */

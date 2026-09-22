@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.metastorage;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -561,9 +559,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * Assert that two nodes have the same internal state in {@link DistributedMetaStorage}.
      */
     protected void assertDistributedMetastoragesAreEqual(IgniteEx ignite1, IgniteEx ignite2) throws Exception {
-        DistributedMetaStorage distributedMetastorage1 = ignite1.context().distributedMetastorage();
+        DistributedMetaStorageImpl distributedMetastorage1 = (DistributedMetaStorageImpl)ignite1.context().distributedMetastorage();
 
-        DistributedMetaStorage distributedMetastorage2 = ignite2.context().distributedMetastorage();
+        DistributedMetaStorageImpl distributedMetastorage2 = (DistributedMetaStorageImpl)ignite2.context().distributedMetastorage();
 
         Object ver1 = U.field(distributedMetastorage1, "ver");
 
@@ -577,17 +575,15 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         assertEquals(histCache1, histCache2);
 
-        Method fullDataMtd = U.findNonPublicMethod(DistributedMetaStorageImpl.class, "localFullData");
+        var fullData1 = distributedMetastorage1.localFullData();
 
-        Object[] fullData1 = (Object[])fullDataMtd.invoke(distributedMetastorage1);
+        var fullData2 = distributedMetastorage2.localFullData();
 
-        Object[] fullData2 = (Object[])fullDataMtd.invoke(distributedMetastorage2);
-
-        assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
+        assertEqualsMaps(fullData1, fullData2);
 
         // Also check that arrays are sorted.
-        Arrays.sort(fullData1, Comparator.comparing(o -> U.field(o, "key")));
+        fullData1 = new TreeMap<>(fullData1);
 
-        assertEqualsCollections(Arrays.asList(fullData1), Arrays.asList(fullData2));
+        assertEqualsMaps(fullData1, fullData2);
     }
 }

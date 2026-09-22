@@ -133,6 +133,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean skipReadThrough = opCtx != null && opCtx.skipReadThrough();
+        boolean keepBinaryInInterceptor = opCtx != null && opCtx.keepBinaryInInterceptor();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
@@ -145,6 +146,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore,
                         skipReadThrough,
+                        keepBinaryInInterceptor,
                         recovery,
                         readRepairStrategy,
                         needVer);
@@ -287,6 +289,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     @Override protected IgniteInternalFuture<Boolean> lockAllAsync(
         Collection<KeyCacheObject> keys,
         long timeout,
+        long waitTimeout,
         IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,
@@ -303,10 +306,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             isRead,
             retval,
             timeout,
+            waitTimeout,
             createTtl,
             accessTtl,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
+            opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery());
 
@@ -404,8 +409,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                    ctx.deploymentEnabled()));
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                                 req.version(ver);
                             }
@@ -477,10 +481,36 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
+        removeLocks(ver, keys, false);
+    }
+
+    /**
+     * Removes locks regardless of whether they are owned or not for given
+     * version and keys. In savepoint mode lock version is not marked as globally cancelled.
+     *
+     * @param ver Lock version.
+     * @param keys Keys.
+     */
+    public void removeLocksForSavepoint(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
+        removeLocks(ver, keys, true);
+    }
+
+    /**
+     * @param ver Lock version.
+     * @param keys Keys.
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    private void removeLocks(
+        GridCacheVersion ver,
+        Collection<KeyCacheObject> keys,
+        boolean forSavepoint
+    ) {
         if (keys.isEmpty())
             return;
 
         try {
+            GridCacheVersion obsoleteVer = forSavepoint ? nextVersion() : null;
+
             int keyCnt = -1;
 
             Map<ClusterNode, GridNearUnlockRequest> map = null;
@@ -521,17 +551,26 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     req = map.get(primary);
 
                                     if (req == null) {
-                                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
-                                            ctx.deploymentEnabled()));
+                                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
 
                                         req.version(ver);
+                                        req.forSavepoint(forSavepoint);
                                     }
                                 }
 
                                 // Remove candidate from local node first.
                                 if (entry.removeLock(cand.version())) {
+                                    if (forSavepoint)
+                                        evictNearEntry(entry, obsoleteVer, cand.topologyVersion());
+
                                     if (primary.isLocal()) {
-                                        dht.removeLocks(primary.id(), ver, F.asList(key), true);
+                                        dht.removeLocks(
+                                            primary.id(),
+                                            ver,
+                                            F.asList(key),
+                                            true,
+                                            forSavepoint
+                                        );
 
                                         assert req == null;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -751,6 +752,28 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         assertEquals(DeclaredBodyEnum.TWO.ordinal(), obj.type.ordinal());
         assertEquals(DeclaredBodyEnum.TWO, obj.type);
         assertTrue(obj.type == DeclaredBodyEnum.TWO);
+    }
+
+    /**
+     * Marshalling into an {@link java.io.OutputStream} must produce exactly the same bytes as marshalling into an array.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMarshalToStreamMatchesArray() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        for (Object obj : new Object[] {null, "string", 42, simpleObject()}) {
+            byte[] arr = marsh.marshal(obj);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+            marsh.marshal(obj, out);
+
+            assertArrayEquals("Mismatch for " + obj, arr, out.toByteArray());
+
+            assertEquals(obj, marsh.unmarshal(out.toByteArray(), null));
+        }
     }
 
     /**
@@ -2786,7 +2809,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryObjectImpl po = marshal(simpleObject(), marsh);
 
-        CacheObjectContext coCtx = new CacheObjectContext(newContext(), null, null, false, false, true, false, false);
+        CacheObjectContext coCtx = new CacheObjectContext(newContext(), null, null, false, false, true, false);
 
         assert po.value(coCtx, false) == po.value(coCtx, false);
 
@@ -3745,6 +3768,37 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
             ++i;
         }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testFieldOrderByBinarylizable() throws Exception {
+        BinaryObjectImpl binObj = marshal(new FieldOrderBinarylizable(), binaryMarshaller());
+
+        assertArrayEquals(FieldOrderBinarylizable.FIELD_NAMES, binObj.type().fieldNames().toArray());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMetadataFieldOrderAfterSerialization() throws Exception {
+        String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
+
+        Map<String, BinaryFieldMetadata> fields = new LinkedHashMap<>();
+
+        for (String fieldName : fieldNames)
+            fields.put(fieldName, new BinaryFieldMetadata(GridBinaryMarshaller.INT, fieldName.hashCode()));
+
+        BinaryMetadata meta = new BinaryMetadata(1, "type", fields, null, false, null);
+        BinaryMarshaller marsh = binaryMarshaller();
+        BinaryOutputStream out = BinaryStreams.outputStream(1024);
+
+        meta.writeTo(marsh.binaryMarshaller().writer(out));
+
+        BinaryMetadata restoredMeta = new BinaryMetadata();
+
+        restoredMeta.readFrom(marsh.binaryMarshaller().reader(BinaryStreams.inputStream(out.array())));
+
+        assertArrayEquals(fieldNames, restoredMeta.fields().toArray());
     }
 
     /**
@@ -5042,8 +5096,24 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         }
     }
 
-    /**
-     */
+    /** */
+    private static class FieldOrderBinarylizable implements Binarylizable {
+        /** Field names. */
+        private static final String[] FIELD_NAMES = {"field9", "field8", "field0", "field1", "field2"};
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            for (String fieldName : FIELD_NAMES)
+                writer.writeInt(fieldName, 0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            // No-op.
+        }
+    }
+
+    /** */
     private static class CustomSerializedObject1 implements Binarylizable {
         /** */
         private int val;

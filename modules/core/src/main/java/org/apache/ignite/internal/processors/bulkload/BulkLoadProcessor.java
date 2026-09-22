@@ -21,17 +21,9 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
-import org.apache.ignite.internal.processors.tracing.NoopSpan;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_BATCH_PROCESS;
 
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
@@ -62,12 +54,6 @@ public class BulkLoadProcessor implements AutoCloseable {
     /** Exception, current load process ended with, or {@code null} if in progress or if succeded. */
     private Exception failReason;
 
-    /** Tracing processor. */
-    private final Tracing tracing;
-
-    /** Span of the running query. */
-    private final Span qrySpan;
-
     /**
      * Creates bulk load processor.
      *
@@ -77,20 +63,14 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @param outputStreamer Streamer that puts actual key/value into the cache.
      * @param runningQryMgr Running query manager.
      * @param qryId Running query id.
-     * @param tracing Tracing processor.
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, long qryId, Tracing tracing) {
+        BulkLoadCacheWriter outputStreamer, RunningQueryManager runningQryMgr, long qryId) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
         this.runningQryMgr = runningQryMgr;
         this.qryId = qryId;
-        this.tracing = tracing;
-
-        GridRunningQueryInfo qryInfo = runningQryMgr.runningQueryInfo(qryId);
-
-        qrySpan = qryInfo == null ? NoopSpan.INSTANCE : qryInfo.span();
 
         isClosed = false;
     }
@@ -112,17 +92,15 @@ public class BulkLoadProcessor implements AutoCloseable {
      * @throws IgniteIllegalStateException when called after {@link #close()}.
      */
     public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
-        try (TraceSurroundings ignored = MTC.support(tracing.create(SQL_BATCH_PROCESS, qrySpan))) {
-            if (isClosed)
-                throw new IgniteIllegalStateException("Attempt to process a batch on a closed BulkLoadProcessor");
+        if (isClosed)
+            throw new IgniteIllegalStateException("Attempt to process a batch on a closed BulkLoadProcessor");
 
-            Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
+        Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
 
-            for (List<Object> record : inputRecords) {
-                IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
+        for (List<Object> record : inputRecords) {
+            IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
 
-                outputStreamer.apply(kv);
-            }
+            outputStreamer.apply(kv);
         }
     }
 

@@ -1,0 +1,78 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.spi;
+
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.testframework.GridTestUtils.loadMarshaller;
+import static org.apache.ignite.testframework.GridTestUtils.loadSerializer;
+
+/**
+ * Plugin provider for registering test messages in the communication and discovery protocols.
+ */
+public class MessagesPluginProvider extends AbstractTestPluginProvider {
+    /** */
+    private final MessageFactoryProvider msgFactoryProvider;
+
+    /** */
+    @SafeVarargs
+    public MessagesPluginProvider(Class<? extends Message>... msgs) {
+        msgFactoryProvider = f -> {
+            short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
+
+            for (Class<? extends Message> msg : msgs) {
+                f.register(directType, loadSerializer(msg), marshaller(msg));
+
+                directType++;
+            }
+        };
+    }
+
+    /**
+     * A marshaller companion is generated only for a message that has something to marshal, and the loader throws
+     * when there is no such class. Test messages are mostly plain, so a missing companion is the normal case here.
+     *
+     * @return Generated marshaller of the message, or {@code null} when the message has nothing to marshal.
+     */
+    private static <T extends Message> @Nullable MessageMarshaller<T> marshaller(Class<? extends Message> msg) {
+        try {
+            return loadMarshaller(msg);
+        }
+        catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "Test messages plugin";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+        // Register messages into the communication protocol.
+        registry.registerExtension(MessageFactoryProvider.class, msgFactoryProvider);
+    }
+}

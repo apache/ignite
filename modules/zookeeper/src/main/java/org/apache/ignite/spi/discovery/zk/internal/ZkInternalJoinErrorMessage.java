@@ -17,18 +17,17 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.io.Serializable;
+
 /**
  *
  */
-class ZkInternalJoinErrorMessage implements ZkInternalMessage {
+class ZkInternalJoinErrorMessage implements ZkInternalMessage, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     transient boolean notifyNode = true;
-
-    /** */
-    final long nodeInternalId;
 
     /** */
     final String err;
@@ -38,7 +37,6 @@ class ZkInternalJoinErrorMessage implements ZkInternalMessage {
      * @param err Error message.
      */
     ZkInternalJoinErrorMessage(long nodeInternalId, String err) {
-        this.nodeInternalId = nodeInternalId;
         this.err = err;
     }
 }

@@ -23,10 +23,10 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.QueryTable;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
+import org.apache.ignite.internal.processors.query.h2.QueryTableSerializer;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.h2.value.Value;
 
@@ -35,35 +35,35 @@ import org.h2.value.Value;
  */
 public class GridH2ValueMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public void registerAll(MessageFactory factory) {
-        factory.register((short)-4, () -> GridH2Null.INSTANCE);
-        factory.register((short)-5, GridH2Boolean::new);
-        factory.register((short)-6, GridH2Byte::new);
-        factory.register((short)-7, GridH2Short::new);
-        factory.register((short)-8, GridH2Integer::new);
-        factory.register((short)-9, GridH2Long::new);
-        factory.register((short)-10, GridH2Decimal::new);
-        factory.register((short)-11, GridH2Double::new);
-        factory.register((short)-12, GridH2Float::new);
-        factory.register((short)-13, GridH2Time::new);
-        factory.register((short)-14, GridH2Date::new);
-        factory.register((short)-15, GridH2Timestamp::new);
-        factory.register((short)-16, GridH2Bytes::new);
-        factory.register((short)-17, GridH2String::new);
-        factory.register((short)-18, GridH2Array::new);
-        factory.register((short)-19, GridH2JavaObject::new);
-        factory.register((short)-20, GridH2Uuid::new);
-        factory.register((short)-21, GridH2Geometry::new);
-        factory.register((short)-22, GridH2CacheObject::new);
-        factory.register((short)-30, GridH2IndexRangeRequest::new);
-        factory.register((short)-31, GridH2IndexRangeResponse::new);
-        factory.register((short)-32, GridH2RowMessage::new);
-        factory.register((short)-33, GridH2QueryRequest::new);
-        factory.register((short)-34, GridH2RowRange::new);
-        factory.register((short)-35, GridH2RowRangeBounds::new);
-        factory.register((short)-54, QueryTable::new);
-        factory.register((short)-55, GridH2DmlRequest::new);
-        factory.register((short)-56, GridH2DmlResponse::new);
+    @Override public void registerAll(IgniteMessageFactory factory) {
+        factory.register(-4, new GridH2NullSerializer());
+        factory.register(-5, new GridH2BooleanSerializer());
+        factory.register(-6, new GridH2ByteSerializer());
+        factory.register(-7, new GridH2ShortSerializer());
+        factory.register(-8, new GridH2IntegerSerializer());
+        factory.register(-9, new GridH2LongSerializer());
+        factory.register(-10, new GridH2DecimalSerializer());
+        factory.register(-11, new GridH2DoubleSerializer());
+        factory.register(-12, new GridH2FloatSerializer());
+        factory.register(-13, new GridH2TimeSerializer());
+        factory.register(-14, new GridH2DateSerializer());
+        factory.register(-15, new GridH2TimestampSerializer());
+        factory.register(-16, new GridH2BytesSerializer());
+        factory.register(-17, new GridH2StringSerializer());
+        factory.register(-18, new GridH2ArraySerializer());
+        factory.register(-19, new GridH2JavaObjectSerializer());
+        factory.register(-20, new GridH2UuidSerializer());
+        factory.register(-21, new GridH2GeometrySerializer());
+        factory.register(-22, new GridH2CacheObjectSerializer());
+        factory.register(-30, new GridH2IndexRangeRequestSerializer());
+        factory.register(-31, new GridH2IndexRangeResponseSerializer());
+        factory.register(-32, new GridH2RowMessageSerializer());
+        factory.register(-33, new GridH2QueryRequestSerializer());
+        factory.register(-34, new GridH2RowRangeSerializer());
+        factory.register(-35, new GridH2RowRangeBoundsSerializer());
+        factory.register(-54, new QueryTableSerializer());
+        factory.register(-55, new GridH2DmlRequestSerializer());
+        factory.register(-56, new GridH2DmlResponseSerializer());
     }
 
     /**

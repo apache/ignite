@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
+import org.apache.ignite.spi.communication.tcp.internal.CommunicationConnectionStateHandler;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 
 /**
@@ -38,7 +38,7 @@ class CommunicationWorkerThreadUtils {
      */
     static void interruptCommWorkerThreads(String clientName, IgniteLogger log) {
         List<Thread> tcpCommWorkerThreads = Thread.getAllStackTraces().keySet().stream()
-            .filter(t -> t.getName().contains(CommunicationWorker.WORKER_NAME))
+            .filter(t -> t.getName().contains(CommunicationConnectionStateHandler.WORKER_NAME))
             .filter(t -> t.getName().contains(clientName))
             .collect(Collectors.toList());
 

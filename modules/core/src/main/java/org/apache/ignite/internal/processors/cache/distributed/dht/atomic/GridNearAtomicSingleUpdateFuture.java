@@ -82,6 +82,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param keepBinary Keep binary flag.
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Maximum number of retries.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridNearAtomicSingleUpdateFuture(
         GridCacheContext cctx,
@@ -100,7 +101,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean keepBinaryInInterceptor
     ) {
         super(cctx,
             cache,
@@ -116,7 +118,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             keepBinary,
             recovery,
             remapCnt,
-            appAttrs);
+            appAttrs,
+            keepBinaryInInterceptor);
         this.key = key;
         this.val = val;
     }
@@ -250,11 +253,11 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
                 if (op == TRANSFORM) {
                     if (ret != null) {
-                        assert ret.value() == null || ret.value() instanceof Map : ret.value();
+                        assert ret.value(cctx) == null || ret.value(cctx) instanceof Map : ret.value(cctx);
 
-                        if (ret.value() != null) {
+                        if (ret.value(cctx) != null) {
                             if (opRes != null)
-                                opRes.mergeEntryProcessResults(ret);
+                                opRes.mergeEntryProcessResults(cctx, ret);
                             else
                                 opRes = ret;
                         }
@@ -553,7 +556,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             skipStore,
             keepBinary,
             recovery,
-            skipReadThrough);
+            skipReadThrough,
+            keepBinaryInInterceptor);
 
         if (canUseSingleRequest()) {
             if (op == TRANSFORM) {
@@ -566,8 +570,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     op,
                     invokeArgs,
                     taskNameHash,
-                    flags,
-                    cctx.deploymentEnabled());
+                    flags);
             }
             else {
                 if (filter == null || filter.length == 0) {
@@ -579,8 +582,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         syncMode,
                         op,
                         taskNameHash,
-                        flags,
-                        cctx.deploymentEnabled());
+                        flags);
                 }
                 else {
                     req = new GridNearAtomicSingleUpdateFilterRequest(
@@ -592,8 +594,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         op,
                         filter,
                         taskNameHash,
-                        flags,
-                        cctx.deploymentEnabled());
+                        flags);
                 }
             }
         }
@@ -610,7 +611,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 filter,
                 taskNameHash,
                 flags,
-                cctx.deploymentEnabled(),
                 1);
         }
 

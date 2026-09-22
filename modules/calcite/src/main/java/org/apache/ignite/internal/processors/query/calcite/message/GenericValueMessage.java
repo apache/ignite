@@ -17,25 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-public final class GenericValueMessage implements ValueMessage {
+/** */
+public final class GenericValueMessage implements Message {
     /** */
-    private Object val;
+    @Marshalled("serialized")
+    Object val;
 
     /** */
     @Order(0)
-    private byte[] serialized;
+    byte[] serialized;
 
     /** */
     public GenericValueMessage() {
-
+        // No-op.
     }
 
     /** */
@@ -43,39 +41,9 @@ public final class GenericValueMessage implements ValueMessage {
         this.val = val;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object value() {
+    /** */
+    public Object value() {
         return val;
     }
 
-    /**
-     * @return Serialized value.
-     */
-    public byte[] serialized() {
-        return serialized;
-    }
-
-    /**
-     * @param serialized Serialized value.
-     */
-    public void serialized(byte[] serialized) {
-        this.serialized = serialized;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (val != null && serialized == null)
-            serialized = U.marshal(ctx, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (serialized != null && val == null)
-            val = U.unmarshal(ctx, serialized, U.resolveClassLoader(ctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.GENERIC_VALUE_MESSAGE;
-    }
 }

@@ -177,7 +177,6 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
      */
     private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
-            .setLazy(true)
             .setArgs(args), false);
     }
 

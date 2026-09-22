@@ -85,9 +85,6 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
-import org.apache.ignite.internal.managers.systemview.walker.CacheGroupIoViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.PartitionStateViewWalker;
 import org.apache.ignite.internal.metric.IoStatisticsType;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -124,7 +121,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotStartDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
@@ -153,6 +150,9 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
+import org.apache.ignite.internal.systemview.CacheGroupIoViewWalker;
+import org.apache.ignite.internal.systemview.CachePagesListViewWalker;
+import org.apache.ignite.internal.systemview.PartitionStateViewWalker;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
 import org.apache.ignite.internal.util.InitializationProtector;
@@ -217,10 +217,10 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
+import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.isAffinityConfigurationMdcSafe;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -393,18 +393,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             SchemaAbstractDiscoveryMessage msg0 = (SchemaAbstractDiscoveryMessage)msg;
 
             if (msg0.exchange())
-                return new SchemaExchangeWorkerTask(remoteSecurityContext(ctx), msg0);
+                return new SchemaExchangeWorkerTask(msg0);
         }
         else if (msg instanceof ClientCacheChangeDummyDiscoveryMessage) {
             ClientCacheChangeDummyDiscoveryMessage msg0 = (ClientCacheChangeDummyDiscoveryMessage)msg;
 
-            return msg0;
+            return new ClientCacheChangeDummyDiscoveryTask(msg0);
         }
         else if (msg instanceof CacheStatisticsModeChangeMessage) {
             CacheStatisticsModeChangeMessage msg0 = (CacheStatisticsModeChangeMessage)msg;
 
             if (msg0.initial())
-                return new CacheStatisticsModeChangeTask(remoteSecurityContext(ctx), msg0);
+                return new CacheStatisticsModeChangeTask(msg0);
         }
 
         return null;
@@ -432,10 +432,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             ctx.query().onNodeLeave(task0.node());
         }
-        else if (task instanceof ClientCacheChangeDummyDiscoveryMessage) {
-            ClientCacheChangeDummyDiscoveryMessage task0 = (ClientCacheChangeDummyDiscoveryMessage)task;
+        else if (task instanceof ClientCacheChangeDummyDiscoveryTask) {
+            ClientCacheChangeDummyDiscoveryTask task0 = (ClientCacheChangeDummyDiscoveryTask)task;
 
-            sharedCtx.affinity().processClientCachesRequests(task0);
+            sharedCtx.affinity().processClientCachesRequests(task0.message());
         }
         else if (task instanceof ClientCacheUpdateTimeout) {
             ClientCacheUpdateTimeout task0 = (ClientCacheUpdateTimeout)task;
@@ -446,11 +446,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheStatisticsModeChangeTask task0 = (CacheStatisticsModeChangeTask)task;
 
             processStatisticsModeChange(task0.message());
-        }
-        else if (task instanceof TxTimeoutOnPartitionMapExchangeChangeTask) {
-            TxTimeoutOnPartitionMapExchangeChangeTask task0 = (TxTimeoutOnPartitionMapExchangeChangeTask)task;
-
-            sharedCtx.tm().processTxTimeoutOnPartitionMapExchangeChange(task0.message());
         }
         else if (task instanceof StopCachesOnClientReconnectExchangeTask) {
             StopCachesOnClientReconnectExchangeTask task0 = (StopCachesOnClientReconnectExchangeTask)task;
@@ -601,7 +596,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
-        transactions = new IgniteTransactionsImpl(sharedCtx, null, false, null);
+        transactions = new IgniteTransactionsImpl(sharedCtx, null, null);
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())
@@ -1142,12 +1137,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.onKernalStart();
 
+        registerMdcMetricsIfNeeded(cache);
+
         if (ctx.events().isRecordable(EventType.EVT_CACHE_STARTED))
             ctx.events().addEvent(EventType.EVT_CACHE_STARTED);
 
         if (log.isDebugEnabled())
             log.debug("Executed onKernalStart() callback for cache [name=" + cache.name() + ", mode=" +
                 cache.configuration().getCacheMode() + ']');
+    }
+
+    /** */
+    private void registerMdcMetricsIfNeeded(GridCacheAdapter<?, ?> cache) {
+        if (ctx.clientNode())
+            return;
+
+        if (ctx.discovery().localNode() == null || ctx.discovery().localNode().dataCenterId() == null)
+            return;
+
+        cache.metrics0().registerAffinityConfigurationSafeMetric(isAffinityConfigurationMdcSafe(cache.configuration()));
+
+        cache.metrics0().registerPartitionDistributionSafeMetric();
     }
 
     /**
@@ -4237,8 +4247,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
-        if (msg instanceof SnapshotDiscoveryMessage &&
-            ((SnapshotDiscoveryMessage)msg).needExchange())
+        if (msg instanceof SnapshotStartDiscoveryMessage &&
+            ((SnapshotStartDiscoveryMessage)msg).needExchange())
             return true;
 
         if (msg instanceof WalStateAbstractMessage) {
@@ -4845,21 +4855,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Callback invoked by deployment manager for whenever a class loader gets undeployed.
-     *
-     * @param ldr Class loader.
-     */
-    public void onUndeployed(ClassLoader ldr) {
-        if (!ctx.isStopping()) {
-            for (GridCacheAdapter<?, ?> cache : caches.values()) {
-                // Do not notify system caches and caches for which deployment is disabled.
-                if (cache.context().userCache() && cache.context().deploymentEnabled())
-                    cache.onUndeploy(ldr);
-            }
-        }
-    }
-
-    /**
      * @return Shared context.
      */
     public <K, V> GridCacheSharedContext<K, V> context() {
@@ -5102,7 +5097,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.encryptionKey(encKey);
 
-        req.encryptionKeyId(encKeyId);
+        assert encKeyId == null || encKeyId >= 0;
+
+        req.encryptionKeyId(encKeyId == null ? -1 : encKeyId);
 
         req.restartId(restartId);
 
@@ -5221,7 +5218,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (globalCaches.isEmpty())
             return;
 
-        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(UUID.randomUUID(), globalCaches, enabled);
+        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(globalCaches, enabled);
 
         EnableStatisticsFuture fut = new EnableStatisticsFuture(msg.requestId());
 

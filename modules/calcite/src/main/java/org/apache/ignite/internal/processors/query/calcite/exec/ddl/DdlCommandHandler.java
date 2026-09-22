@@ -33,9 +33,12 @@ import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -43,6 +46,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableAddCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableDropCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
@@ -61,9 +65,16 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.KEY_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_KEY;
+import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRAP_VALUE;
 
 /** */
 public class DdlCommandHandler {
@@ -97,12 +108,14 @@ public class DdlCommandHandler {
     }
 
     /** */
-    public void handle(UUID qryId, DdlCommand cmd) throws IgniteCheckedException {
+    public void handle(UUID qryId, BaseQueryContext qryCtx, DdlCommand cmd) throws IgniteCheckedException {
         try {
-            if (cmd instanceof TransactionCommand)
-                return;
+            if (cmd instanceof TransactionCommand) {
+                GridNearTxLocal tx = Commons.queryTransaction(qryCtx, cacheProc.context());
 
-            if (cmd instanceof CreateTableCommand)
+                handle0((TransactionCommand)cmd, tx);
+            }
+            else if (cmd instanceof CreateTableCommand)
                 handle0((CreateTableCommand)cmd);
             else if (cmd instanceof DropTableCommand)
                 handle0((DropTableCommand)cmd);
@@ -123,6 +136,36 @@ public class DdlCommandHandler {
         }
     }
 
+    /**
+     * Handles transaction control commands (SAVEPOINT and ROLLBACK TO SAVEPOINT).
+     *
+     * @param cmd Command.
+     * @param tx Transaction. Can be null if there is no transaction associated with the query context.
+     * @throws IgniteCheckedException If failed to execute the command.
+     */
+    private void handle0(TransactionCommand cmd, @Nullable GridNearTxLocal tx) throws IgniteCheckedException {
+        if (cmd.type() == TransactionCommand.Type.NOOP)
+            return;
+
+        if (tx == null)
+            throw new IgniteSQLException(SAVEPOINTS_EXPLICIT_TX_ONLY, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        switch (cmd.type()) {
+            case SAVEPOINT:
+                tx.savepoint(cmd.savepointName(), true);
+
+                break;
+
+            case ROLLBACK_TO_SAVEPOINT:
+                tx.rollbackToSavepoint(cmd.savepointName());
+
+                break;
+
+            default:
+                throw new AssertionError("Unexpected transaction command type: " + cmd.type());
+        }
+    }
+
     /** */
     private void handle0(CreateTableCommand cmd) throws IgniteCheckedException {
         security.authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
@@ -136,7 +179,15 @@ public class DdlCommandHandler {
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, cmd.tableName());
         }
 
+        checkKVWrappedParam(cmd);
+
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cmd.tableName());
+
+        if (!F.isEmpty(cmd.valueTypeName()))
+            validateTypeName(cmd.valueTypeName());
+
+        if (!F.isEmpty(cmd.keyTypeName()))
+            validateTypeName(cmd.keyTypeName());
 
         QueryEntity e = toQueryEntity(cmd);
 
@@ -178,6 +229,42 @@ public class DdlCommandHandler {
     }
 
     /** */
+    private void checkKVWrappedParam(CreateTableCommand cmd) {
+        Boolean wrapKey = cmd.wrapKey();
+
+        if (wrapKey != null) {
+            if (!wrapKey) {
+                if (cmd.primaryKeyColumns().size() > 1) {
+                    throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when composite primary key exists.",
+                        IgniteQueryErrorCode.PARSING);
+                }
+
+                if (!F.isEmpty(cmd.keyTypeName())) {
+                    throw new IgniteSQLException(WRAP_KEY + " parameter cannot be \"false\" when " + KEY_TYPE + " is defined.",
+                        IgniteQueryErrorCode.PARSING);
+                }
+            }
+        }
+        else
+            cmd.wrapKey(!F.isEmpty(cmd.keyTypeName()) || cmd.primaryKeyColumns().size() > 1);
+
+        Boolean wrapVal = cmd.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (!cmd.primaryKeyColumns().isEmpty() && cmd.columns().size() - cmd.primaryKeyColumns().size() > 1) {
+                throw new IgniteSQLException(WRAP_VALUE + " parameter cannot be \"false\" with multiple columns.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(cmd.valueTypeName())) {
+                throw new IgniteSQLException(WRAP_VALUE + " parameter cannot be \"false\" when " + VALUE_TYPE + " is defined.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+        // By default, value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+    }
+
+    /** */
     private void handle0(DropTableCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -214,7 +301,7 @@ public class DdlCommandHandler {
 
             if (QueryUtils.isSqlType(typeDesc.valueClass())) {
                 throw new SchemaOperationException("Cannot add column(s) because table was created " +
-                    "with WRAP_VALUE=false option.");
+                    "based on cache configured with built-in types or with " + WRAP_VALUE + "=false option.");
             }
 
             List<QueryField> cols = new ArrayList<>(cmd.columns().size());
@@ -237,7 +324,7 @@ public class DdlCommandHandler {
                 Integer scale = col.scale();
 
                 QueryField field = new QueryField(col.name(), typeName,
-                    col.type().isNullable(), col.defaultValue(),
+                    col.type().isNullable(),
                     precession == null ? -1 : precession, scale == null ? -1 : scale);
 
                 cols.add(field);
@@ -309,9 +396,10 @@ public class DdlCommandHandler {
 
     /** */
     private QueryEntity toQueryEntity(CreateTableCommand cmd) {
-        QueryEntity res = new QueryEntity();
+        QueryEntityEx res = new QueryEntityEx();
 
         res.setTableName(cmd.tableName());
+        res.sql(true);
 
         Set<String> notNullFields = null;
 
@@ -357,46 +445,106 @@ public class DdlCommandHandler {
         if (!F.isEmpty(scale))
             res.setFieldsScale(scale);
 
-        String valTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+        String generatedValTypeName;
+        String generatedKeyTypeName;
+
+        do {
+            generatedValTypeName = QueryUtils.createTableValueTypeName(cmd.schemaName(), cmd.tableName());
+            generatedKeyTypeName = QueryUtils.createTableKeyTypeName(generatedValTypeName);
+        }
+        while (hasTypeIdCollisions(generatedValTypeName) || hasTypeIdCollisions(generatedKeyTypeName));
+
+        String valTypeName = generatedValTypeName;
 
         String keyTypeName;
         if ((!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() > 1) || !F.isEmpty(cmd.keyTypeName())) {
             keyTypeName = cmd.keyTypeName();
 
             if (F.isEmpty(keyTypeName))
-                keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+                keyTypeName = generatedKeyTypeName;
 
             if (!F.isEmpty(cmd.primaryKeyColumns())) {
                 res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
 
-                res = new QueryEntityEx(res).setPreserveKeysOrder(true);
+                res.setPreserveKeysOrder(true);
             }
         }
         else if (!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() == 1) {
             String pkFieldName = cmd.primaryKeyColumns().get(0);
 
-            keyTypeName = res.getFields().get(pkFieldName);
+            if (cmd.wrapKey()) {
+                res.setKeyFields(Set.copyOf(cmd.primaryKeyColumns()));
 
-            res.setKeyFieldName(pkFieldName);
+                keyTypeName = generatedKeyTypeName;
+
+                res.setPreserveKeysOrder(true);
+            }
+            else {
+                keyTypeName = res.getFields().get(pkFieldName);
+
+                res.setKeyFieldName(pkFieldName);
+            }
         }
         else {
             // if pk is not explicitly set, we create it ourselves
             keyTypeName = IgniteUuid.class.getName();
 
-            res = new QueryEntityEx(res).implicitPk(true);
+            res.implicitPk(true);
+        }
+
+        if (cmd.wrapValue() != null && !cmd.wrapValue()) {
+            ColumnDefinition valCol = null;
+
+            for (ColumnDefinition col : cmd.columns()) {
+                if (!cmd.primaryKeyColumns().contains(col.name())) {
+                    valCol = col;
+                    break;
+                }
+            }
+
+            if (valCol != null) {
+                valTypeName = Commons.typeFactory().getResultClass(valCol.type()).getTypeName();
+                res.setValueFieldName(valCol.name());
+            }
         }
 
         res.setValueType(F.isEmpty(cmd.valueTypeName()) ? valTypeName : cmd.valueTypeName());
         res.setKeyType(keyTypeName);
 
-        if (!F.isEmpty(notNullFields)) {
-            QueryEntityEx res0 = new QueryEntityEx(res);
-
-            res0.setNotNullFields(notNullFields);
-
-            res = res0;
-        }
+        if (!F.isEmpty(notNullFields))
+            res.setNotNullFields(notNullFields);
 
         return res;
+    }
+
+    /** */
+    private void validateTypeName(String typeName) {
+        String duplicatedTypeName = duplicatedTypeName(typeName);
+        if (duplicatedTypeName != null) {
+            throw new IgniteSQLException(
+                "Duplicate ID [typeId=" + qryProc.objectContext().binaryContext().typeId(typeName) +
+                ", oldCls=" + duplicatedTypeName +
+                ", newCls=" + typeName + "], please retry with another type name.");
+        }
+    }
+
+    /** */
+    private boolean hasTypeIdCollisions(String typeName) {
+        return duplicatedTypeName(typeName) != null;
+    }
+
+    /** */
+    private @Nullable String duplicatedTypeName(String typeName) {
+        BinaryContext binCtx = qryProc.objectContext().binaryContext();
+
+        int typeId = binCtx.typeId(typeName);
+
+        String anotherTypeName = ((MarshallerContextImpl)binCtx.marshaller().getContext()).resolveClassName(JAVA_ID, typeId);
+
+        if (anotherTypeName == null || anotherTypeName.equals(typeName)
+            || binCtx.userTypeName(anotherTypeName).equals(binCtx.userTypeName(typeName)))
+            return null;
+
+        return anotherTypeName;
     }
 }

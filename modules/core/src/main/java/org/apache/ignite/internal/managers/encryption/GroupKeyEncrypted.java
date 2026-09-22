@@ -18,19 +18,29 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Cache group encryption key with identifier. Key is encrypted.
  */
-public class GroupKeyEncrypted implements Serializable {
+public class GroupKeyEncrypted implements Serializable, Message {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /** Encryption key ID. */
-    private final int id;
+    @Order(0)
+    int id;
 
     /** Encryption key. */
-    private final byte[] key;
+    @Order(1)
+    byte[] key;
+
+    /** Default constructor for {@link MessageFactory}. */
+    public GroupKeyEncrypted() {
+        // No-op.
+    }
 
     /**
      * @param id Encryption key ID.

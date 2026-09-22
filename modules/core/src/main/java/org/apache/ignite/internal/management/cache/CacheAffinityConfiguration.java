@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
@@ -40,19 +37,24 @@ public class CacheAffinityConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache affinity function. */
-    private String function;
+    @Order(0)
+    String function;
 
     /** Cache affinity mapper. */
-    private String mapper;
+    @Order(1)
+    String mapper;
 
     /** Number of backup nodes for one partition. */
-    private int partitionedBackups;
+    @Order(2)
+    int partitionedBackups;
 
     /** Total partition count. */
-    private int partitions;
+    @Order(3)
+    int partitions;
 
     /** Cache partitioned affinity exclude neighbors. */
-    private Boolean exclNeighbors;
+    @Order(4)
+    Boolean exclNeighbors;
 
     /**
      * Default constructor
@@ -119,24 +121,6 @@ public class CacheAffinityConfiguration extends IgniteDataTransferObject {
      */
     @Nullable public Boolean isExcludeNeighbors() {
         return exclNeighbors;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, function);
-        U.writeString(out, mapper);
-        out.writeInt(partitionedBackups);
-        out.writeInt(partitions);
-        out.writeObject(exclNeighbors);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        function = U.readString(in);
-        mapper = U.readString(in);
-        partitionedBackups = in.readInt();
-        partitions = in.readInt();
-        exclNeighbors = (Boolean)in.readObject();
     }
 
     /** {@inheritDoc} */

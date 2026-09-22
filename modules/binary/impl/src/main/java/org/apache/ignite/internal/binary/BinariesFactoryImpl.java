@@ -90,7 +90,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryWriterEx writerNoSchemaHolder(BinaryContext ctx, BinaryOutputStream out) {
+    @Override public BinaryWriterEx writerWithoutSchema(BinaryContext ctx, BinaryOutputStream out) {
         return new BinaryWriterExImpl(ctx, out, null, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
     }
 

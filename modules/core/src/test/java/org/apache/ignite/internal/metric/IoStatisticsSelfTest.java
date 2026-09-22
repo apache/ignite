@@ -98,7 +98,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         assertNotNull(mreg);
 
         if (type == CACHE_GROUP) {
-            assertEquals(5, Iterators.size(mreg.iterator()));
+            assertEquals(7, Iterators.size(mreg.iterator()));
 
             assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS).value());
 

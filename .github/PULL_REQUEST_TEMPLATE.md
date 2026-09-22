@@ -14,7 +14,7 @@ The following pattern must be used: `IGNITE-XXXX Change summary` where `XXXX` - 
 - [ ] A reviewer has been mentioned through the JIRA comments 
 (see [the Maintainers list](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Contribute#HowtoContribute-ReviewProcessandMaintainers)) 
 - [ ] The pull request has been checked by the Teamcity Bot and 
-the `green visa` attached to the JIRA ticket (see [TC.Bot: Check PR](https://mtcga.gridgain.com/prs.html))
+the `green visa` attached to the JIRA ticket (see tab `PR Check` at [TC.Bot - Instance 1](https://tcbot2.sbt-ignite-dev.ru/prs.html) or [TC.Bot - Instance 2](https://mtcga.gridgain.com/prs.html))
 
 ### Notes
 - [How to Contribute](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Contribute)

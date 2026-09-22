@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.snippets;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;

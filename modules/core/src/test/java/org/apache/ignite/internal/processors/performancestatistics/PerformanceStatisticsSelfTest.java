@@ -20,18 +20,25 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
+import javax.cache.configuration.FactoryBuilder;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,17 +51,24 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_DELETE;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_DELETE_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_AND_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_INVOKE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOAD;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOAD_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOAD_CACHE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_LOCK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_WRITE;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_WRITE_ALL;
 
 /**
  * Tests performance statistics.
@@ -62,6 +76,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 @RunWith(Parameterized.class)
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
 public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatisticsTest {
+    /** Store cache name. */
+    private static final String STORE_CACHE_NAME = "store-cache";
+
     /** Nodes count. */
     private static final int NODES_CNT = 2;
 
@@ -105,11 +122,33 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
     /** Test cache. */
     private static IgniteCache<Object, Object> cache;
 
+    /** Store-backed test cache. */
+    private static IgniteCache<Object, Object> storeCache;
+
+    /** Cache store operation types. */
+    private static final Set<OperationType> CACHE_STORE_OPS = EnumSet.of(
+        CACHE_LOAD,
+        CACHE_LOAD_ALL,
+        CACHE_LOAD_CACHE,
+        CACHE_WRITE,
+        CACHE_WRITE_ALL,
+        CACHE_DELETE,
+        CACHE_DELETE_ALL
+    );
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
+
+        CacheConfiguration<Object, Object> storeCacheCfg = defaultCacheConfiguration()
+            .setName(STORE_CACHE_NAME)
+            .setReadThrough(true)
+            .setWriteThrough(true)
+            .setCacheStoreFactory(FactoryBuilder.factoryOf(MapCacheStoreStrategy.MapCacheStore.class));
+
+        cfg.setCacheConfiguration(defaultCacheConfiguration(), storeCacheCfg);
 
         return cfg;
     }
@@ -123,6 +162,7 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         node = clientType == SERVER ? srv : client;
 
         cache = node.cache(DEFAULT_CACHE_NAME);
+        storeCache = node.cache(STORE_CACHE_NAME);
 
         for (int i = 0; i < ENTRY_COUNT; i++)
             cache.put(i, i);
@@ -246,6 +286,26 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
             cache -> cache.invokeAllAsync(Collections.singleton(10), CACHE_ENTRY_PROC).get());
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCacheStoreOperation() throws Exception {
+        checkCacheStoreOperation(Map.of(CACHE_LOAD, 1), cache -> cache.get(0));
+        checkCacheStoreOperation(Map.of(CACHE_LOAD_ALL, 1), cache -> cache.getAll(Set.of(0, 1)));
+        checkCacheStoreOperation(Map.of(CACHE_LOAD_CACHE, 1), cache -> cache.loadCache(null));
+
+        checkCacheStoreOperation(Map.of(CACHE_WRITE, 1, CACHE_DELETE, 1), cache -> {
+            cache.put(0, 0);
+            cache.remove(0);
+        });
+
+        checkCacheStoreOperation(Map.of(CACHE_WRITE_ALL, 1, CACHE_DELETE_ALL, 1), cache -> {
+            Map<Object, Object> vals = Map.of(0, 0, 1, 1);
+
+            cache.putAll(vals);
+            cache.removeAll(vals.keySet());
+        });
+    }
+
     /** Checks cache operation. */
     private void checkCacheOperation(OperationType op, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
         long startTime = U.currentTimeMillis();
@@ -272,6 +332,33 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
         });
 
         assertEquals(1, ops.get());
+    }
+
+    /** Checks cache store operations. */
+    private void checkCacheStoreOperation(Map<OperationType, Integer> expOps, Consumer<IgniteCache<Object, Object>> clo) throws Exception {
+        long startTime = U.currentTimeMillis();
+
+        cleanPerformanceStatisticsDir();
+
+        startCollectStatistics();
+
+        clo.accept(storeCache);
+
+        Map<OperationType, Integer> actOps = new EnumMap<>(OperationType.class);
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long opStartTime, long duration) {
+                if (cacheId != CU.cacheId(STORE_CACHE_NAME) || !CACHE_STORE_OPS.contains(type))
+                    return;
+
+                actOps.merge(type, 1, Integer::sum);
+
+                assertTrue(opStartTime >= startTime);
+                assertTrue(duration >= 0);
+            }
+        });
+
+        assertEquals(expOps, actOps);
     }
 
     /** @throws Exception If failed. */

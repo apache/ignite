@@ -28,7 +28,7 @@ setup(name="ignitetest",
       author="Apache Ignite",
       platforms=["any"],
       license="apache2.0",
-      packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*"]),
+      packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*", "checks", "checks.*"]),
       include_package_data=True,
       install_requires=open('docker/requirements.txt').read(),
       tests_require=["pytest==6.2.5"])

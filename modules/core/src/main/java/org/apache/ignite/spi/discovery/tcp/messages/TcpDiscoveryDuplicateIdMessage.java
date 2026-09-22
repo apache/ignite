@@ -20,19 +20,15 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message telling joining node that new topology already contain
  * different node with same ID.
  */
-public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage {
     /** ID of the node with duplicate ID. */
-    @Order(5)
-    private UUID nodeId;
+    @Order(0)
+    UUID nodeId;
 
     /** */
     public TcpDiscoveryDuplicateIdMessage() {
@@ -60,20 +56,8 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
         return nodeId;
     }
 
-    /**
-     * @param nodeId Node with duplicate ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryDuplicateIdMessage.class, this, "super", super.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 12;
     }
 }

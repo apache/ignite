@@ -26,6 +26,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.maintenance.MaintenanceAction;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,16 +43,22 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
     /** Failure processor. */
     private final FailureProcessor failureProc;
 
+    /** */
+    private final String igniteInstanceName;
+
     /**
+     * @param igniteInstanceName Ignite instance name.
      * @param logFunction Logger provider.
      * @param defrgMgr Defragmentation manager.
      * @param failureProc Failure processor.
      */
     public ExecuteDefragmentationAction(
+        String igniteInstanceName,
         Function<Class<?>, IgniteLogger> logFunction,
         CachePartitionDefragmentationManager defrgMgr,
         FailureProcessor failureProc
     ) {
+        this.igniteInstanceName = igniteInstanceName;
         this.log = logFunction.apply(ExecuteDefragmentationAction.class);
         this.defrgMgr = defrgMgr;
         this.failureProc = failureProc;
@@ -68,7 +75,7 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
             return false;
         }
 
-        Thread defrgThread = new Thread(() -> {
+        Thread defrgThread = new IgniteThread(igniteInstanceName, "defragmentation-thread", () -> {
             try {
                 defrgMgr.executeDefragmentation();
             }
@@ -79,8 +86,6 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
                 failureProc.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         });
-
-        defrgThread.setName("defragmentation-thread");
 
         defrgThread.setDaemon(true);
 

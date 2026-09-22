@@ -18,13 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -37,21 +34,21 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
-    @Order(5)
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Keys to request. */
-    @Order(6)
+    @Order(2)
     @GridToStringInclude
-    private Collection<KeyCacheObject> keys;
+    Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
-    @Order(value = 7, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(3)
+    AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor.
@@ -66,15 +63,13 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
      * @param miniId Mini-future ID.
      * @param keys Keys.
      * @param topVer Topology version.
-     * @param addDepInfo Deployment info.
      */
     GridDhtForceKeysRequest(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
         Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer,
-        boolean addDepInfo
+        AffinityTopologyVersion topVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -85,7 +80,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         this.miniId = miniId;
         this.keys = keys;
         this.topVer = topVer;
-        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -96,24 +90,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Mini-future ID.
      */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Mini-future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -124,42 +104,10 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
     }
 
     /**
-     * @param keys Keys.
-     */
-    public void keys(Collection<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
-    /**
      * @return Topology version for which keys are requested.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version for which keys are requested.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -174,10 +122,6 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         return keys.size();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 42;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

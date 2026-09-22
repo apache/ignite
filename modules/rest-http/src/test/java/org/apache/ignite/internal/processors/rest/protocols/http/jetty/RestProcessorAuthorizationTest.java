@@ -17,16 +17,10 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
@@ -41,19 +35,25 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginPro
 import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.Test;
 
+import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.CacheGetRemoveSkipStoreTest.TEST_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
+import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.RestSetupSimpleTest.execute;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests REST processor authorization commands GET_OR_CREATE_CACHE / DESTROY_CACHE.
@@ -113,7 +113,7 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         assertNull(ignite.cache(TEST_CACHE));
 
-        executeCommand(LOGIN, GET_OR_CREATE_CACHE, F.asMap("cacheName", TEST_CACHE));
+        executeCommand(LOGIN, GET_OR_CREATE_CACHE, new T2<>("cacheName", TEST_CACHE));
 
         GridTuple3<String, SecurityPermission, SecurityContext> ctx = authorizationCtxList.get(0);
 
@@ -125,7 +125,7 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         authorizationCtxList.clear();
 
-        executeCommand(LOGIN, DESTROY_CACHE, F.asMap("cacheName", TEST_CACHE));
+        executeCommand(LOGIN, DESTROY_CACHE, new T2<>("cacheName", TEST_CACHE));
 
         ctx = authorizationCtxList.get(0);
 
@@ -143,13 +143,13 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
 
-        GridRestResponse res = executeCommand(LOGIN_NO_PERMISSIONS, CLUSTER_SET_STATE, F.asMap("state", ACTIVE.name()));
+        GridRestResponse res = executeCommand(LOGIN_NO_PERMISSIONS, CLUSTER_SET_STATE, new T2<>("state", ACTIVE.name()));
 
         assertEquals(GridRestResponse.STATUS_SECURITY_CHECK_FAILED, res.getSuccessStatus());
 
         assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
 
-        res = executeCommand(LOGIN, CLUSTER_SET_STATE, F.asMap("state", ACTIVE.name()));
+        res = executeCommand(LOGIN, CLUSTER_SET_STATE, new T2<>("state", ACTIVE.name()));
 
         assertEquals(GridRestResponse.STATUS_SUCCESS, res.getSuccessStatus());
 
@@ -163,41 +163,70 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
 
-        GridRestResponse res = executeCommand(LOGIN_NO_PERMISSIONS, CLUSTER_ACTIVATE, Collections.emptyMap());
+        GridRestResponse res = executeCommand(LOGIN_NO_PERMISSIONS, CLUSTER_ACTIVATE);
 
         assertEquals(GridRestResponse.STATUS_SECURITY_CHECK_FAILED, res.getSuccessStatus());
 
         assertEquals(ClusterState.INACTIVE, ignite.cluster().state());
 
-        res = executeCommand(LOGIN, CLUSTER_ACTIVATE, Collections.emptyMap());
+        res = executeCommand(LOGIN, CLUSTER_ACTIVATE);
 
         assertEquals(GridRestResponse.STATUS_SUCCESS, res.getSuccessStatus());
 
         assertEquals(ACTIVE, ignite.cluster().state());
     }
 
+    /** @throws Exception if failed. */
+    @Test
+    public void testRestExtension() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        assertThat(execute(SC_UNAUTHORIZED, "/ext1/help"),
+            containsString("Missing or invalid authentication token (maybe expired session)"));
+
+        String sesToken = authenticate(LOGIN_NO_PERMISSIONS);
+
+        assertThat(execute("/ext1/help", new T2<>("sessionToken", sesToken)),
+            containsString("Extension 1."));
+
+        assertThat(execute(SC_FORBIDDEN, "/ext1/deactivate", new T2<>("sessionToken", sesToken)),
+            containsString("Authorization failed."));
+
+        sesToken = authenticate(LOGIN);
+
+        execute("/ext1/deactivate", new T2<>("sessionToken", sesToken));
+
+        assertFalse(ignite.cluster().state().active());
+    }
+
+    /** @return Session token. */
+    private String authenticate(String login) throws Exception {
+        String res = execute("/ignite",
+            new T2<>("cmd", "authenticate"),
+            new T2<>("ignite.login", login),
+            new T2<>("ignite.password", PWD));
+
+        return new ObjectMapper().readTree(res).get("sessionToken").asText();
+    }
+
     /** */
+    @SafeVarargs
     private GridRestResponse executeCommand(
         String login,
         GridRestCommand cmd,
-        Map<String, String> params
-    ) throws IOException {
-        StringBuilder addr = new StringBuilder("http://localhost:8080/ignite?cmd=").append(cmd.key())
-            .append("&ignite.login=").append(login)
-            .append("&ignite.password=").append(PWD);
+        T2<String, String>... params
+    ) throws Exception {
+        T2<String, String>[] allParams = new T2[params.length + 3];
 
-        for (Map.Entry<String, String> e : params.entrySet())
-            addr.append("&").append(e.getKey()).append("=").append(e.getValue());
+        allParams[0] = new T2<>("cmd", cmd.key());
+        allParams[1] = new T2<>("ignite.login", login);
+        allParams[2] = new T2<>("ignite.password", PWD);
 
-        URL url = new URL(addr.toString());
+        System.arraycopy(params, 0, allParams, 3, params.length);
 
-        URLConnection conn = url.openConnection();
+        String res = execute("/ignite", allParams);
 
-        conn.connect();
-
-        assertEquals(200, ((HttpURLConnection)conn).getResponseCode());
-
-        return new ObjectMapper().readValue(conn.getInputStream(), GridRestResponse.class);
+        return new ObjectMapper().readValue(res, GridRestResponse.class);
     }
 
     /** {@inheritDoc} */

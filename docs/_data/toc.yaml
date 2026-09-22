@@ -33,7 +33,7 @@
     - title: REST API
       url: quick-start/restapi
 - title: Installation
-  url: installation
+  url: installation/installing-using-zip
   items:
   - title: Installing Using ZIP Archive
     url: installation/installing-using-zip
@@ -77,6 +77,8 @@
       url: clustering/discovery-in-the-cloud
     - title: Network Configuration
       url: clustering/network-configuration
+    - title: Multi Data Center Deployment
+      url: clustering/multi-data-center
     - title: Connecting Client Nodes 
       url: clustering/connect-client-nodes
     - title: Baseline Topology
@@ -224,7 +226,7 @@
     - title: Calcite-based SQL Engine
       url: SQL/sql-calcite
 - title: SQL Reference
-  url: sql-reference/sql-reference-overview
+  url: sql-reference/index
   items:
     - title: SQL Conformance
       url: sql-reference/sql-conformance
@@ -232,12 +234,14 @@
       url: sql-reference/ddl
     - title: Data Manipulation Language (DML)
       url: sql-reference/dml
-    - title: Transactions
-      url: sql-reference/transactions
+    - title: Transaction-aware Queries
+      url: SQL/sql-calcite#transaction-aware-queries
     - title: Operational Commands
       url: sql-reference/operational-commands
     - title: Aggregate functions
       url: sql-reference/aggregate-functions
+    - title: Window Functions
+      url: sql-reference/window-functions
     - title: Numeric Functions
       url: sql-reference/numeric-functions
     - title: String Functions
@@ -341,7 +345,7 @@
         - title: Stacking
           url: machine-learning/ensemble-methods/stacking
         - title: Bagging
-          url: machine-learning/ensemble-methods/baggin
+          url: machine-learning/ensemble-methods/bagging
         - title: Random Forest
           url: machine-learning/ensemble-methods/random-forest
         - title: Gradient Boosting
@@ -448,8 +452,6 @@
       url: monitoring-metrics/system-views
     - title: Performance Statistics
       url: monitoring-metrics/performance-statistics
-    - title: Tracing
-      url: monitoring-metrics/tracing
 - title: Working with Events
   items:
     - title: Enabling and Listenting to Events
@@ -475,7 +477,7 @@
     - title: Index Reader
       url: tools/index-reader
 - title: Security
-  url: security
+  url: security/index
   items:
     - title: Security Model
       url: security/security-model

@@ -23,9 +23,11 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -39,6 +41,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -57,6 +61,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.zk.internal.ZkIgnitePaths;
+import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClusterNode;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryStatistics;
@@ -64,6 +69,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -362,8 +368,15 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             log.debug("Node version to set: " + ver);
         }
 
-        locNodeAttrs = attrs;
         locNodeVer = ver;
+        locNodeAttrs = new HashMap<>(attrs);
+
+        try {
+            locNodeAttrs.put(ATTR_IGNITE_FEATURES, Marshallers.jdk().marshal(ignite.context().localNodeFeatures()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to initialize Ignite Node Features attribute", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -405,7 +418,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        impl.sendCustomMessage(msg);
+        impl.sendCustomEvent(msg);
     }
 
     /** {@inheritDoc} */
@@ -460,7 +473,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
             lsnr,
             exchange,
             stats,
-            ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller());
+            ((IgniteEx)ignite).context().marshallerContext().jdkMarshaller(),
+            ((IgniteEx)ignite).context().messageFactory()
+        );
 
         registerMBean(igniteInstanceName, new ZookeeperDiscoverySpiMBeanImpl(this), ZookeeperDiscoverySpiMBean.class);
 
@@ -552,21 +567,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
         return locNode;
     }
 
-    /**
-     * Used in tests (called via reflection).
-     *
-     * @return Copy of SPI.
-     */
-    private ZookeeperDiscoverySpi cloneSpiConfiguration() {
-        ZookeeperDiscoverySpi spi = new ZookeeperDiscoverySpi();
-
-        spi.setZkRootPath(zkRootPath);
-        spi.setZkConnectionString(zkConnectionString);
-        spi.setSessionTimeout(sesTimeout);
-        spi.setJoinTimeout(joinTimeout);
-        spi.setClientReconnectDisabled(clientReconnectDisabled);
-
-        return spi;
+    /** {@inheritDoc} */
+    @Override public MessageFactoryProvider messageFactoryProvider() {
+        return new ZkMessageFactory();
     }
 
     /** {@inheritDoc} */

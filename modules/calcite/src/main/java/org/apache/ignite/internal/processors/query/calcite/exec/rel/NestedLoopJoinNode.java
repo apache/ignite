@@ -17,212 +17,77 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Deque;
 import java.util.List;
 import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 
 /** */
-public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
-    /** */
-    private static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
-
-    /** Special value to highlights that all row were received and we are not waiting any more. */
-    protected static final int NOT_WAITING = -1;
-
+public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJoinNode<Row> {
     /** */
     protected final BiPredicate<Row, Row> cond;
 
     /** */
-    protected final RowHandler<Row> handler;
-
-    /** */
-    protected int requested;
-
-    /** */
-    protected Row left;
-
-    /** */
-    protected int rightIdx;
-
-    /** */
-    protected int waitingLeft;
-
-    /** */
-    protected int waitingRight;
+    protected final RowHandler<Row> rowHnd;
 
     /** */
     protected final List<Row> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
 
     /** */
-    protected final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
-
-    /** */
-    protected boolean inLoop;
+    protected int rightIdx;
 
     /**
      * @param ctx Execution context.
+     * @param rowType Row type.
      * @param cond Join expression.
      */
     private NestedLoopJoinNode(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
         super(ctx, rowType);
 
         this.cond = cond;
-        handler = ctx.rowHandler();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void request(int rowsCnt) throws Exception {
-        assert !F.isEmpty(sources()) && sources().size() == 2;
-        assert rowsCnt > 0 && requested == 0;
-
-        checkState();
-
-        requested = rowsCnt;
-
-        if (!inLoop)
-            context().execute(this::doJoin, this::onError);
-    }
-
-    /** */
-    private void doJoin() throws Exception {
-        checkState();
-
-        join();
+        rowHnd = ctx.rowHandler();
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
-        requested = 0;
-        waitingLeft = 0;
-        waitingRight = 0;
+        super.rewindInternal();
+
+        rightIdx = 0;
 
         rightMaterialized.clear();
-        leftInBuf.clear();
-
-        left = null;
-        rightIdx = 0;
     }
 
     /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx == 0)
-            return new Downstream<Row>() {
-                /** {@inheritDoc} */
-                @Override public void push(Row row) throws Exception {
-                    pushLeft(row);
-                }
-
-                /** {@inheritDoc} */
-                @Override public void end() throws Exception {
-                    endLeft();
-                }
-
-                /** {@inheritDoc} */
-                @Override public void onError(Throwable e) {
-                    NestedLoopJoinNode.this.onError(e);
-                }
-            };
-        else if (idx == 1)
-            return new Downstream<Row>() {
-                /** {@inheritDoc} */
-                @Override public void push(Row row) throws Exception {
-                    pushRight(row);
-                }
-
-                /** {@inheritDoc} */
-                @Override public void end() throws Exception {
-                    endRight();
-                }
-
-                /** {@inheritDoc} */
-                @Override public void onError(Throwable e) {
-                    NestedLoopJoinNode.this.onError(e);
-                }
-            };
-
-        throw new IndexOutOfBoundsException();
-    }
-
-    /** */
-    private void pushLeft(Row row) throws Exception {
-        assert downstream() != null;
-        assert waitingLeft > 0;
-
-        checkState();
-
-        waitingLeft--;
-
-        leftInBuf.add(row);
-
-        join();
-    }
-
-    /** */
-    private void pushRight(Row row) throws Exception {
+    @Override protected void pushRight(Row row) throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
 
-        checkState();
+        nodeMemoryTracker.onRowAdded(row);
 
         waitingRight--;
 
         rightMaterialized.add(row);
 
-        nodeMemoryTracker.onRowAdded(row);
+        if (waitingRight == 0) {
+            checkState();
 
-        if (waitingRight == 0)
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
+        }
     }
 
     /** */
-    private void endLeft() throws Exception {
-        assert downstream() != null;
-        assert waitingLeft > 0;
-
-        checkState();
-
-        waitingLeft = NOT_WAITING;
-
-        join();
-    }
-
-    /** */
-    private void endRight() throws Exception {
-        assert downstream() != null;
-        assert waitingRight > 0;
-
-        checkState();
-
-        waitingRight = NOT_WAITING;
-
-        join();
-    }
-
-    /** */
-    protected Node<Row> leftSource() {
-        return sources().get(0);
-    }
-
-    /** */
-    protected Node<Row> rightSource() {
-        return sources().get(1);
-    }
-
-    /** */
-    protected abstract void join() throws Exception;
-
-    /** */
-    @NotNull public static <Row> NestedLoopJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType,
-        RelDataType leftRowType, RelDataType rightRowType, JoinRelType joinType, BiPredicate<Row, Row> cond) {
+    public static <Row> NestedLoopJoinNode<Row> create(
+        ExecutionContext<Row> ctx,
+        RelDataType outputRowType,
+        RelDataType leftRowType,
+        RelDataType rightRowType,
+        JoinRelType joinType,
+        BiPredicate<Row, Row> cond
+    ) {
         switch (joinType) {
             case INNER:
                 return new InnerJoin<>(ctx, outputRowType, cond);
@@ -253,21 +118,18 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 return new AntiJoin<>(ctx, outputRowType, cond);
 
             default:
-                throw new IllegalStateException("Join type \"" + joinType + "\" is not supported yet");
+                throw new IllegalArgumentException("Join type '" + joinType + "' is not supported.");
         }
     }
 
     /** */
     private static class InnerJoin<Row> extends NestedLoopJoinNode<Row> {
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
+        /** */
         public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
@@ -277,13 +139,14 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                             left = leftInBuf.remove();
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                                 continue;
 
                             requested--;
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
+                            Row row = rowHnd.concat(left, rightMaterialized.get(rightIdx - 1));
                             downstream().push(row);
                         }
 
@@ -310,13 +173,10 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         /** Right row factory. */
         private final RowHandler.RowFactory<Row> rightRowFactory;
 
-        /** Whether current left row was matched or not. */
+        /** Shows whether current left row was matched. */
         private boolean matched;
 
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
+        /** */
         public LeftJoin(
             ExecutionContext<Row> ctx,
             RelDataType rowType,
@@ -328,11 +188,11 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
             this.rightRowFactory = rightRowFactory;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override protected void rewindInternal() {
-            matched = false;
-
             super.rewindInternal();
+
+            matched = false;
         }
 
         /** {@inheritDoc} */
@@ -348,7 +208,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                         }
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                                 continue;
@@ -356,7 +217,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                             requested--;
                             matched = true;
 
-                            Row row = handler.concat(left, rightMaterialized.get(rightIdx - 1));
+                            Row row = rowHnd.concat(left, rightMaterialized.get(rightIdx - 1));
                             downstream().push(row);
                         }
 
@@ -367,7 +228,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                                 requested--;
                                 wasPushed = true;
 
-                                downstream().push(handler.concat(left, rightRowFactory.create()));
+                                downstream().push(rowHnd.concat(left, rightRowFactory.create()));
                             }
 
                             if (matched || wasPushed) {
@@ -391,7 +252,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
     /** */
     private static class RightJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** Right row factory. */
+        /** Left row factory. */
         private final RowHandler.RowFactory<Row> leftRowFactory;
 
         /** */
@@ -400,10 +261,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         /** */
         private int lastPushedInd;
 
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
+        /** */
         public RightJoin(
             ExecutionContext<Row> ctx,
             RelDataType rowType,
@@ -417,10 +275,10 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         /** {@inheritDoc} */
         @Override protected void rewindInternal() {
+            super.rewindInternal();
+
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
-
-            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -439,7 +297,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                             left = leftInBuf.remove();
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             Row right = rightMaterialized.get(rightIdx++);
 
@@ -449,7 +308,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                             requested--;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
 
-                            Row joined = handler.concat(left, right);
+                            Row joined = rowHnd.concat(left, right);
                             downstream().push(joined);
                         }
 
@@ -468,16 +327,16 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
+                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);
+
                 try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
-                        checkState();
+                    Row emptyLeft = lastPushedInd < 0 ? null : leftRowFactory.create();
 
-                        if (lastPushedInd < 0)
-                            break;
+                    while (lastPushedInd >= 0) {
+                        if (rescheduleJoin())
+                            return;
 
-                        Row row = handler.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
+                        Row row = rowHnd.concat(emptyLeft, rightMaterialized.get(lastPushedInd));
 
                         rightNotMatchedIndexes.clear(lastPushedInd);
 
@@ -486,6 +345,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
                         if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
                             break;
+
+                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1);
                     }
                 }
                 finally {
@@ -508,7 +369,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         /** Right row factory. */
         private final RowHandler.RowFactory<Row> rightRowFactory;
 
-        /** Whether current left row was matched or not. */
+        /** Shows whether current left row was matched. */
         private boolean leftMatched;
 
         /** */
@@ -517,10 +378,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         /** */
         private int lastPushedInd;
 
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
+        /** */
         public FullOuterJoin(
             ExecutionContext<Row> ctx,
             RelDataType rowType,
@@ -536,11 +394,12 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
         /** {@inheritDoc} */
         @Override protected void rewindInternal() {
+            super.rewindInternal();
+
+            left = null;
             leftMatched = false;
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
-
-            super.rewindInternal();
         }
 
         /** {@inheritDoc} */
@@ -562,7 +421,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                         }
 
                         while (requested > 0 && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             Row right = rightMaterialized.get(rightIdx++);
 
@@ -573,7 +433,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                             leftMatched = true;
                             rightNotMatchedIndexes.clear(rightIdx - 1);
 
-                            Row joined = handler.concat(left, right);
+                            Row joined = rowHnd.concat(left, right);
                             downstream().push(joined);
                         }
 
@@ -584,7 +444,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                                 requested--;
                                 wasPushed = true;
 
-                                downstream().push(handler.concat(left, rightRowFactory.create()));
+                                downstream().push(rowHnd.concat(left, rightRowFactory.create()));
                             }
 
                             if (leftMatched || wasPushed) {
@@ -603,16 +463,16 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
+                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);
+
                 try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
-                        checkState();
+                    Row emptyLeft = lastPushedInd < 0 ? null : leftRowFactory.create();
 
-                        if (lastPushedInd < 0)
-                            break;
+                    while (lastPushedInd >= 0) {
+                        if (rescheduleJoin())
+                            return;
 
-                        Row row = handler.concat(leftRowFactory.create(), rightMaterialized.get(lastPushedInd));
+                        Row row = rowHnd.concat(emptyLeft, rightMaterialized.get(lastPushedInd));
 
                         rightNotMatchedIndexes.clear(lastPushedInd);
 
@@ -621,6 +481,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
                         if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
                             break;
+
+                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1);
                     }
                 }
                 finally {
@@ -637,10 +499,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
     /** */
     private static class SemiJoin<Row> extends NestedLoopJoinNode<Row> {
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
+        /** */
         public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
@@ -655,7 +514,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                     boolean matched = false;
 
                     while (!matched && requested > 0 && rightIdx < rightMaterialized.size()) {
-                        checkState();
+                        if (rescheduleJoin())
+                            return;
 
                         if (!cond.test(left, rightMaterialized.get(rightIdx++)))
                             continue;
@@ -682,10 +542,7 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
 
     /** */
     private static class AntiJoin<Row> extends NestedLoopJoinNode<Row> {
-        /**
-         * @param ctx Execution context.
-         * @param cond Join expression.
-         */
+        /** */
         public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
@@ -702,7 +559,8 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
                         boolean matched = false;
 
                         while (!matched && rightIdx < rightMaterialized.size()) {
-                            checkState();
+                            if (rescheduleJoin())
+                                return;
 
                             if (cond.test(left, rightMaterialized.get(rightIdx++)))
                                 matched = true;
@@ -741,14 +599,5 @@ public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
         }
 
         return false;
-    }
-
-    /** */
-    protected void tryToRequestInputs() throws Exception {
-        if (waitingLeft == 0 && leftInBuf.size() <= HALF_BUF_SIZE)
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
-
-        if (waitingRight == 0 && requested > 0)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
     }
 }

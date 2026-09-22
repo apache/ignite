@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -74,6 +75,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setCommunicationSpi(getCommunication());
+
+        c.setPluginProviders(new MessagesPluginProvider(GridTestMessage.class));
 
         return c;
     }

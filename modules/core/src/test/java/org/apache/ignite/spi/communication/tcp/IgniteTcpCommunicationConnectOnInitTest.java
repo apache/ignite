@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
@@ -180,31 +179,25 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
      */
     private class TestDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
             InetSocketAddress sockAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
+        ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            return super.openSocket(sockAddr, timeoutHelper);
+            return super.openSession(sock, sockAddr, timeoutHelper);
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(
-            Socket sock,
-            InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper
-        ) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
+            byte[] data,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            return super.openSocket(sock, remAddr, timeoutHelper);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
-            awaitLatch();
-
-            super.writeToSocket(sock, msg, data, timeout);
+            super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -219,10 +212,14 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout) throws IOException {
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
             awaitLatch();
 
-            super.writeToSocket(msg, sock, res, timeout);
+            super.writeReceipt(ses, res, timeout);
         }
 
         /**

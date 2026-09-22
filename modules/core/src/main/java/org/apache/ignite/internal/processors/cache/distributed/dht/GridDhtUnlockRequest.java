@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,8 +30,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /** Near keys. */
-    @Order(8)
-    private List<KeyCacheObject> nearKeys;
+    @Order(0)
+    List<KeyCacheObject> nearKeys;
 
     /**
      * Empty constructor.
@@ -44,17 +43,9 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /**
      * @param cacheId Cache ID.
      * @param dhtCnt Key count.
-     * @param addDepInfo Deployment info flag.
      */
-    public GridDhtUnlockRequest(int cacheId, int dhtCnt, boolean addDepInfo) {
-        super(cacheId, dhtCnt, addDepInfo);
-    }
-
-    /**
-     * Sets the near.
-     */
-    public void nearKeys(List<KeyCacheObject> nearKeys) {
-        this.nearKeys = nearKeys;
+    public GridDhtUnlockRequest(int cacheId, int dhtCnt) {
+        super(cacheId, dhtCnt);
     }
 
     /**
@@ -79,26 +70,8 @@ public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtUnlockRequest.class, this);
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 36;
-    }
 }

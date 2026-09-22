@@ -286,7 +286,6 @@ namespace Apache.Ignite.Core.Services
         /// <param name="callCtx">Service call context.</param>
         /// <returns>Proxy over service.</returns>
         /// <seealso cref="IServiceCallContext"/>
-        [IgniteExperimental]
         T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class;
 
         /// <summary>
@@ -326,7 +325,6 @@ namespace Apache.Ignite.Core.Services
         /// <param name="callCtx">Service call context.</param>
         /// <returns>Proxy over service.</returns>
         /// <seealso cref="IServiceCallContext"/>
-        [IgniteExperimental]
         dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx);
 
         /// <summary>

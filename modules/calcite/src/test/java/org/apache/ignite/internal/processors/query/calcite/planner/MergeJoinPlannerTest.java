@@ -44,7 +44,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         "NestedLoopJoinConverter",
         "CorrelatedNestedLoopJoin",
         "FilterSpoolMergeRule",
-        "JoinCommuteRule"
+        "JoinCommuteRule",
+        "HashJoinConverter"
     };
 
     /** */

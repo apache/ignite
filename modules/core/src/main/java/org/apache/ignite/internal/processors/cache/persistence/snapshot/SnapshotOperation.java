@@ -18,28 +18,117 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
-import java.util.Set;
+import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Initial snapshot operation interface.
+ * Current snapshot operation on local node.
  */
-public interface SnapshotOperation extends Serializable {
-    /**
-     * Cache group ids included to this snapshot.
-     *
-     * @return Cache group identifiers.
-     */
-    public Set<Integer> cacheGroupIds();
+public class SnapshotOperation {
+    /** */
+    private final SnapshotOperationRequest req;
+
+    /** Snapshot file tree. */
+    @GridToStringExclude
+    private final SnapshotFileTree sft;
+
+    /** Snapshot metadata. */
+    @GridToStringExclude
+    private SnapshotMetadata meta;
+
+    /** Exception occurred during snapshot operation processing. */
+    private volatile Throwable err;
+
+    /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
+    @GridToStringExclude
+    private volatile boolean streamerWrn;
 
     /**
-     * @return Cache names included to this snapshot.
+     * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
+     * the operation status 'not OK' if no other error occurred.
      */
-    public Set<String> cacheNames();
+    private volatile List<String> warnings;
+
+    /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
+    private volatile boolean startStageEnded;
+
+    /** */
+    public SnapshotOperation(SnapshotOperationRequest req, SnapshotFileTree sft) {
+        this.req = req;
+        this.sft = sft;
+    }
+
+    /** */
+    public SnapshotOperationRequest request() {
+        return req;
+    }
+
+    /** @return Snapshot file tree. */
+    public SnapshotFileTree snapshotFileTree() {
+        return sft;
+    }
+
+    /** @return Snapshot metadata. */
+    public SnapshotMetadata meta() {
+        return meta;
+    }
+
+    /** Stores snapshot metadata. */
+    public void meta(SnapshotMetadata meta) {
+        this.meta = meta;
+    }
+
+    /** @return Exception occurred during snapshot operation processing. */
+    public Throwable error() {
+        return err;
+    }
+
+    /** @param err Exception occurred during snapshot operation processing. */
+    public void error(Throwable err) {
+        this.err = err;
+    }
+
+    /** {@code True} If the streamer warning flag is set. {@code False} otherwise. */
+    public boolean streamerWarning() {
+        return streamerWrn;
+    }
+
+    /** Sets the streamer warning flag. */
+    public boolean streamerWarning(boolean val) {
+        return streamerWrn = val;
+    }
+
+    /** @return Warnings of snapshot operation. */
+    public List<String> warnings() {
+        return warnings;
+    }
+
+    /** @param warnings Warnings of snapshot operation. */
+    public void warnings(List<String> warnings) {
+        assert this.warnings == null;
+
+        this.warnings = warnings;
+    }
 
     /**
-     * @return Any custom extra parameter.
-     * In case Map object is provided, contains named snapshot operation attributes.
+     * @return Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
-    public Object extraParameter();
+    protected boolean startStageEnded() {
+        return startStageEnded;
+    }
+
+    /**
+     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
+     */
+    protected void startStageEnded(boolean startStageEnded) {
+        this.startStageEnded = startStageEnded;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SnapshotOperation.class, this, super.toString());
+    }
 }

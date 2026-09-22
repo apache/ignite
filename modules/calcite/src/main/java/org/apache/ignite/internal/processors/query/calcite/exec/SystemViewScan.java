@@ -47,8 +47,8 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
     /** */
     private final RangeIterable<Row> ranges;
 
-    /** Participating colunms. */
-    private final ImmutableBitSet requiredColumns;
+    /** Row field to view column mapping. */
+    protected final int[] fieldColMapping;
 
     /** System view field names (for filtering). */
     private final String[] filterableFieldNames;
@@ -66,7 +66,6 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
         this.ectx = ectx;
         this.desc = desc;
         this.ranges = ranges;
-        this.requiredColumns = requiredColumns;
 
         RelDataType rowType = desc.rowType(ectx.getTypeFactory(), requiredColumns);
 
@@ -83,6 +82,11 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
                 }
             }
         }
+
+        ImmutableBitSet reqCols = requiredColumns == null ? ImmutableBitSet.range(0, rowType.getFieldCount())
+            : requiredColumns;
+
+        fieldColMapping = reqCols.toArray();
     }
 
     /** {@inheritDoc} */
@@ -123,6 +127,6 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
         else
             viewIter = view.iterator();
 
-        return F.iterator(viewIter, row -> desc.toRow(ectx, row, factory, requiredColumns), true);
+        return F.iterator(viewIter, row -> desc.toRow(ectx, row, factory.create(), fieldColMapping), true);
     }
 }

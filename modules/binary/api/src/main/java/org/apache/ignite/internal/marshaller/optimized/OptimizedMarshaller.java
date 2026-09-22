@@ -71,40 +71,6 @@ import org.apache.ignite.marshaller.Marshaller;
  */
 public interface OptimizedMarshaller extends Marshaller {
     /**
-     * Sets whether marshaller should require {@link Serializable} interface or not.
-     *
-     * @param requireSer Whether to require {@link Serializable}.
-     * @return {@code this} for chaining.
-     */
-    public OptimizedMarshaller setRequireSerializable(boolean requireSer);
-
-    /**
-     * Sets ID mapper.
-     *
-     * @param mapper ID mapper.
-     * @return {@code this} for chaining.
-     */
-    public OptimizedMarshaller setIdMapper(OptimizedMarshallerIdMapper mapper);
-
-    /**
-     * Specifies size of cached object streams used by marshaller. Object streams are cached for
-     * performance reason to avoid costly recreation for every serialization routine. If {@code 0} (default),
-     * pool is not used and each thread has its own cached object stream which it keeps reusing.
-     * <p>
-     * Since each stream has an internal buffer, creating a stream for each thread can lead to
-     * high memory consumption if many large messages are marshalled or unmarshalled concurrently.
-     * Consider using pool in this case. This will limit number of streams that can be created and,
-     * therefore, decrease memory consumption.
-     * <p>
-     * NOTE: Using streams pool can decrease performance since streams will be shared between
-     * different threads which will lead to more frequent context switching.
-     *
-     * @param poolSize Streams pool size. If {@code 0}, pool is not used.
-     * @return {@code this} for chaining.
-     */
-    public OptimizedMarshaller setPoolSize(int poolSize);
-
-    /**
      * Clears the optimized class descriptors cache. This is essential for the clients
      * on disconnect in order to make them register their user types again (server nodes may
      * lose previously registered types).

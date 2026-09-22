@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.codegen;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
 import org.apache.ignite.internal.TransactionIsolationEnumMapper;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
+import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -31,14 +34,14 @@ import org.apache.ignite.transactions.TransactionIsolation;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer {
+public final class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer<CustomMapperEnumFieldsMessage> {
     /** */
-    private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
+    private static final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
+    /** */
+    private static final MessageCollectionType isolationsCollDesc = new MessageCollectionType(new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, transactionIsolationMapper::encode, transactionIsolationMapper::decode), CollectionImplementationType.ARRAY_LIST), CollectionImplementationType.ARRAY_LIST);
 
     /** */
-    @Override public boolean writeTo(Message m, MessageWriter writer) {
-        CustomMapperEnumFieldsMessage msg = (CustomMapperEnumFieldsMessage)m;
-
+    @Override public final boolean writeTo(CustomMapperEnumFieldsMessage msg, MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -48,7 +51,13 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte(transactionIsolationMapper.encode(msg.txMode())))
+                if (!writer.writeByte(transactionIsolationMapper.encode(msg.txMode)))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeCollection(msg.isolations, isolationsCollDesc))
                     return false;
 
                 writer.incrementState();
@@ -58,12 +67,18 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
     }
 
     /** */
-    @Override public boolean readFrom(Message m, MessageReader reader) {
-        CustomMapperEnumFieldsMessage msg = (CustomMapperEnumFieldsMessage)m;
-
+    @Override public final boolean readFrom(CustomMapperEnumFieldsMessage msg, MessageReader reader) {
         switch (reader.state()) {
             case 0:
-                msg.txMode(transactionIsolationMapper.decode(reader.readByte()));
+                msg.txMode = transactionIsolationMapper.decode(reader.readByte());
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                msg.isolations = reader.readCollection(isolationsCollDesc);
 
                 if (!reader.isLastRead())
                     return false;
@@ -72,5 +87,10 @@ public class CustomMapperEnumFieldsMessageSerializer implements MessageSerialize
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final CustomMapperEnumFieldsMessage createMessage() {
+        return new CustomMapperEnumFieldsMessage();
     }
 }

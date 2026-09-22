@@ -45,12 +45,16 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *     cacheCfg.setSqlFunctionClasses(MyTableFunctions.class);
  *
  *     // And use in queries.
- *     cache.query(new SqlFieldsQuery("select S_VAL from MY_TABLE(1, 5.0f, "ext") where F_VAL is not null"));
+ *     cache.query(new SqlFieldsQuery("select S_VAL from TABLE(MY_TABLE(1, 5.0f, "ext")) where F_VAL is not null"));
  * </pre>
  * <p>
  * Table function must return an {@code Iterable} as a row set. Each row can be represented by an {@code Object[]} or
  * by an {@code Collection}. Row length must match the defined number of column types. Row value types must match the
  * defined column types or be able assigned to them.
+ * <p>
+ * Table functions can be overloaded by SQL parameter types or their order. Java types mapped to the same SQL type
+ * cannot define separate overloads; for example, {@code int} and {@link Integer} both correspond to SQL
+ * {@code INTEGER}.
  * <p>
  * Note, the table functions are available currently only with Calcite.
  *

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -168,21 +167,15 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
      */
     private static class FailTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(InetSocketAddress sockAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected TcpDiscoveryIoSession openSession(
+            Socket sock,
+            InetSocketAddress sockAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteCheckedException {
             if (sockAddr.getPort() == FAIL_PORT)
                 throw new SocketException("Connection refused");
 
-            return super.openSocket(sockAddr, timeoutHelper);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr,
-            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-            if (remAddr.getPort() == FAIL_PORT)
-                throw new SocketException("Connection refused");
-
-            return super.openSocket(sock, remAddr, timeoutHelper);
+            return super.openSession(sock, sockAddr, timeoutHelper);
         }
     }
 
@@ -191,10 +184,13 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
      */
     private static class DropTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
-            long timeout) throws IOException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(sock, msg, data, timeout);
+        @Override protected void write(
+            TcpDiscoveryIoSession ses,
+            byte[] data,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            if (ses.socket().getPort() != FAIL_PORT)
+                super.write(ses, data, timeout);
         }
 
         /** {@inheritDoc} */
@@ -205,10 +201,13 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
-            long timeout) throws IOException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(msg, sock, res, timeout);
+        @Override protected void writeReceipt(
+            TcpDiscoveryIoSession ses,
+            int res,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            if (ses.socket().getPort() != FAIL_PORT)
+                super.writeReceipt(ses, res, timeout);
         }
     }
 

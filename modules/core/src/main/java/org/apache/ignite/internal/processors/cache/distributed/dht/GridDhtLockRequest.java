@@ -18,18 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.BitSet;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -41,46 +35,32 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** Invalidate reader flags. */
-    @Order(20)
-    private BitSet invalidateEntries;
+    @Order(0)
+    BitSet invalidateEntries;
 
     /** Mini future ID. */
-    @Order(21)
-    private IgniteUuid miniId;
-
-    /** Owner mapped version, if any. */
-    @GridToStringInclude
-    private Map<KeyCacheObject, GridCacheVersion> owned;
-
-    /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
-    @Order(22)
-    @GridToStringExclude
-    private KeyCacheObject[] ownedKeys;
-
-    /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
-    @Order(23)
-    @GridToStringExclude
-    private GridCacheVersion[] ownedValues;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Topology version. */
-    @Order(value = 24, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(2)
+    AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(25)
-    private int taskNameHash;
+    @Order(3)
+    int taskNameHash;
 
     /** Indexes of keys needed to be preloaded. */
-    @Order(26)
-    private BitSet preloadKeys;
+    @Order(4)
+    BitSet preloadKeys;
 
     /** TTL for read operation. */
-    @Order(27)
-    private long accessTtl;
+    @Order(5)
+    long accessTtl;
 
     /** Transaction label. */
-    @Order(value = 28, method = "txLabel")
-    private String txLbl;
+    @Order(6)
+    String txLbl;
 
     /**
      * Empty constructor.
@@ -110,8 +90,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param skipStore Skip store flag.
      * @param storeUsed Cache store used flag.
      * @param keepBinary Keep binary flag.
-     * @param addDepInfo Deployment info flag.
      * @param txLbl Transaction label.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -133,9 +114,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         long accessTtl,
         boolean skipStore,
         boolean skipReadThrough,
+        boolean keepBinaryInInterceptor,
         boolean storeUsed,
         boolean keepBinary,
-        boolean addDepInfo,
         String txLbl
     ) {
         super(cacheId,
@@ -153,8 +134,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             txSize,
             skipStore,
             skipReadThrough,
-            keepBinary,
-            addDepInfo);
+            keepBinaryInInterceptor,
+            keepBinary);
 
         this.topVer = topVer;
 
@@ -179,80 +160,10 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
-     * @return Invalidate reader flags.
-     */
-    public BitSet invalidateEntries() {
-        return invalidateEntries;
-    }
-
-    /**
-     * @param invalidateEntries Invalidate reader flags.
-     */
-    public void invalidateEntries(BitSet invalidateEntries) {
-        this.invalidateEntries = invalidateEntries;
-    }
-
-    /**
-     * @return Array of keys from {@link #owned}. Used during marshalling and unmarshalling.
-     */
-    public KeyCacheObject[] ownedKeys() {
-        return ownedKeys;
-    }
-
-    /**
-     * @param ownedKeys Array of keys from {@link #owned}. Used during marshalling and unmarshalling.
-     */
-    public void ownedKeys(KeyCacheObject[] ownedKeys) {
-        this.ownedKeys = ownedKeys;
-    }
-
-    /**
-     * @return Array of values from {@link #owned}. Used during marshalling and unmarshalling.
-     */
-    public GridCacheVersion[] ownedValues() {
-        return ownedValues;
-    }
-
-    /**
-     * @param ownedValues Array of values from {@link #owned}. Used during marshalling and unmarshalling.
-     */
-    public void ownedValues(GridCacheVersion[] ownedValues) {
-        this.ownedValues = ownedValues;
-    }
-
-    /**
-     * @return Indexes of keys needed to be preloaded.
-     */
-    public BitSet preloadKeys() {
-        return preloadKeys;
-    }
-
-    /**
-     * @param preloadKeys Indexes of keys needed to be preloaded.
-     */
-    public void preloadKeys(BitSet preloadKeys) {
-        this.preloadKeys = preloadKeys;
     }
 
     /**
@@ -288,19 +199,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * Sets owner and its mapped version.
-     *
-     * @param key Key.
-     * @param ownerMapped Owner mapped version.
-     */
-    public void owned(KeyCacheObject key, GridCacheVersion ownerMapped) {
-        if (owned == null)
-            owned = new GridLeanMap<>(3);
-
-        owned.put(key, ownerMapped);
-    }
-
-    /**
      * @param idx Entry index to check.
      * @return {@code True} if near entry should be invalidated.
      */
@@ -316,13 +214,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param miniId Mini ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
      * @return TTL for read operation.
      */
     public long accessTtl() {
@@ -330,64 +221,10 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @param accessTtl TTL for read operation.
-     */
-    public void accessTtl(long accessTtl) {
-        this.accessTtl = accessTtl;
-    }
-
-    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
-    }
-
-    /**
-     * @param txLbl Transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (owned != null && ownedKeys == null) {
-            ownedKeys = new KeyCacheObject[owned.size()];
-            ownedValues = new GridCacheVersion[ownedKeys.length];
-
-            int i = 0;
-
-            for (Map.Entry<KeyCacheObject, GridCacheVersion> entry : owned.entrySet()) {
-                ownedKeys[i] = entry.getKey();
-                ownedValues[i] = entry.getValue();
-                i++;
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (ownedKeys != null) {
-            owned = new GridLeanMap<>(ownedKeys.length);
-
-            for (int i = 0; i < ownedKeys.length; i++) {
-                ownedKeys[i].finishUnmarshal(ctx.cacheContext(cacheId).cacheObjectContext(), ldr);
-                owned.put(ownedKeys[i], ownedValues[i]);
-            }
-
-            ownedKeys = null;
-            ownedValues = null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 30;
     }
 
     /** {@inheritDoc} */

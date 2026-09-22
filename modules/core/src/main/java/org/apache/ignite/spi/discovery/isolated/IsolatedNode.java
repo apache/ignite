@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -48,6 +49,9 @@ public class IsolatedNode implements IgniteClusterNode {
     /** Node attributes. */
     private Map<String, Object> attrs;
 
+    /** Node features. */
+    private final IgniteNodeFeatureSet features;
+
     /** */
     private volatile ClusterMetrics metrics = new ClusterMetricsSnapshot();
 
@@ -58,11 +62,13 @@ public class IsolatedNode implements IgniteClusterNode {
      * @param id Node ID.
      * @param attrs Node attributes.
      * @param ver Node version.
+     * @param features Node features.
      */
-    public IsolatedNode(UUID id, Map<String, Object> attrs, IgniteProductVersion ver) {
+    public IsolatedNode(UUID id, Map<String, Object> attrs, IgniteProductVersion ver, IgniteNodeFeatureSet features) {
         this.id = id;
         this.attrs = U.sealMap(attrs);
         this.ver = ver;
+        this.features = features;
     }
 
     /** {@inheritDoc} */
@@ -73,6 +79,11 @@ public class IsolatedNode implements IgniteClusterNode {
     /** {@inheritDoc} */
     @Override public Object consistentId() {
         return consistentId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet features() {
+        return features;
     }
 
     /** {@inheritDoc} */

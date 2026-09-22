@@ -181,9 +181,10 @@ class WebSessionV2 implements HttpSession {
         return maxInactiveInterval;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public HttpSessionContext getSessionContext() {
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Always returns an empty context.
+     */
+    @Override @Deprecated public HttpSessionContext getSessionContext() {
         return EMPTY_SES_CTX;
     }
 
@@ -215,8 +216,10 @@ class WebSessionV2 implements HttpSession {
         return attr;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object getValue(final String name) {
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttribute(String)}.
+     */
+    @Override @Deprecated public Object getValue(final String name) {
         return getAttribute(name);
     }
 
@@ -230,8 +233,10 @@ class WebSessionV2 implements HttpSession {
             attributes().put(name, val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void putValue(final String name, final Object val) {
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #setAttribute(String, Object)}.
+     */
+    @Override @Deprecated public void putValue(final String name, final Object val) {
         setAttribute(name, val);
     }
 
@@ -262,8 +267,10 @@ class WebSessionV2 implements HttpSession {
         return entity.attributes().keySet();
     }
 
-    /** {@inheritDoc} */
-    @Override public String[] getValueNames() {
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttributeNames()}.
+     */
+    @Override @Deprecated public String[] getValueNames() {
         assertValid();
 
         final Set<String> names = attributeNames();
@@ -278,8 +285,10 @@ class WebSessionV2 implements HttpSession {
         attributes().put(name, REMOVED_ATTR);
     }
 
-    /** {@inheritDoc} */
-    @Override public void removeValue(final String name) {
+    /**
+     * @deprecated Legacy {@link HttpSession} API. Use {@link #removeAttribute(String)}.
+     */
+    @Override @Deprecated public void removeValue(final String name) {
         removeAttribute(name);
     }
 

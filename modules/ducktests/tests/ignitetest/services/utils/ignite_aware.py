@@ -117,9 +117,20 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         super().start_node(node, **kwargs)
 
-        wait_until(lambda: self.alive(node), timeout_sec=10)
+        wait_until(lambda: self.alive(node), timeout_sec=10, err_msg=lambda: self.__jvm_startup_failure_msg(node))
 
         ignite_jmx_mixin(node, self)
+
+    def __jvm_startup_failure_msg(self, node):
+        """
+        A JVM that rejects an option (an unknown collector, a bad heap value, two collectors selected)
+        dies before it logs anything Ignite-shaped, so without the console tail this is a bare timeout.
+        """
+        console_log = os.path.join(self.log_dir, "console.log")
+
+        output = node.account.ssh_capture(f"tail -n 30 {console_log}", allow_fail=True)
+
+        return f"{self.who_am_i(node)}: JVM did not start within 10 seconds. Tail of {console_log}:\n{output}"
 
     def stop_async(self, force_stop=False, **kwargs):
         """
@@ -283,6 +294,28 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         for node in nodes:
             self.await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=from_the_beginning,
                                      backoff_sec=backoff_sec, log_file=log_file)
+
+    def check_event_absent_on_node(self, evt_message, node, from_the_beginning=True, log_file=None):
+        """
+        Verify that a specific event message is NOT present in a node's log file.
+        :param evt_message: Event message.
+        :param node: Ignite service node.
+        :param from_the_beginning: If True, search from the beginning of the log file
+                (this is usually what you want for an absence check).
+        :param log_file: Explicit log file.
+        """
+        log = os.path.join(self.log_dir, log_file) if log_file else node.log_file
+
+        with monitor_log(node, log, from_the_beginning) as monitor:
+            assert not monitor.found(evt_message), \
+                "Event [%s] was unexpectedly found on '%s'" % (evt_message, node.name)
+
+    def check_event_absent(self, evt_message, from_the_beginning=True, log_file=None):
+        """
+        Verify that a specific event message is NOT present on any node of the service.
+        """
+        for node in self.nodes:
+            self.check_event_absent_on_node(evt_message, node, from_the_beginning=from_the_beginning, log_file=log_file)
 
     @staticmethod
     def event_time(evt_message, node):

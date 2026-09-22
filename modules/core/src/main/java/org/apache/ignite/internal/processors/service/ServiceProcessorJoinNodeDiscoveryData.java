@@ -17,32 +17,31 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Initial data of {@link IgniteServiceProcessor} to send in cluster on joining node.
- */
-public class ServiceProcessorJoinNodeDiscoveryData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+/** Initial data of {@link IgniteServiceProcessor} to send in cluster on joining node. */
+public class ServiceProcessorJoinNodeDiscoveryData implements Message {
     /** Static services configurations info. */
-    public final ArrayList<ServiceInfo> staticServicesInfo;
+    @Order(0)
+    List<ServiceInfo> staticServicesInfo;
 
-    /**
-     * @param staticServicesInfo Static services configurations info.
-     */
-    public ServiceProcessorJoinNodeDiscoveryData(@NotNull ArrayList<ServiceInfo> staticServicesInfo) {
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceProcessorJoinNodeDiscoveryData() {
+        // No-op.
+    }
+
+    /** @param staticServicesInfo Static services configurations info. */
+    public ServiceProcessorJoinNodeDiscoveryData(@NotNull List<ServiceInfo> staticServicesInfo) {
         this.staticServicesInfo = staticServicesInfo;
     }
 
-    /**
-     * @return Static services configurations info.
-     */
-    public ArrayList<ServiceInfo> services() {
+    /** @return Static services configurations info. */
+    public List<ServiceInfo> services() {
         return staticServicesInfo;
     }
 

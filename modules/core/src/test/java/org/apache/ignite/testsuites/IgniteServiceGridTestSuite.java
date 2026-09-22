@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.service.GridServiceClusterReadOnlyM
 import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryRedeployTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeployClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.service.GridServiceDeploymentCompoundFutureSelfTest;
-import org.apache.ignite.internal.processors.service.GridServiceDeploymentExceptionPropagationTest;
+import org.apache.ignite.internal.processors.service.GridServiceExceptionPropagationTest;
 import org.apache.ignite.internal.processors.service.GridServiceMetricsTest;
 import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorBatchDeploySelfTest;
@@ -40,12 +40,14 @@ import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelf
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallContextTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceCallInterceptorTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployOnJoinedNodeTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFailureTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
+import org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessageSerializationTest;
 import org.apache.ignite.internal.processors.service.ServiceConcurrentUndeployTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentDiscoveryListenerNotificationOrderTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentNonSerializableStaticConfigurationTest;
@@ -59,8 +61,10 @@ import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessing
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessingOnNodesLeftTest;
 import org.apache.ignite.internal.processors.service.ServiceHotRedeploymentViaDeploymentSpiTest;
 import org.apache.ignite.internal.processors.service.ServiceInfoSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceLocalStartOrderTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
+import org.apache.ignite.internal.processors.service.ServiceRedeploymentOnNodeLeftTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
@@ -101,8 +105,9 @@ import org.junit.runners.Suite;
     IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class,
     IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class,
     IgniteServiceDeploymentFailureTest.class,
+    IgniteServiceDeployOnJoinedNodeTest.class,
 
-    GridServiceDeploymentExceptionPropagationTest.class,
+    GridServiceExceptionPropagationTest.class,
     ServiceDeploymentProcessingOnCoordinatorLeftTest.class,
     ServiceDeploymentProcessingOnCoordinatorFailTest.class,
     ServiceDeploymentProcessingOnNodesLeftTest.class,
@@ -120,7 +125,10 @@ import org.junit.runners.Suite;
     GridServiceClusterReadOnlyModeTest.class,
     IgniteServiceCallContextTest.class,
     GridServiceMetricsTest.class,
-    IgniteServiceCallInterceptorTest.class
+    IgniteServiceCallInterceptorTest.class,
+    ServiceRedeploymentOnNodeLeftTest.class,
+    ServiceLocalStartOrderTest.class,
+    LazyServiceConfigurationMessageSerializationTest.class
 })
 public class IgniteServiceGridTestSuite {
     /** */

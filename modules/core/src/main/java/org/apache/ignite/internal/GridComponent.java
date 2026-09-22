@@ -79,7 +79,13 @@ public interface GridComponent {
         META_STORAGE,
 
         /** Performance statistics processor. */
-        PERFORMANCE_STAT_PROC;
+        PERFORMANCE_STAT_PROC,
+
+        /** Event storage manager. */
+        EVENT_MGR,
+
+        /** Rolling upgrade processor. */
+        ROLLING_UPGRADE_PROC;
 
         /** Cached values array. */
         public static final DiscoveryDataExchangeType[] VALUES = values();

@@ -27,9 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -62,17 +61,18 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -495,7 +495,7 @@ public class CheckpointWorkflow {
             Comparator<FullPageId> cmp = Comparator.comparingInt(FullPageId::groupId)
                 .thenComparingLong(FullPageId::effectivePageId);
 
-            ForkJoinPool pool = null;
+            ExecutorService pool = null;
 
             for (T2<PageMemoryEx, FullPageId[]> pagesPerReg : cpPagesPerRegion) {
                 if (pagesPerReg.getValue().length >= parallelSortThreshold)
@@ -518,23 +518,14 @@ public class CheckpointWorkflow {
      * @param cmp Cmp.
      * @return ForkJoinPool instance, check {@link ForkJoinTask#fork()} realization.
      */
-    private static ForkJoinPool parallelSortInIsolatedPool(
+    private ExecutorService parallelSortInIsolatedPool(
         FullPageId[] pagesArr,
         Comparator<FullPageId> cmp,
-        ForkJoinPool pool
+        ExecutorService pool
     ) throws IgniteCheckedException {
-        ForkJoinPool.ForkJoinWorkerThreadFactory factory = new ForkJoinPool.ForkJoinWorkerThreadFactory() {
-            @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-                ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-
-                worker.setName("checkpoint-pages-sorter-" + worker.getPoolIndex());
-
-                return worker;
-            }
-        };
-
-        ForkJoinPool execPool = pool == null ?
-            new ForkJoinPool(PARALLEL_SORT_THREADS + 1, factory, null, false) : pool;
+        ExecutorService execPool = pool == null
+            ? new IgniteForkJoinPool("checkpoint-pages-sorter", igniteInstanceName, PARALLEL_SORT_THREADS + 1, null, false)
+            : pool;
 
         Future<?> sortTask = execPool.submit(() -> Arrays.parallelSort(pagesArr, cmp));
 
@@ -619,7 +610,7 @@ public class CheckpointWorkflow {
         long cpTs,
         UUID cpId,
         WALPointer walPtr,
-        StripedExecutor exec,
+        IgniteStripedExecutor exec,
         CheckpointPagesWriterFactory checkpointPagesWriterFactory
     ) throws IgniteCheckedException {
         assert cpTs != 0;
@@ -682,7 +673,7 @@ public class CheckpointWorkflow {
      * @param applyError Check error reference.
      */
     private void awaitApplyComplete(
-        StripedExecutor exec,
+        IgniteStripedExecutor exec,
         AtomicReference<Throwable> applyError
     ) throws IgniteCheckedException {
         try {

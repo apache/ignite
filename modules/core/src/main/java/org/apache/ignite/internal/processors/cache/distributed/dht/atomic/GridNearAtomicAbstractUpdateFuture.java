@@ -150,6 +150,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Operation result. */
     protected GridCacheReturn opRes;
 
+    /** Handle binary in interceptor operation flag. */
+    protected boolean keepBinaryInInterceptor;
+
     /**
      * Constructor.
      *
@@ -167,6 +170,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
      * @param appAttrs Application attributes.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     protected GridNearAtomicAbstractUpdateFuture(
         GridCacheContext cctx,
@@ -183,7 +187,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean keepBinaryInInterceptor
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -209,6 +214,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
         this.remapCnt = remapCnt;
         this.appAttrs = appAttrs;
+        this.keepBinaryInInterceptor = keepBinaryInInterceptor;
     }
 
     /**
@@ -359,7 +365,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             ? null
             : (this.retval || op == TRANSFORM)
                 ? cctx.unwrapBinaryIfNeeded(
-                    ret.value(),
+                    ret.value(cctx),
                     keepBinary,
                     U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId))
                 : ret.success();
@@ -475,9 +481,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
             req.nodeId(),
             req.futureId(),
-            req.partition(),
-            true,
-            cctx.deploymentEnabled());
+            req.stripeIdx(),
+            true);
 
         ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
             "before response is received: " + req.nodeId());
@@ -497,9 +502,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
             req.nodeId(),
             req.futureId(),
-            req.partition(),
-            e instanceof ClusterTopologyCheckedException,
-            cctx.deploymentEnabled());
+            req.stripeIdx(),
+            e instanceof ClusterTopologyCheckedException);
 
         res.addFailedKeys(req.keys(), e);
 
@@ -514,9 +518,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
             req.updateRequest().nodeId(),
             req.futureId(),
-            req.partition(),
-            e instanceof ClusterTopologyCheckedException,
-            cctx.deploymentEnabled());
+            req.stripeIdx(),
+            e instanceof ClusterTopologyCheckedException);
 
         res.addFailedKeys(req.updateRequest().keys(), e);
 
@@ -914,7 +917,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
             CacheOperationContext prevOpCtx = cctx.operationContextPerCall();
 
             if (appAttrs != null)
-                cctx.operationContextPerCall(new CacheOperationContext().setApplicationAttributes(appAttrs));
+                cctx.operationContextPerCall(CacheOperationContext.builder().applicationAttributes(appAttrs).build());
 
             try {
                 apply0(req, res);

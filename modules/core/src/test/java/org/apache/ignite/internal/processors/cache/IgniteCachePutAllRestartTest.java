@@ -125,7 +125,7 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
         try {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            long endTime = System.currentTimeMillis() + 2 * 60_000;
+            long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(2 * 60_000, 20_000);
 
             while (System.currentTimeMillis() < endTime) {
                 int node = rnd.nextInt(1, NODES);
@@ -151,7 +151,7 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        long endTime = System.currentTimeMillis() + 2 * 60_000;
+        long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(2 * 60_000, 20_000);
 
         while (System.currentTimeMillis() < endTime) {
             int node = rnd.nextInt(0, NODES);
@@ -168,7 +168,7 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
 
                     Random rnd = new Random();
 
-                    long endTime = System.currentTimeMillis() + 60_000;
+                    long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 10_000);
 
                     try {
                         int iter = 0;

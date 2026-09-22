@@ -36,8 +36,8 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** ACK future versions. */
-    @Order(value = 4, method = "futureIds")
-    private GridLongList futIds;
+    @Order(0)
+    GridLongList futIds;
 
     /** */
     @GridToStringExclude
@@ -85,18 +85,9 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
         return false;
     }
 
-    /**
-     * @return List of ACKed future ids.
-     */
+    /** @return List of ACKed future ids. */
     public GridLongList futureIds() {
         return futIds;
-    }
-
-    /**
-     * @param futIds New list of ACKed future ids.
-     */
-    public void futureIds(GridLongList futIds) {
-        this.futIds = futIds;
     }
 
     /** {@inheritDoc} */
@@ -104,10 +95,6 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 37;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

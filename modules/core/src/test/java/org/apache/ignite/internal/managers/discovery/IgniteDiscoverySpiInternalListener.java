@@ -30,7 +30,9 @@ public interface IgniteDiscoverySpiInternalListener {
      * @param locNode Local node.
      * @param log Log.
      */
-    public void beforeJoin(ClusterNode locNode, IgniteLogger log);
+    public default void beforeJoin(ClusterNode locNode, IgniteLogger log) {
+        // No-op.
+    }
 
     /**
      * @param locNode Local node.

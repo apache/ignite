@@ -21,13 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -35,7 +31,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.Nullable;
@@ -85,18 +80,6 @@ public class SystemViewTableImpl extends AbstractTable implements IgniteTable {
     /** {@inheritDoc} */
     @Override public SystemViewTableDescriptorImpl<?> descriptor() {
         return desc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteLogicalTableScan toRel(
-        RelOptCluster cluster,
-        RelOptTable relOptTbl,
-        @Nullable List<RexNode> proj,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns,
-        @Nullable List<RelHint> hints
-    ) {
-        return IgniteLogicalTableScan.create(cluster, cluster.traitSet(), relOptTbl, hints, proj, cond, requiredColumns);
     }
 
     /** {@inheritDoc} */

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -72,7 +73,7 @@ public class ExecutionPlan {
     }
 
     /** */
-    public ColocationGroup target(Fragment fragment) {
+    public @Nullable ColocationGroup target(Fragment fragment) {
         if (fragment.rootFragment())
             return null;
 

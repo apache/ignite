@@ -83,6 +83,8 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
 
         final Ignite node2 = "client".equals(node2Name) ? startClientGrid(node2Name) : startGrid(node2Name);
 
+        awaitPartitionMapExchange();
+
         final ContinuousQuery<Integer, MarshallerCheckingEntry> qry = new ContinuousQuery<>();
 
         ScanQuery<Integer, MarshallerCheckingEntry> scanQry = new ScanQuery<>(new IgniteBiPredicate<Integer, MarshallerCheckingEntry>() {

@@ -61,7 +61,7 @@ public class ClientCacheRemoveAllConflictRequest extends ClientCacheDataRequest 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            cachex(ctx).removeAllConflict(map);
+            internalCache(ctx).removeAllConflict(map);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

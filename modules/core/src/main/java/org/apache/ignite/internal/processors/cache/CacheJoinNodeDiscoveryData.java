@@ -17,39 +17,41 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Information about configured caches sent from joining node.
- */
-public class CacheJoinNodeDiscoveryData implements Serializable {
+/** Information about configured caches sent from joining node. */
+public class CacheJoinNodeDiscoveryData implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    @Order(0)
     @GridToStringInclude
-    private final Map<String, CacheInfo> caches;
+    Map<String, CacheJoinInfo> caches;
 
     /** */
+    @Order(1)
     @GridToStringInclude
-    private final Map<String, CacheInfo> templates;
+    Map<String, CacheJoinInfo> templates;
 
     /** */
+    @Order(2)
     @GridToStringInclude
-    private final IgniteUuid cacheDeploymentId;
+    IgniteUuid cacheDeploymentId;
 
     /** */
-    private final boolean startCaches;
+    @Order(3)
+    boolean startCaches;
 
     /** */
-    @Nullable private ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData;
+    @Order(4)
+    @Nullable ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData;
+
+    /** */
+    public CacheJoinNodeDiscoveryData() { }
 
     /**
      * @param cacheDeploymentId Deployment ID for started caches.
@@ -59,8 +61,8 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
      */
     public CacheJoinNodeDiscoveryData(
         IgniteUuid cacheDeploymentId,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
-        Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
+        Map<String, CacheJoinInfo> caches,
+        Map<String, CacheJoinInfo> templates,
         boolean startCaches
     ) {
         this.cacheDeploymentId = cacheDeploymentId;
@@ -69,138 +71,34 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         this.startCaches = startCaches;
     }
 
-    /**
-     * @return {@code True} if required to start all caches on joining node.
-     */
+    /** @return {@code True} if required to start all caches on joining node. */
     boolean startCaches() {
         return startCaches;
     }
 
-    /**
-     * @return Deployment ID assigned on joining node.
-     */
+    /** @return Deployment ID assigned on joining node. */
     public IgniteUuid cacheDeploymentId() {
         return cacheDeploymentId;
     }
 
-    /**
-     * @return Templates configured on joining node.
-     */
-    public Map<String, CacheInfo> templates() {
+    /** @return Templates configured on joining node. */
+    public Map<String, CacheJoinInfo> templates() {
         return templates;
     }
 
-    /**
-     * @return Caches configured on joining node.
-     */
-    public Map<String, CacheInfo> caches() {
+    /** @return Caches configured on joining node. */
+    public Map<String, CacheJoinInfo> caches() {
         return caches;
     }
 
     /** */
-    public void clusterCacheGroupRecoveryData(@Nullable ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData) {
-        this.clusterCacheGroupRecoveryData = clusterCacheGroupRecoveryData;
+    public void clusterCacheGroupRecoveryData(@Nullable ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData) {
+        this.clusterCacheGrpRecoveryData = clusterCacheGrpRecoveryData;
     }
 
     /** */
     @Nullable public ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData() {
-        return clusterCacheGroupRecoveryData;
-    }
-
-    /**
-     *
-     */
-    public static class CacheInfo implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        @GridToStringInclude
-        private StoredCacheData cacheData;
-
-        /** */
-        @GridToStringInclude
-        private CacheType cacheType;
-
-        /** */
-        @GridToStringInclude
-        private boolean sql;
-
-        /** Flags added for future usage. */
-        private long flags;
-
-        /** Statically configured flag */
-        private boolean staticallyConfigured;
-
-        /**
-         * @param cacheData Cache data.
-         * @param cacheType Cache type.
-         * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
-         * @param flags Flags (for future usage).
-         * @param staticallyConfigured {@code true} if it was configured by static config and {@code false} otherwise.
-         */
-        public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags,
-            boolean staticallyConfigured) {
-            this.cacheData = cacheData;
-            this.cacheType = cacheType;
-            this.sql = sql;
-            this.flags = flags;
-            this.staticallyConfigured = staticallyConfigured;
-        }
-
-        /**
-         * @return Cache data.
-         */
-        public StoredCacheData cacheData() {
-            return cacheData;
-        }
-
-        /**
-         * @return Cache type.
-         */
-        public CacheType cacheType() {
-            return cacheType;
-        }
-
-        /**
-         * @return SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
-         */
-        public boolean sql() {
-            return sql;
-        }
-
-        /**
-         * @return {@code true} if it was configured by static config and {@code false} otherwise.
-         */
-        public boolean isStaticallyConfigured() {
-            return staticallyConfigured;
-        }
-
-        /**
-         * @return Long which bits represent some flags.
-         */
-        public long getFlags() {
-            return flags;
-        }
-
-        /**
-         * @param ois ObjectInputStream.
-         */
-        private void readObject(ObjectInputStream ois)
-            throws IOException, ClassNotFoundException {
-            ObjectInputStream.GetField gf = ois.readFields();
-
-            cacheData = (StoredCacheData)gf.get("cacheData", null);
-            cacheType = (CacheType)gf.get("cacheType", null);
-            sql = gf.get("sql", false);
-            flags = gf.get("flags", 0L);
-            staticallyConfigured = gf.get("staticallyConfigured", true);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(CacheInfo.class, this);
-        }
+        return clusterCacheGrpRecoveryData;
     }
 
     /** {@inheritDoc} */

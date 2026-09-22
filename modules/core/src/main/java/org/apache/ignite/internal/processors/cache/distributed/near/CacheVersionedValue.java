@@ -17,42 +17,42 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Cache object and version.
  */
-public class CacheVersionedValue implements Message {
+public class CacheVersionedValue implements Message, CacheIdAware {
     /** Value. */
-    @Order(value = 0, method = "value")
+    @Order(0)
     @GridToStringInclude
-    private CacheObject val;
+    CacheObject val;
 
     /** Cache version. */
-    @Order(value = 1, method = "version")
+    @Order(1)
     @GridToStringInclude
-    private GridCacheVersion ver;
+    GridCacheVersion ver;
+    
+    /** */
+    @Order(2)
+    int cacheId;
 
     /** */
     public CacheVersionedValue() {
         // No-op.
     }
 
-    /**
-     * @param val Cache value.
-     * @param ver Cache version.
-     */
-    public CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
+    /** */
+    public CacheVersionedValue(CacheObject val, GridCacheVersion ver, int cacheId) {
         this.val = val;
         this.ver = ver;
+        this.cacheId = cacheId;
     }
 
     /**
@@ -63,58 +63,20 @@ public class CacheVersionedValue implements Message {
     }
 
     /**
-     * @param ver New cache version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
-    }
-
-    /**
      * @return Cache object.
      */
     public CacheObject value() {
         return val;
     }
 
-    /**
-     * @param val New value.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
-    }
-
-    /**
-     * This method is called before the whole message is sent
-     * and is responsible for pre-marshalling state.
-     *
-     * @param ctx Cache object context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        if (val != null)
-            val.prepareMarshal(ctx);
-    }
-
-    /**
-     * This method is called after the whole message is received
-     * and is responsible for unmarshalling state.
-     *
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        if (val != null)
-            val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 102;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheVersionedValue.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return cacheId;
     }
 }

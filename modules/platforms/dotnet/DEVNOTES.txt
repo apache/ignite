@@ -1,7 +1,7 @@
 Requirements
 ============
 
-* Oracle JDK 8 or 11
+* Oracle JDK 17
 * .NET 6 SDK
 * JAVA_HOME environment variable set to the corresponding JDK (x64 or x86)
 * Apache Maven bin directory in PATH, or MAVEN_HOME environment variable

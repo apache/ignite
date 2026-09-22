@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -49,61 +47,64 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
 
+    /** Handle binary in interceptor operation flag bit mask. */
+    private static final int KEEP_BINARY_INTERCEPTOR_FLAG_MASK = 0x10;
+
     /** Sender node ID. */
-    @Order(7)
-    private UUID nodeId;
+    @Order(0)
+    public UUID nodeId;
 
     /** Near transaction version. */
-    @Order(value = 8, method = "nearXidVersion")
-    private GridCacheVersion nearXidVer;
+    @Order(1)
+    public GridCacheVersion nearXidVer;
 
     /** Thread ID. */
-    @Order(9)
-    private long threadId;
+    @Order(2)
+    public long threadId;
 
     /** Future ID. */
-    @Order(value = 10, method = "futureId")
-    private IgniteUuid futId;
+    @Order(3)
+    public IgniteUuid futId;
 
     /** Max wait timeout. */
-    @Order(11)
-    private long timeout;
+    @Order(4)
+    public long timeout;
 
     /** Indicates whether lock is obtained within a scope of transaction. */
-    @Order(value = 12, method = "inTx")
-    private boolean isInTx;
+    @Order(5)
+    public boolean isInTx;
 
     /** Invalidate flag for transactions. */
-    @Order(13)
-    private boolean isInvalidate;
+    @Order(6)
+    public boolean isInvalidate;
 
     /** Indicates whether implicit lock so for read or write operation. */
-    @Order(value = 14, method = "txRead")
-    private boolean isRead;
+    @Order(7)
+    public boolean isRead;
 
     /** Transaction isolation level. */
-    @Order(15)
-    private TransactionIsolation isolation;
+    @Order(8)
+    public TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
-    @Order(16)
-    private List<KeyCacheObject> keys;
+    @Order(9)
+    public List<KeyCacheObject> keys;
 
     /** Array indicating whether value should be returned for a key. */
-    @Order(value = 17, method = "returnValues")
+    @Order(10)
     @GridToStringInclude
-    private boolean[] retVals;
+    public boolean[] retVals;
 
     /** Key-bytes index. */
     protected int idx;
 
     /** Key count. */
-    @Order(18)
-    private int txSize;
+    @Order(11)
+    public int txSize;
 
     /** Additional flags. */
-    @Order(19)
-    private byte flags;
+    @Order(12)
+    public byte flags;
 
     /**
      * Empty constructor.
@@ -127,7 +128,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param skipStore Skip store flag.
-     * @param addDepInfo Deployment info flag.
+     * @param skipReadThrough Skip read-through cache store flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -145,10 +147,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int txSize,
         boolean skipStore,
         boolean skipReadThrough,
-        boolean keepBinary,
-        boolean addDepInfo
+        boolean keepBinaryInInterceptor,
+        boolean keepBinary
     ) {
-        super(lockVer, keyCnt, addDepInfo);
+        super(lockVer, keyCnt, false);
 
         assert keyCnt > 0;
         assert futId != null;
@@ -171,6 +173,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         skipStore(skipStore);
         skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
+        keepBinaryInInterceptor(keepBinaryInInterceptor);
     }
 
     /**
@@ -181,24 +184,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param nodeId Node ID.
-     */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /**
      * @return Near transaction ID.
      */
     public GridCacheVersion nearXidVersion() {
         return nearXidVer;
-    }
-
-    /**
-     * @param nearXidVer Near transaction ID.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
     }
 
     /**
@@ -209,24 +198,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param threadId Owner node thread ID.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
-    }
-
-    /**
      * @return Future ID.
      */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
     }
 
     /**
@@ -237,13 +212,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param isInTx {@code True} if implicit transaction lock.
-     */
-    public void inTx(boolean isInTx) {
-        this.isInTx = isInTx;
-    }
-
-    /**
      * @return Invalidate flag.
      */
     public boolean isInvalidate() {
@@ -251,24 +219,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param isInvalidate Invalidate flag.
-     */
-    public void isInvalidate(boolean isInvalidate) {
-        this.isInvalidate = isInvalidate;
-    }
-
-    /**
      * @return {@code True} if lock is implicit and for a read operation.
      */
     public boolean txRead() {
         return isRead;
-    }
-
-    /**
-     * @param isRead {@code True} if lock is implicit and for a read operation.
-     */
-    public void txRead(boolean isRead) {
-        this.isRead = isRead;
     }
 
     /**
@@ -280,80 +234,95 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Array indicating whether value should be returned for a key.
-     */
-    public boolean[] returnValues() {
-        return retVals;
-    }
-
-    /**
-     * @param retVals Array indicating whether value should be returned for a key.
-     */
-    public void returnValues(boolean[] retVals) {
-        this.retVals = retVals;
-    }
-
-    /**
      * Sets skip store flag value.
      *
      * @param skipStore Skip store flag.
      */
     private void skipStore(boolean skipStore) {
-        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+        setFlag(skipStore, SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Skip store flag.
      */
     public boolean skipStore() {
-        return (flags & SKIP_STORE_FLAG_MASK) == 1;
+        return isFlag(SKIP_STORE_FLAG_MASK);
     }
 
     /**
-     * Sets skip store flag value.
+     * Sets skip read-through flag value.
      *
      * @param skipReadThrough Skip read-through cache store flag.
      */
     private void skipReadThrough(boolean skipReadThrough) {
-        flags = skipReadThrough ? (byte)(flags | SKIP_READ_THROUGH_FLAG_MASK) : (byte)(flags & ~SKIP_READ_THROUGH_FLAG_MASK);
+        setFlag(skipReadThrough, SKIP_READ_THROUGH_FLAG_MASK);
     }
 
     /**
-     * @return Skip store flag.
+     * @return Skip read-through flag.
      */
     public boolean skipReadThrough() {
-        return (flags & SKIP_READ_THROUGH_FLAG_MASK) != 0;
+        return isFlag(SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /** Sets flag indicating whether to handle binary in interceptor. */
+    public void keepBinaryInInterceptor(boolean handleBinary) {
+        setFlag(handleBinary, KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
+    }
+
+    /**
+     * @return Flag indicating whether to handle binary in interceptor.
+     */
+    public boolean keepBinaryInInterceptor() {
+        return isFlag(KEEP_BINARY_INTERCEPTOR_FLAG_MASK);
     }
 
     /**
      * @param keepBinary Keep binary flag.
      */
     private void keepBinary(boolean keepBinary) {
-        flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
+        setFlag(keepBinary, KEEP_BINARY_FLAG_MASK);
     }
 
     /**
      * @return Keep binary.
      */
     public boolean keepBinary() {
-        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+        return isFlag(KEEP_BINARY_FLAG_MASK);
     }
 
     /**
      * @return Flag indicating whether transaction use cache store.
      */
     public boolean storeUsed() {
-        return (flags & STORE_USED_FLAG_MASK) != 0;
+        return isFlag(STORE_USED_FLAG_MASK);
     }
 
     /**
      * @param storeUsed Store used value.
      */
     public void storeUsed(boolean storeUsed) {
-        if (storeUsed)
-            flags |= STORE_USED_FLAG_MASK;
-        else
-            flags &= ~STORE_USED_FLAG_MASK;
+        setFlag(storeUsed, STORE_USED_FLAG_MASK);
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reads flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /**
@@ -364,24 +333,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param isolation Transaction isolation level.
-     */
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
-    }
-
-    /**
      * @return Tx size.
      */
     public int txSize() {
         return txSize;
-    }
-
-    /**
-     * @param txSize Tx size.
-     */
-    public void txSize(int txSize) {
-        this.txSize = txSize;
     }
 
     /**
@@ -408,16 +363,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return keys;
     }
 
-    /**
-     * @param keys Unmarshalled keys.
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
-    }
-
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
+    @Override public int stripeIdx() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : ANY_STRIPE;
     }
 
     /**
@@ -427,54 +375,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         return timeout;
     }
 
-    /**
-     * @param timeout Max lock wait time.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(keys, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(keys, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 21;
     }
 
     /** {@inheritDoc} */

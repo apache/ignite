@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,43 +27,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridTaskResultResponse implements Message {
     /** Result. */
-    private @Nullable Object res;
+    @Marshalled("resBytes")
+    public @Nullable Object res;
 
     /** Serialized result. */
-    @Order(value = 0, method = "resultBytes")
-    private byte[] resBytes;
+    @Order(0)
+    @Nullable byte[] resBytes;
 
     /** Finished flag. */
     @Order(1)
-    private boolean finished;
+    boolean finished;
 
     /** Flag indicating that task has ever been launched on node. */
     @Order(2)
-    private boolean found;
+    boolean found;
 
     /** Error. */
-    @Order(value = 3, method = "error")
-    private String err;
+    @Order(3)
+    String err;
 
     /**
      * @return Task result.
      */
     @Nullable public Object result() {
         return res;
-    }
-
-    /**
-     * @param resBytes Serialized result.
-     */
-    public void resultBytes(byte[] resBytes) {
-        this.resBytes = resBytes;
-    }
-
-    /**
-     * @return Serialized result.
-     */
-    public byte[] resultBytes() {
-        return resBytes;
     }
 
     /**
@@ -110,32 +95,4 @@ public class GridTaskResultResponse implements Message {
         this.err = err;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 77;
-    }
-
-    /**
-     * Marshals task result to byte array.
-     *
-     * @param ctx Context.
-     * @param res Task result.
-     */
-    public void marshalResult(GridKernalContext ctx, @Nullable Object res) throws IgniteCheckedException {
-        resBytes = U.marshal(ctx, res);
-    }
-
-    /**
-     * Unmarshals task result from byte array.
-     *
-     * @param ctx Context.
-     */
-    public void unmarshalResult(GridKernalContext ctx) throws IgniteCheckedException {
-        if (resBytes != null) {
-            res = U.unmarshal(ctx, resBytes, U.resolveClassLoader(ctx.config()));
-
-            // It is not required anymore.
-            resBytes = null;
-        }
-    }
 }

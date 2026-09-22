@@ -17,27 +17,45 @@
 
 package org.apache.ignite.internal.marshaller.optimized;
 
+import java.io.IOException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
+import org.apache.ignite.internal.util.io.GridUnsafeDataOutput;
 
 /**
- *
+ * Storage for object streams.
  */
-public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRegistry {
+class OptimizedObjectSharedStreamRegistry {
     /** */
     private static final ThreadLocal<StreamHolder> holders = new ThreadLocal<>();
 
-    /** {@inheritDoc} */
-    @Override OptimizedObjectOutputStream out() {
+    /**
+     * Gets output stream.
+     *
+     * @return Object output stream.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
+     */
+    OptimizedObjectOutputStream out() {
         return holder().acquireOut();
     }
 
-    /** {@inheritDoc} */
-    @Override OptimizedObjectInputStream in() {
+    /**
+     * Gets input stream.
+     *
+     * @return Object input stream.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
+     */
+    OptimizedObjectInputStream in() {
         return holder().acquireIn();
     }
 
-    /** {@inheritDoc} */
-    @Override void closeOut(OptimizedObjectOutputStream out) {
+    /**
+     * Closes and releases output stream.
+     *
+     * @param out Object output stream.
+     */
+    void closeOut(OptimizedObjectOutputStream out) {
         CommonUtils.close(out, null);
 
         StreamHolder holder = holders.get();
@@ -46,8 +64,12 @@ public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRe
             holder.releaseOut();
     }
 
-    /** {@inheritDoc} */
-    @Override void closeIn(OptimizedObjectInputStream in) {
+    /**
+     * Closes and releases input stream.
+     *
+     * @param in Object input stream.
+     */
+    void closeIn(OptimizedObjectInputStream in) {
         CommonUtils.close(in, null);
 
         StreamHolder holder = holders.get();
@@ -70,6 +92,34 @@ public class OptimizedObjectSharedStreamRegistry extends OptimizedObjectStreamRe
             holder.releaseIn();
 
             holders.set(null);
+        }
+    }
+
+    /**
+     * Creates output stream.
+     *
+     * @return Object output stream.
+     */
+    static OptimizedObjectOutputStream createOut() {
+        try {
+            return new OptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to create object output stream.", e);
+        }
+    }
+
+    /**
+     * Creates input stream.
+     *
+     * @return Object input stream.
+     */
+    static OptimizedObjectInputStream createIn() {
+        try {
+            return new OptimizedObjectInputStream(new GridUnsafeDataInput());
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to create object input stream.", e);
         }
     }
 

@@ -113,7 +113,9 @@ public class PerformanceStatisticsPropertiesTest extends AbstractPerformanceStat
     @Test
     @WithSystemProperty(key = IGNITE_PERF_STAT_FLUSH_SIZE, value = "" + TEST_FLUSH_SIZE)
     public void testFlushSize() throws Exception {
-        long initLen = srv.context().cache().cacheDescriptors().values().stream().mapToInt(
+        long initLen = 1 + OperationType.versionRecordSize();
+
+        initLen += srv.context().cache().cacheDescriptors().values().stream().mapToInt(
             desc -> 1 + cacheStartRecordSize(desc.cacheName().getBytes().length, false)).sum();
 
         long opsCnt = (TEST_FLUSH_SIZE - initLen) / (/*typeOp*/1 + OperationType.cacheRecordSize());

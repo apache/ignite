@@ -80,6 +80,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.requireNonNull;
 import static org.apache.calcite.rex.RexUtil.removeCast;
 import static org.apache.calcite.rex.RexUtil.sargRef;
+import static org.apache.calcite.sql.SqlKind.AND;
 import static org.apache.calcite.sql.SqlKind.EQUALS;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
@@ -96,6 +97,9 @@ import static org.apache.calcite.sql.SqlKind.SEARCH;
 public class RexUtils {
     /** Maximum amount of search bounds tuples per scan. */
     public static final int MAX_SEARCH_BOUNDS_COMPLEXITY = 100;
+
+    /** Operands limit per call when expanding SEARCH/SARG operator. */
+    public static final int SEARCH_EXPAND_OPERANDS_LIMIT = 100;
 
     /** */
     public static RexNode makeCast(RexBuilder builder, RexNode node, RelDataType type) {
@@ -879,7 +883,7 @@ public class RexUtils {
         RexNode op1 = call.getOperands().get(1);
 
         if (!op0.getType().isNullable())
-            return RexUtil.expandSearch(rexBuilder, program, call);
+            return expandSearch(rexBuilder, program, call);
 
         while (op1 instanceof RexLocalRef) // Dereference local variable.
             op1 = requireNonNull(program, "program").getExprList().get(((RexSlot)op1).getIndex());
@@ -892,7 +896,7 @@ public class RexUtils {
             ? rexBuilder.makeLiteral(arg.nullAs.toBoolean())
             : rexBuilder.makeNullLiteral(rexBuilder.getTypeFactory().createSqlType(SqlTypeName.BOOLEAN));
 
-        RexNode expandedSearch = RexUtil.expandSearch(rexBuilder, program,
+        RexNode expandedSearch = expandSearch(rexBuilder, program,
             rexBuilder.makeCall(call.getOperator(), rexBuilder.makeNotNull(op0), op1));
 
         return rexBuilder.makeCall(SqlStdOperatorTable.CASE,
@@ -900,6 +904,42 @@ public class RexUtils {
             nullAs,
             expandedSearch
         );
+    }
+
+    /**
+     * Expand SEARCH/SARG with operands limit (to avoid too deep recursion on operands processing after compilation).
+     */
+    private static RexNode expandSearch(RexBuilder rexBuilder, @Nullable RexProgram program, RexNode call) {
+        RexNode expandedSearch = RexUtil.expandSearch(rexBuilder, program, call);
+
+        RexShuttle groupingShuttle = new RexShuttle() {
+            @Override public RexNode visitCall(RexCall call) {
+                if (call.getOperands().size() > SEARCH_EXPAND_OPERANDS_LIMIT
+                    && (call.getOperator().getKind() == OR || call.getOperator().getKind() == AND)) {
+
+                    List<RexNode> groupedOps = new ArrayList<>();
+                    List<RexNode> grpOps = new ArrayList<>(SEARCH_EXPAND_OPERANDS_LIMIT);
+
+                    for (int i = 0; i < call.getOperands().size(); i++) {
+                        if (i > 0 && i % SEARCH_EXPAND_OPERANDS_LIMIT == 0) {
+                            groupedOps.add(rexBuilder.makeCall(call.getOperator(), grpOps));
+
+                            grpOps = new ArrayList<>(SEARCH_EXPAND_OPERANDS_LIMIT);
+                        }
+
+                        grpOps.add(call.getOperands().get(i));
+                    }
+
+                    groupedOps.add(grpOps.size() == 1 ? grpOps.get(0) : rexBuilder.makeCall(call.getOperator(), grpOps));
+
+                    return rexBuilder.makeCall(call.getOperator(), groupedOps);
+                }
+
+                return super.visitCall(call);
+            }
+        };
+
+        return expandedSearch.accept(groupingShuttle);
     }
 
     /**

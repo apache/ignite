@@ -46,7 +46,7 @@ DDL or DML statements that modify the data are prohibited as well.
 
 You can change the cluster state in multiple ways:
 
-* link:control-script#getting-cluster-state[Control script]:
+* link:tools/control-script#getting-cluster-state[Control script]:
 +
 [source, shell]
 ----

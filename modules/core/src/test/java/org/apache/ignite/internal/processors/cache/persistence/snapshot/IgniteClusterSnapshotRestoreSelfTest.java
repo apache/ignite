@@ -95,6 +95,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Reset consistent ID flag. */
     private boolean resetConsistentId;
 
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final long TIMEOUT = 60_000;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -117,7 +120,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         // Skip check because some partitions will be empty - keysCnt == parts/2.
         Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
     }
@@ -235,7 +239,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             TestRecordingCommunicationSpi.spi(g).record(SnapshotFilesRequestMessage.class);
 
         // Restore all cache groups.
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT));
 
         awaitPartitionMapExchange(true, true, null, true);
 
@@ -277,8 +282,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             try {
-                grid(nodeIdxSupplier.getAsInt()).snapshot().restoreSnapshot(
-                    SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+                runWithLoggedThreadDump(() ->
+                    grid(nodeIdxSupplier.getAsInt()).snapshot().restoreSnapshot(
+                        SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
                 successCnt.incrementAndGet();
             }
@@ -444,7 +450,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         resetBaselineTopology();
 
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+        runWithLoggedThreadDump(() ->
+            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT));
 
         assertCacheKeys(grid(0).cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);

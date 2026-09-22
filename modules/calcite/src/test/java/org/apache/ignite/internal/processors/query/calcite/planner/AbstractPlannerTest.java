@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptUtil;
@@ -39,6 +41,9 @@ import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
@@ -53,7 +58,6 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -68,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -216,26 +221,34 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Nullable RelOptListener planLsnr,
         String... disabledRules
     ) {
-        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, disabledRules);
+        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, null, ImmutableSet.copyOf(disabledRules), null);
     }
 
     /** */
-    protected PlanningContext plannerCtx(
+    private PlanningContext plannerCtx(
         String sql,
         Collection<IgniteSchema> schemas,
         @Nullable RelOptListener planLsnr,
-        String... disabledRules
+        Collection<Object> params,
+        Collection<String> disabledRules,
+        @Nullable Context additionalCtx
     ) {
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(Contexts.of(baseQueryContext(schemas), planLsnr))
-            .query(sql)
-            .build();
+        Context parentCtx = Contexts.of(baseQueryContext(schemas), planLsnr);
+
+        PlanningContext.Builder ctxBuilder = PlanningContext.builder()
+            .parentContext(additionalCtx == null ? parentCtx : Contexts.chain(parentCtx, additionalCtx))
+            .query(sql);
+
+        if (params != null)
+            ctxBuilder.parameters(params.toArray(Object[]::new));
+
+        PlanningContext ctx = ctxBuilder.build();
 
         IgnitePlanner planner = ctx.planner();
 
         assertNotNull(planner);
 
-        planner.addDisabledRules(ImmutableSet.copyOf(disabledRules));
+        planner.addDisabledRules(disabledRules);
 
         return ctx;
     }
@@ -435,13 +448,25 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @SuppressWarnings("ThrowableNotThrown")
+    void assertThrows(
+        TestPlanningContextBuilder ctxBuilder,
+        Class<? extends Throwable> cls,
+        @Nullable String msg
+    ) {
+        GridTestUtils.assertThrows(null, () -> assertPlan(ctxBuilder, rel -> true), cls, msg);
+    }
+
+    /** */
     protected <T extends RelNode> void assertPlan(
         String sql,
         IgniteSchema schema,
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        assertPlan(sql, schema, null, predicate, disabledRules);
+        TestPlanningContextBuilder builder = contextBuilder().query(sql).schema(schema).disabledRules(disabledRules);
+
+        assertPlan(builder, predicate);
     }
 
     /** */
@@ -451,20 +476,33 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        assertPlan(sql, schemas, null, predicate, disabledRules);
+        TestPlanningContextBuilder builder = contextBuilder().query(sql).schemas(schemas).disabledRules(disabledRules);
+
+        assertPlan(builder, predicate);
     }
 
     /** */
     protected <T extends RelNode> void assertPlan(
         String sql,
-        Collection<IgniteSchema> schemas,
-        @Nullable RelOptListener planLsnr,
+        IgniteSchema schema,
+        RelOptListener planLsnr,
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        IgniteRel plan = physicalPlan(plannerCtx(sql, schemas, planLsnr, disabledRules));
+        TestPlanningContextBuilder builder = contextBuilder().query(sql).schema(schema).disabledRules(disabledRules)
+            .planListener(planLsnr);
 
-        checkSplitAndSerialization(plan, schemas);
+        assertPlan(builder, predicate);
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(
+        TestPlanningContextBuilder ctxBuilder,
+        Predicate<T> predicate
+    ) throws Exception {
+        IgniteRel plan = physicalPlan(ctxBuilder.build());
+
+        checkSplitAndSerialization(plan, ctxBuilder.schemas);
 
         if (!predicate.test((T)plan)) {
             String invalidPlanMsg = "Invalid plan (" + lastErrorMsg + "):\n" +
@@ -472,17 +510,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             fail(invalidPlanMsg);
         }
-    }
-
-    /** */
-    protected <T extends RelNode> void assertPlan(
-        String sql,
-        IgniteSchema schema,
-        @Nullable RelOptListener planLsnr,
-        Predicate<T> predicate,
-        String... disabledRules
-    ) throws Exception {
-        assertPlan(sql, Collections.singletonList(schema), planLsnr, predicate, disabledRules);
     }
 
     /**
@@ -620,6 +647,40 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Change localRef arrangement according lexographical ordering, i.e. <br>
+     * AND(=($t1, 0), =($t0, 0), SEARCH($t2, Sarg[IS NOT NULL])) <br>
+     * will become: <br>
+     * AND(=($t0, 0), =($t1, 0), SEARCH($t2, Sarg[IS NOT NULL]))
+     */
+    protected <T extends RelNode> Predicate<ProjectableFilterableTableScan> satisfyCondition(String condition) {
+        return node -> {
+            RexShuttle shuttle = new RexShuttle() {
+                @Override public RexNode visitCall(RexCall c) {
+                    RexCall call = (RexCall)super.visitCall(c);
+
+                    if (call.getOperator().isSymmetrical()) {
+                        List<RexNode> exprs = new ArrayList<>(call.getOperands());
+                        exprs.sort(Comparator.comparing(RexNode::toString));
+                        return node.getCluster().getRexBuilder().makeCall(call.getOperator(), exprs);
+                    }
+
+                    return call;
+                }
+            };
+
+            RexNode normCond = shuttle.apply(node.condition());
+
+            if (!condition.equals(normCond.toString())) {
+                lastErrorMsg = "Unexpected condition [expected=" + condition + ", actual=" + normCond + ']';
+
+                return false;
+            }
+
+            return true;
+        };
+    }
+
+    /**
      * Predicate builder for "Operator has column names" condition.
      */
     protected <T extends RelNode> Predicate<T> hasColumns(String... cols) {
@@ -740,23 +801,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(UUID nodeId, CalciteMessage msg) {
+        @Override public void send(UUID nodeId, Message msg) {
             mgr.send(localNodeId(), nodeId, msg);
         }
 
         /** {@inheritDoc} */
         @Override public boolean alive(UUID nodeId) {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareMarshal(Message msg) {
-            // No-op;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void prepareUnmarshal(Message msg) {
-            // No-op;
         }
     }
 
@@ -776,5 +827,84 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             return true;
         }
+    }
+
+    /** Test planning context builder. */
+    public class TestPlanningContextBuilder {
+        /** */
+        private String query;
+
+        /** */
+        private Collection<IgniteSchema> schemas;
+
+        /** */
+        private Collection<Object> params = List.of();
+
+        /** */
+        private Collection<String> disabledRules = List.of();
+
+        /** */
+        @Nullable private RelOptListener planListener;
+
+        /** */
+        @Nullable private Context additionalCtx;
+
+        /** */
+        public TestPlanningContextBuilder query(String qry) {
+            query = qry;
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder schema(IgniteSchema schemas) {
+            this.schemas = List.of(schemas);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder schemas(Collection<IgniteSchema> schemas) {
+            this.schemas = List.copyOf(schemas);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder params(Collection<Object> params) {
+            this.params = List.copyOf(params);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder params(Object... params) {
+            this.params = Arrays.asList(params);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder disabledRules(String... rules) {
+            disabledRules = List.of(rules);
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder planListener(@Nullable RelOptListener planListener) {
+            this.planListener = planListener;
+            return this;
+        }
+
+        /** */
+        public TestPlanningContextBuilder additionalCtx(Context additionalCtx) {
+            this.additionalCtx = additionalCtx;
+            return this;
+        }
+
+        /** */
+        PlanningContext build() {
+            return plannerCtx(query, schemas, planListener, params, disabledRules, additionalCtx);
+        }
+    }
+
+    /** */
+    public TestPlanningContextBuilder contextBuilder() {
+        return new TestPlanningContextBuilder();
     }
 }

@@ -19,7 +19,11 @@ package org.apache.ignite.spi.tracing;
 
 /**
  * Logical piece of a trace that insulates spi specific logic.
+ *
+ * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+ * retired in favor of Ignite Performance Statistics and Ignite Metrics.
  */
+@Deprecated(forRemoval = true)
 public interface SpiSpecificSpan {
 
     /**

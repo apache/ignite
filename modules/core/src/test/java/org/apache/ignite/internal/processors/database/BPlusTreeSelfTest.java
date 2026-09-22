@@ -170,7 +170,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         reuseList = createReuseList(CACHE_ID, pageMem, 0, true);
 
-        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager") {
+        lockTrackerManager = new PageLockTrackerManager("testIgniteInstance", "testTreeManager", log) {
             @Override public PageLockListener createPageLockTracker(String name) {
                 return new TestPageLockListener(super.createPageLockTracker(name));
             }

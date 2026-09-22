@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,10 +67,13 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -225,8 +227,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
             int grp = e.getKey();
 
             for (File grpDumpDir : sft.cacheStorages(cctx.cache().cacheGroup(grp).config())) {
-                if (!grpDumpDir.mkdirs())
-                    throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+                U.ensureDirectory(grpDumpDir, "directory for dump cache group", log);
+
+                if (!F.isEmpty(grpDumpDir.listFiles()))
+                    throw new IgniteCheckedException("Dump directory not empty: " + grpDumpDir);
             }
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
@@ -242,7 +246,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveCacheConfigs() {
+    @Override protected List<IgniteCompletableFuture<Void>> saveCacheConfigs() {
         return processed.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
@@ -263,7 +267,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveGroup(int grp, Set<Integer> grpParts) {
+    @Override protected List<IgniteCompletableFuture<Void>> saveGroup(int grp, Set<Integer> grpParts) {
         long start = System.currentTimeMillis();
 
         AtomicLong entriesCnt = new AtomicLong();
@@ -277,7 +281,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         if (log.isInfoEnabled())
             log.info("Start group dump [name=" + name + ", id=" + grp + ']');
 
-        List<CompletableFuture<Void>> futs = grpParts.stream().map(part -> runAsync(() -> {
+        List<IgniteCompletableFuture<Void>> futs = grpParts.stream().map(part -> runAsync(() -> {
             long entriesCnt0 = 0;
             long writtenEntriesCnt0 = 0;
 
@@ -330,7 +334,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
         int futsSize = futs.size();
 
-        CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize])).whenComplete((res, t) -> {
+        IgniteCompletableFuture.allOf(futs.toArray(new IgniteCompletableFuture[futsSize])).whenComplete((res, t) -> {
             clearDumpListener(gctx);
 
             if (log.isInfoEnabled()) {
@@ -365,7 +369,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized CompletableFuture<Void> closeAsync() {
+    @Override protected synchronized IgniteCompletableFuture<Void> closeAsync() {
         if (closeFut == null) {
             dumpCtxs.values().forEach(PartitionDumpContext::close);
 
@@ -382,7 +386,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                     taken.add(new GroupPartitionId(grp, part));
             }
 
-            closeFut = CompletableFuture.runAsync(
+            closeFut = IgniteCompletableFuture.runAsync(
                 () -> {
                     thLocBufs.clear();
                     if (encThLocBufs != null)

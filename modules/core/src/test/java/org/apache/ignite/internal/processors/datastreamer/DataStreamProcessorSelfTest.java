@@ -55,6 +55,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -377,6 +378,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                 Affinity<Integer> aff = cache0.affinity();
 
+                IgniteCacheDatabaseSharedManager db = grid(g).context().cache().context().database();
+
                 for (int key = 0; key < cnt * threads; key++) {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
                         GridCacheEntryEx entry = cache0.entryEx(key);
@@ -394,7 +397,14 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                                 entry = cache0.entryEx(key);
                             }
 
-                            entry.unswap();
+                            db.checkpointReadLock();
+
+                            try {
+                                entry.unswap();
+                            }
+                            finally {
+                                db.checkpointReadUnlock();
+                            }
 
                             assertEquals(new Integer((key < 100 ? -1 : key)),
                                 CU.value(entry.rawGet(), cache0.context(), false));

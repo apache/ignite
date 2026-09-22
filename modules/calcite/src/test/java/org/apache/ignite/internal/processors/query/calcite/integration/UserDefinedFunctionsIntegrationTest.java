@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
@@ -67,8 +69,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** */
     @Test
     public void testSameSignatureNotRegistered() throws Exception {
-        LogListener logChecker = LogListener.matches("Unable to register function 'SAMESIGN'. Other function " +
-            "with the same name and parameters is already registered").build();
+        LogListener logChecker = createUnableRegisterFunctionLogListener("SAMESIGN");
 
         listeningLog.registerListener(logChecker);
 
@@ -92,6 +93,34 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertEquals(1, schema.getFunctions("SAMESIGN").size());
     }
 
+    /** */
+    @Test
+    public void testOverloadedFunctions() throws Exception {
+        LogListener sqlEquivalentLogLsnr = createUnableRegisterFunctionLogListener("SQL_EQUIVALENT");
+        LogListener sqlEquivalentTableLogLsnr = createUnableRegisterFunctionLogListener("SQL_EQUIVALENT_TABLE");
+
+        listeningLog.registerAllListeners(sqlEquivalentLogLsnr, sqlEquivalentTableLogLsnr);
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("overloaded-functions")
+            .setSqlSchema("UDF")
+            .setSqlFunctionClasses(OverloadedFunctionsLibrary.class));
+
+        SchemaPlus schema = queryProcessor(client).schemaHolder().schema("UDF");
+
+        assertEquals(2, schema.getFunctions("OVERLOADED").size());
+        assertEquals(2, schema.getFunctions("OVERLOADED_TABLE").size());
+        assertEquals(1, schema.getFunctions("SQL_EQUIVALENT").size());
+        assertEquals(1, schema.getFunctions("SQL_EQUIVALENT_TABLE").size());
+
+        assertTrue(sqlEquivalentLogLsnr.check(getTestTimeout()));
+        assertTrue(sqlEquivalentTableLogLsnr.check(getTestTimeout()));
+
+        assertQuery("SELECT UDF.OVERLOADED(1, 'a')").returns("1a").check();
+        assertQuery("SELECT UDF.OVERLOADED('a', 1)").returns("a1").check();
+
+        assertQuery("SELECT * FROM TABLE(UDF.OVERLOADED_TABLE(1, 'a'))").returns("1a").check();
+        assertQuery("SELECT * FROM TABLE(UDF.OVERLOADED_TABLE('a', 1))").returns("a1").check();
+    }
 
     /** */
     @Test
@@ -105,18 +134,25 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         // Make sure that the new functions didn't affect schema 'PUBLIC'.
         assertQuery("SELECT UPPER(?)").withParams("abc").returns("ABC").check();
-        assertQuery("select UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
-        assertQuery("select * from table(SYSTEM_RANGE(1, 2))").returns(1L).returns(2L).check();
-        assertQuery("select TYPEOF(?)").withParams(1L).returns("BIGINT").check();
-        assertQuery("select ? + ?").withParams(1, 2).returns(3).check();
-        assertThrows("select PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
+        assertQuery("SELECT UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1609459200L).check();
+        assertQuery("SELECT * FROM TABLE(SYSTEM_RANGE(1, 2))").returns(1L).returns(2L).check();
+        assertQuery("SELECT TYPEOF(?)").withParams(1L).returns("BIGINT").check();
+        assertQuery("SELECT ? + ?").withParams(1, 2).returns(3).check();
+        assertThrows("SELECT PLUS(?, ?)", SqlValidatorException.class, "No match found for function signature", 1, 2);
 
         // Ensure that new functions are successfully created in a custom schema.
         assertQuery("SELECT \"OWN_SCHEMA\".UPPER(?)").withParams("abc").returns(3).check();
-        assertQuery("select \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
-        assertQuery("select * from table(\"OWN_SCHEMA\".SYSTEM_RANGE(1, 2))").returns(100L).check();
-        assertQuery("select \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
-        assertQuery("select \"OWN_SCHEMA\".PLUS(?, ?)").withParams(1, 2).returns(100).check();
+        assertQuery("SELECT \"OWN_SCHEMA\".UNIX_SECONDS(TIMESTAMP '2021-01-01 00:00:00')").returns(1).check();
+        assertQuery("SELECT * FROM TABLE(\"OWN_SCHEMA\".SYSTEM_RANGE(1, 2))").returns(100L).check();
+        assertQuery("SELECT \"OWN_SCHEMA\".TYPEOF('ABC')").returns(1).check();
+        assertQuery("SELECT \"OWN_SCHEMA\".PLUS(?, ?)").withParams(1, 2).returns(100).check();
+
+        assertQuery("SELECT * FROM TABLE(\"OWN_SCHEMA\".STR_ARRAY_CONSUME_TABLE(?)) as t").withParams(List.of("row1", "row2"))
+            .returns("row1").returns( "row2").check();
+        assertQuery("SELECT * FROM TABLE(\"OWN_SCHEMA\".OBJ_ARRAY_CONSUME_TABLE(?)) as t").withParams(List.of(new CustomClass(), "row2"))
+            .returns("CustomClass.toString").returns( "row2").check();
+        assertThrows("SELECT * FROM TABLE(\"OWN_SCHEMA\".STR_ARRAY_CONSUME_TABLE(?)) as t", IgniteSQLException.class,
+            "An error occurred while query executing", List.of(new CustomClass(), "row2"));
 
         LogListener logChecker0 = LogListener.matches("Unable to add user-defined SQL function 'upper'")
             .andMatches("Unable to add user-defined SQL function 'unix_seconds'")
@@ -231,6 +267,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testUdfAnotherSchema() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
+            .setSqlSchema("EMP")
+            .setIndexedTypes(Integer.class, Employer.class));
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Object>("udf")
+            .setSqlSchema("UDF")
+            .setSqlFunctionClasses(MulFunctionsLibrary.class));
+
+        for (int i = 0; i < 3; i++)
+            client.cache("emp").put(i, new Employer("emp" + i, (double)i));
+
+        assertQuery("SELECT udf.mul(_key, _key) FROM emp.Employer")
+            .returns(0).returns(1).returns(4).check();
+    }
+
+    /** */
+    @Test
     public void testTableFunctions() throws Exception {
         IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
             .setSqlSchema("PUBLIC")
@@ -321,6 +375,51 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testScalarSubqueriesInTableFunctionArguments() throws Exception {
+        IgniteCache<Integer, Employer> emp = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>("emp")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TableFunctionsLibrary.class)
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("emp")))
+        );
+
+        emp.put(1, new Employer("Igor1", 1d));
+        emp.put(2, new Employer("Roman1", 2d));
+
+        awaitPartitionMapExchange();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments((SELECT 10), 20))")
+            .returns(10, 20)
+            .check();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments((SELECT 10), (SELECT 20)))")
+            .returns(10, 20)
+            .check();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments((SELECT 4) + (SELECT 6), 20))")
+            .returns(10, 20)
+            .check();
+
+        assertQuery("SELECT * FROM TABLE(scalarQueryArguments(" +
+            "(SELECT _KEY FROM emp WHERE _KEY < 0), 20))")
+            .returns(null, 20)
+            .check();
+
+        assertQuery("SELECT e._KEY, (SELECT f.SCALAR_VALUE FROM TABLE(" +
+            "scalarQueryArguments((SELECT e._KEY + 1), e._KEY)) f) " +
+            "FROM emp e ORDER BY e._KEY")
+            .returns(1, 2)
+            .returns(2, 3)
+            .check();
+
+        assertThrows(
+            "SELECT * FROM TABLE(scalarQueryArguments((SELECT _KEY FROM emp), 20))",
+            IllegalArgumentException.class,
+            "Subquery returned more than 1 value."
+        );
+    }
+
+    /** */
+    @Test
     public void testIncorrectTableFunctions() throws Exception {
         LogListener logChecker0 = LogListener.matches("One or more column names is not unique")
             .andMatches("must match the number of column types")
@@ -383,6 +482,17 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    @Test
+    public void testBigDecimalFunctionArgument() {
+        client.getOrCreateCache(new CacheConfiguration<>("decimal-functions")
+            .setSqlSchema("UDF")
+            .setSqlFunctionClasses(OtherFunctionsLibrary2.class));
+
+        assertQuery("SELECT udf.decimalToInt(5)").returns(5).check();
+        assertQuery("SELECT udf.decimalToInt(5.3)").returns(5).check();
+    }
+
+    /** */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertThrows(String sql) {
         GridTestUtils.assertThrowsWithCause(() -> assertQuery(sql).check(), IgniteSQLException.class);
@@ -403,6 +513,13 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 Arrays.asList(x + 4, x + 5, x + 6),
                 Arrays.asList(x + 7, x + 8, x + 9)
             );
+        }
+
+        /** Returns a single row containing the function arguments. */
+        @QuerySqlTableFunction(columnTypes = {Integer.class, Integer.class},
+            columnNames = {"SCALAR_VALUE", "LITERAL_VALUE"})
+        public static Iterable<Collection<?>> scalarQueryArguments(Integer scalarVal, int literalVal) {
+            return List.of(Arrays.asList(scalarVal, literalVal));
         }
 
         /** Overrides. */
@@ -662,6 +779,12 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         public static int sameSign2(int v) {
             return v;
         }
+
+        /** */
+        @QuerySqlFunction
+        public static int decimalToInt(BigDecimal val) {
+            return val.intValue();
+        }
     }
 
     /** */
@@ -695,6 +818,24 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         public static int plus(int x, int y) {
             return 100;
         }
+
+        /** Table function with String array as input. */
+        @QuerySqlTableFunction(alias = "STR_ARRAY_CONSUME_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Object[]> strArrConsumeTable(List<String> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .collect(Collectors.toList());
+        }
+
+        /** Table function with Object array as input. */
+        @QuerySqlTableFunction(alias = "OBJ_ARRAY_CONSUME_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Object[]> objArrConsumeTable(List<Object> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .collect(Collectors.toList());
+        }
     }
 
     /** */
@@ -707,5 +848,70 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 .query(new SqlFieldsQuery("SELECT salary FROM emp4 WHERE _key = ?").setArgs(key))
                 .getAll().get(0).get(0);
         }
+    }
+
+    /** */
+    private static class CustomClass {
+        /** */
+        @Override public String toString() {
+            return "CustomClass.toString";
+        }
+    }
+
+    /** */
+    public static class OverloadedFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static String overloaded(int i, String s) {
+            return i + s;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static String overloaded(String s, int i) {
+            return s + i;
+        }
+
+        /** */
+        @QuerySqlFunction(alias = "SQL_EQUIVALENT")
+        public static String sqlEquivalent(int i) {
+            return String.valueOf(i);
+        }
+
+        /** */
+        @QuerySqlFunction(alias = "SQL_EQUIVALENT")
+        public static String sqlEquivalent(Integer i) {
+            return String.valueOf(i);
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "OVERLOADED_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> overloadedTable(int i, String s) {
+            return List.of(List.of(i + s));
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "OVERLOADED_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> overloadedTable(String s, int i) {
+            return List.of(List.of(s + i));
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "SQL_EQUIVALENT_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> sqlEquivalentTable(int i) {
+            return List.of(List.of(String.valueOf(i)));
+        }
+
+        /** */
+        @QuerySqlTableFunction(alias = "SQL_EQUIVALENT_TABLE", columnTypes = {String.class}, columnNames = {"RESULT"})
+        public static Iterable<Collection<?>> sqlEquivalentTable(Integer i) {
+            return List.of(List.of(String.valueOf(i)));
+        }
+    }
+
+    /** */
+    private static LogListener createUnableRegisterFunctionLogListener(String fun) {
+        return LogListener.matches("Unable to register function '" + fun + "'. Other function " +
+            "with the same name and parameters is already registered").build();
     }
 }

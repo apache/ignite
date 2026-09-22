@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.direct.DirectMarshallingMessagesTest;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStreamImplByteOrderSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerTest;
@@ -49,7 +48,6 @@ import org.junit.runners.Suite;
     OptimizedMarshallerSerialPersistentFieldsSelfTest.class,
     DirectByteBufferStreamImplByteOrderSelfTest.class,
     GridHandleTableSelfTest.class,
-    OptimizedMarshallerPooledSelfTest.class,
     MarshallerEnumDeadlockMultiJvmTest.class,
     DirectMarshallingMessagesTest.class,
     ObjectInputStreamFilteringTest.class,

@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnConfigurationViewWalker;
 import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsConfigurationManager;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
+import org.apache.ignite.internal.systemview.StatisticsColumnConfigurationViewWalker;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**

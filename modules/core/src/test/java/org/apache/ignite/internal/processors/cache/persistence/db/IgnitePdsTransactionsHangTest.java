@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -68,7 +69,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
     public static final int WARM_UP_PERIOD = 20;
 
     /** Duration. */
-    public static final int DURATION = 180;
+    public static final int DURATION = GridTestUtils.SF.applyLB(180, 40);
 
     /** Maximum count of inserted keys. */
     public static final int MAX_KEY_COUNT = 500_000;

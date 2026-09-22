@@ -18,24 +18,23 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Defines a signle index key.
  */
 public class IndexKeyDefinition implements Message {
-    /** A message for {@link IndexKeyType}. */
-    @Order(value = 0, method = "indexKeyTypeMessage")
-    private IndexKeyTypeMessage idxTypeMsg;
+    /** Index key type. */
+    @Order(0)
+    IndexKeyType idxType;
 
     /** Order. */
-    @Order(value = 1, method = "ascending")
-    private boolean asc;
+    @Order(1)
+    boolean asc;
 
     /** Precision for variable length key types. */
     @Order(2)
-    private int precision;
+    int precision;
 
     /** */
     public IndexKeyDefinition() {
@@ -44,7 +43,7 @@ public class IndexKeyDefinition implements Message {
 
     /** */
     public IndexKeyDefinition(int idxTypeCode, long precision, boolean asc) {
-        idxTypeMsg = new IndexKeyTypeMessage(idxTypeCode);
+        idxType = IndexKeyType.forCode(idxTypeCode);
 
         this.asc = asc;
 
@@ -55,24 +54,14 @@ public class IndexKeyDefinition implements Message {
             this.precision = (int)precision;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 113;
-    }
-
     /** */
     public boolean ascending() {
         return asc;
     }
 
     /** */
-    public void ascending(boolean asc) {
-        this.asc = asc;
-    }
-
-    /** */
     public IndexKeyType indexKeyType() {
-        return idxTypeMsg.value();
+        return idxType;
     }
 
     /** */
@@ -80,18 +69,4 @@ public class IndexKeyDefinition implements Message {
         return precision;
     }
 
-    /** */
-    public void precision(int precision) {
-        this.precision = precision;
-    }
-
-    /** */
-    public IndexKeyTypeMessage indexKeyTypeMessage() {
-        return idxTypeMsg;
-    }
-
-    /** */
-    public void indexKeyTypeMessage(IndexKeyTypeMessage idxTypeMsg) {
-        this.idxTypeMsg = idxTypeMsg;
-    }
 }

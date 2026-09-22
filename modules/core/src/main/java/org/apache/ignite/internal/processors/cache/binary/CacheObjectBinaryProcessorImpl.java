@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.managers.systemview.walker.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -88,6 +86,7 @@ import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.systemview.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -116,9 +115,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
+import static org.apache.ignite.internal.binary.BinaryUtils.affinityFieldName;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.util.typedef.internal.CU.affinityFieldName;
 
 /**
  * Binary processor implementation.
@@ -306,7 +305,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (!ctx.clientNode())
             metadataFileStore.restoreMetadata(meta -> metadataLocCache.put(meta.typeId(), new BinaryMetadataVersionInfo(meta)));
 
-        fakeCacheObjCtx = new CacheObjectContext(ctx, null, null, false, false, false, false, false);
+        fakeCacheObjCtx = new CacheObjectContext(ctx, null, null, false, false, false, false);
     }
 
     /** {@inheritDoc} */
@@ -1111,7 +1110,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
-            false,
             notSysCache
         );
     }
@@ -1395,7 +1393,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if ((res = validateBinaryConfiguration(rmtNode)) != null)
             return res;
 
-        return validateBinaryMetadata(rmtNode.id(), (Map<Integer, BinaryMetadataVersionInfo>)discoData.joiningNodeData());
+        return validateBinaryMetadata(rmtNode.id(), discoData.joiningNodeData());
     }
 
     /** */
@@ -1419,11 +1417,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** */
-    private IgniteNodeValidationResult validateBinaryMetadata(UUID rmtNodeId, Map<Integer, BinaryMetadataVersionInfo> newNodeMeta) {
-        if (newNodeMeta == null)
+    private IgniteNodeValidationResult validateBinaryMetadata(UUID rmtNodeId, CacheBinaryDataBagItem cacheBinaryItem) {
+        if (cacheBinaryItem == null)
             return null;
 
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.entrySet()) {
+        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : cacheBinaryItem.meta.entrySet()) {
             if (!metadataLocCache.containsKey(metaEntry.getKey()))
                 continue;
 
@@ -1465,30 +1463,25 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     res.put(e.getKey(), e.getValue());
             }
 
-            dataBag.addGridCommonData(BINARY_PROC.ordinal(), (Serializable)res);
+            dataBag.addGridCommonData(BINARY_PROC.ordinal(), new CacheBinaryDataBagItem(res));
         }
     }
 
     /** {@inheritDoc} */
     @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        Map<Integer, BinaryMetadataVersionInfo> res = U.newHashMap(metadataLocCache.size());
-
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : metadataLocCache.entrySet())
-            res.put(e.getKey(), e.getValue());
-
-        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), (Serializable)res);
+        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), new CacheBinaryDataBagItem(metadataLocCache));
     }
 
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-        Map<Integer, BinaryMetadataVersionInfo> newNodeMeta = (Map<Integer, BinaryMetadataVersionInfo>)data.joiningNodeData();
+        CacheBinaryDataBagItem cacheBinaryItem = data.joiningNodeData();
 
-        if (newNodeMeta == null)
+        if (cacheBinaryItem == null)
             return;
 
         UUID joiningNode = data.joiningNodeId();
 
-        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.entrySet()) {
+        for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : cacheBinaryItem.meta.entrySet()) {
             if (metadataLocCache.containsKey(metaEntry.getKey())) {
                 BinaryMetadataVersionInfo locMetaVerInfo = metadataLocCache.get(metaEntry.getKey());
 
@@ -1536,10 +1529,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        Map<Integer, BinaryMetadataVersionInfo> receivedData = (Map<Integer, BinaryMetadataVersionInfo>)data.commonData();
+        CacheBinaryDataBagItem cacheBinaryItem = data.commonData();
 
-        if (receivedData != null) {
-            for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : receivedData.entrySet()) {
+        if (cacheBinaryItem != null && !F.isEmpty(cacheBinaryItem.meta)) {
+            for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : cacheBinaryItem.meta.entrySet()) {
                 BinaryMetadataVersionInfo metaVerInfo = e.getValue();
 
                 BinaryMetadataVersionInfo locMetaVerInfo = new BinaryMetadataVersionInfo(metaVerInfo.metadata(),

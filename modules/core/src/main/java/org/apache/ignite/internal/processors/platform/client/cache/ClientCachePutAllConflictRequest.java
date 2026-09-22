@@ -72,7 +72,7 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            cachex(ctx).putAllConflict(map);
+            internalCache(ctx).putAllConflict(map);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

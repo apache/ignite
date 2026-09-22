@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -32,8 +29,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,43 +57,44 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /** Flag indicating recovery on read repair. */
     protected static final int DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK = 0x80;
 
+    /** */
+    protected static final int DHT_ATOMIC_KEEP_BINARY_IN_INTERCEPTOR = 0x100;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future ID on primary. */
-    @Order(value = 4, method = "futureId")
+    @Order(0)
     protected long futId;
 
     /** Write version. */
-    @Order(value = 5, method = "writeVersion")
+    @Order(1)
     protected GridCacheVersion writeVer;
 
     /** Topology version. */
-    @Order(value = 6, method = "topologyVersion")
+    @Order(2)
     protected AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(7)
+    @Order(3)
     protected int taskNameHash;
 
     /** Node ID. */
-    @GridDirectTransient
     protected UUID nodeId;
 
     /** On response flag. Access should be synced on future. */
-    @GridDirectTransient
     private boolean onRes;
 
     /** */
-    @Order(8)
-    private UUID nearNodeId;
+    @Order(4)
+    UUID nearNodeId;
 
     /** */
-    @Order(value = 9, method = "nearFutureId")
-    private long nearFutId;
+    @Order(5)
+    long nearFutId;
 
     /** Additional flags. */
-    @Order(10)
+    @Order(6)
     protected byte flags;
 
     /**
@@ -120,8 +116,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean skipStore,
         boolean readRepairRecovery
     ) {
@@ -133,7 +129,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         this.writeVer = writeVer;
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
-        this.addDepInfo = addDepInfo;
 
         if (skipStore)
             setFlag(true, DHT_ATOMIC_SKIP_STORE_FLAG_MASK);
@@ -141,18 +136,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             setFlag(true, DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
         if (readRepairRecovery)
             setFlag(true, DHT_ATOMIC_READ_REPAIR_RECOVERY_FLAG_MASK);
+        if (keepBinaryInInterceptor)
+            setFlag(true, DHT_ATOMIC_KEEP_BINARY_IN_INTERCEPTOR);
     }
 
     /** {@inheritDoc} */
     @Override public final AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
     }
 
     /**
@@ -187,13 +177,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return nearNodeId;
     }
 
-    /**
-     * @param nearNodeId New near node id.
-     */
-    public void nearNodeId(UUID nearNodeId) {
-        this.nearNodeId = nearNodeId;
-    }
-
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -214,17 +197,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param flags New additional flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
      * @return Keep binary flag.
      */
     public final boolean keepBinary() {
         return isFlag(DHT_ATOMIC_KEEP_BINARY_FLAG_MASK);
+    }
+
+    /** @return {@code true} if need to handle binary in interceptor. */
+    public final boolean keepBinaryInInterceptor() {
+        return isFlag(DHT_ATOMIC_KEEP_BINARY_IN_INTERCEPTOR);
     }
 
     /**
@@ -267,11 +248,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return addDepInfo;
     }
 
-    /**
-     * @return Force transform backups flag.
-     */
-    public abstract boolean forceTransformBackups();
-
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.atomicMessageLogger();
@@ -280,7 +256,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProc Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -291,7 +266,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public abstract void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -303,13 +277,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProc Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
     public abstract void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime);
 
@@ -326,24 +298,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param taskNameHash New task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Future ID on primary node.
      */
     public final long futureId() {
         return futId;
-    }
-
-    /**
-     * @param futId New future ID on primary node.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
     }
 
     /**
@@ -354,24 +312,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * @param nearFutId New near future id.
-     */
-    public void nearFutureId(long nearFutId) {
-        this.nearFutId = nearFutId;
-    }
-
-    /**
      * @return Write version.
      */
     public final GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer New write version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -426,22 +370,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     @Nullable public abstract CacheObject previousValue(int idx);
 
     /**
-     * @param idx Key index.
-     * @return Entry processor.
-     */
-    @Nullable public abstract EntryProcessor<Object, Object, Object> entryProcessor(int idx);
-
-    /**
      * @param idx Near key index.
      * @return Value.
      */
     @Nullable public abstract CacheObject nearValue(int idx);
-
-    /**
-     * @param idx Key index.
-     * @return Transform closure.
-     */
-    @Nullable public abstract EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx);
 
     /**
      * @param idx Index.
@@ -474,11 +406,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     public abstract long nearExpireTime(int idx);
 
     /**
-     * @return Optional arguments for entry processor.
-     */
-    @Nullable public abstract Object[] invokeArguments();
-
-    /**
      * Sets flag mask.
      *
      * @param flag Set or clear.
@@ -496,138 +423,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     final boolean isFlag(int mask) {
         return (flags & mask) != 0;
-    }
-
-    // TODO: remove after IGNITE-26774
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong(nearFutId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeUuid(nearNodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt(taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeMessage(writeVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                nearFutId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                nearNodeId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                taskNameHash = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                writeVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

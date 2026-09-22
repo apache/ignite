@@ -70,12 +70,12 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerPool;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
@@ -87,6 +87,7 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.TMP_SUFFIX;
+import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newCachedThreadPool;
 
 /**
  * File page store manager.
@@ -239,9 +240,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         };
 
         if (cleanFiles) {
-            cleanupAsyncExecutor.async(doShutdown);
+            try {
+                cleanupAsyncExecutor.async(doShutdown);
 
-            U.log(log, "Cache stores cleanup started asynchronously");
+                U.log(log, "Cache stores cleanup started asynchronously");
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to start cache stores cleanup asynchronously", e);
+            }
         }
         else
             doShutdown.run();
@@ -924,7 +930,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private final IgniteLogger log;
 
         /** */
-        private Set<GridWorker> workers = new GridConcurrentHashSet<>();
+        private final GridWorkerPool workerPool;
 
         /** */
         private static final AtomicLong workerCounter = new AtomicLong(0);
@@ -932,17 +938,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /** */
         public LongOperationAsyncExecutor(String igniteInstanceName, IgniteLogger log) {
             this.igniteInstanceName = igniteInstanceName;
-
             this.log = log;
+
+            workerPool = new GridWorkerPool(newCachedThreadPool("async-file-store-cleanup-worker", igniteInstanceName), log);
         }
 
         /**
-         * Executes long operation in dedicated thread. Uses write lock as such operations can't run
-         * simultaneously.
+         * Executes long operation asynchronously. Uses write lock as such operations can't run simultaneously.
          *
          * @param runnable long operation
          */
-        public void async(Runnable runnable) {
+        public void async(Runnable runnable) throws IgniteCheckedException {
             String workerName = "async-file-store-cleanup-task-" + workerCounter.getAndIncrement();
 
             GridWorker worker = new GridWorker(igniteInstanceName, workerName, log) {
@@ -954,17 +960,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     }
                     finally {
                         readWriteLock.writeLock().unlock();
-
-                        workers.remove(this);
                     }
                 }
             };
 
-            workers.add(worker);
-
-            Thread asyncTask = U.newThread(worker);
-
-            asyncTask.start();
+            workerPool.execute(worker);
         }
 
         /**
@@ -990,7 +990,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          * Cancels async tasks.
          */
         public void awaitAsyncTaskCompletion(boolean cancel) {
-            U.awaitForWorkersStop(workers, cancel, log);
+            workerPool.join(cancel);
         }
     }
 

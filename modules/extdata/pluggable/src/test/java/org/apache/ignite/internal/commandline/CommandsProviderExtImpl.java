@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
@@ -32,7 +29,6 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -90,17 +86,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
 
         /** */
         @Argument
-        private String testPrint;
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeString(out, testPrint);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException {
-            testPrint = U.readString(in);
-        }
+        String testPrint;
 
         /** */
         public void testPrint(String testPrint) {

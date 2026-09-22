@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -84,7 +83,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.tracing.SpanType.AFFINITY_CALCULATION;
 
 /**
  *
@@ -1955,16 +1953,27 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
+                int grpId = desc.groupId();
+
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                if (skipNotStartedDynamicGroup(fut, desc, grp, newAff)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Skip coordinator affinity initialization for cache group started after" +
+                            " current exchange [grp=" + desc.cacheOrGroupName() +
+                            ", grpId=" + grpId + ", curTopVer=" + topVer +
+                            ", grpStartTopVer=" + desc.startTopologyVersion() + ']');
+                    }
+
+                    return;
+                }
+
                 CacheGroupHolder grpHolder = getOrCreateGroupHolder(topVer, desc);
 
                 if (grpHolder.affinity().idealAssignmentRaw() != null)
                     return;
 
                 // Need initialize holders and affinity if this node became coordinator during this exchange.
-                int grpId = desc.groupId();
-
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
                 if (grp == null) {
                     grpHolder = CacheGroupNoAffOrFilteredHolder.create(cctx, desc, topVer, null);
 
@@ -2080,6 +2089,30 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Checks whether the given cache group has not started at this exchange. If so, it is safe to skip it here as
+     * its affinity and local group context will be initialized later by its own exchange.
+     *
+     * @param fut Current exchange future.
+     * @param desc Cache group descriptor.
+     * @param grp Local cache group context.
+     * @param newAff {@code True} if there are no older nodes with affinity info available.
+     * @return {@code True} if the group must be skipped by the current exchange.
+     */
+    private boolean skipNotStartedDynamicGroup(
+        GridDhtPartitionsExchangeFuture fut,
+        CacheGroupDescriptor desc,
+        @Nullable CacheGroupContext grp,
+        boolean newAff
+    ) {
+        if (grp != null || newAff)
+            return false;
+
+        AffinityTopologyVersion grpStartTopVer = desc.startTopologyVersion();
+
+        return grpStartTopVer != null && grpStartTopVer.after(fut.initialVersion());
+    }
+
+    /**
      * @param topVer Topology version.
      * @param desc Cache descriptor.
      * @return Cache holder.
@@ -2146,9 +2179,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (cache.affinity().lastVersion().equals(evts.topologyVersion()))
                     return;
 
-                Span affCalcSpan = cctx.kernalContext().tracing().create(AFFINITY_CALCULATION, fut.span())
-                    .addTag("cache.group", desc::cacheOrGroupName);
-
                 boolean latePrimary = cache.rebalanceEnabled;
 
                 boolean grpAdded = evts.nodeJoined(desc.receivedFrom());
@@ -2174,8 +2204,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
 
                 cctx.exchange().exchangerUpdateHeartbeat();
-
-                affCalcSpan.end();
 
                 fut.timeBag().finishLocalStage("Affinity initialization (node join) " +
                     "[grp=" + desc.cacheOrGroupName() + ", crd=" + crd + "]");
