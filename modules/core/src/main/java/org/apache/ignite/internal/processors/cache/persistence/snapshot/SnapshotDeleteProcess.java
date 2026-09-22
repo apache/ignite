@@ -95,9 +95,16 @@ public class SnapshotDeleteProcess {
      * @return Future that will be completed when the snapshot is deleted.
      */
     public IgniteFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
-        UUID reqId = UUID.randomUUID();
-
         var clusterOpFut = new GridFutureAdapter<SnapshotDeleteProcessResult>();
+
+        if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
+            clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_MSG +
+                "The snapshot deletion feature isn't activated yet [snpName=" + snpName + ", snpPath=" + snpPath + ']'));
+
+            return new IgniteFutureImpl<>(clusterOpFut);
+        }
+
+        UUID reqId = UUID.randomUUID();
 
         clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId));
 
@@ -138,7 +145,7 @@ public class SnapshotDeleteProcess {
 
         var curCreateRq = snpMgr.currentCreateRequest();
 
-        if (curCreateRq != null && curCreateRq.snpName.equals(req.snpName)) {
+        if (curCreateRq != null && curCreateRq.snpName.equalsIgnoreCase(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
                 "Snapshot with this name is being created [req=" + req + ']'));
         }
@@ -153,27 +160,16 @@ public class SnapshotDeleteProcess {
                 "Snapshot with this name is being checked [req=" + req + ']'));
         }
 
-        if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
-            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "The snapshot deletion feature isn't activated yet [req=" + req + ']'));
+        File path = resolvePath(req.snpPath);
+
+        String pathValidationErr = validateAbsoluteSnapshotRoot(path, req.snpName);
+
+        if (pathValidationErr != null) {
+            return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
+                SNP_PATH_ERR_PREF + pathValidationErr + " [req=" + req + ']'));
         }
 
-        File path = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
-
-        if (!F.isEmpty(req.snpPath)) {
-            File reqPath = new File(req.snpPath);
-
-            path = reqPath.isAbsolute()
-                ? reqPath
-                : new File(path, req.snpPath);
-
-            String pathValidationErr = validateAbsoluteSnapshotRoot(path, req.snpName);
-
-            if (pathValidationErr != null) {
-                return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
-                    SNP_PATH_ERR_PREF + pathValidationErr + " [req=" + req + ']'));
-            }
-        }
+        req.resolvedPath = path;
 
         try {
             if (!requests.add(req)) {
@@ -260,6 +256,19 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
+    private File resolvePath(@Nullable String path) {
+        var res = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
+
+        if (path != null) {
+            File reqPath = new File(path);
+
+            res = reqPath.isAbsolute() ? reqPath : new File(res, path);
+        }
+
+        return res;
+    }
+
+    /** */
     private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path, String snpName) {
         if (path == null)
             return null;
@@ -322,11 +331,7 @@ public class SnapshotDeleteProcess {
                 }
             });
 
-            clusterOpFut.onDone(new SnapshotDeleteProcessResult(
-                completedNodes.isEmpty() ? null : completedNodes,
-                uncompletedNodes.isEmpty() ? null : uncompletedNodes,
-                emptyNodes.isEmpty() ? null : emptyNodes
-            ));
+            clusterOpFut.onDone(new SnapshotDeleteProcessResult(completedNodes, uncompletedNodes, emptyNodes));
         }
         catch (Throwable t) {
             clusterOpFut.onDone(t);
@@ -335,7 +340,11 @@ public class SnapshotDeleteProcess {
 
     /** */
     public boolean isDeleting(String snpName, @Nullable String snpPath) {
-        return requests.contains(new SnapshotDeleteRequest(null, snpName, snpPath));
+        var rq = new SnapshotDeleteRequest(null, snpName, snpPath);
+
+        rq.resolvedPath = resolvePath(rq.snpPath);
+
+        return requests.contains(rq);
     }
 
     /**

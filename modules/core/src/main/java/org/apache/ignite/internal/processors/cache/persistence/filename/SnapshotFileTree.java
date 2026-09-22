@@ -51,7 +51,7 @@ public class SnapshotFileTree extends NodeFileTree {
     private static final String DELTA_IDX_SUFFIX = ".idx";
 
     /** Snapshot metafile extension. */
-    private static final String SNAPSHOT_METAFILE_EXT = ".smf";
+    public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
     /** File name template consists of delta pages. */
     private static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
@@ -477,6 +477,8 @@ public class SnapshotFileTree extends NodeFileTree {
             case DUMP_LOCK:
             case WAL_SEGMENT_FILE_EXT:
             case FILE_SUFFIX:
+            case ZIP_SUFFIX:
+            case TMP_SUFFIX:
             case ".dat":
                 return true;
         }

@@ -132,7 +132,7 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>();
 
         try {
-            contexts.remove(ctx.req.snapshotName());
+            contexts.remove(ctx.req.snapshotName().toLowerCase());
 
             GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = clusterOpFuts.get(reqId);
 
@@ -474,7 +474,7 @@ public class SnapshotCheckProcess {
     private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
         return snpName == null
             ? contexts.values().stream().filter(ctx0 -> ctx0.req.requestId().equals(reqId)).findFirst().orElse(null)
-            : contexts.get(snpName);
+            : contexts.get(snpName.toLowerCase());
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
@@ -488,7 +488,7 @@ public class SnapshotCheckProcess {
             if (nodeStopping)
                 return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
-            ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
+            ctx = contexts.computeIfAbsent(req.snapshotName().toLowerCase(), snpName -> new SnapshotCheckContext(req));
         }
 
         if (!ctx.req.requestId().equals(req.requestId())) {
@@ -594,7 +594,7 @@ public class SnapshotCheckProcess {
             if (ctx != null) {
                 unregisterMetrics(ctx.req.snapshotName());
 
-                contexts.remove(ctx.req.snapshotName());
+                contexts.remove(ctx.req.snapshotName().toLowerCase());
             }
 
             if (clusterOpFut != null)
@@ -700,7 +700,7 @@ public class SnapshotCheckProcess {
 
     /** @return {@code True} if snapshot with specified name is checking. */
     boolean isSnapshotChecking(String snpName) {
-        return contexts.get(snpName) != null;
+        return contexts.get(snpName.toLowerCase()) != null;
     }
 
     /** @return {@code True} if node with the provided id is in the cluster and is a baseline node. {@code False} otherwise. */
@@ -776,7 +776,7 @@ public class SnapshotCheckProcess {
          */
         @Nullable private volatile List<SnapshotMetadata> metas;
 
-        /** Map of snapshot pathes per consistent id for {@link #metas}. */
+        /** Map of snapshot paths per consistent id for {@link #metas}. */
         @GridToStringInclude
         @Nullable private Map<String, SnapshotFileTree> locFileTree;
 

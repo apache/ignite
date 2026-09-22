@@ -728,7 +728,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Deletes local shapshot data.
+     * Deletes local snapshot data.
      *
      * @param sft Snapshot file tree
      * @param nodeFolderName Exact node's data subdirectory name usually taken from the consistent id.
@@ -747,24 +747,43 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         AtomicBoolean res = new AtomicBoolean(true);
 
-        for (var dir : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller(), sft.db())) {
-            if (!dir.exists())
+        Collection<File> nodesData = new ArrayList<>(30);
+        Collection<File> sharedData = new ArrayList<>(30);
+
+        nodesData.addAll(F.asList(sft.binaryMetaRoot(), sft.marshaller(), sft.db()));
+
+        File[] incrementals = sft.incrementsRoot().listFiles();
+
+        if (!F.isEmpty(incrementals)) {
+            for (var inc : incrementals) {
+                if (inc.isDirectory()) {
+                    // Incremental_root/db/[wal,marshaller,binary] - nodes' data.
+                    var incDb = new File(inc, "db");
+
+                    nodesData.addAll(F.asList(incDb.listFiles()));
+
+                    // Incremental snp. metafile.
+                    sharedData.add(new File(inc, nodeFolderName + SnapshotFileTree.SNAPSHOT_METAFILE_EXT));
+
+                    sharedData.add(incDb);
+                    sharedData.add(inc);
+                }
+            }
+        }
+
+        sharedData.add(sft.meta());
+
+        for (var f : nodesData) {
+            if (!f.exists())
                 continue;
 
-            var nodeDir = new File(dir, nodeFolderName);
+            deleteSnapshotDataCompletely(new File(f, nodeFolderName), res);
 
-            if (nodeDir.exists())
-                deleteSnapshotDataCompletely(nodeDir, res);
-
-            // Recheck for the case of concurrent deletion.
             try {
-                Files.delete(dir.toPath());
-            }
-            catch (NoSuchFileException ne) {
-                // No-op: someone else deleted.
+                Files.deleteIfExists(f.toPath());
             }
             catch (Exception e) {
-                if (dir.exists()) {
+                if (f.exists()) {
                     res.set(false);
 
                     if (err == null)
@@ -773,17 +792,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        deleteSnapshotDataCompletely(sft.meta(), res);
+        sharedData.add(sft.incrementsRoot());
+        sharedData.add(sft.root());
 
-        try {
-            Files.delete(sft.root().toPath());
-        }
-        catch (Exception e) {
-            if (sft.root().exists()) {
-                res.set(false);
+        for (var f : sharedData) {
+            try {
+                Files.deleteIfExists(f.toPath());
+            }
+            catch (Exception e) {
+                if (f.exists()) {
+                    res.set(false);
 
-                if (err == null)
-                    err = e;
+                    if (err == null)
+                        err = e;
+                }
             }
         }
 
@@ -1570,7 +1592,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory will be used.
-     * @return Future which will be completed when the snapshot is deleted on all the baseline nodes.
+     * @return Future which will be completed when the snapshot is deleted on all the online server nodes.
      */
     public IgniteFuture<SnapshotDeleteProcessResult> deleteSnapshot(String name, @Nullable String snpPath) {
         return deleteSnpProc.start(name, snpPath);
@@ -1609,7 +1631,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
      */
     public boolean isRestoring(String snpName) {
-        return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
+        return snpName.equalsIgnoreCase(restoreCacheGrpProc.restoringSnapshotName());
     }
 
     /**

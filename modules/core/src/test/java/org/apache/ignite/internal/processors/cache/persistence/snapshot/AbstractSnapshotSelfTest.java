@@ -304,7 +304,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         if (!fullCleanPersistentDir())
             return;
 
-        // Clean all: also separated snapshot working directories and custom snapshot pathes.
+        // Clean all: also separated snapshot working directories and custom snapshot paths.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);

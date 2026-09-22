@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.jetbrains.annotations.Nullable;
 
 /** Result of {@link SnapshotDeleteProcess}. */
 public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject {
@@ -31,15 +30,15 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
 
     /** Nodes which found snapshot data and completely removed it. */
     @Order(0)
-    @Nullable Collection<UUID> completedNodes;
+    Collection<UUID> completedNodes;
 
     /** Nodes which found snapshot data but didn't remove it completely. */
     @Order(1)
-    @Nullable Collection<UUID> uncompletedNodes;
+    Collection<UUID> uncompletedNodes;
 
     /** Server nodes which didn't find any snapshot data. */
     @Order(2)
-    @Nullable Collection<UUID> emptyNodes;
+    Collection<UUID> emptyNodes;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteProcessResult() {
@@ -48,9 +47,9 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
 
     /** */
     public SnapshotDeleteProcessResult(
-        @Nullable Collection<UUID> completedNodes,
-        @Nullable Collection<UUID> uncompletedNodes,
-        @Nullable Collection<UUID> emptyNodes
+        Collection<UUID> completedNodes,
+        Collection<UUID> uncompletedNodes,
+        Collection<UUID> emptyNodes
     ) {
         this.completedNodes = completedNodes;
         this.uncompletedNodes = uncompletedNodes;
@@ -58,17 +57,17 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
     }
 
     /** */
-    public @Nullable Collection<UUID> completedNodes() {
+    public Collection<UUID> completedNodes() {
         return completedNodes;
     }
 
     /** */
-    public @Nullable Collection<UUID> uncompletedNodes() {
+    public Collection<UUID> uncompletedNodes() {
         return uncompletedNodes;
     }
 
     /** */
-    public @Nullable Collection<UUID> emptyNodes() {
+    public Collection<UUID> emptyNodes() {
         return emptyNodes;
     }
 }

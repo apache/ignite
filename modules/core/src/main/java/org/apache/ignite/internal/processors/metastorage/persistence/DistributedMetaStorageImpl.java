@@ -103,7 +103,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * </p>
  * <p>Whole updates history until some point in the past is stored along with the data, so when an outdated node
  * connects to the cluster it will receive all the missing data and apply it locally. Listeners will also be invoked
- * after such updates. If there's not enough history stored or joining node is clear then it'll receive shapshot of
+ * after such updates. If there's not enough history stored or joining node is clear then it'll receive snapshot of
  * distributed metastorage (usually called {@code fullData} in code) so there won't be inconsistencies.
  * </p>
  *

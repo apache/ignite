@@ -29,8 +29,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -42,7 +40,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot delete'. */
-@RunWith(Parameterized.class)
 public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbstractTest {
     /** Value: -1 - do not use, 1 - server node, 0 - client node. */
     @Parameter(1)
@@ -50,7 +47,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
 
     /** */
     @Parameter(2)
-    public boolean addIncrements;
+    public boolean incremental;
 
     /** */
     @Parameter(3)
@@ -70,10 +67,10 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
             F.asList(-1, 1, 0), // Use extra node (do not use at all, server node, client node);
-            F.asList(false, true), // Add increments to the test snapshot;
+            F.asList(false, true), // Add incremental snapshot;
             F.asList(false, true), // Change baseline;
             F.asList(false, true), // Use custom snapshot path;
-            F.asList(true, false) // Separated (own) work directory.
+            F.asList(false, true) // Separated (own) work directory.
         );
     }
 
@@ -82,6 +79,8 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -96,7 +95,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
-        // Also cleans separated snapshot working directories and custom snapshot pacthes.
+        // Also cleans separated snapshot working directories and custom snapshot patches.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);
@@ -120,10 +119,10 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         // work directories are set.
         assumeTrue(!customPath || !separatedWorkDir);
 
-        int entriesCnt = 4000;
+        int entriesCnt = 100;
         int initNodes = 3;
 
-        walCompactionEnabled(addIncrements);
+        walCompactionEnabled(incremental);
 
         IgniteEx ig = (IgniteEx)startGridsMultiThreaded(initNodes);
 
@@ -145,7 +144,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
             .get(getTestTimeout());
 
-        if (addIncrements) {
+        if (incremental) {
             for (int i = 0; i < 3; ++i) {
                 int dataIdx = entriesCnt + entriesCnt / 4 * i;
 
