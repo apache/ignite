@@ -1405,7 +1405,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             if (cls == null)
                 cls = cls0;
 
-            return doReadEnum(in, cls, Marshallers.USE_CACHE.get());
+            return doReadEnum(in, cls);
         }
         else
             return null;
@@ -1928,8 +1928,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case ENUM:
-                obj = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr),
-                    Marshallers.USE_CACHE.get());
+                obj = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
@@ -2768,7 +2767,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr), Marshallers.USE_CACHE.get());
+                arr[i] = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
         }
 
         return arr;
@@ -2778,10 +2777,9 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * Having target class in place we simply read ordinal and create final representation.
      *
      * @param cls Enum class.
-     * @param useCache True if class loader cache will be used, false otherwise.
      * @return Value.
      */
-    private static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls, boolean useCache) throws BinaryObjectException {
+    private static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
         if (!cls.isEnum())
@@ -2789,7 +2787,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
         int ord = in.readInt();
 
-        if (useCache)
+        if (Marshallers.USE_CACHE.get())
             return BinaryEnumCache.get(cls, ord);
         else
             return uncachedEnumValue(cls, ord);
