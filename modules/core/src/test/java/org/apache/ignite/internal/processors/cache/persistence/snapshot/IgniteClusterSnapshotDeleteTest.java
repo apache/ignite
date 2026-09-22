@@ -131,9 +131,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests snapshot deletion when one node finds snapshot but fails to delete its data. */
     @Test
     public void testUncompletedNodes() throws Exception {
-        // Incremental snapshots don't support encryption and only-primary mode.
-        assumeTrue(!incremental || !encryption);
-        assumeTrue(!incremental || !onlyPrimary);
+        // Incremental snapshots don't support only-primary and encryption modes.
+        assumeTrue(!incremental || !(onlyPrimary || encryption));
 
         separatedWorkDir = true;
 
@@ -360,9 +359,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests snapshot deletion when one node has no snapshot data. */
     @Test
     public void testEmptyNodes() throws Exception {
-        // Incremental snapshots don't support encryption and only-primary mode.
-        assumeTrue(!incremental || !encryption);
-        assumeTrue(!incremental || !onlyPrimary);
+        // Incremental snapshots don't support only-primary and encryption modes.
+        assumeTrue(!incremental || !(onlyPrimary || encryption));
 
         separatedWorkDir = true;
 
@@ -385,6 +383,9 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests snapshot deletion repeat after an offline node restarts. */
     @Test
     public void testDeletionRepeatAfterOfflineNodeStarts() throws Exception {
+        // Incremental snapshots don't support only-primary and encryption modes.
+        assumeTrue(!incremental || !(onlyPrimary || encryption));
+
         separatedWorkDir = true;
 
         startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
@@ -424,7 +425,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Test snapshot deletion process when one node leaves. */
     @Test
     public void testNodeStopsInTheMiddle() throws Exception {
-        // Incremental snapshots don't support only-primary and encryption mode.
+        // Incremental snapshots don't support only-primary and encryption modes.
         assumeTrue(!incremental || !(onlyPrimary || encryption));
 
         separatedWorkDir = true;
@@ -545,9 +546,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */
     @Test
     public void testSnapshotDeleteWhenCheckInProgress() throws Exception {
-        // Incremental snapshots don't support encryption and only-primary mode.
-        assumeTrue(!incremental || !encryption);
-        assumeTrue(!incremental || !onlyPrimary);
+        // Incremental snapshots don't support only-primary and encryption modes.
+        assumeTrue(!incremental || !(onlyPrimary || encryption));
 
         doTestConcurrentSnapshotDelete(
             () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null, incremental ? 1 : 0)),
@@ -583,8 +583,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a snapshot deletion is declined when a snapshot restore begins. */
     @Test
     public void testSnapshotDeleteWhenRestoreBegins() throws Exception {
-        // Incremental snapshots don't support encryption.
-        assumeTrue(!incremental || !encryption);
+        // Incremental snapshots don't support only-primary and encryption modes.
+        assumeTrue(!incremental || !(onlyPrimary || encryption));
 
         doTestConcurrentSnapshotDelete(
             () -> {
@@ -608,9 +608,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a snapshot deletion is declined when a snapshot restore is in progress. */
     @Test
     public void testSnapshotDeleteWhenRestoreInProgress() throws Exception {
-        // Incremental snapshots don't support encryption and only-primary mode.
-        assumeTrue(!incremental || !encryption);
-        assumeTrue(!incremental || !onlyPrimary);
+        // Incremental snapshots don't support only-primary and encryption modes.
+        assumeTrue(!incremental || !(onlyPrimary || encryption));
 
         var restoreMsgs = F.asList(
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
