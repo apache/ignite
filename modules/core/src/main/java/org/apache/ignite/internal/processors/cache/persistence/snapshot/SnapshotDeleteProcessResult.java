@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -40,6 +41,10 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
     @Order(2)
     Collection<UUID> emptyNodes;
 
+    /** Snapshot's baseline nodes which aren't found in current cluster. */
+    @Order(3)
+    Collection<String> absentBaselines;
+
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteProcessResult() {
         // No-op.
@@ -49,25 +54,32 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
     public SnapshotDeleteProcessResult(
         Collection<UUID> completedNodes,
         Collection<UUID> uncompletedNodes,
-        Collection<UUID> emptyNodes
+        Collection<UUID> emptyNodes,
+        Collection<String> absentBaselines
     ) {
         this.completedNodes = completedNodes;
         this.uncompletedNodes = uncompletedNodes;
         this.emptyNodes = emptyNodes;
+        this.absentBaselines = absentBaselines;
     }
 
     /** */
     public Collection<UUID> completedNodes() {
-        return completedNodes;
+        return Collections.unmodifiableCollection(completedNodes);
     }
 
     /** */
     public Collection<UUID> uncompletedNodes() {
-        return uncompletedNodes;
+        return Collections.unmodifiableCollection(uncompletedNodes);
     }
 
     /** */
     public Collection<UUID> emptyNodes() {
-        return emptyNodes;
+        return Collections.unmodifiableCollection(emptyNodes);
+    }
+
+    /** */
+    public Collection<String> absentBaselines() {
+        return Collections.unmodifiableCollection(absentBaselines);
     }
 }

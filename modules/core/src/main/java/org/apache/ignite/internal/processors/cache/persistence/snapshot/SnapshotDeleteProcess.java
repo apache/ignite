@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -137,7 +139,7 @@ public class SnapshotDeleteProcess {
         }
 
         if (kctx.cluster().get().localNode().isClient())
-            return new GridFinishedFuture<>(new SnapshotDeleteResponse(null));
+            return new GridFinishedFuture<>(new SnapshotDeleteResponse());
 
         kctx.security().authorize(ADMIN_SNAPSHOT);
 
@@ -162,7 +164,7 @@ public class SnapshotDeleteProcess {
 
         File path = resolvePath(req.snpPath);
 
-        String pathValidationErr = validateAbsoluteSnapshotRoot(path, req.snpName);
+        String pathValidationErr = validateAbsoluteSnapshotRoot(path);
 
         if (pathValidationErr != null) {
             return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
@@ -188,11 +190,11 @@ public class SnapshotDeleteProcess {
 
                 log.warning("Snapshot deletion won't process, no snapshot metadata found [req=" + req + ']');
 
-                return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND));
+                return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND, null));
             }
 
             // Future to delete snapshot contents according to snapshot metadatas.
-            GridCompoundFuture<SnapshotDeleteResponse.SnapshotDeleteStatus, SnapshotDeleteResponse> resultFut =
+            GridCompoundFuture<SnapshotDeleteResponse, SnapshotDeleteResponse> resultFut =
                 new GridCompoundFuture<>(new MetaFuturesReducer());
 
             resultFut.listen(fut -> requests.remove(req));
@@ -200,7 +202,7 @@ public class SnapshotDeleteProcess {
             File path0 = path;
 
             for (var meta : locMetas) {
-                GridFutureAdapter<SnapshotDeleteResponse.SnapshotDeleteStatus> perMetaFut = new GridFutureAdapter<>();
+                GridFutureAdapter<SnapshotDeleteResponse> perMetaFut = new GridFutureAdapter<>();
 
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
                     try {
@@ -212,7 +214,7 @@ public class SnapshotDeleteProcess {
 
                         boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, foundFlag);
 
-                        SnapshotDeleteResponse.SnapshotDeleteStatus res;
+                        SnapshotDeleteResponse.SnapshotDeleteStatus status;
 
                         if (foundFlag.get()) {
                             if (deleted && log.isInfoEnabled())
@@ -220,7 +222,7 @@ public class SnapshotDeleteProcess {
                             else if (!deleted)
                                 log.warning("Snapshot deleted not completely [req=" + req + ']');
 
-                            res = deleted
+                            status = deleted
                                 ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
                                 : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
                         }
@@ -228,10 +230,10 @@ public class SnapshotDeleteProcess {
                             if (log.isInfoEnabled())
                                 log.info("Snapshot not found to delete [req=" + req + ']');
 
-                            res = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
+                            status = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
                         }
 
-                        perMetaFut.onDone(res);
+                        perMetaFut.onDone(new SnapshotDeleteResponse(status, meta.bltNodes));
                     }
                     catch (Throwable e) {
                         perMetaFut.onDone(e);
@@ -271,7 +273,7 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path, String snpName) {
+    private @Nullable String validateAbsoluteSnapshotRoot(@Nullable File path) {
         if (path == null)
             return null;
 
@@ -313,10 +315,14 @@ public class SnapshotDeleteProcess {
             var completedNodes = new ArrayList<UUID>(results.size());
             var uncompletedNodes = new ArrayList<UUID>(results.size());
             var emptyNodes = new ArrayList<UUID>(results.size());
+            var snpNodes = new HashSet<String>();
 
             results.forEach((nodeId, nodeRes) -> {
-                if (nodeRes.res != null) {
-                    switch (nodeRes.res) {
+                if (!F.isEmpty(nodeRes.nodeIds))
+                    snpNodes.addAll(nodeRes.nodeIds);
+
+                if (nodeRes.status != null) {
+                    switch (nodeRes.status) {
                         case NOT_FOUND:
                             emptyNodes.add(nodeId);
                             break;
@@ -333,7 +339,10 @@ public class SnapshotDeleteProcess {
                 }
             });
 
-            clusterOpFut.onDone(new SnapshotDeleteProcessResult(completedNodes, uncompletedNodes, emptyNodes));
+            kctx.discovery().baselineNodes(kctx.discovery().topologyVersionEx()).stream()
+                .map(bn -> bn.consistentId().toString()).toList().forEach(snpNodes::remove);
+
+            clusterOpFut.onDone(new SnapshotDeleteProcessResult(completedNodes, uncompletedNodes, emptyNodes, snpNodes));
         }
         catch (Throwable t) {
             clusterOpFut.onDone(t);
@@ -371,20 +380,28 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private static class MetaFuturesReducer implements IgniteReducer<SnapshotDeleteResponse.SnapshotDeleteStatus, SnapshotDeleteResponse> {
+    private static class MetaFuturesReducer implements IgniteReducer<SnapshotDeleteResponse, SnapshotDeleteResponse> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus res = null;
+        private @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status;
+
+        /** */
+        private final Collection<String> nodeIds = new HashSet<>();
 
         /** {@inheritDoc} */
-        @Override public boolean collect(@Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status) {
+        @Override public boolean collect(SnapshotDeleteResponse res) {
+            assert res != null;
+
             synchronized (this) {
-                if (res == null || res == status)
-                    res = status;
+                if (!F.isEmpty(res.nodeIds))
+                    nodeIds.addAll(res.nodeIds);
+
+                if (status == null || status == res.status)
+                    status = res.status;
                 else
-                    res = SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+                    status = SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
             }
 
             return true;
@@ -392,7 +409,7 @@ public class SnapshotDeleteProcess {
 
         /** {@inheritDoc} */
         @Override public SnapshotDeleteResponse reduce() {
-            return new SnapshotDeleteResponse(res == null ? SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND : res);
+            return new SnapshotDeleteResponse(status == null ? SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND : status, nodeIds);
         }
     }
 }

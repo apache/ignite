@@ -158,9 +158,13 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             }
         }
 
+        String baselineGone = null;
+
         // Optionally restarts with the same servers number, but changed baseline. The snapshot is kept on the same
         // previous nodes independently of the baseline.
         if (changeBaseline) {
+            baselineGone = grid(initNodes - 1).name();
+
             ig.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();
 
@@ -212,6 +216,9 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "testSnapshot"));
 
         out = testOut.toString();
+
+        if (changeBaseline)
+            assertTrue(out.contains("consistent ids are missing in current cluster [cnt=1]: " + baselineGone));
 
         if (separatedWorkDir) {
             // When the nodes use own separated work directory, we expect a strict result.

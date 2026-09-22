@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Collection;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -31,7 +32,11 @@ import org.jetbrains.annotations.Nullable;
 public class SnapshotDeleteResponse implements Message {
     /** {@code null} for client node. */
     @Order(0)
-    @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus res;
+    @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status;
+
+    /** Snapshot's node ids. */
+    @Order(1)
+    @Nullable Collection<String> nodeIds;
 
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteResponse() {
@@ -39,8 +44,9 @@ public class SnapshotDeleteResponse implements Message {
     }
 
     /** {@code null} for client node. */
-    SnapshotDeleteResponse(@Nullable SnapshotDeleteResponse.SnapshotDeleteStatus res) {
-        this.res = res;
+    SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus status, Collection<String> nodeIds) {
+        this.status = status;
+        this.nodeIds = nodeIds;
     }
 
     /** {@inheritDoc} */

@@ -776,11 +776,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 res = false;
 
             // Delete parent dir which is {snapshot_root}/db if empty.
-            if (!sft.marshaller().getParentFile().delete())
+            if (!sft.marshaller().getParentFile().delete() && sft.marshaller().getParentFile().exists())
                 res = false;
 
             // Delete root dir which is {snapshot_root} if empty.
-            if (!sft.root().delete())
+            if (!sft.root().delete() && sft.root().exists())
                 res = false;
         }
         catch (Exception e) {

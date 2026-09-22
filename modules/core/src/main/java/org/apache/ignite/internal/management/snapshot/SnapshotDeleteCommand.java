@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.util.Collection;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
@@ -56,7 +55,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!F.isEmpty(res.uncompletedNodes())) {
             found = true;
 
-            printer.accept("WARNING, the following nodes found snapshot data but might not remove it completely "
+            printer.accept("WARNING: the following nodes found snapshot data but might not remove it completely "
                 + nodeIdsStrLst(res.uncompletedNodes()));
 
             printer.accept("");
@@ -71,21 +70,25 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
         if (found) {
             if (!F.isEmpty(res.emptyNodes())) {
-                printer.accept("NOTE, the following nodes didn't find any snapshot data, nothing to delete "
+                printer.accept("NOTE: the following nodes didn't find any snapshot data, nothing to delete "
                     + nodeIdsStrLst(res.emptyNodes()));
+            }
+
+            if (!F.isEmpty(res.absentBaselines())) {
+                printer.accept("WARNING: the snapshot's baseline nodes with the following consistent ids " +
+                    "are missing in current cluster " + nodeIdsStrLst(res.absentBaselines()));
             }
         }
         else {
-            if (!F.isEmpty(res.emptyNodes()))
-                printer.accept("Snapshot not found on current server nodes.");
-            else
-                printer.accept("Unknown result.");
+            assert !F.isEmpty(res.emptyNodes());
+
+            printer.accept("Snapshot not found on current server nodes.");
         }
     }
 
     /** */
-    private static String nodeIdsStrLst(Collection<UUID> uuids) {
-        return "[cnt=" + uuids.size() + "]: " + uuids.stream().map(UUID::toString).collect(Collectors.joining(", "));
+    private static String nodeIdsStrLst(Collection<?> uuids) {
+        return "[cnt=" + uuids.size() + "]: " + uuids.stream().map(Object::toString).collect(Collectors.joining(", "));
     }
 
     /** {@inheritDoc} */
