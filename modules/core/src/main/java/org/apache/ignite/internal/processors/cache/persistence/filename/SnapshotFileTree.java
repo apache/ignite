@@ -457,35 +457,6 @@ public class SnapshotFileTree extends NodeFileTree {
         return res;
     }
 
-    /** */
-    public static boolean isSnapshotFile(File f) {
-        if (f.isDirectory())
-            return true;
-
-        int idx = f.getName().indexOf('.');
-
-        if (idx < 1)
-            return false;
-
-        String ext = f.getName().substring(idx);
-
-        switch (ext) {
-            case DELTA_IDX_SUFFIX:
-            case DELTA_SUFFIX:
-            case SNAPSHOT_METAFILE_EXT:
-            case DUMP_FILE_EXT:
-            case DUMP_LOCK:
-            case WAL_SEGMENT_FILE_EXT:
-            case FILE_SUFFIX:
-            case ZIP_SUFFIX:
-            case TMP_SUFFIX:
-            case ".dat":
-                return true;
-        }
-
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotFileTree.class, this);

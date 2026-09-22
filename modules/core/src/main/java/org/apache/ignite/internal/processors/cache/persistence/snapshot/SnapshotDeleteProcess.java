@@ -184,6 +184,8 @@ public class SnapshotDeleteProcess {
             List<SnapshotMetadata> locMetas = kctx.cache().context().snapshotMgr().readSnapshotMetadatas(snpFiles);
 
             if (locMetas.isEmpty()) {
+                requests.remove(req);
+
                 log.warning("Snapshot deletion won't process, no snapshot metadata found [req=" + req + ']');
 
                 return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND));
@@ -208,7 +210,7 @@ public class SnapshotDeleteProcess {
                         var byMetaSft = new SnapshotFileTree(kctx, req.snpName, path0.getAbsolutePath(), meta.folderName(),
                             meta.consId);
 
-                        boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, meta.folderName(), foundFlag);
+                        boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, foundFlag);
 
                         SnapshotDeleteResponse.SnapshotDeleteStatus res;
 

@@ -865,11 +865,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(
-                            SnapshotFileTree sft,
-                            String nodeFolderName,
-                            @Nullable AtomicBoolean existsFlag
-                        ) {
+                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
                             delProcInitLatch.countDown();
 
                             try {
@@ -879,7 +875,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                                 throw new RuntimeException("Interrupted.", e);
                             }
 
-                            return super.deleteLocalSnapshot(sft, nodeFolderName, existsFlag);
+                            return super.deleteLocalSnapshot(sft, existsFlag);
                         }
                     };
                 }
