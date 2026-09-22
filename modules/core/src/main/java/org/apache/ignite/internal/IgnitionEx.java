@@ -38,7 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
@@ -141,7 +140,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
-import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_MBEANS_DISABLED;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -298,71 +296,46 @@ public class IgnitionEx {
         @Nullable ShutdownPolicy shutdown, boolean stopNotStarted) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
-        if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
-            grid.starterThreadInterrupted = true;
+        BinaryContext old = GridBinaryMarshaller.pushContext(grid.grid.context().cacheObjects().binaryContext());
 
-            grid.starterThread.interrupt();
-        }
+        try {
+            if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
+                grid.starterThreadInterrupted = true;
 
-        if (grid != null) {
-            if (grid.state() == STARTED)
-                grid.stop(cancel, shutdown);
-
-            boolean fireEvt;
-
-            if (name != null)
-                fireEvt = grids.remove(name, grid);
-            else {
-                synchronized (dfltGridMux) {
-                    fireEvt = dfltGrid == grid;
-
-                    if (fireEvt)
-                        dfltGrid = null;
-                }
+                grid.starterThread.interrupt();
             }
 
-            if (fireEvt)
-                notifyStateChange(grid.getName(), grid.state());
+            if (grid != null) {
+                if (grid.state() == STARTED)
+                    grid.stop(cancel, shutdown);
 
-            return true;
-        }
+                boolean fireEvt;
 
-        // We don't have log at this point...
-        U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
+                if (name != null)
+                    fireEvt = grids.remove(name, grid);
+                else {
+                    synchronized (dfltGridMux) {
+                        fireEvt = dfltGrid == grid;
 
-        return false;
-    }
-
-    /**
-     * @deprecated
-     *
-     * Behavior of the method is the almost same as {@link IgnitionEx#stop(boolean, ShutdownPolicy)}.
-     * If node stopping process will not be finished within {@code timeoutMs} whole JVM will be killed.
-     *
-     * @param timeoutMs Timeout to wait graceful stopping.
-     */
-    @Deprecated
-    public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted, long timeoutMs) {
-        final ScheduledExecutorService executor = newSingleThreadScheduledExecutor("ignite-stop-await-worker", name);
-
-        // Schedule delayed node killing if graceful stopping will be not finished within timeout.
-        executor.schedule(new Runnable() {
-            @Override public void run() {
-                if (state(name) == IgniteState.STARTED) {
-                    U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
-                        " milliseconds. Killing node...");
-
-                    // We are not able to kill only one grid so whole JVM will be stopped.
-                    Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
+                        if (fireEvt)
+                            dfltGrid = null;
+                    }
                 }
+
+                if (fireEvt)
+                    notifyStateChange(grid.getName(), grid.state());
+
+                return true;
             }
-        }, timeoutMs, TimeUnit.MILLISECONDS);
 
-        boolean success = stop(name, cancel, null, stopNotStarted);
+            // We don't have log at this point...
+            U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
 
-        executor.shutdownNow();
-
-        return success;
+            return false;
+        }
+        finally {
+            GridBinaryMarshaller.popContext(old);
+        }
     }
 
     /**
