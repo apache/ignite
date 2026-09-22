@@ -401,7 +401,7 @@ Register name: `communication.tcp`
 |RejectedSslSessionsCount | integer | TCP sessions count that were rejected due to SSL errors.
 |SslEnabled | boolean | Whether SSL is enabled.
 |SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
-|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent.
+|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent over the configured time interval (1 minute by default).
 |outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
 |receivedBytes | long | Total number of bytes received by current node.
 |receivedMessagesByType.{message_type} | long | Total number of messages with given type received by current node.
@@ -472,7 +472,7 @@ Register name: `client.connector`
 |SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
 |jdbc.AcceptedSessions | integer | Number of successfully established sessions for the client type.
 |jdbc.ActiveSessions | integer | Number of active sessions for the jdbc client.
-|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent.
+|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent over the configured time interval (1 minute by default).
 |odbc.AcceptedSessions | integer | Number of successfully established sessions for the client type.
 |odbc.ActiveSessions | integer | Number of active sessions for the odbc client.
 |outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
@@ -495,7 +495,7 @@ Register name: `rest.client`
 |RejectedSslSessionsCount | integer | TCP sessions count that were rejected due to SSL errors.
 |SslEnabled | boolean | Whether SSL is enabled.
 |SslHandshakeDurationHistogram | histogram | SSL handshake duration in milliseconds.
-|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent.
+|maxOutboundMessagesQueueSize | long | Maximum number of messages waiting to be sent over the configured time interval (1 minute by default).
 |outboundMessagesQueueSize | long | Total number of messages waiting to be sent over all connections.
 |receivedBytes | long | Total number of bytes received by current node.
 |sentBytes | long | Total number of bytes sent by current node.
@@ -517,7 +517,7 @@ Register name: `io.discovery`
 |FailedNodes | integer | Failed nodes count.
 |JoinedNodes | integer | Joined nodes count.
 |LeftNodes | integer | Left nodes count.
-|MaxMsgQueueSize | long | Max message queue size.
+|MaxMsgQueueSize | long | Maximum message queue size over the configured time interval (1 minute by default).
 |MessageWorkerQueueSize | integer | Message worker queue current size.
 |Next | UUID | Next in the ring node ID.
 |PendingMessagesRegistered | integer | Pending messages registered count.
@@ -755,7 +755,7 @@ Register name: `sql.queries.user`
 |Name | Type | Description
 |canceled | long | Number of canceled queries that have been started on this node. This metric number included in the general 'failed' metric.
 |failed | long | Total number of failed by any reason (cancel, etc) queries that have been started on this node.
-|maxResultSetSize | long | Maximum result set size for SQL queries.
+|maxResultSetSize | long | Maximum result set size for SQL queries over the configured time interval (1 minute by default).
 |resultSetSizeHistogram | histogram | Histogram of result set sizes for SQL queries.
 |success | long | Number of successfully executed user queries that have been started on this node.
 |===
