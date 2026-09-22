@@ -67,6 +67,8 @@ import org.apache.ignite.internal.processors.rollingupgrade.CoreVersionRollingUp
 import org.apache.ignite.internal.processors.rollingupgrade.PluginVersionRollingUpgradeTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSetTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.ManagementApiVersionValidationTest;
+import org.apache.ignite.internal.processors.rollingupgrade.message.RollingUpgradeDistributedAttributeTest;
+import org.apache.ignite.internal.processors.rollingupgrade.message.RollingUpgradeMessageSerializationTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.ErrorMessageSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
@@ -112,6 +114,8 @@ import org.junit.runners.Suite;
 
     CoreVersionRollingUpgradeTest.class,
     PluginVersionRollingUpgradeTest.class,
+    RollingUpgradeMessageSerializationTest.class,
+    RollingUpgradeDistributedAttributeTest.class,
     ManagementApiVersionValidationTest.class,
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentV2Test.class,

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshalledMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -29,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public final class TestMarshalledMessageSerializer implements MessageSerializer<TestMarshalledMessage> {
     /** */
-    @Override public final boolean writeTo(TestMarshalledMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -49,7 +50,7 @@ public final class TestMarshalledMessageSerializer implements MessageSerializer<
     }
 
     /** */
-    @Override public final boolean readFrom(TestMarshalledMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
                 msg.dataBytes = reader.readByteArray();

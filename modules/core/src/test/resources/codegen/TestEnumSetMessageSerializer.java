@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestEnumSetMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -46,7 +47,7 @@ public final class TestEnumSetMessageSerializer implements MessageSerializer<Tes
     private static final MessageMapType isolationsMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.STRING), new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), CollectionImplementationType.ENUM_SET), false);
 
     /** */
-    @Override public final boolean writeTo(TestEnumSetMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestEnumSetMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -56,19 +57,19 @@ public final class TestEnumSetMessageSerializer implements MessageSerializer<Tes
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection(msg.isolations, isolationsCollDesc))
+                if (!writer.writeCollection(msg.isolations, isolationsCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMap(msg.isolationsMap, isolationsMapCollDesc))
+                if (!writer.writeMap(msg.isolationsMap, isolationsMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection(msg.isolationsList, isolationsListCollDesc))
+                if (!writer.writeCollection(msg.isolationsList, isolationsListCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
@@ -78,10 +79,10 @@ public final class TestEnumSetMessageSerializer implements MessageSerializer<Tes
     }
 
     /** */
-    @Override public final boolean readFrom(TestEnumSetMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestEnumSetMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
-                msg.isolations = reader.readCollection(isolationsCollDesc);
+                msg.isolations = reader.readCollection(isolationsCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -89,7 +90,7 @@ public final class TestEnumSetMessageSerializer implements MessageSerializer<Tes
                 reader.incrementState();
 
             case 1:
-                msg.isolationsMap = reader.readMap(isolationsMapCollDesc);
+                msg.isolationsMap = reader.readMap(isolationsMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -97,7 +98,7 @@ public final class TestEnumSetMessageSerializer implements MessageSerializer<Tes
                 reader.incrementState();
 
             case 2:
-                msg.isolationsList = reader.readCollection(isolationsListCollDesc);
+                msg.isolationsList = reader.readCollection(isolationsListCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
