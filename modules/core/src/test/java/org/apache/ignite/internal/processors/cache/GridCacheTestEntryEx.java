@@ -299,6 +299,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
+    @Override public boolean hasNonExpiredValue() {
+        return hasValue();
+    }
+
+    /** @inheritDoc */
     @Override public CacheObject rawPut(CacheObject val, long ttl) {
         CacheObject old = this.val;
 

@@ -22,16 +22,21 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
+import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -39,6 +44,7 @@ import org.junit.Test;
 import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 
 /**
  * Tests for cache.size() with ttl enabled.
@@ -55,6 +61,26 @@ public class CacheSizeTtlTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, value = "10000")
+    public void testEntriesLeak() throws Exception {
+        IgniteEx srv = startGrid(getConfiguration().setIncludeEventTypes(EVT_CACHE_OBJECT_READ));
+
+        srv.events().localListen(evt -> {
+            doSleep(2000L);
+            return true;
+        }, EVT_CACHE_OBJECT_READ);
+
+        IgniteCache<Object, Object> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME)
+            .withExpiryPolicy(new TouchedExpiryPolicy(new Duration(SECONDS, 5)));
+
+        cache.put(1, 1);
+        cache.get(1);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> cache.size(CachePeekMode.PRIMARY) == 0, 15_000L));
     }
 
     /**
