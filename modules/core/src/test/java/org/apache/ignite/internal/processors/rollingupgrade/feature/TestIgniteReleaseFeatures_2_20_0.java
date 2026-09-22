@@ -23,14 +23,17 @@ public class TestIgniteReleaseFeatures_2_20_0 {
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = TestIgniteReleaseFeatures_2_19_2.ROLLING_UPGRADE_FEATURE;
 
     /** */
+    public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = TestIgniteReleaseFeatures_2_19_1.SNAPSHOT_DELETE_FEATURE;
+
+    /** */
     public static final IgniteFeature VER_2_19_2_ID_1_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
 
     /** */
     public static final IgniteFeature VER_2_19_2_ID_2_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_2_FEATURE;
 
     /** */
-    public static final IgniteFeature VER_2_20_0_ID_3_FEATURE = new IgniteCoreFeature(3);
+    public static final IgniteFeature VER_2_20_0_ID_3_FEATURE = new IgniteCoreFeature(VER_2_19_2_ID_2_FEATURE.id() + 1);
 
     /** */
-    public static final IgniteFeature VER_2_20_0_ID_4_FEATURE = new IgniteCoreFeature(4);
+    public static final IgniteFeature VER_2_20_0_ID_4_FEATURE = new IgniteCoreFeature(VER_2_20_0_ID_3_FEATURE.id() + 1);
 }

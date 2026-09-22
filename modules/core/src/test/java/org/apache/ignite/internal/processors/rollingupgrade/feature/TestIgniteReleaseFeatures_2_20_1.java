@@ -35,5 +35,5 @@ public class TestIgniteReleaseFeatures_2_20_1 {
     public static final IgniteFeature VER_2_20_0_ID_4_FEATURE = TestIgniteReleaseFeatures_2_20_0.VER_2_20_0_ID_4_FEATURE;
 
     /** */
-    public static final IgniteFeature VER_2_20_1_ID_6_FEATURE = new IgniteCoreFeature(6);
+    public static final IgniteFeature VER_2_20_1_ID_6_FEATURE = new IgniteCoreFeature(VER_2_20_0_ID_4_FEATURE.id() + 1);
 }
