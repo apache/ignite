@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.localtask;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,12 +36,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class SimpleTaskSerializer implements IgniteDataTransferObjectSerializer<SimpleTask> {
     /** {@inheritDoc} */
-    @Override public void writeExternal(SimpleTask obj, ObjectOutput out) throws IOException {
+    @Override public void writeExternal(SimpleTask obj, ObjectOutput out, MessageSerializationContext ctx) throws IOException {
         U.writeLongString(out, obj.name);
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(SimpleTask obj, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(
+        SimpleTask obj,
+        ObjectInput in,
+        MessageSerializationContext ctx
+    ) throws IOException, ClassNotFoundException {
         obj.name = U.readLongString(in);
     }
 }

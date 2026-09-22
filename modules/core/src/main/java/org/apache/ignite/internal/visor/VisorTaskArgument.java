@@ -24,11 +24,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.OP_FEATURES_ATTR;
 
 /**
  * Visor tasks argument.
@@ -48,7 +56,7 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
     private static final int MAGIC = 0xBAA55F5E;
 
     /** */
-    transient IgniteCoreFeatureSet cmdInitiatorFeatures = IgniteCoreFeatureSet.local();
+    transient IgniteNodeFeatureSet cmdInitiatorFeatures = new IgniteNodeFeatureSet(IgniteCoreFeatureSet.local());
 
     /** Node IDs task should be mapped to. */
     @Order(0)
@@ -116,6 +124,11 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
         this(node, null, debug);
     }
 
+    /** */
+    public IgniteNodeFeatureSet initiatorFeatures() {
+        return cmdInitiatorFeatures;
+    }
+
     /**
      * @return Node IDs task should be mapped to.
      */
@@ -141,9 +154,11 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
 
-        cmdInitiatorFeatures.writeExternal(out);
+        cmdInitiatorFeatures.componentFeatures(IgniteCoreFeature.COMPONENT_NAME).writeExternal(out);
 
-        writeIgniteDataTransferObject(out);
+        try (Scope ignored = OperationContext.set(OP_FEATURES_ATTR, cmdInitiatorFeatures)) {
+            writeIgniteDataTransferObject(out);
+        }
     }
 
     /** {@inheritDoc} */
@@ -158,18 +173,34 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
             );
         }
 
-        cmdInitiatorFeatures = new IgniteCoreFeatureSet();
+        IgniteCoreFeatureSet cmdInitiatorFeatures = new IgniteCoreFeatureSet();
         cmdInitiatorFeatures.readExternal(in);
 
-        if (!cmdInitiatorFeatures.isUpgradableTo(IgniteCoreFeatureSet.local())) {
+        IgniteComponentFeatureSet locFeatures = localFeatures();
+
+        if (!cmdInitiatorFeatures.isUpgradableTo(locFeatures)) {
             throw new IOException("Failed to deserialize the Ignite Management API command argument. The data was" +
                 " serialized by an incompatible Ignite version" +
                 " [remoteVersion=" + cmdInitiatorFeatures.version() +
-                ", localVersion=" + IgniteCoreFeatureSet.local().version() + ']'
+                ", localVersion=" + locFeatures.version() + ']'
             );
         }
 
-        readIgniteDataTransferObject(in);
+        this.cmdInitiatorFeatures = new IgniteNodeFeatureSet(cmdInitiatorFeatures);
+
+        try (Scope ignored = OperationContext.set(OP_FEATURES_ATTR, this.cmdInitiatorFeatures)) {
+            readIgniteDataTransferObject(in);
+        }
+    }
+
+    /** */
+    private static IgniteComponentFeatureSet localFeatures() {
+        try {
+            return IgnitionEx.localIgnite().context().localNodeFeatures().componentFeatures(IgniteCoreFeature.COMPONENT_NAME);
+        }
+        catch (IllegalArgumentException ignored) {
+            return IgniteCoreFeatureSet.local();
+        }
     }
 
     /** {@inheritDoc} */

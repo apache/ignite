@@ -42,9 +42,7 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteNodeFeatureSet LOCAL_CORE_FEATURES = new IgniteNodeFeatureSet(new IgniteComponentFeatureSet[] {
-        IgniteCoreFeatureSet.local()
-    });
+    public static final IgniteNodeFeatureSet LOCAL_CORE_FEATURES = new IgniteNodeFeatureSet(IgniteCoreFeatureSet.local());
 
     /** */
     @Order(0)
@@ -59,7 +57,7 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
     }
 
     /** */
-    public IgniteNodeFeatureSet(IgniteComponentFeatureSet[] features) {
+    public IgniteNodeFeatureSet(IgniteComponentFeatureSet... features) {
         assert features != null;
 
         this.features = features;

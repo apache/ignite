@@ -93,4 +93,10 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
 public class SupportedFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
+
+    /** */
+    public static final IgniteFeature RU_AWARE_DISTRIBUTED_ATTRIBUTE_FEATURE = new IgniteCoreFeature(1);
+
+    /** */
+    public static final IgniteFeature OP_FEATURES_PROPAGATION_FEATURE = new IgniteCoreFeature(2);
 }

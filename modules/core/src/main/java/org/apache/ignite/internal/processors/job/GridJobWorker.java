@@ -56,6 +56,8 @@ import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -170,8 +172,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Request topology version. */
     private final String execName;
 
-    /** Security context. */
-    private final SecurityContext secCtx;
+    /** Operation context the job was received under. */
+    private final OperationContextSnapshot opCtxSnp;
 
     /** Job status. */
     private volatile ComputeJobStatusEnum status = QUEUED;
@@ -247,7 +249,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         jobTopic = TOPIC_JOB.topic(ses.getJobId(), locNodeId);
         taskTopic = TOPIC_TASK.topic(ses.getJobId(), locNodeId);
 
-        secCtx = ctx.security().securityContext();
+        opCtxSnp = OperationContext.createSnapshot();
     }
 
     /**
@@ -491,28 +493,32 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /** {@inheritDoc} */
     @Override protected void body() {
-        assert job != null;
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            assert job != null;
 
-        startTime = U.currentTimeMillis();
+            startTime = U.currentTimeMillis();
 
-        isStarted = true;
+            isStarted = true;
 
-        status = RUNNING;
+            status = RUNNING;
 
-        // Event notification.
-        evtLsnr.onJobStarted(this);
+            // Event notification.
+            evtLsnr.onJobStarted(this);
 
-        if (!internal && ctx.event().isRecordable(EVT_JOB_STARTED))
-            recordEvent(EVT_JOB_STARTED, /*no message for success*/null);
+            if (!internal && ctx.event().isRecordable(EVT_JOB_STARTED))
+                recordEvent(EVT_JOB_STARTED, /*no message for success*/null);
 
-        execute0(true);
+            execute0(true);
+        }
     }
 
     /**
      * Executes the job.
      */
     public void execute() {
-        execute0(false);
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            execute0(false);
+        }
     }
 
     /**
@@ -525,7 +531,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         SqlFieldsQuery.setThreadedQueryInitiatorId("task:" + ses.getTaskName() + ":" + getJobId());
 
-        try (Scope ignored = ctx.security().withContext(secCtx)) {
+        try {
             if (partsReservation != null) {
                 try {
                     if (!partsReservation.reserve()) {
@@ -728,32 +734,34 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param sys System flag.
      */
     public void cancel(boolean sys) {
-        if (log.isDebugEnabled())
-            log.debug("Cancelling job: " + ses);
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            if (log.isDebugEnabled())
+                log.debug("Cancelling job: " + ses);
 
-        boolean firstCancel = isCancelled.compareAndSet(false, true);
+            boolean firstCancel = isCancelled.compareAndSet(false, true);
 
-        isCancelledBySystem = sys;
+            isCancelledBySystem = sys;
 
-        status = CANCELLED;
+            status = CANCELLED;
 
-        final ComputeJob job0 = job;
+            final ComputeJob job0 = job;
 
-        try (Scope ignored = ctx.security().withContext(secCtx)) {
-            U.wrapThreadLoader(dep.classLoader(), job0::cancel);
-        }
-        catch (Throwable e) { // Catch throwable to protect against bad user code.
-            U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
-                ", ses=" + ses + ']', e);
+            try {
+                U.wrapThreadLoader(dep.classLoader(), job0::cancel);
+            }
+            catch (Throwable e) { // Catch throwable to protect against bad user code.
+                U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
+                    ", ses=" + ses + ']', e);
 
-            if (e instanceof Error)
-                throw e;
-        }
-        finally {
-            onCancel(firstCancel);
+                if (e instanceof Error)
+                    throw e;
+            }
+            finally {
+                onCancel(firstCancel);
 
-            if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
-                recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
+                if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
+                    recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
+            }
         }
     }
 
@@ -782,6 +790,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         evt.taskSessionId(ses.getId());
         evt.type(evtType);
         evt.taskNode(taskNode);
+
+        SecurityContext secCtx = ses.session().initiatorSecurityContext();
+
         evt.taskSubjectId(secCtx != null ? secCtx.subject().id() : null);
 
         ctx.event().record(evt);
@@ -1029,7 +1040,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     boolean onMasterNodeLeft() {
         if (job instanceof ComputeJobMasterLeaveAware) {
             if (masterLeaveGuard.compareAndSet(false, true)) {
-                try {
+                try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
                     ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses.session());
 
                     if (log.isDebugEnabled())
