@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
-import static org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionAbstractTest.setEvictionMode;
-
 /** ExpiryPolicy + page eviction synergy test for {@link DataPageEvictionMode#RANDOM_2_LRU}. */
 public class Random2LruPageEvictionWithExpiryPolicyTest extends PageEvictionWithExpiryPolicyAbstractTest {
     /** {@inheritDoc} */

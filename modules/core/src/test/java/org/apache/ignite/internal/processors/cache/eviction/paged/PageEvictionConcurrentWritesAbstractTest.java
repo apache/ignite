@@ -21,19 +21,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /**
  * Concurrent deadlock test for size-aware page eviction.
@@ -45,60 +39,15 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
  * small entries rather than overrunning the free list. The test asserts that no deadlock occurs (all threads finish
  * within a global deadline).
  */
-public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommonAbstractTest {
-    /** Off-heap region size. */
-    private static final int SIZE = 256 * 1024 * 1024;
-
-    /** Partition count (kept low so that index-tree structures do not exhaust the region). */
-    private static final int PARTITIONS = 32;
-
-    /** Large record size (larger than the empty-pages pool so that each write is size-aware). */
-    private static final int LARGE_RECORD_SIZE = 2 * 1024 * 1024;
-
-    /** Small record size used to pre-fill the region with evictable data. */
-    private static final int SMALL_RECORD_SIZE = 4096;
-
-    /** Empty pages pool size. */
-    private static final int POOL_SIZE = 100;
-
-    /** Number of small pre-fill entries, leaving a buffer that is exceeded by the total of the large writes, so that
-     * the last of them can only be stored by freeing pages via size-aware eviction. The large records are small
-     * enough that concurrent size-aware eviction reliably frees the required pages (no spurious guard OOM). */
-    private static final int SMALL_ENTRIES = 48_000;
-
-    /** Number of writer threads. */
-    private static final int THREADS = 10;
-
-    /** Large rows inserted per thread. Their total (threads x rows) exceeds the buffer left by the pre-fill, so the
-     * last large writes overflow the region and require size-aware eviction to free small entry pages. */
-    private static final int LARGE_ROWS_PER_THREAD = 20;
-
-    /** Global deadline for the whole test (protects against a deadlock/busy-spin hang). */
-    private static final long DEADLINE = TimeUnit.MINUTES.toMillis(3);
-
+public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvictionAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName)
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setInitialSize(SIZE)
-                    .setMaxSize(SIZE)
-                    .setEmptyPagesPoolSize(POOL_SIZE))
-                .setPageSize(DFLT_PAGE_SIZE));
+        return super.getConfiguration(gridName).setDataStorageConfiguration(new DataStorageConfiguration());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * @param ignite Ignite node.
-     * @return Cache with a small partition count (reduces structural page overhead).
-     */
-    private IgniteCache<Integer, Object> createCache(IgniteEx ignite) {
-        return ignite.createCache(new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, PARTITIONS)));
     }
 
     /**
@@ -109,32 +58,40 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends GridCommo
      */
     @Test
     public void testConcurrentLargeWritesNoDeadlock() throws Exception {
+         // Number of small pre-fill entries, leaving a buffer that is exceeded by the total of the large writes, so that
+         // the last of them can only be stored by freeing pages via size-aware eviction. The large records are small
+         // enough that concurrent size-aware eviction reliably frees the required pages (no spurious guard OOM).
+        int smallEntries = 48_000;
+
+         // Large rows inserted per thread. Their total (threads x rows) exceeds the buffer left by the pre-fill, so the
+         // last large writes overflow the region and require size-aware eviction to free small entry pages.
+        int largeRowsPerThread = 20;
+
         IgniteEx ignite = startGrid(1);
 
-        IgniteCache<Integer, Object> cache = createCache(ignite);
+        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
         // Pre-fill the region with many small entries so that eviction always has evictable pages to free.
-        for (int i = 0; i < SMALL_ENTRIES; i++)
-            cache.put(i, new byte[SMALL_RECORD_SIZE]);
+        for (int i = 0; i < smallEntries; i++)
+            cache.put(i, new byte[4096]);
 
-        byte[] largeVal = new byte[LARGE_RECORD_SIZE];
+        byte[] largeVal = new byte[2 * 1024 * 1024];
 
         CountDownLatch startLatch = new CountDownLatch(1);
 
         AtomicInteger threadIdx = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-                U.awaitQuiet(startLatch);
+            U.awaitQuiet(startLatch);
 
-                int idx = threadIdx.getAndIncrement();
+            int idx = threadIdx.getAndIncrement();
 
-                for (int k = 0; k < LARGE_ROWS_PER_THREAD; k++)
-                    cache.put(SMALL_ENTRIES + idx * LARGE_ROWS_PER_THREAD + k, largeVal);
-            },
-            THREADS, "paged-writer");
+            for (int k = 0; k < largeRowsPerThread; k++)
+                cache.put(smallEntries + idx * largeRowsPerThread + k, largeVal);
+            }, 10, "paged-writer");
 
         startLatch.countDown();
 
-        fut.get(DEADLINE);
+        fut.get(TimeUnit.MINUTES.toMillis(3));
     }
 }

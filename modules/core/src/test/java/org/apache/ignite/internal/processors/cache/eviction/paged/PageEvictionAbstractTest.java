@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -26,8 +27,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import javax.cache.expiry.Duration;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static javax.cache.expiry.CreatedExpiryPolicy.factoryOf;
 
 /**
  *
@@ -129,5 +135,33 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             cacheConfiguration.setNearConfiguration(new NearCacheConfiguration<>());
 
         return cacheConfiguration;
+    }
+
+    /**
+     * @param ignite Ignite node.
+     * @param cacheName Cache name.
+     * @return Cache with a small partition count.
+     */
+    protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName) {
+        return createCache(ignite, cacheName, 0, false);
+    }
+
+    /**
+     * @param ignite Ignite node.
+     * @param cacheName Cache name.
+     * @param ttl TTL in milliseconds ({@code 0} for no expiry).
+     * @return Cache with a small partition count and, if {@code ttl > 0}, eager TTL expiry.
+     */
+    protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName, long ttl, boolean transactional) {
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<Integer, Object>(cacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (transactional)
+            ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        if (ttl > 0)
+            ccfg.setExpiryPolicyFactory(factoryOf(new Duration(MILLISECONDS, ttl))).setEagerTtl(true);
+
+        return ignite.createCache(ccfg);
     }
 }
