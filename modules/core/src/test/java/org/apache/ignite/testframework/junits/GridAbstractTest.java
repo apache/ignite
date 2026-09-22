@@ -195,8 +195,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
      **************************************************************/
-    /** Null name for execution map. */
-    private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Ip finder for TCP discovery. */
     public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false).

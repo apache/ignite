@@ -21,8 +21,11 @@ import java.net.URL;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -80,6 +83,25 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     private void executeFail(Ignite g1, Ignite g2, Class task) {
         try {
             g1.compute().execute(task, g2.cluster().localNode().id());
+
+            assert false; // Exception must be thrown.
+        }
+        catch (IgniteException e) {
+            // Throwing exception is a correct behaviour.
+            info("Received correct exception: " + e);
+        }
+    }
+
+    /**
+     * Querying events here throws {@link IgniteCheckedException}.
+     * This is correct behavior.
+     *
+     * @param g Grid.
+     * @param filter Event filter.
+     */
+    private void executeFail(ClusterGroup g, IgnitePredicate<Event> filter) {
+        try {
+            g.ignite().events(g).remoteQuery(filter, 0);
 
             assert false; // Exception must be thrown.
         }
