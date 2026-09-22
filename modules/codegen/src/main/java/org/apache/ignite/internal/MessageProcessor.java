@@ -497,8 +497,7 @@ public class MessageProcessor extends AbstractProcessor {
             return;
         }
 
-        printError(env, field,
-            "Failed to resolve feature in the registry by its name [reg=" + regCls + ", feature=" + featureName + ']');
+        printError(env, field, "Failed to resolve feature in the registry by its name [reg=" + regCls + ", feature=" + featureName + ']');
     }
 
     /** */
