@@ -373,7 +373,8 @@ control.sh --tx --min-duration 100 --kill
 ** long GC pauses.
 * Unstable network operation. Indicators: log messages about connection loss between nodes, socket closures, or network timeouts triggering.
 * Resource-intensive operations (for example, deleting a cache that is part of a cache group, snapshots execution, index rebuild, rebalancing, etc.).
-* Deadlocks during transactions execution.
+* Deadlocks during transaction execution. Indicators: message `Deadlock detected` on the node that initiated the transaction.
+* Internal Apache Ignite bugs or Java-level deadlocks in Apache Ignite code. Indicators: thread dumps showing threads waiting for locks held by other threads; over time, the thread state doesn't change (stack trace remains unchanged). Not all deadlocks can be detected by thread dumps, for example, deadlocks caused by pool starvation. In such cases Apache Ignite has built-in pool starvation detection mechanism.
 
 == Transaction Timeout
 
