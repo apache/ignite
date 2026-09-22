@@ -23,9 +23,8 @@ public class TestIgniteReleaseFeatures_2_19_2 {
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = TestIgniteReleaseFeatures_2_19_1.ROLLING_UPGRADE_FEATURE;
 
     /** */
-    public static final IgniteFeature VER_2_19_2_ID_1_FEATURE =
-        new IgniteCoreFeature(TestIgniteReleaseFeatures_2_19_1.SNAPSHOT_DELETE_FEATURE.id() + 1);
+    public static final IgniteFeature VER_2_19_2_ID_1_FEATURE = new IgniteCoreFeature(1);
 
     /** */
-    public static final IgniteFeature VER_2_19_2_ID_2_FEATURE = new IgniteCoreFeature(VER_2_19_2_ID_1_FEATURE.id() + 1);
+    public static final IgniteFeature VER_2_19_2_ID_2_FEATURE = new IgniteCoreFeature(2);
 }

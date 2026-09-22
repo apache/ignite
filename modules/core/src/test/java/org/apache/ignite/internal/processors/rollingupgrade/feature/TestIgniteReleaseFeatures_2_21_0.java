@@ -26,8 +26,8 @@ public class TestIgniteReleaseFeatures_2_21_0 {
     public static final IgniteFeature VER_2_20_0_ID_4_FEATURE = TestIgniteReleaseFeatures_2_20_1.VER_2_20_0_ID_4_FEATURE;
 
     /** */
-    public static final IgniteFeature VER_2_21_0_ID_5_FEATURE = new IgniteCoreFeature(VER_2_20_0_ID_4_FEATURE.id() + 1);
+    public static final IgniteFeature VER_2_21_0_ID_5_FEATURE = new IgniteCoreFeature(5);
 
     /** */
-    public static final IgniteFeature VER_2_21_0_ID_6_FEATURE = new IgniteCoreFeature(VER_2_21_0_ID_5_FEATURE.id() + 1);
+    public static final IgniteFeature VER_2_21_0_ID_6_FEATURE = new IgniteCoreFeature(6);
 }
