@@ -326,7 +326,9 @@ The delete operation is subject to the following limitations:
 
 * The deletion is rejected if any snapshot operation with the same name (create, restore, check, or a delete with the same name) is
   active for the snapshot.
-* The operation cannot be cancelled. It cannot be undone, and the deleted snapshot cannot be restored. The command prompts for a confirmation.
+* The operation cannot be undone and the deleted snapshot cannot be restored. The command prompts for a confirmation.
+* Before deletion, no snapshot validation is done except finding and reading its metadata. If the metadata isn't found or cannot be read, snapshot isn't deleted.
+* If the provided snapshot path belongs to Ignite's home or to Ignite's a not snapshot work directory, the operation fails.
 
 == Getting Snapshot Operation Status
 
