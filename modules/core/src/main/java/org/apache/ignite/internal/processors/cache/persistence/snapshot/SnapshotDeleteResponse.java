@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 public class SnapshotDeleteResponse implements Message {
     /** {@code null} for client node. */
     @Order(0)
-    @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status;
+    @Nullable SnapshotDeleteResponse.DeleteStatus status;
 
     /** Snapshot's node ids. */
     @Order(1)
@@ -44,7 +44,7 @@ public class SnapshotDeleteResponse implements Message {
     }
 
     /** {@code null} for client node. */
-    SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus status, Collection<String> nodeIds) {
+    SnapshotDeleteResponse(DeleteStatus status, Collection<String> nodeIds) {
         this.status = status;
         this.nodeIds = nodeIds;
     }
@@ -55,12 +55,12 @@ public class SnapshotDeleteResponse implements Message {
     }
 
     /** */
-    enum SnapshotDeleteStatus {
+    enum DeleteStatus {
         /** Snapshot found and completely deleted. */
         DELETED,
 
         /** Snapshot found but some files or directories might not be deleted (locked). */
-        PARTLY_DELETED,
+        PARTLY,
 
         /** Snapshot not found. */
         NOT_FOUND;

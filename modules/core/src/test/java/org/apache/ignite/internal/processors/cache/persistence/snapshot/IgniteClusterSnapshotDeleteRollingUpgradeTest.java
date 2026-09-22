@@ -40,6 +40,7 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_PREPARE_VERSION_FINALIZATION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRollingUpgradeTest {
@@ -118,8 +119,11 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
         finalizeFut.get(getTestTimeout());
 
-        for (int i = 0; i < ALL_GRIDS; i++)
-            assertFalse(ru(grid(i)).isVersionUpgradeEnabled());
+        for (int i = 0; i < ALL_GRIDS; i++) {
+            int i0 = i;
+
+            assertTrue(waitForCondition(() -> !ru(grid(i0)).isVersionUpgradeEnabled(), getTestTimeout()));
+        }
 
         assertFalse(F.isEmpty(snp(1).deleteSnapshot(SNP_NAME, null).get(getTestTimeout()).completedNodes));
     }
@@ -148,8 +152,11 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
         ru(grid(1)).finalizeClusterVersion();
 
-        for (int i = 0; i < ALL_GRIDS; i++)
-            assertFalse(ru(grid(i)).isVersionUpgradeEnabled());
+        for (int i = 0; i < ALL_GRIDS; i++) {
+            int i0 = i;
+
+            assertTrue(waitForCondition(() -> !ru(grid(i0)).isVersionUpgradeEnabled(), getTestTimeout()));
+        }
 
         assertEquals(3, snp(1).deleteSnapshot(SNP_NAME, null).get().completedNodes().size());
     }

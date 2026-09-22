@@ -190,7 +190,7 @@ public class SnapshotDeleteProcess {
 
                 log.warning("Snapshot deletion won't process, no snapshot metadata found [req=" + req + ']');
 
-                return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND, null));
+                return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.DeleteStatus.NOT_FOUND, null));
             }
 
             // Future to delete snapshot contents according to snapshot metadatas.
@@ -214,7 +214,7 @@ public class SnapshotDeleteProcess {
 
                         boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, foundFlag);
 
-                        SnapshotDeleteResponse.SnapshotDeleteStatus status;
+                        SnapshotDeleteResponse.DeleteStatus status;
 
                         if (foundFlag.get()) {
                             if (deleted && log.isInfoEnabled())
@@ -223,14 +223,14 @@ public class SnapshotDeleteProcess {
                                 log.warning("Snapshot deleted not completely [req=" + req + ']');
 
                             status = deleted
-                                ? SnapshotDeleteResponse.SnapshotDeleteStatus.DELETED
-                                : SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+                                ? SnapshotDeleteResponse.DeleteStatus.DELETED
+                                : SnapshotDeleteResponse.DeleteStatus.PARTLY;
                         }
                         else {
                             if (log.isInfoEnabled())
                                 log.info("Snapshot not found to delete [req=" + req + ']');
 
-                            status = SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND;
+                            status = SnapshotDeleteResponse.DeleteStatus.NOT_FOUND;
                         }
 
                         perMetaFut.onDone(new SnapshotDeleteResponse(status, meta.bltNodes));
@@ -329,7 +329,7 @@ public class SnapshotDeleteProcess {
                         case DELETED:
                             completedNodes.put(nodeId, consistentId(nodeId));
                             break;
-                        case PARTLY_DELETED:
+                        case PARTLY:
                             uncompletedNodes.put(nodeId, consistentId(nodeId));
                             break;
                         default:
@@ -395,7 +395,7 @@ public class SnapshotDeleteProcess {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private @Nullable SnapshotDeleteResponse.SnapshotDeleteStatus status;
+        private @Nullable SnapshotDeleteResponse.DeleteStatus status;
 
         /** */
         private final Collection<String> nodeIds = new HashSet<>();
@@ -411,7 +411,7 @@ public class SnapshotDeleteProcess {
                 if (status == null || status == res.status)
                     status = res.status;
                 else
-                    status = SnapshotDeleteResponse.SnapshotDeleteStatus.PARTLY_DELETED;
+                    status = SnapshotDeleteResponse.DeleteStatus.PARTLY;
             }
 
             return true;
@@ -419,7 +419,7 @@ public class SnapshotDeleteProcess {
 
         /** {@inheritDoc} */
         @Override public SnapshotDeleteResponse reduce() {
-            return new SnapshotDeleteResponse(status == null ? SnapshotDeleteResponse.SnapshotDeleteStatus.NOT_FOUND : status, nodeIds);
+            return new SnapshotDeleteResponse(status == null ? SnapshotDeleteResponse.DeleteStatus.NOT_FOUND : status, nodeIds);
         }
     }
 }

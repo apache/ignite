@@ -42,7 +42,7 @@ public final class SnapshotDeleteProcessResult extends IgniteDataTransferObject 
     @Order(2)
     Map<UUID, String> emptyNodes;
 
-    /** Snapshot's baseline nodes which aren't found in current cluster. */
+    /** Snapshot's baseline nodes missing in current cluster. */
     @Order(3)
     Collection<String> absentBaselines;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
  * @see IgniteSnapshotManager#deleteSnapshot(String, String)
+ * @see SnapshotDeleteProcess
  */
 @GridInternal
 public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {

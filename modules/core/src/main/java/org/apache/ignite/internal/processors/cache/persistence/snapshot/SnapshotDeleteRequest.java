@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -46,6 +47,7 @@ public class SnapshotDeleteRequest implements Message {
     @Nullable String snpPath;
 
     /** Resolved absolute path. Transient */
+    @GridToStringExclude
     @Nullable File resolvedPath;
 
     /** Default constructor for {@link MessageFactory}. */
