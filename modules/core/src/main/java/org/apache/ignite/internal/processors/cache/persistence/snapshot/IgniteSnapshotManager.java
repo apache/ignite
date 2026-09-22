@@ -1930,6 +1930,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * local node will be placed on the first place.
      */
     public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft) {
+        return readSnapshotMetadatas(sft, true);
+    }
+
+    /**
+     * Note, there can be snapshots from other nodes.
+     * This method will read all metadata.
+     * Some instances can return {@link SnapshotMetadata#folderName()} and {@link SnapshotMetadata#consistentId()} that differs from local.
+     *
+     * @param sft Snapshot file tree.
+     * @param failIfCantRead If {@code true}, throws an exeption if cant read a metadata file.
+     * @return List of snapshot metadata for the given snapshot name on local node.
+     * If snapshot has been taken from local node the snapshot metadata for given
+     * local node will be placed on the first place.
+     */
+    public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft, boolean failIfCantRead) {
         if (!(sft.root().exists() && sft.root().isDirectory()))
             return Collections.emptyList();
 
@@ -1941,8 +1956,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
 
-        try {
-            for (File smf : smfs) {
+        for (File smf : smfs) {
+            try {
                 SnapshotMetadata curr = readSnapshotMetadata(smf);
 
                 if (prev != null && !prev.sameSnapshot(curr)) {
@@ -1954,9 +1969,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 prev = curr;
             }
-        }
-        catch (IgniteCheckedException | IOException e) {
-            throw new IgniteException(e);
+            catch (Exception e) {
+                String err = "Fail to read snapshot metadata [meta=" + smf + ']';
+
+                if (failIfCantRead)
+                    throw new IgniteException(err, e);
+                else
+                    log.error(err, e);
+            }
         }
 
         SnapshotMetadata currNodeSmf = metasMap.remove(cctx.localNode().consistentId().toString());

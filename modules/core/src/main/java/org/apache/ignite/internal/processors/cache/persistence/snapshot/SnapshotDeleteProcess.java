@@ -183,7 +183,7 @@ public class SnapshotDeleteProcess {
 
             // We need to find and read snapshot metas to ensure the content is a snapshot. Also, the metas contain
             // initial cluster topology and actual snasphot folder names.
-            List<SnapshotMetadata> locMetas = kctx.cache().context().snapshotMgr().readSnapshotMetadatas(snpFiles);
+            List<SnapshotMetadata> locMetas = kctx.cache().context().snapshotMgr().readSnapshotMetadatas(snpFiles, false);
 
             if (locMetas.isEmpty()) {
                 requests.remove(req);

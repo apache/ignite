@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -197,18 +199,30 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testDeleteNotSnapshotSharedDirectory() throws Exception {
-        doTestDeleteNotSnapshot(false);
+    public void testDeleteSnapshotNoMetaSharedDirectory() throws Exception {
+        doTestDeleteNotSnapshot(false, false);
     }
 
     /** */
     @Test
-    public void testDeleteNotSnapshotDedicatedDirectories() throws Exception {
-        doTestDeleteNotSnapshot(true);
+    public void testDeleteSnapshotNoMetaDedicatedDirectories() throws Exception {
+        doTestDeleteNotSnapshot(true, false);
     }
 
     /** */
-    protected void doTestDeleteNotSnapshot(boolean separatedWorkDir) throws Exception {
+    @Test
+    public void testDeleteSnapshotCorruptedMetaSharedDirectory() throws Exception {
+        doTestDeleteNotSnapshot(false, true);
+    }
+
+    /** */
+    @Test
+    public void testDeleteSnapshotCorruptedMetaDedicatedDirectories() throws Exception {
+        doTestDeleteNotSnapshot(true, true);
+    }
+
+    /** */
+    protected void doTestDeleteNotSnapshot(boolean separatedWorkDir, boolean corruptFile) throws Exception {
         this.separatedWorkDir = separatedWorkDir;
 
         startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
@@ -225,8 +239,20 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             .binaryMeta().exists());
 
         assertTrue(snpSft.meta().exists());
-        assertTrue(U.delete(snpSft.meta()));
-        assertFalse(snpSft.meta().exists());
+
+        if (corruptFile) {
+            try (var rwf = new RandomAccessFile(snpSft.meta(), "rw")) {
+                byte[] slop = new byte[128];
+
+                new Random().nextBytes(slop);
+
+                rwf.write(slop);
+            }
+        }
+        else {
+            assertTrue(U.delete(snpSft.meta()));
+            assertFalse(snpSft.meta().exists());
+        }
 
         var delSnpRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
