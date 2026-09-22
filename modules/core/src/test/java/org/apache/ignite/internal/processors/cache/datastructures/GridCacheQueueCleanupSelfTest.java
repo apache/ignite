@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteQueue;
@@ -25,6 +27,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
@@ -197,5 +200,36 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
 
         for (int i = 0; i < 500; i++)
             assertEquals((Integer)i, queue.poll());
+    }
+
+    /**
+     * @param ignite Grid.
+     * @param stop Stop flag.
+     * @param queueName Queue name.
+     * @return Future completing when thread finishes.
+     */
+    private IgniteInternalFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
+        return GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, config(false));
+
+                assertEquals(0, queue.size());
+
+                for (int i = 0; i < 10; i++)
+                    assertTrue(queue.add(i));
+
+                while (!stop.get()) {
+                    for (int i = 0; i < 100; i++)
+                        assertTrue(queue.add(i));
+
+                    for (int i = 0; i < 100; i++)
+                        assertNotNull(queue.poll());
+                }
+
+                assertEquals(10, queue.size());
+
+                return null;
+            }
+        });
     }
 }
