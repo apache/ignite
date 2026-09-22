@@ -60,7 +60,14 @@ import org.jetbrains.annotations.Nullable;
  *     <li>Using {@link MessageSerializer} for messages implementing the {@link Message} interface.</li>
  *     <li>Deprecated: Using {@link JdkMarshaller} for messages that have not yet been refactored.</li>
  * </ul>
- * A leading byte is used to distinguish between the modes. The byte will be removed in future.
+ * A leading byte is used to distinguish between the modes. The byte will be removed in the future.
+ * <p>
+ * <b>NOTE:</b> This class is designed with the following access rules in mind. Socket read operations must be performed
+ * by a single thread at a time, while socket write operations may be performed concurrently by multiple threads. Because
+ * {@link #writeMessage(TcpDiscoveryAbstractMessage)} writes messages in batches, all session write methods must be
+ * blocking. Currently, {@link TcpDiscoveryIoSession} may be accessed concurrently for writing by the
+ * {@link ServerImpl.ClientMessageWorker} and {@link ServerImpl.SocketReader} threads.
+ * </p>
  */
 public class TcpDiscoveryIoSession implements AutoCloseable {
     /** Default size of buffer used for buffering socket in/out. */
@@ -128,6 +135,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
     /**
      * Writes a discovery message to the underlying socket output stream.
+     * Refer to the class description for the rationale behind synchronized access.
      *
      * @param msg Message to send to the remote node.
      * @throws IgniteCheckedException If serialization fails.
@@ -260,6 +268,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
     /**
      * Writes raw data to the underlying socket output stream.
+     * Refer to the class description for the rationale behind synchronized access.
      *
      * @param data Raw data to write.
      * @throws IOException If failed.
@@ -272,6 +281,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
 
     /**
      * Writes a single byte response to the underlying socket output stream.
+     * Refer to the class description for the rationale behind synchronized access.
      *
      * @param b Integer response.
      * @throws IOException If failed.

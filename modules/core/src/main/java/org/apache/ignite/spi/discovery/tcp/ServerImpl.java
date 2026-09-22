@@ -2852,14 +2852,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Force pending messages send. */
         private boolean forceSndPending;
 
-        // This serializer is used exclusively for serializing messages sent to clients,
-        // as it represents a special case within the RingMessageWorker workflow.
-        // Generally, both serialization and deserialization of messages should be handled by TcpDiscoveryIoSession.
-        // However, there are scenarios where the session is not available, yet messages still need to be sent to clients.
-        // A typical example is a single server with one or more connected clients.
-        // To address this, we use TcpDiscoveryMessageSerializer, which includes some code copied from TcpDiscoveryIoSession
-        // and can be instantiated independently of any active session.
-        /** */
+        /**
+         * This serializer is used exclusively for pre-serializing messages sent to clients. Pre-serialization is performed
+         * once for each message, after which the serialized message is reused for sending to all connected clients.
+         */
         private final TcpDiscoveryMessageSerializer cliMsgSer = new TcpDiscoveryMessageSerializer(ctx);
 
         /** IO session. */

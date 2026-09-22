@@ -27,7 +27,7 @@ public class ClientMessageHolder {
     private final TcpDiscoveryAbstractMessage msg;
 
     /** */
-    private byte[] msgBytes;
+    private volatile byte[] msgBytes;
 
     /** */
     public ClientMessageHolder(TcpDiscoveryAbstractMessage msg) {
@@ -42,12 +42,12 @@ public class ClientMessageHolder {
     }
 
     /** */
-    public synchronized byte @Nullable [] messageBytes() {
+    public byte @Nullable [] messageBytes() {
         return msgBytes;
     }
 
     /** */
-    public synchronized void serialize(TcpDiscoveryMessageSerializer ser) throws IgniteCheckedException {
+    public void serialize(TcpDiscoveryMessageSerializer ser) throws IgniteCheckedException {
         if (msgBytes == null)
             msgBytes = ser.serialize(msg);
     }
