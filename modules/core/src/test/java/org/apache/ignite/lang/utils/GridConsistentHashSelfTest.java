@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.GridConsistentHash;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -72,30 +71,6 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
             ", added=" + Arrays.toString(nodes) + ']';
 
         return hash;
-    }
-
-    /**
-     * @param hash Hash to clean.
-     */
-    private void clean(GridConsistentHash<UUID> hash) {
-        if (hash != null) {
-            int cnt = hash.count();
-
-            assert hash.removeNode(hash.random());
-
-            assertEquals(cnt - 1, hash.count());
-
-//            info("Cleaning nodes", hash.nodes());
-
-            hash.removeNodes(hash.nodes());
-
-            hash.clear();
-
-            assertEquals(0, hash.size());
-            assertEquals("Invalid hash: " + hash.nodes(), 0, hash.count());
-
-            assert hash.isEmpty();
-        }
     }
 
     /**
@@ -248,14 +223,6 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param msg Message.
-     * @param c Collection.
-     */
-    private void info(String msg, Collection c) {
-        info(msg + " [size=" + c.size() + ", col=" + c + ']');
-    }
-
-    /**
      * @param nodes Nodes.
      * @return Nodes.
      */
@@ -266,96 +233,5 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
             ids[i] = UUID.randomUUID();
 
         return ids;
-    }
-
-    /**
-     * @param hash Hash.
-     * @param replicas Replicas.
-     * @param nodes Nodes.
-     * @return Runnable.
-     */
-    private Runnable initializer(final GridConsistentHash<UUID> hash, final int replicas, final UUID[] nodes) {
-        return new Runnable() {
-            @Override public void run() {
-                initialize(hash, replicas, nodes);
-            }
-        };
-    }
-
-    /**
-     * @param hash Hash.
-     * @param keys Keys.
-     * @return Runnable.
-     */
-    private Runnable hasher(final GridConsistentHash<UUID> hash, final String[] keys) {
-        return new Runnable() {
-            @Override public void run() {
-                for (String k : keys) {
-                    assert hash.node(k) != null;
-                }
-            }
-        };
-    }
-
-    /**
-     * @param hash Hash.
-     * @param cnts Counts.
-     * @param mappings Mappings.
-     * @param keys Keys.
-     */
-    private void hash(GridConsistentHash<UUID> hash, Map<UUID, AtomicInteger> cnts, Map<String, UUID> mappings,
-        String[] keys) {
-        for (String k : keys) {
-            UUID id = hash.node(k);
-
-            assert id != null;
-
-            AtomicInteger i = cnts.get(id);
-
-            if (i == null)
-                cnts.put(id, i = new AtomicInteger());
-
-            i.incrementAndGet();
-
-            mappings.put(k, id);
-        }
-    }
-
-    /**
-     *
-     * @param m1 Map 1.
-     * @param m2 Map 2.
-     * @param keys Keys.
-     * @return Reassignment count.
-     */
-    private int compare(Map<String, UUID> m1, Map<String, UUID> m2, String[] keys) {
-        int cnt = 0;
-
-        // Check reassignment percentages.
-        for (String key : keys) {
-            UUID id1 = m1.get(key);
-            UUID id2 = m2.get(key);
-
-            assert id1 != null;
-            assert id2 != null;
-
-            if (!id1.equals(id2))
-                cnt++;
-        }
-
-        return cnt;
-    }
-
-    /**
-     * @param cnt Number of keys to create.
-     * @return Array of keys.
-     */
-    private String[] keys(int cnt) {
-        String[] keys = new String[cnt];
-
-        for (int i = 0; i < cnt; i++)
-            keys[i] = UUID.randomUUID().toString();
-
-        return keys;
     }
 }

@@ -100,15 +100,6 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Object createTestObject() {
-        TestObjectAllTypes res = new TestObjectAllTypes();
-
-        res.setDefaultData();
-
-        return res;
-    }
-
-    /** */
     private interface RegisteredClass { }
 
     /** */
