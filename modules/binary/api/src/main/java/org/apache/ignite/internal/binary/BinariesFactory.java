@@ -171,8 +171,6 @@ public interface BinariesFactory {
     /** */
     public BinaryIdentityResolver arrayIdentityResolver();
 
-    /**
-     * Clears binary caches.
-     */
+    /** Clears binary caches. */
     public void clearCache();
 }
