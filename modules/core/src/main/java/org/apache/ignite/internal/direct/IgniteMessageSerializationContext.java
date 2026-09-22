@@ -63,11 +63,10 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
         ComponentMessageSerializationContext cmpCtx = ctxByComponent.get(feature.componentName());
 
         if (cmpCtx == null) {
-            throw new IllegalStateException(
-                "A field is guarded by a feature of an undeclared component" +
-                    " [feature=" + feature +
-                    ", component=" + feature.componentName() +
-                    ", declaredComponents=" + ctxByComponent.keySet() + ']'
+            throw new IllegalStateException("A field is guarded by a feature of an undeclared component" +
+                " [feature=" + feature +
+                ", component=" + feature.componentName() +
+                ", declaredComponents=" + ctxByComponent.keySet() + ']'
             );
         }
 
