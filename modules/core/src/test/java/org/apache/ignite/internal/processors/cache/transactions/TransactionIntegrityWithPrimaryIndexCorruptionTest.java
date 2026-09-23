@@ -189,11 +189,6 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         /** {@inheritDoc} */
         @Override public void beforeNodesStarted() {
             BPlusTree.testHndWrapper = (tree, hnd) -> {
-                final IgniteEx locIgnite = (IgniteEx)Ignition.localIgnite();
-
-                if (getTestIgniteInstanceIndex(locIgnite.name()) != failedNodeIdx)
-                    return hnd;
-
                 if (treeCorruptionPred.apply(hnd, tree)) {
                     PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
@@ -203,7 +198,11 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
                             log.info("Invoked [cachedId=" + cacheId + ", hnd=" + arg.toString() +
                                 ", corruption=" + corruptionEnabled + ", row=" + arg.row() + ", rowCls=" + arg.row().getClass() + ']');
 
-                            if (corruptionEnabled && (arg.row() instanceof SearchRow)) {
+                            final IgniteEx locIgnite = (IgniteEx)Ignition.localIgnite();
+
+                            if (corruptionEnabled
+                                && (arg.row() instanceof SearchRow)
+                                && getTestIgniteInstanceIndex(locIgnite.name()) == failedNodeIdx) {
                                 SearchRow row = (SearchRow)arg.row();
 
                                 // Store cacheId to search row explicitly, as it can be zero if there is one cache in a group.

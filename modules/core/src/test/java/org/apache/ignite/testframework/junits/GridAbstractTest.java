@@ -82,8 +82,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -1578,7 +1580,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
             if (!isRemoteJvm(igniteInstanceName)) {
-                IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
+                BinaryContext old = GridBinaryMarshaller.pushContext(ignite.context().cacheObjects().binaryContext());
+
+                try {
+                    IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
+                }
+                finally {
+                    GridBinaryMarshaller.popContext(old);
+                }
             }
             else
                 IgniteProcessProxy.stop(igniteInstanceName, cancel);

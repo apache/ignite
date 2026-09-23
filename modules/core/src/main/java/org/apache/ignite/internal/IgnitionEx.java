@@ -296,46 +296,39 @@ public class IgnitionEx {
         @Nullable ShutdownPolicy shutdown, boolean stopNotStarted) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
-        BinaryContext old = GridBinaryMarshaller.pushContext(grid.grid.context().cacheObjects().binaryContext());
+        if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
+            grid.starterThreadInterrupted = true;
 
-        try {
-            if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
-                grid.starterThreadInterrupted = true;
+            grid.starterThread.interrupt();
+        }
 
-                grid.starterThread.interrupt();
-            }
+        if (grid != null) {
+            if (grid.state() == STARTED)
+                grid.stop(cancel, shutdown);
 
-            if (grid != null) {
-                if (grid.state() == STARTED)
-                    grid.stop(cancel, shutdown);
+            boolean fireEvt;
 
-                boolean fireEvt;
+            if (name != null)
+                fireEvt = grids.remove(name, grid);
+            else {
+                synchronized (dfltGridMux) {
+                    fireEvt = dfltGrid == grid;
 
-                if (name != null)
-                    fireEvt = grids.remove(name, grid);
-                else {
-                    synchronized (dfltGridMux) {
-                        fireEvt = dfltGrid == grid;
-
-                        if (fireEvt)
-                            dfltGrid = null;
-                    }
+                    if (fireEvt)
+                        dfltGrid = null;
                 }
-
-                if (fireEvt)
-                    notifyStateChange(grid.getName(), grid.state());
-
-                return true;
             }
 
-            // We don't have log at this point...
-            U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
+            if (fireEvt)
+                notifyStateChange(grid.getName(), grid.state());
 
-            return false;
+            return true;
         }
-        finally {
-            GridBinaryMarshaller.popContext(old);
-        }
+
+        // We don't have log at this point...
+        U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
+
+        return false;
     }
 
     /**
@@ -1298,12 +1291,11 @@ public class IgnitionEx {
 
         if (bctx != null)
             return gridx(bctx.igniteInstanceName());
-
-        if (Thread.currentThread() instanceof IgniteThread)
+        else if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getIgniteInstanceName());
-
-        throw new IllegalArgumentException("Ignite instance name thread local must be set or" +
-            " this method should be accessed under " + IgniteThread.class.getName());
+        else
+            throw new IllegalArgumentException("Ignite instance name thread local must be set or" +
+                " this method should be accessed under " + IgniteThread.class.getName());
     }
 
     /**
