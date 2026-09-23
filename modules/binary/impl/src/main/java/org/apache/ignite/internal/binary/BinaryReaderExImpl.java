@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1403,7 +1405,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             if (cls == null)
                 cls = cls0;
 
-            return BinaryUtils.doReadEnum(in, cls);
+            return doReadEnum(in, cls);
         }
         else
             return null;
@@ -1461,7 +1463,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 if (cls == null)
                     cls = cls0;
 
-                return BinaryUtils.doReadEnumArray(in, ctx, ldr, cls);
+                return doReadEnumArray(in, ctx, ldr, cls);
 
             case HANDLE:
                 Object arr = readHandleField();
@@ -1925,12 +1927,12 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case ENUM:
-                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
+                obj = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
             case ENUM_ARR:
-                obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
+                obj = doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
@@ -2746,6 +2748,69 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      */
     private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
         return BinaryUtils.doReadBinaryEnum(in, ctx, BinaryUtils.doReadEnumType(in));
+    }
+
+    /**
+     * @param cls Enum class.
+     * @return Value.
+     */
+    private static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
+        throws BinaryObjectException {
+        int len = in.readInt();
+
+        Object[] arr = (Object[])Array.newInstance(cls, len);
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == GridBinaryMarshaller.NULL)
+                arr[i] = null;
+            else
+                arr[i] = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
+        }
+
+        return arr;
+    }
+
+    /**
+     * Having target class in place we simply read ordinal and create final representation.
+     *
+     * @param cls Enum class.
+     * @return Value.
+     */
+    private static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls) throws BinaryObjectException {
+        assert cls != null;
+
+        if (!cls.isEnum())
+            throw new BinaryObjectException("Class does not represent enum type: " + cls.getName());
+
+        int ord = in.readInt();
+
+        if (Marshallers.USE_CACHE.get())
+            return BinaryEnumCache.get(cls, ord);
+        else
+            return uncachedEnumValue(cls, ord);
+    }
+
+    /**
+     * Get value for the given class without any caching.
+     *
+     * @param cls Class.
+     */
+    private static <T> T uncachedEnumValue(Class<?> cls, int ord) throws BinaryObjectException {
+        assert cls != null;
+
+        if (ord >= 0) {
+            Object[] vals = cls.getEnumConstants();
+
+            if (ord < vals.length)
+                return (T)vals[ord];
+            else
+                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
+                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
+        }
+        else
+            return null;
     }
 
     /**

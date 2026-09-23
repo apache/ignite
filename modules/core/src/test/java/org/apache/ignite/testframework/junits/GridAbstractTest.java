@@ -196,8 +196,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
      **************************************************************/
-    /** Null name for execution map. */
-    private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Ip finder for TCP discovery. */
     public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false).
@@ -1245,28 +1243,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @param regionCfg Region config.
-     */
-    private void validateDataRegion(DataRegionConfiguration regionCfg) {
-        if (regionCfg.isPersistenceEnabled() && regionCfg.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE)
-            throw new AssertionError("Max size of data region should be set explicitly to avoid memory over usage");
-    }
-
-    /**
-     * @param cfg Config.
-     */
-    private void validateConfiguration(IgniteConfiguration cfg) {
-        if (cfg.getDataStorageConfiguration() != null) {
-            validateDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
-
-            if (cfg.getDataStorageConfiguration().getDataRegionConfigurations() != null) {
-                for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
-                    validateDataRegion(reg);
-            }
-        }
-    }
-
-    /**
      * Starts new grid with given name.
      *
      * @param igniteInstanceName Ignite instance name.
@@ -2070,14 +2046,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @param name Name to mask.
-     * @return Masked name.
-     */
-    private String maskNull(String name) {
-        return name == null ? NULL_NAME : name;
-    }
-
-    /**
      * @return Ignite home.
      */
     protected String home() throws IgniteCheckedException {
@@ -2233,7 +2201,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         GridClassLoaderCache.clear();
         ClassLoaderUtils.clearClassCache();
         MarshallerExclusions.clearCache();
-        BinaryUtils.clearCache();
+        BinaryUtils.binariesFactory.clearCache();
         serializedObj.clear();
 
         if (err != null)

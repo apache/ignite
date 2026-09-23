@@ -403,14 +403,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return {@code True} if near cache is enabled.
      */
-    private static <K, V> boolean nearEnabled(GridCacheAdapter<K, V> cache) {
-        return isNearEnabled(cache.configuration());
-    }
-
-    /**
-     * @param cache Cache.
-     * @return {@code True} if near cache is enabled.
-     */
     protected static <K, V> boolean nearEnabled(final IgniteCache<K, V> cache) {
         CacheConfiguration cfg = GridAbstractTest.executeOnLocalOrRemoteJvm(cache,
             new TestCacheCallable<K, V, CacheConfiguration>() {
@@ -422,14 +414,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             });
 
         return isNearEnabled(cfg);
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Near cache.
-     */
-    private static <K, V> GridNearCacheAdapter<K, V> near(GridCacheAdapter<K, V> cache) {
-        return cache.context().near();
     }
 
     /**
