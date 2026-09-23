@@ -4,8 +4,3 @@
 *.sh text eol=lf
 mvnw text eol=lf
 modules/ducktests/tests/docker/ducker-ignite text eol=lf
-modules/ducktests/tests/docker/clean_up.sh text eol=lf
-
-# Windows batch files are only ever run on Windows.
-*.bat text eol=crlf
-*.cmd text eol=crlf
