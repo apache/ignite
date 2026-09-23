@@ -20,12 +20,9 @@ package org.apache.ignite.testframework;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -1460,54 +1457,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param path Path.
-     * @param startFilter Start filter.
-     * @param endFilter End filter.
-     * @return List of JARs that corresponds to the filters.
-     * @throws IOException If failed.
-     */
-    private static Collection<String> getFiles(String path, @Nullable final String startFilter,
-        @Nullable final String endFilter) throws IOException {
-        Collection<String> res = new ArrayList<>();
-
-        File file = new File(path);
-
-        assert file.isDirectory();
-
-        File[] jars = file.listFiles(new FilenameFilter() {
-            /**
-             * @see FilenameFilter#accept(File, String)
-             */
-            @SuppressWarnings({"UnnecessaryJavaDocLink"})
-            @Override public boolean accept(File dir, String name) {
-                // Exclude spring.jar because it tries to load META-INF/spring-handlers.xml from
-                // all available JARs and create instances of classes from there for example.
-                // Exclude logging as it is used by spring and casted to Log interface.
-                // Exclude log4j because of the design - 1 per VM.
-                if (name.startsWith("spring") || name.startsWith("log4j") ||
-                    name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("ignite-tests"))
-                    return false;
-
-                boolean ret = true;
-
-                if (startFilter != null)
-                    ret = name.startsWith(startFilter);
-
-                if (ret && endFilter != null)
-                    ret = name.endsWith(endFilter);
-
-                return ret;
-            }
-        });
-
-        for (File jar : jars)
-            res.add(jar.getCanonicalPath());
-
-        return res;
-    }
-
-    /**
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
@@ -1819,35 +1768,10 @@ public final class GridTestUtils {
      */
     public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
-        assert fieldName != null;
 
-        try {
-            Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
+        Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
-            Field field = cls.getDeclaredField(fieldName);
-
-            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
-
-            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
-
-            /**
-             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
-             * If a final field is initialized to a compile-time constant in the field declaration,
-             *   changes to the final field may not be observed.
-             */
-            if (isFinal && isStatic)
-                throw new IgniteException("Modification of static final field through reflection.");
-
-            boolean accessible = field.isAccessible();
-
-            if (!accessible)
-                field.setAccessible(true);
-
-            field.set(obj, val);
-        }
-        catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
-        }
+        setFieldValue(obj, cls, fieldName, val);
     }
 
     /**
@@ -1881,21 +1805,6 @@ public final class GridTestUtils {
              */
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
-
-            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
-                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Field.class, MethodHandles.lookup());
-
-                VarHandle varHandle = lookup.findVarHandle(Field.class, "modifiers", int.class);
-
-                varHandle.set(field, field.getModifiers() & ~Modifier.FINAL);
-            }
-            else if (isFinal) {
-                Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-                modifiersField.setAccessible(true);
-
-                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            }
 
             field.set(obj, val);
         }
