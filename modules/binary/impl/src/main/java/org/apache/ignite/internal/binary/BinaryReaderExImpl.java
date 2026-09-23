@@ -375,11 +375,6 @@ class BinaryReaderExImpl implements BinaryReaderEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void setHandle(Object obj) {
-        setHandle(obj, start);
-    }
-
-    /** {@inheritDoc} */
     @Override public void setHandle(Object obj, int pos) {
         handles().put(pos, obj);
     }
@@ -2375,7 +2370,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 case BINARY:
                     res = newInstance(desc.ctor(), desc.describedClass());
 
-                    setHandle(res);
+                    setHandle(res, start);
 
                     if (desc.serializer != null)
                         desc.serializer.readBinary(res, this);
@@ -2387,7 +2382,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 case OBJECT:
                     res = newInstance(desc.ctor(), desc.describedClass());
 
-                    setHandle(res);
+                    setHandle(res, start);
 
                     for (BinaryFieldDescriptor info : desc.fields)
                         readField(res, info);
@@ -2404,7 +2399,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 try {
                     res = desc.readResolveMtd.invoke(res);
 
-                    setHandle(res);
+                    setHandle(res, start);
                 }
                 catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
