@@ -79,19 +79,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     private @Nullable String cstIdSuffix;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        var cfg = super.getConfiguration(igniteInstanceName);
-
-        if (separatedWorkDir)
-            cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
-
-        if (cstIdSuffix != null)
-            cfg.setConsistentId(cfg.getConsistentId().toString() + '_' + cstIdSuffix);
-
-        return cfg;
-    }
-
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, incremental={2}")
     public static Collection<?> runParams() {
@@ -109,6 +96,19 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         }
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        var cfg = super.getConfiguration(igniteInstanceName);
+
+        if (separatedWorkDir)
+            cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
+
+        if (cstIdSuffix != null)
+            cfg.setConsistentId(cfg.getConsistentId().toString() + '_' + cstIdSuffix);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */

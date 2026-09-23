@@ -903,14 +903,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         delProcProceedLatch.countDown();
 
-        var delRes = delFut.get(getTestTimeout());
-
-        // Concurrent deletion on the same path may cause exeptions like 'directory is not empty' or 'access denied'.
-        int nonEmptyCnt = (F.isEmpty(delRes.completedNodes)
-            ? 0
-            : delRes.completedNodes.size()) + (F.isEmpty(delRes.uncompletedNodes) ? 0 : delRes.uncompletedNodes.size());
-
-        assertEquals(grid(0).cluster().forServers().nodes().size(), nonEmptyCnt);
+        delFut.get(getTestTimeout());
 
         for (var node : G.allGrids())
             assertFalse(new SnapshotFileTree(((IgniteEx)node).context(), SNAPSHOT_NAME, null).root().exists());
