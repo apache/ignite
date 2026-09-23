@@ -2207,7 +2207,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         GridClassLoaderCache.clear();
         ClassLoaderUtils.clearClassCache();
         MarshallerExclusions.clearCache();
-        BinaryUtils.clearCache();
+        BinaryUtils.binariesFactory.clearCache();
         serializedObj.clear();
 
         if (err != null)
