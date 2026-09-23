@@ -324,14 +324,14 @@ control.bat --snapshot delete snapshot_09062021 --src /tmp/ignite/snapshots
 
 The delete operation is subject to the following limitations:
 
-* The deletion is rejected if any snapshot operation with the same name (create, restore, check, or a delete with the same name) is
-  active for the snapshot or if snapshot name is incorrect.
+* The deletion is rejected if any snapshot operation (create, restore, check, delete) is active for the snapshot.
 * The operation requires the snapshot administration pesmissins via `IgniteSecurity` (if configured).
 * The operation cannot be undone and the deleted snapshot cannot be restored. The command prompts for a confirmation.
 * Before deletion, no snapshot validation is done except finding and reading its metadata. If the metadata isn't found or cannot be read, snapshot isn't deleted.
 * If the provided snapshot path belongs to Ignite's home or to Ignite's a not snapshot work directory, the operation fails.
 * If nodes share the same snapshot directory, a deletion concurrency may apper. Some nodes may not find snapshot at all
 or decide that the removal wasn't complete. Snapshot is deleted anyway.
+* The removal operation is not subject for the snapshot operation status and cancel requests.
 
 == Getting Snapshot Operation Status
 
