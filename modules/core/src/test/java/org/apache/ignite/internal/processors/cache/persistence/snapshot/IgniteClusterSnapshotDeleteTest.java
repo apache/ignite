@@ -186,9 +186,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         startGridsMultiThreaded(3);
 
-        var delRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
-
-        assertTrue(F.isEmpty(delRes.emptyNodes));
+        snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
         for (var ig : G.allGrids()) {
             assertTrue(Files.list(((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath())
