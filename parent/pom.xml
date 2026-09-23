@@ -646,6 +646,7 @@
                         --add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
                         --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
                         --add-opens=java.base/java.util.regex=ALL-UNNAMED
+                        -Djava.security.manager=allow
                     </argLine>
                 </configuration>
             </plugin>
