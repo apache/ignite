@@ -119,11 +119,15 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "This operation will completely remove snapshot: '" + arg.snapshotName() + "' and all its incrementals " +
-            "from all online server nodes." +
+        return "This operation will completely remove snapshot: '" + arg.snapshotName() + "' and all its incrementals." +
             U.nl() + U.nl() +
-            "NOTE: Snapshot data on offline server nodes will remain untouched." +
+            "If the security is enabled, the operation requires the snapshot administration permissions." +
             U.nl() + U.nl() +
-            "The operation cannot be reverted.";
+            "Deletion in not snapshots Ignite's directories and deletion of any data without or corrupted snapshot " +
+                "metadata are prohibited." +
+            U.nl() + U.nl() +
+            "The operation cannot be reverted." +
+            U.nl() + U.nl() +
+            "NOTE: Snapshot data on offline server nodes will remain untouched.";
     }
 }
