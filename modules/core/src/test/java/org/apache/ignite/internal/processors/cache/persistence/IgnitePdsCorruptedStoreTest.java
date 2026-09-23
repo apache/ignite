@@ -129,14 +129,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return File or folder in work directory.
-     * @throws IgniteCheckedException If failed to resolve file name.
-     */
-    private File file(String file) throws IgniteCheckedException {
-        return U.resolveWorkDirectory(U.defaultWorkDirectory(), file, false);
-    }
-
-    /**
      * Create cache configuration.
      *
      * @param name Cache name.

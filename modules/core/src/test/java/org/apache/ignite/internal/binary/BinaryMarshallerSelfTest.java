@@ -4082,17 +4082,6 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
     }
 
     /**
-     * @param po Binary object.
-     * @param off Offset.
-     * @return Value.
-     */
-    private int intFromBinary(BinaryObject po, int off) {
-        byte[] arr = U.field(po, "arr");
-
-        return Integer.reverseBytes(U.bytesToInt(arr, off));
-    }
-
-    /**
      * @param obj Original object.
      * @return Result object.
      */

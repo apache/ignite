@@ -20,7 +20,6 @@ package org.apache.ignite.testframework;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -1458,54 +1457,6 @@ public final class GridTestUtils {
         }
         else
             addr = new int[] {229, 1, 1, 1};
-    }
-
-    /**
-     * @param path Path.
-     * @param startFilter Start filter.
-     * @param endFilter End filter.
-     * @return List of JARs that corresponds to the filters.
-     * @throws IOException If failed.
-     */
-    private static Collection<String> getFiles(String path, @Nullable final String startFilter,
-        @Nullable final String endFilter) throws IOException {
-        Collection<String> res = new ArrayList<>();
-
-        File file = new File(path);
-
-        assert file.isDirectory();
-
-        File[] jars = file.listFiles(new FilenameFilter() {
-            /**
-             * @see FilenameFilter#accept(File, String)
-             */
-            @SuppressWarnings({"UnnecessaryJavaDocLink"})
-            @Override public boolean accept(File dir, String name) {
-                // Exclude spring.jar because it tries to load META-INF/spring-handlers.xml from
-                // all available JARs and create instances of classes from there for example.
-                // Exclude logging as it is used by spring and casted to Log interface.
-                // Exclude log4j because of the design - 1 per VM.
-                if (name.startsWith("spring") || name.startsWith("log4j") ||
-                    name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("ignite-tests"))
-                    return false;
-
-                boolean ret = true;
-
-                if (startFilter != null)
-                    ret = name.startsWith(startFilter);
-
-                if (ret && endFilter != null)
-                    ret = name.endsWith(endFilter);
-
-                return ret;
-            }
-        });
-
-        for (File jar : jars)
-            res.add(jar.getCanonicalPath());
-
-        return res;
     }
 
     /**

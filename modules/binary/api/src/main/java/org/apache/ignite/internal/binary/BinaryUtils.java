@@ -1309,69 +1309,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Having target class in place we simply read ordinal and create final representation.
-     *
-     * @param cls Enum class.
-     * @return Value.
-     */
-    static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls) throws BinaryObjectException {
-        assert cls != null;
-
-        if (!cls.isEnum())
-            throw new BinaryObjectException("Class does not represent enum type: " + cls.getName());
-
-        int ord = in.readInt();
-
-        if (Marshallers.USE_CACHE.get())
-            return BinaryEnumCache.get(cls, ord);
-        else
-            return uncachedEnumValue(cls, ord);
-    }
-
-    /**
-     * Get value for the given class without any caching.
-     *
-     * @param cls Class.
-     */
-    private static <T> T uncachedEnumValue(Class<?> cls, int ord) throws BinaryObjectException {
-        assert cls != null;
-
-        if (ord >= 0) {
-            Object[] vals = cls.getEnumConstants();
-
-            if (ord < vals.length)
-                return (T)vals[ord];
-            else
-                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
-                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
-        }
-        else
-            return null;
-    }
-
-    /**
-     * @param cls Enum class.
-     * @return Value.
-     */
-    static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
-        throws BinaryObjectException {
-        int len = in.readInt();
-
-        Object[] arr = (Object[])Array.newInstance(cls, len);
-
-        for (int i = 0; i < len; i++) {
-            byte flag = in.readByte();
-
-            if (flag == GridBinaryMarshaller.NULL)
-                arr[i] = null;
-            else
-                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr));
-        }
-
-        return arr;
-    }
-
-    /**
      * Read object serialized using optimized marshaller.
      *
      * @return Result.
@@ -2316,13 +2253,6 @@ public class BinaryUtils {
         return obj instanceof BinaryObject
             ? ((BinaryObject)obj).type().typeName()
             : obj == null ? null : obj.getClass().getSimpleName();
-    }
-
-    /**
-     * Clears binary caches.
-     */
-    public static void clearCache() {
-        BinaryEnumCache.clear();
     }
 
     /**

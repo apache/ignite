@@ -41,13 +41,7 @@ public class StringWriterSelfTest extends GridCommonAbstractTest {
     public static final int TWO_BYTES_MAX = 0x800;
 
     /** */
-    public static final int THREE_BYTES_MAX = 0xD800;
-
-    /** */
-    public static final int FOUR_BYTES_MAX = 0xE000;
-
-    /** */
-    public static final int FOUR_BYTES_HIGH_BOUND = 0x10000;
+    public static final int CHAR_HIGH_BOUND = 0x10000;
 
     /** Tests for all encoder paths: ASCII bulk copy, Latin-1, generic UTF-16 and malformed surrogates. */
     @Test
@@ -101,13 +95,13 @@ public class StringWriterSelfTest extends GridCommonAbstractTest {
                     c = (char)(LATIN1_MAX + rnd.nextInt(TWO_BYTES_MAX - LATIN1_MAX));
                 else if (bucket < 75)
                     // 3-byte chars.
-                    c = (char)(TWO_BYTES_MAX + rnd.nextInt(THREE_BYTES_MAX - TWO_BYTES_MAX));
+                    c = (char)(TWO_BYTES_MAX + rnd.nextInt(Character.MIN_SURROGATE - TWO_BYTES_MAX));
                 else if (bucket < 90)
                     // Surrogates, mostly malformed.
-                    c = (char)(THREE_BYTES_MAX + rnd.nextInt(FOUR_BYTES_MAX - THREE_BYTES_MAX));
+                    c = (char)(Character.MIN_SURROGATE + rnd.nextInt((Character.MAX_SURROGATE + 1) - Character.MIN_SURROGATE));
                 else
                     // 3-byte chars above the surrogate range.
-                    c = (char)(FOUR_BYTES_MAX + rnd.nextInt(FOUR_BYTES_HIGH_BOUND - FOUR_BYTES_MAX));
+                    c = (char)((Character.MAX_SURROGATE + 1) + rnd.nextInt(CHAR_HIGH_BOUND - (Character.MAX_SURROGATE + 1)));
 
                 sb.append(c);
             }
@@ -126,7 +120,7 @@ public class StringWriterSelfTest extends GridCommonAbstractTest {
         StringBuilder ascii = new StringBuilder(len);
         StringBuilder latin1 = new StringBuilder(len);
         StringBuilder cyrillic = new StringBuilder(len);
-        StringBuilder mixed = new StringBuilder(len);
+        StringBuilder mixed = new StringBuilder(len * 6);
 
         for (int i = 0; i < len; i++) {
             ascii.append((char)('a' + i % 26));

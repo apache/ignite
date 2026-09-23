@@ -84,34 +84,20 @@ public final class StringWriter {
         byte[] latin1 = latin1Value(val);
 
         if (latin1 != null) {
-            if (out.hasArray()) {
-                if (!hasNegatives(latin1)) {
-                    out.unsafeEnsure(latin1.length);
-                    // Pure ASCII: UTF-8 representation matches the internal array, copy it as-is.
-                    System.arraycopy(latin1, 0, out.array(), out.position(), latin1.length);
+            if (out.hasArray() && !hasNegatives(latin1)) {
+                out.unsafeEnsure(latin1.length);
+                // Pure ASCII: UTF-8 representation matches the internal array, copy it as-is.
+                System.arraycopy(latin1, 0, out.array(), out.position(), latin1.length);
 
-                    written = latin1.length;
-                }
-                else
-                    written = encodeLatin1(latin1, out);
+                written = latin1.length;
 
                 out.unsafePosition(out.position() + written);
             }
             else
                 written = writeLatin1(latin1, out);
         }
-        else {
-            // Allocating memory for worst case - 3 bytes per char.
-            out.unsafeEnsure(Math.multiplyExact(3, val.length()));
-
-            if (out.hasArray()) {
-                written = encodeChars(val, out);
-
-                out.unsafePosition(out.position() + written);
-            }
-            else
-                written = writeChars(val, out);
-        }
+        else
+            written = writeChars(val, out);
 
         out.unsafeWriteInt(lenPos, written);
     }
@@ -126,12 +112,12 @@ public final class StringWriter {
     private static int writeLatin1(byte[] val, BinaryOutputStream out) {
         out.unsafeEnsure(Math.addExact(val.length, val.length));
 
-        int utfLen = 0;
+        int start = out.position();
 
         for (int i = 0; i < val.length; i++) {
             byte b = val[i];
 
-            if (b >= 0) {
+            if (b >= 0)
                 out.unsafeWriteByte(b);
 
                 utfLen++;
@@ -146,37 +132,7 @@ public final class StringWriter {
             }
         }
 
-        return utfLen;
-    }
-
-    /**
-     * Encodes a Latin-1 string value to the buffer as UTF-8.
-     *
-     * @param val Internal Latin-1 array of the string.
-     * @param out Output stream.
-     * @return Count of written bytes.
-     */
-    private static int encodeLatin1(byte[] val, BinaryOutputStream out) {
-        out.unsafeEnsure(Math.addExact(val.length, val.length));
-
-        byte[] buf = out.array();
-
-        long off = out.position() + GridUnsafe.BYTE_ARR_OFF;
-
-        for (int i = 0; i < val.length; i++) {
-            byte b = val[i];
-
-            if (b >= 0)
-                GridUnsafe.putByte(buf, off++, b);
-            else {
-                int c = b & 0xFF;
-
-                GridUnsafe.putByte(buf, off++, (byte)(0b1100_0000 | (c >> 6)));
-                GridUnsafe.putByte(buf, off++, (byte)(0b1000_0000 | (c & 0b0011_1111)));
-            }
-        }
-
-        return (int)(off - GridUnsafe.BYTE_ARR_OFF - out.position());
+        return out.position() - start;
     }
 
     /**
@@ -188,13 +144,17 @@ public final class StringWriter {
      * @return Number of bytes written.
      */
     private static int writeChars(String val, BinaryOutputStream out) {
+        // Allocating memory for worst case - 3 bytes per char.
+        out.unsafeEnsure(Math.multiplyExact(3, val.length()));
+
+        int start = out.position();
         int len = val.length();
         int utfLen = 0;
 
         for (int i = 0; i < len; i++) {
             char c = val.charAt(i);
 
-            if (c < 0x80) {
+            if (c < 0x80)
                 out.unsafeWriteByte((byte)c);
 
                 utfLen++;
@@ -280,11 +240,11 @@ public final class StringWriter {
                     i++;
                 }
                 else
-                    GridUnsafe.putByte(buf, off++, (byte)'?');
+                    out.unsafeWriteByte((byte)'?');
             }
         }
 
-        return (int)(off - GridUnsafe.BYTE_ARR_OFF - out.position());
+        return out.position() - start;
     }
 
     /**

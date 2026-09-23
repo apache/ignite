@@ -24,7 +24,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RepeatUnion;
 
-/** Coordinator-side iterative UNION ALL for a recursive CTE. */
+/** Coordinator-side iterative union for a recursive CTE. */
 public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
     /** */
     public IgniteRepeatUnion(
@@ -32,9 +32,10 @@ public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
         RelTraitSet traits,
         RelNode seed,
         RelNode iterative,
+        boolean all,
         int iterationLimit
     ) {
-        super(cluster, traits, seed, iterative, true, iterationLimit, null);
+        super(cluster, traits, seed, iterative, all, iterationLimit, null);
     }
 
     /** Constructor used for deserialization. */
@@ -44,6 +45,7 @@ public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
             input.getInputs().get(1),
+            input.getBoolean("all", true),
             iterationLimit(input)
         );
     }
@@ -57,7 +59,7 @@ public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.size() == 2;
 
-        return new IgniteRepeatUnion(getCluster(), traitSet, inputs.get(0), inputs.get(1), iterationLimit);
+        return new IgniteRepeatUnion(getCluster(), traitSet, inputs.get(0), inputs.get(1), all, iterationLimit);
     }
 
     /** {@inheritDoc} */
@@ -69,7 +71,7 @@ public class IgniteRepeatUnion extends RepeatUnion implements IgniteRel {
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         assert inputs.size() == 2;
 
-        return new IgniteRepeatUnion(cluster, getTraitSet(), inputs.get(0), inputs.get(1), iterationLimit);
+        return new IgniteRepeatUnion(cluster, getTraitSet(), inputs.get(0), inputs.get(1), all, iterationLimit);
     }
 
     /** Reads the optional iteration limit from a serialized plan. */
