@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Query table descriptor.
  */
-public class QueryTable implements Message {
+public class QueryTable extends AbstractMessage {
     /** Schema. */
     @Order(0)
     String schema;

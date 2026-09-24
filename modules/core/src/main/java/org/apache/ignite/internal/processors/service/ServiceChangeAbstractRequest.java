@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.service;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Abstract class for service change requests.
  */
-abstract class ServiceChangeAbstractRequest implements Message {
+abstract class ServiceChangeAbstractRequest extends AbstractMessage {
     /** Service id. */
     @Order(0)
     IgniteUuid srvcId;

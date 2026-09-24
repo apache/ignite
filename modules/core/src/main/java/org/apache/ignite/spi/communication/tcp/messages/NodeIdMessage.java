@@ -20,12 +20,12 @@ package org.apache.ignite.spi.communication.tcp.messages;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Node ID message.
  */
-public class NodeIdMessage implements Message {
+public class NodeIdMessage extends AbstractMessage {
     /** Message body size (with message type) in bytes. */
     static final int MESSAGE_SIZE = 1 + 16;  // null flag, UUID value.
 

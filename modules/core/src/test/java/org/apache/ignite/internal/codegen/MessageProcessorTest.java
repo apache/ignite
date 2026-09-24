@@ -244,7 +244,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testInheritedMessages() {
-        Compilation compilation = compile("AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("AbstractTestMessage.java", "ChildMessage.java");
 
         assertThat(compilation).succeeded();
 
@@ -259,7 +259,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testMultipleMessages() {
-        Compilation compilation = compile("TestMessage.java", "AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("TestMessage.java", "AbstractTestMessage.java", "ChildMessage.java");
 
         assertThat(compilation).succeeded();
 

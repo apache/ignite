@@ -34,6 +34,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteSpi;
@@ -717,7 +718,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** */
-    private static class SecurityPermissionSetImpl implements SecurityPermissionSet {
+    private static class SecurityPermissionSetImpl extends AbstractMessage implements SecurityPermissionSet {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestFeatureRegistry;
 import org.apache.ignite.internal.TestRollingUpgradeAwareMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -68,7 +69,6 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 }
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -114,7 +114,6 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 }
 
                 reader.incrementState();
-
         }
 
         return true;

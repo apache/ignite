@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
@@ -29,7 +30,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
  * Carries discovery data in form of {@link Message}
  * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
-public class DiscoveryDataPacket implements Message {
+public class DiscoveryDataPacket extends AbstractMessage {
     /** */
     @Order(0)
     UUID joiningNodeId;
