@@ -28,7 +28,6 @@ import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
-import org.apache.ignite.internal.processors.cache.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -130,8 +129,7 @@ public abstract class SqlListenerUtils {
             || cls == UUID.class
             || cls == Time.class
             || cls == Timestamp.class
-            || cls == java.sql.Date.class
-            || cls == java.util.Date.class
+            || cls == java.sql.Date.class || cls == java.util.Date.class
             || cls == boolean[].class
             || cls == byte[].class
             || cls == char[].class
@@ -145,8 +143,7 @@ public abstract class SqlListenerUtils {
             || cls == UUID[].class
             || cls == Time[].class
             || cls == Timestamp[].class
-            || cls == java.util.Date[].class
-            || cls == java.sql.Date[].class
+            || cls == java.util.Date[].class || cls == java.sql.Date[].class
             || cls == SqlInputStreamWrapper.class
             || cls == Blob.class;
     }

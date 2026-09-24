@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.odbc;
+package org.apache.ignite.internal.processors.odbc;
 
 import java.io.InputStream;
 
