@@ -143,46 +143,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public BinaryContext context();
 
     /**
-     * @param val Value.
-     */
-    public void writeBooleanFieldPrimitive(boolean val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeByteFieldPrimitive(byte val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeCharFieldPrimitive(char val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeShortFieldPrimitive(short val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeIntFieldPrimitive(int val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeLongFieldPrimitive(long val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeFloatFieldPrimitive(float val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeDoubleFieldPrimitive(double val);
-
-    /**
      * Write byte array from the InputStream.
      *
      * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
@@ -251,4 +211,18 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @param proxy Proxy.
      */
     public void writeProxy(Proxy proxy, Class<?>[] intfs);
+
+    /**
+     * @param obj Object to write.
+     * @param binObjAllow Allow to write non plain objects.
+     * @throws BinaryObjectException On error.
+     */
+    public void writeJdbcObject(@Nullable Object obj, boolean binObjAllow);
+
+    /**
+     * Write value with flag. e.g. writePlainObject(writer, (byte)77) will write two byte: {BYTE, 77}.
+     *
+     * @param val Value.
+     */
+    public void writePlainObject(Object val);
 }

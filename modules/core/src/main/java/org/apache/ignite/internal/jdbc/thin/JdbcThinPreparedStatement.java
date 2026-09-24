@@ -39,7 +39,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
+import org.apache.ignite.internal.processors.cache.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;

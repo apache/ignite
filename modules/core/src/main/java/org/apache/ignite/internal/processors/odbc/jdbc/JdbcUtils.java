@@ -179,6 +179,6 @@ public class JdbcUtils {
             return;
         }
 
-        SqlListenerUtils.writeObject(writer, obj, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
+        writer.writeJdbcObject(obj, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
     }
 }

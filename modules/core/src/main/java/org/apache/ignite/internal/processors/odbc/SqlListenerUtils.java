@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.math.BigDecimal;
 import java.sql.Blob;
-import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -27,9 +26,9 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
+import org.apache.ignite.internal.processors.cache.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -114,123 +113,6 @@ public abstract class SqlListenerUtils {
     }
 
     /**
-     * @param writer Writer.
-     * @param obj Object to write.
-     * @param binObjAllow Allow to write non plain objects.
-     * @throws BinaryObjectException On error.
-     */
-    public static void writeObject(BinaryWriterEx writer, @Nullable Object obj, boolean binObjAllow)
-        throws BinaryObjectException {
-        if (obj == null) {
-            writer.writeByte(GridBinaryMarshaller.NULL);
-
-            return;
-        }
-
-        Class<?> cls = obj.getClass();
-
-        if (cls == Boolean.class)
-            writer.writeBooleanFieldPrimitive((Boolean)obj);
-        else if (cls == Byte.class)
-            writer.writeByteFieldPrimitive((Byte)obj);
-        else if (cls == Character.class)
-            writer.writeCharFieldPrimitive((Character)obj);
-        else if (cls == Short.class)
-            writer.writeShortFieldPrimitive((Short)obj);
-        else if (cls == Integer.class)
-            writer.writeIntFieldPrimitive((Integer)obj);
-        else if (cls == Long.class)
-            writer.writeLongFieldPrimitive((Long)obj);
-        else if (cls == Float.class)
-            writer.writeFloatFieldPrimitive((Float)obj);
-        else if (cls == Double.class)
-            writer.writeDoubleFieldPrimitive((Double)obj);
-        else if (cls == String.class)
-            writer.writeString((String)obj);
-        else if (cls == BigDecimal.class)
-            writer.writeDecimal((BigDecimal)obj);
-        else if (cls == UUID.class)
-            writer.writeUuid((UUID)obj);
-        else if (cls == Time.class)
-            writer.writeTime((Time)obj);
-        else if (cls == Timestamp.class)
-            writer.writeTimestamp((Timestamp)obj);
-        else if (cls == java.sql.Date.class || cls == java.util.Date.class)
-            writer.writeDate((java.util.Date)obj);
-        else if (cls == boolean[].class)
-            writer.writeBooleanArray((boolean[])obj);
-        else if (cls == byte[].class)
-            writer.writeByteArray((byte[])obj);
-        else if (cls == char[].class)
-            writer.writeCharArray((char[])obj);
-        else if (cls == short[].class)
-            writer.writeShortArray((short[])obj);
-        else if (cls == int[].class)
-            writer.writeIntArray((int[])obj);
-        else if (cls == long[].class)
-            writer.writeLongArray((long[])obj);
-        else if (cls == float[].class)
-            writer.writeFloatArray((float[])obj);
-        else if (cls == double[].class)
-            writer.writeDoubleArray((double[])obj);
-        else if (cls == String[].class)
-            writer.writeStringArray((String[])obj);
-        else if (cls == BigDecimal[].class)
-            writer.writeDecimalArray((BigDecimal[])obj);
-        else if (cls == UUID[].class)
-            writer.writeUuidArray((UUID[])obj);
-        else if (cls == Time[].class)
-            writer.writeTimeArray((Time[])obj);
-        else if (cls == Timestamp[].class)
-            writer.writeTimestampArray((Timestamp[])obj);
-        else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
-            writer.writeDateArray((java.util.Date[])obj);
-        else if (obj instanceof SqlInputStreamWrapper)
-            writeByteArray(writer, (SqlInputStreamWrapper)obj);
-        else if (obj instanceof Blob)
-            writeByteArray(writer, (Blob)obj);
-        else if (binObjAllow)
-            writer.writeObjectDetached(obj);
-        else
-            throw new BinaryObjectException("Custom objects are not supported");
-    }
-
-    /**
-     * Write byte array from the InputStream enclosed in the stream wrapper.
-     *
-     * @param writer Writer.
-     * @param wrapper stream wrapper
-     */
-    private static void writeByteArray(BinaryWriterEx writer, SqlInputStreamWrapper wrapper) throws BinaryObjectException {
-        int written = writer.writeByteArray(wrapper.inputStream(), wrapper.length());
-
-        if (wrapper.length() != -1 && wrapper.length() != written) {
-            throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + wrapper.length() + ", " +
-                    "actualLength=" + written + "]");
-        }
-    }
-
-    /**
-     * Write byte array from the Blob instance.
-     *
-     * @param writer Writer.
-     * @param blob Blob.
-     */
-    private static void writeByteArray(BinaryWriterEx writer, Blob blob) throws BinaryObjectException {
-        try {
-            int written = writer.writeByteArray(blob.getBinaryStream(), (int)blob.length());
-
-            if ((int)blob.length() != written) {
-                throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + (int)blob.length() + ", " +
-                        "actualLength=" + written + "]");
-            }
-        }
-        catch (SQLException e) {
-            throw new BinaryObjectException(e);
-        }
-    }
-
-    /**
      * @param cls Class.
      * @return {@code true} is the type is plain (not user's custom class).
      */
@@ -248,7 +130,8 @@ public abstract class SqlListenerUtils {
             || cls == UUID.class
             || cls == Time.class
             || cls == Timestamp.class
-            || cls == java.sql.Date.class || cls == java.util.Date.class
+            || cls == java.sql.Date.class
+            || cls == java.util.Date.class
             || cls == boolean[].class
             || cls == byte[].class
             || cls == char[].class
@@ -262,7 +145,8 @@ public abstract class SqlListenerUtils {
             || cls == UUID[].class
             || cls == Time[].class
             || cls == Timestamp[].class
-            || cls == java.util.Date[].class || cls == java.sql.Date[].class
+            || cls == java.util.Date[].class
+            || cls == java.sql.Date[].class
             || cls == SqlInputStreamWrapper.class
             || cls == Blob.class;
     }
