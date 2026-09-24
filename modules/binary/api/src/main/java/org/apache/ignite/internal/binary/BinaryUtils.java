@@ -129,9 +129,6 @@ public class BinaryUtils {
         TreeSet.class, new BinaryTreeSetWriteReplacer()
     );
 
-    /** {@code true} if serialized value of this type cannot contain references to objects. */
-    private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
-
     /** Binary classes. */
     private static final Collection<Class<?>> BINARY_CLS;
 
@@ -236,19 +233,6 @@ public class BinaryUtils {
 
         BINARY_CLS = Set.copyOf(FLAG_TO_CLASS.values());
 
-        for (byte b : new byte[] {
-            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG,
-            GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE, GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN,
-            GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE,
-            GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME, GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR,
-            GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR,
-            GridBinaryMarshaller.TIME_ARR, GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR,
-            GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR,
-            GridBinaryMarshaller.TIMESTAMP_ARR, GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
-
-            PLAIN_TYPE_FLAG[b] = true;
-        }
-
         FIELD_TYPE_NAMES = new String[104];
 
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BYTE] = "byte";
@@ -339,24 +323,6 @@ public class BinaryUtils {
             return ((BinaryObjectEx)obj).heapCopy();
 
         return obj;
-    }
-
-    /**
-     * @return {@code true} if content of serialized value cannot contain references to other object.
-     */
-    public static boolean isPlainType(int type) {
-        return type > 0 && type < PLAIN_TYPE_FLAG.length && PLAIN_TYPE_FLAG[type];
-    }
-
-    /**
-     * Checks whether an array type values can or can not contain references to other object.
-     *
-     * @param type Array type.
-     * @return {@code true} if content of serialized array value cannot contain references to other object.
-     */
-    public static boolean isPlainArrayType(int type) {
-        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR)
-            || type == GridBinaryMarshaller.TIMESTAMP_ARR || type == GridBinaryMarshaller.TIME_ARR;
     }
 
     /**
