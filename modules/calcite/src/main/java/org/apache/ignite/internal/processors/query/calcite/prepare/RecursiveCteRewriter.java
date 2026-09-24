@@ -27,11 +27,14 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
-/** Infers an omitted RECURSIVE keyword before the validator registers WITH scopes. */
+/** Normalizes recursive CTEs before the validator registers WITH scopes. */
 class RecursiveCteRewriter {
     /** FROM operators whose first operand is a table reference. */
     private static final Set<SqlKind> FROM_WRAPPERS = EnumSet.of(
@@ -39,9 +42,39 @@ class RecursiveCteRewriter {
         SqlKind.LATERAL, SqlKind.PIVOT, SqlKind.UNPIVOT, SqlKind.MATCH_RECOGNIZE
     );
 
-    /** */
-    private RecursiveCteRewriter() {
-        // No-op.
+    /**
+     * Ignores sorting of the recursive UNION before Calcite wraps it in a SELECT, hiding the recursive scope.
+     * Row limiting cannot be discarded because it changes the result. Ordinary CTEs retain their ordering.
+     */
+    static void rewriteOrderBy(SqlWithItem item) {
+        if (!(item.query instanceof SqlOrderBy) || !hasRecursiveReference(item))
+            return;
+
+        SqlOrderBy orderBy = (SqlOrderBy)item.query;
+
+        if (orderBy.orderList.isEmpty())
+            return;
+
+        if (orderBy.fetch != null || orderBy.offset != null) {
+            throw new IgniteSQLException(
+                "Unsupported recursive CTE: ORDER BY with FETCH, LIMIT or OFFSET is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION
+            );
+        }
+
+        item.query = orderBy.query;
+    }
+
+    /** Finds a self-reference in the recursive operand before ORDER BY has been rewritten. */
+    private static boolean hasRecursiveReference(SqlWithItem item) {
+        SqlNode qry = withoutOrderBy(item.query);
+
+        return qry.getKind() == SqlKind.UNION && references(((SqlCall)qry).operand(1), item.name, false);
+    }
+
+    /** Returns the query expression inside an optional ORDER BY wrapper. */
+    private static SqlNode withoutOrderBy(SqlNode qry) {
+        return qry instanceof SqlOrderBy ? ((SqlOrderBy)qry).query : qry;
     }
 
     /**
@@ -71,11 +104,15 @@ class RecursiveCteRewriter {
                 SqlWithItem item = (SqlWithItem)withNode;
                 boolean shadows = item.name.names.equals(name.names);
 
-                // A recursive item shadows the outer name in its recursive term, but not in its seed.
-                SqlNode qry = shadows && item.recursive.booleanValue() && item.query.getKind() == SqlKind.UNION
-                    ? ((SqlCall)item.query).operand(0) : item.query;
+                SqlNode qry = withoutOrderBy(item.query);
 
-                if (references(qry, name, false))
+                // ORDER BY normalization runs before nested items have had their recursive flags inferred.
+                // A recursive item shadows the outer name in its recursive term, but not in its seed.
+                SqlNode visibleQry = shadows && qry.getKind() == SqlKind.UNION
+                    && (item.recursive.booleanValue() || hasRecursiveReference(item))
+                    ? ((SqlCall)qry).operand(0) : item.query;
+
+                if (references(visibleQry, name, false))
                     return true;
 
                 // This item is visible in subsequent items and in the WITH body.

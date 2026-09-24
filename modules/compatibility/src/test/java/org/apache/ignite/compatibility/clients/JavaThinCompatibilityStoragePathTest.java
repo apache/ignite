@@ -81,21 +81,28 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
 
     /** {@inheritDoc} */
     @Override public void testOldClientToCurrentServer() throws Exception {
-        assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
+        assumeVersionSupported();
 
         super.testOldClientToCurrentServer();
     }
 
     /** {@inheritDoc} */
     @Override public void testCurrentClientToOldServer() throws Exception {
+        assumeVersionSupported();
+
+        super.testCurrentClientToOldServer();
+    }
+
+    /** Skips the test if the old version doesn't support the cluster state API or the current JDK. */
+    private void assumeVersionSupported() {
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
-        if (majorJavaVer >= 17)
+        if (majorJavaVer >= 21)
+            assumeTrue("JDK 21 support is available starting with release 2.16.0", ver.compareTo(VER_2_16_0) >= 0);
+        else if (majorJavaVer >= 17)
             assumeTrue("JDK 17 support is available starting with release 2.13.0", ver.compareTo(VER_2_13_0) >= 0);
         else
             assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
-
-        super.testCurrentClientToOldServer();
     }
 
 
