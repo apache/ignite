@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -64,13 +63,6 @@ public class SnapshotDeleteRequest implements Message {
     SnapshotDeleteRequest(UUID reqId, String snpName, @Nullable String snpPath) {
         this.reqId = reqId;
         this.snpName = snpName.trim();
-
-        // A protection against empty relative paths like "  ".
-        if (!F.isEmpty(snpPath))
-            snpPath = snpPath.trim();
-
-        snpPath = F.isEmpty(snpPath) ? null : snpPath;
-
         this.snpPath = snpPath;
     }
 
