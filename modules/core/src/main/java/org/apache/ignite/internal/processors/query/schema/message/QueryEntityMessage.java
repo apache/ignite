@@ -29,12 +29,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.QueryIndexMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Message for {@link QueryEntity} transfer.
  */
-public class QueryEntityMessage implements Message {
+public class QueryEntityMessage extends AbstractMessage {
     /** Key type. */
     @Order(0)
     String keyType;

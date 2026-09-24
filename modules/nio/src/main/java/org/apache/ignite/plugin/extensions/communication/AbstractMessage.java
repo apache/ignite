@@ -15,18 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.plugin.extensions.communication;
 
-import java.util.List;
-import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
-
-/** */
-public class IncorrectRawListMessage extends AbstractMessage {
-    /** */
-    @Marshalled("msgBytes")
-    List msgColl;
-
-    /** */
-    @Order(0)
-    byte[] msgBytes;
+/** Base class of every message. */
+public abstract class AbstractMessage implements Message {
+    // No-op.
 }

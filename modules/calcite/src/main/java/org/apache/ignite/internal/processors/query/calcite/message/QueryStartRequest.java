@@ -25,10 +25,11 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** Message sent to remote nodes to start a query fragment execution. */
-public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionContextAware {
+public class QueryStartRequest extends AbstractMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
     String schema;

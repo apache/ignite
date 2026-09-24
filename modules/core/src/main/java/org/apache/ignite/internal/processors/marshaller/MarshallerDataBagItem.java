@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.marshaller;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class MarshallerDataBagItem implements Message {
+public class MarshallerDataBagItem extends AbstractMessage {
     /** */
     @Order(0)
     List<Map<Integer, MappedName>> mappings;

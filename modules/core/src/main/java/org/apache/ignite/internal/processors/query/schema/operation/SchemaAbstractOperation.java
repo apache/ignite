@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Abstract operation on schema.
  */
-public abstract class SchemaAbstractOperation implements Message {
+public abstract class SchemaAbstractOperation extends AbstractMessage {
     /** Operation ID. */
     @Order(0)
     UUID opId;

@@ -36,12 +36,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous handler for message subscription.
  */
-public final class GridMessageListenHandler implements GridContinuousHandler, MarshallableMessage {
+public final class GridMessageListenHandler extends AbstractMessage implements GridContinuousHandler, MarshallableMessage {
     /** */
     private volatile @Nullable Object topic;
 

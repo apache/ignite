@@ -21,6 +21,7 @@ import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord.PartitionState;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;

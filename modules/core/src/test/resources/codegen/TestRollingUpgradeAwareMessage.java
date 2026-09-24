@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
 @FeatureGated(registry = TestFeatureRegistry.class)
-public class TestRollingUpgradeAwareMessage implements Message {
+public class TestRollingUpgradeAwareMessage extends AbstractMessage {
     /** */
     @Order(0)
     int plain;

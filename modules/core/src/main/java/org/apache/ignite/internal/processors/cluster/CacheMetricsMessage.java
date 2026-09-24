@@ -21,11 +21,11 @@ import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Cache metrics message. */
-public class CacheMetricsMessage implements Message {
+public class CacheMetricsMessage extends AbstractMessage {
     /** Number of reads. */
     @Order(0)
     public long cacheGets;

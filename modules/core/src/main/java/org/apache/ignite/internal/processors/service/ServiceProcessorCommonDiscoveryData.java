@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.service;
 import java.util.List;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
 /** Initial data container to be sent to newly joining node for initialization of {@link IgniteServiceProcessor}. */
-public class ServiceProcessorCommonDiscoveryData implements Message {
+public class ServiceProcessorCommonDiscoveryData extends AbstractMessage {
     /** Clusters registered services descriptors. */
     @Order(0)
     List<ServiceInfo> registeredServices;

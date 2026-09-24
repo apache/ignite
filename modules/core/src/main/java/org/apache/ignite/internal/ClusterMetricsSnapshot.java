@@ -25,7 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
@@ -37,7 +37,7 @@ import static java.lang.Math.min;
  * Note that whenever adding or removing metric parameters, care
  * must be taken to update serialize/deserialize logic as well.
  */
-public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
+public class ClusterMetricsSnapshot extends AbstractMessage implements ClusterMetrics {
     /** Size of serialized node metrics. */
     public static final int METRICS_SIZE =
         4/*max active jobs*/ +

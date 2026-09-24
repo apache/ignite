@@ -21,10 +21,10 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class DefaultMapperEnumFieldsMessage implements Message {
+public class DefaultMapperEnumFieldsMessage extends AbstractMessage {
     @Order(0)
     TransactionIsolation publicEnum;
 

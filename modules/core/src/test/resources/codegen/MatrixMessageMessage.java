@@ -18,12 +18,12 @@
 package org.apache.ignite.internal;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class MatrixMessageMessage implements Message {
+public class MatrixMessageMessage extends AbstractMessage {
     @Order(0)
     private GridCacheVersion[][] ver;
 
