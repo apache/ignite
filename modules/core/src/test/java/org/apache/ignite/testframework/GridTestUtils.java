@@ -23,8 +23,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -1771,35 +1769,10 @@ public final class GridTestUtils {
      */
     public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
-        assert fieldName != null;
 
-        try {
-            Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
+        Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
-            Field field = cls.getDeclaredField(fieldName);
-
-            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
-
-            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
-
-            /**
-             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
-             * If a final field is initialized to a compile-time constant in the field declaration,
-             *   changes to the final field may not be observed.
-             */
-            if (isFinal && isStatic)
-                throw new IgniteException("Modification of static final field through reflection.");
-
-            boolean accessible = field.isAccessible();
-
-            if (!accessible)
-                field.setAccessible(true);
-
-            field.set(obj, val);
-        }
-        catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
-        }
+        setFieldValue(obj, cls, fieldName, val);
     }
 
     /**
@@ -1833,21 +1806,6 @@ public final class GridTestUtils {
              */
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
-
-            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
-                MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(Field.class, MethodHandles.lookup());
-
-                VarHandle varHandle = lookup.findVarHandle(Field.class, "modifiers", int.class);
-
-                varHandle.set(field, field.getModifiers() & ~Modifier.FINAL);
-            }
-            else if (isFinal) {
-                Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-                modifiersField.setAccessible(true);
-
-                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            }
 
             field.set(obj, val);
         }
