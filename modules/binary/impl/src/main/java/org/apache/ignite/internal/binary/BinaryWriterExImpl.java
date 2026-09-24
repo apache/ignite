@@ -1452,7 +1452,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         fieldCnt++;
     }
 
-
     /**
      * Write byte array from the InputStream.
      *
