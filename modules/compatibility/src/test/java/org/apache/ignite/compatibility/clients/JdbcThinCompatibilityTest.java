@@ -55,7 +55,11 @@ public class JdbcThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
-        if (majorJavaVer > 11) {
+        if (majorJavaVer >= 21) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                VER_2_16_0.compareTo(IgniteProductVersion.fromString(verFormatted)) <= 0);
+        }
+        else if (majorJavaVer > 11) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0);
         }

@@ -59,14 +59,14 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     public GridCacheQueryMetricsAdapter(GridMetricManager mmgr, String cacheName, boolean isNear) {
         MetricRegistryImpl mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
 
-        minTime = mreg.longMetric("QueryMinimalTime", null);
+        minTime = mreg.longMetric("QueryMinimalTime", "Minimum execution time of queries, in milliseconds.");
         minTime.value(Long.MAX_VALUE);
 
-        maxTime = mreg.longMetric("QueryMaximumTime", null);
-        sumTime = mreg.longAdderMetric("QuerySumTime", null);
-        execs = mreg.longAdderMetric("QueryExecuted", null);
-        completed = mreg.longAdderMetric("QueryCompleted", null);
-        fails = mreg.longAdderMetric("QueryFailed", null);
+        maxTime = mreg.longMetric("QueryMaximumTime", "Maximum execution time of queries, in milliseconds.");
+        sumTime = mreg.longAdderMetric("QuerySumTime", "Total execution time of queries, in milliseconds.");
+        execs = mreg.longAdderMetric("QueryExecuted", "Number of executed queries.");
+        completed = mreg.longAdderMetric("QueryCompleted", "Number of completed queries.");
+        fails = mreg.longAdderMetric("QueryFailed", "Number of failed queries.");
     }
 
     /** {@inheritDoc} */

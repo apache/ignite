@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -648,7 +649,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 if (!condition.isA(SqlKind.OR))
                     return condition;
 
-                Set<RexNode> commonPart = new HashSet<>();
+                // Insertion order matters: RexNode hash codes are not stable across JVMs, so a hash-ordered set
+                // would make the order of the extracted conjuncts (and the resulting plan) differ from run to run.
+                Set<RexNode> commonPart = new LinkedHashSet<>();
 
                 List<RexNode> orOps = ((RexCall)condition).getOperands();
 

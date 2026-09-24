@@ -646,7 +646,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteRepeatUnion rel) {
-        RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), rel.iterationLimit());
+        RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), rel.all, rel.iterationLimit());
 
         node.register(F.asList(visit(rel.getLeft()), visit(rel.getRight())));
 

@@ -31,6 +31,107 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
     /** Number of invocations of a non-deterministic function. */
     private static final AtomicInteger nonDeterministicCallCnt = new AtomicInteger();
 
+    /** Explicit and inferred recursion must produce the same rows. */
+    @Test
+    public void testOptionalRecursiveKeyword() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "seed(n) AS (SELECT 1), numbers(n) AS (" +
+                "SELECT n FROM seed UNION ALL SELECT n + 1 FROM numbers WHERE n < 3), " +
+                "result AS (SELECT * FROM numbers) SELECT * FROM result")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+
+            assertQuery("SELECT * FROM (WITH " + keyword + "\"Numbers\"(n) AS (" +
+                "SELECT 1 UNION ALL SELECT x.n + 1 FROM \"Numbers\" x WHERE x.n < 3) " +
+                "SELECT * FROM \"Numbers\")")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+
+            assertQuery("WITH " + keyword + "numbers(n) AS (" +
+                "SELECT 1 UNION SELECT n + 1 FROM numbers WHERE n < 3) SELECT * FROM numbers")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+        }
+    }
+
+    /** Checks explicit and implicit recursion with ORDER BY inside and outside the CTE. */
+    @Test
+    public void testRecursiveCteWithOrderBy() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 FROM numbers WHERE n < 3 " +
+                "ORDER BY n" +
+                ") " +
+                "SELECT n FROM numbers ORDER BY n")
+                .ordered()
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+        }
+    }
+
+    /** FETCH, LIMIT and OFFSET cannot be combined with sorting of the recursive UNION. */
+    @Test
+    public void testRecursiveCteOrderByWithRowLimitingIsRejected() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            for (String limit : new String[] {"FETCH FIRST 2 ROWS ONLY", "LIMIT 2", "OFFSET 1 ROW"}) {
+                assertThrows("WITH " + keyword + "numbers(n) AS (SELECT 1 UNION ALL " +
+                    "SELECT n + 1 FROM numbers WHERE n < 3 ORDER BY n " + limit + ") SELECT n FROM numbers",
+                    IgniteSQLException.class,
+                    "Unsupported recursive CTE: ORDER BY with FETCH, LIMIT or OFFSET is not supported");
+            }
+        }
+    }
+
+    /** A non-recursive CTE retains sorting and row limiting even in a WITH RECURSIVE clause. */
+    @Test
+    public void testNonRecursiveCteOrderByWithRowLimiting() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "numbers(n) AS (SELECT 1 AS n UNION ALL SELECT 3 UNION ALL " +
+                "SELECT 2 ORDER BY n DESC FETCH FIRST 2 ROWS ONLY) SELECT n FROM numbers ORDER BY n")
+                .ordered()
+                .returns(2)
+                .returns(3)
+                .check();
+        }
+    }
+
+    /** An inner recursive CTE hides an ordinary outer CTE's name during early recursion detection. */
+    @Test
+    public void testOrderByWithNestedCteShadowing() {
+        assertQuery("WITH numbers(n) AS (SELECT 9 AS n UNION ALL " +
+            "SELECT n FROM (WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE n < 3 ORDER BY n) SELECT n FROM numbers) " +
+            "ORDER BY n DESC FETCH FIRST 2 ROWS ONLY) SELECT n FROM numbers ORDER BY n")
+            .ordered()
+            .returns(3)
+            .returns(9)
+            .check();
+    }
+
+    /** Row limiting of a recursive CTE's consumer remains supported. */
+    @Test
+    public void testRecursiveCteOrderByWithOuterRowLimiting() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "numbers(n) AS (SELECT 1 UNION ALL " +
+                "SELECT n + 1 FROM numbers WHERE n < 5 ORDER BY n) " +
+                "SELECT n FROM numbers ORDER BY n DESC FETCH FIRST 2 ROWS ONLY")
+                .ordered()
+                .returns(5)
+                .returns(4)
+                .check();
+        }
+    }
+
     /** */
     @Test
     public void testEmployeeHierarchy() {
@@ -218,19 +319,41 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
-    /** */
+    /** Both DISTINCT spellings eliminate duplicates in the seed and across recursive iterations. */
     @Test
-    public void testRecursiveCteWithDistinctUnionIsRejected() {
-        assertThrows(
-            "WITH RECURSIVE numbers(n) AS (" +
-                "SELECT 1 " +
-                "UNION " +
-                "SELECT n + 1 FROM numbers WHERE n < 3" +
-            ") " +
-            "SELECT n FROM numbers",
-            IgniteSQLException.class,
-            "only UNION ALL is supported"
-        );
+    public void testRecursiveCteWithDistinctUnion() {
+        for (String union : new String[] {"UNION", "UNION DISTINCT"}) {
+            assertQuery("WITH RECURSIVE numbers(n) AS (" +
+                "SELECT * FROM (VALUES (1), (1), (2)) " + union + " " +
+                "SELECT MOD(n, 3) + 1 FROM numbers" +
+                ") SELECT n FROM numbers")
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+        }
+    }
+
+    /** NULLs compare equal and all columns participate in duplicate elimination. */
+    @Test
+    public void testRecursiveDistinctNulls() {
+        assertQuery("WITH RECURSIVE numbers(n, label) AS (" +
+            "SELECT * FROM (VALUES (1, CAST(NULL AS VARCHAR)), (1, CAST(NULL AS VARCHAR)), (1, 'x')) " +
+            "UNION DISTINCT SELECT n, label FROM numbers" +
+            ") SELECT n, label FROM numbers")
+            .returns(1, null)
+            .returns(1, "x")
+            .check();
+    }
+
+    /** Duplicate-only input batches must keep requesting rows until the source ends. */
+    @Test
+    public void testRecursiveDistinctLargeDuplicateBatch() {
+        assertQuery("WITH RECURSIVE numbers(n) AS (" +
+            "SELECT 1 UNION SELECT n FROM numbers CROSS JOIN TABLE(SYSTEM_RANGE(1, 10000))" +
+            ") SELECT n FROM numbers")
+            .returns(1)
+            .check();
     }
 
     /** */
