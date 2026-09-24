@@ -103,7 +103,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
         assertNotNull("TTL entry must be present before expiry", ttlCache.get(0));
 
-        GridTestUtils.waitForCondition(() -> ttlCache.get(0) == null, 10_000);
+        assertTrue(GridTestUtils.waitForCondition(() -> ttlCache.get(0) == null, 10_000));
 
         for (int i = 0; i < ttlEntries; i++)
             plainCache.put(smallEntries + i, val);
