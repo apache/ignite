@@ -47,6 +47,9 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     private final RowFactory<Row> rowFactory;
 
     /** */
+    private final boolean hasConvertableFields;
+
+    /** */
     public TableFunctionScan(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
@@ -57,6 +60,8 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
         this.dataSupplier = dataSupplier;
 
         rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
+
+        hasConvertableFields = hasConvertableFields(ctx, rowType);
     }
 
     /** {@inheritDoc} */
@@ -70,7 +75,7 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
             throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 
         Object[] rowArr = rowContainer.getClass() == Object[].class
-            ? ((Object[])rowContainer).clone()
+            ? ((Object[])rowContainer)
             : ((Collection<?>)rowContainer).toArray();
 
         if (rowArr.length != rowType.getFieldCount()) {
@@ -78,8 +83,13 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
 
-        for (int i = 0; i < rowArr.length; i++)
-            rowArr[i] = convertToInternal(rowArr[i], rowType.getFieldList().get(i).getType());
+        if (hasConvertableFields) {
+            if (rowContainer.getClass() == Object[].class)
+                rowArr = rowArr.clone();
+
+            for (int i = 0; i < rowArr.length; i++)
+                rowArr[i] = convertToInternal(rowArr[i], rowType.getFieldList().get(i).getType());
+        }
 
         return rowFactory.create(rowArr);
     }
@@ -100,5 +110,15 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
             return val;
 
         return TypeUtils.toInternal(ctx, val, storageType);
+    }
+
+    /** */
+    private static boolean hasConvertableFields(ExecutionContext<?> ctx, RelDataType rowType) {
+        return rowType.getFieldList().stream().anyMatch(field -> {
+            RelDataType type = field.getType();
+
+            return !(type instanceof OtherType) && type.getSqlTypeName() != SqlTypeName.OTHER
+                && TypeUtils.isConvertableType(ctx.getTypeFactory().getResultClass(type));
+        });
     }
 }

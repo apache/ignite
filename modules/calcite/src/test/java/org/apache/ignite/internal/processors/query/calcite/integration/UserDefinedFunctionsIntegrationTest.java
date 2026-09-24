@@ -522,7 +522,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                     Object actual = rows.get(0).get(i);
 
                     assertEquals("Unexpected value type at index " + i, exp[i].getClass(), actual.getClass());
-                    assertEqualsArraysAware("Unexpected value at index " + i, exp[i], actual);
+                    assertEquals("Unexpected value at index " + i, exp[i], actual);
                 }
             })
             .check();

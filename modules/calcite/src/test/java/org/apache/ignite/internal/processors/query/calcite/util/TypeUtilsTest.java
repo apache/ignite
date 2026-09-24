@@ -46,9 +46,8 @@ public class TypeUtilsTest {
     public void testLocalDateConversion() {
         for (String date : new String[] {
             "0001-01-01", "1500-01-02", "1582-10-10", "1969-12-31", "1970-01-01", "2011-12-30", "9999-12-31"
-        }) {
+        })
             checkConversion(LocalDate.parse(date), new DateString(date).getDaysSinceEpoch(), Date.class);
-        }
     }
 
     /** */
@@ -75,9 +74,8 @@ public class TypeUtilsTest {
     public void testSqlDateConversion() {
         for (String date : new String[] {
             "0001-01-01", "1500-01-02", "1582-10-04", "1582-10-15", "1969-12-31", "1970-01-01", "9999-12-31"
-        }) {
+        })
             checkConversion(DataContexts.EMPTY, Date.valueOf(date), new DateString(date).getDaysSinceEpoch(), Date.class);
-        }
     }
 
     /** */
