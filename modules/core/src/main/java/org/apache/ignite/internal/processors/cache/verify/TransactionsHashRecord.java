@@ -23,7 +23,7 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Represents committed transactions hash for a pair of nodes.
@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * consistent id.
  */
 @JdkMarshalled
-public class TransactionsHashRecord implements Message, Serializable {
+public class TransactionsHashRecord extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

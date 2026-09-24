@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TransactionIsolationEnumMapper;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;

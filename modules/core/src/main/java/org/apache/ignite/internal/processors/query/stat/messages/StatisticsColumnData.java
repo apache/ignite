@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Statistics by column (or by set of columns, if they collected together)
  */
-public class StatisticsColumnData implements Message, Serializable {
+public class StatisticsColumnData extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

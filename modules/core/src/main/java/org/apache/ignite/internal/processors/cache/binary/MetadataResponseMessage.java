@@ -18,12 +18,12 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Carries latest version of metadata to client as a response for {@link MetadataRequestMessage}.
  */
-public class MetadataResponseMessage implements Message {
+public class MetadataResponseMessage extends AbstractMessage {
     /** Type ID. */
     @Order(0)
     int typeId;

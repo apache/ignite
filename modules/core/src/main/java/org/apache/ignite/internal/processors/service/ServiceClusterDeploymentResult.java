@@ -24,7 +24,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
  * <p/>
  * Contains coint of deployed service and deployment errors across the cluster mapped to nodes ids.
  */
-public class ServiceClusterDeploymentResult implements Message {
+public class ServiceClusterDeploymentResult extends AbstractMessage {
     /** Service id. */
     @Order(0)
     IgniteUuid srvcId;

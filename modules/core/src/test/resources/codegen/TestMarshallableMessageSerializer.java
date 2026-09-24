@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;

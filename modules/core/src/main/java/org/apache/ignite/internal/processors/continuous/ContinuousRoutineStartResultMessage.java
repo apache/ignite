@@ -22,13 +22,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class ContinuousRoutineStartResultMessage implements Message {
+public class ContinuousRoutineStartResultMessage extends AbstractMessage {
     /** */
     @Order(0)
     UUID routineId;

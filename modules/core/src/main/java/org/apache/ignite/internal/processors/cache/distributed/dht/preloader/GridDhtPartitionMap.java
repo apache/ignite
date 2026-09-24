@@ -27,14 +27,14 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
  * Partition map from single node.
  */
-public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Message {
+public class GridDhtPartitionMap extends AbstractMessage implements Comparable<GridDhtPartitionMap> {
     /** Node ID. */
     @Order(0)
     protected UUID nodeId;

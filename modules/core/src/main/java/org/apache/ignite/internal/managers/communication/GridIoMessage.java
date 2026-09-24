@@ -26,13 +26,14 @@ import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage
 import org.apache.ignite.internal.util.nio.GridNioServer.MessageWrapper;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements StripedMessage, MessageWrapper {
+public class GridIoMessage extends AbstractMessage implements StripedMessage, MessageWrapper {
     /** Policy. */
     @Order(0)
     byte plc;

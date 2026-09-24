@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshalledCollectionMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;

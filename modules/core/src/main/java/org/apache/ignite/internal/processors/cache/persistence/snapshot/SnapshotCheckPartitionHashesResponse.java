@@ -21,11 +21,11 @@ import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class SnapshotCheckPartitionHashesResponse implements Message {
+public class SnapshotCheckPartitionHashesResponse extends AbstractMessage {
     /** Per metas result: consistent id -> check results per partition key. */
     @Order(0)
     Map<String, Map<PartitionKey, PartitionHashRecord>> perMetaResults;

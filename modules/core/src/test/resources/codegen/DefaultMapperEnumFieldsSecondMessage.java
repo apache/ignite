@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class DefaultMapperEnumFieldsSecondMessage implements Message {
+public class DefaultMapperEnumFieldsSecondMessage extends AbstractMessage {
     @Order(0)
     TransactionIsolation txMode;
 

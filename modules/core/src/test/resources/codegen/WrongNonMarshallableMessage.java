@@ -18,8 +18,9 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class WrongNonMarshallableMessage implements NonMarshallableMessage {
+public class WrongNonMarshallableMessage extends AbstractMessage implements NonMarshallableMessage {
     @Order(0)
     byte[] dataBytes;
 

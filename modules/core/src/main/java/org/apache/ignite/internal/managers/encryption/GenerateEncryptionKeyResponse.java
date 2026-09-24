@@ -21,12 +21,12 @@ import java.util.Collection;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Generate encryption key response.
  */
-public class GenerateEncryptionKeyResponse implements Message {
+public class GenerateEncryptionKeyResponse extends AbstractMessage {
     /** Request message ID. */
     @Order(0)
     IgniteUuid id;
