@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;

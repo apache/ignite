@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * As {@link DiscoveryCustomMessage} messages are delivered to client nodes asynchronously
@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  * API to make a request is provided by {@link BinaryMetadataTransport#requestUpToDateMetadata(int)} method.
  */
-public class MetadataRequestMessage implements Message {
+public class MetadataRequestMessage extends AbstractMessage {
     /** */
     @Order(0)
     int typeId;

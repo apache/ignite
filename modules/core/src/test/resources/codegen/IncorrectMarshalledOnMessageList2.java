@@ -18,10 +18,10 @@
 package org.apache.ignite.internal;
 
 import java.util.List;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class IncorrectMarshalledOnMessageList2 implements Message {
+public class IncorrectMarshalledOnMessageList2 extends AbstractMessage {
     /** */
     @Marshalled("msgBytes")
     List<List<TestMessage>> msgColl;

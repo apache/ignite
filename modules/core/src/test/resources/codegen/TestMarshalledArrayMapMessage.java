@@ -20,9 +20,9 @@ package org.apache.ignite.internal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestMarshalledArrayMapMessage implements Message {
+public class TestMarshalledArrayMapMessage extends AbstractMessage {
     @Marshalled(keys = "mapKeys", values = "mapVals")
     Map<GridTopicMessage, List<GridTopicMessage>> theMap;
 

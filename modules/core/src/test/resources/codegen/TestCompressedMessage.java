@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestCompressedMessage implements Message {
+public class TestCompressedMessage extends AbstractMessage {
     @Order(0)
     CompressedMessage message;
 

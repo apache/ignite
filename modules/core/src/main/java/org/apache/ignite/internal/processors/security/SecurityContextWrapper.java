@@ -21,7 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.thread.context.DistributedAttributeIdRegistry;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
@@ -30,7 +30,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * @see OperationContextDispatcher#createSnapshot()
  * @see DistributedAttributeIdRegistry#SECURITY
  */
-public class SecurityContextWrapper implements Message {
+public class SecurityContextWrapper extends AbstractMessage {
     /** A value of {@link SecuritySubject#id()} */
     @Order(0)
     UUID subjId;
