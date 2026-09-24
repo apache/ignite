@@ -235,16 +235,16 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             int offset = in.readInt();
 
             // Get trivial flag values.
-            userType = BinaryUtils.isUserType(flags);
-            fieldIdLen = BinaryUtils.fieldIdLength(flags);
-            fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+            userType = BinaryImplUtils.isUserType(flags);
+            fieldIdLen = BinaryImplUtils.fieldIdLength(flags);
+            fieldOffLen = BinaryImplUtils.fieldOffsetLength(flags);
 
             // Calculate footer borders and raw offset.
-            if (BinaryUtils.hasSchema(flags)) {
+            if (BinaryImplUtils.hasSchema(flags)) {
                 // Schema exists.
                 footerStart = start + offset;
 
-                if (BinaryUtils.hasRaw(flags)) {
+                if (BinaryImplUtils.hasRaw(flags)) {
                     footerLen = len - offset;
                     rawOff = start + in.readIntPositioned(start + len - 4);
                 }
@@ -258,7 +258,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 footerStart = start + len;
                 footerLen = 0;
 
-                if (BinaryUtils.hasRaw(flags))
+                if (BinaryImplUtils.hasRaw(flags))
                     rawOff = start + offset;
                 else
                     rawOff = start + len;
@@ -288,7 +288,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             }
 
             mapper = userType ? ctx.userTypeMapper(typeId) : BinaryContext.defaultMapper();
-            schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
+            schema = BinaryImplUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
             dataStart = 0;
@@ -372,11 +372,6 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setHandle(Object obj) {
-        setHandle(obj, start);
     }
 
     /** {@inheritDoc} */
@@ -1991,7 +1986,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
-            if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
+            if (fieldIdLen != BinaryImplUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId, schemaId);
 
                 BinaryMetadata meta = type != null ? type.metadata() : null;
@@ -2043,7 +2038,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Schema.
      */
     private BinarySchema createSchema() {
-        assert fieldIdLen == BinaryUtils.FIELD_ID_LEN;
+        assert fieldIdLen == BinaryImplUtils.FIELD_ID_LEN;
 
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
@@ -2055,7 +2050,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
             builder.addField(fieldId);
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
+            searchPos += BinaryImplUtils.FIELD_ID_LEN + fieldOffLen;
         }
 
         return builder.build();
@@ -2186,7 +2181,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         if (order != BinarySchema.ORDER_NOT_FOUND) {
             int offsetPos = footerStart + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-            int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);
+            int pos = start + BinaryImplUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);
 
             streamPosition(pos);
 
@@ -2204,7 +2199,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      */
     private boolean trySetSystemFieldPosition(int id) {
         // System types are never written with compact footers because they do not have metadata.
-        assert fieldIdLen == BinaryUtils.FIELD_ID_LEN;
+        assert fieldIdLen == BinaryImplUtils.FIELD_ID_LEN;
 
         int searchPos = footerStart;
         int searchTail = searchPos + footerLen;
@@ -2216,7 +2211,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             int id0 = in.readIntPositioned(searchPos);
 
             if (id0 == id) {
-                int pos = start + BinaryUtils.fieldOffsetRelative(in, searchPos + BinaryUtils.FIELD_ID_LEN,
+                int pos = start + BinaryImplUtils.fieldOffsetRelative(in, searchPos + BinaryImplUtils.FIELD_ID_LEN,
                     fieldOffLen);
 
                 streamPosition(pos);
@@ -2224,7 +2219,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 return true;
             }
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
+            searchPos += BinaryImplUtils.FIELD_ID_LEN + fieldOffLen;
         }
     }
 
@@ -2375,7 +2370,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 case BINARY:
                     res = newInstance(desc.ctor(), desc.describedClass());
 
-                    setHandle(res);
+                    setHandle(res, start);
 
                     if (desc.serializer != null)
                         desc.serializer.readBinary(res, this);
@@ -2387,7 +2382,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 case OBJECT:
                     res = newInstance(desc.ctor(), desc.describedClass());
 
-                    setHandle(res);
+                    setHandle(res, start);
 
                     for (BinaryFieldDescriptor info : desc.fields)
                         readField(res, info);
@@ -2404,7 +2399,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 try {
                     res = desc.readResolveMtd.invoke(res);
 
-                    setHandle(res);
+                    setHandle(res, start);
                 }
                 catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
