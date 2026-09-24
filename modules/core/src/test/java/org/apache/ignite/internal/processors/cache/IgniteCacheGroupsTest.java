@@ -3882,7 +3882,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     assertTrue(cacheIds.add(CU.cacheId(cache.getName())));
                 }
 
-                for (int n = 0; n < SRVS; n++) {
+                for (int n = 0; n <= SRVS; n++) {
                     for (String grpName : Arrays.asList(GROUP1, GROUP2)) {
                         CacheGroupContext grp = cacheGroup(ignite(n), grpName);
 
