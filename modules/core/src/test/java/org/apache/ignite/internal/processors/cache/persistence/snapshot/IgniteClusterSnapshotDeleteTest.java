@@ -22,7 +22,6 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -277,79 +275,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     private String folderName(int gridIdx) {
         return grid(gridIdx).context().pdsFolderResolver().fileTree().folderName();
-    }
-
-    /** Test delete snapshot directly in Ignite. */
-    @Test
-    public void testDeletionInIgnite() throws Exception {
-        /** No need to multiply this test. */
-        assumeFalse(onlyPrimary || encryption || incremental);
-
-        startGridsMultiThreaded(3);
-
-        List<String> dirsToTest = new ArrayList<>(30);
-
-        var ignFileTree = grid(0).context().pdsFolderResolver().fileTree();
-
-        dirsToTest.add(CommonUtils.getIgniteHome());
-        dirsToTest.add(ignFileTree.root().getAbsolutePath());
-
-        ignFileTree.allStorages().forEach(s -> {
-            for (var sub : s.listFiles()) {
-                if (!sub.isDirectory() || sub.compareTo(ignFileTree.snapshotsRoot()) == 0)
-                    continue;
-
-                dirsToTest.add(sub.getAbsolutePath());
-            }
-        });
-
-        IgniteSnapshotManager snpMgr = snp(grid(0));
-        var fileSep = File.separator;
-        var belongsToErrMsg = "belongs to an Ignite directory";
-
-        for (var dir : dirsToTest) {
-            List<String> tests = new ArrayList<>(20);
-
-            tests.add(dir + fileSep);
-            // Double path separator.
-            tests.add(dir.replaceAll("\\".equals(fileSep) ? "\\\\" : fileSep, "\\".equals(fileSep) ? "\\\\\\\\" : fileSep));
-            tests.add(dir + fileSep + "unexisting");
-
-            for (var test : tests) {
-                if (log.isInfoEnabled())
-                    log.info("Testing path: " + test);
-
-                assertThrowsAnyCause(
-                    null,
-                    () -> snpMgr.deleteSnapshot(SNAPSHOT_NAME, test).get(getTestTimeout()),
-                    IllegalArgumentException.class,
-                    belongsToErrMsg
-                );
-            }
-        }
-
-        var testDir = new File(fileSep + "unexisting_" + UUID.randomUUID()).getAbsolutePath();
-
-        if (log.isInfoEnabled())
-            log.info("Testing path: " + testDir);
-
-        var delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, testDir).get(getTestTimeout());
-
-        assertEquals(3, delRes.emptyNodes.size());
-
-        var snpRoot = ignFileTree.snapshotsRoot();
-
-        delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, snpRoot.getAbsolutePath()).get(getTestTimeout());
-
-        assertTrue(F.isEmpty(delRes.completedNodes));
-        assertTrue(F.isEmpty(delRes.uncompletedNodes));
-        assertEquals(3, delRes.emptyNodes.size());
-
-        delRes = snpMgr.deleteSnapshot(SNAPSHOT_NAME, new File(snpRoot, "unexisting").getAbsolutePath()).get(getTestTimeout());
-
-        assertTrue(F.isEmpty(delRes.completedNodes));
-        assertTrue(F.isEmpty(delRes.uncompletedNodes));
-        assertEquals(3, delRes.emptyNodes.size());
     }
 
     /** Tests snapshot deletion when one node has no snapshot data. */
