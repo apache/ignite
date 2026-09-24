@@ -115,8 +115,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Override public void afterTestSnapshot() throws Exception {
         super.afterTestSnapshot();
 
-        G.allGrids();
-
         cleanPersistenceDir();
     }
 
@@ -307,7 +305,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager snpMgr = snp(grid(0));
         var fileSep = File.separator;
-        var belongsToErrMsg = "belongs to a an Ignite's directory";
+        var belongsToErrMsg = "belongs to an Ignite directory";
 
         for (var dir : dirsToTest) {
             List<String> tests = new ArrayList<>(20);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
@@ -85,7 +86,8 @@ public class SnapshotDeleteRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(snpName.toLowerCase(), resolvedPath);
+        // Lower-cased to prevent concurrent snapshot operation ff the name typed with diffent cases.
+        return Objects.hash(snpName.toLowerCase(Locale.ROOT), resolvedPath);
     }
 
     /** {@inheritDoc} */

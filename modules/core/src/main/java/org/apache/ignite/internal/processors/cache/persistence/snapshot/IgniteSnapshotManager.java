@@ -754,25 +754,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         boolean res = true;
 
+        // The 'exists' checks are for a concurrent deletion when nodes share their working and snapshot directories.
+        // Nodes may steal removal jobs and the files aren't synchronized. There are gaps between and `exists()` and `delete()`.
+        // We try to delete first. If snapshot data wasn't deleted because it doesn't already exist is not a delete error here.
         try {
-            if (sft.binaryMeta().exists() && !U.delete(sft.binaryMeta()) && sft.binaryMeta().exists())
+            if (!U.delete(sft.binaryMeta()) && sft.binaryMeta().exists())
                 res = false;
 
             for (var s : sft.allStorages().toList()) {
-                if (s.exists() && !U.delete(s) && s.exists())
+                if (!U.delete(s) && s.exists())
                     res = false;
             }
 
-            if (sft.meta().exists() && !U.delete(sft.meta()) && sft.meta().exists())
+            if (!U.delete(sft.meta()) && sft.meta().exists())
                 res = false;
 
-            if (sft.binaryMetaRoot().exists() && !deleteDirectory(sft.binaryMetaRoot()) && sft.binaryMetaRoot().exists())
+            if (!deleteDirectory(sft.binaryMetaRoot()) && sft.binaryMetaRoot().exists())
                 res = false;
 
-            if (sft.marshaller().exists() && !deleteDirectory(sft.marshaller()) && sft.marshaller().exists())
+            if (!deleteDirectory(sft.marshaller()) && sft.marshaller().exists())
                 res = false;
 
-            if (sft.incrementsRoot().exists() && !deleteDirectory(sft.incrementsRoot()) && sft.incrementsRoot().exists())
+            if (!deleteDirectory(sft.incrementsRoot()) && sft.incrementsRoot().exists())
                 res = false;
 
             // Delete parent dir which is {snapshot_root}/db if empty.
@@ -802,13 +805,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Concurrently traverse the directory and delete all files. */
     private boolean deleteDirectory(File dir) throws IOException {
-        var res = new AtomicBoolean();
+        var res = new AtomicBoolean(true);
 
         Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<>() {
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 File f0 = file.toFile();
 
-                if (f0.exists() && !U.delete(f0) && f0.exists())
+                // Check for a concurrent deletion.
+                if (!U.delete(f0) && f0.exists())
                     res.set(false);
 
                 return FileVisitResult.CONTINUE;
@@ -822,7 +826,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             @Override public FileVisitResult postVisitDirectory(Path dir, IOException e) {
                 File f0 = dir.toFile();
 
-                if (f0.exists() && !f0.delete() && f0.exists())
+                // Check for a concurrent deletion.
+                if (!f0.delete() && f0.exists())
                     res.set(false);
 
                 if (log.isInfoEnabled() && e != null)
@@ -1939,7 +1944,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Some instances can return {@link SnapshotMetadata#folderName()} and {@link SnapshotMetadata#consistentId()} that differs from local.
      *
      * @param sft Snapshot file tree.
-     * @param failIfCantRead If {@code true}, throws an exeption if cant read a metadata file.
+     * @param failIfCantRead If {@code true}, throws an exception if cannot read a metadata file.
      * @return List of snapshot metadata for the given snapshot name on local node.
      * If snapshot has been taken from local node the snapshot metadata for given
      * local node will be placed on the first place.

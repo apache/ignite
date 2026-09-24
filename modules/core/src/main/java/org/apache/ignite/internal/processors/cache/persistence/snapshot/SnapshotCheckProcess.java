@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -132,7 +133,7 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>();
 
         try {
-            contexts.remove(ctx.req.snapshotName().toLowerCase());
+            contexts.remove(ctx.req.snapshotName().toLowerCase(Locale.ROOT));
 
             GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = clusterOpFuts.get(reqId);
 
@@ -474,7 +475,7 @@ public class SnapshotCheckProcess {
     private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
         return snpName == null
             ? contexts.values().stream().filter(ctx0 -> ctx0.req.requestId().equals(reqId)).findFirst().orElse(null)
-            : contexts.get(snpName.toLowerCase());
+            : contexts.get(snpName.toLowerCase(Locale.ROOT));
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
@@ -488,7 +489,7 @@ public class SnapshotCheckProcess {
             if (nodeStopping)
                 return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
-            ctx = contexts.computeIfAbsent(req.snapshotName().toLowerCase(), snpName -> new SnapshotCheckContext(req));
+            ctx = contexts.computeIfAbsent(req.snapshotName().toLowerCase(Locale.ROOT), snpName -> new SnapshotCheckContext(req));
         }
 
         if (!ctx.req.requestId().equals(req.requestId())) {
@@ -594,7 +595,7 @@ public class SnapshotCheckProcess {
             if (ctx != null) {
                 unregisterMetrics(ctx.req.snapshotName());
 
-                contexts.remove(ctx.req.snapshotName().toLowerCase());
+                contexts.remove(ctx.req.snapshotName().toLowerCase(Locale.ROOT));
             }
 
             if (clusterOpFut != null)
@@ -700,7 +701,7 @@ public class SnapshotCheckProcess {
 
     /** @return {@code True} if snapshot with specified name is checking. */
     boolean isSnapshotChecking(String snpName) {
-        return contexts.get(snpName.toLowerCase()) != null;
+        return contexts.get(snpName.toLowerCase(Locale.ROOT)) != null;
     }
 
     /** @return {@code True} if node with the provided id is in the cluster and is a baseline node. {@code False} otherwise. */

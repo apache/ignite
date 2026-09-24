@@ -151,7 +151,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
 
                 try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
                     for (int d = dataIdx; d < dataIdx + entriesCnt / 4; ++d)
-                        streamer.addData(i, i);
+                        streamer.addData(d, d);
                 }
 
                 snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, true, false)
@@ -204,7 +204,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
 
         assertFalse(out.contains(SnapshotDeleteCommand.REMOVED_PREF));
         assertFalse(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF));
-        assertTrue(out.contains(SnapshotDeleteCommand.NOT_FOUND_PREF));
+        assertTrue(out.contains(SnapshotDeleteCommand.NOT_FOUND));
 
         testOut.reset();
         assertTrue(testOut.toString().isEmpty());

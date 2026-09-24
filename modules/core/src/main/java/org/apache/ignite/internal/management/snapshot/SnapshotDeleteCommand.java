@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
     /** */
-    public static final String DESC = "Deletes snapshot and all its incrementals from all the online server nodes";
+    public static final String DESC = "Deletes the snapshot and all its incremental snapshots from all online server nodes";
 
     /** */
     public static final String UNSURED_DELETION_PREF = "WARNING: the following nodes found snapshot data but might not " +
@@ -49,7 +49,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         "operation skipped ";
 
     /** */
-    public static final String NOT_FOUND_PREF = "Snapshot not found on current server nodes ";
+    public static final String NOT_FOUND = "Snapshot not found on available server nodes.";
 
     /** */
     public static final String MISSING_BASELINES = "WARNING: the snapshot's baseline nodes with the following consistent " +
@@ -101,7 +101,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         else {
             assert !res.emptyNodes().isEmpty();
 
-            printer.accept(NOT_FOUND_PREF);
+            printer.accept(NOT_FOUND);
         }
     }
 

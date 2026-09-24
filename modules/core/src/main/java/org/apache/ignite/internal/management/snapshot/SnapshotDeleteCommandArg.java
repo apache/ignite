@@ -21,6 +21,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class SnapshotDeleteCommandArg extends IgniteDataTransferObject {
@@ -35,9 +36,9 @@ public class SnapshotDeleteCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Order(1)
-    @Argument(example = "path", optional = true, description = "Path to snapshot location directory. If not specified " +
+    @Argument(example = "path/to/directory", optional = true, description = "Path to snapshot location directory. If not specified " +
         "or specified a relative path, the default snapshot configuration directory will be used")
-    String src;
+    @Nullable String src;
 
     /** */
     public String snapshotName() {
@@ -50,7 +51,7 @@ public class SnapshotDeleteCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String src() {
+    @Nullable public String src() {
         return src;
     }
 

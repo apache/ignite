@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
@@ -162,18 +163,18 @@ public class SnapshotDeleteProcess {
                 "Snapshot with this name is being checked [req=" + req + ']'));
         }
 
-        File path = resolvePath(req.snpPath);
-
-        String pathValidationErr = validateAbsoluteSnapshotRoot(path);
-
-        if (pathValidationErr != null) {
-            return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
-                SNP_PATH_ERR_PREF + pathValidationErr + " [req=" + req + ']'));
-        }
-
-        req.resolvedPath = path;
-
         try {
+            File path = resolvePath(req.snpPath);
+
+            String pathValidationErr = validateAbsoluteSnapshotRoot(path);
+
+            if (pathValidationErr != null) {
+                return new GridFinishedFuture<>(new IllegalArgumentException(OP_REJECT_MSG +
+                    SNP_PATH_ERR_PREF + pathValidationErr + " [req=" + req + ']'));
+            }
+
+            req.resolvedPath = path;
+
             if (!requests.add(req)) {
                 return new GridFinishedFuture<>(new IgniteIllegalStateException("Deletion of the snapshot has already " +
                     "started [req=" + req + ']'));
@@ -260,7 +261,7 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private File resolvePath(@Nullable String path) {
+    private File resolvePath(@Nullable String path) throws IOException {
         var res = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
 
         if (path != null) {
@@ -269,7 +270,7 @@ public class SnapshotDeleteProcess {
             res = reqPath.isAbsolute() ? reqPath : new File(res, path);
         }
 
-        return res;
+        return res.getCanonicalFile();
     }
 
     /** */
@@ -284,7 +285,7 @@ public class SnapshotDeleteProcess {
         if (ignFileTree.snapshotsRoot().compareTo(path) != 0 && !contains(ignFileTree.snapshotsRoot(), path)) {
             for (var ignPath : List.of(new File(CommonUtils.getIgniteHome()), ignFileTree.root())) {
                 if (ignPath.compareTo(path) == 0 || contains(ignPath, path))
-                    return "belongs to a an Ignite's directory";
+                    return "belongs to an Ignite directory";
             }
         }
 
@@ -363,7 +364,12 @@ public class SnapshotDeleteProcess {
     public boolean isDeleting(String snpName, @Nullable String snpPath) {
         var rq = new SnapshotDeleteRequest(null, snpName, snpPath);
 
-        rq.resolvedPath = resolvePath(rq.snpPath);
+        try {
+            rq.resolvedPath = resolvePath(rq.snpPath);
+        }
+        catch (IOException ignored) {
+            return false;
+        }
 
         return requests.contains(rq);
     }
