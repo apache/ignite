@@ -3883,16 +3883,21 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                 }
 
                 for (int n = 0; n < SRVS; n++) {
-                    CacheGroupContext grp = cacheGroup(ignite(n), GROUP1);
+                    for (String grpName : Arrays.asList(GROUP1, GROUP2)) {
+                        CacheGroupContext grp = cacheGroup(ignite(n), grpName);
 
-                    assertNotNull(grp);
+                        // Group may be absent on a node if all its caches were
+                        // re-created under another group during this iteration.
+                        if (grp == null)
+                            continue;
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
+                        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                            IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
 
-                        assertTrue(cachesMap.size() <= cacheIds.size());
+                            assertTrue(cachesMap.size() <= cacheIds.size());
 
-                        cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                            cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                        }
                     }
                 }
             }
