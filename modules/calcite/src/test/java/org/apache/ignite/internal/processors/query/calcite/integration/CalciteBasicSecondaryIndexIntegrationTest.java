@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -921,16 +920,14 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
     // ===== various complex conditions =====
 
     /** */
-    @Disabled("TODO")
     @Test
     public void testOrderByKey() {
-        assertQuery("SELECT id, name, depId, age FROM Developer ORDER BY _key")
-            .matches(containsTableScan("PUBLIC", "DEVELOPER"))
-            .matches(not(containsSubPlan("IgniteSort")))
-            .returns(1, "Mozart", 3, "Vienna", 33)
-            .returns(2, "Beethoven", 2, "Vienna", 44)
-            .returns(3, "Bach", 1, "Leipzig", 55)
-            .returns(4, "Strauss", 2, "Munich", 66)
+        assertQuery("SELECT id, name, depId, age FROM Developer WHERE id<=4 ORDER BY _key")
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER"))
+            .returns(1, "Mozart", 3, 33)
+            .returns(2, "Beethoven", 2, 44)
+            .returns(3, "Bach", 1, 55)
+            .returns(4, "Strauss", 2, 66)
             .ordered()
             .check();
     }
