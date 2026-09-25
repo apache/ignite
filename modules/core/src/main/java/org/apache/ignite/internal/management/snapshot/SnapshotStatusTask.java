@@ -124,10 +124,21 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                 else {
                     MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
 
-                    metrics = new T5<>(
-                        mreg.<LongMetric>findMetric("CurrentSnapshotProcessedSize").value(),
-                        mreg.<LongMetric>findMetric("CurrentSnapshotTotalSize").value(),
-                        -1L, -1L, -1L);
+                    metrics = req.dump()
+                        ? new T5<>(
+                            mreg.<LongMetric>findMetric("CurrentDumpProcessedPartitions").value(),
+                            mreg.<LongMetric>findMetric("CurrentDumpTotalPartitions").value(),
+                            mreg.<LongMetric>findMetric("CurrentDumpProcessedEntries").value(),
+                            -1L,
+                            -1L
+                        )
+                        : new T5<>(
+                            mreg.<LongMetric>findMetric("CurrentSnapshotProcessedSize").value(),
+                            mreg.<LongMetric>findMetric("CurrentSnapshotTotalSize").value(),
+                            -1L,
+                            -1L,
+                            -1L
+                        );
                 }
 
                 return new SnapshotStatus(
