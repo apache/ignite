@@ -23,17 +23,16 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  */
-public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
+public class ClosableIteratorsHolderTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final int GENERATED = 10000;
 
@@ -44,7 +43,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
     private ClosableIteratorsHolder holder;
 
     /** */
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         iterators = Collections.newSetFromMap(new ConcurrentHashMap<>());
         holder = new ClosableIteratorsHolder(log());
@@ -52,7 +51,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         holder.tearDown();
 

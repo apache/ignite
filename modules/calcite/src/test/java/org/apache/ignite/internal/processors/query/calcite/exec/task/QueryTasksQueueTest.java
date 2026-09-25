@@ -21,12 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Tests QueryTasksQueue data structure. */
-public class QueryTasksQueueTest extends GridCommonAbstractTest {
+public class QueryTasksQueueTest extends GridCommonAbstractWrapperTest {
     /** */
     @Test
     public void testQueryBlockingUnblocking() throws Exception {

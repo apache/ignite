@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.stat.StatisticsUtils.toDecimal;
 
@@ -86,7 +86,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     private IgniteStatisticsImpl tbl1stat;
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 
