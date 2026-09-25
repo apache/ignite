@@ -37,6 +37,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
 
+import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
+
 /**
  * Class is responsible for serializing discovery messages using RU-ready {@link MessageSerializer} mechanism.
  */
@@ -105,7 +107,7 @@ public class DiscoveryMessageParser {
         do {
             msgBuf.clear();
 
-            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter);
+            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter, IGNORED);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }
@@ -131,7 +133,7 @@ public class DiscoveryMessageParser {
                 msgBuf.rewind();
             }
 
-            finished = MessageSerialization.readFrom(msgFactory, msg, msgReader);
+            finished = MessageSerialization.readFrom(msgFactory, msg, msgReader, IGNORED);
 
             assert read != -1 || finished : "Stream closed before message was fully read.";
 

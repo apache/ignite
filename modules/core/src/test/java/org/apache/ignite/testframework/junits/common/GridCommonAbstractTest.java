@@ -1398,7 +1398,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (nodeInitializer != null)
             nodeInitializer.apply(fakeNode);
 
-        fakeNode.consistentId(joiningNodeConsistentId == null ? getTestIgniteInstanceName(nodes.size()) :
+        fakeNode.setConsistentId(joiningNodeConsistentId == null ? getTestIgniteInstanceName(nodes.size()) :
             joiningNodeConsistentId);
 
         nodes.add(fakeNode);
@@ -1449,7 +1449,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         GridTestNode fakeNode = new GridTestNode(UUID.randomUUID(), null);
 
-        fakeNode.consistentId(getTestIgniteInstanceName(nodes.size()));
+        fakeNode.setConsistentId(getTestIgniteInstanceName(nodes.size()));
 
         nodes.add(fakeNode);
 

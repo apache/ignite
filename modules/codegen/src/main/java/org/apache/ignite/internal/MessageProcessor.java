@@ -41,6 +41,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
@@ -48,9 +49,11 @@ import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
+import static org.apache.ignite.internal.MessageSerializerGenerator.qualifiedClassName;
 
 /**
  * Annotation processor that generates serialization and deserialization code for classes implementing the {@code Message} interface.
@@ -95,6 +98,13 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** Checked exception declared by the generated methods. */
     static final String IGNITE_CHECKED_EXCEPTION_CLS = "org.apache.ignite.IgniteCheckedException";
+
+    /** Feature registry a message resolves its guards against unless it declares one with {@link RollingUpgradeAware#registry()}. */
+    static final String DFLT_FEATURE_REG_CLS =
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry";
+
+    /** */
+    static final String IGNITE_FEATURE_CLS = "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature";
 
     /** */
     public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
@@ -425,4 +435,102 @@ public class MessageProcessor extends AbstractProcessor {
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
         return typeElement != null ? typeElement.asType() : null;
     }
+
+    /** */
+    @Nullable public static FieldFeatureGuard buildFieldFeatureGuard(ProcessingEnvironment env, VariableElement field) {
+        Order ann = field.getAnnotation(Order.class);
+
+        String introducingFeature = ann.introducedBy();
+        String deprecatingFeature = ann.deprecatedBy();
+
+        if (introducingFeature.isEmpty() && deprecatingFeature.isEmpty())
+            return null;
+
+        if (introducingFeature.equals(deprecatingFeature)) {
+            printError(env, field, "Elements introducedBy and deprecatedBy of the @Order annotation must not reference the same feature.");
+
+            return null;
+        }
+
+        String regCls = resolveFeatureRegistry(field.getEnclosingElement());
+
+        String regName = regCls.substring(regCls.lastIndexOf('.') + 1);
+
+        List<String> conditions = new ArrayList<>();
+
+        if (!introducingFeature.isEmpty()) {
+            validateFeature(env, field, introducingFeature, regCls);
+
+            conditions.add("ctx.includeFieldIntroducedBy(" + regName + '.' + introducingFeature + ")");
+        }
+
+        if (!deprecatingFeature.isEmpty()) {
+            validateFeature(env, field, deprecatingFeature, regCls);
+
+            conditions.add("ctx.includeFieldDeprecatedBy(" + regName + '.' + deprecatingFeature + ")");
+        }
+
+        return new FieldFeatureGuard(regCls, String.join(" && ", conditions));
+    }
+
+    /** */
+    private static void validateFeature(ProcessingEnvironment env, VariableElement field, String featureName, String regCls) {
+        TypeElement regElem = env.getElementUtils().getTypeElement(regCls);
+
+        if (regElem == null) {
+            printError(env, field, "Cannot resolve the feature registry class [reg=" + regCls + ']');
+
+            return;
+        }
+
+        for (Element featureElem : regElem.getEnclosedElements()) {
+            if (featureElem.getKind() != ElementKind.FIELD || !featureElem.getSimpleName().contentEquals(featureName))
+                continue;
+
+            Set<Modifier> mods = featureElem.getModifiers();
+
+            if (!mods.contains(Modifier.PUBLIC) || !mods.contains(Modifier.STATIC) || !mods.contains(Modifier.FINAL))
+                printError(env, field, "Feature constant must be public static final [reg=" + regCls + ", feature=" + featureName + ']');
+            else if (!isIgniteFeature(env, featureElem))
+                printError(env, field, "Feature constant must be of type IgniteFeature [reg=" + regCls + ", feature=" + featureName + ']');
+
+            return;
+        }
+
+        printError(env, field, "Failed to resolve feature in the registry by its name [reg=" + regCls + ", feature=" + featureName + ']');
+    }
+
+    /** */
+    private static boolean isIgniteFeature(ProcessingEnvironment env, Element featureElem) {
+        TypeElement igniteFeatureType = env.getElementUtils().getTypeElement(IGNITE_FEATURE_CLS);
+
+        return igniteFeatureType != null && env.getTypeUtils().isAssignable(featureElem.asType(), igniteFeatureType.asType());
+    }
+
+    /** */
+    private static void printError(ProcessingEnvironment env, Element el, String msg) {
+        env.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, el);
+    }
+
+    /** */
+    private static String resolveFeatureRegistry(Element cls) {
+        RollingUpgradeAware ann = cls.getAnnotation(RollingUpgradeAware.class);
+
+        if (ann == null)
+            return DFLT_FEATURE_REG_CLS;
+
+        String regCls;
+
+        try {
+            regCls = ann.registry().getName();
+        }
+        catch (MirroredTypeException e) {
+            regCls = qualifiedClassName(e.getTypeMirror());
+        }
+
+        return Void.class.getName().equals(regCls) ? DFLT_FEATURE_REG_CLS : regCls;
+    }
+
+    /** */
+    public record FieldFeatureGuard(String registry, String expression) { }
 }
