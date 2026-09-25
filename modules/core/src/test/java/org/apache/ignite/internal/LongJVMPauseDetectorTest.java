@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -84,5 +89,63 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
 
         assertFalse(interruptLsnr.check());
         assertTrue(stopLsnr.check());
+    }
+
+    /**
+     * This test will create, check logic,
+     * check report gethering and gracefull shutdown
+     */
+    @Test
+    public void testFullCycle() throws InterruptedException {
+        long[] monotonicTimes = new long[] {
+            0, // init field
+            100, // first renew of last wake-up time
+            100, // check we didn't wake up spuriously
+            100, // we need to get real wait time, so now time is
+            50_000_100, // so we waited 50 ms, and previous time is 100 ns, so it's that time now
+            550_000_100}; // something happend! Waited for 500 ms (equals to 500ms + previous nanotime)!
+        CountDownLatch cntDownLatch = new CountDownLatch(7);
+        LongJVMPauseDetector longJVMPauseDetector = getLongJVMPauseDetector(monotonicTimes, cntDownLatch);
+        longJVMPauseDetector.start();
+        assertTrue(cntDownLatch.await(10, TimeUnit.SECONDS));
+        assertEquals(500, longJVMPauseDetector.longPausesTotalDuration());
+        assertEquals(1, longJVMPauseDetector.longPausesCount());
+        Map<Long, Long> longPauseEvts = longJVMPauseDetector.longPauseEvents();
+        assertTrue(longPauseEvts.containsValue(500L));
+        Optional<String> spottedPausesExplain = longJVMPauseDetector.getTotalSpottedPausesExplain(100);
+        assertTrue(spottedPausesExplain.isPresent());
+        assertTrue(spottedPausesExplain.get().matches("Pause detecor spotted 1 pauses: \\[500 ms at \\d+;]. Each with precision 50 ms"));
+        longJVMPauseDetector.stop();
+    }
+
+    /**
+     * @param monotonicTimes Monotonic times. Answers for method
+     *                       {@link org.apache.ignite.internal.LongJVMPauseDetector#getMonotonicTimeNanos()}
+     * @param cntDownLatch Count down latch.
+     */
+    private @NotNull LongJVMPauseDetector getLongJVMPauseDetector(long[] monotonicTimes, CountDownLatch cntDownLatch) {
+        return new LongJVMPauseDetector("test-instance", listeningTestLogger) {
+            private int visitCounter;
+            /** {@inheritDoc} */
+            @Override protected long getMonotonicTimeNanos() {
+                synchronized (this) {
+                    visitCounter++;
+                    if (visitCounter - 1 >= monotonicTimes.length) {
+                        cntDownLatch.countDown();
+                        while (!Thread.currentThread().isInterrupted()) {
+                            try {
+                                wait(Long.MAX_VALUE);
+                            }
+                            catch (InterruptedException ignored) {
+                                // do nothing
+                            }
+                        }
+                        return 0;
+                    }
+                    cntDownLatch.countDown();
+                    return monotonicTimes[visitCounter - 1];
+                }
+            }
+        };
     }
 }
