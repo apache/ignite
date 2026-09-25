@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
@@ -81,14 +83,8 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
         );
 
         for (Object[] newParam : newParams) {
-            for (Object[] inheritedParam : innerParams()) {
-                Object[] combined = new Object[newParam.length + inheritedParam.length];
-                System.arraycopy(inheritedParam, 0, combined, 0, inheritedParam.length);
-                System.arraycopy(newParam, 0, combined, inheritedParam.length, newParam.length);
-
-                Arguments res = Arguments.of(combined);
-                extraParams.add(res);
-            }
+            for (Object[] inheritedParam : innerParams())
+                extraParams.add(Arguments.from(Stream.concat(Arrays.stream(inheritedParam), Stream.of(newParam)).toList()));
         }
 
         return extraParams;

@@ -26,11 +26,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** */
 @ParameterizedClass(name = "Query engine={0}")
-@CsvSource({CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME})
+@ValueSource(strings = {CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME})
 public class AbstractMultiEngineIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Parameter(0)

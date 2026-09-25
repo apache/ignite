@@ -78,10 +78,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         List<Arguments> extraParams = new ArrayList<>();
 
         for (TestAggregateType newParam : TestAggregateType.values()) {
-            for (Object[] inheritedParam : innerParams()) {
-                Arguments res = Arguments.from(Stream.concat(Arrays.stream(inheritedParam), Stream.of(newParam)).toList());
-                extraParams.add(res);
-            }
+            for (Object[] inheritedParam : innerParams())
+                extraParams.add(Arguments.from(Stream.concat(Arrays.stream(inheritedParam), Stream.of(newParam)).toList()));
         }
 
         return extraParams;
