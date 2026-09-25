@@ -123,8 +123,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
             U.nl() + U.nl() +
             "If the security is enabled, the operation requires the snapshot administration permissions." +
             U.nl() + U.nl() +
-            "Deletion in not snapshots Ignite's directories and deletion of any data without or corrupted snapshot " +
-                "metadata are prohibited." +
+            "Deletion of any data without (valid) snapshot metadata is prohibited." +
             U.nl() + U.nl() +
             "The operation cannot be reverted." +
             U.nl() + U.nl() +
