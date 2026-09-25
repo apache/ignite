@@ -333,6 +333,45 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
+    /** Tests that snapshot restore is declined when the same snapshot is being deleted. */
+    @Test
+    public void testConcurrentSnapshotDeleteAndRestoreOperations() throws Exception {
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE),
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null).get(),
+            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)),
+            true
+        );
+    }
+
+    /** */
+    @Test
+    public void testConcurrentSnapshotDeleteAndRestoreOperationsWithDifferentPath() throws Exception {
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+
+                grid(0).createCache(DEFAULT_CACHE_NAME);
+
+                try (var ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                    for (int i = 0; i < CACHE_KEYS_RANGE; ++i)
+                        ds.addData(i, i);
+                }
+
+                snp(grid(0)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(getTestTimeout());
+
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                awaitPartitionMapExchange();
+            },
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, snpPath, null).get(),
+            null,
+            false
+        );
+    }
+
     /**
      * Ensures that the cache doesn't start if one of the baseline nodes fails.
      *

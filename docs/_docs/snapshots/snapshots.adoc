@@ -287,6 +287,50 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --groups cache-group1,cach
 control.(sh|bat) --snapshot restore snapshot_09062021 --increment 1
 ----
 
+== Deleting Snapshot
+
+You can delete a snapshot using the `control.sh|bat` script.
+
+The deletion is performed on all *online* server nodes of the cluster.
+[NOTE]
+====
+The snapshot integrity, topology and correctness aren't checked. Snapshot data on offline server nodes aren't deleted.
+====
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+# Delete the snapshot "snapshot_09062021".
+control.sh --snapshot delete snapshot_09062021
+
+# Delete the snapshot "snapshot_09062021" located in the "/tmp/ignite/snapshots" folder.
+control.sh --snapshot delete snapshot_09062021 --src /tmp/ignite/snapshots
+----
+
+tab:Windows[]
+[source,shell]
+----
+# Delete the snapshot "snapshot_09062021".
+control.bat --snapshot delete snapshot_09062021
+
+# Delete the snapshot "snapshot_09062021" located in the "C:\tmp\ignite\snapshots" folder.
+control.bat --snapshot delete snapshot_09062021 --src C:\tmp\ignite\snapshots
+----
+--
+
+=== Delete operation limitations
+
+The delete operation is subject to the following limitations:
+
+* The deletion is rejected if any snapshot operation (create, restore, check, delete) is active for the snapshot.
+* The operation requires the snapshot administration permissions via `IgniteSecurity` (if configured).
+* The operation cannot be undone and the deleted snapshot cannot be restored. The command prompts for a confirmation.
+* Before deletion, no snapshot validation is done except finding and reading its metadata. If the metadata isn't found
+or cannot be read, snapshot isn't deleted.
+* The deletion operation is independent of the status of the snapshot operation and cancellation requests.
+
 == Getting Snapshot Operation Status
 
 The status of the current snapshot operation in the cluster can be obtained using the `control.sh|bat` script or JMX interface:

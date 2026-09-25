@@ -603,7 +603,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             () -> snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
             IgniteException.class,
-            "Snapshot with given name already exists on local node.");
+            "Snapshot with given name already exists on local node");
 
         stopAllGrids();
 
@@ -613,6 +613,43 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
+    }
+
+    /**
+     * Tests that snapshot create detects concurrent deletion, or detects still existing snapshot or successfully
+     * proceeds if snapshot already deleted.
+     */
+    @Test
+    public void testConcurrentSnapshotDeleteOperation() throws Exception {
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+                snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
+            },
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get(),
+            e -> e.getMessage().contains("Snapshot with given name already exists"),
+            false
+        );
+    }
+
+    /**
+     * Tests that a concurrent deletion of a same-named snapshot is allowed if it has a different path.
+     */
+    @Test
+    public void testConcurrentSnapshotDeleteOperationWithDifferentPath() throws Exception {
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doTestConcurrentSnapshotDeleteOperation(
+            () -> {
+                startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+                snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
+            },
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(),
+            null,
+            false
+        );
     }
 
     /** @throws Exception If fails. */
