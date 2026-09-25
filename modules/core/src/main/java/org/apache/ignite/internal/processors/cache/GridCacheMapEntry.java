@@ -5016,7 +5016,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     interceptorVal = cctx.config().getInterceptor().onBeforePut(interceptEntry, updated0);
                 }
                 catch (Throwable e) {
-                    throw new IgniteCheckedException(e);
+                    throw new IgniteCheckedException("Cache's interceptor failed in 'onBeforePut'.", e);
                 }
 
                 wasIntercepted = true;

@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -32,13 +35,13 @@ import org.apache.ignite.lang.IgniteInClosure;
  */
 public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Worker pool. */
-    private GridWorkerPool workerPool;
+    private final GridWorkerPool workerPool;
 
     /** Ignite instance name. */
-    private String igniteInstanceName;
+    private final String igniteInstanceName;
 
     /**
      * Assigns filter name to a filter.
@@ -58,7 +61,29 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        workerPool.join(false);
+        CountDownLatch launchedLatch = new CountDownLatch(1);
+
+        var stoppingT = new Thread(
+            () -> {
+                launchedLatch.countDown();
+
+                workerPool.join(true, -1L);
+            },
+            getClass().getSimpleName() + "-stoppingDaemon"
+        );
+
+        stoppingT.setDaemon(true);
+
+        stoppingT.start();
+
+        try {
+            launchedLatch.await(CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException("Filed to wait for " + getClass().getName() + "'s stopping thread launch.", e);
+        }
     }
 
     /** {@inheritDoc} */
