@@ -119,9 +119,9 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(SnapshotDeleteCommandArg arg) {
-        return "This operation will completely remove snapshot: '" + arg.snapshotName() + "' and all its incrementals." +
+        return "This operation will completely remove snapshot: '" + arg.snapshotName() + "' and all its incremental snapshots." +
             U.nl() + U.nl() +
-            "If the security is enabled, the operation requires the snapshot administration permissions." +
+            "The operation may require the snapshot administration permissions." +
             U.nl() + U.nl() +
             "Deletion of any data without (valid) snapshot metadata is prohibited." +
             U.nl() + U.nl() +
