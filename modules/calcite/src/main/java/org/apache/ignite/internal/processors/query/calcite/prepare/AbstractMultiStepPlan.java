@@ -19,15 +19,24 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import com.google.common.primitives.Ints;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.partition.PartitionPruningContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,6 +98,15 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
         if (!F.isEmpty(mapCtx.partitions())) {
             List<Fragment> fragments = executionPlan0.fragments();
 
+            try {
+                FragmentMapping.validateColocation(
+                    Commons.transform(fragments, Fragment::mapping), dataSourceIds(fragments));
+            }
+            catch (ColocationMappingException e) {
+                throw new IgniteSQLException(
+                    "Execution of non-collocated query with partition parameter is not possible", e);
+            }
+
             fragments = Commons.transform(fragments, f -> {
                 try {
                     return f.filterByPartitions(mapCtx.partitions());
@@ -132,6 +150,41 @@ public abstract class AbstractMultiStepPlan extends AbstractQueryPlan implements
         }
 
         return executionPlan0;
+    }
+
+    /** Returns IDs of table data sources from all query fragments. */
+    private static Set<Long> dataSourceIds(List<Fragment> fragments) {
+        Set<Long> srcIds = new HashSet<>();
+
+        IgniteRelShuttle collector = new IgniteRelShuttle() {
+            @Override public IgniteRel visit(IgniteIndexScan rel) {
+                srcIds.add(rel.sourceId());
+
+                return super.visit(rel);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexCount rel) {
+                srcIds.add(rel.sourceId());
+
+                return super.visit(rel);
+            }
+
+            @Override public IgniteRel visit(IgniteIndexBound rel) {
+                srcIds.add(rel.sourceId());
+
+                return super.visit(rel);
+            }
+
+            @Override public IgniteRel visit(IgniteTableScan rel) {
+                srcIds.add(rel.sourceId());
+
+                return super.visit(rel);
+            }
+        };
+
+        fragments.forEach(fragment -> fragment.root().accept(collector));
+
+        return srcIds;
     }
 
     /** {@inheritDoc} */
