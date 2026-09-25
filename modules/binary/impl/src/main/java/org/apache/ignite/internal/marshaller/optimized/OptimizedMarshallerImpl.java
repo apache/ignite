@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
+import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
@@ -81,7 +81,7 @@ import sun.misc.Unsafe;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller implements OptimizedMarshaller {
+public class OptimizedMarshallerImpl extends AbstractMarshaller implements OptimizedMarshaller {
     /** Default class loader. */
     private final ClassLoader dfltClsLdr = getClass().getClassLoader();
 
@@ -112,7 +112,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
     }
 
     /** {@inheritDoc} */
-    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
         OptimizedObjectOutputStream objOut = null;
@@ -135,7 +135,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
         OptimizedObjectOutputStream objOut = null;
 
         try {
@@ -156,7 +156,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
         boolean useCache = Marshallers.USE_CACHE.get();
@@ -191,7 +191,7 @@ public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller imp
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
         OptimizedObjectInputStream objIn = null;

@@ -24,6 +24,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.nio.GridBufferedParser;
 import org.apache.ignite.internal.util.nio.GridDelimitedParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
@@ -175,7 +178,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
             new GridDelimitedParser(delim, directMode);
 
         if (converter == null)
-            converter = new DefaultConverter<>(getIgnite().name());
+            converter = new DefaultConverter<>(((IgniteEx)getIgnite()).context().cacheObjects().binaryContext());
 
         GridNioFilter codec = new GridNioCodecFilter(parser, log, directMode);
 
@@ -219,26 +222,30 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
      */
     private class DefaultConverter<T> implements SocketMessageConverter<T> {
         /** Marshaller. */
-        private final Marshaller marsh;
+        private final Marshaller marsh = Marshallers.jdk();
+
+        /** Binary context. */
+        private final BinaryContext bctx;
 
         /**
          * Constructor.
-         *
-         * @param igniteInstanceName Ignite instance name.
          */
-        private DefaultConverter(@Nullable String igniteInstanceName) {
-            marsh = Marshallers.jdk();
-
-            marsh.nodeName(igniteInstanceName);
+        private DefaultConverter(BinaryContext bctx) {
+            this.bctx = bctx;
         }
 
         /** {@inheritDoc} */
         @Override public T convert(byte[] msg) {
+            BinaryContext oldCtx = GridBinaryMarshaller.pushContext(bctx);
+
             try {
                 return U.unmarshal(marsh, msg, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                GridBinaryMarshaller.popContext(oldCtx);
             }
         }
     }

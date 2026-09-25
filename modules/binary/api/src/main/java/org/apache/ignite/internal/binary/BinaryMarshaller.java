@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
+import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
@@ -33,7 +33,7 @@ import sun.misc.Unsafe;
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
  * in the binary format.
  */
-public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
+public class BinaryMarshaller extends AbstractMarshaller {
     /** */
     @GridToStringExclude
     private GridBinaryMarshaller impl;
@@ -77,22 +77,22 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+    @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
         return impl.marshal(obj, false);
     }
 
     /** {@inheritDoc} */
-    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         impl.marshal(obj, out, false);
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(byte[] bytes, @Nullable ClassLoader clsLdr) {
+    @Override public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) {
         return impl.deserialize(bytes, clsLdr);
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         // we have to fully read the InputStream because GridBinaryMarshaller requires support of a method that

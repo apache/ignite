@@ -38,7 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
@@ -67,7 +66,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -139,7 +140,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
-import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_MBEANS_DISABLED;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -329,38 +329,6 @@ public class IgnitionEx {
         U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
 
         return false;
-    }
-
-    /**
-     * @deprecated
-     *
-     * Behavior of the method is the almost same as {@link IgnitionEx#stop(boolean, ShutdownPolicy)}.
-     * If node stopping process will not be finished within {@code timeoutMs} whole JVM will be killed.
-     *
-     * @param timeoutMs Timeout to wait graceful stopping.
-     */
-    @Deprecated
-    public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted, long timeoutMs) {
-        final ScheduledExecutorService executor = newSingleThreadScheduledExecutor("ignite-stop-await-worker", name);
-
-        // Schedule delayed node killing if graceful stopping will be not finished within timeout.
-        executor.schedule(new Runnable() {
-            @Override public void run() {
-                if (state(name) == IgniteState.STARTED) {
-                    U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
-                        " milliseconds. Killing node...");
-
-                    // We are not able to kill only one grid so whole JVM will be stopped.
-                    Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
-                }
-            }
-        }, timeoutMs, TimeUnit.MILLISECONDS);
-
-        boolean success = stop(name, cancel, null, stopNotStarted);
-
-        executor.shutdownNow();
-
-        return success;
     }
 
     /**
@@ -1319,10 +1287,10 @@ public class IgnitionEx {
      * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
-        String name = U.getCurrentIgniteName();
+        BinaryContext bctx = GridBinaryMarshaller.currentContext();
 
-        if (U.isCurrentIgniteNameSet(name))
-            return gridx(name);
+        if (bctx != null)
+            return gridx(bctx.igniteInstanceName());
         else if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getIgniteInstanceName());
         else

@@ -185,8 +185,6 @@ public class BinaryContext {
     ) {
         assert metaHnd != null;
 
-        optmMarsh.nodeName(igniteInstanceName);
-
         this.metaHnd = metaHnd;
         this.igniteInstanceName = igniteInstanceName;
         this.clsLdr = clsLdr;

@@ -450,7 +450,7 @@ public class GridBinaryMarshaller {
      * @param ctx Binary context.
      * @return Old binary context.
      */
-    @Nullable private static BinaryContext pushContext(BinaryContext ctx) {
+    @Nullable public static BinaryContext pushContext(BinaryContext ctx) {
         return BINARY_CTX.get().set(ctx);
     }
 
@@ -519,5 +519,10 @@ public class GridBinaryMarshaller {
             return BINARY_CTX_SUPPLIER.get();
 
         return ctx;
+    }
+
+    /** @return Thread-bound context if set, {@code null} otherwise. */
+    public static BinaryContext currentContext() {
+        return BINARY_CTX.get().get();
     }
 }
