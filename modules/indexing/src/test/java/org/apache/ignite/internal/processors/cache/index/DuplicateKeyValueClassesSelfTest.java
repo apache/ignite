@@ -17,14 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import javax.cache.CacheException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
 
-/**
- * Make sure that cache can start with multiple key-value classes of the same type.
- */
+import static org.apache.ignite.internal.processors.query.QueryEntityMerger.CONFLICT_MESSAGE_TEMPLATE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+
+/** Tests handling of duplicate key and value classes configured through {@link CacheConfiguration#setIndexedTypes}. */
 @SuppressWarnings("unchecked")
 public class DuplicateKeyValueClassesSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
@@ -42,32 +49,49 @@ public class DuplicateKeyValueClassesSelfTest extends AbstractIndexingCommonTest
         grid(0).destroyCache(CACHE_NAME);
     }
 
-    /**
-     * Test duplicate key class.
-     *
-     * @throws Exception If failed.
-     */
+    /** Checks that the same key class can be used with different value classes. */
     @Test
-    public void testDuplicateKeyClass() throws Exception {
+    public void testDuplicateKeyClass() {
         CacheConfiguration ccfg = new CacheConfiguration()
             .setName(CACHE_NAME)
             .setIndexedTypes(UUID.class, Clazz1.class, UUID.class, Clazz2.class);
 
         grid(0).createCache(ccfg);
+
+        Collection<QueryEntity> entities = grid(0).context().cache().cacheConfiguration(CACHE_NAME).getQueryEntities();
+
+        assertEquals(2, entities.size());
+
+        Set<String> valTypes = new HashSet<>();
+
+        for (QueryEntity entity : entities) {
+            assertEquals(UUID.class.getName(), entity.getKeyType());
+
+            valTypes.add(entity.getValueType());
+        }
+
+        Set<String> expValTypes = new HashSet<>(Arrays.asList(Clazz1.class.getName(), Clazz2.class.getName()));
+
+        assertEquals(expValTypes, valTypes);
     }
 
     /**
-     * Test duplicate value class.
-     *
-     * @throws Exception If failed.
+     * Checks that conflicting key types configured for the same value class are rejected instead of silently
+     * discarding one of the query entity configurations.
      */
     @Test
-    public void testDuplicateValueClass() throws Exception {
+    public void testConflictingKeyTypesForSameValueClass() {
         CacheConfiguration ccfg = new CacheConfiguration()
-            .setName(CACHE_NAME)
-            .setIndexedTypes(UUID.class, Clazz1.class, String.class, Clazz1.class);
+            .setName(CACHE_NAME);
 
-        grid(0).createCache(ccfg);
+        String msg = String.format(CONFLICT_MESSAGE_TEMPLATE, CACHE_NAME, "keyType", UUID.class.getName(), String.class.getName());
+
+        assertThrows(
+            log,
+            () -> ccfg.setIndexedTypes(UUID.class, Clazz1.class, String.class, Clazz1.class),
+            CacheException.class,
+            msg
+        );
     }
 
     /**

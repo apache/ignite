@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
@@ -52,6 +55,9 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
  * Defragmentation tests with enabled ignite-indexing.
  */
 public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentationTest {
+    /** Key type used to configure indexed cache. */
+    private Class<?> indexedKeyType = Integer.class;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -73,19 +79,13 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         CacheConfiguration<?, ?> cache1Cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
-            .setIndexedTypes(
-                IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class, byte[].class,
-                Integer.class, byte[].class
-            )
+            .setIndexedTypes(indexedKeyType, byte[].class)
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         CacheConfiguration<?, ?> cache2Cfg = new CacheConfiguration<>(CACHE_2_NAME)
             .setAtomicityMode(TRANSACTIONAL)
             .setGroupName(GRP_NAME)
-            .setIndexedTypes(
-                IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class, byte[].class,
-                Integer.class, byte[].class
-            )
+            .setIndexedTypes(indexedKeyType, byte[].class)
             .setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
         cache2Cfg.setExpiryPolicyFactory(new PolicyFactory());
@@ -116,9 +116,24 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
         ig.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<?, ?> dfltCacheCfg = ig.cachex(DEFAULT_CACHE_NAME).configuration();
-        CacheFileTree cft = ig.context().pdsFolderResolver().fileTree().cacheTree(dfltCacheCfg);
 
-        fillCache(keyMapper, ig.cache(DEFAULT_CACHE_NAME));
+        Collection<QueryEntity> qryEntities = dfltCacheCfg.getQueryEntities();
+
+        assertEquals(1, qryEntities.size());
+
+        QueryEntity qryEntity = qryEntities.iterator().next();
+
+        assertEquals(indexedKeyType.getName(), qryEntity.getKeyType());
+
+        IgniteCache<T, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
+
+        fillCache(keyMapper, cache);
+
+        Cache.Entry<T, Object> entry = cache.iterator().next();
+
+        assertEquals(indexedKeyType, entry.getKey().getClass());
+
+        CacheFileTree cft = ig.context().pdsFolderResolver().fileTree().cacheTree(dfltCacheCfg);
 
         forceCheckpoint(ig);
 
@@ -155,7 +170,7 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         assertFalse(idxRebuild.didRebuildIndexes());
 
-        IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
+        cache = node.cache(DEFAULT_CACHE_NAME);
 
         assertFalse(completionMarkerFile.exists());
 
@@ -163,6 +178,10 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         for (int k = 0; k < ADDED_KEYS_COUNT; k++)
             cache.get(keyMapper.apply(k));
+
+        Cache.Entry<T, Object> entryAfterDefragmentation = cache.iterator().next();
+
+        assertEquals(indexedKeyType, entryAfterDefragmentation.getKey().getClass());
     }
 
     /**
@@ -205,6 +224,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
      */
     @Test
     public void testIndexingWithComplexKey() throws Exception {
+        indexedKeyType = IgniteCacheUpdateSqlQuerySelfTest.AllTypes.class;
+
         test(integer -> new IgniteCacheUpdateSqlQuerySelfTest.AllTypes((long)integer));
     }
 

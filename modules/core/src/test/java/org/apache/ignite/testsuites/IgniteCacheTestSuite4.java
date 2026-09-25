@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomi
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheUtilsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicCopyOnReadDisabledTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPeekModesTest;
@@ -176,6 +177,7 @@ public class IgniteCacheTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCrossCacheTxSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MarshallerCacheJobRunNodeRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheDirectoryNameTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheUtilsTest.class, ignoredTests);
 
         return suite;
     }
