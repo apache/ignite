@@ -49,10 +49,10 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
     @Override public Expression implement(RexToLixTranslator translator,
         RexCall call, List<Expression> translatedOperands) {
         translatedOperands =
-            ConverterUtils.fromInternal(method.getParameterTypes(), translatedOperands);
+            ConverterUtils.fromInternal(translator.getRoot(), method.getParameterTypes(), translatedOperands);
         translatedOperands =
             ConverterUtils.convertAssignableTypes(method.getParameterTypes(), translatedOperands);
-        final Expression callExpr;
+        Expression callExpr;
         if ((method.getModifiers() & Modifier.STATIC) != 0)
             callExpr = Expressions.call(method, translatedOperands);
 
@@ -66,6 +66,10 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
 
             callExpr = Expressions.call(target, method, translatedOperands);
         }
+
+        callExpr = ConverterUtils.toInternal(translator.getRoot(), callExpr,
+            translator.typeFactory.getJavaClass(call.getType()));
+
         if (!containsCheckedException(method))
             return callExpr;
 
