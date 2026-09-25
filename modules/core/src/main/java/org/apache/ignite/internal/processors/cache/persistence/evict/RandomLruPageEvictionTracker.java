@@ -141,7 +141,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
-                        assert compactTs >= 0 : "[compactTs=" + compactTs + "]";
+                        // Under concurrent writes a fragment chain may be partially built (a concurrent writer
+                        // has not yet linked the head page), so after two hops the timestamp can still be
+                        // negative. Skip this sample and try another page.
+                        if (compactTs < 0)
+                            continue;
                     }
                 }
 

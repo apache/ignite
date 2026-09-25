@@ -24,8 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -35,25 +33,9 @@ import org.junit.Test;
 
 /** Negative test for the size-aware eviction progress guard. */
 public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
-    /** Off-heap region size. */
-    private static final int SIZE = 12 * 1024 * 1024;
-
-    /**
-     * Number of resident entries (each ~one page) filling the region to ~55% of its capacity. This keeps the region
-     * comfortably below the eviction threshold (so the ordinary threshold-based {@code ensureFreeSpace} path is a
-     * no-op) while leaving less free space than a single large record needs, so the size-aware eviction guard is
-     * exercised.
-     */
-    private static final int FILL_ENTRIES = 1_600;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName)
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setInitialSize(SIZE)
-                    .setMaxSize(SIZE)
-                    .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU)));
+        return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));
     }
 
     /** {@inheritDoc} */
@@ -73,15 +55,17 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, 0, true);
 
-        // Pre-fill the region so that less than one large record of free space remains, without overflowing it.
-        byte[] fillVal = new byte[3_800];
+        // Fill to ~85% of total pages, below the 0.9 eviction threshold. Each entry is ~one page.
+        int fillEntries = (int)(totalPages(ignite) * 0.85);
 
-        for (int i = 1; i <= FILL_ENTRIES; i++)
+        byte[] fillVal = new byte[pageSize(ignite) - 200];
+
+        for (int i = 1; i <= fillEntries; i++)
             cache.put(i, fillVal);
 
-        Collection<Integer> keys = new ArrayList<>(FILL_ENTRIES);
+        Collection<Integer> keys = new ArrayList<>(fillEntries);
 
-        for (int i = 1; i <= FILL_ENTRIES; i++)
+        for (int i = 1; i <= fillEntries; i++)
             keys.add(i);
 
         CountDownLatch ready = new CountDownLatch(1);
@@ -107,8 +91,9 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
         try {
             assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
 
+            // Large row that needs more free pages than remain — eviction cannot free any page (all locked) → OOM.
             GridTestUtils.assertThrowsWithCause(
-                () -> cache.put(FILL_ENTRIES + 1, new byte[8 * 1024 * 1024]),
+                () -> cache.put(fillEntries + 1, new byte[4 * 1024 * 1024]),
                 IgniteOutOfMemoryException.class
             );
         }

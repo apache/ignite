@@ -50,7 +50,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     }
 
     /**
-     * Regression: ordinary small records that keep the region below the eviction threshold must not trigger page
+     * Regression test: ordinary small records that keep the region below the eviction threshold must not trigger page
      * eviction at all (eviction is not started, eviction rate stays zero).
      *
      * @throws Exception If failed.
@@ -59,7 +59,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     public void testNoEvictionBelowThreshold() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        DataRegionMetricsImpl metrics = ignite.context().cache().context().database().dataRegion(null).metrics();
+        DataRegionMetricsImpl metrics = defaultRegion(ignite).metrics();
 
         metrics.enableMetrics();
 
@@ -85,8 +85,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     private void checkPageEvictionMetric(CacheAtomicityMode atomicityMode) throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        DataRegionMetricsImpl metrics =
-            ignite.context().cache().context().database().dataRegion(null).metrics();
+        DataRegionMetricsImpl metrics = defaultRegion(ignite).metrics();
 
         metrics.enableMetrics();
 

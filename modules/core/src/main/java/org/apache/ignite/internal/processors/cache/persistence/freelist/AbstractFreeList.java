@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl.SEG_CNT;
 
 /**
  */
@@ -601,14 +602,31 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * @param part Partition.
+     * @param row Row to write.
+     * @param written Written size.
+     * @param statHolder Statistics holder to track IO operations.
      * @return Page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private long allocateDataPage(int part) throws IgniteCheckedException {
-        assert part <= PageIdAllocator.MAX_PARTITION_ID;
+    private long allocateDataPage(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        assert row.partition() <= PageIdAllocator.MAX_PARTITION_ID;
 
-        return pageMem.allocatePage(grpId, part, FLAG_DATA);
+        long pageId;
+
+        try {
+            pageId = pageMem.allocatePage(grpId, row.partition(), FLAG_DATA);
+        }
+        catch (IgniteOutOfMemoryException oom) {
+            // Headroom was consumed after the pre-reserve trusted it. Evict to create empty pages and retry.
+            dbMgr.ensureFreeSpaceForInsert(dataRegion, row.size() - written);
+
+            pageId = takePage(row.size() - written, row, statHolder);
+
+            if (pageId == 0L)
+                throw oom;
+        }
+
+        return pageId;
     }
 
     /**
@@ -621,8 +639,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         // Each of up to 16 segments loses up to one page to allocation overhead (lastAllocatedIdxPtr + alignment),
         // so the theoretical max is never reached in practice. Subtract the worst-case segment loss to get an
         // effective limit that reflects real product scenarios.
-        if (maxPages > 16)
-            maxPages -= 16;
+        if (maxPages > SEG_CNT)
+            maxPages -= SEG_CNT;
 
         return pageMem.loadedPages() >= maxPages;
     }
@@ -690,8 +708,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void insertDataRows(Collection<T> rows,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void insertDataRows(Collection<T> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
             GridCursor<T> cur = new GridCursorIteratorWrapper<>(rows.iterator());
 
@@ -718,7 +735,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 long pageId = takePageWithReserve(row.size() - written, row, statHolder);
 
                 if (pageId == 0L) {
-                    pageId = allocateDataPage(row.partition());
+                    pageId = allocateDataPage(row, written, statHolder);
 
                     initIo = row.ioVersions().latest();
                 }
@@ -782,7 +799,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long pageId = takePageWithReserve(row.size() - written, row, statHolder);
 
         if (pageId == 0L) {
-            pageId = allocateDataPage(row.partition());
+            pageId = allocateDataPage(row, written, statHolder);
 
             initIo = row.ioVersions().latest();
         }

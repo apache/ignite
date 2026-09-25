@@ -107,6 +107,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl.SEG_CNT;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
@@ -1260,12 +1261,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Size-aware reserve for an eviction-enabled non-persistent region. Runs eviction until the free list holds
-     * enough real empty pages to accommodate the row, or throws {@link IgniteOutOfMemoryException} if the goal is
-     * unreachable / no progress can be made. Progress is measured against the number of empty pages in the free list
-     * (the only resource a subsequent fragmented write can reliably consume once the region is effectively full); the
-     * region's spare capacity (headroom) is only trusted in the fast path while the region is below the eviction
-     * threshold.
+     * Size-aware reserve for an eviction-enabled non-persistent region. Runs eviction until the combined space
+     * (empty pages in the free list + unallocated headroom) is enough to accommodate the row, or throws
+     * {@link IgniteOutOfMemoryException} if the goal is unreachable / no progress can be made. Both empty pages and
+     * headroom are treated as concurrent resources: the fast path returns as soon as their sum covers the row, and
+     * the eviction loop only evicts the deficit (pages that neither headroom nor the free list can provide).
      *
      * @param region Data region.
      * @param regCfg Data region configuration.
@@ -1283,9 +1283,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         long pagePayload = pageMem.pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
-        if (dataRowSize <= regCfg.getEmptyPagesPoolSize() * pagePayload)
-            return;
-
         CacheFreeList freeList = freeListMap.get(regCfg.getName());
 
         if (freeList == null)
@@ -1300,9 +1297,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         long emptyPages = freeList.emptyDataPages();
 
-        boolean evictionRegime = pageMem.loadedPages() >= (long)(totalPages * regCfg.getEvictionThreshold());
-
-        if (emptyPages >= requiredPages || (!evictionRegime && emptyPages + (totalPages - pageMem.loadedPages()) >= requiredPages))
+        // Effective headroom accounts for per-segment allocation overhead (up to one page per segment),
+        // so the fast path does not trust headroom that cannot actually be allocated.
+        if (emptyPages + effectiveHeadroom(totalPages, pageMem.loadedPages()) >= requiredPages)
             return;
 
         PageEvictionTracker evictionTracker = region.evictionTracker();
@@ -1315,7 +1312,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
-        while (freeList.emptyDataPages() < requiredPages) {
+        while (freeList.emptyDataPages() + effectiveHeadroom(totalPages, pageMem.loadedPages()) < requiredPages) {
             if (region.metrics().onPageEvictionsStarted()) {
                 U.warn(log, "Page-based evictions started." +
                     " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
@@ -1351,6 +1348,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Computes the effective headroom (unallocated pages that can actually be allocated), accounting for per-segment
+     * allocation overhead (up to one page per segment).
+     *
+     * @param totalPages Total pages in the region (maxSize / systemPageSize).
+     * @param loadedPages Currently loaded pages.
+     * @return Effective headroom, never negative.
+     */
+    private static long effectiveHeadroom(long totalPages, long loadedPages) {
+        long effectiveTotal = totalPages > SEG_CNT ? totalPages - SEG_CNT : 0;
+
+        return Math.max(0, effectiveTotal - loadedPages);
+    }
+
+    /**
      * @param regCfg Data region configuration.
      * @return New {@link IgniteOutOfMemoryException} (also reported as a critical failure) for the given region.
      */
@@ -1378,6 +1389,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void ensureFreeSpace(DataRegion memPlc) throws IgniteCheckedException {
         if (memPlc == null)
+            return;
+
+        long totalPages = memPlc.config().getMaxSize() / memPlc.pageMemory().systemPageSize();
+
+        if (effectiveHeadroom(totalPages, memPlc.pageMemory().loadedPages()) > memPlc.config().getEmptyPagesPoolSize())
             return;
 
         while (memPlc.evictionTracker().evictionRequired()) {

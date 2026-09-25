@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -29,6 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -163,5 +165,30 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             ccfg.setExpiryPolicyFactory(factoryOf(new Duration(MILLISECONDS, ttl))).setEagerTtl(true);
 
         return ignite.createCache(ccfg);
+    }
+
+    /** @return Default data region. */
+    protected static DataRegion defaultRegion(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().dataRegion(null);
+    }
+
+    /** @return The maximum default data region size in bytes. */
+    protected static long regionMaxSize(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).config().getMaxSize();
+    }
+
+    /** @return The page size in bytes for the default data region. */
+    protected static int pageSize(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).pageMemory().pageSize();
+    }
+
+    /** @return The total number of pages in the default data region. */
+    protected static long totalPages(IgniteEx ignite) throws IgniteCheckedException {
+        return regionMaxSize(ignite) / defaultRegion(ignite).pageMemory().systemPageSize();
+    }
+
+    /** @return {@code true} if page eviction has started in the default data region. */
+    protected static boolean isEvictionsStarted(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).metrics().isEvictionsStarted();
     }
 }

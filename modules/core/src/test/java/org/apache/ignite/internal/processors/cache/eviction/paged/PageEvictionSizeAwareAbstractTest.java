@@ -21,47 +21,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** Tests size-aware page eviction on in-memory (non-persistent) data regions. */
 public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbstractTest {
-    /** Off-heap region size (large enough to hold cache structural pages with the configured partition count). */
-    private static final int SIZE = 128 * 1024 * 1024;
-
-    /**
-     * Record size: chosen so that a single row requires more pages than are left free when the region is kept at the
-     * eviction threshold ({@code (1 - threshold) * totalPages}). This guarantees a large put cannot take the fast
-     * path of {@code ensureFreeSpaceForInsert} and must actually run the size-aware eviction reserve
-     * ({@code ensureFreeSpaceForEviction}), which is the scenario these tests are meant to cover.
-     */
-    private static final int RECORD_SIZE = 32 * 1024 * 1024;
-
-    /** Small record size used to pre-fill the region with evictable data (for putAll tests). */
-    private static final int SMALL_RECORD_SIZE = 4096;
-
-    /**
-     * Small pre-fill entries count. Chosen to fill the 128 MiB region close to capacity so that less than one large
-     * record ({@link #RECORD_SIZE}) remains available, forcing {@code ensureFreeSpaceForInsert} to actually evict
-     * pre-filled entries rather than taking its fast path.
-     */
-    private static final int SMALL_ENTRIES = 28_000;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName)
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setInitialSize(SIZE)
-                    .setMaxSize(SIZE)));
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -81,8 +48,10 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
+        long regionSize = regionMaxSize(ignite);
+
         GridTestUtils.assertThrowsWithCause(
-            () -> cache.put(1, new byte[SIZE * 2]),
+            () -> cache.put(1, new byte[(int)(regionSize * 2)]),
             IgniteOutOfMemoryException.class
         );
 
@@ -90,7 +59,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             () -> {
                 Map<Integer, Object> batch = new HashMap<>();
 
-                Object val = new byte[RECORD_SIZE];
+                Object val = new byte[(int)(regionSize / 4)];
 
                 for (int i = 0; i < 4; i++)
                     batch.put(i, val);
@@ -109,27 +78,33 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
      */
     @Test
     public void testPutAllLargeRows() throws Exception {
-        int putAllLargeRows = 3;
-
         IgniteEx ignite = startGrid(1);
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
-        // Pre-fill the region to near capacity with small evictable entries so that less than one large row remains
-        // available. This forces ensureFreeSpaceForInsert to evict pre-filled entries rather than taking its fast path.
-        byte[] small = new byte[SMALL_RECORD_SIZE];
+        // Pre-fill to ~85% of capacity so that less than one large row remains available.
+        int smallEntries = (int)(totalPages(ignite) * 0.85);
 
-        for (int i = 0; i < SMALL_ENTRIES; i++)
-            cache.put(SMALL_ENTRIES + i, small);
+        byte[] small = new byte[pageSize(ignite) - 200];
+
+        for (int i = 0; i < smallEntries; i++)
+            cache.put(smallEntries + i, small);
+
+        assertTrue("Pre-fill must load >80% of pages", loadedPages(ignite) > totalPages(ignite) * 0.80);
+        assertFalse("Eviction must not start during pre-fill", isEvictionsStarted(ignite));
+
+        int putAllLargeRows = 3;
 
         Map<Integer, Object> large = new HashMap<>();
 
-        Object val = new byte[RECORD_SIZE];
+        Object val = new byte[(int)(regionMaxSize(ignite) / 4)];
 
         for (int i = 0; i < putAllLargeRows; i++)
             large.put(i, val);
 
         cache.putAll(large);
+
+        assertTrue("Eviction must start after putAll of large rows near capacity", isEvictionsStarted(ignite));
 
         for (int i = 0; i < putAllLargeRows; i++)
             assertNotNull("Large row " + i + " must be readable after putAll", cache.get(i));
@@ -148,21 +123,23 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
-        // Pre-fill the region to near capacity with small evictable entries so that the grown value below cannot
-        // fit without eviction.
-        byte[] small = new byte[SMALL_RECORD_SIZE];
+        int smallEntries = (int)(totalPages(ignite) * 0.85);
 
-        for (int i = 0; i < SMALL_ENTRIES; i++)
-            cache.put(SMALL_ENTRIES + i, small);
+        byte[] small = new byte[pageSize(ignite) - 200];
+
+        for (int i = 0; i < smallEntries; i++)
+            cache.put(smallEntries + i, small);
 
         // Insert key 1 with a small value, then update it to a large value that requires size-aware eviction.
         cache.put(1, new byte[1024]);
 
-        byte[] big = new byte[RECORD_SIZE];
+        byte[] big = new byte[(int)(regionMaxSize(ignite) / 4)];
 
         Arrays.fill(big, (byte)7);
 
         cache.put(1, big);
+
+        assertTrue("Eviction must have started after growing a row near capacity", isEvictionsStarted(ignite));
 
         byte[] read = (byte[])cache.get(1);
 
@@ -171,11 +148,11 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     }
 
     /**
-     * Verifies the {@code evictionRegime} gate in {@code ensureFreeSpaceForEviction}: when the region is below the
+     * Verifies the fast path in {@code ensureFreeSpaceForEviction}: when the region is below the
      * eviction threshold, a large row (exceeding the empty-pages pool) that fits in the remaining headroom is written
      * successfully <b>without triggering eviction</b> — the size-aware reserve trusts headroom
-     * ({@code evictionRegime = false}) and skips the eviction loop. If the gate were broken (always {@code true}),
-     * size-aware eviction would run unnecessarily, evicting pre-filled entries and setting the evictions-started flag.
+     * and skips the eviction loop. If the fast path were broken, size-aware eviction would run unnecessarily,
+     * evicting pre-filled entries and setting the evictions-started flag.
      *
      * @throws Exception If failed.
      */
@@ -185,30 +162,29 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
-        // Pre-fill to ~80 MiB — below the 0.9 * 128 MiB = 115.2 MiB threshold, leaving ~48 MiB of headroom.
-        // After pre-fill, loadedPages is well below threshold, so evictionRegime = false.
-        byte[] small = new byte[SMALL_RECORD_SIZE];
+        // Pre-fill to ~40% of total pages — well below the eviction threshold, leaving ~50% headroom.
+        int preFill = (int)(totalPages(ignite) * 0.4);
 
-        int preFill = 20_000;
+        byte[] small = new byte[pageSize(ignite) - 200];
 
         for (int i = 0; i < preFill; i++)
             cache.put(i, small);
 
-        DataRegionMetricsImpl metrics = ignite.context().cache().context().database().dataRegion(null).metrics();
+        long loadedPages = loadedPages(ignite);
+        long totalPages = totalPages(ignite);
 
-        assertFalse("Eviction must not have started during pre-fill below threshold", metrics.isEvictionsStarted());
+        assertTrue("Pre-fill must load ~40% of pages", loadedPages > totalPages * 0.30 && loadedPages < totalPages * 0.50);
+        assertFalse("Eviction must not have started during pre-fill below threshold", isEvictionsStarted(ignite));
 
-        // Write a 32 MiB row that fits in the remaining headroom (~48 MiB). Total ~112 MiB stays below the 115.2 MiB
-        // threshold, so evictionRegime remains false throughout and no eviction is triggered.
-        byte[] val = new byte[RECORD_SIZE];
+        // Write a large row that fits in the remaining headroom. After pre-fill at ~40%, ~60% remains.
+        // Use ~30% of region so total ~70% stays below the 90% threshold.
+        byte[] val = new byte[(int)(regionMaxSize(ignite) * 0.3)];
 
         Arrays.fill(val, (byte)1);
 
         cache.put(preFill, val);
 
-        // Eviction must not have started: the region never crossed the threshold, so the size-aware reserve
-        // trusted headroom and the normal threshold eviction in insertDataRows never fired.
-        assertFalse("Eviction must not start when the region stays below the threshold", metrics.isEvictionsStarted());
+        assertFalse("Eviction must not start when the region stays below the threshold", isEvictionsStarted(ignite));
 
         for (int i = 0; i < preFill; i++)
             assertNotNull("Pre-filled entry " + i + " must not be evicted below threshold", cache.get(i));
@@ -221,8 +197,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
     /**
      * Verifies that a large row (exceeding the empty-pages pool) is written successfully when the region is already
-     * at or above the eviction threshold — the size-aware eviction loop ({@code evictionRegime = true}) evicts enough
-     * pre-filled entries to free the required pages, and the write succeeds.
+     * at or above the eviction threshold — the size-aware eviction loop evicts enough
+     * pre-filled entries to free the required pages, and to write succeeds.
      *
      * @throws Exception If failed.
      */
@@ -232,30 +208,91 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
-        // Pre-fill to near capacity with small evictable entries. 28 000 x 4 KiB ~ 112 MiB of data; with page
-        // overhead loadedPages is at or above the 0.9 threshold, so evictionRegime = true.
-        byte[] small = new byte[SMALL_RECORD_SIZE];
+        // Pre-fill to ~85% of capacity — above the 0.9 eviction threshold (with page overhead).
+        int smallEntries = (int)(totalPages(ignite) * 0.85);
 
-        for (int i = 0; i < SMALL_ENTRIES; i++)
+        byte[] small = new byte[pageSize(ignite) - 200];
+
+        for (int i = 0; i < smallEntries; i++)
             cache.put(i, small);
 
-        // Write a 32 MiB row that exceeds the empty-pages pool. Since the region is at or above the eviction
-        // threshold, the size-aware reserve cannot trust headroom and must actually evict pre-filled entries.
-        byte[] val = new byte[RECORD_SIZE];
+        assertTrue("Pre-fill must load >80% of pages", loadedPages(ignite) > totalPages(ignite) * 0.80);
+
+        // Write a large row that exceeds the combined headroom + empty-pages pool, so the size-aware
+        // reserve must actually evict pre-filled entries to make room.
+        byte[] val = new byte[(int)(regionMaxSize(ignite) / 4)];
 
         Arrays.fill(val, (byte)1);
 
-        int largeKey = SMALL_ENTRIES + 1;
+        int largeKey = smallEntries + 1;
 
         cache.put(largeKey, val);
 
-        DataRegionMetricsImpl metrics = ignite.context().cache().context().database().dataRegion(null).metrics();
-
-        assertTrue("Eviction must have started after a large put near capacity", metrics.isEvictionsStarted());
+        assertTrue("Eviction must have started after a large put near capacity", isEvictionsStarted(ignite));
 
         byte[] read = (byte[])cache.get(largeKey);
 
         assertNotNull("Large row must be readable after eviction", read);
         assertTrue("Value read back must equal the stored value", Arrays.equals(val, read));
+    }
+
+    /**
+     * Verifies that the data region can be filled beyond the eviction threshold (default 0.9) — at least to
+     * 95% of total pages — without triggering eviction. Before the fix, the headroom gate
+     * caused the size-aware reserve to ignore headroom above the threshold, so the region effectively stopped
+     * growing at ~90% and evicted pre-filled entries unnecessarily.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRegionFillsBeyondEvictionThreshold() throws Exception {
+        IgniteEx ignite = startGrid(1);
+
+        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
+
+        long total = totalPages(ignite);
+
+        byte[] small = new byte[pageSize(ignite) - 200];
+
+        // Put entries until the region is at least 95% full.
+        for (int i = 0; i < total; i++) {
+            cache.put(i, small);
+
+            if (loadedPages(ignite) >= total * 0.95)
+                break;
+        }
+
+        assertTrue("Region must fill beyond the 0.9 eviction threshold", loadedPages(ignite) >= total * 0.95);
+        assertFalse("Eviction must not start when headroom is still available", isEvictionsStarted(ignite));
+
+        stopGrid(1);
+        ignite = startGrid(1);
+
+        assertEquals(0, loadedPages(ignite));
+
+        cache = createCache(ignite, DEFAULT_CACHE_NAME);
+
+        int batchSize = 100;
+
+        // Put entries in batches until the region is at least 95% full.
+        for (int base = 0; base < total; base += batchSize) {
+            Map<Integer, Object> batch = new HashMap<>();
+
+            for (int i = 0; i < batchSize && base + i < total; i++)
+                batch.put(base + i, small);
+
+            cache.putAll(batch);
+
+            if (loadedPages(ignite) >= total * 0.95)
+                break;
+        }
+
+        assertTrue("Region must fill beyond the 0.9 eviction threshold via putAll", loadedPages(ignite) >= total * 0.95);
+        assertFalse("Eviction must not start when headroom is still available", isEvictionsStarted(ignite));
+    }
+
+    /** @return Loaded pages. */
+    private long loadedPages(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).pageMemory().loadedPages();
     }
 }

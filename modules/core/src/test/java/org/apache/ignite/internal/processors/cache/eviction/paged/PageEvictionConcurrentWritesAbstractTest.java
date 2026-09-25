@@ -21,8 +21,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,11 +29,6 @@ import org.junit.Test;
 
 /** Concurrent deadlock test for size-aware page eviction. */
 public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvictionAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName).setDataStorageConfiguration(new DataStorageConfiguration());
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -49,27 +42,28 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
      */
     @Test
     public void testConcurrentLargeWritesNoDeadlock() throws Exception {
-         // Number of small pre-fill entries, leaving a buffer that is exceeded by the total of the large writes, so that
-         // the last of them can only be stored by freeing pages via size-aware eviction.
-        int smallEntries = 48_000;
-
-         // Large rows inserted per thread. Their total (threads x rows) exceeds the buffer left by the pre-fill, so the
-         // last large writes overflow the region and require size-aware eviction to free small entry pages.
+        int smallEntries = 1_000;
         int largeRowsPerThread = 20;
 
         IgniteEx ignite = startGrid(1);
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
-        // Pre-fill the region with many small entries so that eviction always has evictable pages to free.
-        for (int i = 0; i < smallEntries; i++)
-            cache.put(i, new byte[4096]);
+        long regionMax = regionMaxSize(ignite);
 
-        byte[] largeVal = new byte[2 * 1024 * 1024];
+        // Small value: sized so that 'smallEntries' of them fill ~80% of the region, staying under the 90% eviction threshold.
+        byte[] smallVal = new byte[(int)(regionMax * 0.8 / smallEntries)];
+
+        for (int i = 0; i < smallEntries; i++)
+            cache.put(i, smallVal);
+
+        assertFalse("Eviction must not have started during pre-fill", isEvictionsStarted(ignite));
 
         CountDownLatch startLatch = new CountDownLatch(1);
-
         AtomicInteger threadIdx = new AtomicInteger();
+
+        // Large value: 5% of the region — large enough to trigger eviction during concurrent writes.
+        byte[] largeVal = new byte[(int)(regionMax / 20)];
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             U.awaitQuiet(startLatch);
@@ -83,5 +77,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         startLatch.countDown();
 
         fut.get(TimeUnit.MINUTES.toMillis(3));
+
+        assertTrue("Eviction must have started during concurrent large writes", isEvictionsStarted(ignite));
     }
 }
