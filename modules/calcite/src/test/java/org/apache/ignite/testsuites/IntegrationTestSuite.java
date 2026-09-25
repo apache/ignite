@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.KeyClassC
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.LitmusCheckIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalDateTimeSupportTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalQueryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MemoryQuotasIntegrationTest;
@@ -199,6 +200,7 @@ import org.junit.runners.Suite;
     BulkOperationDeadlockIntegrationTest.class,
     SelectForUpdateIntegrationTest.class,
     ResultSetSizeMetricsTest.class,
+    LitmusCheckIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
