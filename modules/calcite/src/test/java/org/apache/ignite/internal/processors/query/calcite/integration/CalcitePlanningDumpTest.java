@@ -26,8 +26,11 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
 import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.apache.ignite.IgniteCommonsSystemProperties.getLong;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -39,7 +42,15 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 @WithSystemProperty(key = IGNITE_CALCITE_PLANNER_TIMEOUT, value = "1000")
 public class CalcitePlanningDumpTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final long PLANNER_TIMEOUT = 1000L;
+    private static long plannerTimeout;
+
+    /** {@inheritDoc} */
+    @BeforeAll
+    @Override protected void beforeTestsStarted() throws Exception {
+        plannerTimeout = getLong(IGNITE_CALCITE_PLANNER_TIMEOUT, 0);
+
+        super.beforeTestsStarted();
+    }
 
     /** */
     @Test
@@ -51,7 +62,7 @@ public class CalcitePlanningDumpTest extends AbstractBasicIntegrationTest {
 
             tbl.addIndex(new DelegatingIgniteIndex(tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX)) {
                 @Override public RelCollation collation() {
-                    doSleep(PLANNER_TIMEOUT);
+                    doSleep(plannerTimeout);
 
                     return delegate.collation();
                 }

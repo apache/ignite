@@ -56,7 +56,7 @@ public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
     @Override protected void beforeTest() throws Exception {
         persistenceEnabled = false;
 
-        assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
+        assertTrue("Not all Ignite instances stopped before tests execution:" + G.allGrids(), G.allGrids().isEmpty());
 
         super.beforeTest();
 
