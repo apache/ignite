@@ -107,12 +107,10 @@ public class SnapshotDeleteProcess {
         clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId));
 
         try {
-            synchronized (clusterOpFuts) {
-                if (interrupted || kctx.isStopping())
-                    throw new NodeStoppingException("Failed to start snapshot delete process: node is stopping.");
+            if (interrupted || kctx.isStopping())
+                throw new NodeStoppingException("Failed to start snapshot delete process: node is stopping.");
 
-                clusterOpFuts.put(reqId, clusterOpFut);
-            }
+            clusterOpFuts.put(reqId, clusterOpFut);
 
             SnapshotDeleteRequest req = new SnapshotDeleteRequest(reqId, snpName, snpPath);
 
@@ -347,9 +345,7 @@ public class SnapshotDeleteProcess {
      * @param err The interrupt reason.
      */
     void interrupt(Throwable err) {
-        synchronized (clusterOpFuts) {
-            interrupted = true;
-        }
+        interrupted = true;
 
         clusterOpFuts.forEach((reqId, clusterOpFut) -> clusterOpFut.onDone(err));
 
