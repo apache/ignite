@@ -90,7 +90,8 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
         @Override public boolean registerClassName(
             byte platformId,
             int typeId,
-            String clsName
+            String clsName,
+            boolean failIfUnregistered
         ) throws IgniteCheckedException {
             return false;
         }

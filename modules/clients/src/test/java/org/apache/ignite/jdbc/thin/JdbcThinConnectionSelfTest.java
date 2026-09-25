@@ -2217,7 +2217,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private MarshallerContext getFakeMarshallerCtx() {
         return new MarshallerContext() {
             @Override public boolean registerClassName(byte platformId, int typeId,
-                String clsName) throws IgniteCheckedException {
+                String clsName, boolean failIfUnregistered) throws IgniteCheckedException {
                 return false;
             }
 
