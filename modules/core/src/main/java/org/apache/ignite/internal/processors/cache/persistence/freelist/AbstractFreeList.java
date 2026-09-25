@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
@@ -75,6 +78,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private static final int MIN_PAGE_FREE_SPACE = 8;
 
     /**
+     * Bounded number of lazy size-aware re-reserve attempts on a fragmented write before falling back to
+     * allocating a brand-new page. Each attempt runs size-aware eviction (which itself fails with a clean OOM when
+     * eviction cannot progress), so this bounds the retry even under heavy contention.
+     */
+    private static final int RE_RESERVE_ATTEMPTS = 4;
+
+    /**
      * Step between buckets in free list, measured in powers of two.
      * For example, for page size 4096 and 256 buckets, shift is 4 and step is 16 bytes.
      */
@@ -97,6 +107,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** Data region this free list belongs to (used for lazy size-aware re-reserve on fragmented writes). */
+    private final DataRegion dataRegion;
+
+    /** Database shared manager (used for lazy size-aware re-reserve on fragmented writes). */
+    private final IgniteCacheDatabaseSharedManager dbMgr;
 
     /** Page list cache limit. */
     private final AtomicLong pageListCacheLimit;
@@ -462,6 +478,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         rmvRow = new RemoveRowHandler(cacheGrpId == 0);
 
         this.evictionTracker = dataRegion.evictionTracker();
+        this.dataRegion = dataRegion;
+        // dbMgr is needed only for the on-demand re-reserve (eviction-enabled in-memory region); null in unit tests
+        // without a cache processor (where eviction is disabled and the re-reserve never fires).
+        dbMgr = ctx.cache() == null ? null : ctx.cache().context().database();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -591,6 +611,53 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return pageMem.allocatePage(grpId, part, FLAG_DATA);
     }
 
+    /**
+     * @return {@code true} when the region has effectively no headroom left (allocated pages reached the configured
+     * max), so a fresh {@code allocateDataPage} could no longer grow it.
+     */
+    private boolean regionEffectivelyFull() {
+        long maxPages = dataRegion.config().getMaxSize() / pageMem.systemPageSize();
+
+        // Each of up to 16 segments loses up to one page to allocation overhead (lastAllocatedIdxPtr + alignment),
+        // so the theoretical max is never reached in practice. Subtract the worst-case segment loss to get an
+        // effective limit that reflects real product scenarios.
+        if (maxPages > 16)
+            maxPages -= 16;
+
+        return pageMem.loadedPages() >= maxPages;
+    }
+
+    /**
+     * Take a page, and if the free list cannot hand one out, re-run the size-aware reserve and retry. The reserve only
+     * bounds the shared empty-pages counter and does not pin pages to this thread, so a concurrent writer may consume
+     * them before this allocation; retrying closes that TOCTOU instead of falling straight to a raw
+     * {@code allocateDataPage}. How hard to retry depends on whether the region can still grow: on an effectively-full
+     * region re-reserving is bounded (each attempt itself fails with a clean OOM when eviction cannot progress), while
+     * with headroom a single re-reserve suffices and the subsequent {@code allocateDataPage} grows the region.
+     *
+     * @param size Free space required on the page.
+     * @param row Row to write.
+     * @param statHolder Statistics holder to track IO operations.
+     * @return Page identifier or 0 if no page could be obtained after re-reserving.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long takePageWithReserve(int size, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        long pageId = takePage(size, row, statHolder);
+
+        if (pageId == 0L && dbMgr != null && !dataRegion.config().isPersistenceEnabled()
+            && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
+            int reReserveAttempts = regionEffectivelyFull() ? RE_RESERVE_ATTEMPTS : 1;
+
+            for (int i = 0; pageId == 0L && i < reReserveAttempts; i++) {
+                dbMgr.ensureFreeSpaceForInsert(dataRegion, size);
+
+                pageId = takePage(size, row, statHolder);
+            }
+        }
+
+        return pageId;
+    }
+
     /** {@inheritDoc} */
     @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         int written = 0;
@@ -604,7 +671,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
             while (written != COMPLETE);
         }
-        catch (IgniteCheckedException | Error e) {
+        catch (IgniteCheckedException | Error | IgniteOutOfMemoryException e) {
             throw e;
         }
         catch (Throwable t) {
@@ -648,7 +715,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 AbstractDataPageIO initIo = null;
 
-                long pageId = takePage(row.size() - written, row, statHolder);
+                long pageId = takePageWithReserve(row.size() - written, row, statHolder);
 
                 if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
@@ -660,6 +727,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 assert written != FAIL_I; // We can't fail here.
             }
+        }
+        catch (IgniteOutOfMemoryException e) {
+            throw e;
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e, grpId);
@@ -693,6 +763,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /**
      * Take a page and write row on it.
+     * <p>
+     * The page is acquired via {@link #takePageWithReserve}, which handles the size-aware re-reserve and TOCTOU
+     * recovery (see its javadoc for details). Reached from the BPlusTree.invoke row-creation closure, this re-reserve
+     * is an inline demand-eviction that runs while the BPlusTree leaf page read lock is held (the closure is invoked
+     * inside {@code read} before the write lock is taken). The entry-level tryLock only skips contended/self-held
+     * entries and never blocks, avoiding a lock-ordering deadlock with the entry lock already held by the caller.
      *
      * @param row Row to write.
      * @param written Written size.
@@ -703,7 +779,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private int writeSinglePage(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         AbstractDataPageIO initIo = null;
 
-        long pageId = takePage(row.size() - written, row, statHolder);
+        long pageId = takePageWithReserve(row.size() - written, row, statHolder);
 
         if (pageId == 0L) {
             pageId = allocateDataPage(row.partition());

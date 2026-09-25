@@ -3658,7 +3658,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * Evicts necessary number of data pages if per-page eviction is configured in current {@link DataRegion}.
      */
     private void ensureFreeSpace() throws IgniteCheckedException {
-        // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
+        // Deadlock alert: evicting a data page removes (and locks) all entries on the page one by one, so this must
+        // only run while NOT holding this entry's lock (all call sites run before lockEntry()). The size-aware path
+        // (RowStore.addRow -> ensureFreeSpaceForInsert) runs under the lock and instead uses the non-blocking
+        // tryLockEntry(0) inside evictInternal.
         assert !lock.isHeldByCurrentThread();
 
         cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
@@ -3684,14 +3687,32 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public boolean evictInternal(
         GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter,
-        boolean evictOffheap)
-        throws IgniteCheckedException {
+        boolean evictOffheap
+    ) throws IgniteCheckedException {
+        return evictInternal(obsoleteVer, filter, evictOffheap, false);
+    }
 
+    /** {@inheritDoc} */
+    @Override public boolean evictInternal(
+        GridCacheVersion obsoleteVer,
+        @Nullable CacheEntryPredicate[] filter,
+        boolean evictOffheap,
+        boolean tryLock
+    ) throws IgniteCheckedException {
         boolean marked = false;
 
         try {
             if (F.isEmptyOrNulls(filter)) {
-                lockEntry();
+                // With tryLock=true the lock is taken non-blockingly and a contended entry is skipped
+                // (returns false) to avoid a lock-ordering deadlock; the tracker then picks another page.
+                // Reentry is forbidden here to prevent self-eviction: if the current thread already holds
+                // the entry lock (e.g. during a row insert that triggers size-aware eviction), evicting
+                // the entry from under itself would corrupt in-flight operations.
+                if (tryLock && lockedByCurrentThread())
+                    return false;
+
+                if (!lockEntry(tryLock))
+                    return false;
 
                 try {
                     if (evictionDisabled()) {
@@ -3725,10 +3746,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             else {
                 // For optimistic check.
+                // Reentry is forbidden when tryLock=true to prevent self-eviction (see the comment above).
+                if (tryLock && lockedByCurrentThread())
+                    return false;
+
                 while (true) {
                     GridCacheVersion v;
 
-                    lockEntry();
+                    if (!lockEntry(tryLock))
+                        return false;
 
                     try {
                         v = ver;
@@ -3740,7 +3766,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (!cctx.isAll(/*version needed for sync evicts*/this, filter))
                         return false;
 
-                    lockEntry();
+                    if (!lockEntry(tryLock))
+                        return false;
 
                     try {
                         if (evictionDisabled()) {
@@ -4180,6 +4207,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public void lockEntry() {
         lock.lock();
+    }
+
+    /**
+     * Acquires the entry lock either blocking ({@code tryLock == false}) or non-blockingly with an immediate
+     * {@code tryLock(0)} ({@code tryLock == true}). Used by {@link #evictInternal} to let size-aware
+     * eviction skip contended entries instead of blocking, avoiding a lock-ordering deadlock.
+     *
+     * @param tryLock {@code true} to acquire the lock non-blockingly.
+     * @return {@code true} if the lock was acquired (always {@code true} when {@code tryLock == false}).
+     */
+    private boolean lockEntry(boolean tryLock) {
+        if (tryLock)
+            return tryLockEntry(0);
+
+        lockEntry();
+
+        return true;
     }
 
     /** {@inheritDoc} */

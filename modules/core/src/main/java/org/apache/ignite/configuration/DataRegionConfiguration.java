@@ -18,7 +18,6 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
@@ -346,9 +345,9 @@ public final class DataRegionConfiguration implements Serializable {
      * Specifies the minimal number of empty pages to be present in reuse lists for this data region.
      * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
      * (key, value) pair is slightly larger than page size / 2.
-     * Increase this parameter if cache can contain very big entries (total size of pages in this pool should be enough
-     * to contain largest cache entry).
-     * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
+     * Since size-aware eviction automatically frees additional pages when the inserted row is larger than this pool,
+     * it is no longer required to increase this parameter up to the size of the largest cache entry;
+     * it may be kept at its default as the steady-state reserve of empty pages.
      *
      * @return Minimum number of empty pages in reuse list.
      */
@@ -360,9 +359,9 @@ public final class DataRegionConfiguration implements Serializable {
      * Specifies the minimal number of empty pages to be present in reuse lists for this data region.
      * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
      * (key, value) pair is slightly larger than page size / 2.
-     * Increase this parameter if cache can contain very big entries (total size of pages in this pool should be enough
-     * to contain largest cache entry).
-     * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
+     * Since size-aware eviction automatically frees additional pages when the inserted row is larger than this pool,
+     * it is no longer required to increase this parameter up to the size of the largest cache entry;
+     * it may be kept at its default as the steady-state reserve of empty pages.
      *
      * @param emptyPagesPoolSize Empty pages pool size.
      * @return {@code this} for chaining.
