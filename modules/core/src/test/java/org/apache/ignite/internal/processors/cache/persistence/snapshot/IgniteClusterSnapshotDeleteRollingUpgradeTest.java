@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -29,10 +30,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.snapshot.SnapshotDeleteCommandArg;
+import org.apache.ignite.internal.management.snapshot.SnapshotDeleteTask;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -111,7 +116,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
         assertTrue(spi(grid(testNodeIx)).waitForBlocked(1, getTestTimeout()));
 
-        ensureSnapshotDeletionFailed();
+        ensureSnapshotDeletionFailed(false);
 
         spi(grid(testNodeIx)).stopBlock();
 
@@ -131,6 +136,17 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
     /** */
     @Test
     public void testSnapshotDeleteFeature() throws Exception {
+        doTestSnapshotDeleteFeature(false);
+    }
+
+    /** */
+    @Test
+    public void testSnapshotDeleteFeatureWithTask() throws Exception {
+        doTestSnapshotDeleteFeature(true);
+    }
+
+    /** */
+    private void doTestSnapshotDeleteFeature(boolean useTask) throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
             startGrid(i, "2.19.0", i >= ALL_GRIDS - CLIENTS);
 
@@ -138,7 +154,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
         createCacheAndSnapshot(1);
 
-        ensureSnapshotDeletionFailed();
+        ensureSnapshotDeletionFailed(useTask);
 
         ru(grid(0)).enableVersionUpgrade();
 
@@ -147,7 +163,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
             upgradeNodeVersion(i, "2.19.1");
 
-            ensureSnapshotDeletionFailed();
+            ensureSnapshotDeletionFailed(useTask);
         }
 
         ru(grid(1)).finalizeClusterVersion();
@@ -158,7 +174,23 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
             assertTrue(waitForCondition(() -> !ru(grid(i0)).isVersionUpgradeEnabled(), getTestTimeout()));
         }
 
-        assertEquals(3, snp(1).deleteSnapshot(SNP_NAME, null).get().completedNodes().size());
+        SnapshotDeleteProcessResult delRes;
+
+        if (useTask) {
+            SnapshotDeleteCommandArg args = new SnapshotDeleteCommandArg();
+
+            args.snapshotName(SNP_NAME);
+
+            IgniteEx ig = grid(1);
+
+            delRes = ig.compute().execute(new SnapshotDeleteTask(), new VisorTaskArgument<>(ig.localNode().id(), args, false)).result();
+
+            assertFalse(delRes == null);
+        }
+        else
+            delRes = snp(1).deleteSnapshot(SNP_NAME, null).get(getTestTimeout());
+
+        assertEquals(3, delRes.completedNodes().size());
     }
 
     /** */
@@ -185,16 +217,34 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
     }
 
     /** */
-    private void ensureSnapshotDeletionFailed() {
+    private void ensureSnapshotDeletionFailed(boolean useTask) {
+        String err = "The snapshot deletion feature isn't activated yet";
+
         for (int i = 0; i < ALL_GRIDS; i++) {
             int i0 = i;
 
-            assertThrowsAnyCause(
-                null,
-                () -> snp(i0).deleteSnapshot(SNP_NAME, null).get(),
-                IgniteIllegalStateException.class,
-                "The snapshot deletion feature isn't activated yet"
-            );
+            if (useTask) {
+                SnapshotDeleteCommandArg args = new SnapshotDeleteCommandArg();
+
+                args.snapshotName(SNP_NAME);
+
+                IgniteEx ig = grid(i0);
+
+                assertThrowsAnyCause(
+                    null,
+                    () -> ig.compute().execute(new SnapshotDeleteTask(), new VisorTaskArgument<>(ig.localNode().id(), args, false)),
+                    IgniteException.class,
+                    err
+                );
+            }
+            else {
+                assertThrowsAnyCause(
+                    null,
+                    () -> snp(i0).deleteSnapshot(SNP_NAME, null).get(),
+                    IgniteIllegalStateException.class,
+                    err
+                );
+            }
         }
     }
 
