@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -66,20 +67,15 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
         Ignite srv2 = startGrid("server2");
         Ignite client = startClientGrid("client");
 
-        boolean blockedAnything = false;
+        TestTcpDiscoverySpi clientSpi = (TestTcpDiscoverySpi)client.configuration().getDiscoverySpi();
 
-        for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getName().contains("%client%")) {
-                thread.suspend();
-                blockedAnything = true;
-            }
+        clientSpi.freeze();
+
+        try {
+            Thread.sleep(10000);
         }
-
-        Thread.sleep(10000);
-
-        for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getName().contains("%client%"))
-                thread.resume();
+        finally {
+            clientSpi.unfreeze();
         }
 
         for (int j = 0; j < 10; j++) {
@@ -102,7 +98,6 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
                 Thread.sleep(1000);
         }
 
-        assertTrue(blockedAnything);
         assertEquals(1, srv2.cluster().forClients().nodes().size());
         assertEquals(1, srv1.cluster().forClients().nodes().size());
     }

@@ -63,7 +63,6 @@ import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
-import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -2487,6 +2486,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         private final AtomicBoolean openSockLock = new AtomicBoolean();
 
         /** */
+        private final AtomicBoolean readLock = new AtomicBoolean();
+
+        /** */
         private AtomicInteger failNodeAdded = new AtomicInteger();
 
         /** */
@@ -2662,25 +2664,20 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /**
-         * @param suspend If {@code true} suspends worker threads.
+         * @param pauseRead If {@code true} also pauses socket reads, which emulates hanging worker threads.
          */
-        public void pauseAll(boolean suspend) {
-            pauseResumeOperation(true, openSockLock, writeLock);
-
-            if (suspend) {
-                for (Thread t : impl.threads())
-                    t.suspend();
-            }
+        public void pauseAll(boolean pauseRead) {
+            if (pauseRead)
+                pauseResumeOperation(true, openSockLock, writeLock, readLock);
+            else
+                pauseResumeOperation(true, openSockLock, writeLock);
         }
 
         /**
          *
          */
         public void resumeAll() {
-            pauseResumeOperation(false, openSockLock, writeLock);
-
-            for (IgniteSpiThread t : impl.threads())
-                t.resume();
+            pauseResumeOperation(false, openSockLock, writeLock, readLock);
         }
 
         /** {@inheritDoc} */
@@ -2688,7 +2685,20 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             TcpDiscoveryIoSession ses,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            return msgTracker.track(ses, super.readMessage(ses, timeout));
+            waitFor(readLock);
+
+            T msg;
+
+            try {
+                msg = super.readMessage(ses, timeout);
+            }
+            finally {
+                // A reader may have been blocked on the socket before the pause, so hold the result (a message or
+                // a failure) until resume.
+                waitFor(readLock);
+            }
+
+            return msgTracker.track(ses, msg);
         }
 
         /** {@inheritDoc} */
@@ -2723,7 +2733,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected int readReceipt(TcpDiscoveryIoSession ses, long timeout) throws IOException {
-            int res = super.readReceipt(ses, timeout);
+            waitFor(readLock);
+
+            int res;
+
+            try {
+                res = super.readReceipt(ses, timeout);
+            }
+            finally {
+                waitFor(readLock);
+            }
 
             if (res != TcpDiscoveryImpl.RES_OK) {
                 invalidRes = true;
