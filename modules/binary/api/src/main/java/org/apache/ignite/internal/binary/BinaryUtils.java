@@ -331,7 +331,7 @@ public class BinaryUtils {
      * @param dataType Data type class.
      * @return Type ID.
      */
-     static byte jdbcTypeByClass(Class<?> dataType) {
+    public static byte jdbcTypeByClass(Class<?> dataType) {
         if (dataType.equals(java.sql.Date.class))
             return GridBinaryMarshaller.DATE;
 

@@ -2136,6 +2136,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                     throw new BinaryObjectException("Custom objects are not supported");
         }
     }
+
     /**
      * Create schema.
      *
