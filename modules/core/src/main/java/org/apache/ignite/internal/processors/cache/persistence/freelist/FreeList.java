@@ -41,13 +41,19 @@ public interface FreeList<T extends Storable> {
     public void insertDataRows(Collection<T> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
-     * @param link Row link.
-     * @param row New row data.
+     * @param oldRow Old row data.
+     * @param newRow New row data.
+     * @param allowFragmented Allow fragmented pages.
      * @param statHolder Statistics holder to track IO operations.
-     * @return {@code True} if was able to update row.
+     * @return {@code True} if was able to update the row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateDataRow(long link, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public boolean updateDataRow(
+        T oldRow,
+        T newRow,
+        boolean allowFragmented,
+        IoStatisticsHolder statHolder
+    ) throws IgniteCheckedException;
 
     /**
      * @param link Row link.

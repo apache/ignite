@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointRecoveryFileStorage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -142,33 +143,7 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
                 cache.put(ThreadLocalRandom.current().nextInt(KEYS_CNT), val.incrementAndGet());
         });
 
-        File cpDir = ignite.context().pdsFolderResolver().fileTree().checkpoint();
-
-        spoiledPageLimit.set(10);
-        fail.set(true);
-
-        try {
-            forceCheckpoint();
-        }
-        catch (Throwable ignore) {
-            // Expected.
-        }
-
-        try {
-            fut.get(10_000);
-        }
-        catch (Throwable ignore) {
-            // Expected.
-        }
-
-        assertTrue(GridTestUtils.waitForCondition(
-            () -> Ignition.state(getTestIgniteInstanceName(0)) == IgniteState.STOPPED_ON_FAILURE,
-            10_000
-        ));
-
-        fail.set(false);
-
-        assertTrue(cpDir.listFiles(((dir, name) -> FILE_NAME_PATTERN.matcher(name).matches())).length > 0);
+        failOnCheckpoint(ignite, fut);
 
         ignite = startGrid(0);
         IgniteCache<Integer, Integer> cache0 = ignite.cache(DEFAULT_CACHE_NAME);
@@ -184,6 +159,75 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
         //    in cache: val.get()
         assertTrue("Expected value between " + (val.get() - 1) + " and " + val.get() + ", actual value: " + max,
             max >= val.get() - 1 && max <= val.get());
+    }
+
+    /** */
+    @Test
+    public void testRecoverFromCheckpointRecoveryFilesForMultiPageInPlaceUpdate() throws Exception {
+        spoilFilePattern = FileTreeTestUtils.partitionFilePattern();
+
+        IgniteEx ignite = initIgnite();
+        IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        byte[][] payloads = new byte[100][10_000];
+
+        for (int i = 0; i < payloads.length; i++) {
+            ThreadLocalRandom.current().nextBytes(payloads[i]);
+            payloads[i][0] = (byte)i;
+        }
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.put(i, payloads[i % payloads.length]);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            while (true) {
+                int key = ThreadLocalRandom.current().nextInt(KEYS_CNT);
+                byte[] val = payloads[ThreadLocalRandom.current().nextInt(payloads.length)];
+                cache.put(key, val);
+            }
+        });
+
+        failOnCheckpoint(ignite, fut);
+
+        ignite = startGrid(0);
+        IgniteCache<Integer, byte[]> cache0 = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < KEYS_CNT; i++) {
+            byte[] val = cache0.get(i);
+            assertTrue(val[0] < payloads.length);
+            assertEqualsArraysAware(val, payloads[val[0]]);
+        }
+    }
+
+    /** */
+    private void failOnCheckpoint(IgniteEx ignite, IgniteInternalFuture<?> futToWait) throws IgniteInterruptedCheckedException {
+        File cpDir = ignite.context().pdsFolderResolver().fileTree().checkpoint();
+
+        spoiledPageLimit.set(10);
+        fail.set(true);
+
+        try {
+            forceCheckpoint();
+        }
+        catch (Throwable ignore) {
+            // Expected.
+        }
+
+        try {
+            futToWait.get(10_000);
+        }
+        catch (Throwable ignore) {
+            // Expected.
+        }
+
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> Ignition.state(getTestIgniteInstanceName(0)) == IgniteState.STOPPED_ON_FAILURE,
+            10_000
+        ));
+
+        fail.set(false);
+
+        assertTrue(cpDir.listFiles(((dir, name) -> FILE_NAME_PATTERN.matcher(name).matches())).length > 0);
     }
 
     /** */

@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE;
+
 /**
  * Data store for H2 rows.
  */
@@ -140,20 +142,23 @@ public class RowStore {
     }
 
     /**
-     * @param link Row link.
-     * @param row New row data.
+     * @param oldRow Old row data.
+     * @param newRow New row data.
      * @return {@code True} if was able to update row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public boolean updateRow(CacheDataRow oldRow, CacheDataRow newRow, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
         GridQueryRowCacheCleaner rowCacheCleaner0 = rowCacheCleaner.get();
 
         if (rowCacheCleaner0 != null)
-            rowCacheCleaner0.remove(link);
+            rowCacheCleaner0.remove(oldRow.link());
 
-        return freeList.updateDataRow(link, row, statHolder);
+        boolean allowFragmented = oldRow.expireTime() == 0
+            && grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE);
+
+        return freeList.updateDataRow(oldRow, newRow, allowFragmented, statHolder);
     }
 
     /**

@@ -54,7 +54,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         long addr = pageAddr + dataOff;
 
-        int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
+        int cacheIdSize = row.storeCacheId() ? 4 : 0;
 
         if (newRow) {
             PageUtils.putShort(addr, 0, (short)payloadSize);
@@ -82,8 +82,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected void writeFragmentData(CacheDataRow row, ByteBuffer buf, int rowOff,
         int payloadSize) throws IgniteCheckedException {
-        assertPageType(buf);
-
         final int keySize = row.key().valueBytesLength(null);
 
         final int valSize = row.value().valueBytesLength(null);
@@ -130,7 +128,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         final int prevLen;
         final int curLen;
 
-        int cacheIdSize = row.cacheId() == 0 ? 0 : 4;
+        int cacheIdSize = row.storeCacheId() ? 4 : 0;
 
         switch (type) {
             case CACHE_ID:
@@ -174,8 +172,10 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
         if (type == EXPIRE_TIME)
             writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);
-        else if (type == CACHE_ID)
-            writeCacheIdFragment(buf, row.cacheId(), rowOff, len, prevLen);
+        else if (type == CACHE_ID) {
+            if (cacheIdSize != 0)
+                writeCacheIdFragment(buf, row.cacheId(), rowOff, len, prevLen);
+        }
         else if (type != VERSION) {
             // Write key or value.
             final CacheObject co = type == KEY ? row.key() : row.value();
