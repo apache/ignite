@@ -212,6 +212,7 @@ be updating the thick client with task-related execution details.
 |EXEC_NAME | string | Thread pool name executing task
 |INTERNAL | boolean | True if task is internal
 |USER_VERSION | string | Task user version
+|JOB_ID | UUID | Deprecated, use `ID` or `SESSION_ID` instead
 |===
 
 == JOBS
@@ -226,7 +227,7 @@ To view the status of the compute task refer to the `TASKS` system view.
 |SESSION_ID | UUID | Job's session ID. Note, `SESSION_ID` is equal to `TASKS.SESSION_ID` for the jobs belonging to a specific task.
 |ORIGIN_NODE_ID | UUID | The id of the node that started the job
 |TASK_NAME | string | The name of the task
-|TASK_CLASSNAME | string | Class name of the task
+|TASK_CLASS_NAME | string | Class name of the task
 |AFFINITY_CACHE_IDS | string | IDs of one or more caches if the job is executed against one of the `IgniteCompute.affinity..`
 methods. The parameter is empty, if you use `IgniteCompute` APIs that don't target specific caches.
 |AFFINITY_PARTITION_ID | int | IDs of one or more partitions if the job is executed via one of the `IgniteCompute.affinity..`
@@ -238,7 +239,7 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 |IS_FINISHING | boolean | `True` if the job is finishing
 |IS_INTERNAL | boolean | `True` if the job is internal
 |IS_STARTED | boolean | `True` if the job has been started
-|IS_TIMEDOUT | boolean | `True` if the job timed out before completing
+|IS_TIMED_OUT | boolean | `True` if the job timed out before completing
 |STATE | string | Possible values: +
 `ACTIVE` - Job is being executed. +
 `PASSIVE` - Job is added to the execution queue. Please, see `CollisionSPI` for more details. +
@@ -260,6 +261,7 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 |SERVICE_ID | UUID |    Service ID
 |STATICALLY_CONFIGURED | boolean | True is service statically configured
 |TOTAL_COUNT | int | Total count of service instances
+|TOPOLOGY_SNAPSHOT | string | Number of service instances per node, as a map of node ID to instance count
 |===
 
 
@@ -347,7 +349,7 @@ The NODES view contains information about the cluster nodes.
 |HOSTNAMES |VARCHAR |The host names of the node.
 |IS_CLIENT |BOOLEAN |Indicates whether the node is a client.
 |NODE_ID |UUID |Node ID.
-|NODE_ORDER |INT |Node order within the topology.
+|NODE_ORDER |BIGINT |Node order within the topology.
 |DATA_CENTER_ID |VARCHAR |Node data center ID.
 |VERSION |VARCHAR |Node version.
 |===
@@ -364,6 +366,7 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 |NODE_ID |UUID |Node ID.
 |NAME |VARCHAR |Attribute name.
+|VALUE |VARCHAR |Attribute value.
 
 |===
 
@@ -545,7 +548,7 @@ This view exposes information about currently running SQL queries.
 [{table_opts}]
 |===
 |NAME | TYPE | DESCRIPTION
-|QUERY_ID | UUID | Query ID
+|QUERY_ID | string | Query ID
 |SQL | string | Query text
 |ORIGIN_NODE_ID | UUID | Node that started query
 |START_TIME | date | Query start time
@@ -626,7 +629,7 @@ This view exposes information about SQL schemas.
 [{table_opts}]
 |===
 |NAME |    TYPE |    DESCRIPTION
-|NAME  |  string|  Name of the schema
+|SCHEMA_NAME | string | Name of the schema
 |PREDEFINED |  boolean | If true schema is predefined
 |===
 
@@ -653,18 +656,18 @@ The NODE_METRICS view provides various metrics about the state of nodes, resourc
 |CUR_CANCELED_JOBS|INT| Number of cancelled jobs that are still running.
 |AVG_CANCELED_JOBS|FLOAT| Average number of cancelled jobs this node ever had running concurrently.
 |TOTAL_CANCELED_JOBS|INT| Number of jobs cancelled since the node startup.
-|MAX_JOBS_WAIT_TIME|TIME| Maximum time a job ever spent waiting in a queue before being executed.
-|CUR_JOBS_WAIT_TIME|TIME| Longest wait time among the jobs that are currently waiting for execution.
-|AVG_JOBS_WAIT_TIME|TIME| Average time jobs spend in the queue before being executed.
-|MAX_JOBS_EXECUTE_TIME|TIME|  Maximum job execution time.
-|CUR_JOBS_EXECUTE_TIME|TIME|  Longest time a current job has been executing for.
-|AVG_JOBS_EXECUTE_TIME|TIME| Average job execution time on this node.
-|TOTAL_JOBS_EXECUTE_TIME|TIME|Total time all finished jobs took to execute on this node since the node startup.
+|MAX_JOBS_WAIT_TIME|BIGINT| Maximum time a job ever spent waiting in a queue before being executed, in milliseconds.
+|CUR_JOBS_WAIT_TIME|BIGINT| Longest wait time among the jobs that are currently waiting for execution, in milliseconds.
+|AVG_JOBS_WAIT_TIME|BIGINT| Average time jobs spend in the queue before being executed, in milliseconds.
+|MAX_JOBS_EXECUTE_TIME|BIGINT| Maximum job execution time, in milliseconds.
+|CUR_JOBS_EXECUTE_TIME|BIGINT| Longest time a current job has been executing for, in milliseconds.
+|AVG_JOBS_EXECUTE_TIME|BIGINT| Average job execution time on this node, in milliseconds.
+|TOTAL_JOBS_EXECUTE_TIME|BIGINT| Total time all finished jobs took to execute on this node since the node startup, in milliseconds.
 |TOTAL_EXECUTED_JOBS|INT|  Total number of jobs handled by the node since the node startup.
 |TOTAL_EXECUTED_TASKS|INT| Total number of tasks handled by the node.
-|TOTAL_BUSY_TIME|TIME| Total time this node spent executing jobs.
-|TOTAL_IDLE_TIME|TIME| Total time this node spent idling (not executing any jobs).
-|CUR_IDLE_TIME|TIME| Time this node has spent idling since executing the last job.
+|TOTAL_BUSY_TIME|BIGINT| Total time this node spent executing jobs, in milliseconds.
+|TOTAL_IDLE_TIME|BIGINT| Total time this node spent idling (not executing any jobs), in milliseconds.
+|CUR_IDLE_TIME|BIGINT| Time this node has spent idling since executing the last job, in milliseconds.
 |BUSY_TIME_PERCENTAGE|FLOAT|Percentage of job execution vs idle time.
 |IDLE_TIME_PERCENTAGE|FLOAT|Percentage of idle vs job execution time.
 |TOTAL_CPU|INT| Number of CPUs available to the Java Virtual Machine.
@@ -681,7 +684,7 @@ The NODE_METRICS view provides various metrics about the state of nodes, resourc
 |NONHEAP_MEMORY_COMMITED|LONG| Amount of non-heap memory in bytes that is committed for the JVM to use. This amount of memory is guaranteed for the JVM to use. The non-heap memory consists of one or more memory pools. This value is the sum of committed non-heap memory values of all non-heap memory pools.
 |NONHEAP_MEMORY_MAX|LONG| Returns the maximum amount of non-heap memory in bytes that can be used for memory management. The column displays `-1` if the maximum memory size is undefined.
 |NONHEAP_MEMORY_TOTAL|LONG| Total amount of non-heap memory in bytes that can be used for memory management. The column displays `-1` if the total memory size is undefined.
-|UPTIME|TIME|Uptime of the JVM.
+|UPTIME|BIGINT| Uptime of the JVM, in milliseconds.
 |JVM_START_TIME|TIMESTAMP|Start time of the JVM.
 |NODE_START_TIME|TIMESTAMP| Start time of the node.
 |LAST_DATA_VERSION|LONG|In-Memory Data Grid assigns incremental versions to all cache operations. This column contains the latest data version on the node.
@@ -706,6 +709,8 @@ The TABLES view contains information about the SQL tables.
 |Column|Data Type|Description
 
 |AFFINITY_KEY_COLUMN | string |  Affinity key column name
+|CACHE_GROUP_ID | int | Cache group id for the table
+|CACHE_GROUP_NAME | string |  Cache group name for the table
 |CACHE_ID | int | Cache id for the table
 |CACHE_NAME | string |  Cache name for the table
 |IS_INDEX_REBUILD_IN_PROGRESS | boolean | True if some index rebuild for this table in progress
@@ -782,6 +787,8 @@ The INDEXES view contains information about SQL indexes.
 |TABLE_NAME | string |  Table name
 |CACHE_NAME | string |  Cache name
 |CACHE_ID | int | Cache ID
+|CACHE_GROUP_ID | int | Cache group ID
+|CACHE_GROUP_NAME | string |  Cache group name
 |INLINE_SIZE | int | Inline size in bytes
 |IS_PK | boolean | True if primary key index
 |IS_UNIQUE | boolean | True if unique index
@@ -826,6 +833,24 @@ and also helps to detect skews in page lists utilization.
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
 |PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
+|===
+
+== PAGES_TIMESTAMP_HISTOGRAM
+
+The PAGES_TIMESTAMP_HISTOGRAM view shows how many pages of a data region were last accessed within each time interval.
+It helps to estimate how much of the data loaded into memory is "hot" and how much is "cold".
+The view is node-specific and contains rows only for the data regions with persistence enabled and link:monitoring-metrics/configuring-metrics#enabling-data-region-metrics[metrics enabled].
+By default, the intervals are one hour long and 24 intervals are kept.
+The first row of a region also counts the pages accessed before the earliest interval, the last row ends at the current time.
+The same data is exposed by the `PageTimestampHistogram` metric of the link:monitoring-metrics/new-metrics#data-region-io[data region register].
+
+[{table_opts}]
+|===
+|Column|Data Type|Description
+|DATA_REGION_NAME | string | Data region name.
+|INTERVAL_START | date | Start of the last-access time interval.
+|INTERVAL_END | date | End of the last-access time interval.
+|PAGES_COUNT | long | Number of pages last accessed within the interval.
 |===
 
 == PARTITION_STATES
@@ -1003,7 +1028,7 @@ Note, latch will be shown on the non parent node only after initial usage on tha
 |Column | Data type |  Description
 |NAME | string | Data structure name
 |COUNT | int | Current count
-|INITIAL_COUT | int | Initial count
+|INITIAL_COUNT | int | Initial count
 |AUTO_DELETE | boolean | True to automatically delete the latch from a cache when its count reaches zero
 |GROUP_NAME | string | Cache group name to store data structure
 |GROUP_ID | int | Cache group id to store data structure
@@ -1085,7 +1110,7 @@ The STATISTICS_LOCAL_DATA view contains link:SQL/sql-statistics[SQL statistics,w
 |TOTAL |BIGINT |Total number of values in column.
 |SIZE |INTEGER |Average value size in bytes.
 |VERSION |BIGINT |Statistics version.
-|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
+|LAST_UPDATE_TIME |TIMESTAMP |Maximum time of all partition statistics which was used to generate local one.
 |===
 
 == STATISTICS_PARTITION_DATA
@@ -1107,7 +1132,29 @@ The STATISTICS_PARTITION_DATA view contains information about link:SQL/sql-stati
 |TOTAL |BIGINT |Total number of values in column.
 |SIZE |INTEGER |Average value size in bytes.
 |VERSION |BIGINT |Statistics version.
-|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
+|LAST_UPDATE_TIME |BIGINT |Time of the partition statistics collection, as a Unix timestamp in milliseconds.
+|===
+
+== STATISTICS_GLOBAL_DATA
+
+The STATISTICS_GLOBAL_DATA view contains global link:SQL/sql-statistics[SQL statistics,window=_blank]: the statistics of a whole table, aggregated from the local statistics of the server nodes that own its partitions.
+Global statistics of an object are gathered by one of the server nodes and delivered to the other nodes on request.
+The view is node-specific and lists the global statistics cached on the node.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|ROWS_COUNT |BIGINT |Count of column rows.
+|DISTINCT |BIGINT |Number of unique non-null values.
+|NULLS |BIGINT |Number of null values.
+|TOTAL |BIGINT |Total number of values in column.
+|SIZE |INTEGER |Average value size in bytes.
+|VERSION |BIGINT |Statistics version.
+|LAST_UPDATE_TIME |TIMESTAMP |Time of the global statistics aggregation.
 |===
 
 == SNAPSHOT
