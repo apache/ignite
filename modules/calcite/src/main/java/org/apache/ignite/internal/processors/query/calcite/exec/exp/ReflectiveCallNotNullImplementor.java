@@ -18,13 +18,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import java.util.List;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.rex.RexCall;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod.UDF_INSTANCE;
 
@@ -69,19 +67,8 @@ public class ReflectiveCallNotNullImplementor implements NotNullImplementor {
             callExpr = Expressions.call(target, method, translatedOperands);
         }
 
-        if (TypeUtils.isConvertableType(method.getReturnType())) {
-            Type targetType = translator.typeFactory.getJavaClass(call.getType());
-            Expression converted = ConverterUtils.toInternal(callExpr, targetType);
-
-            if (converted != callExpr)
-                callExpr = converted;
-            else
-                callExpr = Expressions.convert_(
-                    Expressions.call(TypeUtils.class, "toInternal", translator.getRoot(), callExpr,
-                        Expressions.constant(method.getReturnType())),
-                    targetType
-                );
-        }
+        callExpr = ConverterUtils.toInternal(translator.getRoot(), callExpr,
+            translator.typeFactory.getJavaClass(call.getType()));
 
         if (!containsCheckedException(method))
             return callExpr;

@@ -55,6 +55,25 @@ public class ConverterUtils {
         return toInternal(operand, operand.getType(), targetType);
     }
 
+    /** Converts a user-defined function result to the internal representation using the execution context. */
+    static Expression toInternal(Expression root, Expression operand, Type targetType) {
+        Type fromType = operand.getType();
+
+        if (!TypeUtils.isConvertableType(fromType))
+            return operand;
+
+        // Preserve Calcite's calendar conversion for JDBC dates and timestamps.
+        Expression converted = toInternal(operand, targetType);
+
+        if (converted != operand)
+            return converted;
+
+        return Expressions.convert_(
+            Expressions.call(TypeUtils.class, "toInternal", root, operand, Expressions.constant(fromType)),
+            targetType
+        );
+    }
+
     /** */
     private static Expression toInternal(Expression operand,
         Type fromType, Type targetType) {

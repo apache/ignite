@@ -75,7 +75,7 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
             throw new IgniteSQLException("Unable to process table function data: row type is neither Collection or Object[].");
 
         Object[] rowArr = rowContainer.getClass() == Object[].class
-            ? ((Object[])rowContainer)
+            ? (Object[])rowContainer
             : ((Collection<?>)rowContainer).toArray();
 
         if (rowArr.length != rowType.getFieldCount()) {
