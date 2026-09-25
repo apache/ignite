@@ -723,82 +723,59 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             pdsSettings.consistentId().toString()
         );
 
-        deleteLocalSnapshot(sft, null);
+        deleteLocalSnapshot(sft);
     }
 
     /**
      * Tries to delete local snapshot data.
      *
      * @param sft Snapshot file tree.
-     * @param existsFlag Flag to set {@code true} if any snapshot file or directory was found (existed). If {@code null}, ignored.
-     * @return {@code True}, if data is found and completely deleted;
-     *         {@code False}, if nothing found or if data is found but might not be deleted completely.
+     * @return A pair of {@code boolean} values. The first indicates whether snapshot was completely deleted. The second
+     *         indicates whether the snapshot was found at all.
      */
-    public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
-        var exFlag0 = new AtomicBoolean();
-
-        sft.allStorages().forEach(s -> {
-            if (s.exists())
-                exFlag0.set(true);
-        });
+    public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft) {
+        T2<Boolean, Boolean> res = new T2<>(false, false);
 
         if (sft.root().exists())
-            exFlag0.set(true);
+            res.set2(true);
+        else {
+            for (File storage : sft.allStorages().toList()) {
+                if (storage.exists())
+                    res.set2(true);
+            }
+        }
 
-        if (existsFlag != null)
-            existsFlag.set(exFlag0.get());
+        // Not found at all - nothing to delete.
+        if (!res.get2())
+            return res;
 
-        // Nothing to delete.
-        if (!exFlag0.get())
-            return false;
-
-        boolean res = true;
+        // Assume we'll successed.
+        res.set1(true);
 
         // The 'exists' checks are for a concurrent deletion when nodes share their working and snapshot directories.
         // Nodes may steal removal jobs and the files aren't synchronized. There are gaps between and `exists()` and `delete()`.
-        // We try to delete first. If snapshot data wasn't deleted because it doesn't already exist is not a delete error here.
+        // We try to delete first. If snapshot data wasn't deleted because it doesn't already exist is not a removal error here.
         try {
-            if (!U.delete(sft.binaryMeta()) && sft.binaryMeta().exists())
-                res = false;
+            for (var f : F.asList(sft.meta(), sft.marshaller().getParentFile())) {
+                if (!f.delete() && f.exists())
+                    res.set1(false);
+            }
 
             for (var s : sft.allStorages().toList()) {
                 if (!U.delete(s) && s.exists())
-                    res = false;
+                    res.set1(false);
             }
 
-            if (!U.delete(sft.meta()) && sft.meta().exists())
-                res = false;
-
-            if (!deleteDirectory(sft.binaryMetaRoot()) && sft.binaryMetaRoot().exists())
-                res = false;
-
-            if (!deleteDirectory(sft.marshaller()) && sft.marshaller().exists())
-                res = false;
-
-            if (!deleteDirectory(sft.incrementsRoot()) && sft.incrementsRoot().exists())
-                res = false;
-
-            // Delete parent dir which is {snapshot_root}/db if empty.
-            if (!sft.marshaller().getParentFile().delete() && sft.marshaller().getParentFile().exists())
-                res = false;
-
-            // Delete root dir which is {snapshot_root} if empty.
-            if (!sft.root().delete() && sft.root().exists())
-                res = false;
+            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller(), sft.incrementsRoot(), sft.root())) {
+                if (!deleteDirectory(p) && p.exists())
+                    res.set1(false);
+            }
         }
         catch (Exception e) {
             log.warning("Failed to delete local snapshot [snpName=" + sft.name() + ']', e);
 
-            return false;
+            res.set1(false);
         }
-
-        for (var s : sft.allStorages().toList()) {
-            if (s.exists())
-                return false;
-        }
-
-        if (sft.root().exists())
-            return false;
 
         return res;
     }
@@ -1366,7 +1343,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (snpStartReq.incremental())
                         U.delete(snpOp.snapshotFileTree().incrementalSnapshotFileTree(snpStartReq.incrementIndex()).root());
                     else
-                        deleteLocalSnapshot(snpOp.snapshotFileTree(), null);
+                        deleteLocalSnapshot(snpOp.snapshotFileTree());
                 }
                 else if (!F.isEmpty(endReq.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -4082,7 +4059,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteLocalSnapshot(sft, null);
+                deleteLocalSnapshot(sft);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());

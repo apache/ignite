@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
@@ -193,23 +193,22 @@ public class SnapshotDeleteProcess {
 
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
                     try {
-                        AtomicBoolean foundFlag = new AtomicBoolean();
-
                         // Read file tree of the snapshot.
                         var byMetaSft = new SnapshotFileTree(kctx, req.snpName, path0.getAbsolutePath(), meta.folderName(),
                             meta.consId);
 
-                        boolean deleted = snpMgr.deleteLocalSnapshot(byMetaSft, foundFlag);
+                        T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft);
 
                         SnapshotDeleteResponse.DeleteStatus status;
 
-                        if (foundFlag.get()) {
-                            if (deleted && log.isInfoEnabled())
+                        // If found.
+                        if (deleted.get2()) {
+                            if (deleted.get1() && log.isInfoEnabled())
                                 log.info("Snapshot successfully deleted [req=" + req + ']');
-                            else if (!deleted)
+                            else if (!deleted.get1())
                                 log.warning("Snapshot deleted not completely [req=" + req + ']');
 
-                            status = deleted
+                            status = deleted.get1()
                                 ? SnapshotDeleteResponse.DeleteStatus.DELETED
                                 : SnapshotDeleteResponse.DeleteStatus.PARTLY;
                         }

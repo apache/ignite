@@ -39,7 +39,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -93,6 +92,7 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -865,7 +865,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft) {
                             delProcInitLatch.countDown();
 
                             try {
@@ -875,7 +875,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                                 throw new RuntimeException("Interrupted.", e);
                             }
 
-                            return super.deleteLocalSnapshot(sft, existsFlag);
+                            return super.deleteLocalSnapshot(sft);
                         }
                     };
                 }

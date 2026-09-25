@@ -26,7 +26,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -139,14 +139,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
-                            if (ctx.localNode().id().equals(grid(1).localNode().id())) {
-                                existsFlag.set(true);
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft) {
+                            if (ctx.localNode().id().equals(grid(1).localNode().id()))
+                                return new T2<>(false, true);
 
-                                return false;
-                            }
-
-                            return super.deleteLocalSnapshot(sft, existsFlag);
+                            return super.deleteLocalSnapshot(sft);
                         }
                     };
                 }
@@ -361,7 +358,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public boolean deleteLocalSnapshot(SnapshotFileTree sft, @Nullable AtomicBoolean existsFlag) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 beginLatch.countDown();
 
@@ -373,7 +370,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                                 }
                             }
 
-                            return super.deleteLocalSnapshot(sft, existsFlag);
+                            return super.deleteLocalSnapshot(sft);
                         }
                     };
                 }
