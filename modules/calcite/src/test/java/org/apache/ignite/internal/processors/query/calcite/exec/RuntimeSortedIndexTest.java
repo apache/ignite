@@ -121,7 +121,10 @@ public class RuntimeSortedIndexTest extends GridCommonAbstractTest {
                 NoOpIoTracker.INSTANCE,
                 0,
                 null,
-                null),
+                null,
+                obj -> {
+                    throw new UnsupportedOperationException("Unexpected method call.");
+                }),
             RelCollations.of(ImmutableIntList.copyOf(idxCols)),
             (o1, o2) -> {
                 for (int colIdx : idxCols) {

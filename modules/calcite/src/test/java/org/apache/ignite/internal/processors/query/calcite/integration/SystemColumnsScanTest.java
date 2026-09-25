@@ -264,7 +264,10 @@ public class SystemColumnsScanTest extends AbstractBasicIntegrationTest {
             NoOpIoTracker.INSTANCE,
             0,
             Collections.emptyMap(),
-            null
+            null,
+            obj -> {
+                throw new UnsupportedOperationException("Unexpected method call.");
+            }
         );
 
         ColocationGroup grp = tbl.colocationGroup(new MappingQueryContext(qctx, nodeId, topVer, null)).finalizeMapping();

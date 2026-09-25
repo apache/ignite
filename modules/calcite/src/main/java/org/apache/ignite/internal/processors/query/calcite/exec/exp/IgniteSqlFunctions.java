@@ -119,7 +119,7 @@ public class IgniteSqlFunctions {
     }
 
     /** CAST(VARCHAR AS DECIMAL). */
-    public static BigDecimal toBigDecimal(String s, int precision, int scale) {
+    public static @Nullable BigDecimal toBigDecimal(String s, int precision, int scale) {
         if (s == null)
             return null;
 
@@ -127,7 +127,7 @@ public class IgniteSqlFunctions {
     }
 
     /** Converts {@code val} to a {@link BigDecimal} with the given {@code precision} and {@code scale}. */
-    public static BigDecimal toBigDecimal(Number val, int precision, int scale) {
+    public static @Nullable BigDecimal toBigDecimal(Number val, int precision, int scale) {
         assert precision > 0 : "Invalid precision: " + precision;
         assert scale >= 0 : "Invalid scale: " + scale;
 
@@ -146,7 +146,7 @@ public class IgniteSqlFunctions {
     }
 
     /** Cast object depending on type to DECIMAL. */
-    public static BigDecimal toBigDecimal(Object o, int precision, int scale) {
+    public static @Nullable BigDecimal toBigDecimal(Object o, int precision, int scale) {
         if (o == null)
             return null;
 
