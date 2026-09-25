@@ -367,9 +367,7 @@ public class SnapshotDeleteProcess {
         /** {@inheritDoc} */
         @Override public boolean collect(SnapshotDeleteResponse res) {
             assert res != null;
-
-            System.err.println("Collect thrad: " + Thread.currentThread().getName());
-
+            
             synchronized (this) {
                 if (!F.isEmpty(res.nodeIds))
                     nodeIds.addAll(res.nodeIds);
