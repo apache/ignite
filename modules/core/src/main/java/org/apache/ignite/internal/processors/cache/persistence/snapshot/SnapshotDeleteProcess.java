@@ -97,7 +97,7 @@ public class SnapshotDeleteProcess {
 
         if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
             clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "The snapshot deletion feature isn't activated yet [snpName=" + snpName + ", snpPath=" + snpPath + ']'));
+                "The snapshot deletion feature isn't activated yet."));
 
             return new IgniteFutureImpl<>(clusterOpFut);
         }
