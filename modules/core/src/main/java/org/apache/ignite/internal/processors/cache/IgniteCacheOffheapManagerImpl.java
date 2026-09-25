@@ -43,6 +43,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
@@ -447,6 +448,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert row == null || row.value() != null : row;
 
         return row;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readTo(GridCacheContext cctx, KeyCacheObject key, BinaryWriterEx writer) throws IgniteCheckedException {
+        CacheDataStore dataStore = dataStore(cctx, key);
+
+        if (dataStore == null)
+            return false;
+
+        return dataStore.findTo(cctx, key, writer);
     }
 
     /** {@inheritDoc} */
@@ -1805,6 +1816,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
 
             return row;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean findTo(GridCacheContext cctx, KeyCacheObject key, BinaryWriterEx writer) throws IgniteCheckedException {
+            int pos = writer.out().position();
+
+            find(cctx, key);
+
+            return pos != writer.out().position();
         }
 
         /** {@inheritDoc} */
