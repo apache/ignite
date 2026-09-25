@@ -46,7 +46,6 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
@@ -65,7 +64,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /** */
-@RunWith(Parameterized.class)
 public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     private boolean separatedWorkDir;

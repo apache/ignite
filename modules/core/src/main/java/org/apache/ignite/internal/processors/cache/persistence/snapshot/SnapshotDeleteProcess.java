@@ -78,7 +78,7 @@ public class SnapshotDeleteProcess {
      * @param ctx Kernal context.
      */
     public SnapshotDeleteProcess(GridKernalContext ctx) {
-        this.kctx = ctx;
+        kctx = ctx;
 
         log = ctx.log(getClass());
 
@@ -250,7 +250,7 @@ public class SnapshotDeleteProcess {
 
     /** */
     private File resolvePath(@Nullable String path) throws IOException {
-        var res = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
+        File res = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
 
         if (path != null) {
             File reqPath = new File(path);

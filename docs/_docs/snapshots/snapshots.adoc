@@ -329,7 +329,7 @@ The delete operation is subject to the following limitations:
 * The operation cannot be undone and the deleted snapshot cannot be restored. The command prompts for a confirmation.
 * Before deletion, no snapshot validation is done except finding and reading its metadata. If the metadata isn't found
 or cannot be read, snapshot isn't deleted.
-* The removal operation is not subject to the snapshot operation status and cancel requests.
+* The deletion operation is independent of the status of the snapshot operation and cancellation requests.
 
 == Getting Snapshot Operation Status
 
