@@ -175,7 +175,7 @@ class BinaryBuilderSerializer {
         Byte flag = BinaryUtils.PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag != null) {
-            BinaryImplUtils.writePlainObject(writer, val);
+            writer.writePlainObject(val);
 
             return;
         }

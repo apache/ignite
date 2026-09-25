@@ -2032,6 +2032,111 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         return schema;
     }
 
+    /** {@inheritDoc} */
+    @Override public Object unmarshallJdbc(byte type, boolean binObjAllow, boolean keepBinary) {
+        switch (type) {
+            case GridBinaryMarshaller.NULL:
+                return null;
+
+            case GridBinaryMarshaller.BOOLEAN:
+                return readBoolean();
+
+            case GridBinaryMarshaller.BYTE:
+                return readByte();
+
+            case GridBinaryMarshaller.CHAR:
+                return readChar();
+
+            case GridBinaryMarshaller.SHORT:
+                return readShort();
+
+            case GridBinaryMarshaller.INT:
+                return readInt();
+
+            case GridBinaryMarshaller.LONG:
+                return readLong();
+
+            case GridBinaryMarshaller.FLOAT:
+                return readFloat();
+
+            case GridBinaryMarshaller.DOUBLE:
+                return readDouble();
+
+            case GridBinaryMarshaller.STRING:
+                return BinaryUtils.doReadString(in());
+
+            case GridBinaryMarshaller.DECIMAL:
+                return BinaryUtils.doReadDecimal(in());
+
+            case GridBinaryMarshaller.UUID:
+                return BinaryUtils.doReadUuid(in());
+
+            case GridBinaryMarshaller.TIME:
+                return BinaryUtils.doReadTime(in());
+
+            case GridBinaryMarshaller.TIMESTAMP:
+                return BinaryUtils.doReadTimestamp(in());
+
+            case GridBinaryMarshaller.DATE:
+                return BinaryUtils.doReadDate(in());
+
+            case GridBinaryMarshaller.BOOLEAN_ARR:
+                return BinaryUtils.doReadBooleanArray(in());
+
+            case GridBinaryMarshaller.BYTE_ARR:
+                return BinaryUtils.doReadByteArray(in());
+
+            case GridBinaryMarshaller.CHAR_ARR:
+                return BinaryUtils.doReadCharArray(in());
+
+            case GridBinaryMarshaller.SHORT_ARR:
+                return BinaryUtils.doReadShortArray(in());
+
+            case GridBinaryMarshaller.INT_ARR:
+                return BinaryUtils.doReadIntArray(in());
+
+            case GridBinaryMarshaller.LONG_ARR:
+                return BinaryUtils.doReadLongArray(in());
+
+            case GridBinaryMarshaller.FLOAT_ARR:
+                return BinaryUtils.doReadFloatArray(in());
+
+            case GridBinaryMarshaller.DOUBLE_ARR:
+                return BinaryUtils.doReadDoubleArray(in());
+
+            case GridBinaryMarshaller.STRING_ARR:
+                return BinaryUtils.doReadStringArray(in());
+
+            case GridBinaryMarshaller.DECIMAL_ARR:
+                return BinaryUtils.doReadDecimalArray(in());
+
+            case GridBinaryMarshaller.UUID_ARR:
+                return BinaryUtils.doReadUuidArray(in());
+
+            case GridBinaryMarshaller.TIME_ARR:
+                return BinaryUtils.doReadTimeArray(in());
+
+            case GridBinaryMarshaller.TIMESTAMP_ARR:
+                return BinaryUtils.doReadTimestampArray(in());
+
+            case GridBinaryMarshaller.DATE_ARR:
+                return BinaryUtils.doReadDateArray(in());
+
+            default:
+                in().position(in().position() - 1);
+
+                if (binObjAllow) {
+                    Object res = readObjectDetached();
+
+                    return !keepBinary && res instanceof BinaryObject
+                        ? ((BinaryObject)res).deserialize()
+                        : res;
+                }
+                else
+                    throw new BinaryObjectException("Custom objects are not supported");
+        }
+    }
+
     /**
      * Create schema.
      *

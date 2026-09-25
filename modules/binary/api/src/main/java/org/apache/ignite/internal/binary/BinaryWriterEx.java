@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.InputStream;
 import java.io.ObjectOutput;
-import java.lang.reflect.Proxy;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
@@ -133,70 +131,9 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public int schemaId();
 
     /**
-     * @param schemaId Schema ID.
-     */
-    public void schemaId(int schemaId);
-
-    /**
      * @return Binary context.
      */
     public BinaryContext context();
-
-    /**
-     * @param val Value.
-     */
-    public void writeBooleanFieldPrimitive(boolean val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeByteFieldPrimitive(byte val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeCharFieldPrimitive(char val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeShortFieldPrimitive(short val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeIntFieldPrimitive(int val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeLongFieldPrimitive(long val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeFloatFieldPrimitive(float val);
-
-    /**
-     * @param val Value.
-     */
-    public void writeDoubleFieldPrimitive(double val);
-
-    /**
-     * Write byte array from the InputStream.
-     *
-     * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
-     * If {@code limit} == -1 than it will try to read and write all bytes.
-     *
-     * <p>In any case if actual number of bytes is greater than {@code MAX_ARRAY_SIZE}
-     * than exception will be thrown.
-     *
-     * @param in InputStream.
-     * @param limit Max length of data to be read from the stream or -1 if all data should be read.
-     * @return Number of bytes written.
-     * @throws BinaryObjectException If an I/O error occurs or stream contains more than {@code MAX_ARRAY_SIZE} bytes.
-     */
-    public int writeByteArray(InputStream in, int limit) throws BinaryObjectException;
 
     /**
      * @param po Binary object.
@@ -205,50 +142,21 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException;
 
     /**
-     * Write field.
-     *
-     * @param obj Object.
-     * @param fld Field.
-     * @throws BinaryObjectException If failed.
-     */
-    public void writeField(Object obj, BinaryFieldDescriptor fld) throws BinaryObjectException;
-
-    /**
      * @return Current writer's schema.
      */
     public BinarySchema currentSchema();
 
     /**
-     * Attempts to write the object as a handle.
-     *
      * @param obj Object to write.
-     * @return {@code true} if the object has been written as a handle.
+     * @param binObjAllow Allow to write non plain objects.
+     * @throws BinaryObjectException On error.
      */
-    public boolean tryWriteAsHandle(Object obj);
+    public void writeJdbcObject(@Nullable Object obj, boolean binObjAllow);
 
     /**
-     * @param val Array wrapper.
-     * @throws BinaryObjectException In case of error.
-     */
-    public void writeBinaryArray(BinaryArray val);
-
-    /**
-     * @param val Array.
-     */
-    public void doWriteEnumArray(Object[] val);
-
-    /**
+     * Write value with flag. e.g. writePlainObject(writer, (byte)77) will write two byte: {BYTE, 77}.
+     *
      * @param val Value.
      */
-    public void writeBinaryEnum(BinaryObjectEx val);
-
-    /**
-     * @param val Class.
-     */
-    public void writeClass(Class val);
-
-    /**
-     * @param proxy Proxy.
-     */
-    public void writeProxy(Proxy proxy, Class<?>[] intfs);
+    public void writePlainObject(Object val);
 }

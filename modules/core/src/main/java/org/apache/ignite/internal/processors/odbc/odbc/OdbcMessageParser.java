@@ -338,7 +338,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                     writer.writeInt(row.size());
 
                     for (Object obj : row)
-                        SqlListenerUtils.writeObject(writer, obj, true);
+                        writer.writeJdbcObject(obj, true);
                 }
             }
         }
@@ -365,7 +365,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                     writer.writeInt(row.size());
 
                     for (Object obj : row)
-                        SqlListenerUtils.writeObject(writer, obj, true);
+                        writer.writeJdbcObject(obj, true);
                 }
             }
         }
@@ -401,7 +401,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             byte[] typeIds = res.typeIds();
 
-            SqlListenerUtils.writeObject(writer, typeIds, true);
+            writer.writeJdbcObject(typeIds, true);
         }
         else if (res0 instanceof OdbcQueryGetResultsetMetaResult) {
             OdbcQueryGetResultsetMetaResult res = (OdbcQueryGetResultsetMetaResult)res0;

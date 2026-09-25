@@ -37,6 +37,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -323,6 +324,18 @@ public class BinaryUtils {
             return ((BinaryObjectEx)obj).heapCopy();
 
         return obj;
+    }
+
+    /**
+     * Get ODBC type ID for the type.
+     * @param dataType Data type class.
+     * @return Type ID.
+     */
+    public static byte jdbcTypeByClass(Class<?> dataType) {
+        if (dataType.equals(java.sql.Date.class))
+            return GridBinaryMarshaller.DATE;
+
+        return typeByClass(dataType);
     }
 
     /**
@@ -1510,114 +1523,61 @@ public class BinaryUtils {
     }
 
     /**
-     * Unmarshall JDBC supported type.
-     * @param type Type.
-     * @param reader Binary reader.
-     * @param binObjAllow Allow to read non plaint objects.
-     * @param keepBinary Whether to deserialize objects or keep in binary format.
-     * @return Read object.
+     * Convert {@link java.sql.Types} to binary type constant (See {@link GridBinaryMarshaller} constants).
+     *
+     * @param sqlType SQL type.
+     * @return Binary type.
      */
-    public static Object unmarshallJdbc(byte type, BinaryReaderEx reader, boolean binObjAllow, boolean keepBinary) {
-        switch (type) {
-            case GridBinaryMarshaller.NULL:
-                return null;
+    public static byte sqlTypeToBinary(int sqlType) {
+        switch (sqlType) {
+            case Types.BIGINT:
+                return GridBinaryMarshaller.LONG;
 
-            case GridBinaryMarshaller.BOOLEAN:
-                return reader.readBoolean();
+            case Types.BOOLEAN:
+                return GridBinaryMarshaller.BOOLEAN;
 
-            case GridBinaryMarshaller.BYTE:
-                return reader.readByte();
+            case Types.DATE:
+                return GridBinaryMarshaller.DATE;
 
-            case GridBinaryMarshaller.CHAR:
-                return reader.readChar();
+            case Types.DOUBLE:
+                return GridBinaryMarshaller.DOUBLE;
 
-            case GridBinaryMarshaller.SHORT:
-                return reader.readShort();
+            case Types.FLOAT:
+            case Types.REAL:
+                return GridBinaryMarshaller.FLOAT;
 
-            case GridBinaryMarshaller.INT:
-                return reader.readInt();
+            case Types.NUMERIC:
+            case Types.DECIMAL:
+                return GridBinaryMarshaller.DECIMAL;
 
-            case GridBinaryMarshaller.LONG:
-                return reader.readLong();
+            case Types.INTEGER:
+                return GridBinaryMarshaller.INT;
 
-            case GridBinaryMarshaller.FLOAT:
-                return reader.readFloat();
+            case Types.SMALLINT:
+                return GridBinaryMarshaller.SHORT;
 
-            case GridBinaryMarshaller.DOUBLE:
-                return reader.readDouble();
+            case Types.TIME:
+                return GridBinaryMarshaller.TIME;
 
-            case GridBinaryMarshaller.STRING:
-                return doReadString(reader.in());
+            case Types.TIMESTAMP:
+                return GridBinaryMarshaller.TIMESTAMP;
 
-            case GridBinaryMarshaller.DECIMAL:
-                return doReadDecimal(reader.in());
+            case Types.TINYINT:
+                return GridBinaryMarshaller.BYTE;
 
-            case GridBinaryMarshaller.UUID:
-                return doReadUuid(reader.in());
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGNVARCHAR:
+                return GridBinaryMarshaller.STRING;
 
-            case GridBinaryMarshaller.TIME:
-                return doReadTime(reader.in());
+            case Types.NULL:
+                return GridBinaryMarshaller.NULL;
 
-            case GridBinaryMarshaller.TIMESTAMP:
-                return doReadTimestamp(reader.in());
-
-            case GridBinaryMarshaller.DATE:
-                return doReadDate(reader.in());
-
-            case GridBinaryMarshaller.BOOLEAN_ARR:
-                return doReadBooleanArray(reader.in());
-
-            case GridBinaryMarshaller.BYTE_ARR:
-                return doReadByteArray(reader.in());
-
-            case GridBinaryMarshaller.CHAR_ARR:
-                return doReadCharArray(reader.in());
-
-            case GridBinaryMarshaller.SHORT_ARR:
-                return doReadShortArray(reader.in());
-
-            case GridBinaryMarshaller.INT_ARR:
-                return doReadIntArray(reader.in());
-
-            case GridBinaryMarshaller.LONG_ARR:
-                return doReadLongArray(reader.in());
-
-            case GridBinaryMarshaller.FLOAT_ARR:
-                return doReadFloatArray(reader.in());
-
-            case GridBinaryMarshaller.DOUBLE_ARR:
-                return doReadDoubleArray(reader.in());
-
-            case GridBinaryMarshaller.STRING_ARR:
-                return doReadStringArray(reader.in());
-
-            case GridBinaryMarshaller.DECIMAL_ARR:
-                return doReadDecimalArray(reader.in());
-
-            case GridBinaryMarshaller.UUID_ARR:
-                return doReadUuidArray(reader.in());
-
-            case GridBinaryMarshaller.TIME_ARR:
-                return doReadTimeArray(reader.in());
-
-            case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return doReadTimestampArray(reader.in());
-
-            case GridBinaryMarshaller.DATE_ARR:
-                return doReadDateArray(reader.in());
-
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
             default:
-                reader.in().position(reader.in().position() - 1);
-
-                if (binObjAllow) {
-                    Object res = reader.readObjectDetached();
-
-                    return !keepBinary && res instanceof BinaryObject
-                        ? ((BinaryObject)res).deserialize()
-                        : res;
-                }
-                else
-                    throw new BinaryObjectException("Custom objects are not supported");
+                return GridBinaryMarshaller.BYTE_ARR;
         }
     }
 
@@ -2419,7 +2379,7 @@ public class BinaryUtils {
      * @return {@link BinaryObjectExImpl#field(int)} value or {@code null} if object not instance of {@link BinaryObjectExImpl}.
      */
     public static Object field(Object obj, int fieldId) {
-        if (!(obj instanceof BinaryObjectExImpl))
+        if (!isBinaryObjectExImpl(obj))
             return null;
 
         return ((BinaryObjectExImpl)obj).field(fieldId);

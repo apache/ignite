@@ -23,6 +23,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.odbc.SqlInputStreamWrapper;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -49,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_ZERO_COPY;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_STRING_ZERO_COPY;
+import static org.apache.ignite.internal.binary.BinaryUtils.PLAIN_CLASS_TO_FLAG;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
 /**
@@ -351,8 +355,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         out.write(val, off, len);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinaryArray(BinaryArray val) throws BinaryObjectException {
+    /**
+     * @param val Array wrapper.
+     * @throws BinaryObjectException In case of error.
+     */
+    private void writeBinaryArray(BinaryArray val) {
         if (val.array() == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -376,8 +383,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinaryEnum(BinaryObjectEx val) {
+    /** @param val Value. */
+    private void writeBinaryEnum(BinaryObjectEx val) {
         assert val instanceof BinaryEnumObjectImpl;
 
         int typeId = val.typeId();
@@ -401,8 +408,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeProxy(Proxy proxy, Class<?>[] intfs) {
+    /** @param proxy Proxy. */
+    private void writeProxy(Proxy proxy, Class<?>[] intfs) {
         if (proxy == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -431,8 +438,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeByteFieldPrimitive(byte val) {
+    /** @param val Value. */
+    private void writeByteFieldPrimitive(byte val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BYTE);
@@ -449,8 +456,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeByteFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeClass(@Nullable Class val) {
+    /** @param val Class. */
+    private void writeClass(@Nullable Class val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -470,8 +477,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeShortFieldPrimitive(short val) {
+    /** @param val Value. */
+    private void writeShortFieldPrimitive(short val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.SHORT);
@@ -488,8 +495,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeShortFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeIntFieldPrimitive(int val) {
+    /** @param val Value. */
+    private void writeIntFieldPrimitive(int val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.INT);
@@ -506,8 +513,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeIntFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeLongFieldPrimitive(long val) {
+    /** @param val Value. */
+    private void writeLongFieldPrimitive(long val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.LONG);
@@ -524,8 +531,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeLongFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeFloatFieldPrimitive(float val) {
+    /** @param val Value. */
+    private void writeFloatFieldPrimitive(float val) {
         out.unsafeEnsure(1 + 4);
 
         out.unsafeWriteByte(GridBinaryMarshaller.FLOAT);
@@ -542,8 +549,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeFloatFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeDoubleFieldPrimitive(double val) {
+    /** @param val Value. */
+    private void writeDoubleFieldPrimitive(double val) {
         out.unsafeEnsure(1 + 8);
 
         out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE);
@@ -560,8 +567,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeDoubleFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeCharFieldPrimitive(char val) {
+    /** @param val Value. */
+    private void writeCharFieldPrimitive(char val) {
         out.unsafeEnsure(1 + 2);
 
         out.unsafeWriteByte(GridBinaryMarshaller.CHAR);
@@ -578,8 +585,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeCharFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBooleanFieldPrimitive(boolean val) {
+    /** @param val Value. */
+    private void writeBooleanFieldPrimitive(boolean val) {
         out.unsafeEnsure(1 + 1);
 
         out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN);
@@ -1290,8 +1297,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         doWriteEnumArray(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void doWriteEnumArray(@Nullable Object[] val) {
+    /** @param val Array. */
+    private void doWriteEnumArray(@Nullable Object[] val) {
         assert val == null || val.getClass().getComponentType().isEnum();
 
         if (val == null)
@@ -1445,8 +1452,21 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         fieldCnt++;
     }
 
-    /** {@inheritDoc} */
-    @Override public int writeByteArray(InputStream in, int limit) throws BinaryObjectException {
+    /**
+     * Write byte array from the InputStream.
+     *
+     * <p>If {@code limit} > 0 than no more than {@code limit} bytes will be read and written.
+     * If {@code limit} == -1 than it will try to read and write all bytes.
+     *
+     * <p>In any case if actual number of bytes is greater than {@code MAX_ARRAY_SIZE}
+     * than exception will be thrown.
+     *
+     * @param in InputStream.
+     * @param limit Max length of data to be read from the stream or -1 if all data should be read.
+     * @return Number of bytes written.
+     * @throws BinaryObjectException If an I/O error occurs or stream contains more than {@code MAX_ARRAY_SIZE} bytes.
+     */
+    private int writeByteArray(InputStream in, int limit) throws BinaryObjectException {
         if (limit != -1)
             out.unsafeEnsure(1 + 4 + limit);
         else
@@ -1492,11 +1512,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void schemaId(int schemaId) {
-        this.schemaId = schemaId;
-    }
-
-    /** {@inheritDoc} */
     @Override public int schemaId() {
         return schemaId;
     }
@@ -1524,8 +1539,13 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return handles;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean tryWriteAsHandle(Object obj) {
+    /**
+     * Attempts to write the object as a handle.
+     *
+     * @param obj Object to write.
+     * @return {@code true} if the object has been written as a handle.
+     */
+    private boolean tryWriteAsHandle(Object obj) {
         assert obj != null;
 
         int pos = out.position();
@@ -1569,8 +1589,14 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             this.handles = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeField(Object obj, BinaryFieldDescriptor fld) throws BinaryObjectException {
+    /**
+     * Write field.
+     *
+     * @param obj Object.
+     * @param fld Field.
+     * @throws BinaryObjectException If failed.
+     */
+    private void writeField(Object obj, BinaryFieldDescriptor fld) throws BinaryObjectException {
         writeFieldIdNoSchemaUpdate(fld.id);
 
         switch (fld.mode) {
@@ -1849,6 +1875,259 @@ class BinaryWriterExImpl implements BinaryWriterEx {
                     default:
                         assert false : "Invalid mode: " + fld.mode;
                 }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeJdbcObject(@Nullable Object obj, boolean binObjAllow) throws BinaryObjectException {
+        if (obj == null) {
+            writeByte(GridBinaryMarshaller.NULL);
+
+            return;
+        }
+
+        Class<?> cls = obj.getClass();
+
+        if (cls == Boolean.class)
+            writeBooleanFieldPrimitive((Boolean)obj);
+        else if (cls == Byte.class)
+            writeByteFieldPrimitive((Byte)obj);
+        else if (cls == Character.class)
+            writeCharFieldPrimitive((Character)obj);
+        else if (cls == Short.class)
+            writeShortFieldPrimitive((Short)obj);
+        else if (cls == Integer.class)
+            writeIntFieldPrimitive((Integer)obj);
+        else if (cls == Long.class)
+            writeLongFieldPrimitive((Long)obj);
+        else if (cls == Float.class)
+            writeFloatFieldPrimitive((Float)obj);
+        else if (cls == Double.class)
+            writeDoubleFieldPrimitive((Double)obj);
+        else if (cls == String.class)
+            writeString((String)obj);
+        else if (cls == BigDecimal.class)
+            writeDecimal((BigDecimal)obj);
+        else if (cls == UUID.class)
+            writeUuid((UUID)obj);
+        else if (cls == Time.class)
+            writeTime((Time)obj);
+        else if (cls == Timestamp.class)
+            writeTimestamp((Timestamp)obj);
+        else if (cls == java.sql.Date.class || cls == java.util.Date.class)
+            writeDate((java.util.Date)obj);
+        else if (cls == boolean[].class)
+            writeBooleanArray((boolean[])obj);
+        else if (cls == byte[].class)
+            writeByteArray((byte[])obj);
+        else if (cls == char[].class)
+            writeCharArray((char[])obj);
+        else if (cls == short[].class)
+            writeShortArray((short[])obj);
+        else if (cls == int[].class)
+            writeIntArray((int[])obj);
+        else if (cls == long[].class)
+            writeLongArray((long[])obj);
+        else if (cls == float[].class)
+            writeFloatArray((float[])obj);
+        else if (cls == double[].class)
+            writeDoubleArray((double[])obj);
+        else if (cls == String[].class)
+            writeStringArray((String[])obj);
+        else if (cls == BigDecimal[].class)
+            writeDecimalArray((BigDecimal[])obj);
+        else if (cls == UUID[].class)
+            writeUuidArray((UUID[])obj);
+        else if (cls == Time[].class)
+            writeTimeArray((Time[])obj);
+        else if (cls == Timestamp[].class)
+            writeTimestampArray((Timestamp[])obj);
+        else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
+            writeDateArray((java.util.Date[])obj);
+        else if (obj instanceof SqlInputStreamWrapper wrapper) {
+            int written = writeByteArray(wrapper.inputStream(), wrapper.length());
+
+            if (wrapper.length() != -1 && wrapper.length() != written) {
+                throw new BinaryObjectException("Input stream length mismatch. [declaredLength=" + wrapper.length() + ", " +
+                    "actualLength=" + written + "]");
+            }
+        }
+        else if (obj instanceof Blob blob)
+            try {
+                int written = writeByteArray(blob.getBinaryStream(), (int)blob.length());
+
+                if ((int)blob.length() != written) {
+                    throw new BinaryObjectException("Blob length mismatch. [declaredLength=" + (int)blob.length() + ", " +
+                        "actualLength=" + written + "]");
+                }
+            }
+            catch (SQLException e) {
+                throw new BinaryObjectException(e);
+            }
+        else if (binObjAllow)
+            writeObjectDetached(obj);
+        else
+            throw new BinaryObjectException("Custom objects are not supported");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writePlainObject(Object val) {
+        Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
+
+        if (flag == null)
+            throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
+
+        switch (flag) {
+            case GridBinaryMarshaller.BYTE:
+                writeByte(flag);
+                writeByte((Byte)val);
+
+                break;
+
+            case GridBinaryMarshaller.SHORT:
+                writeByte(flag);
+                writeShort((Short)val);
+
+                break;
+
+            case GridBinaryMarshaller.INT:
+                writeByte(flag);
+                writeInt((Integer)val);
+
+                break;
+
+            case GridBinaryMarshaller.LONG:
+                writeByte(flag);
+                writeLong((Long)val);
+
+                break;
+
+            case GridBinaryMarshaller.FLOAT:
+                writeByte(flag);
+                writeFloat((Float)val);
+
+                break;
+
+            case GridBinaryMarshaller.DOUBLE:
+                writeByte(flag);
+                writeDouble((Double)val);
+
+                break;
+
+            case GridBinaryMarshaller.CHAR:
+                writeByte(flag);
+                writeChar((Character)val);
+
+                break;
+
+            case GridBinaryMarshaller.BOOLEAN:
+                writeByte(flag);
+                writeBoolean((Boolean)val);
+
+                break;
+
+            case GridBinaryMarshaller.DECIMAL:
+                writeDecimal((BigDecimal)val);
+
+                break;
+
+            case GridBinaryMarshaller.STRING:
+                writeString((String)val);
+
+                break;
+
+            case GridBinaryMarshaller.UUID:
+                writeUuid((UUID)val);
+
+                break;
+
+            case GridBinaryMarshaller.DATE:
+                writeDate((Date)val);
+
+                break;
+
+            case GridBinaryMarshaller.TIMESTAMP:
+                writeTimestamp((Timestamp)val);
+
+                break;
+
+            case GridBinaryMarshaller.TIME:
+                writeTime((Time)val);
+
+                break;
+
+            case GridBinaryMarshaller.BYTE_ARR:
+                writeByteArray((byte[])val);
+
+                break;
+
+            case GridBinaryMarshaller.SHORT_ARR:
+                writeShortArray((short[])val);
+
+                break;
+
+            case GridBinaryMarshaller.INT_ARR:
+                writeIntArray((int[])val);
+
+                break;
+
+            case GridBinaryMarshaller.LONG_ARR:
+                writeLongArray((long[])val);
+
+                break;
+
+            case GridBinaryMarshaller.FLOAT_ARR:
+                writeFloatArray((float[])val);
+
+                break;
+
+            case GridBinaryMarshaller.DOUBLE_ARR:
+                writeDoubleArray((double[])val);
+
+                break;
+
+            case GridBinaryMarshaller.CHAR_ARR:
+                writeCharArray((char[])val);
+
+                break;
+
+            case GridBinaryMarshaller.BOOLEAN_ARR:
+                writeBooleanArray((boolean[])val);
+
+                break;
+
+            case GridBinaryMarshaller.DECIMAL_ARR:
+                writeDecimalArray((BigDecimal[])val);
+
+                break;
+
+            case GridBinaryMarshaller.STRING_ARR:
+                writeStringArray((String[])val);
+
+                break;
+
+            case GridBinaryMarshaller.UUID_ARR:
+                writeUuidArray((UUID[])val);
+
+                break;
+
+            case GridBinaryMarshaller.DATE_ARR:
+                writeDateArray((Date[])val);
+
+                break;
+
+            case GridBinaryMarshaller.TIMESTAMP_ARR:
+                writeTimestampArray((Timestamp[])val);
+
+                break;
+
+            case GridBinaryMarshaller.TIME_ARR:
+                writeTimeArray((Time[])val);
+
+                break;
+
+            default:
+                throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
     }
 
@@ -2150,7 +2429,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
                                 }
                             }
 
-                            schemaId(desc.stableSchema.schemaId());
+                            schemaId = desc.stableSchema.schemaId();
 
                             postWrite(desc.userType, desc.registered);
                             postWriteHashCode(obj, desc);
