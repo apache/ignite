@@ -95,13 +95,6 @@ final class RowWindowPartitionFrame<Row> extends WindowPartitionFrame<Row> {
             return applyOffset(rowIdx, cachedEndOffset, size() - 1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void reset() {
-        // Reseting index cache.
-        cachedStartRowIdx = -1;
-        cachedEndRowIdx = -1;
-    }
-
     /** */
     private static int applyOffset(int rowIdx, int offset, int cap) {
         int idx = Math.addExact(rowIdx, offset);
