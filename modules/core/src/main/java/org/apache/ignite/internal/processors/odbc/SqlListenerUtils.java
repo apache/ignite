@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -85,30 +84,17 @@ public abstract class SqlListenerUtils {
      */
     @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
         boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
-        if (type == GridBinaryMarshaller.BYTE_ARR && !createByteArrayCopy && reader.in().hasArray())
-            return readJdbcByteArray(reader);
+        if (type == GridBinaryMarshaller.BYTE_ARR && !createByteArrayCopy && reader.in().hasArray()) {
+            int len = reader.in().readInt();
 
-        return BinaryUtils.unmarshallJdbc(type, reader, binObjAllow, keepBinary);
-    }
+            int position = reader.in().position();
 
-    /**
-     * Read byte array using the reader.
-     *
-     * <p>Returns either (eagerly) new instance of the byte array with all data materialized,
-     * or {@link JdbcBinaryBuffer} which wraps part of the array enclosed in
-     * the reader's input stream in a copy-on-write manner.
-     *
-     * @param reader Reader.
-     * @return Either byte[] or {@link JdbcBinaryBuffer}.
-     */
-    private static Object readJdbcByteArray(BinaryReaderEx reader) {
-        int len = reader.in().readInt();
+            reader.in().position(position + len);
 
-        int position = reader.in().position();
+            return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
+        }
 
-        reader.in().position(position + len);
-
-        return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
+        return reader.unmarshallJdbc(type, binObjAllow, keepBinary);
     }
 
     /**

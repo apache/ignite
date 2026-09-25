@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +43,7 @@ public class JdbcUtils {
                 writer.writeInt(row.size());
 
                 for (Object obj : row)
-                    writeObject(writer, obj, protoCtx);
+                    writer.writeJdbcObject(obj, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
             }
         }
     }
@@ -160,25 +159,5 @@ public class JdbcUtils {
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         return readObject(reader, protoCtx, true);
-    }
-
-    /**
-     * @param writer Writer.
-     * @param obj Object to write.
-     * @param protoCtx Protocol context.
-     * @throws BinaryObjectException On error.
-     */
-    public static void writeObject(
-        BinaryWriterEx writer,
-        @Nullable Object obj,
-        JdbcProtocolContext protoCtx
-    ) throws BinaryObjectException {
-        if (obj == null) {
-            writer.writeByte(GridBinaryMarshaller.NULL);
-
-            return;
-        }
-
-        writer.writeJdbcObject(obj, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
     }
 }

@@ -160,7 +160,7 @@ public class JdbcQueryExecuteRequest extends JdbcClientInfoAwareRequest {
 
         if (args != null) {
             for (Object arg : args)
-                JdbcUtils.writeObject(writer, arg, protoCtx);
+                writer.writeJdbcObject(arg, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
         }
 
         if (protoCtx.isAutoCommitSupported())
