@@ -39,6 +39,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.classpath.ClassPathTestUtils;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -67,6 +68,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -148,6 +150,17 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     @Test
     public void testCacheClear() throws Exception {
         checkCommandPermissions(asList("--cache", "clear", "--caches", DEFAULT_CACHE_NAME), cachePermission(CACHE_REMOVE));
+    }
+
+    /** */
+    @Test
+    public void testClassPathCreate() throws Exception {
+        String files = String.join(",", ClassPathTestUtils.fileArg(ClassPathTestUtils.files()));
+
+        checkCommandPermissions(
+            asList("--class-path", "create", "--name", "secured_app", "--files", files),
+            systemPermissions(ADMIN_OPS)
+        );
     }
 
     /** */

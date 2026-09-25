@@ -130,6 +130,14 @@ public interface BinaryRawWriter {
 
     /**
      * @param val Value to write.
+     * @param off Offset to start write from.
+     * @param len Count of bytes to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeByteArray(@Nullable byte[] val, int off, int len) throws BinaryObjectException;
+
+    /**
+     * @param val Value to write.
      * @throws BinaryObjectException In case of error.
      */
     public void writeShortArray(@Nullable short[] val) throws BinaryObjectException;

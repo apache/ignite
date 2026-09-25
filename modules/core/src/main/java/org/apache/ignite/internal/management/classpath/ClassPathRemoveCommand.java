@@ -14,42 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.management.classpath;
 
-package org.apache.ignite.internal.client.thin;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
-
-/**
- * Thin client payload input channel.
- */
-class PayloadInputChannel {
-    /** Client channel. */
-    private final ClientChannel ch;
-
-    /** Input stream. */
-    private final BinaryInputStream in;
-
-    /**
-     * Constructor.
-     */
-    PayloadInputChannel(ClientChannel ch, ByteBuffer payload) {
-        this.ch = ch;
-        in = BinaryStreams.inputStream(payload);
+/** */
+public class ClassPathRemoveCommand implements ComputeCommand<ClassPathRemoveCommandArg, Void> {
+    /** {@inheritDoc} */
+    @Override public Class<? extends VisorMultiNodeTask<ClassPathRemoveCommandArg, Void, ?>> taskClass() {
+        return ClassPathRemoveTask.class;
     }
 
-    /**
-     * Gets client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Removes IgniteClassPath from cluster";
     }
 
-    /**
-     * Gets input stream.
-     */
-    public BinaryInputStream in() {
-        return in;
+    /** {@inheritDoc} */
+    @Override public Class<? extends ClassPathRemoveCommandArg> argClass() {
+        return ClassPathRemoveCommandArg.class;
     }
 }
