@@ -32,7 +32,9 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Cross check queries on SQL engines.
@@ -64,6 +66,7 @@ public class JdbcCrossEngineTest extends AbstractJdbcTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         startGrids(nodesCnt);
 
@@ -78,6 +81,7 @@ public class JdbcCrossEngineTest extends AbstractJdbcTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < engineNames.length; i++) {
             if (stmts[i] != null && !stmts[i].isClosed()) {

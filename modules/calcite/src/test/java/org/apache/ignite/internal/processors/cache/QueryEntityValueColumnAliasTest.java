@@ -26,11 +26,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
+import org.junit.jupiter.api.Test;
 
 /** */
-public class QueryEntityValueColumnAliasTest extends GridCommonAbstractTest {
+public class QueryEntityValueColumnAliasTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final String CACHE_NAME = "cache";
 

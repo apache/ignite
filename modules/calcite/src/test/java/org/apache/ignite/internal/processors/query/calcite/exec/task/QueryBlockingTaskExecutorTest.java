@@ -25,14 +25,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
-public class QueryBlockingTaskExecutorTest extends GridCommonAbstractTest {
+public class QueryBlockingTaskExecutorTest extends GridCommonAbstractWrapperTest {
     /** Tests that tasks for different queries can be executed concurrently. */
     @Test
     public void testConcurrentTasks() throws Exception {

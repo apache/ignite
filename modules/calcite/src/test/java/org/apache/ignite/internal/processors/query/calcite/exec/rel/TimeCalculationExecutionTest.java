@@ -27,12 +27,12 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test execution/idle time calculation.
  */
-public class TimeCalculationExecutionTest extends AbstractExecutionTest {
+public class TimeCalculationExecutionTest extends AbstractExecutionParametrizedTest {
     /** */
     @Test
     public void testTime() throws Exception {

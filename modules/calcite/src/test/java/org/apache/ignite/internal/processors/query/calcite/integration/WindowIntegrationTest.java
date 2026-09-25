@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration test for WINDOW operator.

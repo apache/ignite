@@ -28,8 +28,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 
@@ -41,7 +41,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     private IgniteSchema publicSchema;
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 

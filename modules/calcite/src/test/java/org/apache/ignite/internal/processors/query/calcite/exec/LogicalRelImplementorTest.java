@@ -38,6 +38,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
@@ -62,16 +63,15 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 
 /**
  * Test LogicalRelImplementor class.
  */
-public class LogicalRelImplementorTest extends GridCommonAbstractTest {
+public class LogicalRelImplementorTest extends GridCommonAbstractWrapperTest {
     /** */
     private LogicalRelImplementor<Object[]> relImplementor;
 
@@ -91,8 +91,9 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     private IgniteTypeFactory tf;
 
     /** */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    @BeforeEach
+    void setup() throws Exception {
+        beforeTest();
 
         tf = Commons.typeFactory();
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(tf);
