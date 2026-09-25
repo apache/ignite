@@ -756,17 +756,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Nodes may steal removal jobs and the files aren't synchronized. There are gaps between and `exists()` and `delete()`.
         // We try to delete first. If snapshot data wasn't deleted because it doesn't already exist is not a removal error here.
         try {
-            for (var f : F.asList(sft.meta(), sft.marshaller().getParentFile())) {
-                if (!f.delete() && f.exists())
-                    res.set1(false);
-            }
+            if (!sft.meta().delete() && sft.meta().exists())
+                res.set1(false);
 
             for (var s : sft.allStorages().toList()) {
                 if (!U.delete(s) && s.exists())
                     res.set1(false);
             }
 
-            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller(), sft.incrementsRoot(), sft.root())) {
+            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller(), sft.incrementsRoot(),
+                sft.marshaller().getParentFile(), sft.root())) {
                 if (!deleteDirectory(p) && p.exists())
                     res.set1(false);
             }

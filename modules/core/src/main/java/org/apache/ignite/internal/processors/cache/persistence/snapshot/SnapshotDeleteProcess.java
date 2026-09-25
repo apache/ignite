@@ -56,6 +56,9 @@ public class SnapshotDeleteProcess {
     /** Reject operation messages. */
     private static final String OP_REJECT_MSG = "Snapshot deletion was rejected. ";
 
+    /** */
+    public static final String OP_REJECT_FEATURE_MSG = OP_REJECT_MSG + "The snapshot deletion feature isn't activated yet.";
+
     /** Kernal context. */
     private final GridKernalContext kctx;
 
@@ -96,8 +99,7 @@ public class SnapshotDeleteProcess {
         var clusterOpFut = new GridFutureAdapter<SnapshotDeleteProcessResult>();
 
         if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
-            clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "The snapshot deletion feature isn't activated yet."));
+            clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_FEATURE_MSG));
 
             return new IgniteFutureImpl<>(clusterOpFut);
         }
@@ -365,6 +367,8 @@ public class SnapshotDeleteProcess {
         /** {@inheritDoc} */
         @Override public boolean collect(SnapshotDeleteResponse res) {
             assert res != null;
+
+            System.err.println("Collect thrad: " + Thread.currentThread().getName());
 
             synchronized (this) {
                 if (!F.isEmpty(res.nodeIds))
