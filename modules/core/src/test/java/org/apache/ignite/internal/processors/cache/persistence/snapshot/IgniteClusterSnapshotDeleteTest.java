@@ -473,7 +473,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             F.asList(CHECK_SNAPSHOT_METAS, CHECK_SNAPSHOT_PARTS),
             true,
             null,
-            "Snapshot with this name is being checked",
+            "Snapshot with the same name is being checked",
             false
         );
     }
@@ -494,7 +494,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                 if (incremental)
                     snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
             },
-            "Snapshot with this name is being created",
+            "Snapshot with the same name is being created",
             false
         );
     }
@@ -519,7 +519,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
                 awaitPartitionMapExchange();
             },
-            "Snapshot with this name is being checked",
+            "Snapshot with the same name is being checked",
             false
         );
     }
@@ -555,7 +555,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
                 awaitPartitionMapExchange();
             },
-            "Snapshot with this name is being restored",
+            "Snapshot with the same name is being restored",
             false
         );
     }
@@ -601,7 +601,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                     return delegate;
                 });
             },
-            "Snapshot with this name is being restored",
+            "Snapshot with the same name is being restored",
             true
         );
     }

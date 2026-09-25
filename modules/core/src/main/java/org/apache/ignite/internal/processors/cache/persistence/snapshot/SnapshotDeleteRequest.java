@@ -72,12 +72,12 @@ public class SnapshotDeleteRequest implements Message {
 
         SnapshotDeleteRequest other = (SnapshotDeleteRequest)o;
 
-        return Objects.equals(resolvedPath, other.resolvedPath);
+        return snpName.equalsIgnoreCase(other.snpName) && Objects.equals(resolvedPath, other.resolvedPath);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(resolvedPath);
+        return Objects.hash(snpName.toLowerCase(java.util.Locale.ROOT), resolvedPath);
     }
 
     /** {@inheritDoc} */

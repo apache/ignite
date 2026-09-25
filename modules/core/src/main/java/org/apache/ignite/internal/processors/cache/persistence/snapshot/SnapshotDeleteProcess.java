@@ -143,17 +143,17 @@ public class SnapshotDeleteProcess {
 
         if (curCreateRq != null && curCreateRq.snpName.equalsIgnoreCase(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "Snapshot with this name is being created [req=" + req + ']'));
+                "Snapshot with the same name is being created [req=" + req + ']'));
         }
 
         if (snpMgr.isRestoring(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "Snapshot with this name is being restored [req=" + req + ']'));
+                "Snapshot with the same name is being restored [req=" + req + ']'));
         }
 
         if (snpMgr.isSnapshotChecking(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "Snapshot with this name is being checked [req=" + req + ']'));
+                "Snapshot with the same name is being checked [req=" + req + ']'));
         }
 
         try {
@@ -169,7 +169,7 @@ public class SnapshotDeleteProcess {
             SnapshotFileTree snpFiles = new SnapshotFileTree(kctx, req.snpName, path.getAbsolutePath());
 
             // We need to find and read snapshot metas to ensure the content is a snapshot. Also, the metas contain
-            // initial cluster topology and actual snasphot folder names.
+            // initial cluster topology and actual snapshot folder names.
             List<SnapshotMetadata> locMetas = kctx.cache().context().snapshotMgr().readSnapshotMetadatas(snpFiles, false);
 
             if (locMetas.isEmpty()) {

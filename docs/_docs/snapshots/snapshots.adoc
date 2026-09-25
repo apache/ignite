@@ -315,8 +315,8 @@ tab:Windows[]
 # Delete the snapshot "snapshot_09062021".
 control.bat --snapshot delete snapshot_09062021
 
-# Delete the snapshot "snapshot_09062021" located in the "/tmp/ignite/snapshots" folder.
-control.bat --snapshot delete snapshot_09062021 --src /tmp/ignite/snapshots
+# Delete the snapshot "snapshot_09062021" located in the "C:\tmp\ignite\snapshots" folder.
+control.bat --snapshot delete snapshot_09062021 --src C:\tmp\ignite\snapshots
 ----
 --
 
