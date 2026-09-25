@@ -772,6 +772,11 @@ Register name: `Services.{service_name}`
 |{method_name} | histogram | Duration in nanoseconds of '{method_name}()'.
 |===
 
+== Change Data Capture
+
+The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc` and `cdc.consumer`, through the exporters configured in `CdcConfiguration`.
+See link:persistence/change-data-capture#metrics[Change Data Capture] for the list of metrics.
+
 == Custom Metrics
 
 Registers created by the application through `Ignite.metrics()`. Their names start with `custom.`, see link:monitoring-metrics/custom-metrics[Custom Metrics].
