@@ -751,7 +751,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Gets local TCP port SPI listens to.
      *
-     * @return Local port range.
+     * @return Local port.
      */
     public int getLocalPort() {
         TcpDiscoveryNode locNode0 = locNode;
@@ -1491,6 +1491,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
 
             discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
+
+            discoReg.register("LocalPort", this::getLocalPort, "Local TCP port the SPI listens to.");
         }
         else {
             discoReg.register("ClientRouterNodeId", () -> String.valueOf(locNode.clientRouterNodeId()), String.class,

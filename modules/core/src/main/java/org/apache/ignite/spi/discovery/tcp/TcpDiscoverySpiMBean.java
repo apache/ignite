@@ -73,7 +73,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
     /**
      * Gets local TCP port SPI listens to.
      *
-     * @return Local port range.
+     * @return Local port.
      */
     @MXBeanDescription("Local TCP port.")
     public int getLocalPort();

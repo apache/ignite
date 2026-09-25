@@ -517,6 +517,7 @@ Register name: `io.discovery`
 |FailedNodes | integer | Failed nodes count.
 |JoinedNodes | integer | Joined nodes count.
 |LeftNodes | integer | Left nodes count.
+|LocalPort | integer | Local TCP port the discovery SPI listens to.
 |MaxMsgQueueSize | long | Maximum message queue size over the configured time interval (1 minute by default).
 |MessageWorkerQueueSize | integer | Message worker queue current size.
 |Next | UUID | Next in the ring node ID.
@@ -527,7 +528,7 @@ Register name: `io.discovery`
 |TotalReceivedMessages | integer | Total received messages count.
 |===
 
-NOTE: `Coordinator`, `CoordinatorSince`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only.
+NOTE: `Coordinator`, `CoordinatorSince`, `LocalPort`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only.
 
 == Data Region IO
 
