@@ -47,6 +47,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 /**
  * Test suite to run SQL test scripts.
  *
@@ -146,7 +148,7 @@ public class ScriptTestSuite {
     public ScriptTestSuite() {
         ScriptRunnerTestsEnvironment env = ScriptTestSuite.class.getAnnotation(ScriptRunnerTestsEnvironment.class);
 
-        assert !F.isEmpty(env.scriptsRoot());
+        assertFalse(F.isEmpty(env.scriptsRoot()));
 
         nodes = env.nodes();
         scriptsRoot = FS.getPath(U.resolveIgnitePath(env.scriptsRoot()).getPath());

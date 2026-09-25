@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -78,11 +79,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         for (TestAggregateType newParam : TestAggregateType.values()) {
             for (Object[] inheritedParam : innerParams()) {
-                Object[] combined = new Object[1 + inheritedParam.length];
-                System.arraycopy(inheritedParam, 0, combined, 0, inheritedParam.length);
-                combined[inheritedParam.length] = newParam;
-
-                Arguments res = Arguments.of(combined);
+                Arguments res = Arguments.from(Stream.concat(Arrays.stream(inheritedParam), Stream.of(newParam)).toList());
                 extraParams.add(res);
             }
         }
