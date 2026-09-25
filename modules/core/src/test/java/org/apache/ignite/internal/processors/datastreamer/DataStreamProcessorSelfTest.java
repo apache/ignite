@@ -690,34 +690,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Wraps integer to closure returning it.
-     *
-     * @param i Value to wrap.
-     * @return Callable.
-     */
-    private static Callable<Integer> callable(@Nullable final Integer i) {
-        return new Callable<Integer>() {
-            @Override public Integer call() throws Exception {
-                return i;
-            }
-        };
-    }
-
-    /**
-     * Wraps integer to closure returning it.
-     *
-     * @param i Value to wrap.
-     * @return Closure.
-     */
-    private static IgniteClosure<Integer, Integer> closure(@Nullable final Integer i) {
-        return new IgniteClosure<Integer, Integer>() {
-            @Override public Integer apply(Integer e) {
-                return e == null ? i : e + i;
-            }
-        };
-    }
-
-    /**
      * Wraps object to closure returning it.
      *
      * @param obj Value to wrap.
@@ -730,23 +702,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     "Expects the same types [e=" + e + ", obj=" + obj + ']';
 
                 return obj;
-            }
-        };
-    }
-
-    /**
-     * Wraps integer to closure expecting it and returning {@code null}.
-     *
-     * @param exp Expected closure value.
-     * @return Remove expected cache value closure.
-     */
-    private static <T> IgniteClosure<T, T> removeClosure(@Nullable final T exp) {
-        return new IgniteClosure<T, T>() {
-            @Override public T apply(T act) {
-                if (exp == null ? act == null : exp.equals(act))
-                    return null;
-
-                throw new AssertionError("Unexpected value [exp=" + exp + ", act=" + act + ']');
             }
         };
     }

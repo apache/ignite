@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -233,16 +235,16 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             int offset = in.readInt();
 
             // Get trivial flag values.
-            userType = BinaryUtils.isUserType(flags);
-            fieldIdLen = BinaryUtils.fieldIdLength(flags);
-            fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+            userType = BinaryImplUtils.isUserType(flags);
+            fieldIdLen = BinaryImplUtils.fieldIdLength(flags);
+            fieldOffLen = BinaryImplUtils.fieldOffsetLength(flags);
 
             // Calculate footer borders and raw offset.
-            if (BinaryUtils.hasSchema(flags)) {
+            if (BinaryImplUtils.hasSchema(flags)) {
                 // Schema exists.
                 footerStart = start + offset;
 
-                if (BinaryUtils.hasRaw(flags)) {
+                if (BinaryImplUtils.hasRaw(flags)) {
                     footerLen = len - offset;
                     rawOff = start + in.readIntPositioned(start + len - 4);
                 }
@@ -256,7 +258,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 footerStart = start + len;
                 footerLen = 0;
 
-                if (BinaryUtils.hasRaw(flags))
+                if (BinaryImplUtils.hasRaw(flags))
                     rawOff = start + offset;
                 else
                     rawOff = start + len;
@@ -286,7 +288,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             }
 
             mapper = userType ? ctx.userTypeMapper(typeId) : BinaryContext.defaultMapper();
-            schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
+            schema = BinaryImplUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
             dataStart = 0;
@@ -370,11 +372,6 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setHandle(Object obj) {
-        setHandle(obj, start);
     }
 
     /** {@inheritDoc} */
@@ -1403,7 +1400,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             if (cls == null)
                 cls = cls0;
 
-            return BinaryUtils.doReadEnum(in, cls);
+            return doReadEnum(in, cls);
         }
         else
             return null;
@@ -1461,7 +1458,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 if (cls == null)
                     cls = cls0;
 
-                return BinaryUtils.doReadEnumArray(in, ctx, ldr, cls);
+                return doReadEnumArray(in, ctx, ldr, cls);
 
             case HANDLE:
                 Object arr = readHandleField();
@@ -1926,12 +1923,12 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case ENUM:
-                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
+                obj = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
             case ENUM_ARR:
-                obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
+                obj = doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
 
                 break;
 
@@ -1989,7 +1986,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
-            if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
+            if (fieldIdLen != BinaryImplUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId, schemaId);
 
                 BinaryMetadata meta = type != null ? type.metadata() : null;
@@ -2041,7 +2038,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Schema.
      */
     private BinarySchema createSchema() {
-        assert fieldIdLen == BinaryUtils.FIELD_ID_LEN;
+        assert fieldIdLen == BinaryImplUtils.FIELD_ID_LEN;
 
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
@@ -2053,7 +2050,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
             builder.addField(fieldId);
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
+            searchPos += BinaryImplUtils.FIELD_ID_LEN + fieldOffLen;
         }
 
         return builder.build();
@@ -2184,7 +2181,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         if (order != BinarySchema.ORDER_NOT_FOUND) {
             int offsetPos = footerStart + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-            int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);
+            int pos = start + BinaryImplUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);
 
             streamPosition(pos);
 
@@ -2202,7 +2199,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      */
     private boolean trySetSystemFieldPosition(int id) {
         // System types are never written with compact footers because they do not have metadata.
-        assert fieldIdLen == BinaryUtils.FIELD_ID_LEN;
+        assert fieldIdLen == BinaryImplUtils.FIELD_ID_LEN;
 
         int searchPos = footerStart;
         int searchTail = searchPos + footerLen;
@@ -2214,7 +2211,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
             int id0 = in.readIntPositioned(searchPos);
 
             if (id0 == id) {
-                int pos = start + BinaryUtils.fieldOffsetRelative(in, searchPos + BinaryUtils.FIELD_ID_LEN,
+                int pos = start + BinaryImplUtils.fieldOffsetRelative(in, searchPos + BinaryImplUtils.FIELD_ID_LEN,
                     fieldOffLen);
 
                 streamPosition(pos);
@@ -2222,7 +2219,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 return true;
             }
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
+            searchPos += BinaryImplUtils.FIELD_ID_LEN + fieldOffLen;
         }
     }
 
@@ -2373,7 +2370,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 case BINARY:
                     res = newInstance(desc.ctor(), desc.describedClass());
 
-                    setHandle(res);
+                    setHandle(res, start);
 
                     if (desc.serializer != null)
                         desc.serializer.readBinary(res, this);
@@ -2385,7 +2382,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 case OBJECT:
                     res = newInstance(desc.ctor(), desc.describedClass());
 
-                    setHandle(res);
+                    setHandle(res, start);
 
                     for (BinaryFieldDescriptor info : desc.fields)
                         readField(res, info);
@@ -2402,7 +2399,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 try {
                     res = desc.readResolveMtd.invoke(res);
 
-                    setHandle(res);
+                    setHandle(res, start);
                 }
                 catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
@@ -2747,6 +2744,69 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      */
     private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
         return BinaryUtils.doReadBinaryEnum(in, ctx, BinaryUtils.doReadEnumType(in));
+    }
+
+    /**
+     * @param cls Enum class.
+     * @return Value.
+     */
+    private static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
+        throws BinaryObjectException {
+        int len = in.readInt();
+
+        Object[] arr = (Object[])Array.newInstance(cls, len);
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == GridBinaryMarshaller.NULL)
+                arr[i] = null;
+            else
+                arr[i] = doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
+        }
+
+        return arr;
+    }
+
+    /**
+     * Having target class in place we simply read ordinal and create final representation.
+     *
+     * @param cls Enum class.
+     * @return Value.
+     */
+    private static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls) throws BinaryObjectException {
+        assert cls != null;
+
+        if (!cls.isEnum())
+            throw new BinaryObjectException("Class does not represent enum type: " + cls.getName());
+
+        int ord = in.readInt();
+
+        if (Marshallers.USE_CACHE.get())
+            return BinaryEnumCache.get(cls, ord);
+        else
+            return uncachedEnumValue(cls, ord);
+    }
+
+    /**
+     * Get value for the given class without any caching.
+     *
+     * @param cls Class.
+     */
+    private static <T> T uncachedEnumValue(Class<?> cls, int ord) throws BinaryObjectException {
+        assert cls != null;
+
+        if (ord >= 0) {
+            Object[] vals = cls.getEnumConstants();
+
+            if (ord < vals.length)
+                return (T)vals[ord];
+            else
+                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
+                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
+        }
+        else
+            return null;
     }
 
     /**

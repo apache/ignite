@@ -98,7 +98,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.logging.version>3.6.3.Final</jboss.logging.version>
         <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
-        <jetty.version>12.1.10</jetty.version>
+        <jetty.version>12.1.13</jetty.version>
         <jetty-jakarta-servlet-api.version>6.1.0</jetty-jakarta-servlet-api.version>
         <jmh.version>1.37</jmh.version>
         <jna.version>5.19.1</jna.version>
@@ -118,14 +118,12 @@
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
-        <postgres.connector.version>42.7.13</postgres.connector.version>
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.8</snappy.version>
         <spring.version>6.2.19</spring.version>
         <surefire.version>3.5.6</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
         <zstd.version>1.5.7-11</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
@@ -646,6 +644,7 @@
                         --add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
                         --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
                         --add-opens=java.base/java.util.regex=ALL-UNNAMED
+                        -Djava.security.manager=allow
                     </argLine>
                 </configuration>
             </plugin>

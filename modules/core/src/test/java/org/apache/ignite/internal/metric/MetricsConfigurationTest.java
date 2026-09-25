@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.Arrays;
 import java.util.Collections;
 import javax.management.DynamicMBean;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.FSYNC;
-import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_SYSTEM_TIME_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.HISTOGRAM_CFG_PREFIX;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.HITRATE_CFG_PREFIX;
@@ -47,7 +49,9 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cach
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
+import static org.apache.ignite.testframework.GridTestUtils.arrayEq;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -337,20 +341,37 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             g0.context().metric().remove(TEST_REG);
 
-            assertNull(
-                g0.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
-            assertNull(
-                g0.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
-            assertNull(
-                g0.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
-
-            assertNull(
-                g1.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
-            assertNull(
-                g1.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
-            assertNull(
-                g1.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
+            assertConfigRemoved(g0, g1,
+                metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME),
+                metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME),
+                metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME));
         });
+    }
+
+    /**
+     * Metric configuration is removed from the distributed metastorage asynchronously, so wait for the removal.
+     *
+     * @param g0 First node.
+     * @param g1 Second node.
+     * @param keys Distributed metastorage keys that must be removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void assertConfigRemoved(IgniteEx g0, IgniteEx g1, String... keys) throws IgniteCheckedException {
+        assertTrue(waitForCondition(() -> {
+            try {
+                for (IgniteEx node : Arrays.asList(g0, g1)) {
+                    for (String key : keys) {
+                        if (node.context().distributedMetastorage().read(key) != null)
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }, getTestTimeout()));
     }
 
     /** Tests metric configuration removed on registry remove. */

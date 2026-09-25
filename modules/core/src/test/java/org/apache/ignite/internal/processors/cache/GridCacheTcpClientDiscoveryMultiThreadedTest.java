@@ -169,25 +169,4 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
         for (int i = 0; i < srvNodesCnt; i++)
             startGrid(i);
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void stopServerNodes() throws Exception {
-        for (int i = 0; i < srvNodesCnt; i++)
-            stopGrid(i);
-    }
-
-    /**
-     * Executes simple operation on the cache.
-     *
-     * @param cache Cache instance to use.
-     */
-    private void performSimpleOperationsOnCache(IgniteCache<Integer, Integer> cache) {
-        for (int i = 100; i < 200; i++)
-            cache.put(i, i);
-
-        for (int i = 100; i < 200; i++)
-            assertEquals(i, (int)cache.get(i));
-    }
 }

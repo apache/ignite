@@ -121,13 +121,6 @@ public class IgniteCacheWriteBehindNoUpdateSelfTest extends GridCommonAbstractTe
         /** */
         private AtomicInteger writeCnt = new AtomicInteger();
 
-        /**
-         *
-         */
-        public void resetWrites() {
-            writeCnt.set(0);
-        }
-
         /** {@inheritDoc} */
         @Override public Long load(String key) throws CacheLoaderException {
             return null;
