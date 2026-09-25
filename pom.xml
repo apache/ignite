@@ -75,6 +75,7 @@
         <module>modules/control-utility</module>
         <module>modules/calcite</module>
         <module>modules/compatibility</module>
+        <module>modules/compatibility-check</module>
     </modules>
 
     <profiles>
