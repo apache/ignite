@@ -6,7 +6,7 @@
 query TTTT
 select REVERSE(''), REVERSE('Hello'), REVERSE('MotörHead'), REVERSE(NULL)
 ----
-(empty)	olleH	daeHrötoM	NULL
+NULL	olleH	daeHrötoM	NULL
 
 # test reverse on tables
 statement ok
@@ -21,7 +21,7 @@ select REVERSE(a) FROM strings ORDER BY id
 olleH
 DlLuH
 daeHrötoM
-(empty)
+NULL
 
 query T
 select REVERSE(b) FROM strings ORDER BY id
@@ -46,4 +46,3 @@ select REVERSE(1, 2)
 
 statement error
 select REVERSE('hello', 'world')
-

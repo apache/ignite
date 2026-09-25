@@ -79,7 +79,7 @@ blablabla
 query T
 SELECT ''::VARBINARY
 ----
-(empty)
+NULL
 
 query T
 SELECT NULL::VARBINARY
@@ -103,6 +103,5 @@ SELECT * FROM blob_empty
 ----
 NULL
 NULL
-(empty)
-(empty)
-
+NULL
+NULL

@@ -12,7 +12,7 @@ NULL	NULL	NULL
 query TTTT
 select REPEAT('', 3), REPEAT('MySQL', 3), REPEAT('MotörHead', 2), REPEAT('Hello', -1)
 ----
-(empty)	MySQLMySQLMySQL	MotörHeadMotörHead	(empty)
+NULL	MySQLMySQLMySQL	MotörHeadMotörHead	NULL
 
 # test repeat on tables
 statement ok
@@ -27,7 +27,7 @@ select REPEAT(a, 3) FROM strings ORDER BY id
 HelloHelloHello
 HuLlDHuLlDHuLlD
 MotörHeadMotörHeadMotörHead
-(empty)
+NULL
 
 query T
 select REPEAT(b, 2) FROM strings ORDER BY id
@@ -55,4 +55,3 @@ select REPEAT('hello', 'world')
 
 statement error
 select REPEAT('hello', 'world', 3)
-

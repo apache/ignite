@@ -308,7 +308,7 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("DECODE(1, 1, 1, 2)").returns(1).check();
         assertExpression("LEAST('a', 'b')").returns("a").check();
         assertExpression("GREATEST('a', 'b')").returns("b").check();
-        assertExpression("COMPRESS('')::VARCHAR").returns("").check();
+        assertExpression("COMPRESS('')::VARCHAR").returns(NULL_RESULT).check();
         assertExpression("OCTET_LENGTH(x'01')").returns(1).check();
         assertExpression("CAST(INTERVAL 1 SECONDS AS INT)").returns(1).check(); // Converted to REINTERPRED.
     }
