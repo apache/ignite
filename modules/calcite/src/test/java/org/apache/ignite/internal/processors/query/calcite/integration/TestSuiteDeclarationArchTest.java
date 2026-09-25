@@ -39,7 +39,7 @@ import org.junit.platform.suite.api.Suite;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
-/** */
+/** Arch tests for legacy junit related code detection. */
 @AnalyzeClasses(
     importOptions = ImportOption.OnlyIncludeTests.class,
     locations = TestSuiteDeclarationArchTest.CalciteLocationProvider.class)
@@ -66,7 +66,7 @@ public class TestSuiteDeclarationArchTest {
         return Location.of(TestSuiteDeclarationArchTest.class.getProtectionDomain().getCodeSource().getLocation());
     }
 
-    /** */
+    /** Check that no legacy junit annotations are defined. */
     @ArchTest
     @SuppressWarnings("unused")
     static final ArchRule CHECK_LEGACY_TESTS =
@@ -79,7 +79,7 @@ public class TestSuiteDeclarationArchTest {
             })
             .allowEmptyShould(true);
 
-    /** */
+    /** Check that all junit test related classes are present in @Suite definitions. */
     @ArchTest
     @SuppressWarnings("unused")
     static final ArchRule CHECK_ALL_TEST_CLASSES_IN_SUITE =

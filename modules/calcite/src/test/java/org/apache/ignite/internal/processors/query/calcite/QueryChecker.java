@@ -56,6 +56,7 @@ import org.hamcrest.core.SubstringMatcher;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -246,7 +247,7 @@ public abstract class QueryChecker {
 
     /** */
     private static String resolveRelation(int times, boolean noMore) {
-        assert times >= 0;
+        assertTrue(times >= 0, "Found: " + times);
 
         return switch (times) {
             case 0 -> noMore ? "does not contain" : "can contain";
