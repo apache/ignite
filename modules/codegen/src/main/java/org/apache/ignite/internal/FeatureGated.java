@@ -24,17 +24,26 @@ import java.lang.annotation.Target;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /**
- * Marks a class whose serialization takes the Rolling Upgrade into account.
+ * Optional complement to the {@link Order} annotations of a class, telling where the {@link IgniteFeature}s named in
+ * {@link Order#introducedBy()} and {@link Order#deprecatedBy()} are declared.
  *
- * <p>The {@link #registry()} is used to resolve fully qualified names of the {@link IgniteFeature}s that introduced or
- * deprecated fields of the annotated class (see {@link Order#introducedBy()} and {@link Order#deprecatedBy()}).</p>
+ * <p>Feature names are resolved as constants of the {@link #registry()} class. Without this annotation they are resolved
+ * against the Ignite Core Feature Registry, so it is needed primarily by classes whose fields are gated by features of
+ * another registry, such as the features of a plugin:</p>
+ * <pre>
+ * &#64;FeatureGated(registry = MyPluginFeatures.class)
+ * public class MyPluginMessage implements Message {
+ *     &#64;Order(value = 0, introducedBy = "MY_FEATURE")
+ *     String fld;
+ * }
+ * </pre>
  *
  * @see Order
  * @see IgniteFeature
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
-public @interface RollingUpgradeAware {
+public @interface FeatureGated {
     /** @return Class of the feature registry, or {@link Void} if the Ignite Core Feature Registry is used. */
     Class<?> registry() default Void.class;
 }

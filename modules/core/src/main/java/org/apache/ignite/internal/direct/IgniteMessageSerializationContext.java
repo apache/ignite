@@ -50,22 +50,21 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
 
     /** {@inheritDoc} */
     @Override public boolean includeFieldIntroducedBy(IgniteFeature feature) {
-        return componentContext(feature).includeFieldIntroducedBy(feature.id());
+        return componentContext(feature.componentName()).includeFieldIntroducedBy(feature.id());
     }
 
     /** {@inheritDoc} */
     @Override public boolean includeFieldDeprecatedBy(IgniteFeature feature) {
-        return componentContext(feature).includeFieldDeprecatedBy(feature.id());
+        return componentContext(feature.componentName()).includeFieldDeprecatedBy(feature.id());
     }
 
     /** */
-    private ComponentMessageSerializationContext componentContext(IgniteFeature feature) {
-        ComponentMessageSerializationContext cmpCtx = ctxByComponent.get(feature.componentName());
+    private ComponentMessageSerializationContext componentContext(String cmpName) {
+        ComponentMessageSerializationContext cmpCtx = ctxByComponent.get(cmpName);
 
         if (cmpCtx == null) {
-            throw new IllegalStateException("A field is guarded by a feature of an undeclared component" +
-                " [feature=" + feature +
-                ", component=" + feature.componentName() +
+            throw new IllegalStateException("A field is gated by a feature of an undeclared component" +
+                " [component=" + cmpName +
                 ", declaredComponents=" + ctxByComponent.keySet() + ']'
             );
         }

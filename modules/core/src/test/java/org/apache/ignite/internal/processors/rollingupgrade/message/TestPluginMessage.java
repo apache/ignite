@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
+import org.apache.ignite.internal.FeatureGated;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.RollingUpgradeAware;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_1_0;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-@RollingUpgradeAware(registry = TestPluginReleaseFeatures_2_1_0.class)
+@FeatureGated(registry = TestPluginReleaseFeatures_2_1_0.class)
 public class TestPluginMessage extends DiscoveryCustomMessage implements TestMessage {
     /** */
     @Order(0)

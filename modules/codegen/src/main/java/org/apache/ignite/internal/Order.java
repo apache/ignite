@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatur
  * should be performed strictly through corresponding getter and setter methods
  * following the naming convention: {@code fieldName()} for getter and {@code fieldName(Type)} for setter.
  *
- * @see RollingUpgradeAware
+ * @see FeatureGated
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
@@ -48,7 +48,7 @@ public @interface Order {
      * <p>An annotated field is included in message serialization only when doing so does not break backward compatibility
      * during a Rolling Upgrade.</p>
      *
-     * @return Name of the Ignite feature that introduced this field, or an empty string if the field is not guarded.
+     * @return Name of the Ignite feature that introduced this field, or an empty string if the field is not gated.
      */
     String introducedBy() default "";
 
@@ -60,7 +60,7 @@ public @interface Order {
      * <p>An annotated field is excluded from message serialization only when doing so does not break backward compatibility
      * during a Rolling Upgrade.</p>
      *
-     * @return Name of the Ignite feature that deprecated this field, or an empty string if the field is not guarded.
+     * @return Name of the Ignite feature that deprecated this field, or an empty string if the field is not gated.
      */
     String deprecatedBy() default "";
 }

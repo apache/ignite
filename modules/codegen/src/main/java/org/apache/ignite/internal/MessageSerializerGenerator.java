@@ -41,7 +41,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.apache.ignite.internal.MessageProcessor.FieldFeatureGuard;
+import org.apache.ignite.internal.MessageProcessor.FieldFeatureGate;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_CLA
 import static org.apache.ignite.internal.MessageProcessor.GRID_H2_NULL;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
-import static org.apache.ignite.internal.MessageProcessor.buildFieldFeatureGuard;
+import static org.apache.ignite.internal.MessageProcessor.buildFieldFeatureGate;
 
 /** Generates {@code *Serializer} classes for {@code Message} types. */
 public class MessageSerializerGenerator extends MessageCompanionGenerator {
@@ -314,19 +314,19 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        FieldFeatureGuard guard = buildFieldFeatureGuard(env, field);
+        FieldFeatureGate gate = buildFieldFeatureGate(env, field);
 
-        if (guard != null) {
-            imports.add(guard.registry());
+        if (gate != null) {
+            imports.add(gate.registry());
 
-            write.add(indentedLine("if (%s) {", guard.expression()));
+            write.add(indentedLine("if (%s) {", gate.expression()));
 
             indent++;
         }
 
         returnFalseIf(write, "!" + writeExpr);
 
-        if (guard != null) {
+        if (gate != null) {
             indent--;
 
             write.add(indentedLine("}"));
@@ -359,12 +359,12 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
-        FieldFeatureGuard guard = buildFieldFeatureGuard(env, field);
+        FieldFeatureGate gate = buildFieldFeatureGate(env, field);
 
-        if (guard != null) {
-            imports.add(guard.registry());
+        if (gate != null) {
+            imports.add(gate.registry());
 
-            read.add(indentedLine("if (%s) {", guard.expression()));
+            read.add(indentedLine("if (%s) {", gate.expression()));
 
             indent++;
         }
@@ -374,7 +374,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         returnFalseIf(read, "!reader.isLastRead()");
 
-        if (guard != null) {
+        if (gate != null) {
             indent--;
 
             read.add(indentedLine("}"));

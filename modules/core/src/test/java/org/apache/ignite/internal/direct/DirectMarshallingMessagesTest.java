@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -140,7 +140,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
             writer.setBuffer(chunk);
 
-            fullyWritten = writer.writeMessage(srcMsg, false, IGNORED);
+            fullyWritten = writer.writeMessage(srcMsg, false, LATEST_SCHEMA);
 
             chunk.flip();
 
@@ -169,7 +169,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
             reader.setBuffer(chunk);
 
-            resMsg = reader.readMessage(false, IGNORED);
+            resMsg = reader.readMessage(false, LATEST_SCHEMA);
 
             pos += chunk.position();
         }

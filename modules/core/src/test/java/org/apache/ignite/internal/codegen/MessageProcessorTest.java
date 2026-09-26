@@ -117,7 +117,7 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testSameFeatureInBothGuardsRejected() {
+    public void testSameFeatureInBothGatesRejected() {
         Compilation compilation = compile("TestFeatureConflictMessage.java");
 
         assertThat(compilation).failed();

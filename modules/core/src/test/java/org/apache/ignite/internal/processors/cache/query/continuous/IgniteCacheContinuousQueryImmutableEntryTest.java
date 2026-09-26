@@ -45,7 +45,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 
 /**
  *
@@ -205,7 +205,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         // Skip write class header.
         writer.onHeaderWritten();
-        MessageSerialization.writeTo(msgFactory, e, writer, IGNORED);
+        MessageSerialization.writeTo(msgFactory, e, writer, LATEST_SCHEMA);
 
         CacheContinuousQueryEntry res = new CacheContinuousQueryEntry();
 
@@ -213,7 +213,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         reader.setBuffer(ByteBuffer.wrap(buf.array()));
 
-        MessageSerialization.readFrom(msgFactory, res, reader, IGNORED);
+        MessageSerialization.readFrom(msgFactory, res, reader, LATEST_SCHEMA);
 
         return res;
     }

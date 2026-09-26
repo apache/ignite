@@ -108,7 +108,7 @@ public class TcpDiscoveryIoSession implements AutoCloseable {
     private final CompositeInputStream in;
 
     /** */
-    private volatile MessageSerializationContext serCtx = MessageSerializationContext.UNNEGOTIATED;
+    private volatile MessageSerializationContext serCtx = MessageSerializationContext.IMMUTABLE_SCHEMA;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.

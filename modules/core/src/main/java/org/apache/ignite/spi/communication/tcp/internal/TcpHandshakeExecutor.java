@@ -39,7 +39,7 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MessageSerializationContext.UNNEGOTIATED;
+import static org.apache.ignite.internal.MessageSerializationContext.IMMUTABLE_SCHEMA;
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
 import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -173,7 +173,7 @@ public class TcpHandshakeExecutor {
             NodeIdMessage nodeIdMsg = new NodeIdMessage();
             reader.setBuffer(buf);
 
-            MessageSerialization.readFrom(msgFactory, nodeIdMsg, reader, UNNEGOTIATED);
+            MessageSerialization.readFrom(msgFactory, nodeIdMsg, reader, IMMUTABLE_SCHEMA);
             reader.reset();
 
             return nodeIdMsg.nodeId();
@@ -192,7 +192,7 @@ public class TcpHandshakeExecutor {
 
             writer.setBuffer(buf);
 
-            MessageSerialization.writeTo(msgFactory, msg, writer, UNNEGOTIATED);
+            MessageSerialization.writeTo(msgFactory, msg, writer, IMMUTABLE_SCHEMA);
 
             buf.flip();
 
@@ -242,7 +242,7 @@ public class TcpHandshakeExecutor {
 
                 reader.setBuffer(buf);
 
-                fininshed = MessageSerialization.readFrom(msgFactory, msg, reader, UNNEGOTIATED);
+                fininshed = MessageSerialization.readFrom(msgFactory, msg, reader, IMMUTABLE_SCHEMA);
 
                 readPos = buf.position();
             }

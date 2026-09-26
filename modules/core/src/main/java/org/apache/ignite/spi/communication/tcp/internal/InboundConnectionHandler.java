@@ -58,7 +58,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.MessageSerializationContext.UNNEGOTIATED;
+import static org.apache.ignite.internal.MessageSerializationContext.IMMUTABLE_SCHEMA;
 import static org.apache.ignite.internal.direct.IgniteMessageSerializationContext.buildForPeers;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_SER_CTX;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
@@ -216,7 +216,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
         if (ses.meta(MSG_SER_CTX.ordinal()) == null)
-            ses.addMeta(MSG_SER_CTX.ordinal(), UNNEGOTIATED);
+            ses.addMeta(MSG_SER_CTX.ordinal(), IMMUTABLE_SCHEMA);
 
         if (ses.accepted()) {
             if (log.isInfoEnabled()) {

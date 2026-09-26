@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 import static org.apache.ignite.internal.util.CommonUtils.makeMessageType;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_QUERY;
@@ -118,7 +118,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
         writer.setBuffer(buf);
 
-        assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer, IGNORED));
+        assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer, LATEST_SCHEMA));
 
         buf.flip();
 
@@ -127,7 +127,7 @@ public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstr
 
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
-        assertTrue(MessageSerialization.readFrom(msgFactory, res, reader, IGNORED));
+        assertTrue(MessageSerialization.readFrom(msgFactory, res, reader, LATEST_SCHEMA));
 
         return res;
     }

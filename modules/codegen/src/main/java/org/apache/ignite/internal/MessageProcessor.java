@@ -99,9 +99,9 @@ public class MessageProcessor extends AbstractProcessor {
     /** Checked exception declared by the generated methods. */
     static final String IGNITE_CHECKED_EXCEPTION_CLS = "org.apache.ignite.IgniteCheckedException";
 
-    /** Feature registry a message resolves its guards against unless it declares one with {@link RollingUpgradeAware#registry()}. */
+    /** Feature registry a message resolves its feature gates against unless it declares one with {@link FeatureGated#registry()}. */
     static final String DFLT_FEATURE_REG_CLS =
-        "org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry";
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry";
 
     /** */
     static final String IGNITE_FEATURE_CLS = "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature";
@@ -437,7 +437,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    @Nullable public static FieldFeatureGuard buildFieldFeatureGuard(ProcessingEnvironment env, VariableElement field) {
+    @Nullable public static FieldFeatureGate buildFieldFeatureGate(ProcessingEnvironment env, VariableElement field) {
         Order ann = field.getAnnotation(Order.class);
 
         String introducingFeature = ann.introducedBy();
@@ -470,7 +470,7 @@ public class MessageProcessor extends AbstractProcessor {
             conditions.add("ctx.includeFieldDeprecatedBy(" + regName + '.' + deprecatingFeature + ")");
         }
 
-        return new FieldFeatureGuard(regCls, String.join(" && ", conditions));
+        return new FieldFeatureGate(regCls, String.join(" && ", conditions));
     }
 
     /** */
@@ -514,7 +514,7 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     private static String resolveFeatureRegistry(Element cls) {
-        RollingUpgradeAware ann = cls.getAnnotation(RollingUpgradeAware.class);
+        FeatureGated ann = cls.getAnnotation(FeatureGated.class);
 
         if (ann == null)
             return DFLT_FEATURE_REG_CLS;
@@ -532,5 +532,5 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    public record FieldFeatureGuard(String registry, String expression) { }
+    public record FieldFeatureGate(String registry, String expression) { }
 }

@@ -20,7 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-@RollingUpgradeAware(registry = TestFeatureRegistry.class)
+@FeatureGated(registry = TestFeatureRegistry.class)
 public class TestRollingUpgradeAwareMessage implements Message {
     /** */
     @Order(0)

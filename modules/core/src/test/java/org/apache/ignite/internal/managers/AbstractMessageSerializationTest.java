@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.Integer.MAX_VALUE;
-import static org.apache.ignite.internal.MessageSerializationContext.IGNORED;
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 import static org.apache.ignite.plugin.extensions.communication.CollectionImplementationType.HASH_SET;
 import static org.junit.Assert.assertEquals;
 
@@ -108,13 +108,13 @@ public abstract class AbstractMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!MessageSerialization.writeTo(msgFactory, msg, writer, IGNORED)) {
+        while (!MessageSerialization.writeTo(msgFactory, msg, writer, LATEST_SCHEMA)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!MessageSerialization.readFrom(msgFactory, msg, reader, IGNORED)) {
+        while (!MessageSerialization.readFrom(msgFactory, msg, reader, LATEST_SCHEMA)) {
             // No-op.
         }
 

@@ -35,10 +35,10 @@ public interface MessageSerializationContext {
 
     /**
      * {@link MessageSerializationContext} implementation that instructs the serialization framework to always
-     * serialize the actual message state: all newly introduced fields are included, and all deprecated fields are
+     * serialize the latest message fields schema: all newly introduced fields are included, and all deprecated fields are
      * excluded.
      */
-    MessageSerializationContext IGNORED = new MessageSerializationContext() {
+    MessageSerializationContext LATEST_SCHEMA = new MessageSerializationContext() {
         /** {@inheritDoc} */
         @Override public boolean includeFieldDeprecatedBy(IgniteFeature feature) {
             return false;
@@ -51,18 +51,20 @@ public interface MessageSerializationContext {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "MessageSerializationContext [IGNORED]";
+            return "MessageSerializationContext [LATEST_SCHEMA]";
         }
     };
 
     /**
-     * Stub {@link MessageSerializationContext} implementation used when the serialization context has not yet been determined.
+     * {@link MessageSerializationContext} implementation that permits only messages whose schema is immutable across
+     * versions, i.e. declares no fields gated by an {@link IgniteFeature}: evaluating any feature gate throws
+     * {@link IllegalStateException}.
      *
-     * <p>The serialization context is unavailable between connection establishment and serialization protocol negotiation.
-     * Messages sent during this period cannot rely on the {@link IgniteFeature} mechanism to adjust the message serialization
-     * in an RU-compatible way.</p>
+     * <p>Used between connection establishment and serialization protocol negotiation, when the peer's features are not
+     * yet known. Messages exchanged during this period must therefore declare no fields gated by
+     * {@code @Order(introducedBy = ...)} or {@code @Order(deprecatedBy = ...)}.</p>
      */
-    MessageSerializationContext UNNEGOTIATED = new MessageSerializationContext() {
+    MessageSerializationContext IMMUTABLE_SCHEMA = new MessageSerializationContext() {
         /** {@inheritDoc} */
         @Override public boolean includeFieldDeprecatedBy(IgniteFeature feature) {
             throw buildError(feature);
@@ -75,13 +77,13 @@ public interface MessageSerializationContext {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "MessageSerializationContext [UNNEGOTIATED]";
+            return "MessageSerializationContext [IMMUTABLE_SCHEMA]";
         }
 
         /** */
         private IllegalStateException buildError(IgniteFeature feature) {
             return new IllegalStateException(
-                "A feature-guarded field was serialized before the peer's features were negotiated [feature=" + feature + ']'
+                "A feature-gated field was serialized before the peer's features were negotiated [feature=" + feature + ']'
             );
         }
     };

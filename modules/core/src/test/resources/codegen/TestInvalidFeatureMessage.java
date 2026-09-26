@@ -20,7 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-@RollingUpgradeAware(registry = TestInvalidFeatureRegistry.class)
+@FeatureGated(registry = TestInvalidFeatureRegistry.class)
 public class TestInvalidFeatureMessage implements Message {
     /** */
     @Order(value = 0, introducedBy = "NOT_A_FEATURE")
