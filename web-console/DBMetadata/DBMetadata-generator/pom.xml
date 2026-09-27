@@ -3,6 +3,12 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.apache.ignite</groupId>
+		<artifactId>ignite-parent-internal</artifactId>
+		<version>2.16.999-SNAPSHOT</version>
+		<relativePath>../../../parent-internal/pom.xml</relativePath>
+	</parent>
 	<groupId>org.apache.ignite.console.agent</groupId>
 	<artifactId>DBMetadata-generator</artifactId>
 	<version>0.2.2</version>
@@ -12,14 +18,8 @@
 		<java.version>11</java.version>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
-		<slf4j.version>1.7.33</slf4j.version>
 		<velocity.version>2.3</velocity.version>
-		<commons-lang3.version>3.12.0</commons-lang3.version>
-		<commons-collections3.version>3.2.2</commons-collections3.version>
-		<commons.io.version>2.11.0</commons.io.version>
-		<jackson.version>2.14.0</jackson.version>
 		<vertx.version>4.4.5</vertx.version>
-		<spring.version>5.3.39</spring.version>
 	</properties>
 
 	<dependencies>
@@ -63,7 +63,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>${commons-lang3.version}</version>
+			<version>${commons.lang3.version}</version>
 		</dependency>
 		<!-- io-->
 		<dependency>
@@ -75,7 +75,7 @@
 		<dependency>
 			<groupId>commons-collections</groupId>
 			<artifactId>commons-collections</artifactId>
-			<version>${commons-collections3.version}</version>
+			<version>${commons.collections.version}</version>
 		</dependency>
 
 		<!-- Spring-->
