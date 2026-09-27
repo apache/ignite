@@ -471,18 +471,6 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         }
     }
 
-    /**
-     * @return All node IDs.
-     */
-    private Collection<UUID> allNodeIds() {
-        Collection<UUID> nodeIds = new ArrayList<>(gridCount());
-
-        for (int i = 0; i < gridCount(); i++)
-            nodeIds.add(grid(i).localNode().id());
-
-        return nodeIds;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

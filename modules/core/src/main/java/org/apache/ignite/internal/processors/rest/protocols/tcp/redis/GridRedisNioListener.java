@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisEx
 import org.apache.ignite.internal.processors.rest.handlers.redis.key.GridRedisKeysCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.list.*;
 import org.apache.ignite.internal.processors.rest.handlers.redis.pubsub.GridRedisSubscribeCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisClientCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisDbSizeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisFlushCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.redis.server.GridRedisTransactionCommandHandler;
@@ -80,7 +81,6 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
 
     /** Connection-related metadata key. Used for cache name only. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
-    public static final int CONN_NAME_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
     public static final int SESS_TX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
     public static final int SESS_TX_QUEUED_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
     public static final int SESS_STREAM_LAST_ID_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
@@ -131,6 +131,7 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisDbSizeCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisFlushCommandHandler(log, hnd, ctx));
         addCommandHandler(new GridRedisTransactionCommandHandler(log, ctx, handlers));
+        addCommandHandler(new GridRedisClientCommandHandler());
         
         // list commands
         addCommandHandler(new GridRedisListAddCommandHandler(log,ctx));

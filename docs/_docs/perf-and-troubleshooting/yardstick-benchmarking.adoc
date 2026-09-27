@@ -14,19 +14,9 @@
 // limitations under the License.
 = Benchmarking Ignite With Yardstick Framework
 
+NOTE: The Yardstick framework has been moved to a separate extensions repository.
+
 == Yardstick Ignite Benchmarks
-
-Apache Ignite benchmarks are written on top of the Yardstick Framework, allowing you to measure the performance of
-various Apache Ignite components and modules. The documentation below describes how to execute and configure pre-assembled
-benchmarks. If you need to add new benchmarks
-or build existing one, then refer to the instructions from Ignite's `DEVNOTES.txt` file in the source directory.
-
-Visit the https://github.com/gridgain/yardstick[Yardstick Repository, window=_blank] for more details on the resulting graphs generation
-and how the framework works.
-
-== Running Ignite Benchmarks Locally
-
-The simplest way to start with benchmarking is to use one of the executable scripts available under the `benchmarks/bin` directory:
 
 [tabs]
 --
@@ -120,10 +110,8 @@ The following benchmarks are provided by default:
 == Properties And Command Line Arguments
 
 Note that this section only describes configuration parameters specific to Ignite benchmarks, and not for Yardstick framework.
-To run Ignite benchmarks and generate graphs, you will need to run them using the Yardstick framework scripts in the `bin` folder.
 
 Refer to the https://github.com/gridgain/yardstick/blob/master/README.md[Yardstick Documentation, window=_blank] for common Yardstick
-properties and command line arguments for running Yardstick scripts.
 
 The following Ignite benchmark properties can be defined in the benchmark configuration:
 
@@ -164,11 +152,19 @@ CONFIGS="-b 1 -sm PRIMARY_SYNC -dn PutBenchmark`IgniteNode"
 
 == Building From Sources
 
-Run `./mvnw clean package -Pyardstick -pl modules/yardstick -am -DskipTests` in the Apache Ignite root directory.
+The Yardstick framework is now maintained in a separate extensions repository.
+To build it, clone the repository and run:
 
-This command will compile the project and also unpack the scripts from `yardstick-resources.zip` file to `modules/yardstick/target/assembly/bin` directory.
+[source, shell]
+----
+git clone https://github.com/apache/ignite-extensions.git
+cd ignite-extensions/modules/yardstick
+mvn clean package -DskipTests
+----
 
-Artifacts can be found in the `modules/yardstick/target/assembly` directory.
+Artifacts will be available in the `modules/yardstick/target/assembly` directory.
+
+For detailed build instructions, refer to the https://github.com/apache/ignite-extensions/tree/master/modules/yardstick[Yardstick extensions repository, window=_blank].
 
 == Custom Ignite Benchmarks
 

@@ -39,10 +39,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.ECHO;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.PING;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.QUIT;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
@@ -56,7 +52,6 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
         ECHO,
         SELECT,
         AUTH,
-        CLIENT,
         INFO
     );
 
@@ -149,25 +144,6 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
 				}
 				
             	msg.setResponse(GridRedisProtocolParser.oKString());            	
-                return new GridFinishedFuture<>(msg);
-                
-            case CLIENT:
-            	// add@byron
-            	String op = msg.aux(1).toUpperCase();
-            	msg.setResponse(GridRedisProtocolParser.oKString());
-            	
-            	if(op.equals("SETNAME")) {
-            		ses.addMeta(GridRedisNioListener.CONN_NAME_META_KEY, msg.aux(2));
-            	}
-            	else if(op.equals("GETNAME")) {
-            		Object name = ses.meta(GridRedisNioListener.CONN_NAME_META_KEY);
-            		if(name!=null) {
-            			msg.setResponse(GridRedisProtocolParser.toSimpleString(name.toString()));
-            		}
-            		else {
-            			msg.setResponse(GridRedisProtocolParser.nil());
-            		}
-            	}
                 return new GridFinishedFuture<>(msg);
                 
             case INFO:

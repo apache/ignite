@@ -101,7 +101,7 @@
         <jetty.version>12.0.19</jetty.version>
         <jetty-jakarta-servlet-api.version>6.1.0</jetty-jakarta-servlet-api.version>
         <jmh.version>1.37</jmh.version>
-        <jna.version>4.5.2</jna.version>
+        <jna.version>5.19.1</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
@@ -113,18 +113,16 @@
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
         <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
-        <maven.model.version>3.8.9</maven.model.version>
+        <maven.model.version>3.9.16</maven.model.version>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
-        <postgres.connector.version>42.7.13</postgres.connector.version>
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.8</snappy.version>
         <spring.version>6.2.6</spring.version>
         <surefire.version>3.5.6</surefire.version>
         <tomcat.version>10.0.27</tomcat.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <yardstick.version>0.8.3</yardstick.version>
         <zookeeper.version>3.9.5</zookeeper.version>
         <zstd.version>1.5.7-8</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
@@ -647,6 +645,7 @@
                         --add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED
                         --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
                         --add-opens=java.base/java.util.regex=ALL-UNNAMED
+                        -Djava.security.manager=allow
                     </argLine>
                 </configuration>
             </plugin>

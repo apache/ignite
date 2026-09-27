@@ -21,10 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -439,39 +435,6 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         watchdog2.start();
         GridTestUtils.runMultiThreaded(tasksR, GET_THREAD);
         watchdog2.stop();
-    }
-
-    /**
-     * @param threads Threads count.
-     * @param recsPerThread initial records per thread.
-     * @param restartedCache cache to obtain data from.
-     */
-    private void verifyByChunk(int threads, int recsPerThread, Cache<Integer, HugeIndexedObject> restartedCache) {
-        int verifyChunk = 100;
-
-        int totalRecsToVerify = recsPerThread * threads;
-        int chunks = totalRecsToVerify / verifyChunk;
-
-        for (int c = 0; c < chunks; c++) {
-            Set<Integer> keys = new TreeSet<>();
-
-            for (int i = 0; i < verifyChunk; i++)
-                keys.add(i + c * verifyChunk);
-
-            Map<Integer, HugeIndexedObject> values = restartedCache.getAll(keys);
-
-            for (Map.Entry<Integer, HugeIndexedObject> next : values.entrySet()) {
-                Integer key = next.getKey();
-
-                int actVal = values.get(next.getKey()).iVal;
-                int i = key;
-                Assert.assertEquals(i, actVal);
-
-                if (i % 1000 == 0)
-                    X.println(" >> Verified: " + i);
-            }
-
-        }
     }
 
     /**

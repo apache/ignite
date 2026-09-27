@@ -32,7 +32,7 @@ public enum GridRedisCommand {
     /** Echo. */
     ECHO("ECHO"),
     /** Select **/
-    SELECT("SELECT"),    
+    SELECT("SELECT"),
     /** always return ok */
     AUTH("AUTH"),
 
@@ -40,7 +40,7 @@ public enum GridRedisCommand {
     /** GET. */
     GET("GET"),
     /** MGET. */
-    MGET("MGET"),    
+    MGET("MGET"),
     /** SET. */
     SET("SET"),
     /** MSET. */
@@ -204,7 +204,7 @@ public enum GridRedisCommand {
  	DISCARD,
  	
  	// Server commands.
- 	CLIENT,
+ 	
     /** DBSIZE. */
     DBSIZE("DBSIZE"),
     INFO,
@@ -214,7 +214,9 @@ public enum GridRedisCommand {
     /** FLUSHDB. */
     FLUSHDB("FLUSHDB 删除当前数据库的所有 key"),
     /** FLUSHALL. 删除所有数据库的所有key */
-    FLUSHALL("FLUSHALL");	
+    FLUSHALL("FLUSHALL"),
+	/** CLIENT. */
+    CLIENT;
 	
 
     /** String for command. */
