@@ -1,0 +1,37 @@
+
+
+web-console-sidebar-overflow {
+    overflow: hidden;
+    position: relative;
+    display: flex;
+
+    &>.web-console-sidebar-overflow__scroll-root {
+        overflow-x: hidden;
+        overflow-y: scroll;
+        margin-right: calc(-1 * var(--scrollbar-width));
+
+        &.top:before {
+            display: block;
+            width: 100%;
+            content: '';
+            height: 1px;
+            position: absolute;
+            top: -1px;
+            box-shadow: 0 0 9px 1px #a0a0a0;
+            transform: translateZ(1px);
+        }
+        &.bottom:after {
+            display: block;
+            width: 100%;
+            content: '';
+            position: absolute;
+            bottom: 0;
+            box-shadow: 0 0 9px 1px #a0a0a0;
+            transform: translateZ(1px);
+        }
+
+        &>ng-transclude {
+            display: block;
+        }
+    }
+}

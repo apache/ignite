@@ -39,6 +39,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -239,6 +240,39 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
 
         assertEquals(res, res.inner.outer);
         assertEquals(res.inner, res.inner.foo);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testObjectHandleIsPossible() {
+        GridBinaryTestClasses.Address addr = new GridBinaryTestClasses.Address(
+                "Weligama", "Kapparatota", 203, 2
+        );
+
+        BinaryObjectBuilder objectBuilder = binaries().builder("customObject");
+
+        objectBuilder.setField("addr1", addr);
+        objectBuilder.setField("addr2", addr);
+
+        BinaryObject build = objectBuilder.build();
+
+        assertSame(build.field("addr1"), build.field("addr1"));
+        assertSame(build.field("addr1"), build.field("addr2"));
+
+        BinaryObjectBuilder secondBuilder = objectBuilder.build().toBuilder();
+
+        GridBinaryTestClasses.Address secondAddr = new GridBinaryTestClasses.Address(
+                "Tokyo", "Shibuya City", 122, 5
+        );
+
+        secondBuilder.setField("addr1", secondAddr);
+
+        BinaryObject build2 = secondBuilder.build();
+
+        assertSame(build2.field("addr1"), build2.field("addr1"));
+        assertNotSame(build2.field("addr1"), build2.field("addr2"));
     }
 
     /**
@@ -837,6 +871,44 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
      *
      */
     @Test
+    public void testCollectionsHandlePossible() {
+        GridBinaryTestClasses.Address testObject = new GridBinaryTestClasses.Address();
+        testObject.city = "city";
+        testObject.flatNumber = 1;
+        testObject.street = "street";
+        testObject.streetNumber = 32;
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            testCollectionHandlePossible(list, Lists.newArrayList(list), testObject);
+        }
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            Collection<Object> src = Lists.newLinkedList(list);
+
+            testCollectionHandlePossible(src, Lists.newLinkedList(src), testObject);
+        }
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            Collection<Object> src = Sets.newHashSet(list);
+
+            testCollectionHandlePossible(src, Sets.newHashSet(src), testObject);
+        }
+
+        {
+            Collection<Object> list = Lists.newArrayList(testObject, 1, 2L, "a", "b");
+            Collection<Object> src = Sets.newLinkedHashSet(list);
+
+            testCollectionHandlePossible(src, Sets.newLinkedHashSet(src), testObject);
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testMapRead() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Maps.newHashMap(ImmutableMap.of(obj, "a", "b", obj));
@@ -886,6 +958,29 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
         assertEquals(ImmutableMap.of(2, "b", 3, res), res.foo);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testMapsHandlePossible() {
+        GridBinaryTestClasses.Address testObject = new GridBinaryTestClasses.Address();
+        testObject.city = "city";
+        testObject.flatNumber = 1;
+        testObject.street = "street";
+        testObject.streetNumber = 32;
+
+        {
+            Map<Object, Object> src = Maps.newHashMap(ImmutableMap.of(1, "a", 2, "b", 3, testObject));
+            testMapHandlePossible(src, Maps.newHashMap(src), 3, testObject);
+        }
+
+        {
+            Map<Object, Object> src = Maps.newLinkedHashMap(ImmutableMap.of(1, "a", 2, "b", 3, testObject));
+
+            testMapHandlePossible(src, Maps.newLinkedHashMap(src), 3, testObject);
+        }
     }
 
     /**
@@ -1904,6 +1999,96 @@ public class BinaryObjectBuilderAdditionalSelfTest extends AbstractBinaryArraysT
         assertNull(builder.getField("field"));
         assertEquals("wewe", builder.getField("w"));
         assertEquals("binaryCachedValue", builder.getField("foo"));
+    }
+
+    /**
+     *
+     */
+    private void testCollectionHandlePossible(Collection<Object> src, Collection<Object> modified, Object obj) {
+        GridBinaryTestClasses.CollectionsHolder listHolder = new GridBinaryTestClasses.CollectionsHolder();
+
+        listHolder.firstCol = src;
+        listHolder.secondCol = src;
+        listHolder.obj = obj;
+
+        BinaryObjectBuilderImpl mutObj = wrap(listHolder);
+
+        assertSame(mutObj.getField("firstCol"), mutObj.getField("firstCol"));
+        assertSame(mutObj.getField("firstCol"), mutObj.getField("secondCol"));
+
+        GridBinaryTestClasses.CollectionsHolder deserialized = mutObj.build().deserialize();
+
+        assertEquals(deserialized.firstCol, deserialized.secondCol);
+        assertEquals(deserialized.firstCol, src);
+
+        Optional<Object> firstObj = deserialized.firstCol.stream()
+                .filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+        Optional<Object> secondObj = deserialized.secondCol.stream()
+                .filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+
+        assertSame(firstObj.get(), deserialized.obj);
+        assertSame(secondObj.get(), deserialized.obj);
+
+        mutObj.setField("firstCol", modified);
+
+        deserialized = mutObj.build().deserialize();
+
+        assertNotSame(deserialized.firstCol, deserialized.secondCol);
+        assertEquals(deserialized.firstCol, deserialized.secondCol);
+
+        firstObj = deserialized.firstCol.stream().filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+        secondObj = deserialized.secondCol.stream().filter(e -> e instanceof GridBinaryTestClasses.Address).findFirst();
+
+        assertEquals(firstObj.get(), deserialized.obj);
+        assertSame(secondObj.get(), deserialized.obj);
+    
+        BinaryObject anotherObject = wrap(listHolder).build();
+    
+        BinaryObjectBuilder bob = anotherObject.toBuilder().build().toBuilder().build().toBuilder();
+    
+        assertSame(bob.getField("firstCol"), bob.getField("firstCol"));
+        assertSame(bob.getField("firstCol"), bob.getField("secondCol"));
+    }
+
+    /**
+     *
+     */
+    private void testMapHandlePossible(Map<Object, Object> src, Map<Object, Object> modified, Object key, Object obj) {
+        GridBinaryTestClasses.MapsHolder mapsHolder = new GridBinaryTestClasses.MapsHolder();
+
+        mapsHolder.firstMap = src;
+        mapsHolder.secondMap = src;
+        mapsHolder.valObj = obj;
+
+        BinaryObjectBuilderImpl mutObj = wrap(mapsHolder);
+
+        assertSame(mutObj.getField("firstMap"), mutObj.getField("firstMap"));
+        assertSame(mutObj.getField("firstMap"), mutObj.getField("secondMap"));
+
+        GridBinaryTestClasses.MapsHolder deserialized = mutObj.build().deserialize();
+
+        assertEquals(deserialized.firstMap, deserialized.secondMap);
+        assertEquals(deserialized.firstMap, src);
+
+        assertSame(deserialized.firstMap.get(key), deserialized.valObj);
+        assertSame(deserialized.secondMap.get(key), deserialized.valObj);
+
+        mutObj.setField("firstMap", modified);
+
+        deserialized = mutObj.build().deserialize();
+
+        assertNotSame(deserialized.firstMap, deserialized.secondMap);
+        assertEquals(deserialized.firstMap, deserialized.secondMap);
+
+        assertEquals(deserialized.firstMap.get(key), deserialized.valObj);
+        assertSame(deserialized.secondMap.get(key), deserialized.valObj);
+        
+        BinaryObject anotherObject = wrap(mapsHolder).build();
+    
+        BinaryObjectBuilder bob = anotherObject.toBuilder().build().toBuilder().build().toBuilder();
+    
+        assertSame(bob.getField("firstMap"), bob.getField("firstMap"));
+        assertSame(bob.getField("firstMap"), bob.getField("secondMap"));
     }
 
     /**

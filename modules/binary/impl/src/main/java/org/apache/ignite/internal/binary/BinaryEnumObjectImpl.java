@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.processors.cache.CacheObjectUtils.objec
 /**
  * Binary enum object.
  */
-class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
+public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 

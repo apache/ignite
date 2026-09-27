@@ -31,6 +31,6 @@ public class ExampleNodeStartup {
      * @throws IgniteException If failed.
      */
     public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/example-ignite.xml");
+        Ignition.start("examples/config/example-cache.xml");
     }
 }

@@ -1,0 +1,7 @@
+{
+  "private": "true",
+  "devDependencies": {
+    "eslint": "latest",
+    "eslint-config-standard": "latest"
+  }
+}

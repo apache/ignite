@@ -639,6 +639,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
     }
+	
+	/** {@inheritDoc} */
+    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, String metaCacheName) {
+        assert metaCacheName != null;
+        return forPredicate(this.ctx.igfsHelper().igfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
+    }
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forHost(ClusterNode node) {

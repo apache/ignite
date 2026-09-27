@@ -327,7 +327,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStopWarmUpByThinClient() throws Exception {
-        checkStopWarmUp(new IgniteInClosureX<>() {
+        checkStopWarmUp(new IgniteInClosureX<IgniteKernal>() {
             /** {@inheritDoc} */
             @Override public void applyx(IgniteKernal kernal) {
                 try (TcpIgniteClient thinCli = (TcpIgniteClient)TcpIgniteClient.start(new ClientConfiguration()

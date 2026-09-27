@@ -70,7 +70,7 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
 
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
             if (thread.getName().contains("%client%")) {
-                thread.suspend();
+                //--thread.suspend();
                 blockedAnything = true;
             }
         }
@@ -78,8 +78,8 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
         Thread.sleep(10000);
 
         for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getName().contains("%client%"))
-                thread.resume();
+            //if (thread.getName().contains("%client%"))
+                //--thread.resume();
         }
 
         for (int j = 0; j < 10; j++) {

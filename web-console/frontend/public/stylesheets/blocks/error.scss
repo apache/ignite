@@ -1,0 +1,16 @@
+
+
+.error-page {
+    text-align: center;
+    min-height: 300px;
+
+    &__title {
+        margin-top: 150px;
+        font-weight: 200;
+    }
+
+    &__description {
+        margin-top: 30px;
+        font-weight: 500;
+    }
+}

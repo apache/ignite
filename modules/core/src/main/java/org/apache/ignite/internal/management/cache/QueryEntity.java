@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,6 +30,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data transfer object for {@link org.apache.ignite.cache.QueryEntity}.
@@ -58,6 +62,10 @@ public class QueryEntity extends IgniteDataTransferObject {
     /** Table name. */
     @Order(5)
     String tblName;
+    
+    /** Table comment. */
+    @Order(9)
+    String tblComment;
 
     /** Key name. Can be used in field list to denote the key as a whole. */
     @Order(6)
@@ -120,6 +128,7 @@ public class QueryEntity extends IgniteDataTransferObject {
             grps.add(new QueryIndex(qryIdx));
 
         tblName = q.getTableName();
+        tblComment = q.getTableComment();
         keyFieldName = q.getKeyFieldName();
         valFieldName = q.getValueFieldName();
     }
@@ -165,6 +174,13 @@ public class QueryEntity extends IgniteDataTransferObject {
     public String getTableName() {
         return tblName;
     }
+    
+    /**
+     * @return Table name.
+     */
+    public String getTableComment() {
+        return tblComment;
+    }
 
     /**
      * @return Key name. Can be used in field list to denote the key as a whole.
@@ -185,6 +201,34 @@ public class QueryEntity extends IgniteDataTransferObject {
      */
     public List<QueryIndex> getGroups() {
         return grps;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeString(out, keyType);
+        U.writeString(out, valType);
+        U.writeCollection(out, keyFields);
+        U.writeStringMap(out, qryFlds);
+        U.writeMap(out, aliases);
+        U.writeCollection(out, grps);
+        U.writeString(out, tblName);
+        U.writeString(out, tblComment);
+        U.writeString(out, keyFieldName);
+        U.writeString(out, valFieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        keyType = U.readString(in);
+        valType = U.readString(in);
+        keyFields = U.readList(in);
+        qryFlds = U.readStringMap(in);
+        aliases = U.readMap(in);
+        grps = U.readList(in);
+        tblName = U.readString(in);
+        tblComment = U.readString(in);
+        keyFieldName = U.readString(in);
+        valFieldName = U.readString(in);
     }
 
     /** {@inheritDoc} */

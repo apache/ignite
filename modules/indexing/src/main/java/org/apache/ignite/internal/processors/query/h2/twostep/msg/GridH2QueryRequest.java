@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -547,6 +549,19 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
         // To avoid deserializing of enum types.
         params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
+		try{
+
+			// add@byron
+            for(int i=0;i<params.length;i++) {
+            	if(params[i] instanceof BinaryObject) {
+            		params[i] = ((BinaryObject)params[i]).deserialize();
+            	}
+            }
+            // end@
+        }        
+        catch (BinaryObjectException e) {
+           // ignore
+        }
     }
 
 

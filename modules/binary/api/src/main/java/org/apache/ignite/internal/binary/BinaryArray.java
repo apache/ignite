@@ -28,7 +28,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -44,12 +43,11 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
 /**
  * Binary object representing array.
  */
-class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryArray> {
+public class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryArray> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Context. */
-    @GridDirectTransient
     @GridToStringExclude
     protected BinaryContext ctx;
 

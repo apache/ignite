@@ -72,7 +72,9 @@ public class QueryEntityClassProperty {
      * @return Alias.
      */
     public String alias() {
-        return F.isEmpty(alias) ? name : alias;
+    	// modify@byron
+    	return F.isEmpty(alias) ? fullName() : alias;
+        //-return F.isEmpty(alias) ? name : alias;
     }
 
     /**

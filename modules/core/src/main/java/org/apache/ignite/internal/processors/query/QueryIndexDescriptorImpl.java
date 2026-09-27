@@ -21,10 +21,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -58,7 +61,12 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
 
     /** */
     private final int inlineSize;
-
+    
+    /**
+     * add@byron get extra index info 
+     */
+	@GridToStringExclude
+	private QueryIndex queryIndex;
     /**
      * Constructor.
      *
@@ -75,7 +83,25 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
         this.type = type;
         this.inlineSize = inlineSize;
     }
+   
 
+    public QueryIndexDescriptorImpl(QueryTypeDescriptorImpl typDesc, QueryIndex queryIndex) {
+		assert queryIndex.getIndexType() != null;
+		this.queryIndex = queryIndex;
+		this.typDesc = typDesc;
+		this.name = queryIndex.getName();
+		this.type = queryIndex.getIndexType();
+		this.inlineSize = queryIndex.getInlineSize();
+	}
+
+	public QueryIndex getQueryIndex() {
+		return queryIndex;
+	}
+
+	public void setQueryIndex(QueryIndex queryIndex) {
+		this.queryIndex = queryIndex;
+	}
+	
     /**
      * @return Type descriptor.
      */

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -83,36 +84,30 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Default size of rebalance thread pool.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THREAD_POOL_SIZE} instead.
-     */
-    @Deprecated
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_REBALANCE_THREAD_POOL_SIZE;
+    /** Maximum number of partitions. */
+    public static final int MAX_PARTITIONS_COUNT = 65000;
+   
+    /** Default number of backups. */
+    public static final int DFLT_BACKUPS = 0;
+
+    /** Default caching mode. */
+    public static final CacheMode DFLT_CACHE_MODE = CacheMode.PARTITIONED;
+
+    /** Default atomicity mode. */
+    public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
     /**
-     * Default rebalance timeout (ms).
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT} instead.
-     */
+      * Default lock timeout.
+      * @deprecated Default lock timeout configuration property has no effect.
+      */
     @Deprecated
-    public static final long DFLT_REBALANCE_TIMEOUT = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
-
-    /**
-     * Default rebalance batches prefetch count.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT} instead.
-     */
-    @Deprecated
-    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
-
-    /**
-     * Time in milliseconds to wait between rebalance messages to avoid overloading CPU.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} instead.
-     */
-    @Deprecated
-    public static final long DFLT_REBALANCE_THROTTLE = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
+    public static final long DFLT_LOCK_TIMEOUT = 0;
 
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
+
+    /** Default maximum inline size for sql indexes. */
+    public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
 
     /** Initial default near cache size. */
     public static final int DFLT_NEAR_START_SIZE = 1500000 / 4;
@@ -120,12 +115,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** Default value for 'invalidate' flag that indicates if this is invalidation-based cache. */
     public static final boolean DFLT_INVALIDATE = false;
 
-    /**
-     * Default rebalance batch size in bytes.
-     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE} instead.
-     */
-    @Deprecated
-    public static final int DFLT_REBALANCE_BATCH_SIZE = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+    /** Default rebalance mode for distributed cache. */
+    public static final CacheRebalanceMode DFLT_REBALANCE_MODE = CacheRebalanceMode.ASYNC;
+   
+    /** Default value for eager ttl flag. */
+    public static final boolean DFLT_EAGER_TTL = true;
+
+    /** Default value for 'maxConcurrentAsyncOps'. */
+    public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
     /** Default value for 'writeBehindEnabled' flag. */
     public static final boolean DFLT_WRITE_BEHIND_ENABLED = false;
@@ -148,8 +145,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** Default write coalescing for write-behind cache store. */
     public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
 
+    /** Default maximum number of query iterators that can be stored. */
+    public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
+
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
+
+    /** Default value for 'readFromBackup' flag. */
+    public static final boolean DFLT_READ_FROM_BACKUP = true;
 
     /** Filter that accepts all nodes. */
     public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgniteAllNodesPredicate();
@@ -158,12 +161,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     @Deprecated
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
+    /** Default number of queries detail metrics to collect. */
+    public static final int DFLT_QRY_DETAIL_METRICS_SIZE = 0;
+
     /** Default value for keep binary in store behavior . */
-    @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
+    public static final Boolean DFLT_STORE_KEEP_BINARY = Boolean.FALSE;
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
+
+    /** Default partition loss policy. */
+    public static final PartitionLossPolicy DFLT_PARTITION_LOSS_POLICY = PartitionLossPolicy.IGNORE;
+
+    /** Default query parallelism. */
+    public static final int DFLT_QUERY_PARALLELISM = 1;
 
     /** Default value for events disabled flag. */
     public static final boolean DFLT_EVENTS_DISABLED = false;
@@ -188,11 +199,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
 
     /** Rebalance thread pool size. */
     @Deprecated
-    private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
+    private int rebalancePoolSize = IgniteConfiguration.DFLT_REBALANCE_THREAD_POOL_SIZE;
 
     /** Rebalance timeout. */
     @Deprecated
-    private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
+    private long rebalanceTimeout = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
 
     /** Cache eviction policy. */
     @Deprecated
@@ -200,7 +211,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
 
     /** Cache eviction policy factory. */
     @SerializeSeparately
-    private Factory evictPlcFactory;
+    private Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory;
 
     /** */
     private boolean onheapCache;
@@ -228,12 +239,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** Platform cache configuration. Enables native cache in platforms (.NET, ...). */
     private PlatformCacheConfiguration platformCfg;
 
+    /** Default value for 'copyOnRead' flag. */
+    public static final boolean DFLT_COPY_ON_READ = true;
+
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSync;
 
     /** */
     @SerializeSeparately
-    private Factory storeFactory;
+    private Factory<? extends CacheStore<? super K, ? super V>> storeFactory;
 
     /** */
     private Boolean storeKeepBinary = DFLT_STORE_KEEP_BINARY;
@@ -267,11 +281,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
 
     /** Rebalance batch size. */
     @Deprecated
-    private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
+    private int rebalanceBatchSize = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
     /** Rebalance batches prefetch count. */
     @Deprecated
-    private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+    private long rebalanceBatchesPrefetchCnt = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
@@ -308,7 +322,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
 
     /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
     @Deprecated
-    private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
+    private long rebalanceThrottle = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 
     /** */
     @SerializeSeparately
@@ -411,7 +425,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * @param name Cache name.
      */
     public CacheConfiguration(String name) {
-        this.name = name;
+        // modify@byron
+        this.setName(name);
     }
 
     /**
@@ -553,6 +568,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     public String getName() {
         return name;
     }
+    
+    /**
+     * Cache name. The cache will be accessed via {@link Ignite#cache(String)} method.
+     *
+     * @return Cache name.
+     */
+    public String getComment() {
+    	if(this.qryEntities!=null && !this.qryEntities.isEmpty()) {
+    		String comment="";
+    		for(QueryEntity entity: this.qryEntities) {
+    			if(entity.getTableComment()!=null) {
+    				if(!comment.isEmpty()) {
+    					comment+="; ";
+    				}
+    				comment+=entity.getTableComment();
+    			}
+    		}
+    		return comment.isBlank() ? null : comment;
+    	}
+        return null;
+    }
 
     /**
      * Sets cache name.
@@ -562,7 +598,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      */
     public CacheConfiguration<K, V> setName(String name) {
         this.name = name;
-
+        //add@byron
+        int pos = name.lastIndexOf('.');
+        if(pos>0 && this.sqlSchema!=null) {
+        	this.sqlSchema = name.substring(pos);
+        }
         return this;
     }
 
@@ -570,15 +610,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * @return {@link DataRegionConfiguration} name.
      */
     @Nullable public String getDataRegionName() {
-        return memPlcName;
-    }
-
-    /**
-     * @return Name of the memory policy.
-     * @deprecated Use {@link #getDataRegionName()} (String)} instead.
-     */
-    @Deprecated
-    public String getMemoryPolicyName() {
         return memPlcName;
     }
 
@@ -595,16 +626,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
         this.memPlcName = dataRegionName;
 
         return this;
-    }
-
-    /**
-     * @param memPlcName Memory policy name.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setDataRegionName(String)} instead.
-     */
-    @Deprecated
-    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        return setDataRegionName(memPlcName);
     }
 
     /**
@@ -643,7 +664,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * @return Cache eviction policy factory or {@code null} if evictions should be disabled
      * or if {@link #getEvictionPolicy()} should be used instead.
      */
-    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+    @Nullable public Factory<? extends EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
         return evictPlcFactory;
     }
 
@@ -1802,7 +1823,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * Gets timeout in milliseconds after which long query warning will be printed.
      *
      * @return Timeout in milliseconds.
-     * @deprecated Use {@link IgniteConfiguration#getLongQueryWarningTimeout()} instead.
      */
     @Deprecated
     public long getLongQueryWarningTimeout() {
@@ -1814,7 +1834,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link IgniteConfiguration#setLongQueryWarningTimeout(long)} instead.
      */
     @Deprecated
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
@@ -1874,10 +1893,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
         if (sqlSchema != null) {
             A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+            this.sqlSchema = sqlSchema;
         }
-
-        this.sqlSchema = sqlSchema;
-
+        else { //add@byron use default sqlSchema
+        	this.setName(this.getName());
+        }
         return this;
     }
 
@@ -2073,6 +2093,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
         return this;
     }
 
+
+    /**
+     * Sets query entities configuration. add@byron
+     *
+     * @param qryEntity Query entities.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setQueryEntity(QueryEntity qryEntity) {
+    	this.qryEntities = Collections.singleton(qryEntity);
+        return this;
+    }
     /**
      * Sets query entities configuration.
      *

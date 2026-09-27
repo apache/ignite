@@ -1,0 +1,62 @@
+
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'general'
+-var model = '$ctrl.clonedTaskFlow'
+
+panel-collapsible(opened=`::true` ng-form=form)
+    panel-title General
+    panel-description
+        | Cluster Task flow configuration.
+        a.link-success(href="https://apacheignite.readme.io/docs/data-grid" target="_blank") More info
+    panel-content.pca-form-row
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Task name:',
+                    model: `${model}.name`,
+                    name: '"name"',                   
+                    required: true
+                })(
+                    
+                    ignite-unique-property='name'
+                    ignite-unique-skip=`["id", ${model}]`
+                )
+                
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Task group (default is target cluster name):',
+                    model: `${model}.group`,
+                    name: '"group"'
+                })
+            
+            .pc-form-grid-col-30
+                 +form-field__dropdown({
+                    label: 'Existing Update Mode:',
+                    model: '$model.existingMode',
+                    name: '"existingMode"',
+                    placeholder: 'REPLACE_EXISTING',
+                    options: '::$ctrl.TaskFlows.updateModes'
+                })
+
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Atomicity:',
+                    model: '$model.atomicityMode',
+                    name: '"atomicityMode"',
+                    placeholder: 'ATOMIC',
+                    options: '::$ctrl.TaskFlows.atomicityModes'
+                })
+           
+            
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Read from backup',
+                    model: `$model.readFromBackup`,
+                    name: '"readFromBackup"',                                    
+                })
+           
+
+        

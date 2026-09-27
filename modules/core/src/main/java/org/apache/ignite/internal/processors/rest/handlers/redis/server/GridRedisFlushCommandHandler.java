@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis.server;
 
 import java.nio.ByteBuffer;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +39,15 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisP
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.NAME;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.BGSAVE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.FLUSHALL;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.FLUSHDB;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SAVE;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage.CACHE_NAME_PREFIX;
 
 /**
@@ -49,8 +56,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        FLUSHDB,
-        FLUSHALL
+        FLUSHDB, FLUSHALL, SAVE, BGSAVE
     );
 
     /**
@@ -76,6 +82,9 @@ public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
         restReq.clientId(msg.clientId());
+        
+        Date now = new Date();
+    	DateFormat formatter = new SimpleDateFormat("yyyy_MM_dd'T'HH_mm_ss");
 
         switch (msg.command()) {
             case FLUSHDB:
@@ -83,13 +92,14 @@ public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
                 restReq.cacheName(msg.cacheName());
 
                 break;
-            default:
+                
+            case FLUSHALL:
                 // CACHE_CLEAR
                 Map<Object, Object> redisCaches = new HashMap<>();
 
                 for (IgniteCacheProxy<?, ?> cache : ctx.cache().publicCaches()) {
                     if (cache.getName().startsWith(CACHE_NAME_PREFIX)) {
-                        redisCaches.put(cache.getName(), null);
+                        redisCaches.put(cache.getName(), cache.getName());
                     }
                 }
 
@@ -98,6 +108,24 @@ public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
 
                 restReq.command(CACHE_CLEAR);
                 restReq.values(redisCaches);
+                break;
+                
+            case SAVE:
+            	restReq.command(NAME);            	
+            	
+            	IgniteFuture<Void> fut = this.ctx.grid().snapshot().createDump(formatter.format(now),null);
+            	
+            	fut.get();
+            	break;
+            	
+            case BGSAVE:
+            	restReq.command(NAME);
+            	
+            	this.ctx.grid().snapshot().createDump(formatter.format(now),null);
+            	break;
+            	
+            default:
+            	restReq.command(NAME);
         }
 
         return restReq;
@@ -105,7 +133,16 @@ public class GridRedisFlushCommandHandler extends GridRedisRestCommandHandler {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        return ((Boolean)restRes.getResponse() ? GridRedisProtocolParser.oKString()
-            : GridRedisProtocolParser.toGenericError("Failed to flush"));
+    	if(restRes.getResponse() == null) {
+    		return GridRedisProtocolParser.nil();
+    	}
+    	if(restRes.getResponse() instanceof Boolean) {
+    		return ((Boolean)restRes.getResponse() ? GridRedisProtocolParser.oKString()
+    	            : GridRedisProtocolParser.toGenericError("Failed to flush"));
+    	}
+    	if(restRes.getResponse() instanceof String) {
+    		return GridRedisProtocolParser.toSimpleString(restRes.getResponse().toString());
+    	}
+    	return GridRedisProtocolParser.oKString();
     }
 }

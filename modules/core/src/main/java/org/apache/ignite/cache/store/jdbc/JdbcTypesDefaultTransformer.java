@@ -135,6 +135,11 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
                 return null;
             }
         }
+        
+        if(type == java.sql.Array.class) { // add@byron        	
+        	java.sql.Array arr = rs.getArray(colIdx);
+        	return arr;
+        }
 
         return rs.getObject(colIdx);
     }

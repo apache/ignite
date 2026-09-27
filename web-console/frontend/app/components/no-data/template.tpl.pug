@@ -1,0 +1,17 @@
+
+
+div(ng-switch='($ctrl.connectionState$ | async:this)' translate-namespace='noDataComponent')
+    div(ng-switch-when='AGENT_DISCONNECTED' translate='.agentDisconnected' translate-sanitize-strategy='null' translate-compile)
+    div(ng-switch-when='CLUSTER_DISCONNECTED' translate='.clusterDisconnected' translate-sanitize-strategy='null' translate-compile)
+    div(ng-switch-when='CLUSTER_INACTIVE')
+        div(ng-if='$ctrl.handleClusterInactive' translate='.clusterInactive')
+        div(ng-if='!$ctrl.handleClusterInactive')
+            ng-transclude
+
+    div(ng-switch-default)
+        .data-loading-wrapper(ng-if='$ctrl.resultDataStatus === "WAITING"')
+            .spinner-circle
+            div(translate='.dataIsLoading')
+
+        div(ng-if='$ctrl.resultDataStatus !== "WAITING"')
+            ng-transclude

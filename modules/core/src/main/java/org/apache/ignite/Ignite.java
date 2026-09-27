@@ -43,7 +43,6 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -467,6 +466,27 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataStreamer<K, V> dataStreamer(String cacheName) throws IllegalStateException;
 
     /**
+     * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
+     * configured then {@link IllegalArgumentException} will be thrown.
+     * <p>
+     * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
+     * be plugged into Hadoop installations. For more information refer to
+     * documentation on Hadoop integration shipped with Ignite.
+     *
+     * @param name IGFS name.
+     * @return IGFS instance.
+     * @throws IllegalArgumentException If IGFS with such name is not configured.
+     */
+    public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException;
+
+    /**
+     * Gets all instances of IGFS (Ignite In-Memory File System).
+     *
+     * @return Collection of IGFS instances.
+     */
+    public Collection<IgniteFileSystem> fileSystems();
+
+    /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
      * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
@@ -729,20 +749,6 @@ public interface Ignite extends AutoCloseable {
      */
     public void resetLostPartitions(Collection<String> cacheNames);
 
-    /**
-     * @return Collection of {@link MemoryMetrics} snapshots.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
-     */
-    @Deprecated
-    public Collection<MemoryMetrics> memoryMetrics();
-
-    /**
-     * @param dataRegionName Name of the data region.
-     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
-     */
-    @Deprecated
-    @Nullable public MemoryMetrics memoryMetrics(String dataRegionName);
 
     /**
      * Returns a collection of {@link DataRegionMetrics} that reflects page memory usage on this Apache Ignite node
@@ -778,22 +784,6 @@ public interface Ignite extends AutoCloseable {
      * @return Snapshot manager.
      */
     public IgniteSnapshot snapshot();
-
-    /**
-     * Returns the {@link TracingConfigurationManager} instance that allows to
-     * <ul>
-     *     <li>Configure tracing parameters such as sampling rate for the specific tracing coordinates
-     *          such as scope and label.</li>
-     *     <li>Retrieve the most specific tracing parameters for the specified tracing coordinates (scope and label)</li>
-     *     <li>Restore the tracing parameters for the specified tracing coordinates to the default.</li>
-     *     <li>List all pairs of tracing configuration coordinates and tracing configuration parameters.</li>
-     * </ul>
-     * @return {@link TracingConfigurationManager} instance.
-     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
-     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
-     */
-    @Deprecated(forRemoval = true)
-    public @NotNull TracingConfigurationManager tracingConfiguration();
 
     /**
      * Underlying operations of returned Ignite instance are aware of application attributes.

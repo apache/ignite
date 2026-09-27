@@ -1,0 +1,23 @@
+
+
+.modal.modal--ignite.modal--wide.theme--ignite(tabindex='-1' role='dialog')
+    .modal-dialog
+        .modal-content
+            .modal-header
+                h4.modal-title(
+                    translate='admin.userActivitiesDialog.title'
+                    translate-values='{userName: ctrl.user.userName}'
+                )
+                button.close(type='button' aria-label='Close' ng-click='$hide()')
+                     svg(ignite-icon='cross')
+            .modal-body.modal-body-with-scroll
+                .panel--ignite
+                    ignite-grid-table(
+                        items='ctrl.data'
+                        column-defs='ctrl.columnDefs'
+                        grid-thin='true'
+                    )
+
+            .modal-footer
+                div
+                    button.btn-ignite.btn-ignite--success(ng-click='$hide()' translate="closeButtonLabel")

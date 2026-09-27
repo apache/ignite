@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "target": "ES2017",
+        "moduleResolution": "Node",
+        "module": "esNext",
+        "lib": ["ES2017", "dom"],
+        "noEmit": true,
+        "allowJs": true,
+        "checkJs": true,
+        "baseUrl": ".",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,       
+        "resolveJsonModule": true,		
+        "plugins": [
+            {"name": "@angular/language-service"}
+        ]
+    },	
+    "exclude": [
+        "build"
+    ]
+}

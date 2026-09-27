@@ -5115,7 +5115,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 try {
                     if (spi.ipFinder.isShared() && locNodeCoord && node.clientRouterNodeId() == null)
-                        spi.ipFinder.registerAddresses(node.socketAddresses());
+                        spi.ipFinder.registerAddresses(node.id(),node.socketAddresses());
                 }
                 catch (IgniteSpiException e) {
                     if (log.isDebugEnabled())
@@ -5219,7 +5219,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg.verified() || !ring.hasRemoteNodes() || msg.senderNodeId() != null) {
                     if (spi.ipFinder.isShared() && !ring.hasRemoteNodes()) {
                         try {
-                            spi.ipFinder.unregisterAddresses(
+                            spi.ipFinder.unregisterAddresses(locNode.id(),
                                 U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
                         }
                         catch (IgniteSpiException e) {

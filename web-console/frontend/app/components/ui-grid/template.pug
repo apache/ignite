@@ -1,0 +1,46 @@
+
+
+div(ng-if='::$ctrl.gridTreeView')
+    .grid.ui-grid--ignite(
+        ui-grid='$ctrl.grid'
+        ui-grid-resize-columns
+        ui-grid-filters
+        ui-grid-selection
+        ui-grid-exporter
+        ui-grid-pinning
+        ui-grid-tree-view
+        ng-class='{ "ui-grid--thin": $ctrl.gridThin }'
+    )
+
+div(ng-if='::$ctrl.gridGrouping')
+    .grid.ui-grid--ignite(
+        ui-grid='$ctrl.grid'
+        ui-grid-resize-columns
+        ui-grid-filters
+        ui-grid-selection
+        ui-grid-exporter
+        ui-grid-pinning
+        ui-grid-grouping
+        ng-class='{ "ui-grid--thin": $ctrl.gridThin }'
+    )
+
+div(ng-if='::(!$ctrl.gridGrouping && !$ctrl.gridTreeView && $ctrl.onSelectionChange)')
+    .grid.ui-grid--ignite(
+        ui-grid='$ctrl.grid'
+        ui-grid-resize-columns
+        ui-grid-filters
+        ui-grid-selection
+        ui-grid-exporter
+        ui-grid-pinning
+        ng-class='{ "ui-grid--thin": $ctrl.gridThin }'
+    )
+
+div(ng-if='::(!$ctrl.gridGrouping && !$ctrl.gridTreeView && !$ctrl.onSelectionChange)')
+    .grid.ui-grid--ignite(
+        ui-grid='$ctrl.grid'
+        ui-grid-resize-columns
+        ui-grid-filters
+        ui-grid-exporter
+        ui-grid-pinning
+        ng-class='{ "ui-grid--thin": $ctrl.gridThin }'
+    )

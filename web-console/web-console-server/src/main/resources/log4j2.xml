@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="INFO" shutdownTimeout="5">
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <!-- Matches only WARN and INFO level -->
+            <LevelRangeFilter minLevel="WARN" maxLevel="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+
+        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <!-- Matches only ERROR level -->
+            <LevelRangeFilter minLevel="ERROR" maxLevel="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+
+        <RollingFile
+            name="FILE"
+            fileName="${env:IGNITE_HOME:-.}/work/log/web-console-server.log"
+            filePattern="${env:IGNITE_HOME:-.}/work/log/web-console-server-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+        </RollingFile>
+
+        <RollingFile
+                name="SERVLET_FILE"
+                fileName="${env:IGNITE_HOME:-.}/work/log/web-console-servlet.log"
+                filePattern="${env:IGNITE_HOME:-.}/work/log/web-console-servlet-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.eclipse.jetty" level="WARN"/>
+        <Logger name="org.eclipse.jetty.webapp" level="DEBUG">
+            <AppenderRef ref="SERVLET_FILE"/>
+        </Logger>
+        <Logger name="org.eclipse.jetty.servlet" level="DEBUG">
+            <AppenderRef ref="SERVLET_FILE"/>
+        </Logger>
+
+        <Logger name="org.apache.ignite.internal" level="WARN">
+            <AppenderRef ref="CONSOLE_ERR"/>
+        </Logger>
+
+        <Logger name="org.apache.ignite.internal" level="INFO" additivity="false">
+            <AppenderRef ref="FILE"/>
+        </Logger>
+
+        <Logger name="org.apache.ignite.spi.checkpoint.noop" level="ERROR"/>
+
+        <Logger name="org.gridgain.console.web.controller.OverrideRequestMappingConfiguration$OverrideRequestMappingHandlerMapping" level="WARN"/>
+
+        <Logger name="org.springframework" level="WARN"/>
+
+        <Logger name="org.springframework" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE_ERR"/>
+            <AppenderRef ref="FILE"/>
+        </Logger>
+
+        <Logger name="org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter" level="OFF"/>
+
+        <Logger name="org.hibernate.validator.internal.util.Version" level="OFF"/>
+
+        <Logger name="springfox.documentation.spring.web" level="WARN"/>
+
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="CONSOLE_ERR"/>
+            <AppenderRef ref="FILE"/>
+        </Root>
+    </Loggers>
+</Configuration>

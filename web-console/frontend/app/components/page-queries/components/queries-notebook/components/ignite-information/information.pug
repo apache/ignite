@@ -1,0 +1,6 @@
+
+
+.block-information
+    svg(ignite-icon='attention' ng-if='title')
+    h3(ng-if='title') {{::title}}
+    div(ng-transclude='')

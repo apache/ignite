@@ -54,7 +54,7 @@
         <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
 
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
-        <revision>2.19.0-SNAPSHOT</revision>
+        <revision>2.16.999-SNAPSHOT</revision>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
     </properties>
 

@@ -19,6 +19,8 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.UUID;
+
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 
@@ -88,6 +90,10 @@ public interface TcpDiscoveryIpFinder {
      */
     public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
+    default void registerAddresses(UUID nodeId, Collection<InetSocketAddress> addrs) throws IgniteSpiException{
+        registerAddresses(addrs);
+    }
+
     /**
      * Unregisters provided addresses.
      * <p>
@@ -98,6 +104,10 @@ public interface TcpDiscoveryIpFinder {
      * @throws IgniteSpiException In case of error.
      */
     public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
+
+    default void unregisterAddresses(UUID nodeId,Collection<InetSocketAddress> addrs) throws IgniteSpiException{
+        unregisterAddresses(addrs);
+    }
 
     /**
      * Closes this IP finder and releases any system resources associated with it.

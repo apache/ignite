@@ -1,0 +1,781 @@
+{
+    "scale": {
+        "time": {
+            "nanosecond": {
+                "short": "ns"
+            },
+            "millisecond": {
+                "short": "ms"
+            },
+            "second": {
+                "long": "seconds",
+                "medium": "sec",
+                "short": "s"
+            },
+            "minute": {
+                "long": "minutes",
+                "medium": "min",
+                "short": "m"
+            },
+            "hour": {
+                "long": "hours",
+                "short": "h"
+            }
+        },
+        "digital": {
+            "kilobyte": {
+                "short": "Kb"
+            },
+            "megabyte": {
+                "short": "Mb"
+            },
+            "gigabyte": {
+                "short": "Gb"
+            },
+            "terabyte": {
+                "short": "Tb"
+            }
+        }
+    },
+    "actionsButtonLabel": "Actions",
+    "closeButtonLabel": "Close",
+    "cancelButtonLabel": "Cancel",
+    "confirmButtonLabel": "Confirm",
+    "configuration": {
+        "configurations": {},
+        "basic": {
+
+        },
+        "advanced": {
+            "cluster": {},
+            "caches": {},
+            "sql": {}
+        },
+        "importDialog": {},
+        "previewDialog": {}
+    },
+    "queries": {
+        "createNotebookDialog": {
+            "title": "New query notebook",
+            "nameInput": {
+                "title": "Notebook name"
+            }
+        },
+        "renameNotebookDialog": {
+            "title": "Rename notebook",
+            "nameInput": {
+                "title": "Notebook name"
+            }
+        },
+        "notebooks": {
+            "documentTitle": "Notebooks",
+            "pageTitle": "Notebooks",
+            "gridColumns": {
+                "name": {
+                    "displayName": "Notebook name",
+                    "categoryDisplayName": "Name",
+                    "filterPlaceholder": "Filter by Name..."
+                },
+                "sqlQueries": {
+                    "displayName": "SQL Queries",
+                    "categoryDisplayName": "SQL Queries"
+                },
+                "scanQueries": {
+                    "displayName": "Scan Queries",
+                    "categoryDisplayName": "Scan Queries"
+                }
+            },
+            "actions": {
+                "clone": "Clone",
+                "rename": "Rename",
+                "delete": "Delete"
+            },
+            "createNotebookButtonLabel": "Create Notebook",
+            "gridTitle": "Notebooks",
+            "loadingMessage": "Loading notebooks...",
+            "noData": {
+                "message": "You have no notebooks. ",
+                "createEntityButtonLabel": "Create one?",
+                "emptyFilterResultMessage": "Nothing to display. Check your filters."
+            }
+        },
+        "notebook": {
+            "documentTitle": "Query notebook",
+            "internalClusterErrorMessagePrefix": "Internal cluster error",
+            "loadingMessageWithDemoEnabled": "Demo grid is starting. Please wait...",
+            "loadingMessageWithDemoDisabled": "Loading query notebook screen...",
+            "newQueryNamePrefix": "Query",
+            "newScanNamePrefix": "Scan",
+            "newGremlinNamePrefix": "Gremlin",
+            "clearQueryResultConfirmationMessage": "Are you sure you want to clear query result?",
+            "queryTooltip": {
+                "clusterIsInactive": "Cluster is inactive",
+                "waitingForResponse": "Waiting for server response",
+                "actionPrefix": "Input text to "
+            },
+            "scanTooltip": {
+                "clusterIsInactive": "Cluster is inactive",
+                "waitingForResponse": "Waiting for server response",
+                "text": "Select cache to export scan results"
+            },
+            "queryResultDialog": {
+                "scan": {
+                    "title": "SCAN query",
+                    "emptyFilterMessage": "SCAN query for cache: <b>{{name}}</b>",
+                    "nonEmptyFilterMessage": "SCAN query for cache: <b>{{name}}</b> with filter: <b>{{filter}}</b>"
+                },
+                "explain": {
+                    "title": "Explain query"
+                },
+                "sqlQuery": {
+                    "title": "SQL query"
+                },
+                "duration": "Duration: {{duration}}",
+                "nodeId": " Node ID8: {{id}}"
+            },
+            "stackTraceDialog": {
+                "title": "Error details",
+                "noStacktraceMessage": "Full stacktrace is not available",
+                "closeButtonLabel": "OK"
+            },
+            "leaveWithRunningQueriesConfirmationMessage": "You have running queries. Are you sure you want to cancel them?",
+            "scanActions": {
+                "scan": "Scan",
+                "scanOnSelectedNode": "Scan on selected node",
+                "rename": "Rename",
+                "remove": "Remove",
+                "cancel": "Cancel",
+                "cancelTooltip": "Cancel query execution"
+            },
+            "renameQueryDialog": {
+                "title": "Rename Query",
+                "nameInput": {
+                    "title": "New query name:"
+                }
+            },
+            "removeQueryDialog": {
+                "message": "{{ hasRunningQueries ? 'Query is being executed. Are you sure you want to cancel and remove query: \"' : 'Are you sure you want to remove query: \"'}}{{name}}\"?"
+            },
+            "chartTooltip": {
+                "table": "Show data in tabular form",
+                "bar": "Show bar chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values",
+                "pie": "Show pie chart<br/>By default first column - pie labels, second column - pie values<br/>In case of one column it will be treated as pie values",
+                "line": "Show line chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values",
+                "area": "Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values"
+            },
+            "chartSettings": {
+                "tooltip": "Click to show chart settings dialog",
+                "buttonLabel": "Chart settings",
+                "timeSpanPrefix": "Show",
+                "timeSpanSuffix": "min",
+                "durationLabel": "Duration: <b>{{duration}}</b>",
+                "nodeId8Label": "NodeID8: <b>{{id}}</b>",
+                "clearQueryResultButtonTooltip": "Clear query result"
+            },
+            "querySettings": {
+                "rowsPerPageInput": {
+                    "tooltip": "Max number of rows to show in query result as one page"
+                },
+                "maxPagesInput": {
+                    "tooltip": "Limit query max results to specified number of pages"
+                },
+                "keepBinary": {
+                    "tooltip": "do not deserialize binary objects, false by default"
+                },
+                "refreshRateInput": {
+                    "tooltip": "Configure periodical execution of last successfully executed query"
+                },
+                "nonCollocatedJoinsInput": {
+                    "tooltip": "Non-collocated joins is a special mode that allow to join data across cluster without collocation.<br>Nested joins are not supported for now.<br><b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins."
+                },
+                "collocatedQueryInput": {
+                    "tooltip": "Used For Optimization Purposes Of Queries With GROUP BY Statements.<br/><b>NOTE:</b> Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.<br/>If you know in advance that the elements of your query selection are collocated together on the same node and you group by collocated key (primary or affinity key), then Ignite can make significant performance and network optimizations by grouping data on remote nodes."
+                },
+                "enforceJoinOrderInput": {
+                    "tooltip": "Enforce join order of tables in the query.<br/>If <b>set</b>, then query optimizer will not reorder tables within join.<br/><b>NOTE:</b> It is not recommended to enable this property unless you have verified that indexes are not selected in optimal order."
+                },
+                "lazyResultSetInput": {
+                    "tooltip": "By default Ignite attempts to fetch the whole query result set to memory and send it to the client.<br/>For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit."
+                }
+            },
+            "queryActions": {
+                "execute": {
+                    "buttonLabel": "Execute"
+                },
+                "executeOnSelectedNode": {
+                    "buttonLabel": "Execute on selected node"
+                },
+                "moveUpParagraph":{
+                    "buttonLabel": "Move up"
+                },
+                "moveDownParagraph":{
+                    "buttonLabel": "Move down"
+                },
+                "explain": {
+                    "buttonLabel": "Explain",
+                    "tooltip": "explain query"
+                },
+                "cancel": {
+                    "buttonLabel": "Cancel",
+                    "tooltip": "Cancel query execution"
+                },
+                "rename": {
+                    "buttonLabel": "Rename"
+                },
+                "remove": {
+                    "buttonLabel": "Remove"
+                }
+            },
+            "queryResultTableHeader": {
+                "currentPage": "Page: <b>{{page}}</b>",
+                "resultsSoFar": "Results so far: <b>{{amount}}</b>",
+                "duration": "Duration: <b>{{duration}}</b>",
+                "nodeId": "NodeID8: <b>{{id}}</b>",
+                "clearQueryResultButtonTooltip": "Clear query result",
+                "exportButtonTooltip": "export query results"
+            },
+            "export": {
+                "exportButtonLabel": "Export",
+                "exportAllButtonLabel": "Export all",
+                "copyToClipboardButtonLabel": "<span title=\"Copy current result page to clipboard\">Copy to clipboard</span>"
+            },
+            "chartResult": {
+                "columnsNotConfiguredErrorMessage": "Cannot display chart. Please configure axis using <b>Chart settings</b>",
+                "noColumnsErrorMessage": "Cannot display chart. Result set must contain Java build-in type columns. Please change query and execute it again.",
+                "pieChartNoSupportForTimeLineErrorMessage": "Pie chart does not support 'TIME_LINE' column for X-axis. Please use another column for X-axis or switch to another chart.",
+                "noQueryAndScanSupportErrorMessage": "Charts do not support <b>Explain</b> and <b>Scan</b> query"
+            },
+            "scanPanelContent": {
+                "chooseCacheInput": {
+                    "placeholder": "Choose cache"
+                },
+                "filterInput": {
+                    "placeholder": "Enter filter"
+                },
+                "rowsPerPageInput": {
+                    "tooltip": "Max number of rows to show in query result as one page"
+                }
+            },
+            "queryResult": {
+                "genericError": "Error: {{error}}",
+                "emptyResult": "Result set is empty. Duration: <b>{{duration}}</b>",
+                "scanQueryCache": "Showing results for scan of <b>{{cacheName}}</b>",
+                "scanQueryFilter": "&nbsp; with filter: <b>{{filter}}</b>",
+                "scanQueryNode": "&nbsp; on node: <b>{{node}}</b>",
+                "nextButtonLabel": "Next",
+                "cachesMetadataInput": {
+                    "label": "Caches:",
+                    "metadataButtonTooltip": "Click to show cache types metadata dialog",
+                    "filterPlaceholder": "Filter caches..."
+                },
+                "useAsDefaultSchemaInput": {
+                    "label": "Use selected cache as default schema name",
+                    "tooltip": "Use selected cache as default schema name.<br/>This will allow to execute query on specified cache without specify schema name.<br/><b>NOTE:</b> In future version of Ignite this feature will be removed."
+                },
+                "wrongCachesFilterError": "Wrong caches filter",
+                "noCaches": "No caches",
+                "showMoreButtonLabel": "Show more",
+                "showQueryButtonLabel": "Show query"
+            },
+            "scrollToQueryButtonLabel": "Scroll to query",
+            "saveNotebookNameButtonTooltip": "Save notebook name",
+            "addQueryButtonLabel": "Add query",
+            "addScanButtonLabel": "Add scan",
+            "addGremlinButtonLabel": "Add Gremlin",
+            "breadcrumbs": {
+                "parent": "Notebooks",
+                "here": "Notebook '{{name}}'"
+            },
+            "features": {
+                "title": "With query notebook you can",
+                "list": "<li>Create any number of queries</li><li>Execute and explain SQL queries</li><li>Execute scan queries</li><li>View data in tabular form and as charts</li><li><a href='https://apacheignite-sql.readme.io/docs/sql-reference-overview' target='_blank'>More info</a></li>",
+                "examplesLabel": "Examples:"
+            },
+            "noData": {
+                "title": "Failed to load notebook",
+                "message": "Notebook not accessible any more. Go back to notebooks list."
+            }
+        },
+        "failedToLoadNotebookErrorMessage": "Failed to load notebook.",
+        "notebookRemovalNotSupportedInDemoModeErrorMessage": "Removing \"{{name}}\" notebook is not supported.",
+        "removeNotebookConfirmationMessage": "Are you sure you want to remove notebook: \"{{notebook.name}}\"?",
+        "removeNotebooksConfirmationMessage": "Are you sure you want to remove {{amount}} selected notebooks?",
+        "notebookNameCollissionErrorMessage": "Notebook with name \"{{name}}\" already exists!"
+    },
+    "connectedClustersDialog": {
+        "logoutButtonTooltip": "Click here to logout from cluster.",
+        "status": {
+            "active": "Active",
+            "inactive": "Not Active"
+        },
+        "noData": {
+            "noClustersMessage": "You have no connected clusters."
+        },
+        "gridColumnTitles": {
+            "name": "Cluster",
+            "nids": "Number of Nodes",
+            "status": "Status"
+        },
+        "title": "Connected Clusters",
+        "closeButtonLabel": "Ok"
+    },
+    "demoMode": {},
+    "helpMenu": {},
+    "userMenu": {},
+    "userProfile": {},
+    "admin": {
+        "pageTitle": "Admin panel",
+        "setUserNotificationsButtonLabel": "Set user notifications",
+        "listOfRegisteredUsers": {
+            "tabs": {
+                "users": "Users",
+                "companies": "Companies",
+                "countries": "Countries"
+            },
+            "gridTitles": {
+                "users": "List of registered users",
+                "companies": "List of registered companies",
+                "countries": "List of registered countries"
+            },
+            "excludeInput": {
+                "placeholder": "Exclude by company name..."
+            },
+            "noData": {
+                "nonEmptyFilterMessage": "Nothing to display. Check your filters."
+            },
+            "actions": {
+                "becomeThisUser": "Become this user",
+                "removeAdmin": "Revoke admin",
+                "grantAdmin": "Grant admin",
+                "addUser": "Add user",
+                "removeUser": "Remove user",
+                "activityDetail": "Activity detail"
+            },
+            "removeUserConfirmationMessage": "Are you sure you want to remove user: \"{{userName}}\"?",
+            "categoryDisplayNames": {
+                "user": "User",
+                "email": "Email",
+                "activated": "Activated",
+                "company": "Company",
+                "country": "Country",
+                "lastLogin": "Last login",
+                "lastActivity": "Last activity",
+                "configurations": "Configurations",
+                "totalActivities": "Total activities",
+                "configurationActivities": "Configuration's activities",
+                "queriesActivities": "Queries' activities"
+            },
+            "columns": {
+                "user": {
+                    "title": "User",
+                    "filterPlaceholder": "Filter by name..."
+                },
+                "email": {
+                    "title": "Email",
+                    "filterPlaceholder": "Filter by email..."
+                },
+                "activated": {
+                    "title": "Activated",
+                    "filterPlaceholder": "Filter by activation..."
+                },
+                "company": {
+                    "title": "Company",
+                    "filterPlaceholder": "Filter by company..."
+                },
+                "country": {
+                    "title": "Country",
+                    "filterPlaceholder": "Filter by country..."
+                },
+                "lastlogin": {
+                    "title": "Last login"
+                },
+                "lastactivity": {
+                    "title": "Last activity"
+                },
+                "cfg_clusters": {
+                    "title": "Clusters count",
+                    "tooltip": "Clusters count"
+                },
+                "cfg_models": {
+                    "title": "Models count",
+                    "tooltip": "Models count"
+                },
+                "cfg_caches": {
+                    "title": "Caches count",
+                    "tooltip": "Caches count"
+                },
+                "cfg": {
+                    "title": "Cfg",
+                    "tooltip": "Total count of configuration usages"
+                },
+                "qry": {
+                    "title": "Qry",
+                    "tooltip": "Total count of queries usages"
+                },
+                "demo": {
+                    "title": "Demo",
+                    "tooltip": "Total count of demo startup"
+                },
+                "dnld": {
+                    "title": "Dnld",
+                    "tooltip": "Total count of agent downloads"
+                },
+                "starts": {
+                    "title": "Starts",
+                    "tooltip": "Total count of agent startup"
+                },
+                "clusters": {
+                    "title": "Clusters",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterBasic": {
+                    "title": "Basic",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterBasicNew": {
+                    "title": "Basic create",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedNew": {
+                    "title": "Adv. Cluster create",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedCluster": {
+                    "title": "Adv. Cluster edit",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedCaches": {
+                    "title": "Adv. Caches",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedCache": {
+                    "title": "Adv. Cache edit",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedModels": {
+                    "title": "Adv. Models",
+                    "tooltip": "Configuration clusters"
+                },
+                "clusterAdvancedModel": {
+                    "title": "Adv. Model edit",
+                    "tooltip": "Configuration clusters"
+                },
+                "execute": {
+                    "title": "Execute",
+                    "tooltip": "Query executions"
+                },
+                "explain": {
+                    "title": "Explain",
+                    "tooltip": "Query explain executions"
+                },
+                "scan": {
+                    "title": "Scan",
+                    "tooltip": "Scan query executions"
+                }
+            }
+        },
+        "userActivitiesDialog": {
+            "title": "Activity details: {{ userName }}",
+            "grid": {
+                "columns": {
+                    "description": {
+                        "title": "Description"
+                    },
+                    "action": {
+                        "title": "Action"
+                    },
+                    "visited": {
+                        "title": "Visited"
+                    }
+                }
+            }
+        },
+        "userNotificationsDialog": {
+            "title": "Set user notifications",
+            "message": "Enter the text, which will show for all users of the Web Console about an important event or warning about ongoing technical works. It will appear <b>on the yellow bar</b> in the header.",
+            "formActionButtonLabel": "Submit",
+            "cancelButtonLabel": "Cancel",
+            "showMessageInput": {
+                "label": "Show message"
+            }
+        },
+        "createUserDialog": {
+            "userCreatedSuccessNotification": "User {{user.email}} created",
+            "loadingText": "Creating user…",
+            "title": "Create User",
+            "formActionButtonLabel": "Create user"
+        }
+    },
+    "newUserForm": {},
+    "gettingStartedDialog": {},
+    "footer": {
+
+    },
+    "navigationMenu": {
+        "queriesLinkLabel": "Queries"
+    },
+    "signIn": {
+        "documentTitle": "Sign In",
+        "pageTitle": "Sign In",
+        "emailInput": {
+            "placeholder": "Input email"
+        },
+        "passwordInput": {
+            "placeholder": "Input password"
+        },
+        "forgotPasswordLinkLabel": "Forgot password?",
+        "formActionButtonLabel": "{{::activationToken ? 'Activate' : 'Sign In'}}",
+        "signupMessage": "Don't have an account? <a href='/signup'>Get started</a>",
+        "confirmRegistrationMessage": "Please sign in to confirm your registration"
+    },
+    "signUp": {
+        "documentTitle": "Sign Up",
+        "pageTitle": "Don't Have An Account?",
+        "formActionButtonLabel": "Sign Up",
+        "signInMessage": "Already have an account? <a ui-sref='signin'>Sign in here</a>"
+    },
+    "signupConfirmation": {
+        "documentTitle": "Sign Up Confirmation",
+        "pageTitle": "Confirm your email",
+        "message": "Thanks For Signing Up!<br />Please check your email and click link in the message we just sent to <b>{{::$ctrl.email}}</b>.<br />If you don’t receive email try to <a ng-click='$ctrl.resendConfirmation()'>resend confirmation</a> once more.",
+        "successNotification": "Signup confirmation sent, check your email"
+    },
+    "forgotPassword": {
+        "documentTitle": "Forgot Password",
+        "pageTitle": "Forgot password?",
+        "pageMessage": "Enter the email address for your account & we'll email you a link to reset your password.",
+        "emailInput": {
+            "placeholder": "Input email"
+        },
+        "backToSignInLinkLabel": "Back to sign in",
+        "formActionButtonLabel": "Send it to me"
+    },
+    "passwordReset": {
+        "documentTitle": "Reset password",
+        "pageTitle": "Reset Password",
+        "newPasswordInput": {
+            "placeholder": "New password"
+        },
+        "confirmNewPasswordInput": {
+            "placeholder": "Confirm new password"
+        },
+        "cancelLinkLabel": "Cancel",
+        "formActionButtonLabel": "Save Changes",
+        "successNotification": "Password successfully changed"
+    },
+    "passwordChangedPage": {
+        "documentTitle": "Password send",
+        "pageTitle": "Ready!",
+        "message": "Further instructions for password reset have been sent to your e-mail address.<br />You'll be redirected back automatically in a few seconds. If not, please <a ui-sref='signin'>click here</a>."
+    },
+    "landing": {
+        "intro": {
+            "title": "Web Console",
+            "subtitle": "An Interactive Configuration Wizard and Management Tool for Apache™ Ignite®",
+            "text": "It provides an interactive configuration wizard which helps you create and download configuration files and code snippets for your Apache Ignite projects. Additionally, the tool allows you to automatically load SQL metadata from any RDBMS, run SQL queries on your in-memory cache, and view execution plans, in-memory schema, and streaming charts.",
+            "signUpButtonLabel": "Sign Up"
+        },
+        "features": {
+            "title": "The Web Console allows you to:",
+            "configuration": {
+                "title": "Configure Apache Ignite clusters and caches",
+                "description": "The Web Console configuration wizard takes you through a step-by-step process that helps you define all the required configuration parameters. The system then generates a ready-to-use project with all the required config files."
+            },
+            "sql": {
+                "title": "Run free-form SQL queries on <br> Apache Ignite caches",
+                "description": "By connecting the Web Console to your Apache Ignite cluster, you can execute SQL queries on your in-memory cache. You can also view the execution plan, in-memory schema, and streaming charts for your cluster."
+            },
+            "schemaImport": {
+                "title": "Import database schemas from <br> virtually any RDBMS",
+                "description": "To speed the creation of your configuration files, the Web Console allows you to automatically import the database schema from virtually any RDBMS including Oracle, SAP, MySQL, PostgreSQL, and many more."
+            },
+            "userManagement": {
+                "title": "Manage the Web Console users",
+                "description": "The Web Console allows you to have accounts with different roles."
+            },
+            "signUpButtonLabel": "Get Started"
+        }
+    },
+    "public": {
+        "appTitle": "Management console for Apache Ignite",
+        "signInLinkLabel": "Sign In"
+    },
+    "formField": {
+        "passwordVisibility": {
+            "show": "Show password",
+            "hide": "Hide password"
+        }
+    },
+    "validationMessages": {
+        "required": "Value is required",
+        "email": "Email has invalid format",
+        "passwordMatch": "Passwords do not match",
+        "unknown": "Value is invalid: {{errorType}}"
+    },
+    "profile": {
+        "confirmChangeToken": "Are you sure you want to change security token?<br>If you change the token you will need to restart the agent.",
+        "documentTitle": "User profile",
+        "pageTitle": "User profile",
+        "firstNameInput": {
+            "label": "First name"
+        },
+        "lastNameInput": {
+            "label": "Last name"
+        },
+        "emailInput": {
+            "label": "Email"
+        },
+        "phoneInput": {
+            "label": "Phone",
+            "placeholder": "Input phone (ex.: +15417543010)"
+        },
+        "countryInput": {
+            "label": "Country/Region"
+        },
+        "companyInput": {
+            "label": "Company"
+        },
+        "tokenPanel": {
+            "title": {
+                "opened": "Cancel security token changing...",
+                "closed": "Show security token..."
+            },
+            "form": {
+                "hint": "The security token is used for authentication of Web agent",
+                "label": "Security Token",
+                "copyTooltip": "Copy security token to clipboard",
+                "placeholder": "No security token. Please regenerate."
+            },
+            "generateToken": "Generate Random Security Token?"
+        },
+        "passwordPanel": {
+            "title": {
+                "opened": "Cancel password changing...",
+                "closed": "Change password..."
+            },
+            "newPassword": {
+                "label": "New password"
+            },
+            "confirmPassword": {
+                "label": "Confirm password"
+            }
+        },
+        "buttons": {
+            "cancel": "Cancel",
+            "save": "Save Changes"
+        }
+    },
+    "bsSelectMenu": {
+        "selectAllOptionLabel": "All"
+    },
+    "clusterSecurityIconComponent": {
+        "titleSecured": "Secured",
+        "titleUnsecured": "Unsecured"
+    },
+    "clusterSelectorComponent": {
+        "failedToSwitchClusterErrorMessage": "Failed to switch cluster: ",
+        "failedToToggleClusterStateErrorMessage": "Failed to toggle cluster state: ",
+        "deactivateConfirmationMessage": "Are you sure you want to deactivate cluster?",
+        "clusterIsInDemoMode": "Demo cluster",
+        "noClusters": "No clusters available",
+        "tooltip": "Multi-Cluster Support<br/><a href=\"https://apacheignite-tools.readme.io/docs/multi-cluster-support\" target=\"_blank\">More info</a>",
+        "activationState": "Cluster {{ active ? 'active' : 'inactive' }}"
+    },
+    "connectedClustersBadgeComponent": {
+        "message": "My Connected Clusters: "
+    },
+    "signupFormComponent": {
+        "emailInput": {
+            "placeholder": "Input email"
+        },
+        "passwordInput": {
+            "placeholder": "Input password"
+        },
+        "confirmPasswordInput": {
+            "placeholder": "Confirm password"
+        },
+        "firstNameInput": {
+            "placeholder": "Input first name"
+        },
+        "lastNameInput": {
+            "placeholder": "Input last name"
+        },
+        "phoneInput": {
+            "placeholder": "Input phone (ex.: +15417543010)"
+        },
+        "countryInput": {
+            "placeholder": "Choose your country"
+        },
+        "companyInput": {
+            "placeholder": "Input company name"
+        }
+    },
+    "gridExportComponent": {
+        "tooltip": "Export filtered rows to CSV",
+        "buttonLabel": "Export to .csv"
+    },
+    "gridItemSelectedComponent": {
+        "someSelected": "{{ selected }} of {{ count }} selected",
+        "noneSelected": "Showing: 0 rows"
+    },
+    "gridShowingRowsComponent": {
+        "total": "Total: {{count}}",
+        "showing": "Showing: {{visible}}",
+        "selected": "Selected: {{selected}} of {{count}}",
+        "copyToClipboardButtonLabel": "Copy to clipboard"
+    },
+    "igniteChartComponent": {
+        "chartNoDataComponent": {
+            "noDatasets": "No Data<br />Make sure you are connected to the right grid."
+        },
+        "ranges": {
+            "1": "1 min",
+            "5": "5 min",
+            "10": "10 min",
+            "15": "15 min",
+            "30": "30 min"
+        },
+        "duplicateDatasetErrorMessage": "Dataset with name {{datasetName}} is already in chart",
+        "rangeLabel": "Range: "
+    },
+    "inputDialog": {
+        "textModeInput": {
+            "placeholder": "Enter value"
+        },
+        "emailModeInput": {
+            "placeholder": "Input email"
+        }
+    },
+    "listEditableComponent": {
+        "addNewItemsButtonLabel": "+ Add new {{entity}}",
+        "noItemsMessage": "You have no {{entity}}. ",
+        "noItemsCreateOneButtonLabel": "Create one?"
+    },
+    "noDataComponent": {
+        "agentDisconnected": "Agent is disconnected. <a ng-click='$ctrl.openAgentMissingDialog()'>Check</a> agent is up and running.",
+        "clusterDisconnected": "Cluster is not available. <a ng-click='$ctrl.openNodeMissingDialog()'>Check</a> cluster is up and running and agent is appropriately <a href=\"https://apacheignite-tools.readme.io/docs/getting-started#section-configuration\" target=\"_blank\">configured</a>.",
+        "clusterInactive": "Cluster is inactive. Please activate cluster.",
+        "dataIsLoading": "Data is loading..."
+    },
+    "permanentNotificationsComponent": {
+        "assumedIdentity": "You are currently viewing user <strong>{{user.firstName}} {{user.lastName}}</strong> as administrator. <a ng-click='$ctrl.revertIdentity()'>Revert to your identity?</a>",
+        "demoMode": "You are now in Demo Mode. <a ng-click='$ctrl.closeDemo()'>Close Demo?</a>"
+    },
+    "timedRedirectionComponent": {
+        "message": "You’ll be redirected back automatically in {{secondsLeft}} seconds, or <a ng-click='$ctrl.go()'>click here</a> to redirect now."
+    },
+    "versionPickerComponent": {
+        "tooltip": "Web Console supports multiple Ignite versions.<br>Select version you need to configure cluster."
+    },
+    "appFooter": {
+        "downloadAgentButtonLabel": "下载 Agent去连接你的集群",
+        "product": "",
+        "copyright": "© {{year}}.",
+        "legal": ""
+    },
+    "demoModeButton": {
+        "continueConfirmationMessage": "Would you like to continue with previous demo session?",
+        "demoModeDisabledErrorMessage": "Demo mode disabled by administrator",
+        "startDemoButtonLabel": "启动Demo"
+    }
+}

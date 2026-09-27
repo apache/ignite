@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.MSET;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.*;
 
 /**
  * Redis MSET command handler.

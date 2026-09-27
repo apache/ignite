@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -107,6 +108,7 @@ import org.h2.table.TableFilter;
 import org.h2.table.TableView;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+import org.h2.value.ValueString;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
@@ -2145,6 +2147,21 @@ public class GridSqlQueryParser {
 
             Expression rightExp = COMPARISON_RIGHT.get(cmp);
             GridSqlElement right = parseExpression(rightExp, calcTypes);
+            
+            // add@byron
+            // Advanced Lucene Index HINT, replace EQUAL by IN expression with empty value. See PartitionExtractor.extractLuceneConditionFromEquality
+            if (opType.equals(GridSqlOperationType.EQUAL) &&
+                    (left instanceof GridSqlColumn) && ((GridSqlColumn)left).columnName().equalsIgnoreCase(PartitionExtractor.LUCENE_FIELD_NAME)) {
+
+                GridSqlOperation res = new GridSqlOperation(IN);
+
+                res.addChild(left);
+                res.addChild(parseExpression(ValueExpression.get(ValueString.get("")), calcTypes));
+                res.addChild(parseExpression(rightExp, calcTypes));
+
+                return res;
+            }
+            // end@
 
             return new GridSqlOperation(opType, left, right);
         }

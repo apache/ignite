@@ -1,0 +1,82 @@
+package org.apache.ignite.internal.plugin;
+
+import io.vertx.webmvc.starter.VertXStarter;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.plugin.IgnitePlugin;
+
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
+
+public class IgniteVertxPlugin implements IgnitePlugin {
+	static Vertx vertx = null;  // 一个jvm只有一个vertx
+	private VertxOptions options;
+	private IgniteLogger log;
+	private final String instanceName;
+	volatile boolean finish = false;
+	
+	public IgniteVertxPlugin(VertxOptions options, IgniteLogger log,String instanceName) {
+		this.options = options;
+		this.log = log;
+		this.instanceName = instanceName;
+	}
+	
+	public static Vertx getVertx() {
+		return vertx;
+	}
+
+	public synchronized Vertx vertx() {
+		
+		if (vertx == null && options.getClusterManager()!=null) {
+			try {
+				long startwatch = System.currentTimeMillis();
+				finish = false;
+				Vertx.clusteredVertx(options, res -> {
+					if (res.succeeded()) {
+						vertx = res.result();
+						vertx.exceptionHandler(event -> {
+							log.error("Vertx:", event);
+						});
+						finish = true;
+
+						long stopwatch = System.currentTimeMillis();
+						long spend = (stopwatch - startwatch) / 1000;
+						log.info("[Vertx web] Vertx web's vert.x system started successfully, using time {}s.",spend+"");
+
+					} else {
+						// 失败的时候做什么！
+						log.error("Failt to start Vertx cluster.Use standalone vertx", res.cause());
+						vertx = Vertx.vertx(options);
+						vertx.exceptionHandler(event -> {
+							log.error("Vertx:", event);
+						});
+						finish = true;
+					}
+				});
+
+			} catch (Exception e) {
+				log.error("[Vertx web] create vertx fail.", e);
+				finish = true;
+			}
+			while(!finish) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		if(vertx==null){
+			vertx = Vertx.vertx(options);
+			vertx.exceptionHandler(event -> {
+				log.error("Vertx:", event);
+			});
+			finish = true;
+		}
+		return vertx;
+	}
+
+	public VertXStarter starter(){
+		return VertXStarter.getInstance(this.instanceName);
+	}
+}
