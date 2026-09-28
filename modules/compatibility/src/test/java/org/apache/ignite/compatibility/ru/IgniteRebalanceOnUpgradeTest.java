@@ -56,14 +56,14 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** Smoke test for rolling upgrade with persistence. */
 public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Consistent ID's. */
-    private static final List<String> CONSISTENT_IDS = List.of(
+    protected static final List<String> CONSISTENT_IDS = List.of(
         "ad26bff6-5ff5-49f1-9a61-425a827953ed",
         "c1099d16-e7d7-49f4-925c-53329286c444",
         "7b880b69-8a9e-4b84-b555-250d365e2e67"
     );
 
     /** Source image name, overridable via {@code -Dru.source.image.name}. */
-    private static final String SOURCE_IMAGE_NAME = System.getProperty("ru.source.image.name");
+    protected static final String SOURCE_IMAGE_NAME = System.getProperty("ru.source.image.name");
 
     /** Upgrade mode. */
     private static final UpgradeMode UPGRADE_MODE = UpgradeMode.valueOf(System.getProperty("ru.upgrade.mode",
@@ -114,7 +114,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     /** Basic RU test. */
     @Test
     public void testRollingUpgrade() throws Exception {
-        try (IgniteClusterContainer cluster = new IgniteClusterContainer(SOURCE_IMAGE_NAME, CONSISTENT_IDS)) {
+        try (IgniteClusterContainer cluster = cluster()) {
             cluster.start();
 
             ClientCacheConfiguration cfg = new ClientCacheConfiguration()
@@ -144,8 +144,13 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
         }
     }
 
+    /** @return Source cluster container. */
+    protected IgniteClusterContainer cluster() throws Exception {
+        return new IgniteClusterContainer(SOURCE_IMAGE_NAME, CONSISTENT_IDS);
+    }
+
     /** Verify data via local host-JVM nodes. */
-    private void verifyViaLocalNodes() {
+    protected void verifyViaLocalNodes() {
         IgniteCache<Integer, Integer> targetCache = nodes.get(0).cache(CACHE_NAME);
 
         for (int i = 0; i < 1000; i++)
@@ -157,7 +162,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     }
 
     /** Verify data via thin client connected to upgraded Docker nodes. */
-    private void verifyViaDockerNodes(IgniteClusterContainer cluster) {
+    protected void verifyViaDockerNodes(IgniteClusterContainer cluster) {
         IgniteContainer con = cluster.containers().get(0);
 
         con.checkNodeCount(cluster.containers().size());
@@ -173,7 +178,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
+    protected void upgradeCluster(IgniteClusterContainer srcCluster) throws Exception {
         List<IgniteContainer> srcContainers = srcCluster.containers();
 
         if (UPGRADE_MODE == UpgradeMode.LOCAL) {
@@ -194,7 +199,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     }
 
     /** Stop container, start a local host-JVM node with the same consistent ID. */
-    private void upgradeLocally(IgniteContainer con, int idx) throws Exception {
+    protected void upgradeLocally(IgniteContainer con, int idx) throws Exception {
         // Address containers use to reach this (host JVM) node:
         //   - Linux:   Docker bridge gateway IP (e.g. 172.24.0.1) — always reachable from containers,
         //              and the host can bind to it. The host's LAN IP is unreliable (on Debian/Ubuntu
@@ -235,7 +240,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0, String ip, int idx) {
+    protected IgniteConfiguration configuration(String nodeId, String workDir, Collection<String> addrs0, String ip, int idx) {
         DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration()
             .setName("testRegion")
             .setInitialSize(1024L * 1024 * 1024)
@@ -295,15 +300,23 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteClient client(String addr) {
+    protected IgniteClient client(String addr) {
         if (client == null)
-            client = Ignition.startClient(new ClientConfiguration().setAddresses(addr));
+            client = Ignition.startClient(clientConfiguration(addr));
 
         return client;
     }
 
+    /**
+     * @param addr Server address.
+     * @return Thin client configuration.
+     */
+    protected ClientConfiguration clientConfiguration(String addr) {
+        return new ClientConfiguration().setAddresses(addr);
+    }
+
     /** */
-    private void closeClient() {
+    protected void closeClient() {
         if (client != null) {
             client.close();
 
@@ -312,7 +325,7 @@ public class IgniteRebalanceOnUpgradeTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void stopLocalNodes() {
+    protected void stopLocalNodes() {
         for (IgniteEx node : nodes) {
             if (node != null)
                 Ignition.stop(node.name(), false);

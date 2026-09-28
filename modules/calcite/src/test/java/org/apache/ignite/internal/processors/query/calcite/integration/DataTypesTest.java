@@ -199,6 +199,26 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .check();
     }
 
+    /** Tests that implicit casts use the registered SQL name of OTHER. */
+    @Test
+    public void testOtherTypeImplicitCast() {
+        sql("CREATE TABLE t(id INT, oth OTHER) WITH " + atomicity());
+
+        sql("INSERT INTO t VALUES (1, 'str1')");
+        sql("INSERT INTO t VALUES (?, ?)", 2, "str2");
+
+        sql("INSERT INTO t SELECT 3, 42");
+        sql("INSERT INTO t SELECT ?, ?", 4, 69);
+
+        assertQuery("SELECT oth FROM t ORDER BY id")
+            .ordered()
+            .returns("str1")
+            .returns("str2")
+            .returns(42)
+            .returns(69)
+            .check();
+    }
+
     /** Tests UUID without index. */
     @Test
     public void testUuidWithoutIndex() {

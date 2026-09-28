@@ -21,18 +21,18 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
-import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_OFFSET_ONE_BYTE;
-import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_OFFSET_TWO_BYTES;
-import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_1;
-import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_2;
-import static org.apache.ignite.internal.binary.BinaryUtils.dataStartRelative;
-import static org.apache.ignite.internal.binary.BinaryUtils.fieldOffsetLength;
-import static org.apache.ignite.internal.binary.BinaryUtils.footerStartAbsolute;
-import static org.apache.ignite.internal.binary.BinaryUtils.hasRaw;
-import static org.apache.ignite.internal.binary.BinaryUtils.hasSchema;
-import static org.apache.ignite.internal.binary.BinaryUtils.isCompactFooter;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.FLAG_OFFSET_ONE_BYTE;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.FLAG_OFFSET_TWO_BYTES;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.OFFSET_1;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.OFFSET_2;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.dataStartRelative;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.fieldOffsetLength;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.footerStartAbsolute;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.hasRaw;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.hasSchema;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.isCompactFooter;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.rawOffsetAbsolute;
 import static org.apache.ignite.internal.binary.BinaryUtils.length;
-import static org.apache.ignite.internal.binary.BinaryUtils.rawOffsetAbsolute;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.FLAGS_POS;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.HASH_CODE_POS;
@@ -188,7 +188,7 @@ class CrossObjectReferenceResolver {
             overrideHeader(
                 outObjStartPos,
                 /** flags */ setFieldOffsetFlag(inObjDesc.flags, footerFieldOffsetLen),
-                /** hash */ BinaryUtils.hashCode(out.array(), outObjStartPos + DFLT_HDR_LEN, outFooterStartPos),
+                /** hash */ BinaryImplUtils.hashCode(out.array(), outObjStartPos + DFLT_HDR_LEN, outFooterStartPos),
                 /** total length */ out.position() - outObjStartPos,
                 schemaOrRawOffsetPos
             );

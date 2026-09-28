@@ -19,9 +19,7 @@ package org.apache.ignite.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -33,11 +31,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -239,21 +233,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         //Rebalance should be successfully finished.
         assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
-    }
-
-    /**
-     * @param gridNumber Grid number.
-     * @param cacheName Cache name.
-     * @return Partitions states for given cache name.
-     */
-    private List<GridDhtPartitionState> getPartitionsStates(int gridNumber, String cacheName) {
-        CacheGroupContext cgCtx = grid(gridNumber).context().cache().cacheGroup(CU.cacheId(cacheName));
-
-        GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)cgCtx.topology();
-
-        return top.localPartitions().stream()
-            .map(GridDhtLocalPartition::state)
-            .collect(Collectors.toList());
     }
 
     /**

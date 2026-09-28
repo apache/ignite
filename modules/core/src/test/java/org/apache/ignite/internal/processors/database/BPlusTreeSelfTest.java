@@ -1518,14 +1518,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertNoLocks();
     }
 
-    /** */
-    private void doTestCursor(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = createTestTree(canGetRow);
-
-        for (long i = 15; i >= 0; i--)
-            tree.put(i);
-    }
-
     /**
      * @throws IgniteCheckedException If failed.
      */

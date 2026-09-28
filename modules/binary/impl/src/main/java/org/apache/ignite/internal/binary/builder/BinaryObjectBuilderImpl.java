@@ -33,6 +33,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinariesFactoryImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.binary.BinaryImplUtils;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -207,7 +208,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
-            if (reader != null && BinaryUtils.hasSchema(flags)) {
+            if (reader != null && BinaryImplUtils.hasSchema(flags)) {
                 Map<Integer, Object> assignedFldsById;
 
                 if (assignedVals != null) {
@@ -231,16 +232,16 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
                     assignedFldsById = Collections.emptyMap();
 
                 // Get footer details.
-                int fieldIdLen = BinaryUtils.fieldIdLength(flags);
-                int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+                int fieldIdLen = BinaryImplUtils.fieldIdLength(flags);
+                int fieldOffsetLen = BinaryImplUtils.fieldOffsetLength(flags);
 
-                IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
+                IgniteBiTuple<Integer, Integer> footer = BinaryImplUtils.footerAbsolute(reader, start);
 
                 int footerPos = footer.get1();
                 int footerEnd = footer.get2();
 
                 // Get raw position.
-                int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
+                int rawPos = BinaryImplUtils.rawOffsetAbsolute(reader, start);
 
                 // Position reader on data.
                 reader.position(start + hdrLen);
@@ -248,7 +249,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
                 int idx = 0;
 
                 while (reader.position() < rawPos) {
-                    int fieldId = BinaryUtils.fieldId(reader.reader(), idx++);
+                    int fieldId = BinaryImplUtils.fieldId(reader.reader(), idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
 
@@ -268,7 +269,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
                     else {
                         int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
-                        if (fieldLen != 0 && !BinaryUtils.isPlainArrayType(type) && BinaryUtils.isPlainType(type)) {
+                        if (fieldLen != 0 && !BinaryImplUtils.isPlainArrayType(type) && BinaryImplUtils.isPlainType(type)) {
                             writer.writeFieldId(fieldId);
 
                             writer.write(reader.array(), reader.position(), fieldLen);
@@ -322,8 +323,8 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             if (reader != null) {
                 // Write raw data if any.
-                int rawOff = BinaryUtils.rawOffsetAbsolute(reader, start);
-                int footerStart = BinaryUtils.footerStartAbsolute(reader, start);
+                int rawOff = BinaryImplUtils.rawOffsetAbsolute(reader, start);
+                int footerStart = BinaryImplUtils.footerStartAbsolute(reader, start);
 
                 if (rawOff < footerStart) {
                     writer.rawWriter();
@@ -381,7 +382,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
         else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))
             newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
 
-        else if (BinaryUtils.isBinaryEnumArray(newVal))
+        else if (BinaryImplUtils.isBinaryEnumArray(newVal))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
         else if (BinaryUtils.isBinaryArray(newVal))
@@ -432,7 +433,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
     private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos,
         int fieldIdLen, int fieldOffsetLen) {
         // Get field offset first.
-        int fieldOffset = BinaryUtils.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
+        int fieldOffset = BinaryImplUtils.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
         int fieldPos = start + fieldOffset;
 
         // Get field length.
@@ -443,7 +444,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
             fieldLen = rawPos - fieldPos;
         else {
             // Field is somewhere in the middle, get difference with the next offset.
-            int nextFieldOffset = BinaryUtils.fieldOffsetRelative(reader,
+            int nextFieldOffset = BinaryImplUtils.fieldOffsetRelative(reader,
                 footerPos + fieldIdLen + fieldOffsetLen + fieldIdLen, fieldOffsetLen);
 
             fieldLen = nextFieldOffset - fieldOffset;
@@ -459,22 +460,22 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
         assert reader != null;
 
         if (readCache == null) {
-            int fieldIdLen = BinaryUtils.fieldIdLength(flags);
-            int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+            int fieldIdLen = BinaryImplUtils.fieldIdLength(flags);
+            int fieldOffsetLen = BinaryImplUtils.fieldOffsetLength(flags);
 
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
+            IgniteBiTuple<Integer, Integer> footer = BinaryImplUtils.footerAbsolute(reader, start);
 
             int footerPos = footer.get1();
             int footerEnd = footer.get2();
 
-            int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
+            int rawPos = BinaryImplUtils.rawOffsetAbsolute(reader, start);
 
             int idx = 0;
 
             while (footerPos + fieldIdLen < footerEnd) {
-                int fieldId = BinaryUtils.fieldId(reader.reader(), idx++);
+                int fieldId = BinaryImplUtils.fieldId(reader.reader(), idx++);
 
                 IgniteBiTuple<Integer, Integer> posAndLen =
                     fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
