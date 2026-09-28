@@ -224,6 +224,11 @@ public class BinariesFactoryImpl implements BinariesFactory {
         return BinaryArrayIdentityResolver.instance();
     }
 
+    /** {@inheritDoc} */
+    @Override public void clearCache() {
+        BinaryEnumCache.clear();
+    }
+
     /**
      * @param cls Class to check.
      * @return {@code True} if {@code val} is assignable to binary Enum object.

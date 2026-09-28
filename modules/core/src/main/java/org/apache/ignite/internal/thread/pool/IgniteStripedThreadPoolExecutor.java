@@ -52,6 +52,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.QUEUE_SIZ
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.REJ_HND_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_COUNT_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_HISTOGRAM_BUCKETS;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACTORY_DESC;
 
@@ -86,7 +87,7 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService, Metrics
         boolean allowCoreThreadTimeOut,
         long keepAliveTime) {
         execs = new IgniteThreadPoolExecutor[concurrentLvl];
-        execTime = new HistogramMetricImpl(TASK_EXEC_TIME, TASK_COUNT_DESC, TASK_EXEC_TIME_HISTOGRAM_BUCKETS);
+        execTime = new HistogramMetricImpl(TASK_EXEC_TIME, TASK_EXEC_TIME_DESC, TASK_EXEC_TIME_HISTOGRAM_BUCKETS);
 
         ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 

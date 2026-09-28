@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
@@ -83,6 +84,46 @@ public class RecursiveCtePlannerTest extends AbstractPlannerTest {
 
         assertPlan(sql.replace("WITH RECURSIVE", "WITH"), schema, isInstanceOf(IgniteRepeatUnion.class)
             .and(input(1, hasChildThat(isInstanceOf(IgniteRecursiveTableScan.class)))));
+    }
+
+    /** Sorting the recursive UNION must not introduce a sort in either recursive branch or above it. */
+    @Test
+    public void testRecursiveCteOrderByIsIgnored() throws Exception {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            for (String direction : new String[] {"ASC", "DESC"}) {
+                for (String union : new String[] {"UNION ALL", "UNION DISTINCT"}) {
+                    assertPlan("WITH " + keyword + "numbers(n) AS (SELECT 1 " + union +
+                        " SELECT n + 1 FROM numbers WHERE n < 3 ORDER BY n " + direction +
+                        ") SELECT n FROM numbers", new IgniteSchema(DEFAULT_SCHEMA),
+                        isInstanceOf(IgniteRepeatUnion.class)
+                            .and(hasChildThat(isInstanceOf(IgniteSort.class)).negate())
+                            .and(input(1, hasChildThat(isInstanceOf(IgniteRecursiveTableScan.class)))));
+                }
+            }
+        }
+    }
+
+    /** Row limiting together with ORDER BY must fail explicitly rather than be silently discarded. */
+    @Test
+    public void testRecursiveCteOrderByWithRowLimitingIsRejected() throws Exception {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            for (String limit : new String[] {"FETCH FIRST 2 ROWS ONLY", "LIMIT 2", "OFFSET 1 ROW"}) {
+                String sql = "WITH " + keyword + "numbers(n) AS (SELECT 1 UNION ALL " +
+                    "SELECT n + 1 FROM numbers WHERE n < 3 ORDER BY n " + limit + ") SELECT n FROM numbers";
+
+                try (IgnitePlanner planner = plannerCtx(sql, new IgniteSchema(DEFAULT_SCHEMA)).planner()) {
+                    SqlNode node = planner.parse(sql);
+
+                    ValidationException err = (ValidationException)GridTestUtils.assertThrows(log,
+                        () -> planner.validate(node), ValidationException.class,
+                        "Unsupported recursive CTE: ORDER BY with FETCH, LIMIT or OFFSET is not supported");
+
+                    assertTrue(sql, err.getCause() instanceof IgniteSQLException);
+                    assertEquals(sql, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+                        ((IgniteSQLException)err.getCause()).statusCode());
+                }
+            }
+        }
     }
 
     /** The inferred flag must be set before Calcite registers CTE scopes, including nested WITH clauses. */

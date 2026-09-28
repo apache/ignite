@@ -86,7 +86,6 @@
                 <module>modules/ducktests</module>
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
-                <module>modules/yardstick</module>
             </modules>
         </profile>
 
@@ -176,8 +175,6 @@
                                         :org.apache.ignite.spi.deployment.uri.scanners.*
                                         :org.apache.ignite.spi.deployment.uri.tasks
                                         :org.apache.ignite.spi.deployment.uri.tasks.*
-                                        :org.apache.ignite.yardstick
-                                        :org.apache.ignite.yardstick.*
                                         :org.apache.ignite.webtest
                                         :org.apache.ignite.webtest.*
                                     </excludePackageNames>
@@ -465,13 +462,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>yardstick</id>
-            <modules>
-                <module>modules/yardstick</module>
-            </modules>
         </profile>
 
         <profile>
