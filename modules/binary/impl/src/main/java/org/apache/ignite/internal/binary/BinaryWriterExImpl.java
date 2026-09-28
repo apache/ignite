@@ -223,11 +223,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         write(obj, desc);
     }
 
-    /** {@inheritDoc} */
-    @Override public byte[] array() {
-        return out.arrayCopy();
-    }
-
     /**
      * @return Stream current position.
      */
