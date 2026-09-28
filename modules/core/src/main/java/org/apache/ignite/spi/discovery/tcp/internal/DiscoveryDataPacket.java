@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,9 +51,6 @@ public class DiscoveryDataPacket implements Message {
 
     /** */
     private boolean joiningNodeClient;
-
-    /** Unmarshalling error, if any. */
-    private IgniteCheckedException unmarshErr;
 
     /** Constructor. */
     public DiscoveryDataPacket() {
