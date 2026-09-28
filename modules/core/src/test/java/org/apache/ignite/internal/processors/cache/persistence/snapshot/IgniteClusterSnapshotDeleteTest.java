@@ -20,14 +20,20 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -162,6 +168,70 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         caseInsensitiveFS = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
             new File(workDir.getAbsolutePath().toUpperCase()).exists();
+    }
+
+    /** */
+    @Test
+    public void testDeniedPermissions() throws Exception {
+        // No matters here.
+        assumeFalse(incremental);
+
+        separatedWorkDir = true;
+
+        AtomicReference<Set<PosixFilePermission>> prevPerms = new AtomicReference<>();
+        AtomicReference<Path> pathRef = new AtomicReference<>();
+
+        // Simulates a deletion error on some node.
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            // Simulates the deletion failure.
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft) {
+                            if (ctx.localNode().id().equals(grid(1).localNode().id())) {
+                                Path path = sft.root().toPath();
+
+                                pathRef.set(path);
+
+                                try {
+                                    prevPerms.set(Files.getPosixFilePermissions(path));
+
+                                    Set<PosixFilePermission> perms = PosixFilePermissions.fromString("r-xr-x---");
+
+                                    Files.setPosixFilePermissions(path, perms);
+                                }
+                                catch (Exception e) {
+                                    throw new IgniteException("Unable to set the posix permissions.", e);
+                                }
+                            }
+
+                            return super.deleteLocalSnapshot(sft);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+
+        try {
+            SnapshotDeleteProcessResult res = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+            assertEquals(1, res.uncompletedNodes().size());
+            assertEquals(2, res.completedNodes().size());
+        }
+        finally {
+            if (pathRef.get() != null && pathRef.get() != null)
+                Files.setPosixFilePermissions(pathRef.get(), prevPerms.get());
+        }
     }
 
     /** */
