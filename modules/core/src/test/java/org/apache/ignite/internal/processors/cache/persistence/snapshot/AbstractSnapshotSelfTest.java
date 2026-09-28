@@ -734,8 +734,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param ignite Ignite instance.
      * @return Snapshot manager related to given ignite instance.
      */
-    public static IgniteSnapshotManager snp(IgniteEx ignite) {
-        return ignite.context().cache().context().snapshotMgr();
+    public static IgniteSnapshotManager snp(Ignite ignite) {
+        return ((IgniteEx)ignite).context().cache().context().snapshotMgr();
     }
 
     /**
@@ -778,7 +778,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         List<BlockingExecutor> execs = new ArrayList<>();
 
         for (Ignite grid : grids) {
-            IgniteSnapshotManager mgr = snp((IgniteEx)grid);
+            IgniteSnapshotManager mgr = snp(grid);
             Function<SnapshotFileTree, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
             BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());

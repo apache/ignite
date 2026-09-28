@@ -27,7 +27,9 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -66,10 +68,19 @@ import static org.junit.Assume.assumeTrue;
 /** */
 public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
+    private static final int INC_CACHE_KEYS_RANGE = CACHE_KEYS_RANGE + CACHE_KEYS_RANGE / 4;
+
+    /** Extra storage path. */
+    private static final String EXT_STORAGE_PATH = "extStorage";
+
+    /** */
     private static boolean caseInsensitiveFS;
 
     /** */
     private boolean separatedWorkDir;
+
+    /** */
+    private boolean extraStorages;
 
     /** */
     @Parameter(2)
@@ -78,8 +89,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     private @Nullable String cstIdSuffix;
 
-    /** */
+    /** Sets the extra snapshot storage to {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)}. */
     private boolean lowerCasedSnpName;
+
+    /** */
+    private @Nullable String[] extStoragePaths;
 
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, incremental={2}")
@@ -95,11 +109,28 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         var cfg = super.getConfiguration(igniteInstanceName);
 
-        if (separatedWorkDir)
-            cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
+        String workDir = separatedWorkDir
+            ? new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath()
+            : U.defaultWorkDirectory();
+
+        cfg.setWorkDirectory(workDir);
 
         if (cstIdSuffix != null)
             cfg.setConsistentId(cfg.getConsistentId().toString() + '_' + cstIdSuffix);
+
+        if (extraStorages) {
+            cfg.getDataStorageConfiguration().setExtraStoragePaths(
+                workDir + File.separator,
+                workDir + File.separator + EXT_STORAGE_PATH
+            );
+
+            extStoragePaths = cfg.getDataStorageConfiguration().getExtraStoragePaths();
+
+            cfg.getDataStorageConfiguration().setExtraSnapshotPaths(
+                "",
+                EXT_STORAGE_PATH
+            );
+        }
 
         return cfg;
     }
@@ -133,6 +164,62 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             new File(workDir.getAbsolutePath().toUpperCase()).exists();
     }
 
+    /** */
+    @Test
+    public void testExtraStoragesDeleted() throws Exception {
+        extraStorages = true;
+
+        dfltCacheCfg = null;
+
+        startGridsMultiThreaded(3);
+
+        assertFalse(F.isEmpty(extStoragePaths));
+
+        assertTrue(grid(0).cache(DEFAULT_CACHE_NAME) == null);
+
+        dfltCacheCfg = defaultCacheConfiguration();
+
+        // Works only with a shared work directory.
+        dfltCacheCfg.setStoragePaths(extStoragePaths);
+
+        grid(0).createCache(dfltCacheCfg);
+        awaitPartitionMapExchange();
+
+        // Fills the cache.
+        startGridsWithCache(0, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        for (Ignite ig : G.allGrids()) {
+            SnapshotFileTree snpTree = new SnapshotFileTree(((IgniteEx)ig).context(), SNAPSHOT_NAME, null);
+
+            assertEquals(2, snpTree.extraStorages().size());
+
+            for (File extSnpStorage : snpTree.allStorages().toList()) {
+                assertTrue(extSnpStorage.exists());
+                assertTrue(extSnpStorage.isDirectory());
+            }
+        }
+
+        snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        for (Ignite ig : G.allGrids()) {
+            SnapshotFileTree snpTree = new SnapshotFileTree(((IgniteEx)ig).context(), SNAPSHOT_NAME, null);
+
+            for (File extSnpStorage : snpTree.allStorages().toList()) {
+                // Snapshot root, even in an external storage.
+                extSnpStorage = extSnpStorage.getParentFile().getParentFile();
+
+                assertEquals(SNAPSHOT_NAME, extSnpStorage.getName());
+
+                assertFalse(extSnpStorage.exists());
+            }
+        }
+    }
+
     /** Tests snapshot deletion when one node finds snapshot but fails to delete its data. */
     @Test
     public void testUncompletedNodes() throws Exception {
@@ -144,6 +231,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                 return "TestSnpMgrProvider";
             }
 
+            // Simulates the deletion failure.
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
@@ -604,7 +692,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         );
 
         // Ensure that the test exists.
-        assertEquals(incremental ? CACHE_KEYS_RANGE + CACHE_KEYS_RANGE / 4 : CACHE_KEYS_RANGE, grid(0).cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(incremental ? INC_CACHE_KEYS_RANGE : CACHE_KEYS_RANGE, grid(0).cache(DEFAULT_CACHE_NAME).size());
     }
 
     /** Tests that a snapshot deletion is declined when a snapshot restore is in progress. */
@@ -685,7 +773,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         );
 
         // Ensure that the test exists.
-        assertEquals(incremental ? CACHE_KEYS_RANGE + CACHE_KEYS_RANGE / 4 : CACHE_KEYS_RANGE, grid(0).cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(incremental ? INC_CACHE_KEYS_RANGE : CACHE_KEYS_RANGE, grid(0).cache(DEFAULT_CACHE_NAME).size());
     }
 
     /** Tests that a snapshot deletion is declined when a snapshot restore is in progress but fails. */
@@ -832,7 +920,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     private void addIncrementalSnapshot(@Nullable String path) {
         try (var ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = CACHE_KEYS_RANGE; i < CACHE_KEYS_RANGE + CACHE_KEYS_RANGE / 4; i++)
+            for (int i = CACHE_KEYS_RANGE; i < INC_CACHE_KEYS_RANGE; i++)
                 ds.addData(i, i);
         }
 

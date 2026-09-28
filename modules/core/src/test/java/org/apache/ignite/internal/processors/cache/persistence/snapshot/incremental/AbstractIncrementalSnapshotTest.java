@@ -132,7 +132,7 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
         try {
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 for (Ignite g: G.allGrids()) {
-                    if (snp((IgniteEx)g).currentCreateRequest() != null)
+                    if (snp(g).currentCreateRequest() != null)
                         return false;
                 }
 

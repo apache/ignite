@@ -54,9 +54,19 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
     /** {@inheritDoc} */
     @Override protected DataStorageConfiguration dataStorageConfiguration() {
-        return new DataStorageConfiguration()
+        // TODO: revert
+        extraSnpPaths = new String[] {
+            "snp_path",
+            "snp_path2"
+        };
+
+        DataStorageConfiguration res = new DataStorageConfiguration()
             .setStoragePath(storagePath(STORAGE_PATH))
             .setExtraStoragePaths(storagePath(STORAGE_PATH_2), storagePath(IDX_PATH));
+
+        res.setExtraSnapshotPaths(extraSnpPaths);
+
+        return res;
     }
 
     /** {@inheritDoc} */

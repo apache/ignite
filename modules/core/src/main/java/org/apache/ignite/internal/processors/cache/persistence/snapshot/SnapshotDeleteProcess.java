@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -208,8 +209,14 @@ public class SnapshotDeleteProcess {
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
                     try {
                         // Read file tree of the snapshot.
-                        var byMetaSft = new SnapshotFileTree(kctx, req.snpName, path0.getAbsolutePath(), meta.folderName(),
-                            meta.consId);
+                        var byMetaSft = new SnapshotFileTree(
+                            kctx.config(),
+                            kctx.pdsFolderResolver().fileTree(),
+                            req.snpName,
+                            req.snpPath == null ? null : path0.getAbsolutePath(),
+                            meta.folderName(),
+                            meta.consId
+                        );
 
                         T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft);
 
@@ -320,8 +327,10 @@ public class SnapshotDeleteProcess {
                 }
             });
 
-            kctx.discovery().baselineNodes(kctx.discovery().topologyVersionEx()).stream()
-                .map(bn -> bn.consistentId().toString()).toList().forEach(snpNodes::remove);
+            Collection<ClusterNode> curBaseline = kctx.discovery().discoCache().aliveBaselineNodes();
+
+            if (!F.isEmpty(curBaseline))
+                curBaseline.stream().map(bn -> bn.consistentId().toString()).toList().forEach(snpNodes::remove);
 
             clusterOpFut.onDone(new SnapshotDeleteProcessResult(completedNodes, uncompletedNodes, emptyNodes, snpNodes));
         }

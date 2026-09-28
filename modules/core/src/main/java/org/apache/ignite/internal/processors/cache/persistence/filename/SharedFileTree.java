@@ -49,7 +49,7 @@ public class SharedFileTree {
     public static final String MARSHALLER_DIR = "marshaller";
 
     /** Database default folder. */
-    protected static final String DB_DIR = "db";
+    public static final String DB_DIR = "db";
 
     /** Root(work) directory. */
     protected final File root;
