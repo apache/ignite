@@ -54,19 +54,9 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
     /** {@inheritDoc} */
     @Override protected DataStorageConfiguration dataStorageConfiguration() {
-        // TODO: revert
-        extraSnpPaths = new String[] {
-            "snp_path",
-            "snp_path2"
-        };
-
-        DataStorageConfiguration res = new DataStorageConfiguration()
+        return new DataStorageConfiguration()
             .setStoragePath(storagePath(STORAGE_PATH))
             .setExtraStoragePaths(storagePath(STORAGE_PATH_2), storagePath(IDX_PATH));
-
-        res.setExtraSnapshotPaths(extraSnpPaths);
-
-        return res;
     }
 
     /** {@inheritDoc} */
@@ -98,8 +88,9 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
             assertTrue(sft.nodeStorage().getAbsolutePath() + " must not extists", !sft.nodeStorage().exists());
 
-            for (File es : sft.extraStorages().values())
+            for (File es : sft.extraStorages().values()) {
                 assertTrue(es.getAbsolutePath() + " must not extists", !es.exists());
+            }
         }
 
         U.delete(srvExtraSnpRoot);
