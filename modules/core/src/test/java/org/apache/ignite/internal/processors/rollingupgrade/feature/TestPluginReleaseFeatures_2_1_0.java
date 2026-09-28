@@ -26,5 +26,8 @@ public class TestPluginReleaseFeatures_2_1_0 {
     public static final IgniteFeature VER_2_0_0_ID_1_FEATURE = TestPluginReleaseFeatures_2_0_0.VER_2_0_0_ID_1_FEATURE;
 
     /** */
-    public static final IgniteFeature VER_2_1_0_ID_2_FEATURE = new TestPluginFeature(2);
+    public static final IgniteFeature VER_2_0_0_ID_2_FEATURE = TestPluginReleaseFeatures_2_0_0.VER_2_0_0_ID_2_FEATURE;
+
+    /** */
+    public static final IgniteFeature VER_2_1_0_ID_3_FEATURE = new TestPluginFeature(3);
 }

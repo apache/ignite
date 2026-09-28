@@ -17,60 +17,45 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
-import java.util.List;
+import java.util.function.Predicate;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /** */
-public interface TestMessage {
+public class TestPluginMessage_0_9_0 extends TestDiscoveryMessage {
     /** */
-    String A = "A";
+    @Order(0)
+    String fldA;
 
     /** */
-    String B = "B";
+    @Order(1)
+    String fldB;
 
     /** */
-    String C = "C";
+    @Order(2)
+    String fldC;
 
-    /** */
-    String D = "D";
+    /** {@inheritDoc} */
+    @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
+        fldA = A;
+        fldB = B;
+        fldC = C;
 
-    /** */
-    String E = "E";
-
-    /** */
-    String F = "F";
-
-    /** */
-    default String fldA() {
-        return null;
+        return this;
     }
 
-    /** */
-    default String fldB() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String fldA() {
+        return fldA;
     }
 
-    /** */
-    default String fldC() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String fldB() {
+        return fldB;
     }
 
-    /** */
-    default String fldD() {
-        return null;
-    }
-
-    /** */
-    default String fldE() {
-        return null;
-    }
-
-    /** */
-    default String fldF() {
-        return null;
-    }
-
-    /** */
-    default List<TestMessage> nestedMessages() {
-        return List.of();
+    /** {@inheritDoc} */
+    @Override public String fldC() {
+        return fldC;
     }
 }

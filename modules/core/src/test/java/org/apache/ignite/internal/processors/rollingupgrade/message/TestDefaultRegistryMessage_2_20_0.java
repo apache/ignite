@@ -17,22 +17,18 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
-import org.apache.ignite.internal.FeatureGated;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_1_0;
-import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /** */
-@FeatureGated(registry = TestPluginReleaseFeatures_2_1_0.class)
-public class TestPluginMessage extends DiscoveryCustomMessage implements TestMessage {
+public class TestDefaultRegistryMessage_2_20_0 extends TestDiscoveryMessage {
     /** */
     @Order(0)
     String fldA;
 
     /** */
-    @Order(value = 1, deprecatedBy = "VER_2_0_0_ID_1_FEATURE")
+    @Order(value = 1, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
     String fldB;
 
     /** */
@@ -40,39 +36,27 @@ public class TestPluginMessage extends DiscoveryCustomMessage implements TestMes
     String fldC;
 
     /** */
-    @Order(value = 3, introducedBy = "VER_1_0_0_ID_0_FEATURE", deprecatedBy = "VER_2_0_0_ID_1_FEATURE")
+    @Order(3)
     String fldD;
 
     /** */
-    @Order(value = 4, introducedBy = "VER_2_0_0_ID_1_FEATURE")
+    @Order(4)
     String fldE;
 
     /** */
-    @Order(value = 5, introducedBy = "VER_2_1_0_ID_2_FEATURE")
+    @Order(5)
     String fldF;
 
-    /** */
-    public TestPluginMessage() {
-        super(IgniteUuid.randomUuid());
-    }
-
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
+    @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
+        fldA = A;
+        fldB = B;
+        fldC = C;
+        fldD = D;
+        fldE = E;
+        fldF = F;
 
-    /** */
-    public static TestPluginMessage build() {
-        TestPluginMessage msg = new TestPluginMessage();
-
-        msg.fldA = A;
-        msg.fldB = B;
-        msg.fldC = C;
-        msg.fldD = D;
-        msg.fldE = E;
-        msg.fldF = F;
-
-        return msg;
+        return this;
     }
 
     /** {@inheritDoc} */

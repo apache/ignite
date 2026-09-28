@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.rollingupgrade.feature;
 /** */
 public class TestIgniteReleaseFeatures_2_21_1 {
     /** */
-    public static final IgniteFeature VER_2_20_0_ID_3_FEATURE = TestIgniteReleaseFeatures_2_21_0.VER_2_20_0_ID_3_FEATURE;
-
-    /** */
     public static final IgniteFeature VER_2_20_0_ID_4_FEATURE = TestIgniteReleaseFeatures_2_21_0.VER_2_20_0_ID_4_FEATURE;
 
     /** */

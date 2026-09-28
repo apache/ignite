@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rollingupgrade.feature;
+package org.apache.ignite.internal.processors.rollingupgrade.message;
+
+import java.util.function.Predicate;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /** */
-public class TestPluginReleaseFeatures_2_0_0 {
+public abstract class TestDiscoveryMessage extends DiscoveryCustomMessage implements TestMessage {
     /** */
-    public static final IgniteFeature VER_1_0_0_ID_0_FEATURE = TestPluginReleaseFeatures_1_0_0.VER_1_0_0_ID_0_FEATURE;
+    protected TestDiscoveryMessage() {
+        super(IgniteUuid.randomUuid());
+    }
 
     /** */
-    public static final IgniteFeature VER_2_0_0_ID_1_FEATURE = new TestPluginFeature(1);
+    public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
+        return this;
+    }
 
-    /** */
-    public static final IgniteFeature VER_2_0_0_ID_2_FEATURE = new TestPluginFeature(2);
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
+    }
 }

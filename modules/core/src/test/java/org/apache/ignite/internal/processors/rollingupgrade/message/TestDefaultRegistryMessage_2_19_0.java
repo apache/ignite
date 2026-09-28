@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
+import java.util.function.Predicate;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /** */
-public class TestDefaultRegistryMessage extends DiscoveryCustomMessage implements TestMessage {
+public class TestDefaultRegistryMessage_2_19_0 extends TestDiscoveryMessage {
     /** */
     @Order(0)
     String fldA;
@@ -45,31 +44,19 @@ public class TestDefaultRegistryMessage extends DiscoveryCustomMessage implement
     String fldE;
 
     /** */
-    @Order(value = 5, introducedBy = "ROLLING_UPGRADE_FEATURE")
+    @Order(5)
     String fldF;
 
-    /** */
-    public TestDefaultRegistryMessage() {
-        super(IgniteUuid.randomUuid());
-    }
-
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
+    @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
+        fldA = A;
+        fldB = B;
+        fldC = C;
+        fldD = D;
+        fldE = E;
+        fldF = F;
 
-    /** */
-    public static TestDefaultRegistryMessage build() {
-        TestDefaultRegistryMessage msg = new TestDefaultRegistryMessage();
-
-        msg.fldA = A;
-        msg.fldB = B;
-        msg.fldC = C;
-        msg.fldD = D;
-        msg.fldE = E;
-        msg.fldF = F;
-
-        return msg;
+        return this;
     }
 
     /** {@inheritDoc} */

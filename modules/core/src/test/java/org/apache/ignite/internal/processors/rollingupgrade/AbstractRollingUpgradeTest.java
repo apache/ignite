@@ -124,17 +124,20 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  *   </tr>
  *   <tr>
  *     <td>2.21.0</td>
- *     <td>{@code IgniteFeatureSet [3 -> 6]}</td>
+ *     <td>{@code IgniteFeatureSet [4 -> 6]}</td>
  *   </tr>
  *   <tr>
  *     <td>2.21.1</td>
- *     <td>{@code IgniteFeatureSet [3 -> 7]}</td>
+ *     <td>{@code IgniteFeatureSet [4 -> 7]}</td>
  *   </tr>
  * </table>
  */
 public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest {
     /** */
     protected static final String TEST_DEFAULT_VER = "2.19.0";
+
+    /** */
+    protected static final String COMPONENT_VERSIONS_ATTRIBUTE = "test.component.versions";
 
     /** */
     protected static final String VER_INCOMPATIBLE_ERR =
@@ -204,8 +207,11 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+        cfg.setUserAttributes(F.asMap(COMPONENT_VERSIONS_ATTRIBUTE, ver));
 
         TestVersions testVersions = TestVersions.parse(ver);
+
+        boolean pluginDeclaresFeatures = testVersions.containsPlugin() && pluginDeclaresFeatures(testVersions.pluginVersion());
 
         IgniteCoreFeatureSet testCoreFeatures = new IgniteCoreFeatureSet(
             IgniteProductVersion.fromString(testVersions.coreVersion()),
@@ -219,7 +225,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
             /** {@inheritDoc} */
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-                if (testVersions.containsPlugin()) {
+                if (pluginDeclaresFeatures) {
                     registry.registerExtension(
                         IgniteComponentFeatureSetProvider.class,
                         new TestPluginComponentFeatureSetProvider(testVersions.pluginVersion()));
@@ -267,6 +273,18 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             TestIgniteReleaseFeatures_2_18_0.class.getPackageName() + ".TestIgniteReleaseFeatures_" + ver.replace(".", "_"));
 
         return IgniteFeatureSet.readDeclaredFeatures(cls);
+    }
+
+    /** */
+    private static boolean pluginDeclaresFeatures(String pluginVer) throws Exception {
+        try {
+            readDeclaredPluginFeatures(pluginVer);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignored) {
+            return false;
+        }
     }
 
     /** */
@@ -550,7 +568,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void restartNode(int nodeIdx) throws Exception {
-        String ver = resolveNodeLocalCompoundVersion(nodeIdx);
+        String ver = nodeComponentVersions(grid(nodeIdx));
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -565,7 +583,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void checkUpgradeFailed(int nodeIdx, String targetVer, String errMsg) throws Exception {
-        String srcVer = resolveNodeLocalCompoundVersion(nodeIdx);
+        String srcVer = nodeComponentVersions(grid(nodeIdx));
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -576,8 +594,8 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
-    protected String resolveNodeLocalCompoundVersion(int nodeIdx) {
-        return resolveCompoundVersion(ru(nodeIdx).features().localVersionFeatures());
+    protected String nodeComponentVersions(Ignite node) {
+        return node.cluster().localNode().attribute(COMPONENT_VERSIONS_ATTRIBUTE);
     }
 
     /** */
@@ -642,7 +660,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
-    protected static class TestVersions {
+    public static class TestVersions {
         /** */
         private final Map<String, String> cmpVersions = new HashMap<>();
 
