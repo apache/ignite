@@ -613,8 +613,11 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
             writeBooleanFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException {
+    /**
+     * @param po Binary object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException {
         if (po == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {

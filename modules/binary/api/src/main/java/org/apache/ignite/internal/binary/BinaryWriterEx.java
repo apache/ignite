@@ -90,12 +90,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public BinaryContext context();
 
     /**
-     * @param po Binary object.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
-     */
-    public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException;
-
-    /**
      * @return Current writer's schema.
      */
     public BinarySchema currentSchema();
