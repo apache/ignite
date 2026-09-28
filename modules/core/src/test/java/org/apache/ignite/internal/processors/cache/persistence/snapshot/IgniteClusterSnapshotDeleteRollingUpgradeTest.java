@@ -35,7 +35,6 @@ import org.apache.ignite.internal.management.snapshot.SnapshotDeleteCommandArg;
 import org.apache.ignite.internal.management.snapshot.SnapshotDeleteTask;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -130,7 +129,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
             assertTrue(waitForCondition(() -> !ru(grid(i0)).isVersionUpgradeEnabled(), getTestTimeout()));
         }
 
-        assertFalse(F.isEmpty(snp(1).deleteSnapshot(SNP_NAME, null).get(getTestTimeout()).completedNodes));
+        assertFalse(snp(1).deleteSnapshot(SNP_NAME, null).get(getTestTimeout()).completedNodes().isEmpty());
     }
 
     /** */

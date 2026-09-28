@@ -59,6 +59,18 @@ public class SnapshotDeleteProcess {
     /** */
     public static final String OP_REJECT_FEATURE_MSG = OP_REJECT_MSG + "The snapshot deletion feature isn't activated yet.";
 
+    /** */
+    private static final String CONCURRENT_OP_PREF = "Snapshot with the same name is being ";
+
+    /** */
+    public static final String BEING_CREATED_PREF = CONCURRENT_OP_PREF + "created ";
+
+    /** */
+    public static final String BEING_RESTORED_PREF = CONCURRENT_OP_PREF + "restored ";
+
+    /** */
+    public static final String BEING_CHECKED_PREF = CONCURRENT_OP_PREF + "checked ";
+
     /** Kernal context. */
     private final GridKernalContext kctx;
 
@@ -144,18 +156,18 @@ public class SnapshotDeleteProcess {
         var curCreateRq = snpMgr.currentCreateRequest();
 
         if (curCreateRq != null && curCreateRq.snpName.equalsIgnoreCase(req.snpName)) {
-            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "Snapshot with the same name is being created [req=" + req + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG + BEING_CREATED_PREF +
+                "[req=" + req + ']'));
         }
 
         if (snpMgr.isRestoring(req.snpName)) {
-            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "Snapshot with the same name is being restored [req=" + req + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG + BEING_RESTORED_PREF +
+                "[req=" + req + ']'));
         }
 
         if (snpMgr.isSnapshotChecking(req.snpName)) {
-            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG +
-                "Snapshot with the same name is being checked [req=" + req + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG + BEING_CHECKED_PREF +
+                "[req=" + req + ']'));
         }
 
         try {
