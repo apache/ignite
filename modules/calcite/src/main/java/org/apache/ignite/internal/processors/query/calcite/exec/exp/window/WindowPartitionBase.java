@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /** Base implementation of window partition. */
 abstract class WindowPartitionBase<Row> implements WindowPartition<Row> {
     /** Comparator for computing the peer index. */
-    private final Comparator<Row> peerCmp;
+    protected final Comparator<Row> peerCmp;
 
     /** */
     private final WindowFunctionFactory<Row> funcFactory;
