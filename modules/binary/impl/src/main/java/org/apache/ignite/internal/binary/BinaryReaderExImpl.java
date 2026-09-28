@@ -2051,7 +2051,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Object unmarshallJdbc(byte type, boolean binObjAllow, boolean keepBinary) {
+    @Override public Object unmarshallJdbc(byte type, boolean binObjAllow, boolean deserialize) {
         switch (type) {
             case GridBinaryMarshaller.NULL:
                 return null;
@@ -2146,7 +2146,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 if (binObjAllow) {
                     Object res = readObjectDetached();
 
-                    return !keepBinary && res instanceof BinaryObject
+                    return deserialize && res instanceof BinaryObject
                         ? ((BinaryObject)res).deserialize()
                         : res;
                 }

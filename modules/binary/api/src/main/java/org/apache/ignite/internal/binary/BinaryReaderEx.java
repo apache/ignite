@@ -56,8 +56,8 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
      * Unmarshall JDBC supported type.
      * @param type Type.
      * @param binObjAllow Allow to read non plaint objects.
-     * @param keepBinary Whether to deserialize objects or keep in binary format.
+     * @param deserialize {@code True} if object should be deserialized during reading.
      * @return Read object.
      */
-    public Object unmarshallJdbc(byte type, boolean binObjAllow, boolean keepBinary);
+    public Object unmarshallJdbc(byte type, boolean binObjAllow, boolean deserialize);
 }

@@ -81,7 +81,7 @@ public abstract class SqlListenerUtils {
             return JdbcBinaryBuffer.createReadOnly(reader.in().array(), position, len);
         }
 
-        return reader.unmarshallJdbc(type, binObjAllow, keepBinary);
+        return reader.unmarshallJdbc(type, binObjAllow, !keepBinary);
     }
 
     /**
