@@ -299,6 +299,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             written = (written == 0 && oldFreeSpace >= rowSize) ? addRowFull(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
 
+            // A non-head fragment (the row is not complete after the fragment write) always occupies the whole
+            // initially empty page (see takePage), so a page can be shared between rows only as a head fragment page.
+            // Deadlock freedom of the fragmented row lock coupling (see updateFragmentedRow) relies on this.
+            assert written == rowSize || io.getDirectCount(pageAddr) == 1 :
+                "Non-head fragment is written to a shared page [pageId=" + U.hexLong(pageId) +
+                    ", items=" + io.getDirectCount(pageAddr) + ']';
+
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
 
@@ -906,19 +913,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 // Fallback if row is fragmented and allow fragmented.
             }
 
-            PartiallyWritten updateRes = write(pageId, updateFragmentedRow, new PartiallyWritten(newRow), itemId,
-                null, statHolder);
+            PartiallyWritten updateRes = updateFragmentedRow(link, newRow, statHolder);
 
-            assert updateRes != null; // Can't fail here.
-
-            while (updateRes.written < size) {
-                pageId = PageIdUtils.pageId(updateRes.nextLink);
-                itemId = PageIdUtils.itemId(updateRes.nextLink);
-
-                updateRes = write(pageId, updateFragmentedRow, updateRes, itemId, null, statHolder);
-
-                assert updateRes != null; // Can't fail here.
-            }
             statHolder.trackPageRemoveData(size);
             statHolder.trackPageInsertData(size);
 
@@ -939,6 +935,118 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to update data row", t, grpId);
         }
+    }
+
+    /**
+     * Updates fragmented row in-place.
+     * <p>
+     * Fragments are updated in the order of fragment links (from the head fragment to the tail one) using lock
+     * coupling: the write lock on the next fragment page is acquired before the write lock on the current fragment
+     * page is released. Readers of fragmented rows traverse fragments in the same order with the same lock coupling
+     * (see {@code CacheDataRowAdapter#doInitFromLink}), so a concurrent update can neither overtake a reader in the
+     * middle of the row nor be overtaken by it, and every reader observes either the entirely old or the entirely new
+     * row, regardless of which structure (data tree, index, pending tree, eviction tracker) the link was obtained
+     * from and which locks of that structure the reader holds.
+     * <p>
+     * Lock coupling is deadlock-free: a page can be shared between rows only as a head fragment page, since non-head
+     * fragments always occupy the whole page (see {@link #takePage}, {@code WriteRowHandler#addRow}), and the head
+     * page is never requested while a lock on another page of the same or another row is held, so all lock chains
+     * have the form "shared head page -> exclusive pages of the same row" and can't form a cycle.
+     *
+     * @param link Row link.
+     * @param row Row with the new data.
+     * @param statHolder Statistics holder to track IO operations.
+     * @return Final state of the update.
+     * @throws IgniteCheckedException If failed.
+     */
+    private PartiallyWritten updateFragmentedRow(long link, T row, IoStatisticsHolder statHolder)
+        throws IgniteCheckedException {
+        PartiallyWritten state = new PartiallyWritten(row);
+
+        int size = row.size();
+
+        long pageId = PageIdUtils.pageId(link);
+        int itemId = PageIdUtils.itemId(link);
+        long page = 0L;
+        long pageAddr = 0L;
+        boolean dirty = false;
+
+        try {
+            page = acquirePage(pageId, statHolder);
+            pageAddr = lockFragmentPage(pageId, page, link);
+
+            while (true) {
+                updateFragmentedRow.run(grpId, pageId, page, pageAddr, pageIoRslvr.resolve(pageAddr), null, state,
+                    itemId, statHolder);
+
+                dirty = state.modified;
+
+                assert PageIO.getCrc(pageAddr) == 0; // See PageHandler#writePage.
+
+                if (state.written >= size)
+                    return state;
+
+                assert state.nextLink != 0L : "Unexpected end of the fragmented row [link=" + U.hexLong(link) +
+                    ", written=" + state.written + ", rowSize=" + size + ']';
+
+                long nextPageId = PageIdUtils.pageId(state.nextLink);
+                int nextItemId = PageIdUtils.itemId(state.nextLink);
+
+                // Lock coupling: acquire the write lock on the next fragment page before releasing the current one.
+                long nextPage = acquirePage(nextPageId, statHolder);
+                long nextPageAddr;
+
+                try {
+                    nextPageAddr = lockFragmentPage(nextPageId, nextPage, state.nextLink);
+                }
+                catch (Throwable t) {
+                    releasePage(nextPageId, nextPage);
+
+                    throw t;
+                }
+
+                long prevPageId = pageId;
+                long prevPage = page;
+                long prevPageAddr = pageAddr;
+                boolean prevDirty = dirty;
+
+                pageId = nextPageId;
+                itemId = nextItemId;
+                page = nextPage;
+                pageAddr = nextPageAddr;
+                dirty = false;
+
+                writeUnlock(prevPageId, prevPage, prevPageAddr, null, prevDirty);
+                releasePage(prevPageId, prevPage);
+            }
+        }
+        finally {
+            if (pageAddr != 0L)
+                writeUnlock(pageId, page, pageAddr, null, dirty);
+
+            if (page != 0L)
+                releasePage(pageId, page);
+        }
+    }
+
+    /**
+     * Acquires the write lock on the fragment page of the live (referenced from the data tree) row.
+     *
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param link Fragment link (for diagnostics).
+     * @return Page address.
+     */
+    private long lockFragmentPage(long pageId, long page, long link) {
+        long pageAddr = writeLock(pageId, page);
+
+        // Pages of the live row can't be recycled, so the lock can't fail here.
+        if (pageAddr == 0L) {
+            throw new IllegalStateException("Failed to lock fragment page of the live row [link=" + U.hexLong(link) +
+                ", tag=" + PageIdUtils.tag(pageId) + ']');
+        }
+
+        return pageAddr;
     }
 
     /** {@inheritDoc} */

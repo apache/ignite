@@ -1456,35 +1456,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow == null)
                 return false;
 
-            // In-place update is not possible when queries (indexes) are enabled.
-            // For indexed entries, if we update entry in-place, after updating entry but before updating index,
-            // the old index may point to the new entry with fields that do not match the index. For multi-page
-            // entries, while reading data row by link from index, intermediate pages may be changing, causing
-            // index to read inconsistent entry. Without in-place update, indexed entries are protected as
-            // follows: when processing index, leaf page lock prevents removal from index tree; then data page
-            // read locks are acquired and entry is read. During update, entry is first removed from index,
-            // then removed from row store. The index page lock guarantees that we do not remove entry from
-            // row store until index finishes working with this entry.
+            // In-place update is not possible when queries (indexes) are enabled. In-place update doesn't change
+            // the row link and doesn't touch indexes (finishUpdate is skipped for IN_PLACE operation), so after the
+            // update index entries may point to the row with fields that don't match the index (until the index is
+            // updated). Without in-place update this is impossible: the new row is inserted to the row store first,
+            // then index entries are updated (under index leaf page lock, which also protects concurrent index
+            // readers of the old row), and only after that the old row is removed from the row store.
             if (cctx.queries().enabled())
                 return false;
 
-            // Pending tree stores entries with their original expire time. During expire, entries for deletion
-            // are read from pending tree (their links), then entries are initialized (key is read by link) under
-            // pending tree leaf page lock. During update, when in-place update is disabled, we first insert new entry
-            // to row store, then remove old entry link from pending tree (this operation acquires pending tree leaf
-            // page lock), add new entry link to pending tree, and after that remove old entry from row store.
-            // The pending tree leaf page lock ensures entry consistency. If in-place update is enabled, during expire
-            // we may read already updated entry with modified TTL.
+            // In-place update doesn't change the row link and doesn't touch the pending tree (finishUpdate is skipped
+            // for IN_PLACE operation), so the pending tree entry (expireTime, link) must stay valid: the expire time
+            // must not change.
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
             int oldLen = oldRow.size();
-
-            // For multi-page entries with pending tree reference (expireTime != 0), even when old expire time
-            // equals new expire time, we may fall between page updates during access from pending tree
-            // (on expiration) and read inconsistent entry, causing unmarshalling failure.
-            if (oldLen > updateValSizeThreshold && oldRow.expireTime() != 0)
-                return false;
 
             // Multi-page in-place row update introduces changes to applying WAL delta records, disable it until
             // feature is activated across all the cluster.
@@ -1492,16 +1479,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 && !grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE))
                 return false;
 
-            // Entry is read from row store by link only in three places: from index tree, from pending tree,
-            // and from data tree (key lookup). Row update is executed under write lock on data tree leaf page,
-            // so KV API operations with in-place update are safe: entry read always happens under data tree
-            // leaf page lock (even for scan cache - iteration goes through data tree). Unfortunately, fixing
-            // the other two cases (read from index tree and pending tree) is problematic: under current data
-            // tree leaf page lock we cannot modify index tree or pending tree, as this may lead to deadlock
-            // (threads working with pending tree and holding its page lock may request data tree page lock).
-            // We cannot pre-delete entries from other trees before the data tree lock either, because consistent
-            // reference to old entry can be obtained only under data tree leaf page lock. Deleting entries
-            // from other trees after the lock (as done currently) is safe only for non in-place update.
+            // In-place update is performed by the data tree invoke closure, which is executed without the data tree
+            // leaf page lock (only the entry lock is held), so concurrent readers of the row by link (data tree,
+            // pending tree, page eviction, etc.) are protected only by the data page locks. A single-page row is
+            // updated under the write lock of its data page and readers read it under the read lock of the same page,
+            // so they see either the old or the new row. A multi-page row is updated fragment by fragment using lock
+            // coupling (the next fragment page is locked before the current one is released), readers of fragmented
+            // rows traverse fragments in the same order with the same lock coupling, so an update can't overtake a
+            // reader and readers see either the entirely old or the entirely new row as well (see
+            // AbstractFreeList#updateFragmentedRow and CacheDataRowAdapter#doInitFromLink).
 
             int newLen = dataRow.size();
 

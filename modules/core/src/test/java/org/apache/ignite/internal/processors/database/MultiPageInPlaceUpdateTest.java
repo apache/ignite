@@ -20,13 +20,17 @@ package org.apache.ignite.internal.processors.database;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.Cache;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
@@ -379,8 +383,8 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
         // In-place update is enabled when TTL is not changed and entry occupies only one page.
         checkLinkChange(ignite, cache, 100, true, false);
 
-        // In-place update is disabled when TTL is not changed, but entry occupies more than one page.
-        checkLinkChange(ignite, cache, ignite.context().cache().context().database().pageSize(), false, false);
+        // In-place update is enabled when TTL is not changed and entry occupies more than one page.
+        checkLinkChange(ignite, cache, ignite.context().cache().context().database().pageSize(), true, false);
 
         cache = cache.withExpiryPolicy(new ModifiedExpiryPolicy(Duration.ONE_DAY));
 
@@ -496,6 +500,105 @@ public class MultiPageInPlaceUpdateTest extends GridCommonAbstractTest {
             int payloadIdx = val[0];
 
             assertEqualsArraysAware(val, payloads[payloadIdx]); // Check that value is consistent.
+        }
+    }
+
+    /** */
+    @Test
+    public void testConcurrentReadInPlaceUpdateInMemory() throws Exception {
+        checkConcurrentReadInPlaceUpdate(false);
+    }
+
+    /** */
+    @Test
+    public void testConcurrentReadInPlaceUpdatePersistence() throws Exception {
+        checkConcurrentReadInPlaceUpdate(true);
+    }
+
+    /**
+     * Checks that concurrent readers never observe partially updated (torn) multi-page row: each reader sees either
+     * the entirely old or the entirely new value.
+     */
+    private void checkConcurrentReadInPlaceUpdate(boolean pds) throws Exception {
+        this.pds = pds;
+
+        IgniteEx ignite = startGrid(0);
+
+        if (pds)
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        int entrySize = 100 * 1024;
+        int keysCnt = 4;
+        int payloadsCnt = 10;
+
+        // Each payload is filled with a single byte value, so a torn read is detected by a non-uniform value.
+        byte[][] payloads = new byte[payloadsCnt][entrySize];
+
+        for (int i = 0; i < payloadsCnt; i++)
+            Arrays.fill(payloads[i], (byte)i);
+
+        long[] links = new long[keysCnt];
+
+        for (int key = 0; key < keysCnt; key++) {
+            cache.put(key, payloads[0]);
+
+            links[key] = link(ignite, key);
+        }
+
+        AtomicBoolean end = new AtomicBoolean();
+
+        IgniteInternalFuture<?> updFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!end.get()) {
+                cache.put(ThreadLocalRandom.current().nextInt(keysCnt),
+                    payloads[ThreadLocalRandom.current().nextInt(payloadsCnt)]);
+            }
+        }, 2, "updater");
+
+        IgniteInternalFuture<?> readFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            int iter = 0;
+
+            while (!end.get()) {
+                if (iter++ % 100 == 0) {
+                    // Scan query reads rows by the data tree cursor.
+                    List<Cache.Entry<Integer, byte[]>> entries = cache.query(new ScanQuery<Integer, byte[]>()).getAll();
+
+                    assertEquals(keysCnt, entries.size());
+
+                    for (Cache.Entry<Integer, byte[]> entry : entries)
+                        checkUniform(entry.getValue(), entrySize);
+                }
+                else
+                    checkUniform(cache.get(ThreadLocalRandom.current().nextInt(keysCnt)), entrySize);
+            }
+        }, 4, "reader");
+
+        try {
+            doSleep(5_000L);
+        }
+        finally {
+            end.set(true);
+        }
+
+        readFut.get(10_000L);
+        updFut.get(10_000L);
+
+        // All updates must be in-place.
+        for (int key = 0; key < keysCnt; key++)
+            assertEquals(links[key], link(ignite, key));
+    }
+
+    /** */
+    private static void checkUniform(byte[] val, int expSize) {
+        assertNotNull(val);
+        assertEquals(expSize, val.length);
+
+        byte b = val[0];
+
+        for (int i = 1; i < val.length; i++) {
+            if (val[i] != b)
+                fail("Torn read detected [pos=" + i + ", expected=" + b + ", actual=" + val[i] + ']');
         }
     }
 

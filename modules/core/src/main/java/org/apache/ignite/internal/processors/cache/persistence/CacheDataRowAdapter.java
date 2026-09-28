@@ -310,59 +310,106 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert key == null : "key";
 
         long nextLink = link;
+        long pageId = pageId(link);
+        long page = 0L;
+        long pageAddr = 0L;
 
-        do {
-            final long pageId = pageId(nextLink);
-
+        try {
             try {
-                final long page = pageMem.acquirePage(grpId, pageId, statHolder);
+                page = pageMem.acquirePage(grpId, pageId, statHolder);
+                pageAddr = readLockFragmentPage(pageMem, grpId, pageId, page, link);
 
-                try {
-                    long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
+                while (true) {
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                    assert pageAddr != 0L : "Cannot lock page [link=" + U.hexLong(nextLink) +
-                        ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]";
+                    int itemId = itemId(nextLink);
+
+                    incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem.pageSize(),
+                        pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
+
+                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
+                        return;
+
+                    nextLink = incomplete.getNextLink();
+
+                    if (nextLink == 0)
+                        break;
+
+                    long nextPageId = pageId(nextLink);
+
+                    // Lock coupling: acquire the read lock on the next fragment page before releasing the current one.
+                    // In-place update of the fragmented row traverses fragments in the same order with the same lock
+                    // coupling (see AbstractFreeList#updateFragmentedRow), so it can't overtake this read and the row
+                    // is read either entirely old or entirely new.
+                    long nextPage = pageMem.acquirePage(grpId, nextPageId, statHolder);
+                    long nextPageAddr;
 
                     try {
-                        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
-
-                        int itemId = itemId(nextLink);
-
-                        incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem.pageSize(),
-                            pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
-
-                        if (incomplete == null || (rowData == KEY_ONLY && key != null))
-                            return;
-
-                        nextLink = incomplete.getNextLink();
+                        nextPageAddr = readLockFragmentPage(pageMem, grpId, nextPageId, nextPage, nextLink);
                     }
-                    finally {
-                        pageMem.readUnlock(grpId, pageId, page);
+                    catch (Throwable e) {
+                        pageMem.releasePage(grpId, nextPageId, nextPage);
+
+                        throw e;
                     }
-                }
-                finally {
-                    pageMem.releasePage(grpId, pageId, page);
+
+                    long prevPageId = pageId;
+                    long prevPage = page;
+
+                    pageId = nextPageId;
+                    page = nextPage;
+                    pageAddr = nextPageAddr;
+
+                    pageMem.readUnlock(grpId, prevPageId, prevPage);
+                    pageMem.releasePage(grpId, prevPageId, prevPage);
                 }
             }
-            catch (RuntimeException | AssertionError e) {
-                // Collect all pages from first link to pageId.
-                long[] pageIds;
+            finally {
+                if (pageAddr != 0L)
+                    pageMem.readUnlock(grpId, pageId, page);
 
-                try {
-                    pageIds = relatedPageIds(grpId, link, pageId, pageMem, statHolder);
-
-                }
-                catch (IgniteCheckedException e0) {
-                    // Ignore exception if failed to resolve related page ids.
-                    pageIds = new long[] {pageId};
-                }
-
-                throw new BPlusTreeRuntimeException(e, grpId, pageIds);
+                if (page != 0L)
+                    pageMem.releasePage(grpId, pageId, page);
             }
         }
-        while (nextLink != 0);
+        catch (RuntimeException | AssertionError e) {
+            // Collect all pages from first link to pageId.
+            long[] pageIds;
+
+            try {
+                pageIds = relatedPageIds(grpId, link, pageId, pageMem, statHolder);
+            }
+            catch (IgniteCheckedException e0) {
+                // Ignore exception if failed to resolve related page ids.
+                pageIds = new long[] {pageId};
+            }
+
+            throw new BPlusTreeRuntimeException(e, grpId, pageIds);
+        }
 
         assert isReady() : "ready";
+    }
+
+    /**
+     * Acquires the read lock on the fragment page of the row.
+     *
+     * @param pageMem Page memory.
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param link Fragment link (for diagnostics).
+     * @return Page address.
+     */
+    private static long readLockFragmentPage(PageMemory pageMem, int grpId, long pageId, long page, long link) {
+        long pageAddr = pageMem.readLock(grpId, pageId, page);
+
+        // Non-empty data page must not be recycled.
+        if (pageAddr == 0L) {
+            throw new IllegalStateException("Cannot lock page [link=" + U.hexLong(link) +
+                ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]");
+        }
+
+        return pageAddr;
     }
 
     /**

@@ -155,8 +155,8 @@ public class RowStore {
         if (rowCacheCleaner0 != null)
             rowCacheCleaner0.remove(oldRow.link());
 
-        boolean allowFragmented = oldRow.expireTime() == 0
-            && grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE);
+        boolean allowFragmented =
+            grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE);
 
         return freeList.updateDataRow(oldRow, newRow, allowFragmented, statHolder);
     }
