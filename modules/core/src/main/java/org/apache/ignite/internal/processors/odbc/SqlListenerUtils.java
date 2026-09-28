@@ -56,25 +56,10 @@ public abstract class SqlListenerUtils {
      */
     @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow, boolean keepBinary)
         throws BinaryObjectException {
-        byte type = reader.readByte();
-
-        return readObject(type, reader, binObjAllow, keepBinary);
+        return readObject(reader, binObjAllow, keepBinary, true);
     }
 
     /**
-     * @param type Object type.
-     * @param reader Reader.
-     * @param binObjAllow Allow to read non plaint objects.
-     * @return Read object.
-     * @throws BinaryObjectException On error.
-     */
-    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
-                                              boolean keepBinary) throws BinaryObjectException {
-        return readObject(type, reader, binObjAllow, keepBinary, true);
-    }
-
-    /**
-     * @param type Object type.
      * @param reader Reader.
      * @param binObjAllow Allow to read non plaint objects.
      * @param keepBinary Whether to deserialize objects or keep in binary format.
@@ -82,8 +67,10 @@ public abstract class SqlListenerUtils {
      * @return Read object.
      * @throws BinaryObjectException On error.
      */
-    @Nullable public static Object readObject(byte type, BinaryReaderEx reader, boolean binObjAllow,
+    @Nullable public static Object readObject(BinaryReaderEx reader, boolean binObjAllow,
         boolean keepBinary, boolean createByteArrayCopy) throws BinaryObjectException {
+        byte type = reader.readByte();
+
         if (type == GridBinaryMarshaller.BYTE_ARR && !createByteArrayCopy && reader.in().hasArray()) {
             int len = reader.in().readInt();
 
