@@ -1502,7 +1502,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return {@code True} if checking of a snapshot with specified name is in progress.
      */
-    public boolean isSnapshotChecking(@Nullable String snpName) {
+    public boolean isSnapshotChecking(String snpName) {
         return checkSnpProc.isSnapshotChecking(snpName);
     }
 
