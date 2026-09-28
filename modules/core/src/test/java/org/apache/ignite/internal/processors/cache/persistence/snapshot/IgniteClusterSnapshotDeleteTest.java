@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,7 +81,10 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     private static final String EXT_STORAGE_PATH = "extStorage";
 
     /** */
-    private static boolean caseInsensitiveFS;
+    private static boolean CASE_INSENSETIVE_FS;
+
+    /** */
+    private static boolean POSIX_PERMISSIONS;
 
     /** */
     private boolean separatedWorkDir;
@@ -132,10 +136,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
             extStoragePaths = cfg.getDataStorageConfiguration().getExtraStoragePaths();
 
-            cfg.getDataStorageConfiguration().setExtraSnapshotPaths(
-                "",
-                EXT_STORAGE_PATH
-            );
+            cfg.getDataStorageConfiguration().setExtraSnapshotPaths("", EXT_STORAGE_PATH);
         }
 
         return cfg;
@@ -162,18 +163,29 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         File workDir = new File(U.defaultWorkDirectory());
 
-        workDir.exists();
+        assertTrue(workDir.exists());
 
-        assertTrue(new File(U.defaultWorkDirectory()).exists());
-
-        caseInsensitiveFS = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
+        CASE_INSENSETIVE_FS = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
             new File(workDir.getAbsolutePath().toUpperCase()).exists();
+
+        Path workPath = workDir.toPath();
+
+        try {
+            Files.getPosixFilePermissions(workPath);
+
+            POSIX_PERMISSIONS = true;
+        }
+        catch (IOException ignored) {
+            // No-op.
+        }
     }
 
     /** */
     @Test
     public void testDeniedPermissions() throws Exception {
-        // No matters here.
+        assumeTrue(POSIX_PERMISSIONS);
+
+        // Doesn't matter here.
         assumeFalse(incremental);
 
         separatedWorkDir = true;
@@ -181,13 +193,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         AtomicReference<Set<PosixFilePermission>> prevPerms = new AtomicReference<>();
         AtomicReference<Path> pathRef = new AtomicReference<>();
 
-        // Simulates a deletion error on some node.
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
                 return "TestSnpMgrProvider";
             }
 
-            // Simulates the deletion failure.
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
@@ -200,9 +210,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                                 try {
                                     prevPerms.set(Files.getPosixFilePermissions(path));
 
-                                    Set<PosixFilePermission> perms = PosixFilePermissions.fromString("r-xr-x---");
-
-                                    Files.setPosixFilePermissions(path, perms);
+                                    // Denies writing (deletion).
+                                    Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("r-xr-x---"));
                                 }
                                 catch (Exception e) {
                                     throw new IgniteException("Unable to set the posix permissions.", e);
@@ -645,7 +654,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotDeleteWhenCheckInProgressNameCase() throws Exception {
         // For case-insensitive file systems only.
-        assertTrue(caseInsensitiveFS);
+        assertTrue(CASE_INSENSETIVE_FS);
 
         lowerCasedSnpName = true;
 
@@ -738,7 +747,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotDeleteWhenRestoreBeginsNameCase() throws Exception {
         // For case-insensitive file systems only.
-        assumeTrue(caseInsensitiveFS);
+        assumeTrue(CASE_INSENSETIVE_FS);
 
         lowerCasedSnpName = true;
 
@@ -808,7 +817,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotDeleteWhenRestoreInProgressNameCase() throws Exception {
         // For case-insensitive file systems only.
-        assumeTrue(caseInsensitiveFS);
+        assumeTrue(CASE_INSENSETIVE_FS);
 
         lowerCasedSnpName = true;
 
@@ -921,7 +930,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             if (incremental)
                 addIncrementalSnapshot(null);
 
-            if (caseInsensitiveFS) {
+            if (CASE_INSENSETIVE_FS) {
                 // Ensure that if any operation uses variating case in snapshot paths/names,
                 // they will actually target the same directory.
                 File snpRoot = new SnapshotFileTree(grid(0).context(), SNAPSHOT_NAME, null).root();

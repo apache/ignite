@@ -763,7 +763,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!deleteDirectory(s) && s.exists())
                     res.set1(false);
 
-                // Deletes "db" directory also beyond the snapshot root in the case when extra snapshot storages are configured.
+                /**
+                 * Deletes "db" directory also beyond the snapshot root in the case when
+                 * {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)} are configured.
+                 */
                 s = s.getParentFile();
 
                 if (!deleteDirectory(s) && s.exists())
@@ -771,7 +774,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 s = s.getParentFile();
 
-                // Deletes the snapshot root directory beyond the snapshot root in the case when extra snapshot storages are configured.
+                /**
+                 * Deletes the snapshot root directory beyond the snapshot root in the case when
+                 * {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)} are configured.
+                 */
                 if (!sft.root().equals(s) && !s.delete() && s.exists())
                     res.set1(false);
             }
