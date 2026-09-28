@@ -106,11 +106,4 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @throws BinaryObjectException On error.
      */
     public void writeJdbcObject(@Nullable Object obj, boolean binObjAllow);
-
-    /**
-     * Write value with flag. e.g. writePlainObject(writer, (byte)77) will write two byte: {BYTE, 77}.
-     *
-     * @param val Value.
-     */
-    public void writePlainObject(Object val);
 }

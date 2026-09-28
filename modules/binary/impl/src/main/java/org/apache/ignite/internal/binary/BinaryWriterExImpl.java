@@ -1988,8 +1988,12 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
             throw new BinaryObjectException("Custom objects are not supported");
     }
 
-    /** {@inheritDoc} */
-    @Override public void writePlainObject(Object val) {
+    /**
+     * Write value with flag. e.g. writePlainObject(writer, (byte)77) will write two byte: {BYTE, 77}.
+     *
+     * @param val Value.
+     */
+    public void writePlainObject(Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
 
         if (flag == null)
