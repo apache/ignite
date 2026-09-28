@@ -309,16 +309,6 @@ public class BinaryImplUtils {
         return val instanceof BinaryEnumArray;
     }
 
-    /**
-     * Gets field by its order.
-     *
-     * @param reader Reader.
-     * @param order Order.
-     */
-    public static int fieldId(BinaryReaderEx reader, int order) {
-        return reader.getOrCreateSchema().fieldId(order);
-    }
-
     /** */
     public static int hashCode(byte[] data, int startPos, int endPos) {
         int hash = 1;
