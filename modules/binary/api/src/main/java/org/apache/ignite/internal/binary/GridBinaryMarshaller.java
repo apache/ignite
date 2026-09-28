@@ -264,10 +264,9 @@ public class GridBinaryMarshaller {
      *
      * @param obj Object to marshal.
      * @param out Output stream.
-     * @param failIfUnregistered Throw exception if class isn't registered.
      * @throws BinaryObjectException In case of error.
      */
-    public void marshal(@Nullable Object obj, OutputStream out, boolean failIfUnregistered) throws BinaryObjectException {
+    public void marshal(@Nullable Object obj, OutputStream out) throws BinaryObjectException {
         try {
             if (obj == null) {
                 out.write(NULL);
@@ -275,7 +274,7 @@ public class GridBinaryMarshaller {
                 return;
             }
 
-            try (BinaryWriterEx writer = BinaryUtils.writer(ctx, failIfUnregistered, UNREGISTERED_TYPE_ID)) {
+            try (BinaryWriterEx writer = BinaryUtils.writer(ctx, false, UNREGISTERED_TYPE_ID)) {
                 writer.marshal(obj);
 
                 BinaryOutputStream s = writer.out();
