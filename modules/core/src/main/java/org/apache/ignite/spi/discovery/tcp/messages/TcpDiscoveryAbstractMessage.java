@@ -110,6 +110,8 @@ public abstract class TcpDiscoveryAbstractMessage extends AbstractMessage {
         topVer = msg.topVer;
         flags = msg.flags;
         opCtxSnp = msg.opCtxSnp;
+
+        rawFields(msg.rawFields());
     }
 
     /**

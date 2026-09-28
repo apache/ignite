@@ -17,7 +17,21 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-/** Base class of every message. */
+import java.util.List;
+import org.jetbrains.annotations.Nullable;
+
+/** Base class holding the raw fields a message carries for peers that can decode them. */
 public abstract class AbstractMessage implements Message {
-    // No-op.
+    /** */
+    @Nullable private transient List<RawField> rawFields;
+
+    /** {@inheritDoc} */
+    @Nullable @Override public List<RawField> rawFields() {
+        return rawFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rawFields(@Nullable List<RawField> rawFields) {
+        this.rawFields = rawFields;
+    }
 }

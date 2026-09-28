@@ -20,12 +20,14 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
+@ImmutableSchema
 public class InetAddressMessage extends AbstractMessage {
     /** */
     @Order(0)

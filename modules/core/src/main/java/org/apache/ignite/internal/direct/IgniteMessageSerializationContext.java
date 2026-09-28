@@ -37,6 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.RAW_FIELDS_FEATURE;
+
 /** */
 public class IgniteMessageSerializationContext implements MessageSerializationContext {
     /** */
@@ -46,6 +48,11 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
     /** */
     private IgniteMessageSerializationContext(Map<String, ComponentMessageSerializationContext> ctxByComponent) {
         this.ctxByComponent = ctxByComponent;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean includeRawFields() {
+        return includeFieldIntroducedBy(RAW_FIELDS_FEATURE);
     }
 
     /** {@inheritDoc} */

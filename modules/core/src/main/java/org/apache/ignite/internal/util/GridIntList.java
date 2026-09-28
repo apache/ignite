@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
@@ -32,6 +33,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_INTS;
  * Minimal list API to work with primitive ints. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
+@ImmutableSchema
 public class GridIntList extends AbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

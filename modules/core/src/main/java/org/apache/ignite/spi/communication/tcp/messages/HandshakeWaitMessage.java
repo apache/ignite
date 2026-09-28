@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import org.apache.ignite.internal.EmptyMessage;
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
@@ -25,6 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
  * Message requesting to wait until node's SPI context initialize.
  */
 @EmptyMessage
+@ImmutableSchema
 public class HandshakeWaitMessage extends AbstractMessage {
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
