@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
@@ -25,6 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 /**
  * Handshake message.
  */
+@ImmutableSchema
 public class HandshakeMessage extends AbstractMessage {
     /** Message body size in bytes. */
     private static final int MESSAGE_SIZE = 36 + 1; // additional byte for null flag of UUID value.
