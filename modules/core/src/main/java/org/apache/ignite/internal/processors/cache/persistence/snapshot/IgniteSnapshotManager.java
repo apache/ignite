@@ -1502,7 +1502,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return {@code True} if checking of a snapshot with specified name is in progress.
      */
-    public boolean isSnapshotChecking(String snpName) {
+    public boolean isSnapshotChecking(@Nullable String snpName) {
         return checkSnpProc.isSnapshotChecking(snpName);
     }
 
@@ -1559,7 +1559,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Snapshot name.
      * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
      */
-    public boolean isRestoring(String snpName) {
+    public boolean isRestoring(@Nullable String snpName) {
+        if (snpName == null)
+            return false;
+
         return snpName.equalsIgnoreCase(restoreCacheGrpProc.restoringSnapshotName());
     }
 

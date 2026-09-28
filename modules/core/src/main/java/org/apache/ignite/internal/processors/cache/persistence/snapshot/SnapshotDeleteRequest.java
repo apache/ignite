@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
@@ -61,7 +62,7 @@ public class SnapshotDeleteRequest implements Message {
      */
     SnapshotDeleteRequest(UUID reqId, String snpName, @Nullable String snpPath) {
         this.reqId = reqId;
-        this.snpName = snpName.trim();
+        this.snpName = snpName;
         this.snpPath = snpPath;
     }
 
@@ -77,7 +78,7 @@ public class SnapshotDeleteRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(snpName.toLowerCase(java.util.Locale.ROOT), resolvedPath);
+        return Objects.hash(snpName.toLowerCase(Locale.ROOT), resolvedPath);
     }
 
     /** {@inheritDoc} */
