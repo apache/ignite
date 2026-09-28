@@ -72,47 +72,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     void marshal(Object obj) throws BinaryObjectException;
 
     /**
-     * Perform pre-write. Reserves space for header and writes class name if needed.
-     *
-     * @param clsName Class name (optional).
-     */
-    public void preWrite(@Nullable String clsName);
-
-    /**
-     * Perform post-write. Fills object header.
-     *
-     * @param userType User type flag.
-     * @param registered Whether type is registered.
-     */
-    public void postWrite(boolean userType, boolean registered);
-
-    /**
-     * Perform post-write hash code update if necessary.
-     *
-     * @param clsName Class name. Always null if class is registered.
-     */
-    public void postWriteHashCode(@Nullable String clsName);
-
-    /**
-     * Pop schema.
-     */
-    public void popSchema();
-
-    /**
-     * Write field ID.
-     * @param fieldId Field ID.
-     */
-    public void writeFieldId(int fieldId);
-
-    /**
-     * Create new writer with same context.
-     *
-     * @param typeId type
-     * @return New writer.
-     */
-    public BinaryWriterEx newWriter(int typeId);
-
-    /**
      * Writes a sub array of bytes.
      * @param b the data to be written
      * @param off       the start offset in the data

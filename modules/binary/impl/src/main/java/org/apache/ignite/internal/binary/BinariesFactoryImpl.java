@@ -65,6 +65,11 @@ public class BinariesFactoryImpl implements BinariesFactory {
 
     /** {@inheritDoc} */
     @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
+        return newWriter(ctx, failIfUnregistered, typeId);
+    }
+
+    /** */
+    public static BinaryWriterExImpl newWriter(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
         BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
         return new BinaryWriterExImpl(

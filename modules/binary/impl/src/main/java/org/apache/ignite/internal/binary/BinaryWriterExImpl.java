@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 /**
  * Binary writer implementation.
  */
-class BinaryWriterExImpl implements BinaryWriterEx {
+public class BinaryWriterExImpl implements BinaryWriterEx {
     /** Zero-copy serialization enabled flag. */
     static final boolean ZERO_COPY = IgniteCommonsSystemProperties.getBoolean(IGNITE_BINARY_STRING_ZERO_COPY, DFLT_ZERO_COPY);
 
@@ -230,16 +230,25 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return out.position();
     }
 
-    /** {@inheritDoc} */
-    @Override public void preWrite(@Nullable String clsName) {
+    /**
+     * Perform pre-write. Reserves space for header and writes class name if needed.
+     *
+     * @param clsName Class name (optional).
+     */
+    public void preWrite(@Nullable String clsName) {
         out.position(out.position() + GridBinaryMarshaller.DFLT_HDR_LEN);
 
         if (clsName != null)
             writeString(clsName);
     }
 
-    /** {@inheritDoc} */
-    @Override public void postWrite(boolean userType, boolean registered) {
+    /**
+     * Perform post-write. Fills object header.
+     *
+     * @param userType User type flag.
+     * @param registered Whether type is registered.
+     */
+    public void postWrite(boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
 
@@ -308,8 +317,12 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         out.unsafePosition(retPos);
     }
 
-    /** {@inheritDoc} */
-    @Override public void postWriteHashCode(@Nullable String clsName) {
+    /**
+     * Perform post-write hash code update if necessary.
+     *
+     * @param clsName Class name. Always null if class is registered.
+     */
+    public void postWriteHashCode(@Nullable String clsName) {
         int typeId = clsName == null ? this.typeId : ctx.typeId(clsName);
 
         BinaryIdentityResolver identity = ctx.identity(typeId);
@@ -334,8 +347,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void popSchema() {
+    /**
+     * Pop schema.
+     */
+    public void popSchema() {
         if (fieldCnt > 0)
             schema.pop(fieldCnt);
     }
@@ -1421,8 +1436,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         writeFieldId(id);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeFieldId(int fieldId) {
+    /**
+     * Write field ID.
+     * @param fieldId Field ID.
+     */
+    public void writeFieldId(int fieldId) {
         int fieldOff = out.position() - start;
 
         // Advance schema hash.
@@ -1561,8 +1579,13 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public BinaryWriterEx newWriter(int typeId) {
+    /**
+     * Create new writer with same context.
+     *
+     * @param typeId type
+     * @return New writer.
+     */
+    public BinaryWriterExImpl newWriter(int typeId) {
         return new BinaryWriterExImpl(ctx, out, schema, handles(), failIfUnregistered, typeId);
     }
 
