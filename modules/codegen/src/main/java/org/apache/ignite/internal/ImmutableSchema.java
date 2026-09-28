@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp.messages;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.EmptyMessage;
-import org.apache.ignite.internal.ImmutableSchema;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Message requesting to wait until node's SPI context initialize.
+ * Marks a message whose schema must not change: no field of it, the inherited ones included, may be added, removed or
+ * gated by {@link Order#introducedBy()} or {@link Order#deprecatedBy()}. The processor rejects a gated field on such
+ * a message, and the generated serializer has no raw-fields state, so the message looks the same on the wire whatever
+ * the serialization context. Subclasses of a marked class are immutable as well.
  */
-@EmptyMessage
-@ImmutableSchema
-public class HandshakeWaitMessage extends AbstractMessage {
-    /** Full message size (with message type) in bytes. */
-    public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(HandshakeWaitMessage.class, this);
-    }
+@Retention(RetentionPolicy.CLASS)
+@Target(ElementType.TYPE)
+public @interface ImmutableSchema {
+    // No-op.
 }

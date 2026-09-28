@@ -20,8 +20,10 @@ package org.apache.ignite.plugin.extensions.communication;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -352,6 +354,22 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeGridCacheVersion(GridCacheVersion ver);
+
+    /**
+     * Serializes a field the peer cannot read positionally and keeps it until {@link #writeRawFields} writes it.
+     *
+     * @param tag Tag of the field: the id of the feature that gates it.
+     * @param valueWriter Writes the field value.
+     */
+    public void postponeRawFieldWrite(int tag, Consumer<MessageWriter> valueWriter);
+
+    /**
+     * Writes the raw-fields. This method call results in all postponed raw fields being written, followed by the specified ones.
+     *
+     * @param rawFields Raw fields the message object carries from an earlier hop, or {@code null}.
+     * @return Whether the suffix was fully written.
+     */
+    public boolean writeRawFields(@Nullable List<RawField> rawFields);
 
     /**
      * @return Whether header of current message is already written.

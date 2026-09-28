@@ -18,8 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.util.List;
-import org.apache.ignite.internal.CorrectEmptyMessage;
 import org.apache.ignite.internal.MessageSerializationContext;
+import org.apache.ignite.internal.TestImmutableSchemaMessage;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -31,9 +31,9 @@ import org.apache.ignite.plugin.extensions.communication.RawField;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public final class CorrectEmptyMessageSerializer implements MessageSerializer<CorrectEmptyMessage> {
+public final class TestImmutableSchemaMessageSerializer implements MessageSerializer<TestImmutableSchemaMessage> {
     /** */
-    @Override public final boolean writeTo(CorrectEmptyMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
+    @Override public final boolean writeTo(TestImmutableSchemaMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -43,10 +43,14 @@ public final class CorrectEmptyMessageSerializer implements MessageSerializer<Co
 
         switch (writer.state()) {
             case 0:
-                if (ctx.includeRawFields()) {
-                    if (!writer.writeRawFields(msg.rawFields()))
-                        return false;
-                }
+                if (!writer.writeInt(msg.id))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeString(msg.name))
+                    return false;
 
                 writer.incrementState();
         }
@@ -55,18 +59,21 @@ public final class CorrectEmptyMessageSerializer implements MessageSerializer<Co
     }
 
     /** */
-    @Override public final boolean readFrom(CorrectEmptyMessage msg, MessageReader reader, MessageSerializationContext ctx) {
+    @Override public final boolean readFrom(TestImmutableSchemaMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
-                if (ctx.includeRawFields()) {
-                    List<RawField> rawFields = reader.readRawFields();
+                msg.id = reader.readInt();
 
-                    if (!reader.isLastRead())
-                        return false;
+                if (!reader.isLastRead())
+                    return false;
 
-                    if (!rawFields.isEmpty())
-                        msg.rawFields(rawFields);
-                }
+                reader.incrementState();
+
+            case 1:
+                msg.name = reader.readString();
+
+                if (!reader.isLastRead())
+                    return false;
 
                 reader.incrementState();
         }
@@ -74,8 +81,9 @@ public final class CorrectEmptyMessageSerializer implements MessageSerializer<Co
         return true;
     }
 
+
     /** {@inheritDoc} */
-    @Override public final CorrectEmptyMessage createMessage() {
-        return new CorrectEmptyMessage();
+    @Override public final TestImmutableSchemaMessage createMessage() {
+        return new TestImmutableSchemaMessage();
     }
 }

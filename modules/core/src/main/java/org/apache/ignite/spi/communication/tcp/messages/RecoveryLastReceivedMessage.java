@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp.messages;
 
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
@@ -24,6 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 /**
  * Recovery acknowledgment message.
  */
+@ImmutableSchema
 public class RecoveryLastReceivedMessage extends AbstractMessage {
     /** */
     public static final long ALREADY_CONNECTED = -1;
