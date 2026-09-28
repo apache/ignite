@@ -151,7 +151,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     @Override protected void generateBody(List<VariableElement> fields) throws Exception {
         generateMethods(fields);
 
-        if (!isSchemaImmutable(env, type) && hasIntroducedFields(fields))
+        if (!isSchemaImmutable(env, type) && hasGatedFields(fields))
             generateRawFieldsConsumer(fields);
 
         // Include superclass types in imports so generated code can cast to them for inherited fields.
@@ -369,7 +369,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         code.add(EMPTY);
 
-        if (hasIntroducedFields(fields)) {
+        if (hasGatedFields(fields)) {
             code.add(indentedLine("rawFields.removeIf(f -> consumeKnownField(msg, f, reader, ctx));"));
             code.add(EMPTY);
         }
@@ -401,7 +401,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         indent++;
 
         for (VariableElement field : fields) {
-            if (!introducedByFeature(field))
+            if (!gatedByFeature(field))
                 continue;
 
             rawFieldsConsumerCode.add(indentedLine("if (f.tag() == %s) {", tagExpression(field)));
@@ -428,13 +428,15 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** */
-    private static boolean hasIntroducedFields(List<VariableElement> fields) {
-        return fields.stream().anyMatch(MessageSerializerGenerator::introducedByFeature);
+    private static boolean hasGatedFields(List<VariableElement> fields) {
+        return fields.stream().anyMatch(MessageSerializerGenerator::gatedByFeature);
     }
 
     /** */
-    private static boolean introducedByFeature(VariableElement field) {
-        return !field.getAnnotation(Order.class).introducedBy().isEmpty();
+    private static boolean gatedByFeature(VariableElement field) {
+        Order order = field.getAnnotation(Order.class);
+
+        return !order.introducedBy().isEmpty() || !order.deprecatedBy().isEmpty();
     }
 
     /** */
@@ -495,9 +497,6 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             indent--;
 
             write.add(indentedLine("}"));
-        }
-
-        if (introducedByFeature(field)) {
             write.add(indentedLine("else if (ctx.includeRawFields() && %s)", defaultValueCondition(field)));
 
             indent++;
