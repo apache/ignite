@@ -96,7 +96,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
  * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
-class BinaryReaderExImpl implements BinaryReaderEx {
+public class BinaryReaderExImpl implements BinaryReaderEx {
     /** Binary context. */
     private final BinaryContext ctx;
 
@@ -312,23 +312,33 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         return in;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinaryClassDescriptor descriptor() {
+    /**
+     * @return Descriptor.
+     */
+    public BinaryClassDescriptor descriptor() {
         if (desc == null)
             desc = ctx.descriptorForTypeId(userType, typeId, ldr, false);
 
         return desc;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object unmarshal(int offset) throws BinaryObjectException {
+    /**
+     * @param offset Offset in the array.
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Object unmarshal(int offset) throws BinaryObjectException {
         streamPosition(offset);
 
         return in.position() >= 0 ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object unmarshalField(String fieldName) throws BinaryObjectException {
+    /**
+     * @param fieldName Field name.
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Object unmarshalField(String fieldName) throws BinaryObjectException {
         try {
             return findFieldByName(fieldName) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
         }
@@ -337,8 +347,12 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Object unmarshalField(int fieldId) throws BinaryObjectException {
+    /**
+     * @param fieldId Field ID.
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public Object unmarshalField(int fieldId) throws BinaryObjectException {
         return findFieldById(fieldId) ? BinaryUtils.unmarshal(in, ctx, ldr, this) : null;
     }
 
@@ -1981,8 +1995,12 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         return mapper.fieldId(typeId, name);
     }
 
-    /** {@inheritDoc} */
-    @Override public BinarySchema getOrCreateSchema() {
+    /**
+     * Get or create object schema.
+     *
+     * @return Schema.
+     */
+    public BinarySchema getOrCreateSchema() {
         BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
@@ -2161,8 +2179,13 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         return builder.build();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean findFieldByName(String name) {
+    /**
+     * Try finding the field by name.
+     *
+     * @param name Field name.
+     * @return Offset.
+     */
+    public boolean findFieldByName(String name) {
         if (raw)
             throw new BinaryObjectException("Failed to read named field because reader is in raw mode.");
 
