@@ -76,7 +76,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
             ctx,
             BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
             locCtx.schemaHolder(),
-            null,
             failIfUnregistered,
             typeId
         );
@@ -88,7 +87,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
             ctx,
             out,
             BinaryThreadLocalContext.get().schemaHolder(),
-            null,
             false,
             GridBinaryMarshaller.UNREGISTERED_TYPE_ID
         );
@@ -96,7 +94,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
 
     /** {@inheritDoc} */
     @Override public BinaryWriterEx writerWithoutSchema(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(ctx, out, null, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+        return new BinaryWriterExImpl(ctx, out, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
     }
 
     /** {@inheritDoc} */

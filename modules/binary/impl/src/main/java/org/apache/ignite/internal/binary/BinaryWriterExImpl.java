@@ -104,7 +104,6 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
     /**
      * @param ctx Context.
      * @param out Output stream.
-     * @param handles Handles.
      * @param failIfUnregistered Flag to fail while writing object of unregistered type.
      * @param typeId Type id.
      */
@@ -112,7 +111,6 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
         BinaryContext ctx,
         BinaryOutputStream out,
         @Nullable BinaryWriterSchemaHolder schema,
-        BinaryWriterHandles handles,
         boolean failIfUnregistered,
         int typeId
     ) {
@@ -1589,7 +1587,11 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
      * @return New writer.
      */
     public BinaryWriterExImpl newWriter(int typeId) {
-        return new BinaryWriterExImpl(ctx, out, schema, handles(), failIfUnregistered, typeId);
+        BinaryWriterExImpl res = new BinaryWriterExImpl(ctx, out, schema, failIfUnregistered, typeId);
+
+        res.handles = handles();
+
+        return res;
     }
 
     /** {@inheritDoc} */
