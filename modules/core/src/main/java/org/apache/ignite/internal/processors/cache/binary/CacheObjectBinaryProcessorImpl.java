@@ -262,7 +262,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, binaryCtx, ctx, log);
 
-        binaryMarsh = new GridBinaryMarshaller(binaryCtx);
+        binaryMarsh = marsh.binaryMarshaller();
 
         binaries = new IgniteBinaryImpl(ctx, this);
 
