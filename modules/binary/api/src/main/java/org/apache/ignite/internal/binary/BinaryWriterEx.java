@@ -72,11 +72,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     void marshal(Object obj) throws BinaryObjectException;
 
     /**
-     * @return Array.
-     */
-    public byte[] array();
-
-    /**
      * Perform pre-write. Reserves space for header and writes class name if needed.
      *
      * @param clsName Class name (optional).

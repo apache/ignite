@@ -188,7 +188,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             serializeTo(writer, serializationCtx);
 
-            byte[] arr = writer.array();
+            byte[] arr = writer.out().arrayCopy();
 
             return new BinaryObjectImpl(ctx, arr, 0);
         }

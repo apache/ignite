@@ -255,7 +255,7 @@ public class GridBinaryMarshaller {
         try (BinaryWriterEx writer = BinaryUtils.writer(ctx, failIfUnregistered, UNREGISTERED_TYPE_ID)) {
             writer.marshal(obj);
 
-            return writer.array();
+            return writer.out().arrayCopy();
         }
     }
 

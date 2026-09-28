@@ -54,7 +54,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         try (BinaryWriterEx writer = BinaryUtils.writer(ctx, false, UNREGISTERED_TYPE_ID)) {
             testObjects.forEach(writer::writeObject);
 
-            serializedTestObjectsBytes = writer.array();
+            serializedTestObjectsBytes = writer.out().arrayCopy();
         }
 
         RawBinaryObjectExtractor rawReader = new RawBinaryObjectExtractor(BinaryStreams.inputStream(serializedTestObjectsBytes));

@@ -273,13 +273,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
-            return new ClientMessage(writer.array());
+            return new ClientMessage(writer.out().arrayCopy());
         }
 
         Object res0 = msg.response();
 
         if (res0 == null)
-            return new ClientMessage(writer.array());
+            return new ClientMessage(writer.out().arrayCopy());
         else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult)res0;
 
@@ -411,7 +411,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         else
             assert false : "Should not reach here.";
 
-        return new ClientMessage(writer.array());
+        return new ClientMessage(writer.out().arrayCopy());
     }
 
     /**

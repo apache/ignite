@@ -3047,7 +3047,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
             writer.writeString("Thread local test");
 
-            writer.array();
+            writer.out().arrayCopy();
 
             assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
         }
