@@ -296,14 +296,7 @@ public class GridBinaryMarshaller {
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
-        BinaryContext oldCtx = pushContext(ctx);
-
-        try {
-            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes, 0), ctx, clsLdr);
-        }
-        finally {
-            popContext(oldCtx);
-        }
+        return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes, 0), ctx, clsLdr);
     }
 
     /**
@@ -312,14 +305,7 @@ public class GridBinaryMarshaller {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     @Nullable public <T> T unmarshal(BinaryInputStream in) throws BinaryObjectException {
-        BinaryContext oldCtx = pushContext(ctx);
-
-        try {
-            return (T)BinaryUtils.unmarshal(in, ctx, null);
-        }
-        finally {
-            popContext(oldCtx);
-        }
+        return (T)BinaryUtils.unmarshal(in, ctx, null);
     }
 
     /**
@@ -425,42 +411,7 @@ public class GridBinaryMarshaller {
      */
     @Nullable <T> T deserialize(BinaryInputStream in, @Nullable ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds) throws BinaryObjectException {
-        BinaryContext oldCtx = pushContext(ctx);
-
-        try {
-            return (T)BinaryUtils.reader(ctx, in, ldr, hnds, true).deserialize();
-        }
-        finally {
-            popContext(oldCtx);
-        }
-    }
-
-    /**
-     * Push binary context and return the old one.
-     *
-     * @return Old binary context.
-     */
-    public BinaryContext pushContext() {
-        return pushContext(ctx);
-    }
-
-    /**
-     * Push binary context and return the old one.
-     *
-     * @param ctx Binary context.
-     * @return Old binary context.
-     */
-    @Nullable private static BinaryContext pushContext(BinaryContext ctx) {
-        return BINARY_CTX.get().set(ctx);
-    }
-
-    /**
-     * Pop binary context and restore the old one.
-     *
-     * @param oldCtx Old binary context.
-     */
-    public static void popContext(@Nullable BinaryContext oldCtx) {
-        BINARY_CTX.get().set(oldCtx);
+        return (T)BinaryUtils.reader(ctx, in, ldr, hnds, true).deserialize();
     }
 
     /**

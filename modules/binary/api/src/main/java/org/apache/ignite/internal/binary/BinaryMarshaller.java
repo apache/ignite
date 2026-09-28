@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -77,12 +76,12 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override protected byte[] marshal0(@Nullable Object obj) throws IgniteCheckedException {
+    @Override protected byte[] marshal0(@Nullable Object obj) {
         return impl.marshal(obj, false);
     }
 
     /** {@inheritDoc} */
-    @Override protected void marshal0(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
+    @Override protected void marshal0(@Nullable Object obj, OutputStream out) {
         impl.marshal(obj, out, false);
     }
 
@@ -92,7 +91,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         // we have to fully read the InputStream because GridBinaryMarshaller requires support of a method that
