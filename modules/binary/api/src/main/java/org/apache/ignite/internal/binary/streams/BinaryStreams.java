@@ -79,17 +79,6 @@ public class BinaryStreams {
     }
 
     /**
-     * @param ptr Pointer.
-     * @param cap Capacity.
-     * @param forceHeap If {@code true} method {@link BinaryInputStream#offheapPointer()} returns 0 and unmarshalling will
-     *        create heap-based objects.
-     * @return Stream.
-     */
-    public static BinaryInputStream inputStream(long ptr, int cap, boolean forceHeap) {
-        return factory.inputStream(ptr, cap, forceHeap);
-    }
-
-    /**
      * @param cap Capacity.
      * @param disableAutoClose Whether to disable resource release in {@link BinaryOutputStream#close()} method
      *                         so that an explicit {@link BinaryOutputStream#release()} call is required.

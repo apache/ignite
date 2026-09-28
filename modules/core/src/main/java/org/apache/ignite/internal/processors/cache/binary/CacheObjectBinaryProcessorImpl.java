@@ -62,8 +62,6 @@ import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -87,7 +85,6 @@ import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemK
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.systemview.BinaryMetadataViewWalker;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -383,32 +380,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         assert arr.length > 0;
 
         return arr;
-    }
-
-    /**
-     * @param ptr Off-heap pointer.
-     * @param forceHeap If {@code true} creates heap-based object.
-     * @return Object.
-     * @throws BinaryObjectException If failed.
-     */
-    public Object unmarshal(long ptr, boolean forceHeap) throws BinaryObjectException {
-        assert ptr > 0 : ptr;
-
-        int size = GridUnsafe.getInt(ptr);
-
-        ptr += 4;
-
-        byte type = GridUnsafe.getByte(ptr++);
-
-        if (type != CacheObject.TYPE_BYTE_ARR) {
-            assert size > 0 : size;
-
-            BinaryInputStream in = BinaryStreams.inputStream(ptr, size, forceHeap);
-
-            return binaryMarsh.unmarshal(in);
-        }
-        else
-            return GridUnsafe.copyMemory(ptr, size);
     }
 
     /** {@inheritDoc} */

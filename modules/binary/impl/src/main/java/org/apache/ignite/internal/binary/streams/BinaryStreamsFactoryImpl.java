@@ -46,11 +46,6 @@ public class BinaryStreamsFactoryImpl implements BinaryStreamsFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryInputStream inputStream(long ptr, int cap, boolean forceHeap) {
-        return new BinaryOffheapInputStream(ptr, cap, forceHeap);
-    }
-
-    /** {@inheritDoc} */
     @Override public BinaryOutputStream createPooledOutputStream(int cap, boolean disableAutoClose) {
         return new BinaryHeapOutputStream(cap, BinaryMemoryAllocator.POOLED.chunk(), disableAutoClose);
     }
