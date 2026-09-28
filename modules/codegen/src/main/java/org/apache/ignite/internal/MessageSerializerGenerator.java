@@ -52,6 +52,8 @@ import static org.apache.ignite.internal.MessageProcessor.GRID_H2_NULL;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.buildFieldFeatureGate;
+import static org.apache.ignite.internal.MessageProcessor.isSchemaImmutable;
+import static org.apache.ignite.internal.MessageProcessor.resolveFeatureRegistry;
 
 /** Generates {@code *Serializer} classes for {@code Message} types. */
 public class MessageSerializerGenerator extends MessageCompanionGenerator {
@@ -72,6 +74,12 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private static final String MESSAGE_SER_CTX_CLS = "org.apache.ignite.internal.MessageSerializationContext";
+
+    /** */
+    private static final String RAW_FIELD_CLS = "org.apache.ignite.plugin.extensions.communication.RawField";
+
+    /** */
+    private static final String LIST_CLS = "java.util.List";
 
     /** */
     private static final String ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper";
@@ -120,6 +128,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     /** */
     private final List<String> read = new ArrayList<>();
 
+    /** */
+    private final List<String> rawFieldsConsumerCode = new ArrayList<>();
+
     /** Static class fields, which should come before ordinary class fields. */
     private final Set<String> headingClsFields = new TreeSet<>();
 
@@ -140,6 +151,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     @Override protected void generateBody(List<VariableElement> fields) throws Exception {
         generateMethods(fields);
 
+        if (!isSchemaImmutable(env, type) && hasIntroducedFields(fields))
+            generateRawFieldsConsumer(fields);
+
         // Include superclass types in imports so generated code can cast to them for inherited fields.
         SystemViewRowAttributeWalkerProcessor.superclasses(env, type).forEach(el -> imports.add(el.toString()));
     }
@@ -151,6 +165,8 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             imports.add(MESSAGE_WRITER_CLS);
             imports.add(MESSAGE_READER_CLS);
             imports.add(MESSAGE_SER_CTX_CLS);
+            imports.add(RAW_FIELD_CLS);
+            imports.add(LIST_CLS);
 
             writeClassHeader(writer, "MessageSerializer", serClsName);
 
@@ -167,6 +183,13 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
                 writer.write(r + NL);
 
             writer.write(NL);
+
+            if (!rawFieldsConsumerCode.isEmpty()) {
+                for (String a: rawFieldsConsumerCode)
+                    writer.write(a + NL);
+
+                writer.write(NL);
+            }
 
             writeCreateMessage(writer);
 
@@ -233,6 +256,13 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         for (VariableElement field: fields)
             processField(field, state++, write);
 
+        if (!isSchemaImmutable(env, type)) {
+            if (write)
+                appendRawFieldsWriter(code, state);
+            else
+                appendRawFieldsReader(code, fields, state);
+        }
+
         indent--;
 
         finish(code);
@@ -269,31 +299,166 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
 
         if (write)
-            writeField(field, opt, callExpr(field, true));
+            writeField(field, opt, writeCall(field, "writer"));
         else
-            readField(field, opt, callExpr(field, false));
+            readField(field, opt, readCall(field, "reader"));
     }
 
-    /** @return Writer/reader call expression for {@code field}. */
-    private String callExpr(VariableElement field, boolean write) throws Exception {
+    /** */
+    private String writeCall(VariableElement field, String writer) throws Exception {
         if (enumType(env, field.asType())) {
-            String prefix = registerEnumMapper(field, field.asType());
+            String mapperPrefix = registerEnumMapper(field, field.asType());
 
-            boolean custMapper = field.getAnnotation(CustomMapper.class) != null;
+            String mapper = field.getAnnotation(CustomMapper.class) != null ? mapperPrefix + "Mapper" : "DefaultEnumMapper.INSTANCE";
 
-            if (write) {
-                return "writer.writeByte(" + (custMapper ? prefix + "Mapper" : "DefaultEnumMapper.INSTANCE") +
-                    ".encode(" + fieldRef(field) + "))";
-            }
-
-            return custMapper
-                ? prefix + "Mapper.decode(reader.readByte())"
-                : "DefaultEnumMapper.INSTANCE.decode(" + prefix + "Vals, reader.readByte())";
+            return writer + ".writeByte(" + mapper + ".encode(" + fieldRef(field) + "))";
         }
 
-        FieldCall call = fieldCall(field);
+        return fieldCall(field).expr(writer + ".write", fieldRef(field));
+    }
 
-        return write ? call.expr("writer.write", fieldRef(field)) : call.expr("reader.read", null);
+    /** */
+    private String readCall(VariableElement field, String reader) throws Exception {
+        if (enumType(env, field.asType())) {
+            String mapperPrefix = registerEnumMapper(field, field.asType());
+
+            return field.getAnnotation(CustomMapper.class) != null
+                ? mapperPrefix + "Mapper.decode(" + reader + ".readByte())"
+                : "DefaultEnumMapper.INSTANCE.decode(" + mapperPrefix + "Vals, " + reader + ".readByte())";
+        }
+
+        return fieldCall(field).expr(reader + ".read", null);
+    }
+
+    /** */
+    private void appendRawFieldsWriter(List<String> code, int state) {
+        code.add(indentedLine("case %d:", state));
+
+        indent++;
+
+        code.add(indentedLine("if (ctx.includeRawFields()) {"));
+
+        indent++;
+
+        returnFalseIf(code, "!writer.writeRawFields(msg.rawFields())");
+
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(EMPTY);
+        code.add(indentedLine("writer.incrementState();"));
+        code.add(EMPTY);
+
+        indent--;
+    }
+
+    /** */
+    private void appendRawFieldsReader(List<String> code, List<VariableElement> fields, int state) {
+        code.add(indentedLine("case %d:", state));
+
+        indent++;
+
+        code.add(indentedLine("if (ctx.includeRawFields()) {"));
+
+        indent++;
+
+        code.add(indentedLine("List<RawField> rawFields = reader.readRawFields();"));
+        code.add(EMPTY);
+
+        returnFalseIf(code, "!reader.isLastRead()");
+
+        code.add(EMPTY);
+
+        if (hasIntroducedFields(fields)) {
+            code.add(indentedLine("rawFields.removeIf(f -> consumeKnownField(msg, f, reader, ctx));"));
+            code.add(EMPTY);
+        }
+
+        code.add(indentedLine("if (!rawFields.isEmpty())"));
+
+        indent++;
+
+        code.add(indentedLine("msg.rawFields(rawFields);"));
+
+        indent--;
+        indent--;
+
+        code.add(indentedLine("}"));
+        code.add(EMPTY);
+        code.add(indentedLine("reader.incrementState();"));
+        code.add(EMPTY);
+
+        indent--;
+    }
+
+    /** */
+    private void generateRawFieldsConsumer(List<VariableElement> fields) throws Exception {
+        rawFieldsConsumerCode.add(indentedLine(METHOD_JAVADOC));
+        rawFieldsConsumerCode.add(indentedLine(
+            "private static boolean consumeKnownField(%s msg, RawField f, MessageReader reader, MessageSerializationContext ctx) {",
+            simpleNameWithGeneric(type)));
+
+        indent++;
+
+        for (VariableElement field : fields) {
+            if (!introducedByFeature(field))
+                continue;
+
+            rawFieldsConsumerCode.add(indentedLine("if (f.tag() == %s) {", tagExpression(field)));
+
+            indent++;
+
+            rawFieldsConsumerCode.add(indentedLine("%s = reader.deserializeRawField(f, in -> %s);",
+                fieldRef(field),
+                readCall(field, "in")));
+            rawFieldsConsumerCode.add(EMPTY);
+            rawFieldsConsumerCode.add(indentedLine("return true;"));
+
+            indent--;
+
+            rawFieldsConsumerCode.add(indentedLine("}"));
+            rawFieldsConsumerCode.add(EMPTY);
+        }
+
+        rawFieldsConsumerCode.add(indentedLine("return false;"));
+
+        indent--;
+
+        rawFieldsConsumerCode.add(indentedLine("}"));
+    }
+
+    /** */
+    private static boolean hasIntroducedFields(List<VariableElement> fields) {
+        return fields.stream().anyMatch(MessageSerializerGenerator::introducedByFeature);
+    }
+
+    /** */
+    private static boolean introducedByFeature(VariableElement field) {
+        return !field.getAnnotation(Order.class).introducedBy().isEmpty();
+    }
+
+    /** */
+    private static String tagExpression(VariableElement field) {
+        Order order = field.getAnnotation(Order.class);
+
+        String reg = resolveFeatureRegistry(field.getEnclosingElement());
+
+        String feature = order.introducedBy().isEmpty() ? order.deprecatedBy() : order.introducedBy();
+
+        return reg.substring(reg.lastIndexOf('.') + 1) + '.' + feature + ".id()";
+    }
+
+    /** */
+    private String defaultValueCondition(VariableElement field) {
+        TypeMirror type = field.asType();
+
+        if (type.getKind() == TypeKind.BOOLEAN)
+            return fieldRef(field);
+
+        if (type.getKind().isPrimitive())
+            return fieldRef(field) + " != 0";
+
+        return fieldRef(field) + " != null";
     }
 
     /**
@@ -309,7 +474,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
      * @param opt Case option.
      * @param writeExpr Writer call expression.
      */
-    private void writeField(VariableElement field, int opt, String writeExpr) {
+    private void writeField(VariableElement field, int opt, String writeExpr) throws Exception {
         write.add(indentedLine("case %d:", opt));
 
         indent++;
@@ -330,6 +495,16 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             indent--;
 
             write.add(indentedLine("}"));
+        }
+
+        if (introducedByFeature(field)) {
+            write.add(indentedLine("else if (ctx.includeRawFields() && %s)", defaultValueCondition(field)));
+
+            indent++;
+
+            write.add(indentedLine("writer.postponeRawFieldWrite(%s, w -> %s);", tagExpression(field), writeCall(field, "w")));
+
+            indent--;
         }
 
         write.add(EMPTY);

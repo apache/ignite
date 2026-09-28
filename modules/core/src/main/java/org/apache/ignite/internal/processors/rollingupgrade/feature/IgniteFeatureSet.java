@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -74,6 +75,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see IgniteFeature
  */
+@ImmutableSchema
 public class IgniteFeatureSet extends AbstractMessage implements Iterable<Integer>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -15,24 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp.messages;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.EmptyMessage;
-import org.apache.ignite.internal.ImmutableSchema;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
-/**
- * Message requesting to wait until node's SPI context initialize.
- */
-@EmptyMessage
-@ImmutableSchema
-public class HandshakeWaitMessage extends AbstractMessage {
-    /** Full message size (with message type) in bytes. */
-    public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(HandshakeWaitMessage.class, this);
-    }
+/** */
+public class TestSecondFeatureRegistry {
+    /** */
+    public static final IgniteFeature OTHER_FEATURE = new IgniteCoreFeature(0);
 }

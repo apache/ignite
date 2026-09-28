@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_1.VER_2_20_1_ID_6_FEATURE;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.A;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.B;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.C;
@@ -172,7 +173,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         assertEquals(oldVerSrv.localNode().id(), routerId(cli));
 
-        assertFields(A, B, C, D, null, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
+        assertFields(A, B, C, D, E, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
 
         stopGrid(0);
 
@@ -221,7 +222,10 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(1, "2.20.0");
         startGrid(2, "2.20.0");
 
-        checkCoreMessageBroadcast(grid(1), A, B, C, D, null, null);
+        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
+
+        assertFields(A, B, C, D, E, null, receivedMsgs.get(grid(2).name()));
+        assertFields(A, B, C, D, null, null, receivedMsgs.get(grid(0).name()));
     }
 
     /** */
@@ -237,11 +241,13 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         stopGrid(0);
 
         IgniteEx newVerSrv = startGrid(3, "2.20.0");
+        IgniteEx newVerSrvAfterOld = startGrid(4, "2.20.0");
 
         Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(newVerSrv, CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCrd.name()));
         assertFields(A, B, C, D, null, null, receivedMsgs.get(oldVerSrv.name()));
+        assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerSrvAfterOld.name()));
     }
 
     /** */
@@ -436,6 +442,95 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         finalizeClusterVersion(0, "2.21.0");
 
         checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
+    }
+
+    /** */
+    @Test
+    public void testRawFieldKeptByOldNodeAndResent() throws Exception {
+        startServerNodes("2.20.0", "2.20.1");
+
+        TestMessage rcvd = send(grid(1), grid(0), CORE_MSG);
+
+        assertEquals(TestCoreMessage_2_20_0.class, rcvd.getClass());
+        assertEquals(1, rcvd.rawFields().size());
+        assertEquals(VER_2_20_1_ID_6_FEATURE.id(), rcvd.rawFields().get(0).tag());
+
+        assertEquals(F, send(grid(0), grid(1), rcvd).fldF());
+        assertEquals(1, rcvd.rawFields().size());
+        assertEquals(F, send(grid(0), grid(1), rcvd).fldF());
+
+        assertNull(send(grid(0), grid(1), CORE_MSG).rawFields());
+    }
+
+    /** */
+    @Test
+    public void testRawFieldAfterUpgradeTargetChange() throws Exception {
+        startGrid(0, "2.20.0");
+        startGrid(1, "2.20.0");
+
+        ru(1).enableVersionUpgrade();
+
+        upgradeNodeVersion(1, "2.20.0", "2.20.1");
+
+        TestMessage rcvd = send(grid(1), grid(0), CORE_MSG);
+
+        assertEquals(TestCoreMessage_2_20_0.class, rcvd.getClass());
+        assertEquals(1, rcvd.rawFields().size());
+
+        upgradeNodeVersion(1, "2.20.0", "2.21.0");
+
+        rcvd = send(grid(0), grid(1), rcvd);
+
+        assertEquals(TestCoreMessage_2_21_0.class, rcvd.getClass());
+        assertFields(A, null, null, null, E, F, rcvd);
+        assertNull(rcvd.rawFields());
+    }
+
+    /** */
+    @Test
+    public void testRawFieldRelayedOverDiscoveryRing() throws Exception {
+        startServerNodes("2.20.0", "2.20.1", "2.20.0", "2.20.1");
+
+        Map<String, TestDiscoveryMessage> rcvd = sendOverDiscovery(grid(1), CORE_MSG);
+
+        assertEquals(F, rcvd.get(grid(3).name()).fldF());
+        assertNull(rcvd.get(grid(3).name()).rawFields());
+
+        assertEquals(1, rcvd.get(grid(0).name()).rawFields().size());
+        assertEquals(1, rcvd.get(grid(2).name()).rawFields().size());
+    }
+
+    /** */
+    @Test
+    public void testNestedAndCompressedRawFields() throws Exception {
+        startServerNodes("2.20.0", "2.21.0", "2.20.0", "2.21.0");
+
+        Map<String, TestDiscoveryMessage> rcvd = sendOverDiscovery(grid(1), CONTAINER_MSG);
+
+        TestContainerMessage_2_21_0 onNew = (TestContainerMessage_2_21_0)rcvd.get(grid(3).name());
+
+        for (TestMessage nestedMsg : onNew.nestedMessages())
+            assertFields(A, null, null, null, E, F, nestedMsg);
+
+        assertFields(A, null, null, null, E, F, onNew.newMsg);
+
+        TestContainerMessage_2_20_0 onOld = (TestContainerMessage_2_20_0)rcvd.get(grid(2).name());
+
+        for (TestMessage nestedMsg : onOld.nestedMessages()) {
+            assertFields(A, null, null, null, E, null, nestedMsg);
+            assertEquals(1, nestedMsg.rawFields().size());
+        }
+
+        assertEquals(1, onOld.rawFields().size());
+    }
+
+    /** */
+    @Test
+    public void testPeerWithoutRawFields() throws Exception {
+        startServerNodes("2.18.0", "2.19.0");
+
+        assertNull(send(grid(1), grid(0), CORE_MSG).rawFields());
+        assertNull(send(grid(0), grid(1), CORE_MSG).rawFields());
     }
 
     /** */

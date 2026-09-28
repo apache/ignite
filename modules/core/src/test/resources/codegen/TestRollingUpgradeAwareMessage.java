@@ -31,12 +31,12 @@ public class TestRollingUpgradeAwareMessage extends AbstractMessage {
     String oldFld;
 
     /** */
-    @Order(value = 2, introducedBy = "FIRST_FEATURE")
+    @Order(value = 2, introducedBy = "SECOND_FEATURE")
     String newFld;
 
     /** */
-    @Order(value = 3, introducedBy = "FIRST_FEATURE", deprecatedBy = "SECOND_FEATURE")
-    long windowed;
+    @Order(value = 3, introducedBy = "THIRD_FEATURE")
+    long newCnt;
 
     /** {@inheritDoc} */
     @Override public short directType() {
