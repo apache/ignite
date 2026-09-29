@@ -23,6 +23,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Resolve-and-dispatch entry points for {@link MessageSerializer}: each looks up the serializer registered for the
@@ -51,6 +52,8 @@ public final class MessageSerialization {
         MessageWriter writer,
         MessageSerializationContext ctx
     ) {
+        assert ctx != null : "Message is serialized without a serialization context [msg=" + msg.getClass().getName() + ']';
+
         return resolveMessageserializer(factory, msg).writeTo(msg, writer, ctx);
     }
 
@@ -70,16 +73,14 @@ public final class MessageSerialization {
         MessageReader reader,
         MessageSerializationContext ctx
     ) {
+        assert ctx != null : "Message is deserialized without a serialization context [msg=" + msg.getClass().getName() + ']';
+
         return resolveMessageserializer(factory, msg).readFrom(msg, reader, ctx);
     }
 
     /** */
-    public static MessageSerializationContext resolveSerializationContext(GridNioSession ses) {
-        MessageSerializationContext ctx = ses.meta(GridNioSessionMetaKey.MSG_SER_CTX.ordinal());
-
-        assert ctx != null : "Session has no serialization context: " + ses;
-
-        return ctx;
+    public static @Nullable MessageSerializationContext resolveSerializationContext(GridNioSession ses) {
+        return ses.meta(GridNioSessionMetaKey.MSG_SER_CTX.ordinal());
     }
 
     /** @return the serializer registered for {@code msg}'s direct type. */
