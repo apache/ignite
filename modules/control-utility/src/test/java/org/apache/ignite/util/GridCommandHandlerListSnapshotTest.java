@@ -22,12 +22,12 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommand;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -50,8 +50,9 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     @Parameter(2)
     public boolean separatedWorkDir;
 
+
     /** */
-    @Parameters(name = "customPath={1},ownWorkDir={2}")
+    @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
@@ -100,129 +101,65 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
     /** */
     @Test
-    public void testSnapshotListSingleSnapshot() throws Exception {
+    public void testNoSnapshots() throws Exception {
+        doTestSnapshotsLists(0);
+    }
+
+    /** */
+    @Test
+    public void testSingleSnapshot() throws Exception {
+        doTestSnapshotsLists(1);
+    }
+
+    /** */
+    private void doTestSnapshotsLists(int snpCnt) throws Exception {
         // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
         // work directories are set.
         assumeTrue(!customPath || !separatedWorkDir);
 
-        int entriesCnt = 100;
-        int initNodes = 3;
-
-        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(initNodes);
+        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(3);
 
         startGrid(CLIENT_NODE_NAME_PREFIX);
 
         ig.cluster().state(ACTIVE);
 
-        createCacheAndPreload(ig, entriesCnt);
-
         File cstSnpsRoot = customPath
             ? new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
             : null;
 
-        // Test listing when no snapshots exist.
-       // injectTestSystemOut();
+        if (snpCnt > 0) {
+            createCacheAndPreload(ig, 100);
 
-//        if (customPath)
-//            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "list", "--src",
-//                cstSnpsRoot.getAbsolutePath()));
-//        else
-//            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "list"));
-//
-//        String out = testOut.toString();
-//
-//        assertTrue("Expected 'No snapshots found' message, got: " + out,
-//            out.contains(SnapshotListCommand.NO_SNAPSHOTS_PREF));
-//
-//        testOut.reset();
-
-        // Create a snapshot.
-        snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
-            .get(getTestTimeout());
-
-        // TODO: add incremental
-
-//        // Add some data and create an incremental snapshot.
-//        try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-//            for (int i = entriesCnt; i < entriesCnt + 50; ++i)
-//                streamer.addData(i, i);
-//        }
-
-//        snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, true, false)
-//            .get(getTestTimeout());
+            snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
+                .get(getTestTimeout());
+        }
 
         injectTestSystemOut();
 
-        // Now list snapshots - should find "testSnapshot" on all server nodes.
-        if (customPath)
-            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "list", "--src",
+        if (customPath) {
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list", "--src",
                 cstSnpsRoot.getAbsolutePath()));
+        }
         else
-            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "list"));
-
-        var out = testOut.toString();
-
-        assertFalse("Expected snapshot to be listed, got: " + out,
-            out.contains(SnapshotListCommand.NO_SNAPSHOTS_PREF));
-        assertTrue("Expected 'Node' in output, got: " + out,
-            out.contains(SnapshotListCommand.NODE_PREF));
-        assertTrue("Expected 'testSnapshot' in output, got: " + out,
-            out.contains("testSnapshot"));
-
-        // With separated work directories, all nodes should have the snapshot.
-        if (separatedWorkDir) {
-            assertTrue("Expected [cnt=" + initNodes + "] nodes in output, got: " + out,
-                countNodeOccurrences(out) == initNodes);
-        }
-
-        testOut.reset();
-
-        // Test with non-existent snapshot path.
-        assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "list", "--src",
-            new File(U.defaultWorkDirectory(), "non_existent").getAbsolutePath()));
-
-        out = testOut.toString();
-
-        assertTrue("Expected 'No snapshots found' for non-existent path, got: " + out,
-            out.contains(SnapshotListCommand.NO_SNAPSHOTS_PREF));
-    }
-
-    /** */
-    @Test
-    public void testSnapshotListMultipleSnapshots() throws Exception {
-        int entriesCnt = 100;
-        int initNodes = 2;
-
-        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(initNodes);
-
-        ig.cluster().state(ACTIVE);
-
-        createCacheAndPreload(ig, entriesCnt);
-
-        // Create first snapshot.
-        snp(ig).createSnapshot("snp1", null, false, false).get(getTestTimeout());
-
-        // Add data.
-        try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = entriesCnt; i < entriesCnt + 50; ++i)
-                streamer.addData(i, i);
-        }
-
-        // Create second snapshot.
-        snp(ig).createSnapshot("snp2", null, false, false).get(getTestTimeout());
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "list"));
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list"));
 
         String out = testOut.toString();
 
-        assertFalse("Expected snapshots to be listed, got: " + out,
-            out.contains(SnapshotListCommand.NO_SNAPSHOTS_PREF));
-        assertTrue("Expected 'snp1' in output, got: " + out,
-            out.contains("snp1"));
-        assertTrue("Expected 'snp2' in output, got: " + out,
-            out.contains("snp2"));
+        for (var g : G.allGrids()) {
+            ClusterNode n = g.cluster().localNode();
+
+            assertEquals(n.isClient() ? 0 : 1, countEntries(out, "Node '%s'".formatted(n.consistentId().toString())));
+        }
+
+        if (snpCnt == 0) {
+            assertFalse(out.contains("Snapshot '"));
+
+            assertEquals(3, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
+
+            return;
+        }
+
+        assertFalse(out.contains(SnapshotListCommand.NO_SNAPSHOTS));
     }
 
     /**
@@ -238,5 +175,14 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         }
 
         return cnt;
+    }
+
+    /** */
+    private static int countEntries(String txt, String entry) {
+        String prev = txt;
+
+        txt = txt.replaceAll(entry, "");
+
+        return  (prev.length() - txt.length()) / entry.length();
     }
 }

@@ -122,7 +122,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             /** File/directory became inaccessible (permission denied, deleted, etc.) */
             @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                if(exc instanceof FileNotFoundException)
+                if (exc instanceof FileNotFoundException)
                     return FileVisitResult.CONTINUE;
 
                 throw new IgniteException("Failed to calculate snapshot size [name=" + path.getName() + ']', exc);
@@ -177,19 +177,20 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     // TODO: check the time conversion.
                     creationTimes[s] = snpRes.get2().toInstant().getEpochSecond();
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
             }
 
             return new SnapshotListJobResult(snpNames, sizes, creationTimes);
         }
 
-        /** TODO: move to a sahred with the deletion process place. */
+        /** TODO: move to a shared with the deletion process place. */
         private File resolveSnapshotsPath(@Nullable String src) throws IOException {
             File res = ignite.context().pdsFolderResolver().fileTree().snapshotsRoot();
 
             if (src != null) {
-                var srcF = new File(src);
+                File srcF = new File(src);
 
                 if (srcF.isAbsolute())
                     res = srcF;

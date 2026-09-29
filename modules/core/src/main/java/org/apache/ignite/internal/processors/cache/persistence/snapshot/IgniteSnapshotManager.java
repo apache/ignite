@@ -1479,7 +1479,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
      */
     public boolean isRestoring(String snpName) {
-        return snpName.equalsIgnoreCase(restoreCacheGrpProc.restoringSnapshotName());
+        return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
     }
 
     /**

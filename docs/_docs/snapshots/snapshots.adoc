@@ -309,8 +309,8 @@ tab:Windows[]
 # List all snapshots in the default snapshot directory.
 control.bat --snapshot list
 
-# List all snapshots in the "/tmp/ignite/snapshots" folder.
-control.bat --snapshot list --src /tmp/ignite/snapshots
+# List all snapshots in the "C:\\tmp\\ignite\\snapshots" folder.
+control.bat --snapshot list --src C:\\tmp\\ignite\\snapshots
 ----
 --
 

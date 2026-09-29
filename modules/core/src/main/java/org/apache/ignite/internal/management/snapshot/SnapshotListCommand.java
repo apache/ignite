@@ -27,10 +27,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** Snapshot list command. */
 public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCommandArg, SnapshotListTaskResult> {
     /** */
+    public static final String HEADER = "Snapshots lists on the following nodes:";
+
+    /** */
     public static final String DESC = "Lists all snapshots on all online server nodes with their sizes";
 
     /** */
-    public static final String NO_SNAPSHOTS_PREF = "No snapshots found on current server nodes";
+    public static final String NO_SNAPSHOTS = "No snapshots found.";
 
     /** */
     public static final String NODE_PREF = "Node ";
@@ -54,13 +57,21 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
     /** {@inheritDoc} */
     @Override public void printResult(SnapshotListCommandArg arg, SnapshotListTaskResult res, Consumer<String> printer) {
-        printer.accept("The following snapshots are found:");
-        printer.accept("");
+        printer.accept(HEADER);
 
         for (int n = 0; n < res.nodesIds().length; n++) {
+            // Skip line before node.
+            printer.accept("");
+
             printer.accept("\tNode '%s' [uuid=%s]:".formatted(res.consistentIds()[n], res.nodesIds()[n]));
 
             SnapshotListJobResult nodeSnps = res.snapshots()[n];
+
+            if(nodeSnps.snapshotNames().length==0) {
+                printer.accept("\t\t" + NO_SNAPSHOTS);
+
+                continue;
+            }
 
             for (int s = 0; s < nodeSnps.snapshotNames().length; s++) {
                 String name = nodeSnps.snapshotNames()[s];
@@ -73,9 +84,10 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                     Date.from(Instant.ofEpochSecond(epochTime)).toString(),
                     epochTime
                 ));
-
-                printer.accept("");
             }
         }
+
+        // Drop a line.
+        printer.accept("");
     }
 }
