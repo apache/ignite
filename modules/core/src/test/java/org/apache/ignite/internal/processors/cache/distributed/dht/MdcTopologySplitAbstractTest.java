@@ -186,7 +186,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
             for (String dc : sides.get(side)) {
                 assertTrue("Unknown DC: " + dc, dataCenters().contains(dc));
-                assertNull("DC is on two sides: " + dc, split.put(dc, side));
+                assertNull("DC is listed twice: " + dc, split.put(dc, side));
             }
         }
 
@@ -241,7 +241,10 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
         List<Integer> restart = new ArrayList<>();
 
-        for (String dc : restartDcs) {
+        for (String dc : dataCenters()) {
+            if (!restartSet.contains(dc))
+                continue;
+
             restart.addAll(serverIndexes(dc));
             restart.add(clientIndex(dc));
         }
@@ -425,12 +428,9 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
         return !sideOfDc.isEmpty();
     }
 
-    /**
-     * Not used: the discovery SPI here decides by the local node's DC, since a client has no port of its own.
-     *
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected boolean isBlocked(int locPort, int rmtPort) {
+        // Not used: the discovery SPI here decides by the local node's DC, since a client has no port of its own.
         throw new UnsupportedOperationException();
     }
 
@@ -445,13 +445,10 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
         return !split.isEmpty() && !split.get(dc1).equals(split.get(dc2));
     }
 
-    /**
-     * Side of the node in the current split, or 0 when the cluster is whole. A split here can have more than the
-     * template's two sides, since the template's {@link #splitAndWait()}, which expects two, is not used.
-     *
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected int segment(ClusterNode node) {
+        // Side of the node in the current split, or 0 when the cluster is whole. There can be more than the
+        // template's two sides: its splitAndWait(), which expects two, is not used.
         return sideOfDc.getOrDefault(node.dataCenterId(), 0);
     }
 
