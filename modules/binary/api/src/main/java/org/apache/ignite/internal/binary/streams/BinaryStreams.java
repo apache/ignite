@@ -95,20 +95,4 @@ public class BinaryStreams {
     public static BinaryOutputStream outputStream(int cap) {
         return factory.outputStream(cap);
     }
-
-    /**
-     * @param cap Capacity.
-     * @param chunk Memory allocator chunk.
-     * @return Binary output stream.
-     */
-    public static BinaryOutputStream outputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
-        return factory.outputStream(cap, chunk);
-    }
-
-    /**
-     * @return Thread local binary memory allocator.
-     */
-    public static BinaryMemoryAllocatorChunk threadLocalChunk() {
-        return factory.threadLocalChunk();
-    }
 }

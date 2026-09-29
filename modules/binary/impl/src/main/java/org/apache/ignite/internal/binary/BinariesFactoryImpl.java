@@ -22,9 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -74,7 +74,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
 
         return new BinaryWriterExImpl(
             ctx,
-            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
+            new BinaryHeapOutputStream((int)CommonUtils.KB, locCtx.chunk()),
             locCtx.schemaHolder(),
             failIfUnregistered,
             typeId

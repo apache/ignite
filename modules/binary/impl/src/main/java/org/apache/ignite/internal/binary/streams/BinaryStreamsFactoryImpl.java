@@ -54,14 +54,4 @@ public class BinaryStreamsFactoryImpl implements BinaryStreamsFactory {
     @Override public BinaryOutputStream outputStream(int cap) {
         return new BinaryHeapOutputStream(cap);
     }
-
-    /** {@inheritDoc} */
-    @Override public BinaryOutputStream outputStream(int cap, BinaryMemoryAllocatorChunk chunk) {
-        return new BinaryHeapOutputStream(cap, chunk);
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinaryMemoryAllocatorChunk threadLocalChunk() {
-        return BinaryMemoryAllocator.THREAD_LOCAL.chunk();
-    }
 }

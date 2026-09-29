@@ -72,16 +72,4 @@ public interface BinaryStreamsFactory {
      * @return Binary output stream data.
      */
     public BinaryOutputStream outputStream(int cap);
-
-    /**
-     * @param cap Capacity.
-     * @param chunk Memory allocator chunk.
-     * @return Binary output stream.
-     */
-    public BinaryOutputStream outputStream(int cap, BinaryMemoryAllocatorChunk chunk);
-
-    /**
-     * @return Thread local binary memory allocator.
-     */
-    public BinaryMemoryAllocatorChunk threadLocalChunk();
 }
