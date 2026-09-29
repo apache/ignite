@@ -116,7 +116,6 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -4578,16 +4577,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private IgniteNodeValidationResult validateByIgniteComponentsWithJoiningNodeData(TcpDiscoveryJoinRequestMessage req) {
-            DiscoveryDataPacket packet = req.gridDiscoveryData();
-
-            try {
-                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(log, ctx.config().isClientMode());
-
-                return spi.getSpiContext().validateNode(req.node(), dataBag);
-            }
-            catch (IgniteCheckedException e) {
-                return new IgniteNodeValidationResult(req.node().id(), e.getMessage());
-            }
+            return spi.getSpiContext().validateNode(req.node(), req.gridDiscoveryData().bagWithJoiningNodeData());
         }
 
         /** */

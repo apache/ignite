@@ -115,7 +115,6 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -751,7 +750,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Gets local TCP port SPI listens to.
      *
-     * @return Local port range.
+     * @return Local port.
      */
     public int getLocalPort() {
         TcpDiscoveryNode locNode0 = locNode;
@@ -1491,6 +1490,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
 
             discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
+
+            discoReg.register("LocalPort", this::getLocalPort, "Local TCP port the SPI listens to.");
         }
         else {
             discoReg.register("ClientRouterNodeId", () -> String.valueOf(locNode.clientRouterNodeId()), String.class,
@@ -2111,17 +2112,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        try {
-            if (dataPacket.joiningNodeId().equals(locNode.id()))
-                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
-            else
-                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
-        }
-        catch (IgniteCheckedException e) {
-            ignite.context().failure().process(new FailureContext(CRITICAL_ERROR, e));
-
-            throw new IgniteException(e);
-        }
+        if (dataPacket.joiningNodeId().equals(locNode.id()))
+            dataBag = dataPacket.bagWithNodeData();
+        else
+            dataBag = dataPacket.bagWithJoiningNodeData();
 
         exchange.onExchange(dataBag);
     }
