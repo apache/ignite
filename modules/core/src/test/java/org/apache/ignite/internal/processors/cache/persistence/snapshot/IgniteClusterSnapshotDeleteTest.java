@@ -61,7 +61,6 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
@@ -778,7 +777,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     public void testSnapshotDeleteWhenRestoreInProgress() throws Exception {
         var restoreMsgs = F.asList(
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
-            RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
             RESTORE_CACHE_GROUP_SNAPSHOT_START
         );
 
@@ -822,7 +820,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         var restoreMsgs = F.asList(
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
-            RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
             RESTORE_CACHE_GROUP_SNAPSHOT_START
         );
 

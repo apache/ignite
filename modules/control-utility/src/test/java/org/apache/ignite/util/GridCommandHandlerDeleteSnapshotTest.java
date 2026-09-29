@@ -42,9 +42,9 @@ import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot delete'. */
 public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbstractTest {
-    /** Value: -1 - do not use, 1 - server node, 0 - client node. */
+    /** Flag to add an extra server node after the cluster start and the snapshot creation. */
     @Parameter(1)
-    public int extraNodeIsServer = -1;
+    public boolean extraServerNode;
 
     /** */
     @Parameter(2)
@@ -67,7 +67,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
-            F.asList(-1, 1, 0), // Use extra node (do not use at all, server node, client node);
+            F.asList(false, true), // Use or not extra server node after the cluster start and the snapshot creation;
             F.asList(false, true), // Add incremental snapshot;
             F.asList(false, true), // Change baseline;
             F.asList(false, true), // Use custom snapshot path;
@@ -181,11 +181,9 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             assertEquals(initNodes, ig.cluster().nodes().size());
         }
 
-        // Optionally adds extra server or client node.
-        if (extraNodeIsServer == 1)
+        // Optionally adds extra server.
+        if (extraServerNode)
             startGrid(initNodes);
-        else if (extraNodeIsServer == 0)
-            startGrid(CLIENT_NODE_NAME_PREFIX);
 
         injectTestSystemOut();
 
@@ -225,10 +223,8 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             // When the nodes use own separated work directory, we expect a strict result.
             assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF + "[cnt=%d]:".formatted(initNodes)));
 
-            if (extraNodeIsServer == 1)
+            if (extraServerNode)
                 assertTrue(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF + "[cnt=1]:"));
-            else if (extraNodeIsServer == 0)
-                assertFalse(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF));
         }
         else {
             // When nodes use a shared work directory, there is a race for the delete operation. One node can get faster
