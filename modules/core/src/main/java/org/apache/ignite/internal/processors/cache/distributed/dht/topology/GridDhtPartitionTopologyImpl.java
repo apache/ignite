@@ -2260,9 +2260,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             final GridDhtPartitionState prevState = locPart.state();
 
-                            changed = isLossIgnored ? locPart.own() : locPart.markLost();
+                            boolean locChanged = isLossIgnored ? locPart.own() : locPart.markLost();
 
-                            if (changed) {
+                            if (locChanged) {
+                                changed = true;
+
                                 long updSeq = updateSeq.incrementAndGet();
 
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
