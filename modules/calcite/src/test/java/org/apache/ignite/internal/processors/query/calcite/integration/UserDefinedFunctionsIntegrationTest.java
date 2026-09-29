@@ -615,6 +615,30 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testCustomTypeTableFunctionCoalesce() {
+        client.getOrCreateCache(new CacheConfiguration<>("custom-type-coalesce-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
+
+        Employer obj = new Employer("Igor", 42.0d);
+        Employer fallback = new Employer("Oleg", 43.0d);
+
+        for (Employer val : new Employer[] {obj, null}) {
+            assertQuery("SELECT COALESCE(obj, obj) FROM customTypeTable(?)")
+                .withParams(val)
+                .returns(val)
+                .check();
+
+            assertQuery("SELECT COALESCE(t1.obj, t2.obj) "
+                + "FROM customTypeTable(?) t1 CROSS JOIN customTypeTable(?) t2")
+                .withParams(val, fallback)
+                .returns(val == null ? fallback : val)
+                .check();
+        }
+    }
+
+    /** */
+    @Test
     public void testArrayListTableFunctionResult() {
         client.getOrCreateCache(new CacheConfiguration<>("array-list-table-functions")
             .setSqlSchema("PUBLIC")
