@@ -312,9 +312,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         return in;
     }
 
-    /**
-     * @return Descriptor.
-     */
+    /** @return Descriptor. */
     public BinaryClassDescriptor descriptor() {
         if (desc == null)
             desc = ctx.descriptorForTypeId(userType, typeId, ldr, false);

@@ -64,8 +64,8 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
-        return newWriter(ctx, failIfUnregistered, typeId);
+    @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered) {
+        return newWriter(ctx, failIfUnregistered, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
     }
 
     /** */

@@ -2299,16 +2299,6 @@ public class BinaryUtils {
 
     /**
      * @param ctx Context.
-     * @param failIfUnregistered Flag to fail while writing object of unregistered type.
-     * @param typeId Type id.
-     * @return Writer instance.
-     */
-    public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
-        return binariesFactory.writer(ctx, failIfUnregistered, typeId);
-    }
-
-    /**
-     * @param ctx Context.
      * @param out Output stream.
      * @return Writer instance.
      */
@@ -2379,7 +2369,7 @@ public class BinaryUtils {
      * @return {@link BinaryObjectExImpl#field(int)} value or {@code null} if object not instance of {@link BinaryObjectExImpl}.
      */
     public static Object field(Object obj, int fieldId) {
-        if (!isBinaryObjectExImpl(obj))
+        if (!(obj instanceof BinaryObjectExImpl))
             return null;
 
         return ((BinaryObjectExImpl)obj).field(fieldId);
