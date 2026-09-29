@@ -113,7 +113,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
 import static org.apache.ignite.internal.binary.BinaryUtils.affinityFieldName;
-import static org.apache.ignite.internal.binary.BinaryUtils.isBinaryObjectImpl;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -1127,7 +1126,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
 
-            if (isBinaryObjectImpl(key)) {
+            if (BinaryUtils.isBinaryObjectImpl(key)) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
                 key = key.copy(partition(ctx, cctx, key));
             }
@@ -1140,7 +1139,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         obj = toBinary(obj, false);
 
-        if (isBinaryObjectImpl(obj)) {
+        if (BinaryUtils.isBinaryObjectImpl(obj)) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;

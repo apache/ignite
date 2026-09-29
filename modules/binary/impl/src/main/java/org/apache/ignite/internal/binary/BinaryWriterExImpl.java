@@ -117,7 +117,6 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
         this.ctx = ctx;
         this.out = out;
         this.schema = schema;
-        this.handles = handles;
         this.failIfUnregistered = failIfUnregistered;
         this.typeId = typeId;
 
@@ -1975,7 +1974,7 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
                     "actualLength=" + written + "]");
             }
         }
-        else if (obj instanceof Blob blob)
+        else if (obj instanceof Blob blob) {
             try {
                 int written = writeByteArray(blob.getBinaryStream(), (int)blob.length());
 
@@ -1987,6 +1986,7 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
             catch (SQLException e) {
                 throw new BinaryObjectException(e);
             }
+        }
         else if (binObjAllow)
             writeObjectDetached(obj);
         else
