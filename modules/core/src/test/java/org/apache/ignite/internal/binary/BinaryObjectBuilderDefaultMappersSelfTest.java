@@ -34,15 +34,12 @@ import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -764,11 +761,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
             GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr0 + 4, arr.length);
 
-            CacheObjectBinaryProcessorImpl proc = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects());
-
-            BinaryObject offheapObj = (BinaryObject)unmarshal(proc, ptr);
-
-            assertEquals(BinaryObjectOffheapImpl.class, offheapObj.getClass());
+            BinaryObjectOffheapImpl offheapObj = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).marshaller().
+                unmarshal(BinaryStreams.inputStream(ptr + 5, len));
 
             assertEquals(expectedHashCode("Class"), offheapObj.type().typeId());
             assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), offheapObj.hashCode());
@@ -791,31 +785,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
         finally {
             GridUnsafe.freeMemory(ptr);
         }
-    }
-
-    /**
-     * @param ptr Off-heap pointer.
-     * @return Object.
-     * @throws BinaryObjectException If failed.
-     */
-    private Object unmarshal(CacheObjectBinaryProcessorImpl proc, long ptr) throws BinaryObjectException {
-        assert ptr > 0 : ptr;
-
-        int size = GridUnsafe.getInt(ptr);
-
-        ptr += 4;
-
-        byte type = GridUnsafe.getByte(ptr++);
-
-        if (type != CacheObject.TYPE_BYTE_ARR) {
-            assert size > 0 : size;
-
-            BinaryInputStream in = BinaryStreams.inputStream(ptr, size);
-
-            return proc.marshaller().unmarshal(in);
-        }
-        else
-            return GridUnsafe.copyMemory(ptr, size);
     }
 
     /**
