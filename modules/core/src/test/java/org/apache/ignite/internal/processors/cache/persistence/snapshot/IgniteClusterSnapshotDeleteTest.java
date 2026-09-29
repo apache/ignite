@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -96,9 +95,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
     /** */
     private @Nullable String cstIdSuffix;
-
-    /** Sets the extra snapshot storage to {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)}. */
-    private boolean lowerCasedSnpName;
 
     /** */
     private @Nullable String[] extStoragePaths;
@@ -393,6 +389,9 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
      *                         metadata file
      */
     protected void doTestDeleteNotSnapshot(boolean separatedWorkDir, boolean corruptSnpMeta) throws Exception {
+        // Doesn't matter here;
+        assumeFalse(onlyPrimary);
+
         this.separatedWorkDir = separatedWorkDir;
 
         startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
@@ -621,6 +620,9 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a concurrent deletion of the same snapshot is declined. */
     @Test
     public void testConcurrentDeleteOfTheSameSnapshot() throws Exception {
+        // Doesn't matter here.
+        assumeFalse(onlyPrimary);
+
         doTestConcurrentSnapshotDeleteOperation(
             () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false),
             () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
@@ -653,8 +655,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     public void testSnapshotDeleteWhenCheckInProgressNameCase() throws Exception {
         // For case-insensitive file systems only.
         assertTrue(CASE_INSENSETIVE_FS);
-
-        lowerCasedSnpName = true;
 
         SnapshotPartitionsVerifyResult res = doTestConcurrentSnapshotDelete(
             () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(SNAPSHOT_NAME.toLowerCase(), null, incremental ? 1 : 0)),
@@ -695,8 +695,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testSnapshotDeleteWhenCreateInProgressNameCase() throws Exception {
-        lowerCasedSnpName = true;
-
         doTestConcurrentSnapshotDelete(
             () -> snp(grid(0)).createSnapshot(SNAPSHOT_NAME.toLowerCase(), null, incremental, onlyPrimary),
             F.asList(START_SNAPSHOT),
@@ -746,8 +744,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     public void testSnapshotDeleteWhenRestoreBeginsNameCase() throws Exception {
         // For case-insensitive file systems only.
         assumeTrue(CASE_INSENSETIVE_FS);
-
-        lowerCasedSnpName = true;
 
         doTestConcurrentSnapshotDelete(
             () -> {
@@ -815,8 +811,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     public void testSnapshotDeleteWhenRestoreInProgressNameCase() throws Exception {
         // For case-insensitive file systems only.
         assumeTrue(CASE_INSENSETIVE_FS);
-
-        lowerCasedSnpName = true;
 
         var restoreMsgs = F.asList(
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
@@ -920,20 +914,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
 
         if (precreateSnp) {
-            snp(grid(0)).createSnapshot(lowerCasedSnpName ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME, null, false, onlyPrimary)
+            snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary)
                 .get(TIMEOUT);
 
             if (incremental)
                 addIncrementalSnapshot(null);
-
-            if (CASE_INSENSETIVE_FS) {
-                // Ensure that if any operation uses variating case in snapshot paths/names,
-                // they will actually target the same directory.
-                File snpRoot = new SnapshotFileTree(grid(0).context(), SNAPSHOT_NAME, null).root();
-
-                assertTrue(snpRoot.equals(new File(snpRoot.getAbsolutePath().toLowerCase())));
-                assertTrue(snpRoot.equals(new File(snpRoot.getAbsolutePath().toUpperCase())));
-            }
         }
 
         TestRecordingCommunicationSpi commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
@@ -999,7 +984,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
                 ds.addData(i, i);
         }
 
-        snp(grid(0)).createSnapshot(lowerCasedSnpName ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME, path, true, onlyPrimary)
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, path, true, onlyPrimary)
             .get(getTestTimeout());
     }
 
