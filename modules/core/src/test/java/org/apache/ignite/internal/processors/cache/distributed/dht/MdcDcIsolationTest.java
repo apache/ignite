@@ -31,7 +31,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Cuts one DC off the cluster: the side the topology validator lets write keeps writing, the cut-off DC only reads,
- * and after the cut-off DC restarts every DC holds the same data.
+ * and after the cut-off DC restarts every DC holds the same data. Also splits three DCs three ways, where no side
+ * writes.
  */
 public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
     /** */
@@ -49,6 +50,43 @@ public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
     @Test
     public void testIsolatedDcOfThree() throws Exception {
         checkIsolation(Arrays.asList(DC1, DC2, DC3), majorityValidator(DC1, DC2, DC3), DC3, DC1);
+    }
+
+    /** Three DCs with majority validation: DC1 alone is a minority too, no DC is privileged. */
+    @Test
+    public void testIsolatedFirstDcOfThree() throws Exception {
+        checkIsolation(Arrays.asList(DC1, DC2, DC3), majorityValidator(DC1, DC2, DC3), DC1, DC2);
+    }
+
+    /** Three DCs with majority validation split three ways: no side writes, every side reads. */
+    @Test
+    public void testThreeWaySplit() throws Exception {
+        dcs = Arrays.asList(DC1, DC2, DC3);
+
+        MdcTopologyValidator validator = majorityValidator(DC1, DC2, DC3);
+
+        startCluster();
+
+        Map<String, Map<Integer, Integer>> expected = fill(DC1, validator);
+
+        splitInto(Arrays.asList(Arrays.asList(DC1), Arrays.asList(DC2), Arrays.asList(DC3)));
+
+        for (String dc : dcs) {
+            for (String cacheName : expected.keySet()) {
+                IgniteCache<Integer, Integer> cache = client(dc).cache(cacheName);
+
+                assertWriteRejected(() -> cache.put(KEYS, KEYS));
+
+                assertEquals(Integer.valueOf(1), cache.get(1));
+            }
+        }
+
+        heal(DC2, DC3);
+
+        for (Map.Entry<String, Map<Integer, Integer>> e : expected.entrySet())
+            assertDataInEveryDc(e.getKey(), e.getValue());
+
+        assertPartitionsSame(idleVerify(client(DC1), expected.keySet().toArray(new String[0])));
     }
 
     /** Two DCs with DC1 as the main one: DC2 cut off from it only reads. */
@@ -73,21 +111,7 @@ public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
 
         startCluster();
 
-        Map<String, Map<Integer, Integer>> expected = new HashMap<>();
-
-        for (CacheAtomicityMode mode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL}) {
-            IgniteCache<Integer, Integer> cache =
-                client(writerDc).createCache(cacheConfiguration(mode.name(), mode, validator));
-
-            Map<Integer, Integer> data = new HashMap<>();
-
-            for (int key = 0; key < KEYS; key++)
-                data.put(key, key);
-
-            cache.putAll(data);
-
-            expected.put(mode.name(), data);
-        }
+        Map<String, Map<Integer, Integer>> expected = fill(writerDc, validator);
 
         split(isolatedDc);
 
@@ -111,5 +135,31 @@ public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
             assertDataInEveryDc(e.getKey(), e.getValue());
 
         assertPartitionsSame(idleVerify(client(writerDc), expected.keySet().toArray(new String[0])));
+    }
+
+    /**
+     * Creates an atomic and a transactional cache and writes {@link #KEYS} keys into each.
+     *
+     * @param dc DC whose client creates and fills the caches.
+     * @param validator Topology validator of the caches.
+     * @return Content of each cache by its name.
+     */
+    private Map<String, Map<Integer, Integer>> fill(String dc, MdcTopologyValidator validator) {
+        Map<String, Map<Integer, Integer>> expected = new HashMap<>();
+
+        for (CacheAtomicityMode mode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL}) {
+            IgniteCache<Integer, Integer> cache = client(dc).createCache(cacheConfiguration(mode.name(), mode, validator));
+
+            Map<Integer, Integer> data = new HashMap<>();
+
+            for (int key = 0; key < KEYS; key++)
+                data.put(key, key);
+
+            cache.putAll(data);
+
+            expected.put(mode.name(), data);
+        }
+
+        return expected;
     }
 }
