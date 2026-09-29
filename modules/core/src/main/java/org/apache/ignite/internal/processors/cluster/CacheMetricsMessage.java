@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cluster;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -188,7 +189,7 @@ public class CacheMetricsMessage implements Message {
     @Order(35)
     public long offHeapAllocatedSize;
 
-    /** Number of non-{@code null} values in the cache. */
+    /** Number of entries in the cache. */
     @Order(36)
     public int size;
 
@@ -196,7 +197,7 @@ public class CacheMetricsMessage implements Message {
     @Order(37)
     public long cacheSize;
 
-    /** Number of keys in the cache, possibly with {@code null} values. */
+    /** Number of keys in the cache. */
     @Order(38)
     public int keySize;
 
@@ -441,17 +442,39 @@ public class CacheMetricsMessage implements Message {
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
 
-        offHeapEntriesCnt = m.getOffHeapEntriesCount();
-        heapEntriesCnt = m.getHeapEntriesCount();
-        offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
-        offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
+        if (m instanceof CacheMetricsImpl) {
+            // Each of the getters below iterates over all local partitions, collect them in one pass instead.
+            CacheMetricsImpl.EntriesStatMetrics entriesStat = ((CacheMetricsImpl)m).getEntriesStat();
+
+            offHeapEntriesCnt = entriesStat.offHeapEntriesCount();
+            heapEntriesCnt = entriesStat.heapEntriesCount();
+            offHeapPrimaryEntriesCnt = entriesStat.offHeapPrimaryEntriesCount();
+            offHeapBackupEntriesCnt = entriesStat.offHeapBackupEntriesCount();
+
+            cacheSize = entriesStat.cacheSize();
+            keySize = entriesStat.keySize();
+            size = entriesStat.size();
+            empty = entriesStat.isEmpty();
+
+            totalPartitionsCnt = entriesStat.totalPartitionsCount();
+            rebalancingPartitionsCnt = entriesStat.rebalancingPartitionsCount();
+        }
+        else {
+            offHeapEntriesCnt = m.getOffHeapEntriesCount();
+            heapEntriesCnt = m.getHeapEntriesCount();
+            offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
+            offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
+
+            cacheSize = m.getCacheSize();
+            keySize = m.getKeySize();
+            size = m.getSize();
+            empty = m.isEmpty();
+
+            totalPartitionsCnt = m.getTotalPartitionsCount();
+            rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
+        }
 
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
-
-        cacheSize = m.getCacheSize();
-        keySize = m.getKeySize();
-        size = m.getSize();
-        empty = m.isEmpty();
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();
@@ -487,9 +510,6 @@ public class CacheMetricsMessage implements Message {
         writeThrough = m.isWriteThrough();
         validForReading = m.isValidForReading();
         validForWriting = m.isValidForWriting();
-
-        totalPartitionsCnt = m.getTotalPartitionsCount();
-        rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
 
         rebalancedKeys = m.getRebalancedKeys();
         estimatedRebalancingKeys = m.getEstimatedRebalancingKeys();
