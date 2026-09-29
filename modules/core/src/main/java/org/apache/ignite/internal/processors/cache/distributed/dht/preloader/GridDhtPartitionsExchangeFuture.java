@@ -3525,6 +3525,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param resTopVer Result topology version.
      */
     private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
+        Collection<CacheGroupContext> changedGrps = ConcurrentHashMap.newKeySet();
+
         try {
             // Reserve at least 2 threads for system operations.
             doInParallelUninterruptibly(
@@ -3532,13 +3534,30 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.affinity().cacheGroups().values(),
                 desc -> {
-                    partitionTopology(desc.groupId()).detectLostPartitions(resTopVer, this);
+                    if (partitionTopology(desc.groupId()).detectLostPartitions(resTopVer, this)) {
+                        CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
+
+                        if (grp != null)
+                            changedGrps.add(grp);
+                    }
 
                     return null;
                 });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
+        }
+
+        // Local partitions changed their states after this node had sent its partition map: a lost partition was
+        // owned under the IGNORE policy or marked LOST. Send the maps again, otherwise the coordinator can keep
+        // a state the node reported earlier.
+        if (!changedGrps.isEmpty()) {
+            if (log.isDebugEnabled()) {
+                log.debug("Refresh partitions due to lost partitions detected [grps=" +
+                    changedGrps.stream().map(CacheGroupContext::cacheOrGroupName).collect(Collectors.toList()) + ']');
+            }
+
+            cctx.exchange().refreshPartitions(changedGrps);
         }
 
         timeBag.finishGlobalStage("Detect lost partitions");
