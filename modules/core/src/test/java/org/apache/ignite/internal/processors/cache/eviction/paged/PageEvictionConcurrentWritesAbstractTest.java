@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +38,8 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
     /**
      * Concurrent large inserts into a region pre-filled with small entries must complete within the deadline without
      * deadlock, and without corrupting the free list (eviction frees small entries rather than overrunning the region).
+     * After the concurrent phase, the cache must remain functional: a new put+get must succeed, and at least some of
+     * the large entries written by concurrent threads must be readable.
      *
      * @throws Exception If failed.
      */
@@ -44,6 +47,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
     public void testConcurrentLargeWritesNoDeadlock() throws Exception {
         int smallEntries = 1_000;
         int largeRowsPerThread = 20;
+        int threads = 10;
 
         IgniteEx ignite = startGrid(1);
 
@@ -72,12 +76,39 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
             for (int k = 0; k < largeRowsPerThread; k++)
                 cache.put(smallEntries + idx * largeRowsPerThread + k, largeVal);
-        }, 10, "paged-writer");
+        }, threads, "paged-writer");
 
         startLatch.countDown();
 
         fut.get(TimeUnit.MINUTES.toMillis(3));
 
         assertTrue("Eviction must have started during concurrent large writes", isEvictionsStarted(ignite));
+
+        // Verify the free list is not corrupted: a new put+get must succeed.
+        byte[] probeVal = new byte[pageSize(ignite) - 200];
+
+        Arrays.fill(probeVal, (byte)1);
+
+        int probeKey = smallEntries + threads * largeRowsPerThread + 1;
+
+        cache.put(probeKey, probeVal);
+
+        byte[] read = (byte[])cache.get(probeKey);
+
+        assertNotNull(read);
+        assertTrue(Arrays.equals(probeVal, read));
+
+        int readableLarge = 0;
+
+        for (int t = 0; t < threads; t++) {
+            for (int k = 0; k < largeRowsPerThread; k++) {
+                int key = smallEntries + t * largeRowsPerThread + k;
+
+                if (cache.get(key) != null)
+                    readableLarge++;
+            }
+        }
+
+        assertTrue(readableLarge > 0);
     }
 }

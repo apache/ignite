@@ -36,9 +36,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
     /**
      * A record larger than the whole region must fail (not hang) even when size-aware eviction is enabled.
-     * A batch {@code putAll} of records whose total size equals the region capacity must also fail with OOM because
-     * structural pages (free list, index tree) leave no room for the data (exercises the batch store path
-     * {@code RowStore.addRows} → {@code ensureFreeSpaceForInsert}).
+     * A {@code putAll} of records whose total size equals the region capacity must also fail with OOM because
+     * structural pages (free list, index tree) leave no room for the data. {@code putAll} writes entries individually
+     * via {@code RowStore.addRow} → {@code FreeList.insertDataRow} (single-row path).
      *
      * @throws Exception If failed.
      */
@@ -71,8 +71,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     }
 
     /**
-     * A batch putAll of several large records (each larger than the empty-pages pool) must be stored successfully when
-     * page eviction is enabled. Exercises the size-aware reserve in the batch store path ({@code RowStore.addRows}).
+     * A {@code putAll} of several large records (each larger than the empty-pages pool) must be stored successfully
+     * when page eviction is enabled. Exercises the size-aware reserve in the single-row path
+     * ({@code RowStore.addRow} → {@code FreeList.insertDataRow}).
      *
      * @throws Exception If failed.
      */

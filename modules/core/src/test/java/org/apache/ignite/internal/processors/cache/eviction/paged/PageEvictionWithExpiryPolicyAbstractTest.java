@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,9 +42,9 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
     /**
      * Concurrent page eviction and TTL cleanup on the same data region must not deadlock.
-     * Multiple threads insert large records into a plain cache (triggering eviction) while small
+     * Multiple threads insert large records into a plain cache (triggering eviction) while page-sized
      * entries in a separate TTL cache (sharing the same data region) expire and are cleaned up
-     * by the eager-TTL background worker.
+     * by the eager-TTL background worker, freeing real pages that the eviction machinery may race with.
      *
      * @throws Exception If failed.
      */
@@ -61,8 +62,9 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
         assertFalse("Eviction must not have started during pre-fill", isEvictionsStarted(ignite));
 
-        int ttlEntries = 10;
-        byte[] ttlVal = new byte[100];
+        // Page-sized TTL entries so their cleanup frees real pages concurrently with eviction.
+        int ttlEntries = 100;
+        byte[] ttlVal = new byte[pageSize(ignite) - 200];
 
         for (int i = 0; i < ttlEntries; i++)
             ttlCache.put(i, ttlVal);
@@ -101,7 +103,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
     /**
      * After short-TTL entries expire and free their pages, putting the same amount of data to a non-expiring cache
-     * must succeed, and the pre-filled small entries must remain intact (not evicted).
+     * must succeed, and the new data must be readable.
      *
      * @throws Exception If failed.
      */
@@ -112,29 +114,34 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         IgniteCache<Integer, Object> plainCache = createCache(ignite, "plain-cache");
         IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL, false);
 
-        int ttlEntries = 2;
-
-        int smallEntries = (int)(totalPages(ignite) * 0.3);
+        int smallEntries = (int)(totalPages(ignite) * 0.80);
 
         byte[] small = new byte[pageSize(ignite) - 200];
 
         for (int i = 0; i < smallEntries; i++)
             plainCache.put(i, small);
 
-        Object val = new byte[(int)(regionMaxSize(ignite) / 5)];
+        assertFalse("Eviction must not start during pre-fill", isEvictionsStarted(ignite));
+
+        int ttlEntries = 2;
+        byte[] val = new byte[(int)(regionMaxSize(ignite) * 0.05)];
 
         for (int i = 0; i < ttlEntries; i++)
             ttlCache.put(i, val);
 
         assertNotNull("TTL entry must be present before expiry", ttlCache.get(0));
 
-        assertTrue(waitForCondition(() -> ttlCache.size() == 0, 10_000));
+        assertTrue("TTL entries must expire", waitForCondition(() -> ttlCache.size() == 0, 10_000));
 
         for (int i = 0; i < ttlEntries; i++)
             plainCache.put(smallEntries + i, val);
 
-        for (int i = 0; i < ttlEntries; i++)
-            assertNotNull("Fresh large record must be present", plainCache.get(smallEntries + i));
+        for (int i = 0; i < ttlEntries; i++) {
+            byte[] read = (byte[])plainCache.get(smallEntries + i);
+
+            assertNotNull("Fresh large record must be present", read);
+            assertTrue("Fresh large record must match", Arrays.equals(val, read));
+        }
 
         for (int i = 0; i < smallEntries; i++)
             assertNotNull("Pre-filled entry " + i + " must not be evicted", plainCache.get(i));
