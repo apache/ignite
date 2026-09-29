@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSe
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossIgnorePolicyMapTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchComplexOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchIsolationTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchTxContinuationTest;
@@ -98,6 +99,7 @@ public class IgniteCacheTestSuite15 {
         GridTestUtils.addTestIfNeeded(suite, ClusterActivationFailureTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheCreateDestroyClusterReadOnlyModeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionLossPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CachePartitionLossIgnorePolicyMapTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheGroupsPartitionLossPolicySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheRebalancingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheManualRebalancingTest.class, ignoredTests);
