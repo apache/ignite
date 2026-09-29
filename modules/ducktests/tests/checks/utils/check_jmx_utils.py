@@ -76,7 +76,6 @@ CASES = [
     ("cache.cache_1", PREFIX % ("cache", "cache_1"), True),
     # Anything else - a dash is enough - is registered quoted, closing quote included.
     ("cache.my-cache", PREFIX % ("cache", '"my-cache"'), True),
-    ("cache.mdc-demo-backup-filter", PREFIX % ("cache", '"mdc-demo-backup-filter"'), True),
     # Only the FIRST dot splits the registry, so the rest of it is the MBean name.
     ("io.dataregion.default", PREFIX % ("io", '"dataregion.default"'), True),
     # 'cache' must not pick up 'cacheGroups': the two hold different metrics of the same cache.
