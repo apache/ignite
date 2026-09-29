@@ -31,8 +31,8 @@ import static org.apache.ignite.internal.binary.BinaryImplUtils.footerStartAbsol
 import static org.apache.ignite.internal.binary.BinaryImplUtils.hasRaw;
 import static org.apache.ignite.internal.binary.BinaryImplUtils.hasSchema;
 import static org.apache.ignite.internal.binary.BinaryImplUtils.isCompactFooter;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.length;
 import static org.apache.ignite.internal.binary.BinaryImplUtils.rawOffsetAbsolute;
-import static org.apache.ignite.internal.binary.BinaryUtils.length;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.DFLT_HDR_LEN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.FLAGS_POS;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.HASH_CODE_POS;

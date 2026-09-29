@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -61,6 +62,12 @@ public class BinariesFactoryImpl implements BinariesFactory {
         boolean forUnmarshal
     ) {
         return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Object unmarshal(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader ldr)
+        throws BinaryObjectException {
+        return BinaryImplUtils.unmarshal(in, ctx, ldr);
     }
 
     /** {@inheritDoc} */
