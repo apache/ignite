@@ -268,15 +268,9 @@ public class SnapshotDeleteProcess {
 
     /** */
     private File resolvePath(@Nullable String path) throws IOException {
-        File res = kctx.pdsFolderResolver().fileTree().snapshotsRoot();
-
-        if (path != null) {
-            File reqPath = new File(path);
-
-            res = reqPath.isAbsolute() ? reqPath : new File(res, path);
-        }
-
-        return res.getCanonicalFile();
+        return path == null
+            ? kctx.pdsFolderResolver().fileTree().snapshotsRoot()
+            : new File(path).getCanonicalFile();
     }
 
     /** */

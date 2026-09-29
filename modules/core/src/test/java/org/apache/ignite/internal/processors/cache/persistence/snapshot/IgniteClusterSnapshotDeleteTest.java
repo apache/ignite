@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -175,7 +174,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
             POSIX_PERMISSIONS = true;
         }
-        catch (IOException ignored) {
+        catch (UnsupportedOperationException ignored) {
             // No-op.
         }
     }

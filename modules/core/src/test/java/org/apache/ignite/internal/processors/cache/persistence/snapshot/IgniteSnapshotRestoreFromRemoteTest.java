@@ -128,7 +128,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean fullCleanPersistentDir() {
+    @Override protected boolean removeAllWorkingDirectories() {
         return false;
     }
 
