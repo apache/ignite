@@ -60,6 +60,78 @@ public class RecursiveCteIntegrationTest extends AbstractBasicIntegrationTest {
         }
     }
 
+    /** Checks explicit and implicit recursion with ORDER BY inside and outside the CTE. */
+    @Test
+    public void testRecursiveCteWithOrderBy() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "numbers(n) AS (" +
+                "SELECT 1 " +
+                "UNION ALL " +
+                "SELECT n + 1 FROM numbers WHERE n < 3 " +
+                "ORDER BY n" +
+                ") " +
+                "SELECT n FROM numbers ORDER BY n")
+                .ordered()
+                .returns(1)
+                .returns(2)
+                .returns(3)
+                .check();
+        }
+    }
+
+    /** FETCH, LIMIT and OFFSET cannot be combined with sorting of the recursive UNION. */
+    @Test
+    public void testRecursiveCteOrderByWithRowLimitingIsRejected() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            for (String limit : new String[] {"FETCH FIRST 2 ROWS ONLY", "LIMIT 2", "OFFSET 1 ROW"}) {
+                assertThrows("WITH " + keyword + "numbers(n) AS (SELECT 1 UNION ALL " +
+                    "SELECT n + 1 FROM numbers WHERE n < 3 ORDER BY n " + limit + ") SELECT n FROM numbers",
+                    IgniteSQLException.class,
+                    "Unsupported recursive CTE: ORDER BY with FETCH, LIMIT or OFFSET is not supported");
+            }
+        }
+    }
+
+    /** A non-recursive CTE retains sorting and row limiting even in a WITH RECURSIVE clause. */
+    @Test
+    public void testNonRecursiveCteOrderByWithRowLimiting() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "numbers(n) AS (SELECT 1 AS n UNION ALL SELECT 3 UNION ALL " +
+                "SELECT 2 ORDER BY n DESC FETCH FIRST 2 ROWS ONLY) SELECT n FROM numbers ORDER BY n")
+                .ordered()
+                .returns(2)
+                .returns(3)
+                .check();
+        }
+    }
+
+    /** An inner recursive CTE hides an ordinary outer CTE's name during early recursion detection. */
+    @Test
+    public void testOrderByWithNestedCteShadowing() {
+        assertQuery("WITH numbers(n) AS (SELECT 9 AS n UNION ALL " +
+            "SELECT n FROM (WITH numbers(n) AS (SELECT 1 UNION ALL " +
+            "SELECT n + 1 FROM numbers WHERE n < 3 ORDER BY n) SELECT n FROM numbers) " +
+            "ORDER BY n DESC FETCH FIRST 2 ROWS ONLY) SELECT n FROM numbers ORDER BY n")
+            .ordered()
+            .returns(3)
+            .returns(9)
+            .check();
+    }
+
+    /** Row limiting of a recursive CTE's consumer remains supported. */
+    @Test
+    public void testRecursiveCteOrderByWithOuterRowLimiting() {
+        for (String keyword : new String[] {"", "RECURSIVE "}) {
+            assertQuery("WITH " + keyword + "numbers(n) AS (SELECT 1 UNION ALL " +
+                "SELECT n + 1 FROM numbers WHERE n < 5 ORDER BY n) " +
+                "SELECT n FROM numbers ORDER BY n DESC FETCH FIRST 2 ROWS ONLY")
+                .ordered()
+                .returns(5)
+                .returns(4)
+                .check();
+        }
+    }
+
     /** */
     @Test
     public void testEmployeeHierarchy() {

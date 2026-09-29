@@ -359,10 +359,5 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         public List<String> logs() {
             return logs;
         }
-
-        /** */
-        public void clear() {
-            logs.clear();
-        }
     }
 }

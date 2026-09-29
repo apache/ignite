@@ -473,13 +473,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param passwd User's password to check.
-     */
-    private void checkInvalidPassword(final String passwd) {
-        assertThrows(() -> asRoot(grid(CLI_NODE), s -> s.createUser("test", passwd.toCharArray())), "Invalid user name");
-    }
-
-    /**
      * @param createNode Node to execute create operation.
      * @param authNode Node to execute authentication.
      * @throws Exception On error.
