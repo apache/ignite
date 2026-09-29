@@ -654,7 +654,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotDeleteWhenCheckInProgressNameCase() throws Exception {
         // For case-insensitive file systems only.
-        assertTrue(CASE_INSENSETIVE_FS);
+        assumeTrue(CASE_INSENSETIVE_FS);
 
         SnapshotPartitionsVerifyResult res = doTestConcurrentSnapshotDelete(
             () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(SNAPSHOT_NAME.toLowerCase(), null, incremental ? 1 : 0)),
