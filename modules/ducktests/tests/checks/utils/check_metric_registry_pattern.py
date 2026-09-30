@@ -19,57 +19,22 @@ Checks the MBean name pattern of a metric registry.
 The pattern is grepped against the MBean list of a node, so it is checked here the same way:
 the match has to cover the WHOLE object name, since that name is what the following
 'get -b <name>' is issued against. Every case runs through Python's re and, where a grep is
-installed, through 'grep -E' itself - the pattern is an ERE, not a Python regular expression.
+installed, through 'grep -E' itself - see checks.support.mbean_grep.
 """
-import re
-import shutil
-import subprocess
-
 import pytest
 
 from ignitetest.services.utils.jmx_utils import metric_registry_pattern
+
+from checks.support.mbean_grep import GREP, python_grep, real_grep
 
 # MBean names as a node prints them: the properties are ordered alphabetically, which puts
 # the instance name between the group and the name.
 PREFIX = "org.apache:clsLdr=3e2a56ab,group=%s,igniteInstanceName=ducker01,name=%s"
 NO_GROUP_PREFIX = "org.apache:clsLdr=3e2a56ab,igniteInstanceName=ducker01,name=%s"
 
-GREP = shutil.which("grep")
-
-
-def python_grep(pattern, negative_pattern, mbean_name):
-    """
-    :return: The part of the name the patterns leave, as 'grep -E -o | grep -E -v' would return it.
-    """
-    match = re.search(pattern, mbean_name)
-
-    if not match or (negative_pattern and re.search(negative_pattern, match.group())):
-        return None
-
-    return match.group()
-
-
-def real_grep(tmp_path, pattern, negative_pattern, mbean_name):
-    """
-    :return: The same as :func:`python_grep`, but produced by 'grep -E' itself. The patterns go
-             through files, since a quote in a command line argument does not survive Windows.
-    """
-    def grep(flag, grep_pattern, text):
-        pattern_file = tmp_path / f"pattern{flag}"
-        pattern_file.write_bytes((grep_pattern + "\n").encode())
-
-        return subprocess.run([GREP, "-E", flag, "-f", str(pattern_file)], input=text.encode(),
-                              capture_output=True).stdout.decode()
-
-    out = grep("-o", pattern, mbean_name + "\n")
-
-    if out and negative_pattern:
-        out = grep("-v", negative_pattern, out)
-
-    return out.strip() or None
-
 
 # (registry, MBean name, whether the registry's pattern must match that name)
+# One case per way the exporter spells a name: a new cache needs no case unless its name is spelled a new way.
 CASES = [
     # A purely alphanumeric name is registered without quotes.
     ("cache.myCache", PREFIX % ("cache", "myCache"), True),
