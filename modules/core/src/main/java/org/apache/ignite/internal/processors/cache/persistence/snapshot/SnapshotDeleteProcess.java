@@ -173,6 +173,9 @@ public class SnapshotDeleteProcess {
 
         File resolvedFullPath = null;
 
+        // Future to delete snapshot contents according to snapshot metadatas.
+        GridCompoundFuture<SnapshotDeleteResponse, SnapshotDeleteResponse> resultFut = new GridCompoundFuture<>(new MetaFuturesReducer());
+
         try {
             resolvedFullPath = resolveFullPath(req.snpName, req.snpPath);
 
@@ -196,10 +199,6 @@ public class SnapshotDeleteProcess {
 
                 return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.DeleteStatus.NOT_FOUND, null));
             }
-
-            // Future to delete snapshot contents according to snapshot metadatas.
-            GridCompoundFuture<SnapshotDeleteResponse, SnapshotDeleteResponse> resultFut =
-                new GridCompoundFuture<>(new MetaFuturesReducer());
 
             File resolvedFullPath0 = resolvedFullPath;
 
@@ -264,16 +263,17 @@ public class SnapshotDeleteProcess {
             if (log.isInfoEnabled())
                 log.info("Deletion of snapshot initialized [req=" + req + ']');
 
-            return resultFut;
         }
         catch (Throwable t) {
             if (resolvedFullPath != null)
                 requests.remove(resolvedFullPath);
 
-            log.warning("An error occurred during snapshot deletion [req=" + req + ']', t);
+            resultFut.onDone(t);
 
-            return new GridFinishedFuture<>(t);
+            log.warning("An error occurred during snapshot deletion [req=" + req + ']', t);
         }
+
+        return resultFut;
     }
 
     /** */
