@@ -886,7 +886,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         prepareCluster.run();
 
-        var delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+        IgniteFuture<SnapshotDeleteProcessResult> delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
 
         assertTrue(delProcInitLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
@@ -905,7 +905,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         delFut.get(getTestTimeout());
 
-        for (var node : G.allGrids())
+        for (Ignite node : G.allGrids())
             assertFalse(new SnapshotFileTree(((IgniteEx)node).context(), SNAPSHOT_NAME, null).root().exists());
 
         if (!rerunAtTheEnd)

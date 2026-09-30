@@ -78,10 +78,10 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     private static final String EXT_STORAGE_PATH = "extStorage";
 
     /** */
-    private static boolean CASE_INSENSETIVE_FS;
+    private static boolean caseInsensetiveFs;
 
     /** */
-    private static boolean POSIX_PERMISSIONS;
+    private static boolean posixPermissions;
 
     /** */
     private boolean separatedWorkDir;
@@ -159,7 +159,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
         assertTrue(workDir.exists());
 
-        CASE_INSENSETIVE_FS = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
+        caseInsensetiveFs = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
             new File(workDir.getAbsolutePath().toUpperCase()).exists();
 
         Path workPath = workDir.toPath();
@@ -167,7 +167,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         try {
             Files.getPosixFilePermissions(workPath);
 
-            POSIX_PERMISSIONS = true;
+            posixPermissions = true;
         }
         catch (UnsupportedOperationException ignored) {
             // No-op.
@@ -177,7 +177,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testDeniedPermissions() throws Exception {
-        assumeTrue(POSIX_PERMISSIONS);
+        assumeTrue(posixPermissions);
 
         // Doesn't matter here.
         assumeFalse(incremental);
@@ -558,7 +558,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         if (incremental)
             addIncrementalSnapshot(null);
 
-        var delFut = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null);
+        IgniteFuture<SnapshotDeleteProcessResult> delFut = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null);
 
         assertTrue(beginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
@@ -629,6 +629,19 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             e -> e.getMessage().contains("Deletion of the snapshot has already started"),
             false
         );
+
+        if (!caseInsensetiveFs) {
+            doTestConcurrentSnapshotDeleteOperation(
+                () -> {
+                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+
+                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME.toLowerCase()).get(getTestTimeout());
+                },
+                () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME.toLowerCase(), null).get(getTestTimeout()),
+                null,
+                false
+            );
+        }
     }
 
     /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */
@@ -654,7 +667,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotDeleteWhenCheckInProgressNameCase() throws Exception {
         // For case-insensitive file systems only.
-        assumeTrue(CASE_INSENSETIVE_FS);
+        assumeTrue(caseInsensetiveFs);
 
         SnapshotPartitionsVerifyResult res = doTestConcurrentSnapshotDelete(
             () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(SNAPSHOT_NAME.toLowerCase(), null, incremental ? 1 : 0)),
@@ -743,7 +756,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotDeleteWhenRestoreBeginsNameCase() throws Exception {
         // For case-insensitive file systems only.
-        assumeTrue(CASE_INSENSETIVE_FS);
+        assumeTrue(caseInsensetiveFs);
 
         doTestConcurrentSnapshotDelete(
             () -> {
@@ -810,7 +823,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotDeleteWhenRestoreInProgressNameCase() throws Exception {
         // For case-insensitive file systems only.
-        assumeTrue(CASE_INSENSETIVE_FS);
+        assumeTrue(caseInsensetiveFs);
 
         var restoreMsgs = F.asList(
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,

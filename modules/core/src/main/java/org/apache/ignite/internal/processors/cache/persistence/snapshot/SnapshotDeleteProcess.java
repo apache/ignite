@@ -109,7 +109,7 @@ public class SnapshotDeleteProcess {
      * @return Future that will be completed when the snapshot is deleted.
      */
     public IgniteFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
-        var clusterOpFut = new GridFutureAdapter<SnapshotDeleteProcessResult>();
+        GridFutureAdapter<SnapshotDeleteProcessResult> clusterOpFut = new GridFutureAdapter<>();
 
         if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
             clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_FEATURE_MSG));
@@ -154,7 +154,7 @@ public class SnapshotDeleteProcess {
 
         IgniteSnapshotManager snpMgr = kctx.cache().context().snapshotMgr();
 
-        var curCreateRq = snpMgr.currentCreateRequest();
+        SnapshotOperationRequest curCreateRq = snpMgr.currentCreateRequest();
 
         if (curCreateRq != null && curCreateRq.snpName.equalsIgnoreCase(req.snpName)) {
             return new GridFinishedFuture<>(new IgniteIllegalStateException(OP_REJECT_MSG + BEING_CREATED_PREF +
@@ -201,9 +201,7 @@ public class SnapshotDeleteProcess {
 
             resultFut.listen(fut -> requests.remove(req));
 
-            File path0 = path;
-
-            for (var meta : locMetas) {
+            for (SnapshotMetadata meta : locMetas) {
                 GridFutureAdapter<SnapshotDeleteResponse> perMetaFut = new GridFutureAdapter<>();
 
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
@@ -213,7 +211,7 @@ public class SnapshotDeleteProcess {
                             kctx.config(),
                             kctx.pdsFolderResolver().fileTree(),
                             req.snpName,
-                            req.snpPath == null ? null : path0.getAbsolutePath(),
+                            req.snpPath == null ? null : path.getAbsolutePath(),
                             meta.folderName(),
                             meta.consId
                         );
@@ -275,7 +273,7 @@ public class SnapshotDeleteProcess {
 
     /** */
     private void reducePhase(UUID reqId, Map<UUID, SnapshotDeleteResponse> results, Map<UUID, Throwable> errors) {
-        var clusterOpFut = clusterOpFuts.get(reqId);
+        GridFutureAdapter<SnapshotDeleteProcessResult> clusterOpFut = clusterOpFuts.get(reqId);
 
         if (clusterOpFut == null)
             return;
@@ -283,7 +281,7 @@ public class SnapshotDeleteProcess {
         assert clusterOpFut != null;
 
         try {
-            var errP = F.isEmpty(errors) ? null : F.first(errors.entrySet());
+            Map.Entry<UUID, Throwable> errP = F.isEmpty(errors) ? null : F.first(errors.entrySet());
 
             if (errP != null) {
                 log.warning("Snapshot deletion finished with an error [reqId=" + reqId + ", nodeId="
@@ -335,7 +333,7 @@ public class SnapshotDeleteProcess {
 
     /** */
     private String consistentId(UUID nodeId) {
-        var node = kctx.discovery().node(nodeId);
+        ClusterNode node = kctx.discovery().node(nodeId);
 
         if (node == null)
             node = kctx.discovery().historicalNode(nodeId);

@@ -759,7 +759,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!sft.meta().delete() && sft.meta().exists())
                 res.set1(false);
 
-            for (var s : sft.allStorages().toList()) {
+            for (File s : sft.allStorages().toList()) {
                 if (!deleteDirectory(s) && s.exists())
                     res.set1(false);
 
