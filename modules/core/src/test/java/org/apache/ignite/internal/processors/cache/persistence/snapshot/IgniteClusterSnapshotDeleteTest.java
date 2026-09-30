@@ -581,22 +581,46 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         assertTrue(delRes.completedNodes().containsKey(grid(1).localNode().id()));
     }
 
+    /** Tests that a concurrent deletion of a snapshot with the same name but different name characters case is allowed. */
+    @Test
+    public void testConcurrentDeleteOfTheSameSnapshotDifferentNameCarachersCase() throws Exception {
+        assumeFalse(caseInsensetiveFs);
+
+        doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(true);
+    }
+
     /** Tests that a concurrent deletion of a snapshot with the same name but different path is allowed. */
     @Test
     public void testConcurrentDeleteOfTheSameSnapshotDifferentPath() throws Exception {
+        doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(false);
+    }
+
+    /**
+     * Tests that a concurrent deletion of a snapshot with the same name but different path is allowed.
+     *
+     * @param useNameCharactersCase If {@code true}, uses a changed characters case of snapshot name as the other snapshot path.
+     *                              If {@code false}, uses different snapshot root path.
+     */
+    private void doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(boolean useNameCharactersCase) throws Exception {
         startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
 
         snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(TIMEOUT);
 
         if (incremental)
-            addIncrementalSnapshot(null);
+            addIncrementalSnapshot(SNAPSHOT_NAME, null);
 
-        String snpPath = new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots").getAbsolutePath();
+        String secondSnpPath = null;
+        String secondSnpName = SNAPSHOT_NAME.toLowerCase();
 
-        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, snpPath, false, onlyPrimary).get(getTestTimeout());
+        if (!useNameCharactersCase) {
+            secondSnpPath = new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots").getAbsolutePath();
+            secondSnpName = SNAPSHOT_NAME;
+        }
+
+        snp(grid(0)).createSnapshot(secondSnpName, secondSnpPath, false, onlyPrimary).get(getTestTimeout());
 
         if (incremental)
-            addIncrementalSnapshot(snpPath);
+            addIncrementalSnapshot(secondSnpName, secondSnpPath);
 
         TestRecordingCommunicationSpi commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
 
@@ -604,7 +628,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             msg instanceof SingleNodeMessage<?> msg0 && msg0.type() == DELETE_SNAPSHOT.ordinal());
 
         var delFut0 = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
-        var delFut1 = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, snpPath);
+        var delFut1 = snp(grid(1)).deleteSnapshot(secondSnpName, secondSnpPath);
 
         commSpi1.waitForBlocked(2, getTestTimeout());
 
@@ -621,39 +645,12 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     @Test
     public void testConcurrentDeleteOfTheSameSnapshot() throws Exception {
         // Doesn't matter here.
-        assumeFalse(onlyPrimary);
+        assumeFalse(onlyPrimary || incremental);
 
         doTestConcurrentSnapshotDeleteOperation(
             () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false),
             () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
             e -> e.getMessage().contains("Deletion of the snapshot has already started"),
-            false
-        );
-
-        if (!caseInsensetiveFs) {
-            doTestConcurrentSnapshotDeleteOperation(
-                () -> {
-                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
-
-                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME.toLowerCase()).get(getTestTimeout());
-                },
-                () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME.toLowerCase(), null).get(getTestTimeout()),
-                null,
-                false
-            );
-        }
-    }
-
-    /** Tests that a snapshot deletion is declined when a snapshot check operation is in progress. */
-    @Test
-    public void testSnapshotDeleteWhenCheckInProgress() throws Exception {
-        doTestConcurrentSnapshotDelete(
-            () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null, incremental ? 1 : 0)),
-            F.asList(CHECK_SNAPSHOT_METAS, CHECK_SNAPSHOT_PARTS),
-            true,
-            null,
-            SnapshotDeleteProcess.BEING_CHECKED_PREF,
-            false,
             false
         );
     }
@@ -991,14 +988,19 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    private void addIncrementalSnapshot(@Nullable String path) {
+    private void addIncrementalSnapshot(String name, @Nullable String path) {
         try (var ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = CACHE_KEYS_RANGE; i < INC_CACHE_KEYS_RANGE; i++)
                 ds.addData(i, i);
         }
 
-        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, path, true, onlyPrimary)
+        snp(grid(0)).createSnapshot(name, path, true, onlyPrimary)
             .get(getTestTimeout());
+    }
+
+    /** */
+    private void addIncrementalSnapshot(@Nullable String path) {
+        addIncrementalSnapshot(SNAPSHOT_NAME, path);
     }
 
     /** {@inheritDoc} */

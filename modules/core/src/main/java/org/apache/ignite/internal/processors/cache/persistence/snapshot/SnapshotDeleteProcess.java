@@ -172,16 +172,16 @@ public class SnapshotDeleteProcess {
         }
 
         try {
-            File path = resolvePath(req.snpPath);
+            req.resolvedFullPath = resolveFullPath(req.snpName, req.snpPath);
 
-            req.resolvedPath = path;
+            File rootPath = req.resolvedFullPath.getParentFile();
 
             if (!requests.add(req)) {
                 return new GridFinishedFuture<>(new IgniteIllegalStateException("Deletion of the snapshot has already " +
                     "started [req=" + req + ']'));
             }
 
-            SnapshotFileTree snpFiles = new SnapshotFileTree(kctx, req.snpName, path.getAbsolutePath());
+            SnapshotFileTree snpFiles = new SnapshotFileTree(kctx, req.snpName, rootPath.getAbsolutePath());
 
             // We need to find and read snapshot metas to ensure the content is a snapshot. Also, the metas contain
             // initial cluster topology and actual snapshot folder names.
@@ -211,7 +211,7 @@ public class SnapshotDeleteProcess {
                             kctx.config(),
                             kctx.pdsFolderResolver().fileTree(),
                             req.snpName,
-                            req.snpPath == null ? null : path.getAbsolutePath(),
+                            req.snpPath == null ? null : rootPath.getAbsolutePath(),
                             meta.folderName(),
                             meta.consId
                         );
@@ -265,10 +265,9 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private File resolvePath(@Nullable String path) throws IOException {
-        return path == null
-            ? kctx.pdsFolderResolver().fileTree().snapshotsRoot()
-            : new File(path).getCanonicalFile();
+    private File resolveFullPath(String name, @Nullable String path) throws IOException {
+        return new File(path == null ? kctx.pdsFolderResolver().fileTree().snapshotsRoot().getAbsolutePath() : path, name)
+            .getCanonicalFile();
     }
 
     /** */
@@ -346,7 +345,7 @@ public class SnapshotDeleteProcess {
         var rq = new SnapshotDeleteRequest(null, snpName, snpPath);
 
         try {
-            rq.resolvedPath = resolvePath(rq.snpPath);
+            rq.resolvedFullPath = resolveFullPath(snpName, rq.snpPath);
         }
         catch (IOException ignored) {
             return false;
