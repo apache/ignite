@@ -22,7 +22,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration tests for recursive common table expressions.

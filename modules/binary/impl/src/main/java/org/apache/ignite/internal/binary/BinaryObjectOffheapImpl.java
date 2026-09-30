@@ -497,7 +497,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, ctx.classLoader(), forUnmarshal);
     }
 
@@ -509,13 +509,13 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
         boolean forUnmarshal) {
         BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
 
-        return BinaryUtils.reader(ctx,
+        return new BinaryReaderExImpl(ctx,
             stream,
             ldr,
             rCtx,
