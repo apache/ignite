@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -265,9 +264,8 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private File resolveFullPath(String name, @Nullable String path) throws IOException {
-        return new File(path == null ? kctx.pdsFolderResolver().fileTree().snapshotsRoot().getAbsolutePath() : path, name)
-            .getCanonicalFile();
+    private File resolveFullPath(String name, @Nullable String path) {
+        return new SnapshotFileTree(kctx, name, path).root();
     }
 
     /** */
@@ -342,14 +340,9 @@ public class SnapshotDeleteProcess {
 
     /** */
     public boolean isDeleting(String snpName, @Nullable String snpPath) {
-        var rq = new SnapshotDeleteRequest(null, snpName, snpPath);
+        SnapshotDeleteRequest rq = new SnapshotDeleteRequest(null, snpName, snpPath);
 
-        try {
-            rq.resolvedFullPath = resolveFullPath(snpName, rq.snpPath);
-        }
-        catch (IOException ignored) {
-            return false;
-        }
+        rq.resolvedFullPath = resolveFullPath(snpName, rq.snpPath);
 
         return requests.contains(rq);
     }
