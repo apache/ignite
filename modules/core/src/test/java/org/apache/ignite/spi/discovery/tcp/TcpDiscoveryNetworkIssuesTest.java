@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -438,11 +439,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        final CountDownLatch failLatch = new CountDownLatch(2);
+        Set<UUID> failedIds = new GridConcurrentHashSet<>();
 
         for (int i = 0; i < gridCnt; i++) {
             ignite(i).events().localListen(evt -> {
-                failLatch.countDown();
+                failedIds.add(((DiscoveryEvent)evt).eventNode().id());
 
                 return true;
             }, EVT_NODE_FAILED);
@@ -465,14 +466,24 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         else
             failedNodes.add(4);
 
+        Set<UUID> frozenIds = failedNodes.stream().map(this::nodeId).collect(Collectors.toSet());
+
+        Set<UUID> healthyIds = G.allGrids().stream().map(ig -> ig.cluster().localNode().id())
+            .filter(id -> !frozenIds.contains(id)).collect(Collectors.toSet());
+
         failedNodes.forEach(idx -> ((TestTcpDiscoverySpi)spi(ignite(idx))).freeze());
 
         try {
-            failLatch.await(10, TimeUnit.SECONDS);
+            assertTrue(waitForCondition(() -> failedIds.containsAll(frozenIds) && G.allGrids().stream()
+                .filter(ig -> healthyIds.contains(ig.cluster().localNode().id()))
+                .allMatch(ig -> healthyIds.equals(ig.cluster().nodes().stream().map(ClusterNode::id)
+                    .collect(Collectors.toSet()))), 10_000));
         }
         finally {
             failedNodes.forEach(idx -> ((TestTcpDiscoverySpi)spi(ignite(idx))).unfreeze());
         }
+
+        assertEquals(frozenIds, failedIds);
 
         for (int i = 0; i < gridCnt; i++) {
             if (!failedNodes.contains(i))

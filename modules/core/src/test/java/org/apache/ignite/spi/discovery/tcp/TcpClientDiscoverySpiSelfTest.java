@@ -738,6 +738,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         clientIpFinder.setAddresses(
             Collections.singleton("localhost:" + srv2Node.discoveryPort()));
 
+        assertNull(client.cluster().node(srv2Node.id()));
+
         clientSpi.resumeAll();
 
         awaitPartitionMapExchange();
