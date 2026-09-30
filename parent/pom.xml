@@ -105,19 +105,18 @@
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
+        <jts.version>1.20.0</jts.version>
+        <junit.version>4.13.1</junit.version>
         <log4j2.version>2.26.1</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.4</lucene.version>
         <lz4.version>1.11.2</lz4.version>
-        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
-        <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
-        <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
-        <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.9.16</maven.model.version>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
+        <prometheus.version>0.3.0</prometheus.version>
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.8</snappy.version>
         <spring.version>6.2.19</spring.version>
@@ -151,6 +150,10 @@
         <maven.jarsigner.plugin.version>3.1.0</maven.jarsigner.plugin.version>
         <build.helper.maven.plugin.version>3.6.1</build.helper.maven.plugin.version>
         <cmake.maven.plugin.version>3.31.5-b1</cmake.maven.plugin.version>
+        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
+        <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
+        <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
+        <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
 
         <sonar.organization>apache</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -236,7 +239,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.1</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 
