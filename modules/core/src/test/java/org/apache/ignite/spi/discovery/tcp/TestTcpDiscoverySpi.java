@@ -77,46 +77,25 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         }
     }
 
-    /**
-     * Blocks while the discovery I/O is frozen.
-     *
-     * @throws InterruptedIOException If interrupted.
-     */
-    private void awaitUnfrozen() throws InterruptedIOException {
-        CountDownLatch latch = freezeLatch;
-
-        if (latch == null)
-            return;
-
-        try {
-            latch.await();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new InterruptedIOException("Interrupted while discovery I/O is frozen.");
-        }
-    }
-
     /** {@inheritDoc} */
-    @Override protected void write(TcpDiscoveryIoSession ses, byte[] data, long timeout) throws IOException,
-        IgniteCheckedException {
+    @Override protected void write(TcpDiscoveryIoSession ses, byte[] data, long timeout) throws IOException, IgniteCheckedException {
         awaitUnfrozen();
 
         super.write(ses, data, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeReceipt(TcpDiscoveryIoSession ses, int res, long timeout) throws IOException,
-        IgniteCheckedException {
+    @Override protected void writeReceipt(TcpDiscoveryIoSession ses, int res, long timeout) throws IOException, IgniteCheckedException {
         awaitUnfrozen();
 
         super.writeReceipt(ses, res, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override protected <T extends Message> T readMessage(TcpDiscoveryIoSession ses, long timeout) throws IOException,
-        IgniteCheckedException {
+    @Override protected <T extends Message> T readMessage(
+        TcpDiscoveryIoSession ses,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
         awaitUnfrozen();
 
         try {
@@ -219,6 +198,27 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         }
         catch (Exception e) {
             throw new IgniteException("Failed to decode a message", e);
+        }
+    }
+
+    /**
+     * Blocks while the discovery I/O is frozen.
+     *
+     * @throws InterruptedIOException If interrupted.
+     */
+    private void awaitUnfrozen() throws InterruptedIOException {
+        CountDownLatch latch = freezeLatch;
+
+        if (latch == null)
+            return;
+
+        try {
+            latch.await();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new InterruptedIOException("Interrupted while discovery I/O is frozen.");
         }
     }
 }
