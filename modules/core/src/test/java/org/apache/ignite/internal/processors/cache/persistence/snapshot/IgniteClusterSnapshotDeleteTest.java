@@ -583,7 +583,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
     /** Tests that a concurrent deletion of a snapshot with the same name but different name characters case is allowed. */
     @Test
-    public void testConcurrentDeleteOfTheSameSnapshotDifferentNameCarachersCase() throws Exception {
+    public void testConcurrentDeleteOfTheSameSnapshotDifferentNameCharactersCase() throws Exception {
         assumeFalse(caseInsensetiveFs);
 
         doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(true);
