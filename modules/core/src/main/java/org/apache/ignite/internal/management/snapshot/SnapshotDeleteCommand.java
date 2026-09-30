@@ -37,7 +37,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
     public static final String DESC = "Deletes the snapshot and all its incremental snapshots from all online server nodes";
 
     /** */
-    public static final String UNSURED_DELETION_PREF = "WARNING: the following nodes found snapshot data but might not " +
+    public static final String UNSURE_DELETION_PREF = "WARNING: the following nodes found snapshot data but might not " +
         "remove it completely: ";
 
     /** */
@@ -78,7 +78,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!res.uncompletedNodes().isEmpty()) {
             found = true;
 
-            printer.accept(UNSURED_DELETION_PREF + nodeIdPairsStrLst(res.uncompletedNodes()));
+            printer.accept(UNSURE_DELETION_PREF + nodeIdPairsStrLst(res.uncompletedNodes()));
 
             printer.accept("");
         }
@@ -97,11 +97,8 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
             if (!res.absentBaselines().isEmpty())
                 printer.accept(MISSING_BASELINES + String.join(", ", res.absentBaselines()));
         }
-        else {
-            assert !res.emptyNodes().isEmpty();
-
+        else
             printer.accept(NOT_FOUND);
-        }
     }
 
     /** */

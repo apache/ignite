@@ -84,7 +84,7 @@ public class SnapshotDeleteProcess {
     /** Cluster-wide operation futures per request id on certain node. */
     private final Map<UUID, GridFutureAdapter<SnapshotDeleteProcessResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
-    /** Current operations represented by the full canonicap path. */
+    /** Current operations represented by the full canonical path. */
     private final Set<File> requests = ConcurrentHashMap.newKeySet();
 
     /** The distributed process. */
@@ -220,7 +220,7 @@ public class SnapshotDeleteProcess {
                             meta.consId
                         );
 
-                        T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft);
+                        T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft, true);
 
                         SnapshotDeleteResponse.DeleteStatus status;
 
@@ -281,8 +281,6 @@ public class SnapshotDeleteProcess {
         if (clusterOpFut == null)
             return;
 
-        assert clusterOpFut != null;
-
         try {
             Map.Entry<UUID, Throwable> errP = F.isEmpty(errors) ? null : F.first(errors.entrySet());
 
@@ -307,13 +305,13 @@ public class SnapshotDeleteProcess {
                 if (nodeRes.status != null) {
                     switch (nodeRes.status) {
                         case NOT_FOUND:
-                            emptyNodes.put(nodeId, consistentId(nodeId));
+                            emptyNodes.put(nodeId, optionalConsistentId(nodeId));
                             break;
                         case DELETED:
-                            completedNodes.put(nodeId, consistentId(nodeId));
+                            completedNodes.put(nodeId, optionalConsistentId(nodeId));
                             break;
                         case PARTLY:
-                            uncompletedNodes.put(nodeId, consistentId(nodeId));
+                            uncompletedNodes.put(nodeId, optionalConsistentId(nodeId));
                             break;
                         default:
                             throw new IgniteIllegalStateException("Unknown snapshot deletion node result, [nodeRes=" +
@@ -335,7 +333,7 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private String consistentId(UUID nodeId) {
+    private String optionalConsistentId(UUID nodeId) {
         ClusterNode node = kctx.discovery().node(nodeId);
 
         if (node == null)

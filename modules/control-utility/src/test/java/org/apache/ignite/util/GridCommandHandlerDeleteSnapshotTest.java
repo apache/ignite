@@ -230,7 +230,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             // When nodes use a shared work directory, there is a race for the delete operation. One node can get faster
             // than others and remove snapshot completely quickly. The others might not find snapshot files. We can be
             // only sure that at least one node removes snapshot.
-            assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF) || out.contains(SnapshotDeleteCommand.UNSURED_DELETION_PREF));
+            assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF) || out.contains(SnapshotDeleteCommand.UNSURE_DELETION_PREF));
         }
 
         assertFalse(out.contains("Snapshot not found on current server nodes"));
