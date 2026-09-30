@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -45,10 +42,6 @@ public class SnapshotDeleteRequest implements Message {
     @Order(2)
     @Nullable String snpPath;
 
-    /** Resolved canonical sanpshot full path (with the snapshot name). Transient */
-    @GridToStringExclude
-    @Nullable File resolvedFullPath;
-
     /** Default constructor for {@link MessageFactory}. */
     public SnapshotDeleteRequest() {
         // No-op.
@@ -63,21 +56,6 @@ public class SnapshotDeleteRequest implements Message {
         this.reqId = reqId;
         this.snpName = snpName;
         this.snpPath = snpPath;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        SnapshotDeleteRequest other = (SnapshotDeleteRequest)o;
-
-        return Objects.equals(resolvedFullPath, other.resolvedFullPath);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(resolvedFullPath);
     }
 
     /** {@inheritDoc} */

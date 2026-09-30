@@ -38,10 +38,10 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** */
     public static final String UNSURED_DELETION_PREF = "WARNING: the following nodes found snapshot data but might not " +
-        "remove it completely ";
+        "remove it completely: ";
 
     /** */
-    public static final String REMOVED_PREF = "Snapshot removal is completed on ";
+    public static final String REMOVED_PREF = "Snapshot removal is completed on: ";
 
     /** */
     public static final String NODE_NOT_FOUND_PREF = "NOTE: the following nodes can't find any snapshot data, " +
