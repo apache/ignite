@@ -252,10 +252,10 @@ public class GridBinaryMarshaller {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(ctx, failIfUnregistered, UNREGISTERED_TYPE_ID)) {
+        try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(ctx, failIfUnregistered)) {
             writer.marshal(obj);
 
-            return writer.array();
+            return writer.out().arrayCopy();
         }
     }
 
@@ -264,10 +264,9 @@ public class GridBinaryMarshaller {
      *
      * @param obj Object to marshal.
      * @param out Output stream.
-     * @param failIfUnregistered Throw exception if class isn't registered.
      * @throws BinaryObjectException In case of error.
      */
-    public void marshal(@Nullable Object obj, OutputStream out, boolean failIfUnregistered) throws BinaryObjectException {
+    public void marshal(@Nullable Object obj, OutputStream out) throws BinaryObjectException {
         try {
             if (obj == null) {
                 out.write(NULL);
@@ -275,7 +274,7 @@ public class GridBinaryMarshaller {
                 return;
             }
 
-            try (BinaryWriterEx writer = BinaryUtils.writer(ctx, failIfUnregistered, UNREGISTERED_TYPE_ID)) {
+            try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(ctx, false)) {
                 writer.marshal(obj);
 
                 BinaryOutputStream s = writer.out();
@@ -299,7 +298,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes, 0), ctx, clsLdr);
+            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes), ctx, clsLdr);
         }
         finally {
             popContext(oldCtx);
@@ -413,7 +412,7 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        return deserialize(BinaryStreams.inputStream(arr, 0), ldr, null);
+        return deserialize(BinaryStreams.inputStream(arr), ldr, null);
     }
 
     /**

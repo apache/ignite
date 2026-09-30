@@ -458,7 +458,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             }
         }
 
-        ses.send(new ClientMessage(writer.array()));
+        ses.send(new ClientMessage(writer.out().arrayCopy()));
     }
 
     /**

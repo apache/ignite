@@ -47,49 +47,17 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
     public BinaryInputStream in();
 
     /**
-     * @param offset Offset in the array.
-     * @return Unmarshalled value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public Object unmarshal(int offset);
-
-    /**
      * @return Deserialized object.
      * @throws BinaryObjectException If failed.
      */
     public Object deserialize() throws BinaryObjectException;
 
     /**
-     * @return Descriptor.
+     * Unmarshall JDBC supported type.
+     * @param type Type.
+     * @param binObjAllow Allow to read non plaint objects.
+     * @param deserialize {@code True} if object should be deserialized during reading.
+     * @return Read object.
      */
-    public BinaryClassDescriptor descriptor();
-
-    /**
-     * @param fieldName Field name.
-     * @return Unmarshalled value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public Object unmarshalField(String fieldName) throws BinaryObjectException;
-
-    /**
-     * @param fieldId Field ID.
-     * @return Unmarshalled value.
-     * @throws BinaryObjectException In case of error.
-     */
-    public Object unmarshalField(int fieldId) throws BinaryObjectException;
-
-    /**
-     * Try finding the field by name.
-     *
-     * @param name Field name.
-     * @return Offset.
-     */
-    public boolean findFieldByName(String name);
-
-    /**
-     * Get or create object schema.
-     *
-     * @return Schema.
-     */
-    public BinarySchema getOrCreateSchema();
+    public Object unmarshallJdbc(byte type, boolean binObjAllow, boolean deserialize);
 }
