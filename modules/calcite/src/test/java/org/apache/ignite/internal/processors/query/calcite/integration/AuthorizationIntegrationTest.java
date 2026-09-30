@@ -46,10 +46,15 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -63,7 +68,9 @@ import static org.apache.ignite.plugin.security.SecurityPermission.SQL_VIEW_DROP
 /**
  * Test authorization of different operations.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "allowDdl = {0}")
+@MethodSource("parameters")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     /** */
     private static final String LOGIN = "client";
@@ -87,13 +94,27 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     private static final AtomicInteger removeCnt = new AtomicInteger();
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean allowDdl;
 
     /** */
-    @Parameterized.Parameters(name = "allowDdl = {0}")
+    @MethodSource("parameters")
     public static Iterable<Object> parameters() {
         return Arrays.asList(false, true);
+    }
+
+    /** */
+    @BeforeAll
+    static void init() {
+        beforeFirstTest0();
+    }
+
+    /** {@inheritDoc} */
+    @AfterAll
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -112,6 +133,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -147,6 +169,7 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

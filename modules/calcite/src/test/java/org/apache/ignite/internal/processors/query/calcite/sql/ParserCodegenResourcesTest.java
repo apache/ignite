@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertNotNull;
 
 /** Verifies that parser code generation inputs are published as module resources. */
 public class ParserCodegenResourcesTest {
     /** Verifies resources required to extend the Ignite SQL grammar. */
-    @Test public void testParserCodegenResourcesAvailable() {
+    @Test
+    public void testParserCodegenResourcesAvailable() {
         assertResourceAvailable("/codegen/config.fmpp");
         assertResourceAvailable("/codegen/includes/parserImpls.ftl");
     }

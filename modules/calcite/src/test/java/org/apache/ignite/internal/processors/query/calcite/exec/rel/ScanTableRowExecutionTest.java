@@ -27,12 +27,12 @@ import org.apache.ignite.internal.processors.query.calcite.exec.TableRowIterable
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Execution test for ScanTableRowNode.
  */
-public class ScanTableRowExecutionTest extends AbstractExecutionTest {
+public class ScanTableRowExecutionTest extends AbstractExecutionParametrizedTest {
     /** */
     @Test
     public void testScanTableRow() {
