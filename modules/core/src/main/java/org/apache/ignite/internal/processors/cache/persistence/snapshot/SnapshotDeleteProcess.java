@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -34,7 +36,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -174,7 +175,7 @@ public class SnapshotDeleteProcess {
         File resolvedFullPath = null;
 
         // Future to delete snapshot contents according to snapshot metadatas.
-        GridCompoundFuture<SnapshotDeleteResponse, SnapshotDeleteResponse> resultFut = new GridCompoundFuture<>(new MetaFuturesReducer());
+        GridFutureAdapter<SnapshotDeleteResponse> resultFut = new GridFutureAdapter<>();
 
         try {
             resolvedFullPath = resolveFullPath(req.snpName, req.snpPath);
@@ -204,8 +205,28 @@ public class SnapshotDeleteProcess {
 
             resultFut.listen(fut -> requests.remove(resolvedFullPath0));
 
+            // Per-metas results.
+            AtomicInteger pendingMetaFuts = new AtomicInteger(locMetas.size());
+            MetaFuturesReducer resReducer = new MetaFuturesReducer();
+            AtomicReference<Throwable> resErr = new AtomicReference<>();
+
             for (SnapshotMetadata meta : locMetas) {
                 GridFutureAdapter<SnapshotDeleteResponse> perMetaFut = new GridFutureAdapter<>();
+
+                // Allows to wait until all the per-meta futures are done.
+                perMetaFut.listen(metaFut -> {
+                    if (metaFut.error() != null)
+                        resErr.compareAndSet(null, metaFut.error());
+                    else
+                        resReducer.collect(metaFut.result());
+
+                    if (pendingMetaFuts.decrementAndGet() == 0) {
+                        if (resErr.get() == null)
+                            resultFut.onDone(resReducer.reduce());
+                        else
+                            resultFut.onDone(resErr.get());
+                    }
+                });
 
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
                     try {
@@ -254,23 +275,18 @@ public class SnapshotDeleteProcess {
                         perMetaFut.onDone(e);
                     }
                 });
-
-                resultFut.add(perMetaFut);
             }
-
-            resultFut.markInitialized();
 
             if (log.isInfoEnabled())
                 log.info("Deletion of snapshot initialized [req=" + req + ']');
-
         }
         catch (Throwable t) {
             if (resolvedFullPath != null)
                 requests.remove(resolvedFullPath);
 
-            resultFut.onDone(t);
-
             log.warning("An error occurred during snapshot deletion [req=" + req + ']', t);
+
+            resultFut.onDone(t);
         }
 
         return resultFut;
