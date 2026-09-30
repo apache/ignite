@@ -220,6 +220,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         File workDir = new File(U.defaultWorkDirectory());
 
+        assertTrue(workDir.exists());
+
         caseInsensetiveFs = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
             new File(workDir.getAbsolutePath().toUpperCase()).exists();
     }
@@ -878,7 +880,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft, boolean ignoreErrs) {
                             delProcInitLatch.countDown();
 
                             try {
@@ -888,7 +890,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                                 throw new RuntimeException("Interrupted.", e);
                             }
 
-                            return super.deleteLocalSnapshot(sft);
+                            return super.deleteLocalSnapshot(sft, ignoreErrs);
                         }
                     };
                 }

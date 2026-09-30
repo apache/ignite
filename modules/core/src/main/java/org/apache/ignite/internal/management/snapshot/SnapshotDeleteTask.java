@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -52,11 +50,6 @@ public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandAr
     /** {@inheritDoc} */
     @Override protected VisorJob<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> job(SnapshotDeleteCommandArg arg) {
         return new SnapshotDeleteJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<SnapshotDeleteCommandArg> arg) {
-        return super.jobNodes(arg);
     }
 
     /** {@inheritDoc} */
