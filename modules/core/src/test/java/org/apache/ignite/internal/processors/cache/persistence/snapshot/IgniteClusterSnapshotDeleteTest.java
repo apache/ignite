@@ -72,7 +72,10 @@ import static org.junit.Assume.assumeTrue;
 /** */
 public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** */
-    private static final int INC_CACHE_KEYS_RANGE = CACHE_KEYS_RANGE + CACHE_KEYS_RANGE / 4;
+    private static final int CACHE_KEYS_RANGE = 10;
+
+    /** */
+    private static final int INC_CACHE_KEYS_RANGE = 15;
 
     /** Extra storage path. */
     private static final String EXT_STORAGE_PATH = "extStorage";
@@ -338,7 +341,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests the snapshot deletion when cluster restarts with changed nodes consistent ids. */
     @Test
     public void testDeleteOtherConsistentId() throws Exception {
-        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false);
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false, true);
 
         stopAllGrids();
 
@@ -648,7 +651,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         assumeFalse(onlyPrimary || incremental);
 
         doTestConcurrentSnapshotDeleteOperation(
-            () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false),
+            () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false, true),
             () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
             e -> e.getMessage().contains("Deletion of the snapshot has already started"),
             false
