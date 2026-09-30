@@ -775,12 +775,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!deleteDirectory(s) && s.exists())
                     res.set1(false);
 
-                s = s.getParentFile();
-
                 /**
                  * Deletes the snapshot root directory beyond the snapshot root in the case when
                  * {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)} are configured.
                  */
+                s = s.getParentFile();
+
                 if (!sft.root().equals(s) && !s.delete() && s.exists())
                     res.set1(false);
             }
