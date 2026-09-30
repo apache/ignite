@@ -45,7 +45,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 

@@ -81,9 +81,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     private static final String EXT_STORAGE_PATH = "extStorage";
 
     /** */
-    private static boolean caseInsensetiveFs;
-
-    /** */
     private static boolean posixPermissions;
 
     /** */
@@ -161,9 +158,6 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         File workDir = new File(U.defaultWorkDirectory());
 
         assertTrue(workDir.exists());
-
-        caseInsensetiveFs = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
-            new File(workDir.getAbsolutePath().toUpperCase()).exists();
 
         Path workPath = workDir.toPath();
 
@@ -650,9 +644,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         // Doesn't matter here.
         assumeFalse(onlyPrimary || incremental);
 
-        doTestConcurrentSnapshotDeleteOperation(
+        String snapshotName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false, true),
-            () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
+            () -> snp(grid(1)).deleteSnapshot(snapshotName, null).get(getTestTimeout()),
             e -> e.getMessage().contains("Deletion of the snapshot has already started"),
             false
         );

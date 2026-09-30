@@ -23,5 +23,5 @@ public class TestIgniteReleaseFeatures_2_19_1 {
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = TestIgniteReleaseFeatures_2_19_0.ROLLING_UPGRADE_FEATURE;
 
     /** */
-    public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = SupportedFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
+    public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = CoreFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
 }
