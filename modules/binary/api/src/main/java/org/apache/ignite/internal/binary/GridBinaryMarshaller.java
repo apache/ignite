@@ -288,6 +288,29 @@ public class GridBinaryMarshaller {
     }
 
     /**
+     * Marshals the object directly into the given stream, without allocating a trimmed copy of the whole result.
+     *
+     * @param obj Object to marshal.
+     * @param out Output stream.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void marshal(Object obj, BinaryOutputStream out) {
+        if (obj == null) {
+            out.writeByte(NULL);
+
+            return;
+        }
+
+        try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(ctx, false)) {
+            writer.marshal(obj);
+
+            BinaryOutputStream s = writer.out();
+
+            out.write(s.array(), 0, s.position());
+        }
+    }
+
+    /**
      * @param bytes Bytes array.
      * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
