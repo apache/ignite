@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.rollingupgrade.feature;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 
 /**
- * Declares the {@link IgniteFeature}s supported by the current Ignite version.
+ * Declares the {@link IgniteCoreFeature}s supported by the current Ignite version.
  * The complete set of declared {@link IgniteFeature}s defines the behavior of a node running the current version
  * and determines whether a Rolling Upgrade is supported between the current Ignite version and older Ignite versions.
  *
@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
  * @see IgniteFeatureManager
  * @see RollingUpgradeProcessor
  */
-public class SupportedFeatureRegistry {
+public class CoreFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 

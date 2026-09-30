@@ -75,7 +75,7 @@ public class JdbcQuery implements JdbcRawBinarylizable {
             writer.writeInt(args.length);
 
             for (Object arg : args)
-                SqlListenerUtils.writeObject(writer, arg, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
+                writer.writeJdbcObject(arg, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
         }
     }
 

@@ -42,7 +42,7 @@ interface BinaryStream {
     public byte[] arrayCopy();
 
     /**
-     * @return Offheap pointer if stream is offheap based and "forceHeap" flag is not set; otherwise {@code 0}.
+     * @return Offheap pointer if stream is offheap based; otherwise {@code 0}.
      */
     public long offheapPointer();
 
