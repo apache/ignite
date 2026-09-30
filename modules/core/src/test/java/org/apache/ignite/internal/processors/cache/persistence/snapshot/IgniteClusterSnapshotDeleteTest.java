@@ -627,8 +627,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         commSpi1.blockMessages((node, msg) ->
             msg instanceof SingleNodeMessage<?> msg0 && msg0.type() == DELETE_SNAPSHOT.ordinal());
 
-        var delFut0 = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
-        var delFut1 = snp(grid(1)).deleteSnapshot(secondSnpName, secondSnpPath);
+        IgniteFuture<SnapshotDeleteProcessResult> delFut0 = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+        IgniteFuture<SnapshotDeleteProcessResult> delFut1 = snp(grid(1)).deleteSnapshot(secondSnpName, secondSnpPath);
 
         commSpi1.waitForBlocked(2, getTestTimeout());
 
@@ -732,10 +732,10 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             F.asList(START_SNAPSHOT),
             false,
             () -> {
-                snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+                snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME.toLowerCase(), null).get(getTestTimeout());
 
                 if (incremental)
-                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME.toLowerCase()).get(getTestTimeout());
             },
             "Snapshot with the same name is being created",
             false,
