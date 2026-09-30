@@ -211,7 +211,7 @@ public class SnapshotDeleteProcess {
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
                     try {
                         // Read file tree of the snapshot.
-                        var byMetaSft = new SnapshotFileTree(
+                        SnapshotFileTree byMetaSft = new SnapshotFileTree(
                             kctx.config(),
                             kctx.pdsFolderResolver().fileTree(),
                             req.snpName,
@@ -219,6 +219,13 @@ public class SnapshotDeleteProcess {
                             meta.folderName(),
                             meta.consId
                         );
+
+                        // Prevents running if the resulting compound future is already stopped with an error.
+                        if (resultFut.error() != null) {
+                            perMetaFut.onDone(resultFut.error());
+
+                            return;
+                        }
 
                         T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft, true);
 
@@ -296,7 +303,7 @@ public class SnapshotDeleteProcess {
             Map<UUID, String> completedNodes = U.newHashMap(results.size());
             Map<UUID, String> uncompletedNodes = U.newHashMap(results.size());
             Map<UUID, String> emptyNodes = U.newHashMap(results.size());
-            var snpNodes = new HashSet<String>();
+            Set<String> snpNodes = new HashSet<>();
 
             results.forEach((nodeId, nodeRes) -> {
                 if (!F.isEmpty(nodeRes.nodeIds))
