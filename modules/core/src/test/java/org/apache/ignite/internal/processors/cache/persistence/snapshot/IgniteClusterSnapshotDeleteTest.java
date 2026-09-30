@@ -656,14 +656,33 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Tests that a snapshot deletion is declined when a snapshot check operation is in progress when the delete operation
-     * uses changed character case in the snapshot name.
+     * Tests that a snapshot deletion is declined when a snapshot check operation is in progress.
+     *
+     * @see SnapshotCheckProcess#isSnapshotChecking(String)
+     */
+    @Test
+    public void testSnapshotDeleteWhenCheckInProgress() throws Exception {
+        SnapshotPartitionsVerifyResult res = doTestConcurrentSnapshotDelete(
+            () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null, incremental ? 1 : 0)),
+            F.asList(CHECK_SNAPSHOT_METAS),
+            true,
+            null,
+            SnapshotDeleteProcess.BEING_CREATED_PREF,
+            false,
+            true
+        );
+
+        assertFalse(res == null);
+        assertTrue(F.isEmpty(res.exceptions()));
+    }
+
+    /**
+     * Tests that a snapshot deletion is declined when a snapshot check operation with other name case is in progress.
      *
      * @see SnapshotCheckProcess#isSnapshotChecking(String)
      */
     @Test
     public void testSnapshotDeleteWhenCheckInProgressNameCase() throws Exception {
-        // For case-insensitive file systems only.
         assumeTrue(caseInsensetiveFs);
 
         SnapshotPartitionsVerifyResult res = doTestConcurrentSnapshotDelete(
@@ -680,7 +699,9 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         assertTrue(F.isEmpty(res.exceptions()));
     }
 
-    /** Tests that a snapshot deletion is declined when a snapshot create operation is in progress. */
+    /**
+     * Tests that a snapshot deletion is declined when a snapshot create operation is in progress.
+     */
     @Test
     public void testSnapshotDeleteWhenCreateInProgress() throws Exception {
         doTestConcurrentSnapshotDelete(
@@ -700,20 +721,21 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Tests that a snapshot deletion is declined when a snapshot create operation is in progress when the delete operation
-     * uses changed character case in the snapshot name.
+     * Tests that a snapshot deletion is declined when a snapshot create operation is in progress with other name case.
      */
     @Test
     public void testSnapshotDeleteWhenCreateInProgressNameCase() throws Exception {
+        assumeTrue(caseInsensetiveFs);
+
         doTestConcurrentSnapshotDelete(
             () -> snp(grid(0)).createSnapshot(SNAPSHOT_NAME.toLowerCase(), null, incremental, onlyPrimary),
             F.asList(START_SNAPSHOT),
             false,
             () -> {
-                snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME.toLowerCase(), null).get(getTestTimeout());
+                snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
 
                 if (incremental)
-                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME.toLowerCase()).get(getTestTimeout());
+                    snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
             },
             "Snapshot with the same name is being created",
             false,
@@ -745,14 +767,12 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Tests that a snapshot deletion is declined when a snapshot restore begins when the delete operation uses
-     * changed character case in the snapshot name.
+     * Tests that a snapshot deletion is declined when a snapshot restore begins with other name case.
      *
      * @see SnapshotCheckProcess#isSnapshotChecking(String)
      */
     @Test
     public void testSnapshotDeleteWhenRestoreBeginsNameCase() throws Exception {
-        // For case-insensitive file systems only.
         assumeTrue(caseInsensetiveFs);
 
         doTestConcurrentSnapshotDelete(
@@ -812,14 +832,12 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Tests that a snapshot deletion is declined when a snapshot restore is in progress when the delete operation uses
-     * changed character case in the snapshot name.
+     * Tests that a snapshot deletion is declined when a snapshot restore is in progress with other name case.
      *
      * @see IgniteSnapshotManager#isRestoring(String)
      */
     @Test
     public void testSnapshotDeleteWhenRestoreInProgressNameCase() throws Exception {
-        // For case-insensitive file systems only.
         assumeTrue(caseInsensetiveFs);
 
         var restoreMsgs = F.asList(
