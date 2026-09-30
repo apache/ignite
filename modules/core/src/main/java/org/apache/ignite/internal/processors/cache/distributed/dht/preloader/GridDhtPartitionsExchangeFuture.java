@@ -3548,9 +3548,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             throw new IgniteException(e);
         }
 
-        // Local partitions changed their states after this node had sent its partition map: a lost partition was
-        // owned under the IGNORE policy or marked LOST. Send the maps again, otherwise the coordinator can keep
-        // a state the node reported earlier.
+        // Detecting lost partitions changed local partition states: a lost partition was owned under the IGNORE policy
+        // or marked LOST. Send the maps again, otherwise the coordinator can keep a state this node reported before.
         if (!changedGrps.isEmpty()) {
             if (log.isDebugEnabled()) {
                 log.debug("Refresh partitions due to lost partitions detected [grps=" +
