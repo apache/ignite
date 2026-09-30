@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
-import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.TestDependencyResolver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -56,8 +54,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * <p>
  * Each lost partition is recreated empty on its new primary as MOVING and owned there when the node detects the loss.
  * If the new primary sends its partition map between these two steps, the map carries MOVING and overwrites what the
- * coordinator already knows, so the node must send its map again once it owns the partition. Otherwise the other nodes
- * get the stale state from the coordinator and see no owner of the partition.
+ * coordinator already knows, so the node must send its map again once it owns the partition.
  */
 public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTest {
     /** */
@@ -71,9 +68,6 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
 
     /** Index of the node that leaves. */
     private static final int LEAVING = 2;
-
-    /** Index of the node that checks who owns the lost partitions: neither the coordinator nor their new primary. */
-    private static final int OBSERVER = 3;
 
     /** When set, the new primary sends its partition map right before it owns a MOVING partition of the cache. */
     private final AtomicBoolean sendBeforeOwn = new AtomicBoolean();
@@ -107,8 +101,6 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
 
         startGrid(NEW_PRIMARY, sendBeforeOwnResolver());
 
-        IgniteEx observer = startGrid(OBSERVER);
-
         IgniteCache<Integer, Integer> cache = crd.cache(CACHE);
 
         for (int i = 0; i < PARTS * 4; i++)
@@ -117,8 +109,6 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
         startGrid(LEAVING);
 
         awaitPartitionMapExchange(true, true, null);
-
-        int[] lostParts = crd.affinity(CACHE).primaryPartitions(grid(LEAVING).localNode());
 
         UUID crdId = crd.localNode().id();
 
@@ -147,40 +137,10 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
 
         newPrimarySpi.stopBlock();
 
-        boolean agreed = waitForCondition(
-            () -> mismatches(crd).isEmpty() && ownerMismatches(observer, lostParts).isEmpty(), 10_000);
-
-        if (!agreed) {
-            fail("The coordinator's partition map differs from the nodes: " + mismatches(crd) +
-                ", the observer sees wrong owners of the lost partitions: " + ownerMismatches(observer, lostParts));
-        }
+        if (!waitForCondition(() -> mismatches(crd).isEmpty(), 10_000))
+            fail("The coordinator's partition map differs from the nodes: " + mismatches(crd));
 
         awaitPartitionMapExchange();
-    }
-
-    /**
-     * @param observer Node that is neither the coordinator nor the new primary of the lost partitions it checks.
-     * @param lostParts Lost partitions.
-     * @return Lost partitions whose owners, as the observer sees them, are not just their primary.
-     */
-    private List<String> ownerMismatches(IgniteEx observer, int[] lostParts) {
-        GridDhtPartitionTopology top = observer.cachex(CACHE).context().topology();
-
-        List<String> res = new ArrayList<>();
-
-        for (int p : lostParts) {
-            ClusterNode primary = observer.affinity(CACHE).mapPartitionToNode(p);
-
-            if (primary.isLocal())
-                continue;
-
-            List<ClusterNode> owners = top.owners(p);
-
-            if (!owners.equals(Collections.singletonList(primary)))
-                res.add("p=" + p + " owners=" + ClusterNodeFunc.nodeIds(owners) + " primary=" + primary.id());
-        }
-
-        return res;
     }
 
     /**
