@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -157,7 +158,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     /** Header-only serializer for the fieldless {@link MarshalOnceCheckMessage}. */
     private static class Serializer implements MessageSerializer<MarshalOnceCheckMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(MarshalOnceCheckMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(MarshalOnceCheckMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
                     return false;
@@ -169,7 +170,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(MarshalOnceCheckMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(MarshalOnceCheckMessage msg, MessageReader reader, MessageSerializationContext ctx) {
             return true;
         }
 
@@ -209,7 +210,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     /** Header-only serializer for the fieldless {@link RetryCheckMessage}. */
     private static class RetrySerializer implements MessageSerializer<RetryCheckMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(RetryCheckMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(RetryCheckMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
                     return false;
@@ -221,7 +222,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(RetryCheckMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(RetryCheckMessage msg, MessageReader reader, MessageSerializationContext ctx) {
             return true;
         }
 

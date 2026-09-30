@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -85,6 +86,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
+import static org.apache.ignite.internal.util.nio.MessageSerialization.resolveSerializationContext;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -1443,6 +1445,8 @@ public class GridNioServer<T> {
 
             MessageWriter writer = messageWriter(ses);
 
+            MessageSerializationContext serCtx = resolveSerializationContext(ses);
+
             boolean handshakeFinished = sslFilter.lock(ses);
 
             try {
@@ -1506,7 +1510,7 @@ public class GridNioServer<T> {
                     List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
 
                     if (req != null)
-                        finished = writeToBuffer(writer, buf, req, pendingRequests);
+                        finished = writeToBuffer(writer, buf, req, pendingRequests, serCtx);
 
                     // Fill up as many messages as possible to write buffer.
                     while (finished) {
@@ -1518,7 +1522,7 @@ public class GridNioServer<T> {
                         if (req == null)
                             break;
 
-                        finished = writeToBuffer(writer, buf, req, pendingRequests);
+                        finished = writeToBuffer(writer, buf, req, pendingRequests, serCtx);
                     }
 
                     int sesBufLimit = buf.limit();
@@ -1592,13 +1596,15 @@ public class GridNioServer<T> {
          * @param buf Buffer to write.
          * @param req Source of data.
          * @param pendingRequests List of requests which was successfully written.
+         * @param serCtx Serialization context of the session.
          * @return {@code true} if message successfully written to buffer and {@code false} otherwise.
          */
         private boolean writeToBuffer(
             MessageWriter writer,
             ByteBuffer buf,
             SessionWriteRequest req,
-            List<SessionWriteRequest> pendingRequests
+            List<SessionWriteRequest> pendingRequests,
+            MessageSerializationContext serCtx
         ) {
             Message msg;
             boolean finished;
@@ -1614,7 +1620,7 @@ public class GridNioServer<T> {
             else {
                 writer.setBuffer(buf);
 
-                finished = MessageSerialization.writeTo(messageFactory(), msg, writer);
+                finished = MessageSerialization.writeTo(messageFactory(), msg, writer, serCtx);
             }
 
             if (finished) {
@@ -1692,6 +1698,8 @@ public class GridNioServer<T> {
 
             MessageWriter writer = messageWriter(ses);
 
+            MessageSerializationContext serCtx = resolveSerializationContext(ses);
+
             if (req == null) {
                 req = systemMessage(ses);
 
@@ -1709,7 +1717,7 @@ public class GridNioServer<T> {
             boolean finished = false;
 
             if (req != null)
-                finished = writeToBuffer(ses, buf, req, writer);
+                finished = writeToBuffer(ses, buf, req, writer, serCtx);
 
             // Fill up as many messages as possible to write buffer.
             while (finished) {
@@ -1723,7 +1731,7 @@ public class GridNioServer<T> {
                 if (req == null)
                     break;
 
-                finished = writeToBuffer(ses, buf, req, writer);
+                finished = writeToBuffer(ses, buf, req, writer, serCtx);
             }
 
             buf.flip();
@@ -1781,14 +1789,20 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param writer Customizer of writing.
+         * @param ses Session the message is written to.
          * @param buf Buffer to write.
          * @param req Source of data.
-         * @param ses Session for notification about writting.
+         * @param writer Customizer of writing.
+         * @param serCtx Serialization context of the session.
          * @return {@code true} if message successfully written to buffer and {@code false} otherwise.
          */
-        private boolean writeToBuffer(GridSelectorNioSessionImpl ses, ByteBuffer buf, SessionWriteRequest req,
-            MessageWriter writer) {
+        private boolean writeToBuffer(
+            GridSelectorNioSessionImpl ses,
+            ByteBuffer buf,
+            SessionWriteRequest req,
+            MessageWriter writer,
+            MessageSerializationContext serCtx
+        ) {
             Message msg;
             boolean finished;
             msg = (Message)req.message();
@@ -1803,7 +1817,7 @@ public class GridNioServer<T> {
             else {
                 writer.setBuffer(buf);
 
-                finished = MessageSerialization.writeTo(msgFactory, msg, writer);
+                finished = MessageSerialization.writeTo(msgFactory, msg, writer, serCtx);
             }
 
             if (finished) {

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -87,7 +88,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
     private static final MessageMapType uuidStringMapCollDesc = new MessageMapType(new MessageItemType(MessageCollectionItemType.UUID), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
-    @Override public final boolean writeTo(TestMapMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMapMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -97,157 +98,157 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMap(msg.booleanArrayBoxedLongMap, booleanArrayBoxedLongMapCollDesc))
+                if (!writer.writeMap(msg.booleanArrayBoxedLongMap, booleanArrayBoxedLongMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMap(msg.byteArrayBooleanArrayMap, byteArrayBooleanArrayMapCollDesc))
+                if (!writer.writeMap(msg.byteArrayBooleanArrayMap, byteArrayBooleanArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMap(msg.shortArrayByteArrayMap, shortArrayByteArrayMapCollDesc))
+                if (!writer.writeMap(msg.shortArrayByteArrayMap, shortArrayByteArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMap(msg.intArrayShortArrayMap, intArrayShortArrayMapCollDesc))
+                if (!writer.writeMap(msg.intArrayShortArrayMap, intArrayShortArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap(msg.longArrayIntArrayMap, longArrayIntArrayMapCollDesc))
+                if (!writer.writeMap(msg.longArrayIntArrayMap, longArrayIntArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMap(msg.charArrayLongArrayMap, charArrayLongArrayMapCollDesc))
+                if (!writer.writeMap(msg.charArrayLongArrayMap, charArrayLongArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMap(msg.floatArrayCharArrayMap, floatArrayCharArrayMapCollDesc))
+                if (!writer.writeMap(msg.floatArrayCharArrayMap, floatArrayCharArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMap(msg.doubleArrayFloatArrayMap, doubleArrayFloatArrayMapCollDesc))
+                if (!writer.writeMap(msg.doubleArrayFloatArrayMap, doubleArrayFloatArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMap(msg.stringDoubleArrayMap, stringDoubleArrayMapCollDesc))
+                if (!writer.writeMap(msg.stringDoubleArrayMap, stringDoubleArrayMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMap(msg.uuidStringMap, uuidStringMapCollDesc))
+                if (!writer.writeMap(msg.uuidStringMap, uuidStringMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMap(msg.bitSetUuidMap, bitSetUuidMapCollDesc))
+                if (!writer.writeMap(msg.bitSetUuidMap, bitSetUuidMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMap(msg.igniteUuidBitSetMap, igniteUuidBitSetMapCollDesc))
+                if (!writer.writeMap(msg.igniteUuidBitSetMap, igniteUuidBitSetMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeMap(msg.affTopVersionIgniteUuidMap, affTopVersionIgniteUuidMapCollDesc))
+                if (!writer.writeMap(msg.affTopVersionIgniteUuidMap, affTopVersionIgniteUuidMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMap(msg.boxedBooleanAffTopVersionMap, boxedBooleanAffTopVersionMapCollDesc))
+                if (!writer.writeMap(msg.boxedBooleanAffTopVersionMap, boxedBooleanAffTopVersionMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeMap(msg.boxedByteBoxedBooleanMap, boxedByteBoxedBooleanMapCollDesc))
+                if (!writer.writeMap(msg.boxedByteBoxedBooleanMap, boxedByteBoxedBooleanMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMap(msg.boxedShortBoxedByteMap, boxedShortBoxedByteMapCollDesc))
+                if (!writer.writeMap(msg.boxedShortBoxedByteMap, boxedShortBoxedByteMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeMap(msg.boxedIntBoxedShortMap, boxedIntBoxedShortMapCollDesc))
+                if (!writer.writeMap(msg.boxedIntBoxedShortMap, boxedIntBoxedShortMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeMap(msg.boxedLongBoxedIntMap, boxedLongBoxedIntMapCollDesc))
+                if (!writer.writeMap(msg.boxedLongBoxedIntMap, boxedLongBoxedIntMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeMap(msg.boxedCharBoxedLongMap, boxedCharBoxedLongMapCollDesc))
+                if (!writer.writeMap(msg.boxedCharBoxedLongMap, boxedCharBoxedLongMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeMap(msg.boxedFloatBoxedCharMap, boxedFloatBoxedCharMapCollDesc))
+                if (!writer.writeMap(msg.boxedFloatBoxedCharMap, boxedFloatBoxedCharMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeMap(msg.boxedDoubleBoxedFloatMap, boxedDoubleBoxedFloatMapCollDesc))
+                if (!writer.writeMap(msg.boxedDoubleBoxedFloatMap, boxedDoubleBoxedFloatMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeMap(msg.messageBoxedDoubleMap, messageBoxedDoubleMapCollDesc))
+                if (!writer.writeMap(msg.messageBoxedDoubleMap, messageBoxedDoubleMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeMap(msg.integerGridLongListMap, integerGridLongListMapCollDesc))
+                if (!writer.writeMap(msg.integerGridLongListMap, integerGridLongListMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMap(msg.gridLongListIntegerMap, gridLongListIntegerMapCollDesc))
+                if (!writer.writeMap(msg.gridLongListIntegerMap, gridLongListIntegerMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeMap(msg.gridlistDoubleMapUuidMap, gridlistDoubleMapUuidMapCollDesc))
+                if (!writer.writeMap(msg.gridlistDoubleMapUuidMap, gridlistDoubleMapUuidMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeMap(msg.gridCacheObjectMap, gridCacheObjectMapCollDesc))
+                if (!writer.writeMap(msg.gridCacheObjectMap, gridCacheObjectMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
@@ -257,10 +258,10 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
     }
 
     /** */
-    @Override public final boolean readFrom(TestMapMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMapMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
-                msg.booleanArrayBoxedLongMap = reader.readMap(booleanArrayBoxedLongMapCollDesc);
+                msg.booleanArrayBoxedLongMap = reader.readMap(booleanArrayBoxedLongMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -268,7 +269,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 1:
-                msg.byteArrayBooleanArrayMap = reader.readMap(byteArrayBooleanArrayMapCollDesc);
+                msg.byteArrayBooleanArrayMap = reader.readMap(byteArrayBooleanArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -276,7 +277,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 2:
-                msg.shortArrayByteArrayMap = reader.readMap(shortArrayByteArrayMapCollDesc);
+                msg.shortArrayByteArrayMap = reader.readMap(shortArrayByteArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -284,7 +285,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 3:
-                msg.intArrayShortArrayMap = reader.readMap(intArrayShortArrayMapCollDesc);
+                msg.intArrayShortArrayMap = reader.readMap(intArrayShortArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -292,7 +293,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 4:
-                msg.longArrayIntArrayMap = reader.readMap(longArrayIntArrayMapCollDesc);
+                msg.longArrayIntArrayMap = reader.readMap(longArrayIntArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +301,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 5:
-                msg.charArrayLongArrayMap = reader.readMap(charArrayLongArrayMapCollDesc);
+                msg.charArrayLongArrayMap = reader.readMap(charArrayLongArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,7 +309,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 6:
-                msg.floatArrayCharArrayMap = reader.readMap(floatArrayCharArrayMapCollDesc);
+                msg.floatArrayCharArrayMap = reader.readMap(floatArrayCharArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -316,7 +317,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 7:
-                msg.doubleArrayFloatArrayMap = reader.readMap(doubleArrayFloatArrayMapCollDesc);
+                msg.doubleArrayFloatArrayMap = reader.readMap(doubleArrayFloatArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +325,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 8:
-                msg.stringDoubleArrayMap = reader.readMap(stringDoubleArrayMapCollDesc);
+                msg.stringDoubleArrayMap = reader.readMap(stringDoubleArrayMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -332,7 +333,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 9:
-                msg.uuidStringMap = reader.readMap(uuidStringMapCollDesc);
+                msg.uuidStringMap = reader.readMap(uuidStringMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -340,7 +341,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 10:
-                msg.bitSetUuidMap = reader.readMap(bitSetUuidMapCollDesc);
+                msg.bitSetUuidMap = reader.readMap(bitSetUuidMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -348,7 +349,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 11:
-                msg.igniteUuidBitSetMap = reader.readMap(igniteUuidBitSetMapCollDesc);
+                msg.igniteUuidBitSetMap = reader.readMap(igniteUuidBitSetMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -356,7 +357,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 12:
-                msg.affTopVersionIgniteUuidMap = reader.readMap(affTopVersionIgniteUuidMapCollDesc);
+                msg.affTopVersionIgniteUuidMap = reader.readMap(affTopVersionIgniteUuidMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -364,7 +365,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 13:
-                msg.boxedBooleanAffTopVersionMap = reader.readMap(boxedBooleanAffTopVersionMapCollDesc);
+                msg.boxedBooleanAffTopVersionMap = reader.readMap(boxedBooleanAffTopVersionMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -372,7 +373,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 14:
-                msg.boxedByteBoxedBooleanMap = reader.readMap(boxedByteBoxedBooleanMapCollDesc);
+                msg.boxedByteBoxedBooleanMap = reader.readMap(boxedByteBoxedBooleanMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -380,7 +381,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 15:
-                msg.boxedShortBoxedByteMap = reader.readMap(boxedShortBoxedByteMapCollDesc);
+                msg.boxedShortBoxedByteMap = reader.readMap(boxedShortBoxedByteMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -388,7 +389,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 16:
-                msg.boxedIntBoxedShortMap = reader.readMap(boxedIntBoxedShortMapCollDesc);
+                msg.boxedIntBoxedShortMap = reader.readMap(boxedIntBoxedShortMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -396,7 +397,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 17:
-                msg.boxedLongBoxedIntMap = reader.readMap(boxedLongBoxedIntMapCollDesc);
+                msg.boxedLongBoxedIntMap = reader.readMap(boxedLongBoxedIntMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -404,7 +405,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 18:
-                msg.boxedCharBoxedLongMap = reader.readMap(boxedCharBoxedLongMapCollDesc);
+                msg.boxedCharBoxedLongMap = reader.readMap(boxedCharBoxedLongMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -412,7 +413,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 19:
-                msg.boxedFloatBoxedCharMap = reader.readMap(boxedFloatBoxedCharMapCollDesc);
+                msg.boxedFloatBoxedCharMap = reader.readMap(boxedFloatBoxedCharMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -420,7 +421,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 20:
-                msg.boxedDoubleBoxedFloatMap = reader.readMap(boxedDoubleBoxedFloatMapCollDesc);
+                msg.boxedDoubleBoxedFloatMap = reader.readMap(boxedDoubleBoxedFloatMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -428,7 +429,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 21:
-                msg.messageBoxedDoubleMap = reader.readMap(messageBoxedDoubleMapCollDesc);
+                msg.messageBoxedDoubleMap = reader.readMap(messageBoxedDoubleMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -436,7 +437,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 22:
-                msg.integerGridLongListMap = reader.readMap(integerGridLongListMapCollDesc);
+                msg.integerGridLongListMap = reader.readMap(integerGridLongListMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -444,7 +445,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 23:
-                msg.gridLongListIntegerMap = reader.readMap(gridLongListIntegerMapCollDesc);
+                msg.gridLongListIntegerMap = reader.readMap(gridLongListIntegerMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -452,7 +453,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 24:
-                msg.gridlistDoubleMapUuidMap = reader.readMap(gridlistDoubleMapUuidMapCollDesc);
+                msg.gridlistDoubleMapUuidMap = reader.readMap(gridlistDoubleMapUuidMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -460,7 +461,7 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                 reader.incrementState();
 
             case 25:
-                msg.gridCacheObjectMap = reader.readMap(gridCacheObjectMapCollDesc);
+                msg.gridCacheObjectMap = reader.readMap(gridCacheObjectMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
