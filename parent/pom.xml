@@ -106,7 +106,7 @@
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
         <jts.version>1.20.0</jts.version>
-        <junit.version>4.13.1</junit.version>
+        <junit4.version>4.13.1</junit4.version>
         <log4j2.version>2.26.1</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.4</lucene.version>
@@ -239,7 +239,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <version>${junit4.version}</version>
             <scope>test</scope>
         </dependency>
 
