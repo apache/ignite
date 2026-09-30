@@ -217,14 +217,14 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         out = testOut.toString();
 
         if (changeBaseline)
-            assertTrue(out.contains(SnapshotDeleteCommand.MISSING_BASELINES + "[cnt=1]: " + baselineGone));
+            assertTrue(out.contains(SnapshotDeleteCommand.MISSING_BASELINES + baselineGone));
 
         if (separatedWorkDir) {
             // When the nodes use own separated work directory, we expect a strict result.
-            assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF + "[cnt=%d]:".formatted(initNodes)));
+            assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF));
 
             if (extraServerNode)
-                assertTrue(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF + "[cnt=1]:"));
+                assertTrue(out.contains(SnapshotDeleteCommand.NODE_NOT_FOUND_PREF));
         }
         else {
             // When nodes use a shared work directory, there is a race for the delete operation. One node can get faster

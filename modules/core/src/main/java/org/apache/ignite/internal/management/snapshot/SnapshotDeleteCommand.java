@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -46,14 +45,14 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** */
     public static final String NODE_NOT_FOUND_PREF = "NOTE: the following nodes can't find any snapshot data, " +
-        "operation skipped ";
+        "operation skipped: ";
 
     /** */
     public static final String NOT_FOUND = "Snapshot not found on available server nodes.";
 
     /** */
     public static final String MISSING_BASELINES = "WARNING: the snapshot's baseline nodes with the following consistent " +
-        "ids are missing in current cluster ";
+        "ids are missing in current cluster: ";
 
     /**
      * {@inheritDoc}
@@ -96,7 +95,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
                 printer.accept(NODE_NOT_FOUND_PREF + nodeIdPairsStrLst(res.emptyNodes()));
 
             if (!res.absentBaselines().isEmpty())
-                printer.accept(MISSING_BASELINES + nodeIdsStrLst(res.absentBaselines()));
+                printer.accept(MISSING_BASELINES + String.join(", ", res.absentBaselines()));
         }
         else {
             assert !res.emptyNodes().isEmpty();
@@ -107,14 +106,9 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** */
     private static String nodeIdPairsStrLst(Map<UUID, String> uuids) {
-        return "[cnt=" + uuids.size() + "]: " + uuids.entrySet().stream()
+        return uuids.entrySet().stream()
             .map(e -> e.getValue() + " [uuid=" + e.getKey() + ']')
             .collect(Collectors.joining(", "));
-    }
-
-    /** */
-    private static String nodeIdsStrLst(Collection<String> uuids) {
-        return "[cnt=" + uuids.size() + "]: " + String.join(", ", uuids);
     }
 
     /** {@inheritDoc} */
