@@ -240,13 +240,6 @@ public class SnapshotDeleteProcess {
                             meta.consId
                         );
 
-                        // Prevents running if the resulting compound future is already stopped with an error.
-                        if (resultFut.error() != null) {
-                            perMetaFut.onDone(resultFut.error());
-
-                            return;
-                        }
-
                         T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft, true);
 
                         SnapshotDeleteResponse.DeleteStatus status;
