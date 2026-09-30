@@ -361,8 +361,6 @@ public class SnapshotDeleteProcess {
         interrupted = true;
 
         clusterOpFuts.forEach((reqId, clusterOpFut) -> clusterOpFut.onDone(err));
-
-        clusterOpFuts.clear();
     }
 
     /** */
