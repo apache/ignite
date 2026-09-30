@@ -34,7 +34,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
 
 /**
  * @see IgniteSnapshotManager#deleteSnapshot(String, String)

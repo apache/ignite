@@ -153,6 +153,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected static final int PAGE_SIZE =
         IgniteSystemProperties.getInteger(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, DFLT_PAGE_SIZE);
 
+    /** */
+    protected static boolean caseInsensetiveFs;
+
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
 
@@ -209,6 +212,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
             ? F.asList(false)
             : F.asList(false, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        File workDir = new File(U.defaultWorkDirectory());
+
+        caseInsensetiveFs = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
+            new File(workDir.getAbsolutePath().toUpperCase()).exists();
     }
 
     /** {@inheritDoc} */
@@ -847,8 +860,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
     }
 
-    /** Tests concurrent snapshot deletion. */
-    protected void doTestConcurrentSnapshotDeleteOperation(
+    /** Tests concurrent snapshot operation when snapshot deletion with the same name is active. */
+    protected void doConcurrentSnapshotOperationWhenDeletionIsActive(
         ExRunnable prepareCluster,
         ExRunnable concurrentOp,
         @Nullable Function<Exception, Boolean> errValidator,

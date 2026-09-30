@@ -23,13 +23,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Snapshot deletion command.
  *
- * @see SupportedFeatureRegistry#SNAPSHOT_DELETE_FEATURE
+ * @see CoreFeatureRegistry#SNAPSHOT_DELETE_FEATURE
  * @see SnapshotDeleteProcess
  */
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
