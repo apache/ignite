@@ -30,7 +30,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Sort aggregate integration test.
