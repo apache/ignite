@@ -3042,12 +3042,12 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryMarshaller marsh = binaryMarshaller();
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(binaryContext(marsh), false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID)) {
+        try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(binaryContext(marsh), false)) {
             assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
             writer.writeString("Thread local test");
 
-            writer.array();
+            writer.out().arrayCopy();
 
             assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
         }

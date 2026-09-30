@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration test for user defined functions.

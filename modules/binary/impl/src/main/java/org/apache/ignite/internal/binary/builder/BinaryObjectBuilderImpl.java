@@ -37,7 +37,7 @@ import org.apache.ignite.internal.binary.BinaryImplUtils;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.CommonUtils;
@@ -177,7 +177,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
     @Override public BinaryObject build() {
         Thread curThread = Thread.currentThread();
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(
+        try (BinaryWriterExImpl writer = BinariesFactoryImpl.newWriter(
             ctx,
             curThread instanceof IgniteThread && ((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata(),
             typeId)
@@ -188,7 +188,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             serializeTo(writer, serializationCtx);
 
-            byte[] arr = writer.array();
+            byte[] arr = writer.out().arrayCopy();
 
             return new BinaryObjectImpl(ctx, arr, 0);
         }
@@ -198,7 +198,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
      * @param writer Writer.
      * @param serializer Serializer.
      */
-    void serializeTo(BinaryWriterEx writer, BinaryBuilderSerializer serializer) {
+    void serializeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer serializer) {
         try {
             writer.preWrite(registeredType ? null : clsNameToWrite);
 
@@ -249,7 +249,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
                 int idx = 0;
 
                 while (reader.position() < rawPos) {
-                    int fieldId = BinaryImplUtils.fieldId(reader.reader(), idx++);
+                    int fieldId = reader.reader().getOrCreateSchema().fieldId(idx++);
                     int fieldLen =
                         fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen).get2();
 
@@ -475,7 +475,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
             int idx = 0;
 
             while (footerPos + fieldIdLen < footerEnd) {
-                int fieldId = BinaryImplUtils.fieldId(reader.reader(), idx++);
+                int fieldId = reader.reader().getOrCreateSchema().fieldId(idx++);
 
                 IgniteBiTuple<Integer, Integer> posAndLen =
                     fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
