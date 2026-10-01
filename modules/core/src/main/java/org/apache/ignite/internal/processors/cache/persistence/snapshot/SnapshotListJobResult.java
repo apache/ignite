@@ -38,16 +38,26 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     @Order(2)
     long[] creationTimes;
 
+    /** */
+    @Order(3)
+    int[] incCnt;
+
+    /** */
+    @Order(4)
+    long[] incSizes;
+
     /** Default constructor for serialization purposes. */
     public SnapshotListJobResult() {
         // No-op.
     }
 
     /** */
-    public SnapshotListJobResult(String[] snpNames, long[] sizes, long[] creationTimes) {
+    public SnapshotListJobResult(String[] snpNames, long[] sizes, long[] creationTimes, int[] incCnt, long[] incSizes) {
         this.snpNames = snpNames;
         this.sizes = sizes;
         this.creationTimes = creationTimes;
+        this.incCnt = incCnt;
+        this.incSizes = incSizes;
     }
 
     /** */
@@ -63,5 +73,15 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     /** */
     public long[] creationTimes() {
         return creationTimes;
+    }
+
+    /** */
+    public int[] incrementalsCount() {
+        return incCnt;
+    }
+
+    /** */
+    public long[] incrementalsSizes() {
+        return incSizes;
     }
 }

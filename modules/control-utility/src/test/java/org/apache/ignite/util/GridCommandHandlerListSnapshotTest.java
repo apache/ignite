@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -55,15 +56,19 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     @Parameter(3)
     public boolean addExtraSrvr;
 
+    /** */
+    @Parameter(4)
+    public int incCnt;
 
     /** */
-    @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2},addExtraSrvr={3}")
+    @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2},addExtraSrvr={3},incCnt={4}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
             F.asList(false, true), // Use custom snapshot path
             F.asList(false, true), // Separated (own) work directory
-            F.asList(true) // Add server node
+            F.asList(false, true), // Add server node
+            F.asList(2) // TODO : Number of incremental snapshots
         );
     }
 
@@ -102,6 +107,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         if (separatedWorkDir)
             cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
 
+        cfg.getDataStorageConfiguration().setWalCompactionEnabled(incCnt > 0);
+
         return cfg;
     }
 
@@ -129,7 +136,10 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // work directories are set.
         assumeTrue(!customPath || !separatedWorkDir);
 
+        assumeTrue(incCnt < 1 || snpCnt > 0);
+
         int srvrsCnt = 3;
+        int entriesCnt = 20;
 
         IgniteEx ig = (IgniteEx)startGridsMultiThreaded(srvrsCnt);
 
@@ -141,20 +151,33 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             ? new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
             : null;
 
+        // Create shapshots.
         if (snpCnt > 0) {
             createCacheAndPreload(ig, 10);
 
-            for (int i = 0; i < snpCnt; ++i) {
-                snp(ig).createSnapshot("testSnapshot" + i, customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
+            for (int s = 0; s < snpCnt; ++s) {
+                snp(ig).createSnapshot("testSnapshot" + s, customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
                     .get(getTestTimeout());
+
+                for (int i = 0; i < incCnt; ++i) {
+                    try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                        for (int k = (i + 1) * entriesCnt; k < (i + 2) * entriesCnt; ++k)
+                            ds.addData(k, k);
+                    }
+
+                    snp(ig).createSnapshot("testSnapshot" + s, customPath ? cstSnpsRoot.getAbsolutePath() : null, true, false)
+                        .get(getTestTimeout());
+                }
             }
         }
 
+        // Add a server.
         if (addExtraSrvr)
             startGrid(G.allGrids().size());
 
         injectTestSystemOut();
 
+        // Requests snapshots.
         if (customPath) {
             assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list", "--src",
                 cstSnpsRoot.getAbsolutePath()));
@@ -164,12 +187,14 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         String out = testOut.toString();
 
+        // Find the nodes in the output.
         for (Ignite g : G.allGrids()) {
             ClusterNode n = g.cluster().localNode();
 
             assertEquals(n.isClient() ? 0 : 1, countEntries(out, "Node '%s'".formatted(n.consistentId().toString())));
         }
 
+        // Ensure that there are no snapshots.
         if (snpCnt == 0) {
             assertFalse(out.contains("Snapshot '"));
 
@@ -182,10 +207,11 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         // The additional server node doesn't have snapshots. But it can see them if shared the snapshot directory.
         int snpsRecordsCnt = srvrsCnt + (addExtraSrvr
-            ? separatedWorkDir ? 0 : 1
+            ? (separatedWorkDir ? 0 : 1)
             : 0
         );
 
+        // Find the snapshots in the output.
         for (int i = 0; i < snpCnt; ++i)
             assertEquals(snpsRecordsCnt, countEntries(out, "Snapshot 'testSnapshot" + i + "'"));
     }
