@@ -78,9 +78,10 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 long size = nodeSnps.sizes()[s];
                 long epochTime = nodeSnps.creationTimes()[s];
 
-                printer.accept("\t\tSnapshot '%s' [size=%s, created=%s (epochTime=%d)]".formatted(
+                printer.accept("\t\tSnapshot '%s' [size=%s (%db), created='%s' (epochSeconds=%d)]".formatted(
                     name,
                     U.humanReadableByteCount(size),
+                    size,
                     Date.from(Instant.ofEpochSecond(epochTime)).toString(),
                     epochTime
                 ));

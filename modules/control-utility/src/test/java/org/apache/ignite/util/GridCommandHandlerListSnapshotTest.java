@@ -22,6 +22,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -50,14 +51,19 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     @Parameter(2)
     public boolean separatedWorkDir;
 
+    /** */
+    @Parameter(3)
+    public boolean addExtraSrvr;
+
 
     /** */
-    @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2}")
+    @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2},addExtraSrvr={3}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
-            F.asList(false, true), // Use custom snapshot path;
-            F.asList(false, true) // Separated (own) work directory.
+            F.asList(false, true), // Use custom snapshot path
+            F.asList(false, true), // Separated (own) work directory
+            F.asList(true) // Add server node
         );
     }
 
@@ -112,12 +118,20 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     }
 
     /** */
+    @Test
+    public void testSeveralSnapshots() throws Exception {
+        doTestSnapshotsLists(4);
+    }
+
+    /** */
     private void doTestSnapshotsLists(int snpCnt) throws Exception {
         // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
         // work directories are set.
         assumeTrue(!customPath || !separatedWorkDir);
 
-        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(3);
+        int srvrsCnt = 3;
+
+        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(srvrsCnt);
 
         startGrid(CLIENT_NODE_NAME_PREFIX);
 
@@ -128,11 +142,16 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             : null;
 
         if (snpCnt > 0) {
-            createCacheAndPreload(ig, 100);
+            createCacheAndPreload(ig, 10);
 
-            snp(ig).createSnapshot("testSnapshot", customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
-                .get(getTestTimeout());
+            for (int i = 0; i < snpCnt; ++i) {
+                snp(ig).createSnapshot("testSnapshot" + i, customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
+                    .get(getTestTimeout());
+            }
         }
+
+        if (addExtraSrvr)
+            startGrid(G.allGrids().size());
 
         injectTestSystemOut();
 
@@ -145,7 +164,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         String out = testOut.toString();
 
-        for (var g : G.allGrids()) {
+        for (Ignite g : G.allGrids()) {
             ClusterNode n = g.cluster().localNode();
 
             assertEquals(n.isClient() ? 0 : 1, countEntries(out, "Node '%s'".formatted(n.consistentId().toString())));
@@ -154,12 +173,21 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         if (snpCnt == 0) {
             assertFalse(out.contains("Snapshot '"));
 
-            assertEquals(3, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
+            assertEquals(srvrsCnt + (addExtraSrvr ? 1 : 0), countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
 
             return;
         }
 
-        assertFalse(out.contains(SnapshotListCommand.NO_SNAPSHOTS));
+        assertEquals((addExtraSrvr && separatedWorkDir ? 1 : 0), countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
+
+        // The additional server node doesn't have snapshots. But it can see them if shared the snapshot directory.
+        int snpsRecordsCnt = srvrsCnt + (addExtraSrvr
+            ? separatedWorkDir ? 0 : 1
+            : 0
+        );
+
+        for (int i = 0; i < snpCnt; ++i)
+            assertEquals(snpsRecordsCnt, countEntries(out, "Snapshot 'testSnapshot" + i + "'"));
     }
 
     /**
