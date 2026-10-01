@@ -234,7 +234,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             assertEquals(2, res.completedNodes().size());
         }
         finally {
-            if (pathRef.get() != null && pathRef.get() != null)
+            if (pathRef.get() != null && prevPerms.get() != null)
                 Files.setPosixFilePermissions(pathRef.get(), prevPerms.get());
         }
     }
