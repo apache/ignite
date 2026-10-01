@@ -766,9 +766,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Nodes may steal removal jobs and the files aren't synchronized. There are gaps between and `exists()` and `delete()`.
         // We try to delete first. If snapshot data wasn't deleted because it doesn't already exist is not a removal error here.
         try {
-            if (!sft.meta().delete() && sft.meta().exists())
-                res.set1(false);
-
             for (File s : allStorages) {
                 // Extra or root sanpshot data.
                 if (!deleteDirectory(s) && s.exists()) {
@@ -796,19 +793,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.set1(false);
             }
 
-            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller())) {
+            for (File p : F.asList(sft.binaryMeta(), sft.marshaller())) {
                 if (!deleteDirectory(p) && p.exists())
                     res.set1(false);
             }
 
-            // Delete last parent 'db' and snapshot root directories.
-            for (File p : F.asList(sft.marshaller().getParentFile(), sft.root())) {
+            // Delete last parent directories.
+            for (File p : F.asList(sft.binaryMetaRoot(), sft.marshaller().getParentFile(), sft.root())) {
                 if ((scoped && !p.delete() || !scoped && !deleteDirectory(p)) && p.exists()) {
                     res.set1(false);
 
                     break;
                 }
             }
+
+            // Remove the metadata at the end. For the scoped removal, delete anyway because it sets 'false' as the result
+            // if can't remove a non-empty shared directory. This is ok.
+            if ((scoped || res.get1()) && !sft.meta().delete() && sft.meta().exists())
+                res.set1(false);
         }
         catch (Exception e) {
             String errMsg = "Failed to delete local snapshot [snpName=" + sft.name() + ']';
