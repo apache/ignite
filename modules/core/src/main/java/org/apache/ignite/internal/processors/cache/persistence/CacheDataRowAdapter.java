@@ -335,12 +335,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     if (nextLink == 0)
                         break;
 
-                    long nextPageId = pageId(nextLink);
-
                     // Lock coupling: acquire the read lock on the next fragment page before releasing the current one.
                     // In-place update of the fragmented row traverses fragments in the same order with the same lock
                     // coupling (see AbstractFreeList#updateFragmentedRow), so it can't overtake this read and the row
                     // is read either entirely old or entirely new.
+                    long nextPageId = pageId(nextLink);
                     long nextPage = pageMem.acquirePage(grpId, nextPageId, statHolder);
                     long nextPageAddr;
 
@@ -353,15 +352,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         throw e;
                     }
 
-                    long prevPageId = pageId;
-                    long prevPage = page;
-
-                    pageId = nextPageId;
-                    page = nextPage;
-                    pageAddr = nextPageAddr;
-
-                    pageMem.readUnlock(grpId, prevPageId, prevPage);
-                    pageMem.releasePage(grpId, prevPageId, prevPage);
+                    try {
+                        pageMem.readUnlock(grpId, pageId, page);
+                        pageMem.releasePage(grpId, pageId, page);
+                    }
+                    finally {
+                        pageId = nextPageId;
+                        page = nextPage;
+                        pageAddr = nextPageAddr;
+                    }
                 }
             }
             finally {
@@ -404,10 +403,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         long pageAddr = pageMem.readLock(grpId, pageId, page);
 
         // Non-empty data page must not be recycled.
-        if (pageAddr == 0L) {
-            throw new IllegalStateException("Cannot lock page [link=" + U.hexLong(link) +
-                ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]");
-        }
+        assert pageAddr != 0L : "Cannot lock page [link=" + U.hexLong(link) +
+            ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]";
 
         return pageAddr;
     }
