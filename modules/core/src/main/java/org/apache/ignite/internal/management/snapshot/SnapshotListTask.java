@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -223,7 +224,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** */
-        private @Nullable T2<Integer, Long> incrementalsNumbersAndSize(SnapshotFileTree sft) {
+        private @Nullable T2<Integer, FileTime> incrementalsNumbersAndSize(SnapshotFileTree sft) {
             File[] incs = sft.incrementsRoot().listFiles();
 
             if (F.isEmpty(incs))
@@ -256,7 +257,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     continue;
                 }
 
-                
+                return calculateDirectorySize(incDir);
             }
 
             return null;

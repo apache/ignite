@@ -519,10 +519,5 @@ public class DistributedProcess<I extends Message, R extends Message> {
          * Cluster version finalization abort process.
          */
         RU_ABORT_VERSION_FINALIZATION,
-
-        /**
-         * List snapshots procedure.
-         */
-        LIST_SNAPSHOTS
     }
 }
