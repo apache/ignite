@@ -58,6 +58,7 @@ import static org.apache.ignite.internal.processors.rollingupgrade.message.TestM
  * 2.1.0   1-4       A B-1 C D-3 E+2 F+4
  * 3.0.0   4         A C E F+4
  * </pre>
+ * 2.19.3 carries feature 6 cherry-picked from 2.20.1, so it can upgrade to 2.20.1 but not to 2.20.0.
  * Core D and plugin D live through the whole cycle: introduced, deprecated once the introducing feature is retired, deleted once
  * the deprecating feature is retired.
  */

@@ -29,5 +29,5 @@ public class TestIgniteReleaseFeatures_2_19_3 {
     public static final IgniteFeature VER_2_19_2_ID_2_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_2_FEATURE;
 
     /** */
-    public static final IgniteFeature VER_2_19_3_ID_6_FEATURE = TestIgniteReleaseFeatures_2_21_0.VER_2_21_0_ID_6_FEATURE;
+    public static final IgniteFeature VER_2_19_3_ID_6_FEATURE = TestIgniteReleaseFeatures_2_20_1.VER_2_20_1_ID_6_FEATURE;
 }
