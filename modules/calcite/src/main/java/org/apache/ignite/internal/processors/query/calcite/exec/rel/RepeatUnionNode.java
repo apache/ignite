@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME;
 
-/** Coordinator-side executor for recursive UNION ALL. */
+/** Coordinator-side executor for recursive union. */
 public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstream<Row> {
     /** Index of the seed input. */
     private static final int SEED_SOURCE = 0;
@@ -46,21 +46,22 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** Number of rows still requested by downstream. */
     private int waiting;
 
+    /** Number of rows still requested from the active source. */
+    private int pending;
+
     /** Number of completed recursive iterations. */
     private int iteration;
-
-    /** Whether the active input is being collected into the next delta. */
-    private boolean writing;
 
     /** */
     public RepeatUnionNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
+        boolean all,
         int iterationLimit
     ) {
         super(ctx, rowType);
 
-        state = new RecursiveCteState<>(ctx);
+        state = new RecursiveCteState<>(ctx, all);
         this.iterationLimit = iterationLimit;
     }
 
@@ -87,27 +88,31 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
-        assert waiting > 0;
-        assert writing;
+        assert waiting > 0 && pending > 0 :
+            "Received a row without outstanding demand [waiting=" + waiting + ", pending=" + pending + ']';
 
         checkState();
 
-        waiting--;
-        state.add(row);
+        pending--;
 
-        downstream().push(row);
+        if (state.add(row)) {
+            waiting--;
+            downstream().push(row);
+        }
+
+        if (pending == 0 && waiting > 0)
+            context().execute(this::requestSource, this::onError);
     }
 
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
-        assert writing;
 
         checkState();
 
+        pending = 0;
         state.commit();
-        writing = false;
 
         if (state.isEmpty()) {
             finish();
@@ -115,25 +120,19 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
             return;
         }
 
-        if (curSrc == SEED_SOURCE) {
-            if (iterationLimit == 0) {
-                throw iterationLimitExceeded();
-            }
+        if (curSrc == RECURSIVE_SOURCE)
+            iteration++;
 
-            curSrc = RECURSIVE_SOURCE;
-            requestSource();
-
-            return;
-        }
-
-        iteration++;
-
-        if (iterationLimit >= 0 && iteration == iterationLimit) {
+        if (iterationLimit >= 0 && iteration == iterationLimit)
             throw iterationLimitExceeded();
-        }
 
-        source().rewind();
-        requestSource();
+        if (curSrc == SEED_SOURCE)
+            curSrc = RECURSIVE_SOURCE;
+        else
+            source().rewind();
+
+        // Let the previous scan leave its push loop before requesting the next iteration.
+        context().execute(this::requestSource, this::onError);
     }
 
     /** {@inheritDoc} */
@@ -152,8 +151,8 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     @Override protected void rewindInternal() {
         curSrc = SEED_SOURCE;
         waiting = 0;
+        pending = 0;
         iteration = 0;
-        writing = false;
         state.clear();
     }
 
@@ -187,14 +186,14 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         }
     }
 
-    /** Starts collecting and requests rows from the active input. */
+    /** Requests the remaining downstream demand from the active input. */
     private void requestSource() throws Exception {
-        if (!writing) {
-            state.beginWrite();
-            writing = true;
-        }
+        checkState();
 
-        source().request(waiting);
+        assert pending == 0 : "Cannot request more rows while the source request is pending [waiting=" + waiting +
+                ", pending=" + pending + ']';
+
+        source().request(pending = waiting);
     }
 
     /** */

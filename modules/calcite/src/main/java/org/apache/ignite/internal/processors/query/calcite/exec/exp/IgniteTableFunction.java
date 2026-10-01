@@ -29,8 +29,10 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TableFunction;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -107,7 +109,8 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
             ? tf.createType(cls)
             : tf.createJavaType(cls);
 
-        return tf.toSql(type);
+        RelDataType sqlType = tf.toSql(type);
+        return sqlType.getSqlTypeName() == SqlTypeName.OTHER ? new OtherType(sqlType.isNullable()) : sqlType;
     }
 
     /** Validates the parameters and throws an exception if it finds an incorrect parameter. */

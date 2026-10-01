@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration test for collect node.

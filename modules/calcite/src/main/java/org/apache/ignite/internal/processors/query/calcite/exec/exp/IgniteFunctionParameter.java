@@ -2,11 +2,11 @@
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * The ASF licenses this file to you under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,37 +16,21 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-import java.util.List;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 
-/**
- * Reflective Java function parameter represented with a SQL type.
- *
- * <p>The SQL representation is required to validate user-defined function arguments and to convert literal arguments
- * while deriving a table function row type.
- */
-final class IgniteFunctionParameter implements FunctionParameter {
-    /** Original function parameter. */
+/** Function parameter that exposes its SQL type to validation. */
+class IgniteFunctionParameter implements FunctionParameter {
+    /** */
     private final FunctionParameter delegate;
 
     /** */
-    private IgniteFunctionParameter(FunctionParameter delegate) {
+    IgniteFunctionParameter(FunctionParameter delegate) {
         this.delegate = delegate;
-    }
-
-    /** Returns function parameters represented with SQL types. */
-    static List<FunctionParameter> toSql(List<FunctionParameter> parameters) {
-        return parameters.stream().map(IgniteFunctionParameter::toSql).toList();
-    }
-
-    /** Returns a function parameter represented with a SQL type. */
-    static FunctionParameter toSql(FunctionParameter parameter) {
-        return new IgniteFunctionParameter(parameter);
     }
 
     /** {@inheritDoc} */
@@ -61,10 +45,10 @@ final class IgniteFunctionParameter implements FunctionParameter {
 
     /** {@inheritDoc} */
     @Override public RelDataType getType(RelDataTypeFactory typeFactory) {
-        JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
-        RelDataType type = tf.toSql(delegate.getType(typeFactory));
+        // Normalize UDF metadata without losing Java types used to convert query results.
+        RelDataType type = IgniteTypeFactory.toSql(typeFactory, delegate.getType(typeFactory));
 
-        // Prevent the validator from replacing OTHER with a structured type derived from a dynamic parameter value.
+        // Use Ignite's generic type to support arbitrary values and prevent inferring a record from a Java object.
         return type.getSqlTypeName() == SqlTypeName.OTHER ? new OtherType(type.isNullable()) : type;
     }
 

@@ -159,39 +159,6 @@ public class GridDsiClient implements Callable {
     }
 
     /**
-     * Method to print request statistics.
-     */
-    private static void displayReqCount() {
-        new Thread(new Runnable() {
-            @SuppressWarnings({"BusyWait"})
-            @Override public void run() {
-                int interval = 30;
-
-                while (true) {
-                    long cnt0 = txCnt.get();
-                    long lt0 = latency.get();
-
-                    try {
-                        Thread.sleep(interval * 1000);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    long cnt1 = txCnt.get();
-                    long lt1 = latency.get();
-
-                    X.println(">>>");
-                    X.println(">>> Transaction/s: " + (cnt1 - cnt0) / interval);
-                    X.println(
-                        ">>> Avg Latency: " + ((cnt1 - cnt0) > 0 ? (lt1 - lt0) / (cnt1 - cnt0) + "ms" : "invalid"));
-                    X.println(">>> Max Submit Time: " + submitTime.getAndSet(0));
-                }
-            }
-        }).start();
-    }
-
-    /**
      * Execute DSI load client.
      *
      * @param args Command line arguments, two required - first one is the number of threads,

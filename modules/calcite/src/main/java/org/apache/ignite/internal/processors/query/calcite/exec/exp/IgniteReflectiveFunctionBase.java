@@ -21,13 +21,15 @@ import java.util.List;
 import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
 
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 /** A base for outer java-method functions. */
 abstract class IgniteReflectiveFunctionBase extends ReflectiveFunctionBase implements ImplementableFunction {
     /** */
     protected final CallImplementor implementor;
 
     /** */
-    private final List<FunctionParameter> funcParams;
+    private final List<FunctionParameter> params;
 
     /** */
     protected IgniteReflectiveFunctionBase(Method method, CallImplementor implementor) {
@@ -35,12 +37,12 @@ abstract class IgniteReflectiveFunctionBase extends ReflectiveFunctionBase imple
 
         this.implementor = implementor;
 
-        funcParams = IgniteFunctionParameter.toSql(super.getParameters());
+        params = super.getParameters().stream().map(IgniteFunctionParameter::new).collect(toUnmodifiableList());
     }
 
     /** {@inheritDoc} */
     @Override public List<FunctionParameter> getParameters() {
-        return funcParams;
+        return params;
     }
 
     /** {@inheritDoc} */

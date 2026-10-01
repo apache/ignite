@@ -75,10 +75,9 @@ public interface BinariesFactory {
     /**
      * @param ctx Context.
      * @param failIfUnregistered Flag to fail while writing object of unregistered type.
-     * @param typeId Type id.
      * @return Writer instance.
      */
-    public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId);
+    public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered);
 
     /**
      * @param ctx Context.
@@ -170,4 +169,7 @@ public interface BinariesFactory {
 
     /** */
     public BinaryIdentityResolver arrayIdentityResolver();
+
+    /** Clears binary caches. */
+    public void clearCache();
 }

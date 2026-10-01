@@ -56,6 +56,25 @@ public class ConverterUtils {
         return toInternal(operand, operand.getType(), targetType);
     }
 
+    /** Converts a user-defined function result to the internal representation using the execution context. */
+    static Expression toInternal(Expression root, Expression operand, Type targetType) {
+        Type fromType = operand.getType();
+
+        if (!TypeUtils.isConvertableType(fromType))
+            return operand;
+
+        // Preserve Calcite's calendar conversion for JDBC dates and timestamps.
+        Expression converted = toInternal(operand, targetType);
+
+        if (converted != operand)
+            return converted;
+
+        return Expressions.convert_(
+            Expressions.call(TypeUtils.class, "toInternal", root, operand, Expressions.constant(fromType)),
+            targetType
+        );
+    }
+
     /** */
     private static Expression toInternal(Expression operand,
         Type fromType, Type targetType) {
@@ -127,7 +146,7 @@ public class ConverterUtils {
         return fromInternal(null, targetTypes, expressions);
     }
 
-    /** */
+    /** Converts user-defined function arguments using the execution context when available. */
     static List<Expression> fromInternal(@Nullable Expression root,
         Class<?>[] targetTypes,
         List<Expression> expressions
@@ -160,35 +179,22 @@ public class ConverterUtils {
 
     /** */
     private static Expression fromInternal(@Nullable Expression root, Expression operand, Type targetType) {
-        // Preserve Calcite conversions when no execution context is available, including temporal conversions.
-        if (root == null)
-            return fromInternal(operand, operand.getType(), targetType);
-
-        // Let the Java method call box compatible primitives instead of generating a reference cast.
-        if (Types.isAssignableFrom(targetType, operand.getType())
-            || Types.isAssignableFrom(targetType, Primitive.box(operand.getType())))
+        if (Types.isAssignableFrom(targetType, operand.getType()))
             return operand;
 
-        if (!TypeUtils.isConvertableType(targetType))
-            return targetType == BigDecimal.class ? fromInternal(operand, operand.getType(), targetType) :
-                convert(operand, operand.getType(), targetType);
+        // Preserve Calcite's calendar conversion for JDBC dates and timestamps.
+        Expression converted = fromInternal(operand, operand.getType(), targetType);
+
+        if (root == null || converted != operand || !TypeUtils.isConvertableType(targetType))
+            return converted;
 
         if (Primitive.is(operand.getType()))
             operand = Expressions.box(operand);
 
-        Expression converted = Expressions.call(
-            TypeUtils.class,
-            "fromInternal",
-            root,
-            operand,
-            Expressions.constant(targetType)
+        return Expressions.convert_(
+            Expressions.call(TypeUtils.class, "fromInternal", root, operand, Expressions.constant(targetType)),
+            targetType
         );
-
-        Primitive primitive = Primitive.of(targetType);
-
-        return primitive == null
-            ? Expressions.convert_(converted, targetType)
-            : Expressions.unbox(Expressions.convert_(converted, primitive.boxClass), primitive);
     }
 
     /** */
@@ -543,13 +549,16 @@ public class ConverterUtils {
         return list;
     }
 
-    /**
-     * Handles decimal type specifically with explicit type conversion.
-     */
+    /** Converts an argument to its Java parameter type, handling decimals separately. */
     private static Expression convertAssignableType(Expression argument, Type targetType) {
-        if (targetType != BigDecimal.class || !Types.needTypeCast(argument.getType(), targetType))
+        // Java method calls can box primitives when the parameter accepts the boxed type.
+        if (Types.isAssignableFrom(targetType, argument.getType())
+            || Types.isAssignableFrom(targetType, Primitive.box(argument.getType())))
             return argument;
 
-        return convertToDecimal(argument, Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL));
+        if (targetType == BigDecimal.class)
+            return convertToDecimal(argument, Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL));
+
+        return convert(argument, targetType);
     }
 }

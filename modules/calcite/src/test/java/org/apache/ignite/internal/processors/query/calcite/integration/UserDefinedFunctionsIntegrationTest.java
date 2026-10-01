@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
@@ -55,15 +56,18 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
 
 /**
  * Integration test for user defined functions.
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** Log listener. */
@@ -651,6 +655,30 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testCustomTypeTableFunctionCoalesce() {
+        client.getOrCreateCache(new CacheConfiguration<>("custom-type-coalesce-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
+
+        Employer obj = new Employer("Igor", 42.0d);
+        Employer fallback = new Employer("Oleg", 43.0d);
+
+        for (Employer val : new Employer[] {obj, null}) {
+            assertQuery("SELECT COALESCE(obj, obj) FROM customTypeTable(?)")
+                .withParams(val)
+                .returns(val)
+                .check();
+
+            assertQuery("SELECT COALESCE(t1.obj, t2.obj) "
+                + "FROM customTypeTable(?) t1 CROSS JOIN customTypeTable(?) t2")
+                .withParams(val, fallback)
+                .returns(val == null ? fallback : val)
+                .check();
+        }
+    }
+
+    /** */
+    @Test
     public void testArrayListTableFunctionResult() {
         client.getOrCreateCache(new CacheConfiguration<>("array-list-table-functions")
             .setSqlSchema("PUBLIC")
@@ -763,6 +791,29 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testHistoricalTemporalFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("historical-temporal-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(TemporalFunctionsLibrary.class, DeterministicTemporalFunctionsLibrary.class));
+
+        assertQuery("SELECT detDateToStr(DATE '1500-01-02'), "
+            + "detTimestampToStr(TIMESTAMP '1500-01-02 03:04:05')")
+            .returns("1500-01-02", "1500-01-02 03:04:05.0")
+            .check();
+
+        assertQuery("SELECT CAST(udfDateFromString('1500-01-02') AS VARCHAR), "
+            + "EXTRACT(DAY FROM udfDateFromString('1500-01-02'))")
+            .returns("1500-01-02", 2L)
+            .check();
+
+        assertQuery("SELECT CAST(udfTimestampFromString('1500-01-02 03:04:05') AS VARCHAR), "
+            + "EXTRACT(DAY FROM udfTimestampFromString('1500-01-02 03:04:05'))")
+            .returns("1500-01-02 03:04:05", 2L)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testTemporalScalarFunctionResultSubtypes() {
         client.getOrCreateCache(new CacheConfiguration<>("temporal-scalar-result-subtypes")
             .setSqlSchema("PUBLIC")
@@ -866,6 +917,131 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             "No match found for function signature LOCALTIMETOSTR(<NUMERIC>)", 5);
         assertThrows("SELECT localDateTimeToStr(?)", SqlValidatorException.class,
             "No match found for function signature LOCALDATETIMETOSTR(<NUMERIC>)", 5);
+    }
+
+    /** */
+    @Test
+    public void testJavaTimeFunctionParametersAfterTableQuery() {
+        sql("CREATE TABLE type_warmup(i INT)");
+
+        // Resolving the table's hidden columns caches Ignite OTHER before Calcite infers UDF parameter types.
+        sql("SELECT * FROM type_warmup");
+
+        testJavaTimeFunctionParametersWithSqlTypeValues();
+    }
+
+    /** */
+    @Test
+    public void testHistoricalJavaTimeFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("historical-java-time-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        checkJavaTimeFunctions("1500-01-02", "03:04:05");
+        checkJavaTimeFunctions("1582-10-04", "12:34:56");
+        checkJavaTimeFunctions("1582-10-15", "12:34:56");
+        checkJavaTimeFunctions("1969-12-31", "23:59:59");
+    }
+
+    /** */
+    @Test
+    public void testJavaTimeFunctionResultsAsJdbcValues() {
+        client.getOrCreateCache(new CacheConfiguration<>("java-time-jdbc-results")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        for (String ts : new String[] {
+            "0001-01-01 00:00:00", "1500-01-02 03:04:05.123", "1582-10-04 23:59:59.999",
+            "1582-10-15 00:00:00", "1969-12-31 23:59:59.999", "1970-01-01 00:00:00", "2021-03-14 12:30:00.123"
+        }) {
+            LocalDateTime locTs = LocalDateTime.parse(ts.replace(' ', 'T'));
+            String date = locTs.toLocalDate().toString();
+            Date sqlDate = Date.valueOf(date);
+            Timestamp sqlTs = Timestamp.valueOf(ts);
+
+            // Check the JDBC values returned to the client, without converting them to strings inside SQL.
+            assertQuery("SELECT localDateFromStr('" + date + "'), localDateTimeFromStr('" + locTs + "')")
+                .returns(sqlDate, sqlTs)
+                .check();
+
+            assertQuery("SELECT d, ts FROM javaTimeValuesTable('" + date + "', '"
+                + locTs.toLocalTime() + "', '" + locTs + "')")
+                .returns(sqlDate, sqlTs)
+                .check();
+
+            // The same JDBC values must retain their calendar fields when passed back to SQL.
+            assertQuery("SELECT localDateToStr(?), localDateTimeToStr(?)")
+                .withParams(sqlDate, sqlTs)
+                .returns(date, locTs.toString())
+                .check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testJavaTimeFunctionsDuringDstTransition() {
+        client.getOrCreateCache(new CacheConfiguration<>("dst-java-time-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(JavaTimeParametersFunctionsLibrary.class));
+
+        // Initialize Calcite's cached default time zone before changing the JVM default.
+        checkJavaTimeFunctions("2021-01-01", "12:00:00");
+
+        TimeZone oldTz = TimeZone.getDefault();
+
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+
+            checkJavaTimeFunctions("2021-03-14", "02:30:00");
+            checkJavaTimeFunctions("2021-11-07", "01:30:00");
+
+            TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Apia"));
+
+            // This local date was skipped when the time zone moved across the date line.
+            checkJavaTimeFunctions("2011-12-30", "12:34:56");
+        }
+        finally {
+            TimeZone.setDefault(oldTz);
+        }
+    }
+
+    /** Checks Java time parameters and results independently, so opposite conversion errors cannot cancel out. */
+    private void checkJavaTimeFunctions(String date, String time) {
+        LocalDate locDate = LocalDate.parse(date);
+        LocalTime locTime = LocalTime.parse(time);
+        LocalDateTime locTs = LocalDateTime.of(locDate, locTime);
+        String ts = date + ' ' + time;
+        String literals = "DATE '" + date + "', TIME '" + time + "', TIMESTAMP '" + ts + '\'';
+
+        assertQuery("SELECT localDateToStr(DATE '" + date + "'), localTimeToStr(TIME '" + time + "'), "
+            + "localDateTimeToStr(TIMESTAMP '" + ts + "')")
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT localDateToStr(?), localTimeToStr(?), localDateTimeToStr(?)")
+            .withParams(locDate, locTime, locTs)
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT CAST(localDateFromStr('" + date + "') AS VARCHAR), "
+            + "CAST(localTimeFromStr('" + time + "') AS VARCHAR), "
+            + "CAST(localDateTimeFromStr('" + locTs + "') AS VARCHAR)")
+            .returns(date, time, ts)
+            .check();
+
+        assertQuery("SELECT * FROM javaTimeStringsTable(" + literals + ')')
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT * FROM javaTimeStringsTable(?, ?, ?)")
+            .withParams(locDate, locTime, locTs)
+            .returns(date, locTime.toString(), locTs.toString())
+            .check();
+
+        assertQuery("SELECT CAST(d AS VARCHAR), CAST(t AS VARCHAR), CAST(ts AS VARCHAR) "
+            + "FROM javaTimeValuesTable('" + date + "', '" + time + "', '" + locTs + "')")
+            .returns(date, time, ts)
+            .check();
     }
 
     /**
@@ -1672,6 +1848,18 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         /** */
         @QuerySqlFunction
+        public static Date udfDateFromString(String val) {
+            return Date.valueOf(val);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static Timestamp udfTimestampFromString(String val) {
+            return Timestamp.valueOf(val);
+        }
+
+        /** */
+        @QuerySqlFunction
         public static Time udfTimeValue() {
             return Time.valueOf("02:03:04");
         }
@@ -1774,6 +1962,41 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     public static class JavaTimeParametersFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static LocalDate localDateFromStr(String val) {
+            return LocalDate.parse(val);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalTime localTimeFromStr(String val) {
+            return LocalTime.parse(val);
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static LocalDateTime localDateTimeFromStr(String val) {
+            return LocalDateTime.parse(val);
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {String.class, String.class, String.class}, columnNames = {"D", "T", "TS"})
+        public static Iterable<Object[]> javaTimeStringsTable(LocalDate date, LocalTime time, LocalDateTime ts) {
+            return Collections.singletonList(new Object[] {date.toString(), time.toString(), ts.toString()});
+        }
+
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {LocalDate.class, LocalTime.class, LocalDateTime.class},
+            columnNames = {"D", "T", "TS"}
+        )
+        public static Iterable<Object[]> javaTimeValuesTable(String date, String time, String ts) {
+            return Collections.singletonList(new Object[] {
+                LocalDate.parse(date), LocalTime.parse(time), LocalDateTime.parse(ts)
+            });
+        }
+
         /** */
         @QuerySqlFunction
         public static String localDateToStr(LocalDate val) {

@@ -20,30 +20,20 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.LinkedList;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
-import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -129,14 +119,6 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     }
 
     /**
-     * @param c Cache.
-     * @return {@code True} if synchronoous preloading.
-     */
-    private boolean isSync(IgniteCache<?, ?> c) {
-        return c.getConfiguration(CacheConfiguration.class).getRebalanceMode() == SYNC;
-    }
-
-    /**
      * @param cnt Number of grids.
      * @param startIdx Start node index.
      * @param list List of started grids.
@@ -167,91 +149,5 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         info("Grids started: " + gridCnt);
 
         stopGrids(ignites);
-    }
-
-    /**
-     * @param keyCnt Key count.
-     * @param nodeCnt Node count.
-     * @throws Exception If failed.
-     */
-    private void checkNodes(int keyCnt, int nodeCnt) throws Exception {
-        try {
-            Ignite g1 = startGrid(0);
-
-            IgniteCache<Integer, String> c1 = g1.cache(DEFAULT_CACHE_NAME);
-
-            putKeys(c1, keyCnt);
-            checkKeys(c1, keyCnt);
-
-            Collection<Ignite> ignites = new LinkedList<>();
-
-            startGrids(nodeCnt, 1, ignites);
-
-            // Check all nodes.
-            for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
-
-                checkKeys(c, keyCnt);
-            }
-
-            info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ']');
-
-            stopGrids(ignites);
-
-            GridDhtCacheAdapter<Integer, String> dht = dht(c1);
-
-            info(">>> Waiting for preload futures...");
-
-            GridCachePartitionExchangeManager<Object, Object> exchMgr
-                = ((IgniteKernal)g1).context().cache().context().exchange();
-
-            // Wait for exchanges to complete.
-            for (IgniteInternalFuture<?> fut : exchMgr.exchangeFutures())
-                fut.get();
-
-            Affinity<Integer> aff = affinity(c1);
-
-            for (int i = 0; i < keyCnt; i++) {
-                if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.cluster().localNode())) {
-                    GridDhtPartitionTopology top = dht.topology();
-
-                    for (GridDhtLocalPartition p : top.localPartitions())
-                        assertEquals("Invalid partition state for partition: " + p, OWNING, p.state());
-                }
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @param c Cache.
-     * @param cnt Key count.
-     */
-    private void putKeys(IgniteCache<Integer, String> c, int cnt) {
-        for (int i = 0; i < cnt; i++)
-            c.put(i, Integer.toString(i));
-    }
-
-    /**
-     * @param c Cache.
-     * @param cnt Key count.
-     */
-    private void checkKeys(IgniteCache<Integer, String> c, int cnt) {
-        Affinity<Integer> aff = affinity(c);
-
-        boolean sync = isSync(c);
-
-        Ignite ignite = c.unwrap(Ignite.class);
-
-        for (int i = 0; i < cnt; i++) {
-            if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(ignite.cluster().localNode())) {
-                String val = sync ? c.localPeek(i, CachePeekMode.ONHEAP) : c.get(i);
-
-                assertEquals("Key check failed [igniteInstanceName=" + ignite.name() + ", cache=" + c.getName() +
-                        ", key=" + i + ']', Integer.toString(i), val);
-            }
-        }
     }
 }

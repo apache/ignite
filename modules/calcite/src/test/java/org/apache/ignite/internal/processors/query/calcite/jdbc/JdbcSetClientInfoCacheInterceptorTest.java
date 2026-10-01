@@ -21,8 +21,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -34,22 +34,24 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import static org.junit.Assume.assumeFalse;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /** */
-@RunWith(Parameterized.class)
-public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "runInTx={0}, mode={1}")
+@MethodSource("data")
+public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final String SESSION_ID = "sessionId";
 
@@ -57,19 +59,19 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean runInTx;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode cacheMode;
 
     /** */
-    @Parameterized.Parameters(name = "runInTx={0}, mode={1}")
-    public static Collection<Object[]> data() {
+    public static Stream<Arguments> data() {
         return GridTestUtils.cartesianProduct(
-            F.asList(false, true),
-            F.asList(CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC));
+            List.of(false, true),
+            List.of(CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC)
+        ).stream().map(Arguments::of);
     }
 
     /** */
@@ -101,6 +103,7 @@ public class JdbcSetClientInfoCacheInterceptorTest extends GridCommonAbstractTes
     }
 
     /** */
+    @BeforeEach
     @Override protected void beforeTest() {
         assumeFalse(runInTx && cacheMode == CacheAtomicityMode.ATOMIC);
     }

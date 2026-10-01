@@ -476,6 +476,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        if (node instanceof SqlWithItem)
+            RecursiveCteRewriter.rewriteOrderBy((SqlWithItem)node);
+
         if (node instanceof SqlOrderBy) {
             SqlOrderBy orderBy = (SqlOrderBy)node;
 
@@ -509,6 +512,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         node = super.performUnconditionalRewrites(node, underFrom);
+
+        if (node instanceof SqlWithItem)
+            RecursiveCteRewriter.inferRecursion((SqlWithItem)node);
 
         if (config() instanceof Config && ((Config)config()).sqlNodeRewriter() != null)
             node = ((Config)config()).sqlNodeRewriter().rewrite(this, node);
