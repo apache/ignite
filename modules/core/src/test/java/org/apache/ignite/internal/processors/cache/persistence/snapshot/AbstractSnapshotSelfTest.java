@@ -905,7 +905,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         prepareCluster.run();
 
-        IgniteFuture<SnapshotDeleteProcessResult> delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
 
         assertTrue(delProcInitLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 

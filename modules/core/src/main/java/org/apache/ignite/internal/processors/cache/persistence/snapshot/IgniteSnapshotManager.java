@@ -1567,7 +1567,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path. If {@code null}, the default configured snapshot directory will be used.
      * @return Future which will be completed when the snapshot is deleted on all the online server nodes.
      */
-    public IgniteFuture<SnapshotDeleteProcessResult> deleteSnapshot(String name, @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotDeleteProcessResult> deleteSnapshot(String name, @Nullable String snpPath) {
         return deleteSnpProc.start(name, snpPath);
     }
 
