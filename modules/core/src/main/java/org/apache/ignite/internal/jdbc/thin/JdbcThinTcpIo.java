@@ -347,7 +347,7 @@ public class JdbcThinTcpIo {
             writer.writeString(connProps.getPassword());
         }
 
-        send(writer.array());
+        send(writer.out().arrayCopy());
 
         BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, false);
 
@@ -452,7 +452,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isReplicatedOnly());
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
 
-        send(writer.array());
+        send(writer.out().arrayCopy());
 
         BinaryReaderEx reader = BinaryUtils.reader(null, BinaryStreams.inputStream(read()), null, false);
 
@@ -593,7 +593,7 @@ public class JdbcThinTcpIo {
         req.writeBinary(writer, protoCtx);
 
         synchronized (connMux) {
-            send(writer.array());
+            send(writer.out().arrayCopy());
         }
     }
 
