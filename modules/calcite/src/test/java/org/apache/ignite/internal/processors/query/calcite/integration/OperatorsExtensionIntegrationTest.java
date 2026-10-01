@@ -185,7 +185,7 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
     @Test
     public void testByteArrayFunctions() {
         assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(x'010203')").returns(3).check();
-        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(?)").withParams((Object) new byte[] {1, 2, 3}).returns(3).check();
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(?)").withParams((Object)new byte[] {1, 2, 3}).returns(3).check();
         assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
 
         assertQuery("SELECT OCTET_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
