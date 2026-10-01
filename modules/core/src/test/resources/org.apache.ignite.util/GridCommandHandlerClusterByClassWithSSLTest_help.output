@@ -274,7 +274,7 @@ This utility can do the following commands:
 
     Parameters:
       snapshot_name  - Snapshot name.
-      --src path     - Path to snapshot location directory. If not specified or specified a relative path, the default snapshot configuration directory will be used.
+      --src path/to/snapshots     - Path to snapshot location directory. If not specified or specified a relative path, the default snapshot configuration directory will be used.
 
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
