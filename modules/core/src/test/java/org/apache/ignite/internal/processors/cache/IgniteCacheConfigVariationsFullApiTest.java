@@ -4627,15 +4627,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
-     * @param cache Cache.
-     * @param k Key.
-     */
-    private void checkKeyAfterLocalEvict(IgniteCache<String, Integer> cache, String k) {
-        assertNull(cache.localPeek(k, ONHEAP));
-        assertNotNull(cache.localPeek(k, OFFHEAP));
-    }
-
-    /**
      * JUnit.
      */
     @Test

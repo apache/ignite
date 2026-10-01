@@ -36,6 +36,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlUtil;
@@ -289,29 +290,40 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** {@inheritDoc} */
     @Override public RelDataType toSql(RelDataType type) {
         if (type instanceof JavaType) {
-            Class<?> clazz = ((JavaType)type).getJavaClass();
+            RelDataType customType = createCustomType(((JavaType)type).getJavaClass());
 
-            if (clazz == Duration.class)
-                return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
-            else if (clazz == Period.class)
-                return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
-            else if (clazz == LocalDateTime.class)
-                return createTypeWithNullability(createSqlType(SqlTypeName.TIMESTAMP), true);
-            else if (clazz == LocalDate.class)
-                return createTypeWithNullability(createSqlType(SqlTypeName.DATE), true);
-            else if (clazz == LocalTime.class)
-                return createTypeWithNullability(createSqlType(SqlTypeName.TIME), true);
-            else if (clazz == UUID.class)
-                return createTypeWithNullability(createSqlType(SqlTypeName.UUID), true);
-            else {
-                RelDataType relType = createCustomType(clazz);
-
-                if (relType != null)
-                    return relType;
-            }
+            if (customType != null)
+                return customType;
         }
 
-        return super.toSql(type);
+        return toSql(this, type);
+    }
+
+    /** Converts Java types, including Java time types, to SQL types using the supplied factory. */
+    public static RelDataType toSql(RelDataTypeFactory typeFactory, RelDataType type) {
+        if (type instanceof JavaType) {
+            Class<?> clazz = ((JavaType)type).getJavaClass();
+            RelDataType sqlType;
+
+            if (clazz == Duration.class)
+                sqlType = typeFactory.createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME);
+            else if (clazz == Period.class)
+                sqlType = typeFactory.createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH);
+            else if (clazz == LocalDateTime.class)
+                sqlType = typeFactory.createSqlType(SqlTypeName.TIMESTAMP);
+            else if (clazz == LocalDate.class)
+                sqlType = typeFactory.createSqlType(SqlTypeName.DATE);
+            else if (clazz == LocalTime.class)
+                sqlType = typeFactory.createSqlType(SqlTypeName.TIME);
+            else if (clazz == UUID.class)
+                sqlType = typeFactory.createSqlType(SqlTypeName.UUID);
+            else
+                return JavaTypeFactoryImpl.toSql(typeFactory, type);
+
+            return typeFactory.createTypeWithNullability(sqlType, true);
+        }
+
+        return JavaTypeFactoryImpl.toSql(typeFactory, type);
     }
 
     /** @return Custom type by storage type. {@code Null} if custom type not found. */

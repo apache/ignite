@@ -16,7 +16,7 @@
 # =====================================================================
 # GLOBAL ARGS (Must be declared at the very top, before any FROM)
 # =====================================================================
-ARG python_version="3.13"
+ARG python_version="3.11"
 ARG jdk_version="eclipse-temurin:17"
 
 # ---------------------------------------------------------------------
@@ -127,7 +127,7 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install Ignite
-RUN for v in "2.7.6" "2.17.0"; \
+RUN for v in "2.7.6" "2.18.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v; \

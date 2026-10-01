@@ -118,6 +118,13 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                         assertEquals(0L, discoReg.<LongMetric>findMetric("CoordinatorSince").value());
                 }
 
+                if (i != cliIdx) {
+                    assertTrue(bean.getLocalPort() > 0);
+                    assertEquals(bean.getLocalPort(), discoReg.<IntMetric>findMetric("LocalPort").value());
+                }
+                else
+                    assertNull(discoReg.findMetric("LocalPort"));
+
                 // `getNodesJoined` returns count of joined nodes since local node startup.
                 assertEquals((cnt - 1) - i, bean.getNodesJoined());
                 assertEquals((cnt - 1) - i, discoReg.<IntMetric>findMetric("JoinedNodes").value());

@@ -229,13 +229,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.sun.mail</groupId>
-                        <artifactId>javax.mail</artifactId>
-                        <version>1.5.2</version>
-                    </dependency>
-                </dependencies>
                 <executions>
                     <execution>
                         <id>jar-badly-signed</id>
@@ -294,8 +287,6 @@
                                 <zip destfile="${basedir}/target/classes/lib/depend.jar" encoding="UTF-8">
                                     <zipfileset dir="modules/uri-dependency/target/classes" />
                                 </zip>
-
-                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar" todir="${basedir}/target/classes/lib" />
 
                                 <!--uri-libs.gar-->
                                 <gar destfile="${basedir}/target/deploy2/uri-libs.gar" basedir="${basedir}/target/classes/lib" />

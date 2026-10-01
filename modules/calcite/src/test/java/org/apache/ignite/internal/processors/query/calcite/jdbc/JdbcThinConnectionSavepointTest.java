@@ -22,25 +22,29 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.sql.Statement;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /** Savepoint tests for thin JDBC connection. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0}")
+@MethodSource("testData")
 public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
     /** */
     private static final String TBL = "SAVEPOINT_TEST_TABLE";
@@ -55,12 +59,11 @@ public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
     /**
      * @return Test parameters.
      */
-    @Parameters(name = "{0}")
-    public static Iterable<Object[]> testData() {
-        return Arrays.asList(new Object[][] {
-            {PESSIMISTIC},
-            {OPTIMISTIC}
-        });
+    private static Collection<Arguments> testData() {
+        return List.of(
+            Arguments.of(PESSIMISTIC),
+            Arguments.of(OPTIMISTIC)
+        );
     }
 
     /** {@inheritDoc} */
@@ -73,6 +76,7 @@ public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -80,6 +84,7 @@ public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
     }
 
     /** {@inheritDoc} */
+    @AfterAll
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
@@ -87,6 +92,7 @@ public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -287,6 +293,6 @@ public class JdbcThinConnectionSavepointTest extends AbstractJdbcTest {
         assertEquals(exp.length / 2, rows.size());
 
         for (int i = 0; i < exp.length; i += 2)
-            assertEqualsCollections(Arrays.asList(exp[i], exp[i + 1]), rows.get(i / 2));
+            assertEqualsCollections(List.of(exp[i], exp[i + 1]), rows.get(i / 2));
     }
 }

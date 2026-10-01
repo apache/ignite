@@ -58,8 +58,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -98,7 +96,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
-import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -115,7 +112,6 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -751,7 +747,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Gets local TCP port SPI listens to.
      *
-     * @return Local port range.
+     * @return Local port.
      */
     public int getLocalPort() {
         TcpDiscoveryNode locNode0 = locNode;
@@ -1491,6 +1487,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             discoReg.register("Coordinator", () -> impl.getCoordinator(), UUID.class, "Coordinator ID");
 
             discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
+
+            discoReg.register("LocalPort", this::getLocalPort, "Local TCP port the SPI listens to.");
         }
         else {
             discoReg.register("ClientRouterNodeId", () -> String.valueOf(locNode.clientRouterNodeId()), String.class,
@@ -1677,36 +1675,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 U.closeQuiet(sock);
 
             throw e;
-        }
-    }
-
-    /** */
-    void validateRemoteFeatures(IgniteNodeFeatureSet rmtFeatures) throws IgniteCheckedException {
-        if (rmtFeatures == null) {
-            throw new UnsupportedNodeVersionException(
-                "Failed to obtain remote node features. The remote node may be running an unsupported Ignite version," +
-                    " which may result in unexpected handshake message serialization");
-        }
-
-        for (IgniteComponentFeatureSet rmtCmpFeatures : rmtFeatures.values()) {
-            IgniteComponentFeatureSet locCmpFeatures = locNode.features().componentFeatures(rmtCmpFeatures.componentName());
-
-            if (locCmpFeatures == null)
-                continue;
-
-            int c = locCmpFeatures.version().compareTo(rmtCmpFeatures.version());
-
-            if (c == 0)
-                continue;
-
-            IgniteComponentFeatureSet src = c > 0 ? rmtCmpFeatures : locCmpFeatures;
-            IgniteComponentFeatureSet target = c > 0 ? locCmpFeatures : rmtCmpFeatures;
-
-            if (!src.isUpgradableTo(target)) {
-                throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
-                    " [locComponents=" + locNode.features() +
-                    ", rmtComponents=" + rmtFeatures + ']');
-            }
         }
     }
 
@@ -2111,17 +2079,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        try {
-            if (dataPacket.joiningNodeId().equals(locNode.id()))
-                dataBag = dataPacket.bagWithNodeData(ignite.log(), ignite.configuration().isClientMode());
-            else
-                dataBag = dataPacket.bagWithJoiningNodeData(ignite.log(), ignite.configuration().isClientMode());
-        }
-        catch (IgniteCheckedException e) {
-            ignite.context().failure().process(new FailureContext(CRITICAL_ERROR, e));
-
-            throw new IgniteException(e);
-        }
+        if (dataPacket.joiningNodeId().equals(locNode.id()))
+            dataBag = dataPacket.bagWithNodeData();
+        else
+            dataBag = dataPacket.bagWithJoiningNodeData();
 
         exchange.onExchange(dataBag);
     }

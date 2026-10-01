@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.RECURSIVE_CTE_ITERATION_LIMIT_PROPERTY_NAME;
 
-/** Coordinator-side executor for recursive UNION ALL. */
+/** Coordinator-side executor for recursive union. */
 public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstream<Row> {
     /** Index of the seed input. */
     private static final int SEED_SOURCE = 0;
@@ -45,23 +46,32 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** Number of rows still requested by downstream. */
     private int waiting;
 
+    /** Number of rows still requested from the active source. */
+    private int pending;
+
     /** Number of completed recursive iterations. */
     private int iteration;
-
-    /** Whether the active input is being collected into the next delta. */
-    private boolean writing;
 
     /** */
     public RepeatUnionNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        RecursiveCteState<Row> state,
+        boolean all,
         int iterationLimit
     ) {
         super(ctx, rowType);
 
-        this.state = state;
+        state = new RecursiveCteState<>(ctx, all);
         this.iterationLimit = iterationLimit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(List<Node<Row>> sources) {
+        assert sources.size() == 2;
+
+        bindRecursiveScans(sources.get(RECURSIVE_SOURCE));
+
+        super.register(sources);
     }
 
     /** {@inheritDoc} */
@@ -78,27 +88,31 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
         assert downstream() != null;
-        assert waiting > 0;
-        assert writing;
+        assert waiting > 0 && pending > 0 :
+            "Received a row without outstanding demand [waiting=" + waiting + ", pending=" + pending + ']';
 
         checkState();
 
-        waiting--;
-        state.add(row);
+        pending--;
 
-        downstream().push(row);
+        if (state.add(row)) {
+            waiting--;
+            downstream().push(row);
+        }
+
+        if (pending == 0 && waiting > 0)
+            context().execute(this::requestSource, this::onError);
     }
 
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
-        assert writing;
 
         checkState();
 
+        pending = 0;
         state.commit();
-        writing = false;
 
         if (state.isEmpty()) {
             finish();
@@ -106,25 +120,19 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
             return;
         }
 
-        if (curSrc == SEED_SOURCE) {
-            if (iterationLimit == 0) {
-                throw iterationLimitExceeded();
-            }
+        if (curSrc == RECURSIVE_SOURCE)
+            iteration++;
 
-            curSrc = RECURSIVE_SOURCE;
-            requestSource();
-
-            return;
-        }
-
-        iteration++;
-
-        if (iterationLimit >= 0 && iteration == iterationLimit) {
+        if (iterationLimit >= 0 && iteration == iterationLimit)
             throw iterationLimitExceeded();
-        }
 
-        source().rewind();
-        requestSource();
+        if (curSrc == SEED_SOURCE)
+            curSrc = RECURSIVE_SOURCE;
+        else
+            source().rewind();
+
+        // Let the previous scan leave its push loop before requesting the next iteration.
+        context().execute(this::requestSource, this::onError);
     }
 
     /** {@inheritDoc} */
@@ -134,12 +142,17 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         return this;
     }
 
+    /** Current delta visible to recursive scans owned by this union. */
+    Iterable<Row> current() {
+        return state.current();
+    }
+
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
         curSrc = SEED_SOURCE;
         waiting = 0;
+        pending = 0;
         iteration = 0;
-        writing = false;
         state.clear();
     }
 
@@ -155,14 +168,32 @@ public class RepeatUnionNode<Row> extends AbstractNode<Row> implements Downstrea
         return sources().get(curSrc);
     }
 
-    /** Starts collecting and requests rows from the active input. */
-    private void requestSource() throws Exception {
-        if (!writing) {
-            state.beginWrite();
-            writing = true;
+    /** Binds recursive scans in this union's recursive term without crossing nested recursive unions. */
+    private void bindRecursiveScans(Node<Row> node) {
+        if (node instanceof RecursiveTableScanNode) {
+            ((RecursiveTableScanNode<Row>)node).bind(this);
+
+            return;
         }
 
-        source().request(waiting);
+        // Nested recursive unions bind their own scans when registering their sources.
+        if (node instanceof RepeatUnionNode)
+            return;
+
+        if (!F.isEmpty(node.sources())) {
+            for (Node<Row> src : node.sources())
+                bindRecursiveScans(src);
+        }
+    }
+
+    /** Requests the remaining downstream demand from the active input. */
+    private void requestSource() throws Exception {
+        checkState();
+
+        assert pending == 0 : "Cannot request more rows while the source request is pending [waiting=" + waiting +
+                ", pending=" + pending + ']';
+
+        source().request(pending = waiting);
     }
 
     /** */

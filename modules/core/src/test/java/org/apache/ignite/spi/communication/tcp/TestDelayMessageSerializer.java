@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
@@ -26,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /** Serializer for {@link TestDelayMessage} that injects an optional write delay for testing. */
 public class TestDelayMessageSerializer implements MessageSerializer<TestDelayMessage> {
     /** {@inheritDoc} */
-    @Override public boolean writeTo(TestDelayMessage msg, MessageWriter writer) {
+    @Override public boolean writeTo(TestDelayMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -47,7 +48,7 @@ public class TestDelayMessageSerializer implements MessageSerializer<TestDelayMe
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(TestDelayMessage msg, MessageReader reader) {
+    @Override public boolean readFrom(TestDelayMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         return true;
     }
 
