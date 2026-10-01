@@ -799,19 +799,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.set1(false);
             }
 
-            // Delete incremental parts.
-            if (scoped) {
-                for (File inc : sft.incrementsRoot().listFiles()) {
-                    if (!removeScopedIncrementalPart(sft, inc))
-                        res.set1(false);
+            // Delete last parent 'db' and snapshot root directories.
+            for (File p : F.asList(sft.marshaller().getParentFile(), sft.root())) {
+                if ((scoped && !p.delete() || !scoped && !deleteDirectory(p)) && p.exists()) {
+                    res.set1(false);
+
+                    break;
                 }
             }
-            else if (!deleteDirectory(sft.incrementsRoot()) && sft.incrementsRoot().exists())
-                res.set1(false);
-
-            // Delete snapshot root.
-            if ((scoped && !sft.root().delete() || !scoped && !deleteDirectory(sft.root())) && sft.root().exists())
-                res.set1(false);
         }
         catch (Exception e) {
             String errMsg = "Failed to delete local snapshot [snpName=" + sft.name() + ']';
@@ -824,38 +819,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 throw new IgniteException(errMsg, e);
         }
-
-        return res;
-    }
-
-    /** */
-    private boolean removeScopedIncrementalPart(SnapshotFileTree snpSft, File incDir) {
-        if (!incDir.exists())
-            return true;
-
-        int incIdx = 0;
-
-        try {
-            incIdx = Integer.parseInt(incDir.getName());
-        }
-        catch (NumberFormatException e) {
-            log.warning("Unable to delete incremental snsphot part, invalid incremental index [idx=" + incIdx + ']', e);
-
-            return false;
-        }
-
-        boolean res = true;
-
-        IncrementalSnapshotFileTree incSft = snpSft.incrementalSnapshotFileTree(incIdx);
-
-        if(!incSft.meta().delete() && incSft.meta().exists())
-            res = false;
-
-        if (!incSft.db() && incDir.exists())
-            res = false;
-
-        if (!incSft.root().delete() && incSft.root().exists())
-            res = false;
 
         return res;
     }
