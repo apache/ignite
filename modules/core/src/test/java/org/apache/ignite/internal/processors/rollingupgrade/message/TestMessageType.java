@@ -72,7 +72,11 @@ public enum TestMessageType {
         if (msgCls == null)
             throw new AssertionError("Failed to resolve test message class [type=" + this + ", cmpVers=" + cmpVers + ']');
 
-        return ((TestDiscoveryMessage)msgCls.getConstructor().newInstance()).fill(featureStatusProvider);
+        TestDiscoveryMessage msg = (TestDiscoveryMessage)msgCls.getConstructor().newInstance();
+
+        msg.fill(featureStatusProvider);
+
+        return msg;
     }
 
     /** */

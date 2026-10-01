@@ -51,7 +51,7 @@ public class TestCoreMessage_2_20_0 extends TestDiscoveryMessage {
     String fldE;
 
     /** {@inheritDoc} */
-    @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
+    @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
         fldA = A;
 
         if (!featureStatusProvider.test(VER_2_20_0_ID_3_FEATURE))
@@ -64,8 +64,6 @@ public class TestCoreMessage_2_20_0 extends TestDiscoveryMessage {
             fldD = D;
 
         fldE = E;
-
-        return this;
     }
 
     /** {@inheritDoc} */

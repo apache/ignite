@@ -55,15 +55,13 @@ public class TestContainerMessage_2_21_0 extends TestDiscoveryMessage {
     Map<Integer, TestCoreMessage_2_21_0> compressedMap;
 
     /** {@inheritDoc} */
-    @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
+    @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
         msg = nestedMessage(featureStatusProvider);
         list = List.of(nestedMessage(featureStatusProvider));
         map = Map.of(0, nestedMessage(featureStatusProvider));
         arr = new TestCoreMessage_2_21_0[] {nestedMessage(featureStatusProvider)};
         compressedMsg = nestedMessage(featureStatusProvider);
         compressedMap = Map.of(0, nestedMessage(featureStatusProvider));
-
-        return this;
     }
 
     /** {@inheritDoc} */
@@ -82,6 +80,10 @@ public class TestContainerMessage_2_21_0 extends TestDiscoveryMessage {
 
     /** */
     private static TestCoreMessage_2_21_0 nestedMessage(Predicate<IgniteFeature> featureStatusProvider) {
-        return (TestCoreMessage_2_21_0)new TestCoreMessage_2_21_0().fill(featureStatusProvider);
+        TestCoreMessage_2_21_0 msg = new TestCoreMessage_2_21_0();
+
+        msg.fill(featureStatusProvider);
+
+        return msg;
     }
 }

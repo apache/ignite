@@ -36,12 +36,10 @@ public class TestPluginMessage_0_9_0 extends TestDiscoveryMessage {
     String fldC;
 
     /** {@inheritDoc} */
-    @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
+    @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
         fldA = A;
         fldB = B;
         fldC = C;
-
-        return this;
     }
 
     /** {@inheritDoc} */

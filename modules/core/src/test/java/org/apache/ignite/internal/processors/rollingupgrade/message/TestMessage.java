@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
 import java.util.List;
+import java.util.function.Predicate;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /** */
 public interface TestMessage {
@@ -38,6 +40,15 @@ public interface TestMessage {
 
     /** */
     String F = "F";
+
+    /**
+     * Fills the message with data. The implementation must take into account the final feature state of the release this
+     * message belongs to. This should imitate how Ignite processors fill messages with RU in mind (e.g. if the feature that
+     * deprecated a field is active, the field is not filled).
+     *
+     * @param featureStatusProvider Tells whether a feature is active in the cluster.
+     */
+    void fill(Predicate<IgniteFeature> featureStatusProvider);
 
     /** */
     default String fldA() {

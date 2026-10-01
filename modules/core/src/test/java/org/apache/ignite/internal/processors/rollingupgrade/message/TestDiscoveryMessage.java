@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
-import java.util.function.Predicate;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,11 +26,6 @@ public abstract class TestDiscoveryMessage extends DiscoveryCustomMessage implem
     /** */
     protected TestDiscoveryMessage() {
         super(IgniteUuid.randomUuid());
-    }
-
-    /** */
-    public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
-        return this;
     }
 
     /** {@inheritDoc} */
