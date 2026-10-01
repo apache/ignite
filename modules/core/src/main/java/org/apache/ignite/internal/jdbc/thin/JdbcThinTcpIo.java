@@ -612,7 +612,7 @@ public class JdbcThinTcpIo {
         out.write((size >> 16) & 0xFF);
         out.write((size >> 24) & 0xFF);
 
-        out.write(stream.array(), 0, stream.position());
+        out.write(stream.array(), 0, size);
 
         out.flush();
     }
