@@ -38,11 +38,9 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.Snapshot
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,13 +107,13 @@ public class SnapshotDeleteProcess {
      * @param snpPath Snapshot directory path (optional).
      * @return Future that will be completed when the snapshot is deleted.
      */
-    public IgniteFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
         GridFutureAdapter<SnapshotDeleteProcessResult> clusterOpFut = new GridFutureAdapter<>();
 
         if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
             clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_FEATURE_MSG));
 
-            return new IgniteFutureImpl<>(clusterOpFut);
+            return clusterOpFut;
         }
 
         UUID reqId = UUID.randomUUID();
@@ -138,7 +136,7 @@ public class SnapshotDeleteProcess {
             clusterOpFut.onDone(t);
         }
 
-        return new IgniteFutureImpl<>(clusterOpFut);
+        return clusterOpFut;
     }
 
     /** */
@@ -400,11 +398,10 @@ public class SnapshotDeleteProcess {
                 if (!F.isEmpty(res.nodeIds))
                     nodeIds.addAll(res.nodeIds);
 
-                if (res.status != status) {
-                    status = status == null
-                        ? res.status
-                        : SnapshotDeleteResponse.DeleteStatus.PARTLY;
-                }
+                if (status == null)
+                    status = res.status;
+                else if (status != res.status)
+                    status = SnapshotDeleteResponse.DeleteStatus.PARTLY;
             }
 
             return true;
