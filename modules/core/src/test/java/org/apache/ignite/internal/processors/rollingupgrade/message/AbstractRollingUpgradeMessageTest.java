@@ -114,7 +114,7 @@ public abstract class AbstractRollingUpgradeMessageTest extends AbstractRollingU
     }
 
     /** */
-    protected TestDiscoveryMessage send(IgniteEx from, IgniteEx to, TestMessageType msgType) throws Exception {
+    protected TestMessage send(IgniteEx from, IgniteEx to, TestMessageType msgType) throws Exception {
         return send(from, to, buildMessage(from, msgType));
     }
 
