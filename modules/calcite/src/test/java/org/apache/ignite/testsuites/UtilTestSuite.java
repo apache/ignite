@@ -20,20 +20,21 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.KeyFilteringCursorTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteFunctionParameterTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryTasksQueueTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherTypeTest;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtilsTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Calcite utility classes tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ClosableIteratorsHolderTest.class,
     MemoryTrackerTest.class,
     QueryCheckerTest.class,
@@ -43,6 +44,7 @@ import org.junit.runners.Suite;
     QueryTasksQueueTest.class,
     OtherTypeTest.class,
     TypeUtilsTest.class,
+    IgniteFunctionParameterTest.class,
 })
 public class UtilTestSuite {
 }

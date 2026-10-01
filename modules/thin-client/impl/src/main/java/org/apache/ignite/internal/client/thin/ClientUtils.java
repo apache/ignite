@@ -84,9 +84,6 @@ public final class ClientUtils {
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
-    /** Use new marshaller. */
-    private static final boolean USE_NEW_MARSHALL = System.getProperty("USE_NEW_MARSHALL") != null;
-
     /**
      * Constructor.
      */
@@ -605,10 +602,7 @@ public final class ClientUtils {
 
     /** Write Ignite binary object to output stream. */
     void writeObject(BinaryOutputStream out, Object obj) {
-        if (USE_NEW_MARSHALL)
-            marsh.marshal(obj, out);
-        else
-            out.writeByteArray(marsh.marshal(obj));
+        marsh.marshal(obj, out);
     }
 
     /**

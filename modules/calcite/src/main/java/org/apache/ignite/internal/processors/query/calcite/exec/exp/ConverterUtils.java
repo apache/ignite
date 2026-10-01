@@ -540,13 +540,16 @@ public class ConverterUtils {
         return list;
     }
 
-    /**
-     * Handles decimal type specifically with explicit type conversion.
-     */
+    /** Converts an argument to its Java parameter type, handling decimals separately. */
     private static Expression convertAssignableType(Expression argument, Type targetType) {
-        if (targetType != BigDecimal.class || !Types.needTypeCast(argument.getType(), targetType))
+        // Java method calls can box primitives when the parameter accepts the boxed type.
+        if (Types.isAssignableFrom(targetType, argument.getType())
+            || Types.isAssignableFrom(targetType, Primitive.box(argument.getType())))
             return argument;
 
-        return convertToDecimal(argument, Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL));
+        if (targetType == BigDecimal.class)
+            return convertToDecimal(argument, Commons.typeFactory().createSqlType(SqlTypeName.DECIMAL));
+
+        return convert(argument, targetType);
     }
 }
