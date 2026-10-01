@@ -33,6 +33,10 @@ import static org.apache.ignite.internal.processors.rollingupgrade.message.TestM
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.D;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.E;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.F;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.CONTAINER_MSG;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.CORE_MSG;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.DEFAULT_REGISTRY_MSG;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.PLUGIN_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -142,7 +146,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         IgniteEx newVerCli = startClientGrid(2, "2.20.0");
         IgniteEx oldVerCli = startClientGrid(3, "2.19.0");
 
-        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(grid(1), TestMessageType.CORE);
+        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCli.name()));
         assertFields(A, B, C, null, null, null, receivedMsgs.get(oldVerCli.name()));
@@ -162,13 +166,13 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         assertEquals(oldVerSrv.localNode().id(), routerId(cli));
 
-        assertFields(A, B, C, null, null, null, sendOverDiscovery(newVerSrv, TestMessageType.CORE).get(cli.name()));
+        assertFields(A, B, C, null, null, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
 
         stopGrid(0);
 
         assertTrue(waitForCondition(() -> newVerSrv.localNode().id().equals(routerId(cli)), getTestTimeout()));
 
-        assertFields(A, B, C, D, E, null, sendOverDiscovery(newVerSrv, TestMessageType.CORE).get(cli.name()));
+        assertFields(A, B, C, D, E, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
     }
 
     /** */
@@ -188,7 +192,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testDefaultRegistryMixedPair() throws Exception {
         startServerNodes("2.19.0", "2.20.0");
 
-        checkMutualMessageSend(grid(0), grid(1), TestMessageType.DEFAULT_REGISTRY, A, null, C, D, E, F);
+        checkMutualMessageSend(grid(0), grid(1), DEFAULT_REGISTRY_MSG, A, null, C, D, E, F);
     }
 
     /** */
@@ -228,7 +232,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         IgniteEx newVerSrv = startGrid(3, "2.20.0");
 
-        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(newVerSrv, TestMessageType.CORE);
+        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(newVerSrv, CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCrd.name()));
         assertFields(A, B, C, null, null, null, receivedMsgs.get(oldVerSrv.name()));
@@ -276,7 +280,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, D, E, null);
 
-        checkMutualMessageSend(grid(0), grid(1), TestMessageType.PLUGIN, A, B, C, D, null, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, B, C, D, null, null);
     }
 
     /** */
@@ -286,7 +290,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, D, E, null);
 
-        checkMutualMessageSend(grid(0), grid(1), TestMessageType.PLUGIN, A, null, C, D, E, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, D, E, null);
     }
 
     /** */
@@ -294,7 +298,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testPluginDeprecatedFieldDropped() throws Exception {
         startServerNodes("2.20.0 | 2.0.0", "2.20.0 | 3.0.0");
 
-        checkMutualMessageSend(grid(0), grid(1), TestMessageType.PLUGIN, A, null, C, D, E, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, D, E, null);
     }
 
     /** */
@@ -304,7 +308,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, null, null);
 
-        checkMutualMessageSend(grid(0), grid(1), TestMessageType.PLUGIN, A, B, C, D, null, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, B, C, D, null, null);
     }
 
     /** */
@@ -316,8 +320,8 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         IgniteEx cli = startClientGrid(1, "2.20.0 | 0.9.0");
 
-        checkReceivedMessageFields(srv, cli, TestMessageType.PLUGIN, A, null, C, null, null, null);
-        checkReceivedMessageFields(cli, srv, TestMessageType.PLUGIN, A, B, C, null, null, null);
+        checkReceivedMessageFields(srv, cli, PLUGIN_MSG, A, null, C, null, null, null);
+        checkReceivedMessageFields(cli, srv, PLUGIN_MSG, A, B, C, null, null, null);
 
         checkMutualCoreMessageSend(srv, cli, A, null, null, D, E, null);
     }
@@ -460,7 +464,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        checkMutualMessageSend(first, second, TestMessageType.CORE, expA, expB, expC, expD, expE, expF);
+        checkMutualMessageSend(first, second, CORE_MSG, expA, expB, expC, expD, expE, expF);
     }
 
     /** */
@@ -473,7 +477,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        Collection<TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(from, TestMessageType.CORE).values();
+        Collection<TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(from, CORE_MSG).values();
 
         for (TestDiscoveryMessage rcvd : receivedMsgs)
             assertFields(expA, expB, expC, expD, expE, expF, rcvd);
@@ -524,8 +528,8 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expF
     ) throws Exception {
         List<TestMessage> receivedMsgs = List.of(
-            send(from, to, TestMessageType.CONTAINER),
-            sendOverDiscovery(from, TestMessageType.CONTAINER).get(to.name())
+            send(from, to, CONTAINER_MSG),
+            sendOverDiscovery(from, CONTAINER_MSG).get(to.name())
         );
 
         for (TestMessage rcvd : receivedMsgs) {

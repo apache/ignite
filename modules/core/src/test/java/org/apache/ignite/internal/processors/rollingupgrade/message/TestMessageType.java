@@ -27,16 +27,16 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public enum TestMessageType {
     /** */
-    CORE("TestCoreMessage"),
+    CORE_MSG("TestCoreMessage"),
 
     /** */
-    PLUGIN("TestPluginMessage"),
+    PLUGIN_MSG("TestPluginMessage"),
 
     /** */
-    DEFAULT_REGISTRY("TestDefaultRegistryMessage"),
+    DEFAULT_REGISTRY_MSG("TestDefaultRegistryMessage"),
 
     /** */
-    CONTAINER("TestContainerMessage");
+    CONTAINER_MSG("TestContainerMessage");
 
     /** */
     private final String clsName;
@@ -50,10 +50,10 @@ public enum TestMessageType {
     @Nullable private Class<? extends Message> resolveClass(String cmpVers) {
         TestVersions vers = TestVersions.parse(cmpVers);
 
-        if (this == PLUGIN && !vers.containsPlugin())
+        if (this == PLUGIN_MSG && !vers.containsPlugin())
             return null;
 
-        String cmpVer = this == PLUGIN ? vers.pluginVersion() : vers.coreVersion();
+        String cmpVer = this == PLUGIN_MSG ? vers.pluginVersion() : vers.coreVersion();
 
         String release = '_' + cmpVer.replace('.', '_');
 
