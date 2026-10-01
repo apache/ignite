@@ -796,13 +796,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     res.set1(false);
             }
 
-            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller())) {
+            for (File p : F.asList(sft.binaryMeta(), sft.marshaller())) {
                 if (!deleteDirectory(p) && p.exists())
                     res.set1(false);
             }
 
-            // Delete last parent 'db' and snapshot root directories.
-            for (File p : F.asList(sft.marshaller().getParentFile(), sft.root())) {
+            // Delete last parent directories.
+            for (File p : F.asList(sft.binaryMetaRoot(), sft.marshaller().getParentFile(), sft.root())) {
                 if ((scoped && !p.delete() || !scoped && !deleteDirectory(p)) && p.exists()) {
                     res.set1(false);
 
