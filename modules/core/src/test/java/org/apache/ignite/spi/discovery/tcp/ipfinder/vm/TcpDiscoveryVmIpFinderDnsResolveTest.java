@@ -31,12 +31,14 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**  */
+@WithSystemProperty(key = "sun.net.inetaddr.ttl", value = "0")
 public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest {
 
     /** Fqnd */
@@ -148,11 +150,6 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
         assertEquals(expectedCount, resolved1.size());
 
         InetSocketAddress addr1 = resolved1.iterator().next();
-
-        //because of JAVA networkaddress cache ttl can be turn on.
-        //will be great to change current test and run it in separate JVM.
-        //and set there -Dsun.net.inetaddr.ttl=0 -Dsun.net.inetaddr.negative.ttl=0
-        Thread.sleep(50_000);
 
         Collection<InetSocketAddress> resolved2 = ipFinder.getRegisteredAddresses();
 
