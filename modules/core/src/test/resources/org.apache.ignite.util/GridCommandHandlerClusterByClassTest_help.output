@@ -269,7 +269,7 @@ This utility can do the following commands:
   Get the status of the current snapshot operation:
     control.(sh|bat) --snapshot status
 
-  Deletes the snapshot and all its incremental snapshots from all online server nodes:
+    Deletes the snapshot and all its incremental snapshots from all online server nodes:
     control.(sh|bat) --snapshot delete snapshot_name [--src path/to/snapshots]
 
     Parameters:
