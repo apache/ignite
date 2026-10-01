@@ -23,7 +23,7 @@ public class TestIgniteReleaseFeatures_2_19_3 {
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = TestIgniteReleaseFeatures_2_19_2.ROLLING_UPGRADE_FEATURE;
 
     /** */
-    public static final IgniteFeature VER_2_19_2_ID_1_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
+    public static final IgniteFeature VER_2_19_0_ID_1_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_0_ID_1_FEATURE;
 
     /** */
     public static final IgniteFeature VER_2_19_2_ID_2_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_2_FEATURE;

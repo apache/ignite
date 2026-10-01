@@ -41,7 +41,7 @@ public class TestCoreMessage_2_19_3 extends TestDiscoveryMessage {
     String fldC;
 
     /** */
-    @Order(value = 3, introducedBy = "VER_2_19_2_ID_1_FEATURE")
+    @Order(value = 3, introducedBy = "VER_2_19_0_ID_1_FEATURE")
     String fldD;
 
     /** */

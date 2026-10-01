@@ -37,7 +37,30 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.resolveTestMessageClasses;
 
-/** */
+/**
+ * Test messages declare a class per release that changes them. Features below the lowest one of a release are retired.
+ * {@code +N} is a field introduced by feature N, {@code -N} is a field deprecated by feature N.
+ * <pre>
+ * Core    Features  TestCoreMessage
+ * 2.18.0  0         A B C
+ * 2.19.0  0-1       A B C D+1
+ * 2.19.2  0-2       A B C-2 D+1
+ * 2.19.3  0-2,6     A B C-2 D+1 F+6
+ * 2.20.0  2-5       A B-3 C-2 D-5 E+4
+ * 2.20.1  2-6       A B-3 C-2 D-5 E+4 F+6
+ * 2.21.0  6         A E F+6
+ *
+ * Plugin  Features  TestPluginMessage
+ * 0.9.0   none      A B C
+ * 1.0.0   0         A B C D+0
+ * 1.1.0   0-1       A B-1 C D+0
+ * 2.0.0   1-3       A B-1 C D-3 E+2
+ * 2.1.0   1-4       A B-1 C D-3 E+2 F+4
+ * 3.0.0   4         A C E F+4
+ * </pre>
+ * Core D and plugin D live through the whole cycle: introduced, deprecated once the introducing feature is retired, deleted once
+ * the deprecating feature is retired.
+ */
 public abstract class AbstractRollingUpgradeMessageTest extends AbstractRollingUpgradeTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, String cmpVers) throws Exception {

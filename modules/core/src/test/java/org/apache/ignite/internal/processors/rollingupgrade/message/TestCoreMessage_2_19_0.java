@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
 import java.util.function.Predicate;
+import org.apache.ignite.internal.FeatureGated;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_0;
 
 /** */
+@FeatureGated(registry = TestIgniteReleaseFeatures_2_19_0.class)
 public class TestCoreMessage_2_19_0 extends TestDiscoveryMessage {
     /** */
     @Order(0)
@@ -35,11 +38,16 @@ public class TestCoreMessage_2_19_0 extends TestDiscoveryMessage {
     @Order(2)
     String fldC;
 
+    /** */
+    @Order(value = 3, introducedBy = "VER_2_19_0_ID_1_FEATURE")
+    String fldD;
+
     /** {@inheritDoc} */
     @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
         fldA = A;
         fldB = B;
         fldC = C;
+        fldD = D;
 
         return this;
     }
@@ -57,5 +65,10 @@ public class TestCoreMessage_2_19_0 extends TestDiscoveryMessage {
     /** {@inheritDoc} */
     @Override public String fldC() {
         return fldC;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String fldD() {
+        return fldD;
     }
 }

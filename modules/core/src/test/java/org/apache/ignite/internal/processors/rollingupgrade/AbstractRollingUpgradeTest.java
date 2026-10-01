@@ -82,55 +82,28 @@ import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Provides the ability to override a node's version and supported {@link IgniteFeature}s in order to
- * simulate a Rolling Upgrade procedure.
+ * Overrides the version and the supported {@link IgniteFeature}s of a node to simulate a Rolling Upgrade. The versions below
+ * are fake and correspond to no real Ignite release. Features below the lowest one of a release are retired.
+ * <pre>
+ * Core    Features
+ * 2.18.0  0
+ * 2.19.0  0-1
+ * 2.19.1  0-1
+ * 2.19.2  0-2
+ * 2.19.3  0-2,6
+ * 2.20.0  2-5
+ * 2.20.1  2-6
+ * 2.21.0  6
+ * 2.21.1  6-7
  *
- * <p>For testing purposes, the following "fake" Ignite versions and their corresponding
- * {@link IgniteFeature}s have been introduced. These versions are used solely for testing and do not
- * correspond to any actual Ignite releases.
- *
- * <table border="1">
- *   <tr>
- *     <th>Version</th>
- *     <th>Features</th>
- *   </tr>
- *   <tr>
- *     <td>2.18.0</td>
- *     <td>not supported</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.0</td>
- *     <td>{@code IgniteFeatureSet [0]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.1</td>
- *     <td>{@code IgniteFeatureSet [0]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.2</td>
- *     <td>{@code IgniteFeatureSet [0 -> 2]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.3</td>
- *     <td>{@code IgniteFeatureSet [0 -> 2, 6]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.20.0</td>
- *     <td>{@code IgniteFeatureSet [0 -> 4]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.20.1</td>
- *     <td>{@code IgniteFeatureSet [0 -> 4, 6]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.21.0</td>
- *     <td>{@code IgniteFeatureSet [4 -> 6]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.21.1</td>
- *     <td>{@code IgniteFeatureSet [4 -> 7]}</td>
- *   </tr>
- * </table>
+ * Plugin  Features
+ * 0.9.0   none
+ * 1.0.0   0
+ * 1.1.0   0-1
+ * 2.0.0   1-3
+ * 2.1.0   1-4
+ * 3.0.0   4
+ * </pre>
  */
 public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest {
     /** */

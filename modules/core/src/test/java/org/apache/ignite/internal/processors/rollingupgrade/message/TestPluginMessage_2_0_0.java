@@ -23,7 +23,8 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_0_0;
 
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_0_0.VER_2_0_0_ID_1_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_0_0.VER_1_1_0_ID_1_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_2_0_0.VER_2_0_0_ID_3_FEATURE;
 
 /** */
 @FeatureGated(registry = TestPluginReleaseFeatures_2_0_0.class)
@@ -33,7 +34,7 @@ public class TestPluginMessage_2_0_0 extends TestDiscoveryMessage {
     String fldA;
 
     /** */
-    @Order(value = 1, deprecatedBy = "VER_2_0_0_ID_1_FEATURE")
+    @Order(value = 1, deprecatedBy = "VER_1_1_0_ID_1_FEATURE")
     String fldB;
 
     /** */
@@ -41,7 +42,7 @@ public class TestPluginMessage_2_0_0 extends TestDiscoveryMessage {
     String fldC;
 
     /** */
-    @Order(value = 3, introducedBy = "VER_1_0_0_ID_0_FEATURE")
+    @Order(value = 3, deprecatedBy = "VER_2_0_0_ID_3_FEATURE")
     String fldD;
 
     /** */
@@ -52,11 +53,14 @@ public class TestPluginMessage_2_0_0 extends TestDiscoveryMessage {
     @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
         fldA = A;
 
-        if (!featureStatusProvider.test(VER_2_0_0_ID_1_FEATURE))
+        if (!featureStatusProvider.test(VER_1_1_0_ID_1_FEATURE))
             fldB = B;
 
         fldC = C;
-        fldD = D;
+
+        if (!featureStatusProvider.test(VER_2_0_0_ID_3_FEATURE))
+            fldD = D;
+
         fldE = E;
 
         return this;

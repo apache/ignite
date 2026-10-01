@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteRe
 
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0.VER_2_19_2_ID_2_FEATURE;
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0.VER_2_20_0_ID_3_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0.VER_2_20_0_ID_5_FEATURE;
 
 /** */
 @FeatureGated(registry = TestIgniteReleaseFeatures_2_20_0.class)
@@ -42,7 +43,7 @@ public class TestCoreMessage_2_20_0 extends TestDiscoveryMessage {
     String fldC;
 
     /** */
-    @Order(value = 3, introducedBy = "VER_2_19_2_ID_1_FEATURE")
+    @Order(value = 3, deprecatedBy = "VER_2_20_0_ID_5_FEATURE")
     String fldD;
 
     /** */
@@ -59,7 +60,9 @@ public class TestCoreMessage_2_20_0 extends TestDiscoveryMessage {
         if (!featureStatusProvider.test(VER_2_19_2_ID_2_FEATURE))
             fldC = C;
 
-        fldD = D;
+        if (!featureStatusProvider.test(VER_2_20_0_ID_5_FEATURE))
+            fldD = D;
+
         fldE = E;
 
         return this;

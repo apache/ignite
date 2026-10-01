@@ -21,28 +21,38 @@ import java.util.function.Predicate;
 import org.apache.ignite.internal.FeatureGated;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_21_0;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_1_1_0;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginReleaseFeatures_1_1_0.VER_1_1_0_ID_1_FEATURE;
 
 /** */
-@FeatureGated(registry = TestIgniteReleaseFeatures_2_21_0.class)
-public class TestCoreMessage_2_21_0 extends TestDiscoveryMessage {
+@FeatureGated(registry = TestPluginReleaseFeatures_1_1_0.class)
+public class TestPluginMessage_1_1_0 extends TestDiscoveryMessage {
     /** */
     @Order(0)
     String fldA;
 
     /** */
-    @Order(1)
-    String fldE;
+    @Order(value = 1, deprecatedBy = "VER_1_1_0_ID_1_FEATURE")
+    String fldB;
 
     /** */
-    @Order(value = 2, introducedBy = "VER_2_21_0_ID_6_FEATURE")
-    String fldF;
+    @Order(2)
+    String fldC;
+
+    /** */
+    @Order(value = 3, introducedBy = "VER_1_0_0_ID_0_FEATURE")
+    String fldD;
 
     /** {@inheritDoc} */
     @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
         fldA = A;
-        fldE = E;
-        fldF = F;
+
+        if (!featureStatusProvider.test(VER_1_1_0_ID_1_FEATURE))
+            fldB = B;
+
+        fldC = C;
+        fldD = D;
 
         return this;
     }
@@ -53,12 +63,17 @@ public class TestCoreMessage_2_21_0 extends TestDiscoveryMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String fldE() {
-        return fldE;
+    @Override public String fldB() {
+        return fldB;
     }
 
     /** {@inheritDoc} */
-    @Override public String fldF() {
-        return fldF;
+    @Override public String fldC() {
+        return fldC;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String fldD() {
+        return fldD;
     }
 }

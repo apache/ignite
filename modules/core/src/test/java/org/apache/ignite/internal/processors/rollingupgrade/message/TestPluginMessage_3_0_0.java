@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
 import java.util.function.Predicate;
@@ -37,21 +36,16 @@ public class TestPluginMessage_3_0_0 extends TestDiscoveryMessage {
 
     /** */
     @Order(2)
-    String fldD;
-
-    /** */
-    @Order(value = 3, introducedBy = "VER_2_0_0_ID_2_FEATURE")
     String fldE;
 
     /** */
-    @Order(value = 4, introducedBy = "VER_2_1_0_ID_3_FEATURE")
+    @Order(value = 3, introducedBy = "VER_2_1_0_ID_4_FEATURE")
     String fldF;
 
     /** {@inheritDoc} */
     @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
         fldA = A;
         fldC = C;
-        fldD = D;
         fldE = E;
         fldF = F;
 
@@ -66,11 +60,6 @@ public class TestPluginMessage_3_0_0 extends TestDiscoveryMessage {
     /** {@inheritDoc} */
     @Override public String fldC() {
         return fldC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String fldD() {
-        return fldD;
     }
 
     /** {@inheritDoc} */

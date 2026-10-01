@@ -44,19 +44,25 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     /** */
     @Test
     public void testSameOldVersion() throws Exception {
-        checkMutualCoreMessageSend("2.19.0", "2.19.0", A, B, C, null, null, null);
+        checkMutualCoreMessageSend("2.19.0", "2.19.0", A, B, C, D, null, null);
+    }
+
+    /** */
+    @Test
+    public void testIntroducedField() throws Exception {
+        checkMutualCoreMessageSend("2.18.0", "2.19.0", A, B, C, null, null, null);
     }
 
     /** */
     @Test
     public void testMixedPair() throws Exception {
-        checkMutualCoreMessageSend("2.19.0", "2.20.0", A, B, C, null, null, null);
+        checkMutualCoreMessageSend("2.19.0", "2.20.0", A, B, C, D, null, null);
     }
 
     /** */
     @Test
     public void testSameNewVersion() throws Exception {
-        checkMutualCoreMessageSend("2.20.0", "2.20.0", A, null, null, D, E, null);
+        checkMutualCoreMessageSend("2.20.0", "2.20.0", A, null, null, null, E, null);
     }
 
     /** */
@@ -74,19 +80,19 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     /** */
     @Test
     public void testWindowClosed() throws Exception {
-        checkMutualCoreMessageSend("2.20.0", "2.20.1", A, null, null, D, E, null);
+        checkMutualCoreMessageSend("2.20.0", "2.20.1", A, null, null, null, E, null);
     }
 
     /** */
     @Test
     public void testDeprecatedFieldDropped() throws Exception {
-        checkMutualCoreMessageSend("2.20.0", "2.21.0", A, null, null, D, E, null);
+        checkMutualCoreMessageSend("2.20.0", "2.21.0", A, null, null, null, E, null);
     }
 
     /** */
     @Test
     public void testDeprecatedFieldDroppedNewFieldShared() throws Exception {
-        checkMutualCoreMessageSend("2.20.1", "2.21.0", A, null, null, D, E, F);
+        checkMutualCoreMessageSend("2.20.1", "2.21.0", A, null, null, null, E, F);
     }
 
     /** */
@@ -100,8 +106,8 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testNestedMessages() throws Exception {
         startServerNodes("2.20.0", "2.21.0");
 
-        checkNestedMessages(grid(0), grid(1), A, null, null, D, E, null);
-        checkNestedMessages(grid(1), grid(0), A, null, null, D, E, null);
+        checkNestedMessages(grid(0), grid(1), A, null, null, null, E, null);
+        checkNestedMessages(grid(1), grid(0), A, null, null, null, E, null);
     }
 
     /** */
@@ -113,7 +119,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         startClientGrid(1, "2.20.0");
 
-        checkCoreMessageBroadcast(srv, A, B, C, null, null, null);
+        checkCoreMessageBroadcast(srv, A, B, C, D, null, null);
     }
 
     /** */
@@ -127,7 +133,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         startClientGrid(2, "2.19.0");
 
-        checkCoreMessageBroadcast(cli1, A, B, C, null, null, null);
+        checkCoreMessageBroadcast(cli1, A, B, C, D, null, null);
     }
 
     /** */
@@ -149,9 +155,9 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCli.name()));
-        assertFields(A, B, C, null, null, null, receivedMsgs.get(oldVerCli.name()));
+        assertFields(A, B, C, D, null, null, receivedMsgs.get(oldVerCli.name()));
 
-        checkMutualCoreMessageSend(newVerCli, oldVerCli, A, B, C, null, null, null);
+        checkMutualCoreMessageSend(newVerCli, oldVerCli, A, B, C, D, null, null);
     }
 
     /** */
@@ -166,7 +172,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         assertEquals(oldVerSrv.localNode().id(), routerId(cli));
 
-        assertFields(A, B, C, null, null, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
+        assertFields(A, B, C, D, null, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
 
         stopGrid(0);
 
@@ -184,7 +190,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         IgniteEx client = startClientGrid(1, "2.20.0");
 
-        checkMutualCoreMessageSend(srv, client, A, B, C, null, null, null);
+        checkMutualCoreMessageSend(srv, client, A, B, C, D, null, null);
     }
 
     /** */
@@ -202,7 +208,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(1, "2.20.0");
         startGrid(2, "2.20.0");
 
-        checkCoreMessageBroadcast(grid(1), A, null, null, D, E, null);
+        checkCoreMessageBroadcast(grid(1), A, null, null, null, E, null);
     }
 
     /** */
@@ -215,7 +221,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(1, "2.20.0");
         startGrid(2, "2.20.0");
 
-        checkCoreMessageBroadcast(grid(1), A, B, C, null, null, null);
+        checkCoreMessageBroadcast(grid(1), A, B, C, D, null, null);
     }
 
     /** */
@@ -235,7 +241,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(newVerSrv, CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCrd.name()));
-        assertFields(A, B, C, null, null, null, receivedMsgs.get(oldVerSrv.name()));
+        assertFields(A, B, C, D, null, null, receivedMsgs.get(oldVerSrv.name()));
     }
 
     /** */
@@ -244,7 +250,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(0, "2.19.0");
         startGrid(1, "2.19.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, null, null, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, null, null);
 
         ru(1).enableVersionUpgrade();
 
@@ -278,7 +284,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testPluginDiffersCoreMatches() throws Exception {
         startServerNodes("2.20.0 | 1.0.0", "2.20.0 | 2.0.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, null);
 
         checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, B, C, D, null, null);
     }
@@ -288,9 +294,9 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testPluginSameVersion() throws Exception {
         startServerNodes("2.20.0 | 2.0.0", "2.20.0 | 2.0.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, null);
 
-        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, D, E, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, null, E, null);
     }
 
     /** */
@@ -298,7 +304,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testPluginDeprecatedFieldDropped() throws Exception {
         startServerNodes("2.20.0 | 2.0.0", "2.20.0 | 3.0.0");
 
-        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, D, E, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, null, E, null);
     }
 
     /** */
@@ -314,7 +320,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     /** */
     @Test
     public void testPluginWithoutFeaturesOnClient() throws Exception {
-        IgniteEx srv = startGrid(0, "2.20.0 | 2.0.0");
+        IgniteEx srv = startGrid(0, "2.20.0 | 1.1.0");
 
         ru(srv).enableVersionUpgrade();
 
@@ -323,31 +329,47 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         checkReceivedMessageFields(srv, cli, PLUGIN_MSG, A, null, C, null, null, null);
         checkReceivedMessageFields(cli, srv, PLUGIN_MSG, A, B, C, null, null, null);
 
-        checkMutualCoreMessageSend(srv, cli, A, null, null, D, E, null);
+        checkMutualCoreMessageSend(srv, cli, A, null, null, null, E, null);
     }
 
     /** */
     @Test
     public void testWholeUpgradeProcess() throws Exception {
-        startGrid(0, "2.19.0");
-        startGrid(1, "2.19.0");
-        startClientGrid(2, "2.19.0");
+        startGrid(0, "2.18.0");
+        startGrid(1, "2.18.0");
+        startClientGrid(2, "2.18.0");
 
         checkMessagesTransmissionBetweenAllNodes(A, B, C, null, null, null);
 
         ru(1).enableVersionUpgrade();
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, null, null, null);
-
-        upgradeNodeVersion(0, "2.19.0", "2.19.2");
+        upgradeNodeVersion(0, "2.18.0", "2.19.0");
 
         checkMessagesTransmissionBetweenAllNodes(A, B, C, null, null, null);
 
-        upgradeNodeVersion(1, "2.19.0", "2.19.2");
+        upgradeNodeVersion(1, "2.18.0", "2.19.0");
 
         checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, null, null);
         checkMutualCoreMessageSend(grid(0), grid(2), A, B, C, null, null, null);
         checkMutualCoreMessageSend(grid(1), grid(2), A, B, C, null, null, null);
+
+        upgradeNodeVersion(2, "2.18.0", "2.19.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+
+        finalizeClusterVersion(0, "2.19.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+
+        ru(1).enableVersionUpgrade();
+
+        upgradeNodeVersion(0, "2.19.0", "2.19.2");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+
+        upgradeNodeVersion(1, "2.19.0", "2.19.2");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
 
         upgradeNodeVersion(2, "2.19.0", "2.19.2");
 
@@ -375,47 +397,45 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         finalizeClusterVersion(0, "2.20.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, null, null, D, E, null);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, null);
 
         ru(1).enableVersionUpgrade();
 
         upgradeNodeVersion(0, "2.20.0", "2.20.1");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, D, E, null);
-        checkMutualCoreMessageSend(grid(0), grid(2), A, null, null, D, E, null);
-        checkMutualCoreMessageSend(grid(1), grid(2), A, null, null, D, E, null);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, null);
 
         upgradeNodeVersion(1, "2.20.0", "2.20.1");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, D, E, F);
-        checkMutualCoreMessageSend(grid(0), grid(2), A, null, null, D, E, null);
-        checkMutualCoreMessageSend(grid(1), grid(2), A, null, null, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, F);
+        checkMutualCoreMessageSend(grid(0), grid(2), A, null, null, null, E, null);
+        checkMutualCoreMessageSend(grid(1), grid(2), A, null, null, null, E, null);
 
         upgradeNodeVersion(2, "2.20.0", "2.20.1");
 
-        checkMessagesTransmissionBetweenAllNodes(A, null, null, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
 
         finalizeClusterVersion(0, "2.20.1");
 
-        checkMessagesTransmissionBetweenAllNodes(A, null, null, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
 
         ru(1).enableVersionUpgrade();
 
         upgradeNodeVersion(0, "2.20.1", "2.21.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, null, null, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
 
         upgradeNodeVersion(1, "2.20.1", "2.21.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, null, null, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
 
         upgradeNodeVersion(2, "2.20.1", "2.21.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, null, null, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
 
         finalizeClusterVersion(0, "2.21.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, null, null, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
     }
 
     /** */

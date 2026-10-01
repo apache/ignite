@@ -18,31 +18,28 @@
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
 import java.util.function.Predicate;
-import org.apache.ignite.internal.FeatureGated;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_21_0;
 
 /** */
-@FeatureGated(registry = TestIgniteReleaseFeatures_2_21_0.class)
-public class TestCoreMessage_2_21_0 extends TestDiscoveryMessage {
+public class TestCoreMessage_2_18_0 extends TestDiscoveryMessage {
     /** */
     @Order(0)
     String fldA;
 
     /** */
     @Order(1)
-    String fldE;
+    String fldB;
 
     /** */
-    @Order(value = 2, introducedBy = "VER_2_21_0_ID_6_FEATURE")
-    String fldF;
+    @Order(2)
+    String fldC;
 
     /** {@inheritDoc} */
     @Override public TestDiscoveryMessage fill(Predicate<IgniteFeature> featureStatusProvider) {
         fldA = A;
-        fldE = E;
-        fldF = F;
+        fldB = B;
+        fldC = C;
 
         return this;
     }
@@ -53,12 +50,12 @@ public class TestCoreMessage_2_21_0 extends TestDiscoveryMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String fldE() {
-        return fldE;
+    @Override public String fldB() {
+        return fldB;
     }
 
     /** {@inheritDoc} */
-    @Override public String fldF() {
-        return fldF;
+    @Override public String fldC() {
+        return fldC;
     }
 }
