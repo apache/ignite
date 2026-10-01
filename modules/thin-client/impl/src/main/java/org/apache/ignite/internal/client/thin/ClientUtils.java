@@ -602,7 +602,7 @@ public final class ClientUtils {
 
     /** Write Ignite binary object to output stream. */
     void writeObject(BinaryOutputStream out, Object obj) {
-        out.writeByteArray(marsh.marshal(obj));
+        marsh.marshal(obj, out);
     }
 
     /**
