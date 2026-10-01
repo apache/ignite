@@ -67,19 +67,19 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
     /** */
     @Test
-    public void testWindowOpenSameVersion() throws Exception {
+    public void testDeprecatedFieldEmptyAfterFinalization() throws Exception {
         checkMutualCoreMessageSend("2.19.2", "2.19.2", A, B, null, D, null, null);
     }
 
     /** */
     @Test
-    public void testWindowOpenMixedPair() throws Exception {
+    public void testDeprecationUnknownToOlderPeer() throws Exception {
         checkMutualCoreMessageSend("2.19.2", "2.20.0", A, B, null, D, null, null);
     }
 
     /** */
     @Test
-    public void testWindowClosed() throws Exception {
+    public void testDeprecationKnownToOlderPeer() throws Exception {
         checkMutualCoreMessageSend("2.20.0", "2.20.1", A, null, null, null, E, null);
     }
 
@@ -246,7 +246,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
     /** */
     @Test
-    public void testCommunicationUpgradeOpensWindow() throws Exception {
+    public void testDeprecatedFieldKeptUntilFinalization() throws Exception {
         startGrid(0, "2.19.0");
         startGrid(1, "2.19.0");
 
