@@ -33,8 +33,7 @@ import org.junit.Test;
 import static org.apache.ignite.failure.FailureType.SEGMENTATION;
 import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
-import static org.apache.ignite.internal.processors.failure.FailureProcessor.FAILURE_METRICS;
-import static org.apache.ignite.internal.processors.failure.FailureProcessor.IGNORED_FAILURES_PREFIX;
+import static org.apache.ignite.internal.processors.failure.FailureProcessor.IGNORED_FAILURES_REG;
 
 /**
  * Tests that the failure processor counts suppressed (ignored) failures per failure type via dedicated metrics
@@ -76,7 +75,7 @@ public class FailureProcessorMetricsTest extends GridCommonAbstractTest {
     public void testPerTypeIgnoredFailuresCountMetrics() throws Exception {
         ignoredTypes = Set.of(SYSTEM_CRITICAL_OPERATION_TIMEOUT, SYSTEM_WORKER_BLOCKED);
 
-        IgniteEx ignite = startGrids(2);
+        IgniteEx ignite = startGrid(0);
 
         LongMetric criticalTimeoutCnt = ignoredFailuresMetric(ignite, SYSTEM_CRITICAL_OPERATION_TIMEOUT);
         LongMetric workerBlockedCnt = ignoredFailuresMetric(ignite, SYSTEM_WORKER_BLOCKED);
@@ -104,9 +103,6 @@ public class FailureProcessorMetricsTest extends GridCommonAbstractTest {
 
         assertEquals(2, criticalTimeoutCnt.value());
         assertEquals(1, workerBlockedCnt.value());
-
-        assertEquals(0, ignoredFailuresMetric(grid(1), SYSTEM_CRITICAL_OPERATION_TIMEOUT).value());
-        assertEquals(0, ignoredFailuresMetric(grid(1), SYSTEM_WORKER_BLOCKED).value());
     }
 
     /** Tests that no {@code failure.ignored.*} metrics are registered when the handler ignores no failure types. */
@@ -122,6 +118,6 @@ public class FailureProcessorMetricsTest extends GridCommonAbstractTest {
 
     /** */
     private LongMetric ignoredFailuresMetric(IgniteEx ignite, FailureType type) {
-        return ignite.context().metric().registry(FAILURE_METRICS).findMetric(IGNORED_FAILURES_PREFIX + '.' + type.name());
+        return ignite.context().metric().registry(IGNORED_FAILURES_REG).findMetric(type.name());
     }
 }

@@ -773,18 +773,18 @@ Register name: `Services.{service_name}`
 |{method_name} | histogram | Duration in nanoseconds of '{method_name}()'.
 |===
 
-== Custom Metrics
+== Failure Handling
 
-Registers created by the application through `Ignite.metrics()`. Their names start with `custom.`, see link:monitoring-metrics/custom-metrics[Custom Metrics].
+Counters of the failures suppressed by the configured failure handler. One counter is registered per failure type the handler ignores, see link:perf-and-troubleshooting/handling-exceptions#critical-workers-health-check[Critical Workers Health Check].
 
-== Failure
-
-Failure processor metrics.
-
-Register name: `failure`
+Register name: `failure.ignored`
 
 [cols="2,1,3",opts="header"]
 |===
-|Name|    Type|    Description
-|ignored.{FailureType}| long | The number of failures of the given type suppressed in accordance with a configured failure handler. One counter per ignored failure type.
+|Name | Type | Description
+|{failure_type} | long | The number of failures of the given type suppressed in accordance with the configured failure handler.
 |===
+
+== Custom Metrics
+
+Registers created by the application through `Ignite.metrics()`. Their names start with `custom.`, see link:monitoring-metrics/custom-metrics[Custom Metrics].
