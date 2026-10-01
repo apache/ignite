@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.snapshot;
 
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -80,7 +81,12 @@ public class SnapshotDeleteTask extends VisorOneNodeTask<SnapshotDeleteCommandAr
         @Override protected SnapshotDeleteProcessResult run(SnapshotDeleteCommandArg arg) {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            return snpMgr.deleteSnapshot(arg.snapshotName(), arg.src()).get();
+            try {
+                return snpMgr.deleteSnapshot(arg.snapshotName(), arg.src()).get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to delete snapshot.", e);
+            }
         }
     }
 }

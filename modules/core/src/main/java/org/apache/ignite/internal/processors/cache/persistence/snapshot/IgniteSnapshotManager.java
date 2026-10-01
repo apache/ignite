@@ -727,6 +727,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * TODO : revise the incremental snapshots parts in the scoped case https://issues.apache.org/jira/browse/IGNITE-29095
+     *
      * Tries to delete local snapshot data.
      *
      * @param sft Snapshot file tree.
