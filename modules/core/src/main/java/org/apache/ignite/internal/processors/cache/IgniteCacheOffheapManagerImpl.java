@@ -1456,18 +1456,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (oldRow == null)
                 return false;
 
-            // In-place update is not possible when queries (indexes) are enabled. In-place update doesn't change
-            // the row link and doesn't touch indexes (finishUpdate is skipped for IN_PLACE operation), so after the
-            // update index entries may point to the row with fields that don't match the index (until the index is
-            // updated). Without in-place update this is impossible: the new row is inserted to the row store first,
-            // then index entries are updated (under index leaf page lock, which also protects concurrent index
-            // readers of the old row), and only after that the old row is removed from the row store.
+            // In-place update is not possible when queries (indexes) are enabled. Index entries reference the row by
+            // link and are built from the row fields, so after the in-place update, but before the index update,
+            // index entries would point to the row with fields that may not match the index. Without in-place update
+            // there is no such window: the new row is inserted to the row store first, then index entries are updated
+            // (the new entry, linked to the new row is added and the old one, linked to the old row is removed under
+            // the index leaf page lock), and only after that the old row is removed from the row store. The index
+            // reader holds the index leaf page read lock while it reads the row by link, and the updater has to
+            // acquire the write lock on the same leaf page to remove the old entry before it removes the old row,
+            // so the reader always reads the row consistent with the index entry it was found by, and the row
+            // can't be removed under the reader.
             if (cctx.queries().enabled())
                 return false;
 
-            // In-place update doesn't change the row link and doesn't touch the pending tree (finishUpdate is skipped
-            // for IN_PLACE operation), so the pending tree entry (expireTime, link) must stay valid: the expire time
-            // must not change.
+            // Pending tree entries reference the row by link and store its expire time. In-place update keeps the
+            // link and doesn't touch the pending tree, so it's possible only when the expire time is not changed,
+            // otherwise the pending tree entry would become inconsistent with the row: the entry would be processed
+            // by the TTL cleanup worker at the old expire time, while the row has the new one. Without in-place update
+            // the pending tree is kept consistent as follows: the new row is inserted to the row store, then the old
+            // link is removed from the pending tree (under the pending tree leaf page lock) and the new one is added,
+            // and only after that the old row is removed from the row store. The TTL cleanup worker holds the pending
+            // tree leaf page write lock while it reads the row by link, and the updater has to acquire the write lock
+            // on the same leaf page to remove the old link before it removes the old row, so the worker always reads
+            // the row consistent with the pending tree entry, and the row can't be removed under the worker.
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
@@ -1479,15 +1490,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 && !grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE))
                 return false;
 
-            // In-place update is performed by the data tree invoke closure, which is executed without the data tree
-            // leaf page lock (only the entry lock is held), so concurrent readers of the row by link (data tree,
-            // pending tree, page eviction, etc.) are protected only by the data page locks. A single-page row is
-            // updated under the write lock of its data page and readers read it under the read lock of the same page,
-            // so they see either the old or the new row. A multi-page row is updated fragment by fragment using lock
-            // coupling (the next fragment page is locked before the current one is released), readers of fragmented
-            // rows traverse fragments in the same order with the same lock coupling, so an update can't overtake a
-            // reader and readers see either the entirely old or the entirely new row as well (see
-            // AbstractFreeList#updateFragmentedRow and CacheDataRowAdapter#doInitFromLink).
+            // Paths that read the row by link hold different locks: KV API - the data tree leaf page lock, TTL
+            // cleanup - the pending tree leaf page lock, page eviction - the read lock of the evicted data page,
+            // indexes - the index tree leaf page lock. The only lock they have in common is the lock on the data row
+            // pages, which are read one by one. In-place update is performed by the data tree invoke closure under
+            // the entry lock, but without the data tree leaf page lock. Atomicity of read / in-place update of a
+            // single-page row is provided by the lock on the single data row page. Atomicity of reads concurrent with
+            // the multi-page in-place update is provided by lock coupling on the data row pages (see
+            // AbstractFreeList#updateFragmentedRow and CacheDataRowAdapter#doInitFromLink), which doesn't allow
+            // a reader to overtake the updater and vice versa, so all readers are protected regardless of the locks
+            // they hold.
 
             int newLen = dataRow.size();
 
