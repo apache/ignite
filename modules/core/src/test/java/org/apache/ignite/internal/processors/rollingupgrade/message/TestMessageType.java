@@ -66,12 +66,17 @@ public enum TestMessageType {
     }
 
     /** */
-    public static Class<? extends Message>[] resolveTestMessageClasses(String cmpVers) {
-        return Arrays.stream(values()).map(msgType -> msgType.resolveClass(cmpVers)).toArray(Class[]::new);
+    public TestDiscoveryMessage build(String cmpVers, Predicate<IgniteFeature> featureStatusProvider) throws Exception {
+        Class<? extends Message> msgCls = resolveClass(cmpVers);
+
+        if (msgCls == null)
+            throw new AssertionError("Failed to resolve test message class [type=" + this + ", cmpVers=" + cmpVers + ']');
+
+        return ((TestDiscoveryMessage)msgCls.getConstructor().newInstance()).fill(featureStatusProvider);
     }
 
     /** */
-    public TestDiscoveryMessage build(String cmpVers, Predicate<IgniteFeature> featureStatusProvider) throws Exception {
-        return ((TestDiscoveryMessage)resolveClass(cmpVers).getConstructor().newInstance()).fill(featureStatusProvider);
+    public static Class<? extends Message>[] resolveTestMessageClasses(String cmpVers) {
+        return Arrays.stream(values()).map(msgType -> msgType.resolveClass(cmpVers)).toArray(Class[]::new);
     }
 }
