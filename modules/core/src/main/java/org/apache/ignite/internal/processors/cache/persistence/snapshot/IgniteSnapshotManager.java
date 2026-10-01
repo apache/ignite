@@ -767,17 +767,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // We try to delete first. If snapshot data wasn't deleted because it doesn't already exist is not a removal error here.
         try {
             for (File s : allStorages) {
-                // Extra or root sanpshot data.
-                if (!deleteDirectory(s) && s.exists()) {
+                // Extra storage's or root's sanpshot data.
+                if (!deleteDirectory(s) && s.exists() || s.equals(sft.nodeStorage())) {
                     res.set1(false);
 
                     continue;
                 }
 
-                if (s.equals(sft.nodeStorage()))
-                    continue;
-
-                // Extra "db" directory.
+                // Extra storage's "db" directory.
                 s = s.getParentFile();
 
                 if ((scoped && !s.delete() || !scoped && !deleteDirectory(s)) && s.exists()) {
@@ -786,30 +783,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     continue;
                 }
 
-                // Extra snapshot root.
+                // Extra storage's snapshot root.
                 s = s.getParentFile();
 
                 if ((scoped && !s.delete() || !scoped && !deleteDirectory(s)) && s.exists())
                     res.set1(false);
             }
 
-            for (File p : F.asList(sft.binaryMeta(), sft.marshaller())) {
+            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller())) {
                 if (!deleteDirectory(p) && p.exists())
                     res.set1(false);
             }
 
-            // Delete last parent directories.
-            for (File p : F.asList(sft.binaryMetaRoot(), sft.marshaller().getParentFile(), sft.root())) {
-                if ((scoped && !p.delete() || !scoped && !deleteDirectory(p)) && p.exists()) {
-                    res.set1(false);
+            File rootDbDir = sft.marshaller().getParentFile();
 
-                    break;
-                }
-            }
+            if ((scoped && !rootDbDir.delete() || !scoped && !deleteDirectory(rootDbDir)) && rootDbDir.exists())
+                res.set1(false);
 
             // Remove the metadata at the end. For the scoped removal, delete anyway because it sets 'false' as the result
             // if can't remove a non-empty shared directory. This is ok.
             if ((scoped || res.get1()) && !sft.meta().delete() && sft.meta().exists())
+                res.set1(false);
+
+            // Finally, delete the snapshot root directory.
+            if ((scoped && !sft.root().delete() || !scoped && !deleteDirectory(sft.root())) && sft.root().exists())
                 res.set1(false);
         }
         catch (Exception e) {
