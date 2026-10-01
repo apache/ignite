@@ -28,7 +28,6 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ignitetest.services.utils.auth import get_credentials, is_auth_enabled
 from ignitetest.services.utils.ignite_spec import envs_to_exports
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_ADMIN_ALIAS
-from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils.version import V_2_11_0
 
 
@@ -303,17 +302,17 @@ class ControlUtility:
 
         while datetime.now() < delta_time:
             for node in self._cluster.nodes:
-                mbean = JmxClient(node).find_mbean('.*name=snapshot.*', negative_pattern='group=views')
+                mbean = node.metric_registry_mbean('snapshot')
 
-                if snapshot_name != next(mbean.LastSnapshotName, ""):
+                if snapshot_name != mbean.value("LastSnapshotName", ""):
                     continue
 
-                start_time = int(next(mbean.LastSnapshotStartTime))
-                end_time = int(next(mbean.LastSnapshotEndTime))
-                err_msg = next(mbean.LastSnapshotErrorMessage)
+                start_time = int(mbean.value("LastSnapshotStartTime"))
+                end_time = int(mbean.value("LastSnapshotEndTime"))
+                err_msg = mbean.value("LastSnapshotErrorMessage")
 
                 if (start_time < end_time) and (err_msg == ''):
-                    assert snapshot_name == next(mbean.LastSnapshotName)
+                    assert snapshot_name == mbean.value("LastSnapshotName")
                     return
 
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
