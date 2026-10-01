@@ -1343,11 +1343,13 @@ public class BinaryUtils {
      * @param hnds Context.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    static BinaryReaderEx reader(BinaryContext ctx,
-                                        BinaryInputStream in,
-                                        ClassLoader ldr,
-                                        @Nullable BinaryReaderHandles hnds,
-                                        boolean forUnmarshal) {
+    static BinaryReaderEx reader(
+        BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean forUnmarshal
+    ) {
         return binariesFactory.reader(ctx, in, ldr, hnds, forUnmarshal);
     }
 
@@ -1365,26 +1367,7 @@ public class BinaryUtils {
         ClassLoader ldr,
         boolean skipHdrCheck,
         boolean forUnmarshal) {
-        return reader(ctx, in, ldr, null, skipHdrCheck, forUnmarshal);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Context.
-     * @param in Input stream.
-     * @param ldr Class loader.
-     * @param hnds Context.
-     * @param skipHdrCheck Whether to skip header check.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
-     */
-    static BinaryReaderEx reader(BinaryContext ctx,
-                                        BinaryInputStream in,
-                                        ClassLoader ldr,
-                                        @Nullable BinaryReaderHandles hnds,
-                                        boolean skipHdrCheck,
-                                        boolean forUnmarshal) {
-        return binariesFactory.reader(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+        return binariesFactory.reader(ctx, in, ldr, null, skipHdrCheck, forUnmarshal);
     }
 
     /**

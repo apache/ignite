@@ -817,7 +817,7 @@ public class BinaryImplUtils {
      */
     @Nullable static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return BinaryUtils.reader(ctx, in, ldr, handles.handles(), false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
 
     /**

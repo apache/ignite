@@ -1980,7 +1980,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx, BinaryReaderHandlesHo
         if (!findFieldById(fieldId))
             return null;
 
-        return BinaryUtils.reader(ctx, in, ldr, hnds, false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**
