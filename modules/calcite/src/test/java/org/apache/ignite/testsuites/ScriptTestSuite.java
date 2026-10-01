@@ -222,8 +222,6 @@ public class ScriptTestSuite {
 
         log.info(">>> Start: " + dirName + "/" + fileName);
 
-        System.out.println( "##teamcity[testStarted name='" + test + "']" );
-
         try {
             Ignite ign = F.first(Ignition.allGrids());
 
@@ -244,14 +242,8 @@ public class ScriptTestSuite {
                 throw new RuntimeException(e);
             }
         }
-        catch (Throwable th) {
-            System.out.println(
-                "##teamcity[testFailed name='" + test + "' message='" + th.getMessage() + "']" );
-        }
         finally {
             log.info(">>> Finish: " + dirName + "/" + fileName);
-
-            System.out.println( "##teamcity[testFinished name='" + test + "']" );
         }
     }
 
