@@ -49,7 +49,7 @@ public class PlannerTimeoutTest extends AbstractPlannerTest {
     static void init() {
         // Additional check for val correctness: GridTestClockTimer#startTestTimer
         // Extended description: https://issues.apache.org/jira/browse/IGNITE-29084
-        assertEquals(1, (int)GridTestUtils.getFieldValue(CommonUtils.class, "gridCnt"));
+        assertTrue(GridTestUtils.<Boolean>getFieldValue(CommonUtils.class, "extClock"));
     }
 
     /** */
