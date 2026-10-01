@@ -220,8 +220,12 @@ public class JUnitTeamcityReporter extends RunListener {
         return "test-" + prevSuite + prevFlush + ".xml";
     }
 
-    /** */
-    private String escapeForTeamcity(String msg) {
+    /**
+     * @param msg Message.
+     *
+     * @return Escaped string.
+     */
+    public static String escapeForTeamcity(String msg) {
         return (msg == null ? "null" : msg)
             .replace("|", "||")
             .replace("\r", "|r")

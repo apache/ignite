@@ -43,32 +43,34 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 
 /**
  * Tests `KILL QUERY` command.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "isAsync={0}, cancelOnClient={1}")
+@MethodSource("parameters")
 public class KillQueryCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
     /** If {@code true}, cancel asynchronously. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public boolean isAsync;
 
     /** If {@code true}, cancel on client(initiator), otherwise on server. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean cancelOnClient;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "isAsync={0},cancelOnClient={1}")
-    public static Collection<?> parameters() {
-        return Stream.of(true, false).flatMap(p -> Stream.of(new Object[] {p, true}, new Object[] {p, false}))
+    @MethodSource("parameters")
+    private static Collection<Arguments> parameters() {
+        return Stream.of(true, false).flatMap(p -> Stream.of(Arguments.of(p, true), Arguments.of(p, false)))
             .collect(Collectors.toList());
     }
 
