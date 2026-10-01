@@ -152,28 +152,24 @@ public class ConverterUtils {
         List<Expression> expressions
     ) {
         final List<Expression> list = new ArrayList<>(expressions.size());
-
         if (targetTypes.length == expressions.size()) {
             for (int i = 0; i < expressions.size(); i++)
                 list.add(fromInternal(root, expressions.get(i), targetTypes[i]));
         }
         else {
             int j = 0;
-
-            for (Expression expression : expressions) {
-                Class<?> targetType;
-
+            for (int i = 0; i < expressions.size(); i++) {
+                Class<?> type;
                 if (!targetTypes[j].isArray()) {
-                    targetType = targetTypes[j];
+                    type = targetTypes[j];
                     j++;
                 }
                 else
-                    targetType = targetTypes[j].getComponentType();
+                    type = targetTypes[j].getComponentType();
 
-                list.add(fromInternal(root, expression, targetType));
+                list.add(fromInternal(root, expressions.get(i), type));
             }
         }
-
         return list;
     }
 

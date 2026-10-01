@@ -80,6 +80,8 @@ import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+
 /**
  * Tests SQL engine extension with plugin.
  */
@@ -166,6 +168,11 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             RexImpTable.FALSE_EXPR
                         ), NullPolicy.ARG0, false
                     ));
+
+                    // A plugin can declare a Java return type while its implementor returns an internal SQL value.
+                    RexImpTable.INSTANCE.define(OperatorTable.JAVA_BINARY_IDENTITY, RexImpTable.createRexCallImplementor(
+                        (translator, call, translatedOperands) -> translatedOperands.get(0), NullPolicy.ARG0, false
+                    ));
                 }
             });
     }
@@ -194,10 +201,39 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .withResultChecker(rows -> {
                 assertEquals(1, rows.size());
                 assertEquals(1, rows.get(0).size());
-                assertEquals(byte[].class, rows.get(0).get(0).getClass());
-                assertEqualsArraysAware(new byte[] {1, 2, 3}, rows.get(0).get(0));
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
             })
             .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnType() {
+        assertQuery("SELECT JAVA_BINARY_IDENTITY(x'010203'), JAVA_BINARY_IDENTITY(x''), "
+            + "JAVA_BINARY_IDENTITY(CAST(NULL AS VARBINARY))")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(3, rows.get(0).size());
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
+                assertArrayEquals(new byte[0], (byte[])rows.get(0).get(1));
+                assertNull(rows.get(0).get(2));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnTypeDynamicParameters() {
+        for (byte[] bytes : new byte[][] {new byte[] {1, 2, 3}, new byte[0], null}) {
+            assertQuery("SELECT JAVA_BINARY_IDENTITY(?)")
+                .withParams((Object)bytes)
+                .withResultChecker(rows -> {
+                    assertEquals(1, rows.size());
+                    assertEquals(1, rows.get(0).size());
+                    assertArrayEquals(bytes, (byte[])rows.get(0).get(0));
+                })
+                .check();
+        }
     }
 
     /** */
@@ -450,6 +486,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.VARBINARY),
             null,
             OperandTypes.NILADIC,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        /** */
+        public static final SqlFunction JAVA_BINARY_IDENTITY = new SqlFunction(
+            "JAVA_BINARY_IDENTITY",
+            SqlKind.OTHER_FUNCTION,
+            opBinding -> opBinding.getTypeFactory().createJavaType(byte[].class),
+            null,
+            OperandTypes.BINARY,
             SqlFunctionCategory.USER_DEFINED_FUNCTION
         );
     }

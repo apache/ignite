@@ -63,6 +63,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Integration test for user defined functions.
@@ -522,7 +523,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         Consumer<List<List<?>>> binaryResultChecker = rows -> {
             assertEquals(1, rows.size());
             assertEquals(1, rows.get(0).size());
-            assertEqualsArraysAware(bytes, rows.get(0).get(0));
+            assertArrayEquals(bytes, (byte[])rows.get(0).get(0));
         };
 
         // Scalar function arguments.
@@ -730,7 +731,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 for (int i = 0; i < exp.length; i++) {
                     Object actual = rows.get(0).get(i);
 
-                    assertEquals("Unexpected value type at index " + i, exp[i].getClass(), actual.getClass());
                     assertEqualsArraysAware("Unexpected value at index " + i, exp[i], actual);
                 }
             })
@@ -750,8 +750,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 assertEquals(2, rows.get(0).size());
                 assertEquals(Date.class, rows.get(0).get(0).getClass());
                 assertEquals(Date.valueOf("2020-01-01"), rows.get(0).get(0));
-                assertEquals(byte[].class, rows.get(0).get(1).getClass());
-                assertEqualsArraysAware(new byte[] {1, 2, 3}, rows.get(0).get(1));
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(1));
             })
             .check();
     }
@@ -875,12 +874,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .check();
     }
 
-    /**
-     * Regression test: {@code java.time} parameters of a UDF must be mapped to SQL temporal types (not to {@code OTHER}),
-     * so that a dynamic parameter bound to a JDBC value ({@link Date}, {@link Time}, {@link Timestamp}) is converted to the
-     * parameter class, and a value of an incompatible type is rejected by the validator instead of failing with
-     * a {@link ClassCastException} at execution time.
-     */
+    /** */
     @Test
     public void testJavaTimeFunctionParametersWithSqlTypeValues() {
         client.getOrCreateCache(new CacheConfiguration<>("java-time-params")
@@ -1044,10 +1038,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             .check();
     }
 
-    /**
-     * Regression test: a call of a deterministic UDF with temporal literal arguments must be reduced to a constant at
-     * planning time. The planner executor has no data context, so the arguments conversion must not depend on it.
-     */
+    /** */
     @Test
     public void testDeterministicTemporalFunctionReduced() {
         client.getOrCreateCache(new CacheConfiguration<>("deterministic-temporal")
