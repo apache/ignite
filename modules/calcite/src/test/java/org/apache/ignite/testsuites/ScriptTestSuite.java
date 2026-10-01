@@ -222,6 +222,8 @@ public class ScriptTestSuite {
 
         log.info(">>> Start: " + dirName + "/" + fileName);
 
+        System.out.println( "##teamcity[testStarted name='" + test + "']" );
+
         try {
             Ignite ign = F.first(Ignition.allGrids());
 
@@ -244,6 +246,8 @@ public class ScriptTestSuite {
         }
         finally {
             log.info(">>> Finish: " + dirName + "/" + fileName);
+
+            System.out.println( "##teamcity[testFinished name='" + test + "']" );
         }
     }
 
