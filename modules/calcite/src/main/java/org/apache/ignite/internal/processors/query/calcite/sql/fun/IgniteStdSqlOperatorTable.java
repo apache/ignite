@@ -252,23 +252,22 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.ARRAY_QUERY);
 
         // Multiset.
-        // TODO https://issues.apache.org/jira/browse/IGNITE-15551
-        //register(SqlStdOperatorTable.MULTISET_VALUE);
-        //register(SqlStdOperatorTable.MULTISET_QUERY);
-        //register(SqlStdOperatorTable.SLICE);
-        //register(SqlStdOperatorTable.ELEMENT);
-        //register(SqlStdOperatorTable.STRUCT_ACCESS);
-        //register(SqlStdOperatorTable.MEMBER_OF);
-        //register(SqlStdOperatorTable.IS_A_SET);
-        //register(SqlStdOperatorTable.IS_NOT_A_SET);
-        //register(SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT);
-        //register(SqlStdOperatorTable.MULTISET_INTERSECT);
-        //register(SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT);
-        //register(SqlStdOperatorTable.MULTISET_EXCEPT);
-        //register(SqlStdOperatorTable.MULTISET_UNION_DISTINCT);
-        //register(SqlStdOperatorTable.MULTISET_UNION);
-        //register(SqlStdOperatorTable.SUBMULTISET_OF);
-        //register(SqlStdOperatorTable.NOT_SUBMULTISET_OF);
+        register(SqlStdOperatorTable.MULTISET_VALUE);
+        register(SqlStdOperatorTable.MULTISET_QUERY);
+        register(SqlStdOperatorTable.SLICE);
+        register(SqlStdOperatorTable.ELEMENT);
+        register(SqlStdOperatorTable.STRUCT_ACCESS);
+        register(SqlStdOperatorTable.MEMBER_OF);
+        register(SqlStdOperatorTable.IS_A_SET);
+        register(SqlStdOperatorTable.IS_NOT_A_SET);
+        register(SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT);
+        register(SqlStdOperatorTable.MULTISET_INTERSECT);
+        register(SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT);
+        register(SqlStdOperatorTable.MULTISET_EXCEPT);
+        register(SqlStdOperatorTable.MULTISET_UNION_DISTINCT);
+        register(SqlStdOperatorTable.MULTISET_UNION);
+        register(SqlStdOperatorTable.SUBMULTISET_OF);
+        register(SqlStdOperatorTable.NOT_SUBMULTISET_OF);
 
         // Other fuctions and operators.
         register(SqlStdOperatorTable.ROW);

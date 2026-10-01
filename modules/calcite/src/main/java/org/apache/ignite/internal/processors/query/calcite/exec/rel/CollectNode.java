@@ -174,7 +174,10 @@ public class CollectNode<Row> extends MemoryTrackingNode<Row> implements SingleN
 
         switch (collectionType.getSqlTypeName()) {
             case ARRAY:
-                return new ArrayCollector<>(ctx.rowHandler(), rowFactory, IN_BUFFER_SIZE);
+            case MULTISET:
+                return new ArrayCollector<>(ctx.rowHandler(), rowFactory, IN_BUFFER_SIZE,
+                    collectionType.getSqlTypeName() == SqlTypeName.MULTISET
+                        && collectionType.getComponentType().isStruct());
             case MAP:
                 return new MapCollector<>(ctx.rowHandler(), rowFactory, IN_BUFFER_SIZE);
             default:
@@ -266,15 +269,20 @@ public class CollectNode<Row> extends MemoryTrackingNode<Row> implements SingleN
     /** */
     private static class ArrayCollector<Row> extends Collector<Row> {
         /** */
+        private final boolean structedType;
+
+        /** */
         private List<Object> outBuf;
 
         /** */
         private ArrayCollector(
             RowHandler<Row> handler,
             RowHandler.RowFactory<Row> rowFactory,
-            int cap
+            int cap,
+            boolean structedType
         ) {
             super(handler, rowFactory, cap);
+            this.structedType = structedType;
             outBuf = new ArrayList<>(cap);
         }
 
@@ -285,7 +293,7 @@ public class CollectNode<Row> extends MemoryTrackingNode<Row> implements SingleN
 
         /** {@inheritDoc} */
         @Override public void push(Row row) {
-            if (rowHandler.columnCount(row) > 1)
+            if (structedType || rowHandler.columnCount(row) > 1)
                 outBuf.add(row);
             else
                 outBuf.add(rowHandler.get(0, row));

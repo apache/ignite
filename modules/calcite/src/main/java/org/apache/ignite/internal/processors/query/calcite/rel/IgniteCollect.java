@@ -26,12 +26,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-
-import static java.util.Objects.requireNonNull;
 
 /** */
 public class IgniteCollect extends Collect implements IgniteRel {
@@ -58,9 +55,12 @@ public class IgniteCollect extends Collect implements IgniteRel {
      * @param input Serialized representation.
      */
     public IgniteCollect(RelInput input) {
-        super(input.getCluster(), input.getTraitSet().replace(IgniteConvention.INSTANCE), input.getInput(),
-            deriveRowType(input.getCluster().getTypeFactory(), input.getEnum("collectionType", SqlTypeName.class),
-                requireNonNull(input.getString("field"), "field"), input.getInput().getRowType()));
+        super(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getInput(),
+            input.getRowType("rowType")
+        );
     }
 
     /** {@inheritDoc} */
@@ -80,7 +80,7 @@ public class IgniteCollect extends Collect implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
-        return super.explainTerms(pw).item("collectionType", getCollectionType());
+        return super.explainTerms(pw).item("collectionType", getCollectionType()).item("rowType", getRowType());
     }
 
     /** {@inheritDoc} */

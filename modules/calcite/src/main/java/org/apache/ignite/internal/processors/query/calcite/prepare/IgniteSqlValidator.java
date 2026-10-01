@@ -46,6 +46,7 @@ import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
@@ -55,6 +56,7 @@ import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlCase;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -736,7 +738,22 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 return type;
         }
 
-        return super.deriveType(scope, expr);
+        RelDataType type = super.deriveType(scope, expr);
+
+        if (expr instanceof SqlCall) {
+            SqlCall call = (SqlCall)expr;
+            SqlOperator op = call.getOperator();
+
+            // Collection predicates yield UNKNOWN for a null collection.
+            if (op == SqlStdOperatorTable.IS_EMPTY || op == SqlStdOperatorTable.IS_NOT_EMPTY
+                || op == SqlStdOperatorTable.IS_A_SET || op == SqlStdOperatorTable.IS_NOT_A_SET) {
+                type = typeFactory.createTypeWithNullability(type, deriveType(scope, call.operand(0)).isNullable());
+
+                setValidatedNodeType(expr, type);
+            }
+        }
+
+        return type;
     }
 
     /** */

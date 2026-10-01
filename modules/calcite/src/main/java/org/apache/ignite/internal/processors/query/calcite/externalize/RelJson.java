@@ -381,8 +381,11 @@ class RelJson {
 
             Object fields = map.get("fields");
 
-            if (fields != null)
-                return toType(typeFactory, fields);
+            if (fields != null) {
+                RelDataType type = toType(typeFactory, fields);
+
+                return Boolean.TRUE == map.get("nullable") ? typeFactory.createTypeWithNullability(type, true) : type;
+            }
             else {
                 SqlTypeName sqlTypeName = toEnum(map.get("type"));
                 Integer precision = (Integer)map.get("precision");
@@ -401,6 +404,8 @@ class RelJson {
                     if (Boolean.TRUE == map.get("nullable"))
                         type = typeFactory.createTypeWithNullability(type, true);
                 }
+                else if (sqlTypeName == SqlTypeName.MULTISET)
+                    type = typeFactory.createMultisetType(toType(typeFactory, map.get("elementType")), -1);
                 else if (sqlTypeName == SqlTypeName.MAP)
                     type = typeFactory.createMapType(
                         toType(typeFactory, map.get("keyType")),
@@ -790,9 +795,19 @@ class RelJson {
             List<Object> list = list();
             for (RelDataTypeField field : node.getFieldList())
                 list.add(toJson(field));
+
+            // A nullable ROW must retain its nullability, independently of its fields' nullability.
+            if (node.isNullable()) {
+                Map<String, Object> map = map();
+                map.put("fields", list);
+                map.put("nullable", true);
+
+                return map;
+            }
+
             return list;
         }
-        else if (node.getSqlTypeName() == SqlTypeName.ARRAY) {
+        else if (node.getSqlTypeName() == SqlTypeName.ARRAY || node.getSqlTypeName() == SqlTypeName.MULTISET) {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
             map.put("elementType", toJson(node.getComponentType()));

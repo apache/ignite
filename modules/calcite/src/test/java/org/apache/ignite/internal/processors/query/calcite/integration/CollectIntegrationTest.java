@@ -49,4 +49,26 @@ public class CollectIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertQuery(sql).resultSize(1).check();
     }
+
+    /** Tests multiset collection from distributed and correlated queries. */
+    @Test
+    public void testMultisetQueries() {
+        sql("CREATE TABLE t(id INT PRIMARY KEY, val INT)");
+        sql("INSERT INTO t VALUES (1, 10), (2, 10), (3, 20), (4, NULL)");
+
+        assertQuery("SELECT * FROM UNNEST(MULTISET(SELECT val FROM t))")
+            .returns(10).returns(10).returns(20).returns(NULL_RESULT).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET(SELECT id, val FROM t))")
+            .returns(1, 10).returns(2, 10).returns(3, 20).returns(4, null).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[ROW(1), ROW(2)])")
+            .returns(1).returns(2).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[ROW(1, 10), ROW(2, 20)])")
+            .returns(1, 10).returns(2, 20).check();
+        assertQuery("SELECT id, CARDINALITY(MULTISET(SELECT b.val FROM t b WHERE b.val = a.val)) FROM t a")
+            .returns(1, 2).returns(2, 2).returns(3, 1).returns(4, 0).check();
+        assertQuery("SELECT id, CARDINALITY(MULTISET[val, val]) FROM t")
+            .returns(1, 2).returns(2, 2).returns(3, 2).returns(4, 2).check();
+        assertQuery("SELECT CARDINALITY(MULTISET(SELECT val FROM t) MULTISET UNION ALL " +
+            "MULTISET(SELECT val FROM t))").returns(8).check();
+    }
 }

@@ -27,6 +27,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -53,6 +54,18 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
         registerOp(SqlStdOperatorTable.TIMESTAMP_DIFF, new TimestampDiffConvertlet());
         registerOp(SqlLibraryOperators.REGEXP_SUBSTR, (cx, call) -> cx.getRexBuilder().makeCall(
             SqlLibraryOperators.REGEXP_SUBSTR, Commons.transform(call.getOperandList(), cx::convertExpression)));
+
+        // Calcite declares these predicates non-nullable, but a null collection yields UNKNOWN.
+        for (SqlOperator op : ImmutableList.of(SqlStdOperatorTable.IS_EMPTY, SqlStdOperatorTable.IS_NOT_EMPTY,
+            SqlStdOperatorTable.IS_A_SET, SqlStdOperatorTable.IS_NOT_A_SET)) {
+            registerOp(op, (cx, call) -> {
+                RexNode operand = cx.convertExpression(call.operand(0));
+                RelDataType type = cx.getTypeFactory().createTypeWithNullability(
+                    cx.getTypeFactory().createSqlType(SqlTypeName.BOOLEAN), operand.getType().isNullable());
+
+                return cx.getRexBuilder().makeCall(type, call.getOperator(), ImmutableList.of(operand));
+            });
+        }
 
         addAlias(IgniteOwnSqlOperatorTable.LENGTH, SqlStdOperatorTable.CHAR_LENGTH);
     }

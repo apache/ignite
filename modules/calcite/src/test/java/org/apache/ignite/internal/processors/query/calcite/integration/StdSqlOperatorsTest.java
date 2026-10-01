@@ -385,6 +385,39 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testMultisets() {
+        // Scalar constructors exercise SLICE, which removes the temporary ROW wrapper.
+        assertExpression("MULTISET[1, 2]").returns(Arrays.asList(1, 2)).check();
+        assertExpression("MULTISET(SELECT val FROM t)").returns(Collections.singletonList(1)).check();
+        assertExpression("CARDINALITY(MULTISET[1, 2])").returns(2).check();
+        assertExpression("MULTISET[1] IS EMPTY").returns(false).check();
+        assertExpression("MULTISET[1] IS NOT EMPTY").returns(true).check();
+        assertExpression("ELEMENT(MULTISET[1])").returns(1).check();
+        assertQuery("SELECT s.r.a FROM (SELECT ELEMENT(CAST(? AS ROW(a INTEGER, b INTEGER) MULTISET)) " +
+            "AS r FROM t) AS s").withParams(Collections.singletonList(new Object[] {1, 2})).returns(1).check();
+        assertExpression("1 MEMBER OF MULTISET[1, 2]").returns(true).check();
+        assertExpression("MULTISET[1, 2] IS A SET").returns(true).check();
+        assertExpression("MULTISET[1, 1] IS NOT A SET").returns(true).check();
+        assertExpression("MULTISET[1] SUBMULTISET OF MULTISET[1, 2]").returns(true).check();
+        assertExpression("MULTISET[3] NOT SUBMULTISET OF MULTISET[1, 2]").returns(true).check();
+
+        assertQuery("SELECT * FROM UNNEST(MULTISET[1, 2])").returns(1).returns(2).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[1, 2] MULTISET UNION ALL MULTISET[2, 3])")
+            .returns(1).returns(2).returns(2).returns(3).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[1, 2] MULTISET UNION DISTINCT MULTISET[2, 3])")
+            .returns(1).returns(2).returns(3).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[1, 2] MULTISET INTERSECT ALL MULTISET[2, 3])")
+            .returns(2).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[1, 2] MULTISET INTERSECT DISTINCT MULTISET[2, 3])")
+            .returns(2).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[1, 2] MULTISET EXCEPT ALL MULTISET[2, 3])")
+            .returns(1).check();
+        assertQuery("SELECT * FROM UNNEST(MULTISET[1, 2] MULTISET EXCEPT DISTINCT MULTISET[2, 3])")
+            .returns(1).check();
+    }
+
+    /** */
     private QueryChecker assertExpression(String qry) {
         // Select expressions from table to test plan serialization containing these expressions.
         return assertQuery("SELECT " + qry + " FROM t");

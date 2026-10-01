@@ -184,6 +184,7 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DEFAULT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DEGREES;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DIVIDE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.DIVIDE_INTEGER;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ELEMENT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EQUALS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EXP;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.EXTRACT;
@@ -191,12 +192,14 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.FLOOR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.GREATER_THAN;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.INITCAP;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_A_SET;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_EMPTY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_FALSE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_ARRAY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_OBJECT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_SCALAR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_VALUE;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_A_SET;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_DISTINCT_FROM;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_EMPTY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_FALSE;
@@ -225,14 +228,23 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOCALTIMESTAMP;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOG10;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.LOWER;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MEMBER_OF;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MINUS_DATE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MOD;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTIPLY;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_EXCEPT;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_EXCEPT_DISTINCT;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_INTERSECT;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_INTERSECT_DISTINCT;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_UNION;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_UNION_DISTINCT;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.MULTISET_VALUE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_INSENSITIVE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_SENSITIVE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_EQUALS;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.NOT_SUBMULTISET_OF;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OCTET_LENGTH;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.OVERLAY;
@@ -252,6 +264,9 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.ROW;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIGN;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIMILAR_TO;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SIN;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SLICE;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.STRUCT_ACCESS;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUBMULTISET_OF;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.SUBSTRING;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TAN;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRIM;
@@ -479,37 +494,35 @@ public class RexImpTable {
         defineMethod(CARDINALITY, BuiltInMethod.COLLECTION_SIZE.method,
             NullPolicy.STRICT);
         final MethodImplementor isEmptyImplementor =
-            new MethodImplementor(BuiltInMethod.IS_EMPTY.method, NullPolicy.NONE,
+            new MethodImplementor(BuiltInMethod.IS_EMPTY.method, NullPolicy.STRICT,
                 false);
         map.put(IS_EMPTY, isEmptyImplementor);
         map.put(IS_NOT_EMPTY, NotImplementor.of(isEmptyImplementor));
 
-        // TODO https://issues.apache.org/jira/browse/IGNITE-15551
-/*
-        defineMethod(SLICE, BuiltInMethod.SLICE.method, NullPolicy.NONE);
+        defineMethod(SLICE, BuiltInMethod.SLICE.method, NullPolicy.STRICT);
         defineMethod(ELEMENT, BuiltInMethod.ELEMENT.method, NullPolicy.STRICT);
         defineMethod(STRUCT_ACCESS, BuiltInMethod.STRUCT_ACCESS.method, NullPolicy.ANY);
-        defineMethod(MEMBER_OF, BuiltInMethod.MEMBER_OF.method, NullPolicy.NONE);
+        // TODO: Compare ROW elements by value; Calcite collection helpers use Object[].equals.
+        defineMethod(MEMBER_OF, BuiltInMethod.MEMBER_OF.method, NullPolicy.STRICT);
         final MethodImplementor isASetImplementor =
-            new MethodImplementor(BuiltInMethod.IS_A_SET.method, NullPolicy.NONE,
+            new MethodImplementor(BuiltInMethod.IS_A_SET.method, NullPolicy.STRICT,
                 false);
         map.put(IS_A_SET, isASetImplementor);
         map.put(IS_NOT_A_SET, NotImplementor.of(isASetImplementor));
         defineMethod(MULTISET_INTERSECT_DISTINCT,
-            BuiltInMethod.MULTISET_INTERSECT_DISTINCT.method, NullPolicy.NONE);
+            BuiltInMethod.MULTISET_INTERSECT_DISTINCT.method, NullPolicy.STRICT);
         defineMethod(MULTISET_INTERSECT,
-            BuiltInMethod.MULTISET_INTERSECT_ALL.method, NullPolicy.NONE);
+            BuiltInMethod.MULTISET_INTERSECT_ALL.method, NullPolicy.STRICT);
         defineMethod(MULTISET_EXCEPT_DISTINCT,
-            BuiltInMethod.MULTISET_EXCEPT_DISTINCT.method, NullPolicy.NONE);
-        defineMethod(MULTISET_EXCEPT, BuiltInMethod.MULTISET_EXCEPT_ALL.method, NullPolicy.NONE);
+            BuiltInMethod.MULTISET_EXCEPT_DISTINCT.method, NullPolicy.STRICT);
+        defineMethod(MULTISET_EXCEPT, BuiltInMethod.MULTISET_EXCEPT_ALL.method, NullPolicy.STRICT);
         defineMethod(MULTISET_UNION_DISTINCT,
-            BuiltInMethod.MULTISET_UNION_DISTINCT.method, NullPolicy.NONE);
-        defineMethod(MULTISET_UNION, BuiltInMethod.MULTISET_UNION_ALL.method, NullPolicy.NONE);
+            BuiltInMethod.MULTISET_UNION_DISTINCT.method, NullPolicy.STRICT);
+        defineMethod(MULTISET_UNION, BuiltInMethod.MULTISET_UNION_ALL.method, NullPolicy.STRICT);
         final MethodImplementor subMultisetImplementor =
-            new MethodImplementor(BuiltInMethod.SUBMULTISET_OF.method, NullPolicy.NONE, false);
+            new MethodImplementor(BuiltInMethod.SUBMULTISET_OF.method, NullPolicy.STRICT, false);
         map.put(SUBMULTISET_OF, subMultisetImplementor);
         map.put(NOT_SUBMULTISET_OF, NotImplementor.of(subMultisetImplementor));
-*/
 
         map.put(COALESCE, new CoalesceImplementor());
         map.put(CAST, new CastImplementor());
@@ -519,6 +532,7 @@ public class RexImpTable {
         final RexCallImplementor val = new ValueConstructorImplementor();
         map.put(MAP_VALUE_CONSTRUCTOR, val);
         map.put(ARRAY_VALUE_CONSTRUCTOR, val);
+        map.put(MULTISET_VALUE, val);
         map.put(ITEM, new ItemImplementor());
 
         map.put(DEFAULT, new DefaultImplementor());
@@ -1654,6 +1668,7 @@ public class RexImpTable {
                     }
                     return map;
                 case ARRAY_VALUE_CONSTRUCTOR:
+                case MULTISET_VALUE_CONSTRUCTOR:
                     Expression lyst =
                         blockBuilder.append("list", Expressions.new_(ArrayList.class),
                             false);

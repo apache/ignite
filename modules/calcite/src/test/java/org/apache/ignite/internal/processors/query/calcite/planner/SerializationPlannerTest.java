@@ -108,6 +108,31 @@ public class SerializationPlannerTest extends AbstractPlannerTest {
     }
 
     /** */
+    @Test
+    public void testMultisetSerialization() throws Exception {
+        IgniteSchema publicSchema = createSchema(
+            createTable("TEST", IgniteDistributions.affinity(0, "TEST", "hash"),
+                "ID", Integer.class, "VAL", String.class)
+        );
+
+        String[] queries = {
+            "SELECT MULTISET[id, id] FROM test",
+            "SELECT MULTISET(SELECT val FROM test)",
+            "SELECT MULTISET(SELECT id, val FROM test)",
+            "SELECT CAST(NULL AS INTEGER MULTISET) FROM test",
+            "SELECT CAST(NULL AS INTEGER MULTISET MULTISET) FROM test",
+            "SELECT MULTISET[id] MULTISET UNION DISTINCT MULTISET[1] FROM test",
+            "SELECT CAST(NULL AS ROW(a INTEGER, b INTEGER)) FROM test",
+            "SELECT ELEMENT(MULTISET[CAST(ROW(id, val) AS ROW(a INTEGER, b VARCHAR(10)))]) FROM test",
+            "SELECT s.r.a, s.r.b FROM (SELECT ELEMENT(MULTISET[CAST(ROW(id, val) AS " +
+                "ROW(a INTEGER, b VARCHAR(10)))]) AS r FROM test) AS s"
+        };
+
+        for (String sql : queries)
+            checkSplitAndSerialization(physicalPlan(sql, publicSchema), publicSchema);
+    }
+
+    /** */
     public static int echo(int val) {
         return val;
     }
