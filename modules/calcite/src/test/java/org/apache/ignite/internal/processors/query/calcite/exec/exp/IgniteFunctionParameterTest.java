@@ -27,10 +27,10 @@ import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests SQL types exposed by user-defined function parameters. */
 public class IgniteFunctionParameterTest {
