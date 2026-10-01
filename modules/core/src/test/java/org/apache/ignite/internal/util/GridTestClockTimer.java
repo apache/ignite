@@ -36,10 +36,15 @@ public class GridTestClockTimer implements Runnable {
      * Constructor.
      */
     public GridTestClockTimer() {
-        synchronized (IgniteUtils.mux) {
-            assert IgniteUtils.gridCnt == 0 : IgniteUtils.gridCnt;
+        try {
+            // Stops the internal clock timer of nodes that may be left running by previous tests
+            // and prevents it from being started on subsequent grid starts.
+            IgniteUtils.useExternalClock();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
 
-            IgniteUtils.gridCnt++; // To prevent one more timer thread start from IgniteUtils.onGridStart.
+            throw new IllegalStateException("Interrupted while switching to the test clock.", e);
         }
     }
 
@@ -48,7 +53,7 @@ public class GridTestClockTimer implements Runnable {
      */
     public static boolean startTestTimer() {
         synchronized (IgniteUtils.mux) {
-            return IgniteUtils.gridCnt == 0;
+            return !IgniteUtils.extClock;
         }
     }
 
