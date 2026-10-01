@@ -240,7 +240,7 @@ public class SnapshotDeleteProcess {
                             meta.consId
                         );
 
-                        T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft, true);
+                        T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft, false, true);
 
                         SnapshotDeleteResponse.DeleteStatus status;
 

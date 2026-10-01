@@ -723,7 +723,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             pdsSettings.consistentId().toString()
         );
 
-        deleteLocalSnapshot(sft, false);
+        deleteLocalSnapshot(sft, true, false);
     }
 
     /**
@@ -731,10 +731,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param sft Snapshot file tree.
      * @param ignoreErrs If {@code true}, logs possible deletion exceptions and marks the result as not deleted.
+     * @param scoped If {@code true}, deletes only node's data and deletes shared snapshot directories only if they are empty.
+     *               Otherwise, completely deletes all the snapshot data.
      * @return A pair of {@code boolean} values. The first indicates whether snapshot was completely deleted. The second
-     *         indicates whether the snapshot was found at all.
+     *         indicates whether the snapshot was found.
      */
-    public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft, boolean ignoreErrs) {
+    public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft, boolean scoped, boolean ignoreErrs) {
         T2<Boolean, Boolean> res = new T2<>(false, false);
 
         List<File> allStorages = sft.allStorages().toList();
@@ -743,8 +745,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             res.set2(true);
         else {
             for (File storage : allStorages) {
-                if (storage.exists())
+                if (storage.exists()) {
                     res.set2(true);
+
+                    break;
+                }
             }
         }
 
@@ -763,32 +768,50 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 res.set1(false);
 
             for (File s : allStorages) {
-                if (!deleteDirectory(s) && s.exists())
+                // Extra or root sanpshot data.
+                if (!deleteDirectory(s) && s.exists()) {
                     res.set1(false);
 
-                /**
-                 * Deletes "db" directory also beyond the snapshot root in the case when
-                 * {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)} are configured.
-                 */
+                    continue;
+                }
+
+                if (s.equals(sft.nodeStorage()))
+                    continue;
+
+                // Extra "db" directory.
                 s = s.getParentFile();
 
-                if (!deleteDirectory(s) && s.exists())
+                if ((scoped && !s.delete() || !scoped && !deleteDirectory(s)) && s.exists()) {
                     res.set1(false);
 
-                /**
-                 * Deletes the snapshot root directory beyond the snapshot root in the case when
-                 * {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)} are configured.
-                 */
+                    continue;
+                }
+
+                // Extra snapshot root.
                 s = s.getParentFile();
 
-                if (!sft.root().equals(s) && !s.delete() && s.exists())
+                if ((scoped && !s.delete() || !scoped && !deleteDirectory(s)) && s.exists())
                     res.set1(false);
             }
 
-            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller(), sft.incrementsRoot(), sft.root())) {
+            for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller())) {
                 if (!deleteDirectory(p) && p.exists())
                     res.set1(false);
             }
+
+            // Delete incremental parts.
+            if (scoped) {
+                for (File inc : sft.incrementsRoot().listFiles()) {
+                    if (!removeScopedIncrementalPart(sft, inc))
+                        res.set1(false);
+                }
+            }
+            else if (!deleteDirectory(sft.incrementsRoot()) && sft.incrementsRoot().exists())
+                res.set1(false);
+
+            // Delete snapshot root.
+            if ((scoped && !sft.root().delete() || !scoped && !deleteDirectory(sft.root())) && sft.root().exists())
+                res.set1(false);
         }
         catch (Exception e) {
             String errMsg = "Failed to delete local snapshot [snpName=" + sft.name() + ']';
@@ -801,6 +824,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 throw new IgniteException(errMsg, e);
         }
+
+        return res;
+    }
+
+    /** */
+    private boolean removeScopedIncrementalPart(SnapshotFileTree snpSft, File incDir) {
+        if (!incDir.exists())
+            return true;
+
+        int incIdx = 0;
+
+        try {
+            incIdx = Integer.parseInt(incDir.getName());
+        }
+        catch (NumberFormatException e) {
+            log.warning("Unable to delete incremental snsphot part, invalid incremental index [idx=" + incIdx + ']', e);
+
+            return false;
+        }
+
+        boolean res = true;
+
+        IncrementalSnapshotFileTree incSft = snpSft.incrementalSnapshotFileTree(incIdx);
+
+        if(!incSft.meta().delete() && incSft.meta().exists())
+            res = false;
+
+        if (!incSft.db() && incDir.exists())
+            res = false;
+
+        if (!incSft.root().delete() && incSft.root().exists())
+            res = false;
 
         return res;
     }
@@ -1368,7 +1423,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     if (snpStartReq.incremental())
                         U.delete(snpOp.snapshotFileTree().incrementalSnapshotFileTree(snpStartReq.incrementIndex()).root());
                     else
-                        deleteLocalSnapshot(snpOp.snapshotFileTree(), false);
+                        deleteLocalSnapshot(snpOp.snapshotFileTree(), true, false);
                 }
                 else if (!F.isEmpty(endReq.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
@@ -4087,7 +4142,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.info("The Local snapshot sender closed. All resources released [dbNodeSnpDir=" + sft.nodeStorage() + ']');
             }
             else {
-                deleteLocalSnapshot(sft, false);
+                deleteLocalSnapshot(sft, true, false);
 
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
