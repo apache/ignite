@@ -192,7 +192,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft, boolean scoped, boolean ignoreErrs) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 Path path = sft.root().toPath();
 
@@ -305,7 +309,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft, boolean scoped, boolean ignoreErrs) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id()))
                                 return new T2<>(false, true);
 
@@ -527,7 +535,11 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft, boolean scoped, boolean ignoreErrs) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
                             if (ctx.localNode().id().equals(grid(1).localNode().id())) {
                                 beginLatch.countDown();
 

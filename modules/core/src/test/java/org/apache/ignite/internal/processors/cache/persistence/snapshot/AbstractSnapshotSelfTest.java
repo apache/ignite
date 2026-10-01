@@ -880,7 +880,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(SnapshotFileTree sft, boolean scoped, boolean ignoreErrs) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
                             delProcInitLatch.countDown();
 
                             try {
