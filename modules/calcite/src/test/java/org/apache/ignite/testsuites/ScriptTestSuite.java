@@ -244,6 +244,10 @@ public class ScriptTestSuite {
                 throw new RuntimeException(e);
             }
         }
+        catch (Throwable th) {
+            System.out.println(
+                "##teamcity[testFailed name='" + test + "' message='" + th.getMessage() + "']" );
+        }
         finally {
             log.info(">>> Finish: " + dirName + "/" + fileName);
 
