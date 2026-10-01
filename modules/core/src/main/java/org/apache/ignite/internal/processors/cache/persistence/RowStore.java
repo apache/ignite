@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE;
 
 /**
  * Data store for H2 rows.

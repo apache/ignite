@@ -95,7 +95,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE;
 
 /**
  *
