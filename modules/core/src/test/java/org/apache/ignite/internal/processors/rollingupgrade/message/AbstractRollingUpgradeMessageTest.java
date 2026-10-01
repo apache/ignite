@@ -28,6 +28,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -90,19 +91,26 @@ public abstract class AbstractRollingUpgradeMessageTest extends AbstractRollingU
 
         String topic = msg.getClass().getName();
 
-        to.context().io().addMessageListener(topic, (nodeId, rcvd, plc) -> {
+        GridMessageListener lsnr = (nodeId, rcvd, plc) -> {
             got.set((T)rcvd);
 
             latch.countDown();
-        });
+        };
 
-        ClusterNode rcvNode = from.context().discovery().node(to.localNode().id());
+        to.context().io().addMessageListener(topic, lsnr);
 
-        from.context().io().sendToCustomTopic(rcvNode, topic, msg, PUBLIC_POOL);
+        try {
+            ClusterNode rcvNode = from.context().discovery().node(to.localNode().id());
 
-        assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+            from.context().io().sendToCustomTopic(rcvNode, topic, msg, PUBLIC_POOL);
 
-        return got.get();
+            assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+
+            return got.get();
+        }
+        finally {
+            to.context().io().removeMessageListener(topic, lsnr);
+        }
     }
 
     /** */
