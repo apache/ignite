@@ -15,16 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rollingupgrade.feature;
+package org.apache.ignite.internal.processors.rollingupgrade.message;
+
+import java.util.function.Predicate;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /** */
-public class TestPluginReleaseFeatures_2_0_0 {
+public class TestCoreMessage_2_18_0 extends TestDiscoveryMessage {
     /** */
-    public static final IgniteFeature VER_1_1_0_ID_1_FEATURE = new TestPluginFeature(1);
+    @Order(0)
+    String fldA;
 
     /** */
-    public static final IgniteFeature VER_2_0_0_ID_2_FEATURE = new TestPluginFeature(2);
+    @Order(1)
+    String fldB;
 
     /** */
-    public static final IgniteFeature VER_2_0_0_ID_3_FEATURE = new TestPluginFeature(3);
+    @Order(2)
+    String fldC;
+
+    /** {@inheritDoc} */
+    @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
+        fldA = A;
+        fldB = B;
+        fldC = C;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String fldA() {
+        return fldA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String fldB() {
+        return fldB;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String fldC() {
+        return fldC;
+    }
 }
