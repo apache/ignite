@@ -4395,7 +4395,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (val != null) {
                 if (newRow == null) {
-                    newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
+                    newRow = entry.cctx.offheap().dataStore(entry.localPartition()).updateRow(
                         entry.cctx,
                         entry.key,
                         val,
@@ -4917,7 +4917,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (needUpdate) {
-                newRow = entry.localPartition().dataStore().createRow(
+                newRow = entry.localPartition().dataStore().updateRow(
                     entry.cctx,
                     entry.key,
                     storeLoadedVal,
@@ -5081,7 +5081,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
 
             if (!entry.isNear()) {
-                newRow = entry.localPartition().dataStore().createRow(
+                newRow = entry.localPartition().dataStore().updateRow(
                     entry.cctx,
                     entry.key,
                     updated,
@@ -5090,7 +5090,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     oldRow);
 
                 treeOp = oldRow != null && oldRow.link() == newRow.link() ?
-                    IgniteTree.OperationType.NOOP : IgniteTree.OperationType.PUT;
+                    IgniteTree.OperationType.IN_PLACE : IgniteTree.OperationType.PUT;
             }
             else
                 treeOp = IgniteTree.OperationType.PUT;

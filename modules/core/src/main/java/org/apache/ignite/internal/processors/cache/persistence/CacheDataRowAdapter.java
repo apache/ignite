@@ -58,6 +58,15 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
  * Cache data row adapter.
  */
 public class CacheDataRowAdapter implements CacheDataRow {
+    /** Version is ready flag. */
+    protected static final byte FLAG_VER_READY = 0x01;
+
+    /** Store cache ID flag. */
+    protected static final byte FLAG_STORE_CACHE_ID = 0x02;
+
+    /** Allow null as value. */
+    protected static final byte FLAG_ALLOW_NULL_VAL = 0x04;
+
     /** */
     @GridToStringExclude
     protected long link;
@@ -68,7 +77,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** */
     @GridToStringInclude
-    protected CacheObject val;
+    @Nullable protected CacheObject val;
 
     /** */
     @GridToStringInclude
@@ -78,8 +87,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected GridCacheVersion ver;
 
-    /** Whether version is ready. */
-    protected boolean verReady;
+    /** */
+    protected byte flags;
 
     /** */
     @GridToStringInclude
@@ -105,7 +114,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         this.ver = ver;
         this.expireTime = expireTime;
 
-        verReady = true;
+        flags = FLAG_VER_READY;
     }
 
     /**
@@ -158,6 +167,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int grpId = grp != null ? grp.groupId() : 0;
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
+        if (readCacheId)
+            flags |= FLAG_STORE_CACHE_ID;
+
         doInitFromLink(link, sharedCtx, coctx, pageMem, grpId, statHolder, readCacheId, rowData, null, skipVer);
     }
 
@@ -186,6 +198,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int itemId0 = itemId;
         ByteBuffer buff = pageBuff;
         IncompleteObject<?> incomplete = null;
+
+        if (readCacheId)
+            flags |= FLAG_STORE_CACHE_ID;
 
         for (;;) {
             long pageAddr = GridUnsafe.bufferAddress(buff);
@@ -240,6 +255,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int grpId = grp != null ? grp.groupId() : 0;
         IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
 
+        if (readCacheId)
+            flags |= FLAG_STORE_CACHE_ID;
+
         IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem.pageSize(),
             pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
 
@@ -292,59 +310,103 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert key == null : "key";
 
         long nextLink = link;
+        long pageId = pageId(link);
+        long page = 0L;
+        long pageAddr = 0L;
 
-        do {
-            final long pageId = pageId(nextLink);
-
+        try {
             try {
-                final long page = pageMem.acquirePage(grpId, pageId, statHolder);
+                page = pageMem.acquirePage(grpId, pageId, statHolder);
+                pageAddr = readLockFragmentPage(pageMem, grpId, pageId, page, link);
 
-                try {
-                    long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
+                while (true) {
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                    assert pageAddr != 0L : "Cannot lock page [link=" + U.hexLong(nextLink) +
-                        ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]";
+                    int itemId = itemId(nextLink);
+
+                    incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem.pageSize(),
+                        pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
+
+                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
+                        return;
+
+                    nextLink = incomplete.getNextLink();
+
+                    if (nextLink == 0)
+                        break;
+
+                    // Lock coupling: acquire the read lock on the next fragment page before releasing the current one.
+                    // In-place update of the fragmented row traverses fragments in the same order with the same lock
+                    // coupling (see AbstractFreeList#updateFragmentedRow), so it can't overtake this read and the row
+                    // is read either entirely old or entirely new.
+                    long nextPageId = pageId(nextLink);
+                    long nextPage = pageMem.acquirePage(grpId, nextPageId, statHolder);
+                    long nextPageAddr;
 
                     try {
-                        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+                        nextPageAddr = readLockFragmentPage(pageMem, grpId, nextPageId, nextPage, nextLink);
+                    }
+                    catch (Throwable e) {
+                        pageMem.releasePage(grpId, nextPageId, nextPage);
 
-                        int itemId = itemId(nextLink);
+                        throw e;
+                    }
 
-                        incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem.pageSize(),
-                            pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
-
-                        if (incomplete == null || (rowData == KEY_ONLY && key != null))
-                            return;
-
-                        nextLink = incomplete.getNextLink();
+                    try {
+                        pageMem.readUnlock(grpId, pageId, page);
+                        pageMem.releasePage(grpId, pageId, page);
                     }
                     finally {
-                        pageMem.readUnlock(grpId, pageId, page);
+                        pageId = nextPageId;
+                        page = nextPage;
+                        pageAddr = nextPageAddr;
                     }
                 }
-                finally {
-                    pageMem.releasePage(grpId, pageId, page);
-                }
             }
-            catch (RuntimeException | AssertionError e) {
-                // Collect all pages from first link to pageId.
-                long[] pageIds;
+            finally {
+                if (pageAddr != 0L)
+                    pageMem.readUnlock(grpId, pageId, page);
 
-                try {
-                    pageIds = relatedPageIds(grpId, link, pageId, pageMem, statHolder);
-
-                }
-                catch (IgniteCheckedException e0) {
-                    // Ignore exception if failed to resolve related page ids.
-                    pageIds = new long[] {pageId};
-                }
-
-                throw new BPlusTreeRuntimeException(e, grpId, pageIds);
+                if (page != 0L)
+                    pageMem.releasePage(grpId, pageId, page);
             }
         }
-        while (nextLink != 0);
+        catch (RuntimeException | AssertionError e) {
+            // Collect all pages from first link to pageId.
+            long[] pageIds;
+
+            try {
+                pageIds = relatedPageIds(grpId, link, pageId, pageMem, statHolder);
+            }
+            catch (IgniteCheckedException e0) {
+                // Ignore exception if failed to resolve related page ids.
+                pageIds = new long[] {pageId};
+            }
+
+            throw new BPlusTreeRuntimeException(e, grpId, pageIds);
+        }
 
         assert isReady() : "ready";
+    }
+
+    /**
+     * Acquires the read lock on the fragment page of the row.
+     *
+     * @param pageMem Page memory.
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param link Fragment link (for diagnostics).
+     * @return Page address.
+     */
+    private static long readLockFragmentPage(PageMemory pageMem, int grpId, long pageId, long page, long link) {
+        long pageAddr = pageMem.readLock(grpId, pageId, page);
+
+        // Non-empty data page must not be recycled.
+        assert pageAddr != 0L : "Cannot lock page [link=" + U.hexLong(link) +
+            ", tag=" + PageIdUtils.tag(pageId) + ", pageLockState=[" + pageMem.pageLockStateInfo(page) + "]]";
+
+        return pageAddr;
     }
 
     /**
@@ -483,7 +545,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
 
         // Read version.
-        if (!verReady) {
+        if ((flags & FLAG_VER_READY) == 0) {
             incomplete = readIncompleteVersion(buf, incomplete, skipVer);
 
             assert skipVer || ver != null || incomplete != null;
@@ -562,7 +624,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             verLen = CacheVersionIO.size(ver, false);
         }
 
-        verReady = true;
+        flags |= FLAG_VER_READY;
 
         off += verLen;
 
@@ -737,7 +799,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     assert ver != null;
                 }
 
-                verReady = true;
+                flags |= FLAG_VER_READY;
 
                 return null;
             }
@@ -759,7 +821,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 assert ver != null;
             }
 
-            verReady = true;
+            flags |= FLAG_VER_READY;
         }
 
         assert !buf.hasRemaining();
@@ -825,7 +887,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return {@code True} if entry is ready.
      */
     public boolean isReady() {
-        return verReady && val != null && key != null;
+        return ((flags & FLAG_VER_READY) != 0) && val != null && key != null;
     }
 
     /** {@inheritDoc} */
@@ -845,20 +907,25 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean storeCacheId() {
+        return (flags & FLAG_STORE_CACHE_ID) != 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public int cacheId() {
         return cacheId;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        assert val != null : "Value is not ready: " + this;
+        assert val != null || (flags & FLAG_ALLOW_NULL_VAL) != 0 : "Value is not ready: " + this;
 
         return val;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
-        assert verReady : "Version is not ready: " + this;
+        assert (flags & FLAG_VER_READY) != 0 : "Version is not ready: " + this;
 
         return ver;
     }
@@ -894,7 +961,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
 
-        return len + (cacheId() != 0 ? 4 : 0);
+        return len + (storeCacheId() ? 4 : 0);
     }
 
     /**
