@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * message's direct type in {@code kctx.messageFactory()} and delegates to it, or skips when none is registered.
  */
 public final class MessageMarshalling {
-    /** */
+    /** Guards against instantiation: the class is a set of static entry points, and this says so. */
     private MessageMarshalling() {
         // No-op.
     }
@@ -38,12 +39,13 @@ public final class MessageMarshalling {
      * Marshals {@code msg} through its registered marshaller; a no-op when none is registered.
      *
      * @param msg Message to marshal.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public static <M extends Message> void marshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx)
-        throws IgniteCheckedException {
-        marshal(factory(kctx), msg, kctx, cacheObjCtx);
+    public static <M extends Message> void marshal(M msg, Marshaller marsh, GridKernalContext kctx,
+        @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        marshal(factory(kctx), msg, marsh, kctx, cacheObjCtx);
     }
 
     /**
@@ -52,28 +54,30 @@ public final class MessageMarshalling {
      *
      * @param msgFactory Message factory to resolve the marshaller from.
      * @param msg Message to marshal.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      */
-    public static <M extends Message> void marshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
-        @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    public static <M extends Message> void marshal(IgniteMessageFactory msgFactory, M msg, Marshaller marsh,
+        GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         MessageMarshaller<M> m = resolve(msgFactory, msg);
 
         if (m != null)
-            m.marshal(msg, kctx, cacheObjCtx);
+            m.marshal(msg, marsh, kctx, cacheObjCtx);
     }
 
     /**
      * Unmarshals {@code msg} through its registered marshaller with full cache context; a no-op when none is registered.
      *
      * @param msg Message to unmarshal.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
      */
-    public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx,
-        ClassLoader clsLdr) throws IgniteCheckedException {
-        unmarshal(factory(kctx), msg, kctx, cacheObjCtx, clsLdr);
+    public static <M extends Message> void unmarshal(M msg, Marshaller marsh, GridKernalContext kctx,
+        @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+        unmarshal(factory(kctx), msg, marsh, kctx, cacheObjCtx, clsLdr);
     }
 
     /**
@@ -82,35 +86,39 @@ public final class MessageMarshalling {
      *
      * @param msgFactory Message factory to resolve the marshaller from.
      * @param msg Message to unmarshal.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      * @param cacheObjCtx Cache object context of the enclosing message, or {@code null} at the top level.
      * @param clsLdr Class loader for unmarshalling.
      */
-    public static <M extends Message> void unmarshal(IgniteMessageFactory msgFactory, M msg, GridKernalContext kctx,
-        @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    public static <M extends Message> void unmarshal(IgniteMessageFactory msgFactory, M msg, Marshaller marsh,
+        GridKernalContext kctx, @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr)
+        throws IgniteCheckedException {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, true)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = resolve(msgFactory, msg);
 
         if (m != null)
-            m.unmarshal(msg, kctx, cacheObjCtx, clsLdr);
+            m.unmarshal(msg, marsh, kctx, cacheObjCtx, clsLdr);
     }
 
     /**
      * Cache-free {@code unmarshal} through the registered marshaller; a no-op when none is registered.
      *
      * @param msg Message to unmarshal.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      */
-    public static <M extends Message> void unmarshal(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    public static <M extends Message> void unmarshal(M msg, Marshaller marsh, GridKernalContext kctx)
+        throws IgniteCheckedException {
         assert !MessageUnmarshalOnceCheck.ENABLED || MessageUnmarshalOnceCheck.firstUnmarshal(msg, false)
             : "Finish-unmarshalled more than once: " + msg.getClass().getName();
 
         MessageMarshaller<M> m = resolve(factory(kctx), msg);
 
         if (m != null)
-            m.unmarshal(msg, kctx);
+            m.unmarshal(msg, marsh, kctx);
     }
 
     /**
@@ -118,13 +126,15 @@ public final class MessageMarshalling {
      * is registered.
      *
      * @param msg Message to unmarshal.
+     * @param marsh Marshaller of the transport.
      * @param kctx Kernal context.
      */
-    public static <M extends Message> void unmarshalNio(M msg, GridKernalContext kctx) throws IgniteCheckedException {
+    public static <M extends Message> void unmarshalNio(M msg, Marshaller marsh, GridKernalContext kctx)
+        throws IgniteCheckedException {
         MessageMarshaller<M> m = resolve(factory(kctx), msg);
 
         if (m != null)
-            m.unmarshalNio(msg, kctx);
+            m.unmarshalNio(msg, marsh, kctx);
     }
 
     /** @return the message factory of {@code kctx}. */

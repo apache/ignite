@@ -28,6 +28,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -132,6 +134,20 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteIndexScan copy(
+        RelTraitSet traitSet,
+        @Nullable RelDataType rowType,
+        @Nullable List<RexNode> projects,
+        @Nullable RexNode condition
+    ) {
+        IgniteIndex idx = getTable().unwrap(IgniteTable.class).getIndex(idxName);
+        List<SearchBounds> newSearchBounds = idx.toSearchBounds(getCluster(), condition, requiredColumns);
+
+        return new IgniteIndexScan(sourceId, getCluster(), traitSet, getTable(), idxName, rowType, projects, condition,
+            newSearchBounds, requiredColumns, collation);
     }
 
     /** {@inheritDoc} */

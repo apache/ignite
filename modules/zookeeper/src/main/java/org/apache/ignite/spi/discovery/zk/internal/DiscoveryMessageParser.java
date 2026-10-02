@@ -29,13 +29,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.IgniteSpiException;
+
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 
 /**
  * Class is responsible for serializing discovery messages using RU-ready {@link MessageSerializer} mechanism.
@@ -94,7 +96,7 @@ public class DiscoveryMessageParser {
         msgWriter.setBuffer(msgBuf);
 
         try {
-            MessageMarshalling.marshal(m, kctx, null);
+            DiscoveryMarshalling.marshal(m, kctx, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal discovery message", e);
@@ -105,7 +107,7 @@ public class DiscoveryMessageParser {
         do {
             msgBuf.clear();
 
-            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter);
+            finished = MessageSerialization.writeTo(msgFactory, m, msgWriter, LATEST_SCHEMA);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }
@@ -131,7 +133,7 @@ public class DiscoveryMessageParser {
                 msgBuf.rewind();
             }
 
-            finished = MessageSerialization.readFrom(msgFactory, msg, msgReader);
+            finished = MessageSerialization.readFrom(msgFactory, msg, msgReader, LATEST_SCHEMA);
 
             assert read != -1 || finished : "Stream closed before message was fully read.";
 
@@ -141,7 +143,7 @@ public class DiscoveryMessageParser {
         while (!finished);
 
         try {
-            MessageMarshalling.unmarshal(msg, kctx);
+            DiscoveryMarshalling.unmarshal(msg, kctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to unmarshal discovery message", e);

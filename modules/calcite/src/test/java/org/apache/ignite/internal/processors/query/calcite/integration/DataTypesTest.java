@@ -37,11 +37,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFun
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.SupplierX;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Test SQL data types.
@@ -196,6 +196,26 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertQuery("SELECT oth FROM t WHERE oth!=22")
             .returns("str")
+            .check();
+    }
+
+    /** Tests that implicit casts use the registered SQL name of OTHER. */
+    @Test
+    public void testOtherTypeImplicitCast() {
+        sql("CREATE TABLE t(id INT, oth OTHER) WITH " + atomicity());
+
+        sql("INSERT INTO t VALUES (1, 'str1')");
+        sql("INSERT INTO t VALUES (?, ?)", 2, "str2");
+
+        sql("INSERT INTO t SELECT 3, 42");
+        sql("INSERT INTO t SELECT ?, ?", 4, 69);
+
+        assertQuery("SELECT oth FROM t ORDER BY id")
+            .ordered()
+            .returns("str1")
+            .returns("str2")
+            .returns(42)
+            .returns(69)
             .check();
     }
 
@@ -679,7 +699,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25749")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-25749")
     @Test
     public void testCharLiteralsInUnion() {
         assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
@@ -1107,6 +1127,6 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
     /** */
     private void assumeNoTransactions() {
-        assumeTrue("Test use queries that doesn't touch any data. Skip for tx modes", sqlTxMode == SqlTransactionMode.NONE);
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE, "Test use queries that doesn't touch any data. Skip for tx modes");
     }
 }

@@ -93,7 +93,7 @@ public class CacheGroupMetricsImpl {
 
         MetricRegistryImpl mreg = kernalCtx.metric().registry(metricGroupName());
 
-        mreg.register("Caches", this::getCaches, List.class, null);
+        mreg.register("Caches", this::getCaches, List.class, "List of caches.");
 
         mreg.register("StorageSize", this::getStorageSize, "Storage space allocated for group, in bytes.");
 
@@ -182,7 +182,7 @@ public class CacheGroupMetricsImpl {
 
             mreg.register("ReencryptionBytesLeft",
                 () -> ctx.shared().kernalContext().encryption().getBytesLeftForReencryption(ctx.groupId()),
-                "The number of bytes left for re-ecryption.");
+                "The number of bytes left for re-encryption.");
         }
     }
 

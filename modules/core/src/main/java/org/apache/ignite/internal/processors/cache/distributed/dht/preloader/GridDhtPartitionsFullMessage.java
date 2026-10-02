@@ -28,13 +28,12 @@ import java.util.stream.IntStream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.SelfMarshallingMessage;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,8 +45,12 @@ import org.jetbrains.annotations.Nullable;
  * Information about partitions of all nodes in topology. <br> Is sent by topology coordinator: when all {@link
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
  * CacheAffinityChangeMessage} for node left or failed case.<br>
+ * Has to be prepared to send to another node and restored after receiving from another node.
+ *
+ * @see #prepareToSend()
+ * @see #received()
  */
-public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage implements SelfMarshallingMessage {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
@@ -385,8 +388,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         flags = rebalanced ? (byte)(flags | REBALANCED_FLAG_MASK) : (byte)(flags & ~REBALANCED_FLAG_MASK);
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfMarshal() {
+    /** Prepares this partitions map to send to another node. */
+    public void prepareToSend() {
         if (!F.isEmpty(parts) && locParts == null)
             locParts = copyPartitionsMap(parts);
     }
@@ -405,8 +408,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.topVer = topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void selfUnmarshal() {
+    /** Properly unwraps the partitions map after receiving from another node. */
+    public GridDhtPartitionsFullMessage received() {
         if (locParts != null && parts == null) {
             parts = copyPartitionsMap(locParts);
 
@@ -438,6 +441,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (parts == null)
             parts = new HashMap<>();
+
+        return this;
     }
 
 
@@ -484,6 +489,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public void cleanUp() {
         locParts = null;
         partCntrs = null;
+        partsSizes = null;
     }
 
     /** */

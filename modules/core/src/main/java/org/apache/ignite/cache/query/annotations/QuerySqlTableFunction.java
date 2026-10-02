@@ -52,6 +52,10 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  * by an {@code Collection}. Row length must match the defined number of column types. Row value types must match the
  * defined column types or be able assigned to them.
  * <p>
+ * Table functions can be overloaded by SQL parameter types or their order. Java types mapped to the same SQL type
+ * cannot define separate overloads; for example, {@code int} and {@link Integer} both correspond to SQL
+ * {@code INTEGER}.
+ * <p>
  * Note, the table functions are available currently only with Calcite.
  *
  * @see QuerySqlFunction

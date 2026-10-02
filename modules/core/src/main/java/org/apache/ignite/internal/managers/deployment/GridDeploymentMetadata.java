@@ -19,11 +19,9 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -61,9 +59,6 @@ public class GridDeploymentMetadata {
     /** */
     private boolean record;
 
-    /** */
-    private IgnitePredicate<ClusterNode> nodeFilter;
-
     /**
      *
      */
@@ -87,7 +82,6 @@ public class GridDeploymentMetadata {
         participants = meta.participants();
         parentLdr = meta.parentLoader();
         record = meta.record();
-        nodeFilter = meta.nodeFilter();
     }
 
     /**
@@ -269,20 +263,6 @@ public class GridDeploymentMetadata {
      */
     public void classLoader(ClassLoader clsLdr) {
         this.clsLdr = clsLdr;
-    }
-
-    /**
-     * @param nodeFilter Node filter.
-     */
-    public void nodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
-        this.nodeFilter = nodeFilter;
-    }
-
-    /**
-     * @return Node filter.
-     */
-    public IgnitePredicate<ClusterNode> nodeFilter() {
-        return nodeFilter;
     }
 
     /** {@inheritDoc} */

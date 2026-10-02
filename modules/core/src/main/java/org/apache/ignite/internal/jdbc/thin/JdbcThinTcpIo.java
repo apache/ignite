@@ -43,6 +43,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
@@ -275,7 +276,7 @@ public class JdbcThinTcpIo {
 
         marsh.setContext(new MarshallerContextImpl(null));
 
-        BinaryWriterEx writer = BinaryUtils.writer(U.binaryContext(marsh), BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE), null);
+        BinaryWriterEx writer = BinaryUtils.writerWithoutSchema(U.binaryContext(marsh), BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -347,7 +348,7 @@ public class JdbcThinTcpIo {
             writer.writeString(connProps.getPassword());
         }
 
-        send(writer.array());
+        send(writer);
 
         BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, false);
 
@@ -436,8 +437,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake_2_1_0() throws IOException, SQLException {
-        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
-            null);
+        BinaryWriterEx writer = BinaryUtils.writerWithoutSchema(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -453,7 +453,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isReplicatedOnly());
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
 
-        send(writer.array());
+        send(writer);
 
         BinaryReaderEx reader = BinaryUtils.reader(null, BinaryStreams.inputStream(read()), null, false);
 
@@ -594,23 +594,25 @@ public class JdbcThinTcpIo {
         req.writeBinary(writer, protoCtx);
 
         synchronized (connMux) {
-            send(writer.array());
+            send(writer);
         }
     }
 
     /**
-     * @param req JDBC request bytes.
+     * @param writer Writer with request bytes.
      * @throws IOException On error.
      */
-    private void send(byte[] req) throws IOException {
-        int size = req.length;
+    private void send(BinaryWriterEx writer) throws IOException {
+        BinaryOutputStream stream = writer.out();
+
+        int size = stream.position();
 
         out.write(size & 0xFF);
         out.write((size >> 8) & 0xFF);
         out.write((size >> 16) & 0xFF);
         out.write((size >> 24) & 0xFF);
 
-        out.write(req);
+        out.write(stream.array(), 0, size);
 
         out.flush();
     }

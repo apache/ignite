@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -39,12 +40,15 @@ import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.IntPair;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -70,6 +74,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RecursiveTableScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RepeatUnionNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanTableRowNode;
@@ -81,6 +87,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.WindowNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -96,8 +103,10 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRepeatUnion;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -126,6 +135,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -567,8 +578,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx,
                 rowType,
                 idxBndRel.first() ? cmp : cmp.reversed(),
-                null,
-                () -> 1
+                SortNode.OFFSET_DEFAULT,
+                1
             );
 
             sortNode.register(scanNode);
@@ -609,6 +620,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteRecursiveTableScan rel) {
+        return new RecursiveTableScanNode<>(ctx, rel.getRowType());
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteValues rel) {
         List<RexLiteral> vals = Commons.flat(Commons.cast(rel.getTuples()));
 
@@ -629,9 +645,18 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteRepeatUnion rel) {
+        RepeatUnionNode<Row> node = new RepeatUnionNode<>(ctx, rel.getRowType(), rel.all, rel.iterationLimit());
+
+        node.register(F.asList(visit(rel.getLeft()), visit(rel.getRight())));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteLimit rel) {
-        Supplier<Integer> offset = (rel.offset() == null) ? null : expressionFactory.execute(rel.offset());
-        Supplier<Integer> fetch = (rel.fetch() == null) ? null : expressionFactory.execute(rel.fetch());
+        long offset = validateAndGetOffset(rel.offset(), LimitNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch(), LimitNode.FETCH_DEFAULT);
 
         LimitNode<Row> node = new LimitNode<>(ctx, rel.getRowType(), offset, fetch);
 
@@ -646,8 +671,12 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSort rel) {
         RelCollation collation = rel.getCollation();
 
-        Supplier<Integer> offset = (rel.offset == null) ? null : expressionFactory.execute(rel.offset);
-        Supplier<Integer> fetch = (rel.fetch == null) ? null : expressionFactory.execute(rel.fetch);
+        long offset = validateAndGetOffset(rel.offset, SortNode.OFFSET_DEFAULT);
+        long fetch = validateAndGetFetch(rel.fetch, SortNode.FETCH_DEFAULT);
+
+        // Zero FETCH is enforced by the outer IgniteLimit, while SortNode accepts only positive FETCH values.
+        if (fetch == 0)
+            fetch = SortNode.FETCH_DEFAULT;
 
         SortNode<Row> node = new SortNode<>(ctx, rel.getRowType(), expressionFactory.comparator(collation), offset,
             fetch);
@@ -657,6 +686,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         node.register(input);
 
         return node;
+    }
+
+    /** */
+    private long validateAndGetOffset(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "offset");
+    }
+
+    /** */
+    private long validateAndGetFetch(RexNode node, long defaultVal) {
+        return node == null ? defaultVal : validateAndGetFetchOffsetParams(node, "fetch / limit");
     }
 
     /** {@inheritDoc} */
@@ -745,9 +784,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         RelDataType rowType = rel.getRowType();
 
-        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
-
-        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(rowType, dataSupplier, rowFactory));
+        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(ctx, rowType, dataSupplier));
     }
 
     /** {@inheritDoc} */
@@ -1049,5 +1086,36 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             filterColMapping,
             otherColMapping
         );
+    }
+
+    /** */
+    private long validateAndGetFetchOffsetParams(RexNode node, String op) {
+        Supplier<Object> scalar = expressionFactory.execute(node);
+        Object param = scalar.get();
+
+        if (param == null && !(node instanceof RexDynamicParam)) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
+
+        if (!(param instanceof Number)) {
+            String actual = param == null ? "null" : param.getClass().getSimpleName();
+            throw new IgniteSQLException(IgniteResource.INSTANCE.incorrectDynamicParameterType("BIGINT", actual).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+        }
+
+        try {
+            BigDecimal paramAsDecimal = IgniteMath.convertToBigDecimal((Number)param);
+
+            if (paramAsDecimal.signum() < 0)
+                throw new IllegalArgumentException("Negative value for " + op);
+
+            IgniteSqlSemantics sem = ctx.unwrap(IgniteSqlSemantics.class);
+            return IgniteSqlSemantics.convertPaginationValueToLong(paramAsDecimal, sem);
+        }
+        catch (RuntimeException ex) {
+            throw new IgniteSQLException(IgniteResource.INSTANCE.illegalFetchLimit(op).str(),
+                IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE, ex);
+        }
     }
 }

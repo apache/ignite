@@ -55,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -123,7 +122,7 @@ public class IdleVerifyUtility {
 
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
                 if (cancelled != null && cancelled.getAsBoolean())
-                    throw new IgniteException();
+                    throw new IgniteException("Checking of partitions page CRC sum has been cancelled.");
 
                 buf.clear();
 
@@ -311,7 +310,7 @@ public class IdleVerifyUtility {
 
         while (it.hasNextX()) {
             if (cancelled != null && cancelled.getAsBoolean())
-                throw new IgniteCheckedException("Caclulate partition hash cancelled.");
+                throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
 
             CacheDataRow row = it.nextX();
 
@@ -421,7 +420,7 @@ public class IdleVerifyUtility {
             if (key.cacheObjectType() == TYPE_BINARY) {
                 binary++;
 
-                if (((BinaryObjectEx)key).isFlagSet(FLAG_COMPACT_FOOTER))
+                if (((BinaryObjectEx)key).isCompactFooter())
                     cf++;
                 else
                     noCf++;

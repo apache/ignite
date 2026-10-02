@@ -86,7 +86,7 @@ class GridAffinityUtils {
     }
 
     /**
-     * Unmarshalls transfer object from remote node within a given context.
+     * Unmarshals transfer object from remote node within a given context.
      *
      * @param ctx Grid kernal context that provides deployment and marshalling services.
      * @param sndNodeId {@link UUID} of the sender node.
@@ -103,8 +103,7 @@ class GridAffinityUtils {
             msg.userVersion(),
             sndNodeId,
             msg.classLoaderId(),
-            msg.loaderParticipants(),
-            null);
+            msg.loaderParticipants());
 
         if (dep == null)
             throw new IgniteDeploymentCheckedException("Failed to obtain affinity object (is peer class loading turned on?): " +

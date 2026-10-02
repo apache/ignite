@@ -39,7 +39,9 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test index rebuild.
@@ -66,6 +68,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         initLatch = null;
         startLatch = null;
@@ -80,6 +83,7 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
 

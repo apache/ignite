@@ -374,9 +374,11 @@ class GridDeploymentCommunication {
                     ", requesters=" + nodeIds + ']');
         }
 
-        Object resTopic = TOPIC_CLASSLOAD.topic(IgniteUuid.fromUuid(ctx.localNodeId()));
+        IgniteUuid resTopicId = IgniteUuid.fromUuid(ctx.localNodeId());
 
-        GridDeploymentRequest req = new GridDeploymentRequest(resTopic, clsLdrId, rsrcName);
+        Object resTopic = TOPIC_CLASSLOAD.topic(resTopicId);
+
+        GridDeploymentRequest req = new GridDeploymentRequest(resTopicId, clsLdrId, rsrcName);
 
         // Send node IDs chain with request.
         req.nodeIds(nodeIds);

@@ -71,6 +71,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jspecify.annotations.Nullable;
@@ -81,59 +82,35 @@ import static org.apache.ignite.internal.IgniteVersionUtils.semanticVersion;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Provides the ability to override a node's version and supported {@link IgniteFeature}s in order to
- * simulate a Rolling Upgrade procedure.
+ * Overrides the version and the supported {@link IgniteFeature}s of a node to simulate a Rolling Upgrade. The versions below
+ * are fake and correspond to no real Ignite release. Features below the lowest one of a release are retired.
+ * <pre>
+ * Core    Features
+ * 2.18.0  0
+ * 2.19.0  0-1
+ * 2.19.1  0-1
+ * 2.19.2  0-2
+ * 2.19.3  0-2,6
+ * 2.20.0  2-5
+ * 2.20.1  2-6
+ * 2.21.0  6
+ * 2.21.1  6-7
  *
- * <p>For testing purposes, the following "fake" Ignite versions and their corresponding
- * {@link IgniteFeature}s have been introduced. These versions are used solely for testing and do not
- * correspond to any actual Ignite releases.
- *
- * <table border="1">
- *   <tr>
- *     <th>Version</th>
- *     <th>Features</th>
- *   </tr>
- *   <tr>
- *     <td>2.18.0</td>
- *     <td>not supported</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.0</td>
- *     <td>{@code IgniteFeatureSet [0]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.1</td>
- *     <td>{@code IgniteFeatureSet [0]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.2</td>
- *     <td>{@code IgniteFeatureSet [0 -> 2]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.19.3</td>
- *     <td>{@code IgniteFeatureSet [0 -> 2, 6]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.20.0</td>
- *     <td>{@code IgniteFeatureSet [0 -> 4]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.20.1</td>
- *     <td>{@code IgniteFeatureSet [0 -> 4, 6]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.21.0</td>
- *     <td>{@code IgniteFeatureSet [3 -> 6]}</td>
- *   </tr>
- *   <tr>
- *     <td>2.21.1</td>
- *     <td>{@code IgniteFeatureSet [3 -> 7]}</td>
- *   </tr>
- * </table>
+ * Plugin  Features
+ * 0.9.0   none
+ * 1.0.0   0
+ * 1.1.0   0-1
+ * 2.0.0   1-3
+ * 2.1.0   1-4
+ * 3.0.0   4
+ * </pre>
  */
 public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest {
     /** */
     protected static final String TEST_DEFAULT_VER = "2.19.0";
+
+    /** */
+    protected static final String COMPONENT_VERSIONS_ATTRIBUTE = "test.component.versions";
 
     /** */
     protected static final String VER_INCOMPATIBLE_ERR =
@@ -148,8 +125,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         "One or more component versions on the joining node differ from the corresponding versions active in the cluster";
 
     /** */
-    protected static final String RU_UNAVAILABLE_BETWEEN_VER_ERR = "Ignite component Rolling Upgrade is not supported" +
-        " between the component version active in the cluster and the version running on the joining node";
+    protected static final String NOT_SUPPORTED_VER_ERR = "Remote node component versions are not supported";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -204,8 +180,11 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+        cfg.setUserAttributes(F.asMap(COMPONENT_VERSIONS_ATTRIBUTE, ver));
 
         TestVersions testVersions = TestVersions.parse(ver);
+
+        boolean pluginDeclaresFeatures = testVersions.containsPlugin() && pluginDeclaresFeatures(testVersions.pluginVersion());
 
         IgniteCoreFeatureSet testCoreFeatures = new IgniteCoreFeatureSet(
             IgniteProductVersion.fromString(testVersions.coreVersion()),
@@ -219,7 +198,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
             /** {@inheritDoc} */
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-                if (testVersions.containsPlugin()) {
+                if (pluginDeclaresFeatures) {
                     registry.registerExtension(
                         IgniteComponentFeatureSetProvider.class,
                         new TestPluginComponentFeatureSetProvider(testVersions.pluginVersion()));
@@ -267,6 +246,18 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             TestIgniteReleaseFeatures_2_18_0.class.getPackageName() + ".TestIgniteReleaseFeatures_" + ver.replace(".", "_"));
 
         return IgniteFeatureSet.readDeclaredFeatures(cls);
+    }
+
+    /** */
+    private static boolean pluginDeclaresFeatures(String pluginVer) throws Exception {
+        try {
+            readDeclaredPluginFeatures(pluginVer);
+
+            return true;
+        }
+        catch (ClassNotFoundException ignored) {
+            return false;
+        }
     }
 
     /** */
@@ -346,10 +337,14 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected void checkJoinFailed(int nodeIdx, String ver, boolean checkClientNode, String msg) {
         int expClusterSize = clusterNode().cluster().nodes().size();
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver), IgniteSpiException.class, msg);
+        Class<? extends Throwable> errCls = Objects.equals(msg, NOT_SUPPORTED_VER_ERR)
+            ? UnsupportedNodeVersionException.class
+            : IgniteSpiException.class;
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(nodeIdx, ver), errCls, msg);
 
         if (checkClientNode)
-            GridTestUtils.assertThrowsAnyCause(log, () -> startClientGrid(nodeIdx, ver), IgniteSpiException.class, msg);
+            GridTestUtils.assertThrowsAnyCause(log, () -> startClientGrid(nodeIdx, ver), errCls, msg);
 
         assertEquals(expClusterSize, clusterNode().cluster().nodes().size());
     }
@@ -546,7 +541,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void restartNode(int nodeIdx) throws Exception {
-        String ver = resolveNodeLocalCompoundVersion(nodeIdx);
+        String ver = nodeComponentVersions(grid(nodeIdx));
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -561,7 +556,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void checkUpgradeFailed(int nodeIdx, String targetVer, String errMsg) throws Exception {
-        String srcVer = resolveNodeLocalCompoundVersion(nodeIdx);
+        String srcVer = nodeComponentVersions(grid(nodeIdx));
         boolean isClient = grid(nodeIdx).context().clientNode();
 
         stopGrid(nodeIdx);
@@ -572,8 +567,8 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
-    protected String resolveNodeLocalCompoundVersion(int nodeIdx) {
-        return resolveCompoundVersion(ru(nodeIdx).features().localVersionFeatures());
+    protected String nodeComponentVersions(Ignite node) {
+        return node.cluster().localNode().attribute(COMPONENT_VERSIONS_ATTRIBUTE);
     }
 
     /** */
@@ -638,7 +633,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     }
 
     /** */
-    protected static class TestVersions {
+    public static class TestVersions {
         /** */
         private final Map<String, String> cmpVersions = new HashMap<>();
 

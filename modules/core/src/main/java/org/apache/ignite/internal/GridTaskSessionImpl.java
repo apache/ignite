@@ -80,7 +80,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final GridKernalContext ctx;
 
     /** */
-    private Collection<ComputeJobSibling> siblings;
+    private @Nullable Collection<ComputeJobSibling> siblings;
 
     /** Guarded by {@link #mux}. */
     private Map<Object, Object> attrs;
@@ -166,7 +166,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
-        Collection<ComputeJobSibling> siblings,
+        @Nullable Collection<ComputeJobSibling> siblings,
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
         boolean fullSup,
@@ -535,7 +535,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> getJobSiblings() {
+    @Override public @Nullable Collection<ComputeJobSibling> getJobSiblings() {
         synchronized (mux) {
             return siblings;
         }

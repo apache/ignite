@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous routine handler.
  */
 @SuppressWarnings("PublicInnerClass")
-public interface GridContinuousHandler extends Externalizable, Cloneable {
+public interface GridContinuousHandler extends Cloneable, Message {
     /**
      * Listener registration status.
      */

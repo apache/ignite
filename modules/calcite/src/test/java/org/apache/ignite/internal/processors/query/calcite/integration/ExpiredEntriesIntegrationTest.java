@@ -27,8 +27,8 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
@@ -38,6 +38,7 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.c
  */
 public class ExpiredEntriesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         CacheConfiguration<Integer, Developer> cacheCfg = new CacheConfiguration<Integer, Developer>()
             .setIndexedTypes(Integer.class, Developer.class)

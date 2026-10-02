@@ -22,6 +22,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 
 /**
@@ -31,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
  */
 public final class TestMessageMarshaller implements MessageMarshaller<TestMessage> {
     /** */
-    @Override public void marshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    @Override public void marshal(TestMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
@@ -41,11 +42,11 @@ public final class TestMessageMarshaller implements MessageMarshaller<TestMessag
             msg.cacheObject.marshal(ctx);
 
         if (msg.nioMsg != null)
-            MessageMarshalling.marshal(msg.nioMsg, kctx, ctx);
+            MessageMarshalling.marshal(msg.nioMsg, marsh, kctx, ctx);
     }
 
     /** */
-    @Override public void unmarshal(TestMessage msg, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
+    @Override public void unmarshal(TestMessage msg, Marshaller marsh, GridKernalContext kctx, CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
         CacheObjectContext ctx = cacheObjCtx;
 
         if (msg.keyCacheObject != null && ctx != null)
@@ -56,8 +57,8 @@ public final class TestMessageMarshaller implements MessageMarshaller<TestMessag
     }
 
     /** */
-    @Override public void unmarshalNio(TestMessage msg, GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void unmarshalNio(TestMessage msg, Marshaller marsh, GridKernalContext kctx) throws IgniteCheckedException {
         if (msg.nioMsg != null)
-            MessageMarshalling.unmarshal(msg.nioMsg, kctx);
+            MessageMarshalling.unmarshal(msg.nioMsg, marsh, kctx);
     }
 }

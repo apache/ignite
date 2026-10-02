@@ -28,8 +28,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
@@ -185,7 +187,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     /** Writes the two fields behind the header. */
     private static class Serializer implements MessageSerializer<FailingUnmarshalMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(FailingUnmarshalMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(FailingUnmarshalMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
                     return false;
@@ -211,7 +213,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(FailingUnmarshalMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(FailingUnmarshalMessage msg, MessageReader reader, MessageSerializationContext ctx) {
             switch (reader.state()) {
                 case 0:
                     msg.seq = reader.readInt();
@@ -242,13 +244,15 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     /** Fails the unmarshal of the flagged messages. */
     private static class FailingMarshaller implements MessageMarshaller<FailingUnmarshalMessage> {
         /** {@inheritDoc} */
-        @Override public void marshal(FailingUnmarshalMessage msg, GridKernalContext kctx,
+        @Override public void marshal(FailingUnmarshalMessage msg,
+            Marshaller marsh,
+            GridKernalContext kctx,
             @Nullable CacheObjectContext cacheObjCtx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void unmarshal(FailingUnmarshalMessage msg, GridKernalContext kctx,
+        @Override public void unmarshal(FailingUnmarshalMessage msg, Marshaller marsh, GridKernalContext kctx,
             @Nullable CacheObjectContext cacheObjCtx, ClassLoader clsLdr) throws IgniteCheckedException {
             if (msg.fail)
                 throw new IgniteCheckedException("Failed payload");

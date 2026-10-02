@@ -18,7 +18,7 @@
 package org.apache.ignite.plugin.security;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -48,7 +48,7 @@ public interface SecurityPermissionSet extends Serializable, Message {
      *
      * @return Map of task names to task permissions.
      */
-    public Map<String, Collection<SecurityPermission>> taskPermissions();
+    public Map<String, EnumSet<SecurityPermission>> taskPermissions();
 
     /**
      * Map of cache names to cache permissions. Wildcards are allowed at the
@@ -56,7 +56,7 @@ public interface SecurityPermissionSet extends Serializable, Message {
      *
      * @return Map of cache names to cache permissions.
      */
-    public Map<String, Collection<SecurityPermission>> cachePermissions();
+    public Map<String, EnumSet<SecurityPermission>> cachePermissions();
 
     /**
      * Map of service names to service permissions. Wildcards are allowed at the
@@ -64,12 +64,12 @@ public interface SecurityPermissionSet extends Serializable, Message {
      *
      * @return Map of service names to service permissions.
      */
-    public Map<String, Collection<SecurityPermission>> servicePermissions();
+    public Map<String, EnumSet<SecurityPermission>> servicePermissions();
 
     /**
      * Collection of system-wide permissions (events enable/disable, Visor task execution).
      *
      * @return Collection of system-wide permissions.
      */
-    @Nullable public Collection<SecurityPermission> systemPermissions();
+    @Nullable public EnumSet<SecurityPermission> systemPermissions();
 }

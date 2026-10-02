@@ -102,6 +102,11 @@ public class ClusterStateProvider {
         return disconnected;
     }
 
+    /** */
+    public Ignite ignite() {
+        return ignite;
+    }
+
     /**
      * @return {@code True} if ssl enabled.
      */

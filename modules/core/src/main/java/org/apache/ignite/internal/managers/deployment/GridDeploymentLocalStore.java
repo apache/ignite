@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.GridAnnotationsCache;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -194,7 +195,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             // Check that class can be loaded.
             String clsName = meta.className();
 
-            Class<?> cls = U.forName(clsName != null ? clsName : alias, ldr);
+            Class<?> cls = ClassLoaderUtils.forName(clsName != null ? clsName : alias, ldr);
 
             if (spi.register(ldr, cls)) {
                 if (log.isDebugEnabled()) {

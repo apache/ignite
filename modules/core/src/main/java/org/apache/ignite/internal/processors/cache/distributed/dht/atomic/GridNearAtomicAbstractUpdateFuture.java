@@ -481,7 +481,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
             req.nodeId(),
             req.futureId(),
-            req.partition(),
+            req.stripeIdx(),
             true);
 
         ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
@@ -502,7 +502,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
             req.nodeId(),
             req.futureId(),
-            req.partition(),
+            req.stripeIdx(),
             e instanceof ClusterTopologyCheckedException);
 
         res.addFailedKeys(req.keys(), e);
@@ -518,7 +518,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
             req.updateRequest().nodeId(),
             req.futureId(),
-            req.partition(),
+            req.stripeIdx(),
             e instanceof ClusterTopologyCheckedException);
 
         res.addFailedKeys(req.updateRequest().keys(), e);

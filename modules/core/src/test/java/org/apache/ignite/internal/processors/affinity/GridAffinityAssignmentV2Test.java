@@ -40,6 +40,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
@@ -249,7 +250,8 @@ public class GridAffinityAssignmentV2Test {
             0,
             metrics,
             v,
-            consistentId
+            consistentId,
+            LOCAL_CORE_FEATURES
         );
 
         node.setAttributes(Collections.emptyMap());

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Transactions lock list response.
  */
-@UseBinaryMarshaller
 public class TxLocksResponse extends GridCacheMessage {
     /** Future ID. */
     @Order(0)

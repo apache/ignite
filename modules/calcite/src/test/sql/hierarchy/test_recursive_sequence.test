@@ -1,0 +1,62 @@
+# name: test/sql/hierarchy/test_recursive_sequence.test
+# description: Test recursive CTEs used to generate integer sequences
+# group: [hierarchy]
+
+# Fixed recursion bound.
+query I
+WITH RECURSIVE numbers(n) AS (
+    SELECT 1
+    UNION ALL
+    SELECT n + 1
+    FROM numbers
+    WHERE n < 5
+)
+SELECT n FROM numbers ORDER BY n;
+----
+1
+2
+3
+4
+5
+
+statement ok
+CREATE TABLE ranges (id INTEGER PRIMARY KEY, last_value INTEGER);
+
+statement ok
+INSERT INTO ranges VALUES (1, 3), (2, 2);
+
+# The seed contains several rows and every row has its own recursion bound.
+query II
+WITH RECURSIVE numbers(id, n, last_value) AS (
+    SELECT id, 1, last_value
+    FROM ranges
+    UNION ALL
+    SELECT id, n + 1, last_value
+    FROM numbers
+    WHERE n < last_value
+)
+SELECT id, n FROM numbers ORDER BY id, n;
+----
+1	1
+1	2
+1	3
+2	1
+2	2
+
+# A predicate outside the CTE filters rows after the recursion is complete.
+query I
+WITH RECURSIVE numbers(n) AS (
+    SELECT 1
+    UNION ALL
+    SELECT n + 1
+    FROM numbers
+    WHERE n < 6
+)
+SELECT n
+FROM numbers
+WHERE n >= 4
+ORDER BY n;
+----
+4
+5
+6

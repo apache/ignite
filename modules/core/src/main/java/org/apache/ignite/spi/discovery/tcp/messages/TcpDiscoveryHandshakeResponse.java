@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -42,6 +43,10 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     @Order(2)
     @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
 
+    /** */
+    @Order(3)
+    IgniteNodeFeatureSet nodeFeatures;
+
     /**
      * Default constructor for {@link MessageFactory}.
      */
@@ -54,11 +59,14 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId Creator node ID.
      * @param locNodeOrder Local node order.
+     * @param locNodeFeatures Local node features.
      */
-    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder) {
+    public TcpDiscoveryHandshakeResponse(UUID creatorNodeId, long locNodeOrder, IgniteNodeFeatureSet locNodeFeatures) {
         super(creatorNodeId);
 
         order = locNodeOrder;
+
+        this.nodeFeatures = locNodeFeatures;
     }
 
     /**
@@ -102,6 +110,11 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         redirectAddrsMsgs = sockAddrs == null
             ? null
             : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
+    }
+
+    /** @return Features supported by the sender node. */
+    public IgniteNodeFeatureSet nodeFeatures() {
+        return nodeFeatures;
     }
 
     /** {@inheritDoc} */

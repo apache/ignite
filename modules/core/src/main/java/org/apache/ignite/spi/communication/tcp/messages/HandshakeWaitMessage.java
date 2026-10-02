@@ -17,12 +17,14 @@
 
 package org.apache.ignite.spi.communication.tcp.messages;
 
+import org.apache.ignite.internal.EmptyMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message requesting to wait until node's SPI context initialize.
  */
+@EmptyMessage
 public class HandshakeWaitMessage implements Message {
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = DIRECT_TYPE_SIZE;

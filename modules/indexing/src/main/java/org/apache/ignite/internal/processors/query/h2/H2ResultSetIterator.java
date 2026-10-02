@@ -320,6 +320,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         try {
             resultSetChecker.checkOnClose();
 
+            h2.runningQueryManager().onFullyFetched(resultSetChecker.fetchedSize());
+
             PerformanceStatisticsProcessor perfStat = ctx.performanceStatistics();
 
             if (perfStat.enabled() && resultSetChecker.fetchedSize() > 0) {

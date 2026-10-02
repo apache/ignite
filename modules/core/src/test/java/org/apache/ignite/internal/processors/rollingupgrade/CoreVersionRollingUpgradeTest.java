@@ -42,7 +42,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_2_FEATURE;
 import static org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi.blockingDiscovery;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -211,7 +211,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         forAllNodes(nodeIdx -> {
             upgradeNodeVersion(nodeIdx, "2.19.2");
-            checkFeatureActivationSubscription(nodeIdx, VER_2_19_2_ID_1_FEATURE, featureActivationLatch);
+            checkFeatureActivationSubscription(nodeIdx, VER_2_19_2_ID_2_FEATURE, featureActivationLatch);
         });
 
         finalizeClusterVersion(1, "2.19.2");
@@ -313,12 +313,34 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
     /** */
     @Test
+    public void testJoinOfNodeWithGreaterUnsupportedVersion() throws Exception {
+        startCluster("2.19.0");
+
+        checkJoinFailed(3, "2.21.0", NOT_SUPPORTED_VER_ERR);
+
+        checkJoinSuccess(3, "2.19.0", false);
+        checkJoinSuccess(4, "2.19.0", true);
+    }
+
+    /** */
+    @Test
+    public void testJoinOfNodeWithSmallerUnsupportedVersion() throws Exception {
+        startCluster("2.21.0");
+
+        checkJoinFailed(3, "2.19.0", NOT_SUPPORTED_VER_ERR);
+
+        checkJoinSuccess(3, "2.21.0", false);
+        checkJoinSuccess(4, "2.21.0", true);
+    }
+
+    /** */
+    @Test
     public void testUpgradeBetweenVersionsWithCherryPicks() throws Exception {
         startCluster("2.19.3");
 
         ru(1).enableVersionUpgrade();
 
-        checkJoinFailed(3, "2.20.0", RU_UNAVAILABLE_BETWEEN_VER_ERR);
+        checkJoinFailed(3, "2.20.0", NOT_SUPPORTED_VER_ERR);
 
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.3", "2.20.1"));
 

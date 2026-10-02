@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -48,7 +50,12 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientAffinityConfiguration;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -162,6 +169,22 @@ public final class ClientUtils {
         return map;
     }
 
+    /** */
+    public static <T> T awaitFutureResult(IgniteInternalFuture<T> fut, long timeout, String desc) throws IgniteCheckedException {
+        try {
+            return timeout > 0 ? fut.get(timeout) : fut.get();
+        }
+        catch (IgniteFutureTimeoutCheckedException | IgniteFutureCancelledCheckedException |
+               IgniteInterruptedCheckedException e) {
+            throw new IgniteCheckedException("Failed to wait for " + desc + " completion [timeout=" + timeout + ']', e);
+        }
+    }
+
+    /** */
+    public static ClientConnectionException createClientConnectionException(Exception e, InetSocketAddress addr) {
+        return new ClientConnectionException(e.getMessage() + " [remoteAddress=" + addr + ']', e);
+    }
+
     /** Deserialize binary type metadata from stream. */
     BinaryMetadata binaryMetadata(BinaryInputStream in) throws IOException {
         try (BinaryReaderEx reader = createBinaryReader(in)) {
@@ -201,7 +224,7 @@ public final class ClientUtils {
 
     /** Serialize binary type metadata to stream. */
     void binaryMetadata(BinaryMetadata meta, BinaryOutputStream out) {
-        try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
+        try (BinaryWriterEx w = BinaryUtils.writerWithoutSchema(marsh.context(), out)) {
             w.writeInt(meta.typeId());
             w.writeString(meta.typeName());
             w.writeString(meta.affinityKeyFieldName());
@@ -246,7 +269,7 @@ public final class ClientUtils {
 
     /** Serialize configuration to stream. */
     void cacheConfiguration(ClientCacheConfiguration cfg, boolean sql, BinaryOutputStream out, ProtocolContext protocolCtx) {
-        try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), out, null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writerWithoutSchema(marsh.context(), out)) {
             if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.SQL_CACHE_CREATION))
                 out.writeBoolean(sql);
 
@@ -579,7 +602,7 @@ public final class ClientUtils {
 
     /** Write Ignite binary object to output stream. */
     void writeObject(BinaryOutputStream out, Object obj) {
-        out.writeByteArray(marsh.marshal(obj));
+        marsh.marshal(obj, out);
     }
 
     /**

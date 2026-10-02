@@ -29,9 +29,6 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
     /** */
     protected static final int HALF_BUF_SIZE = IN_BUFFER_SIZE >> 1;
 
-    /** Special flag which marks that all the rows are received. */
-    protected static final int NOT_WAITING = -1;
-
     /** */
     protected final Deque<Row> leftInBuf = new ArrayDeque<>(IN_BUFFER_SIZE);
 

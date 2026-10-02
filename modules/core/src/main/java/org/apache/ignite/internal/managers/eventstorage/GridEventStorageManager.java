@@ -48,9 +48,9 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
@@ -1070,13 +1070,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + p);
 
-            GridEventStorageRequest msg = new GridEventStorageRequest(
-                resTopicId,
-                p,
-                dep.classLoaderId(),
-                dep.deployMode(),
-                dep.userVersion(),
-                dep.participants());
+            GridEventStorageRequest msg = new GridEventStorageRequest(resTopicId, p, dep);
 
             sendMessage(nodes, TOPIC_EVENT, msg, PUBLIC_POOL);
 
@@ -1248,23 +1242,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 Collection<Event> evts;
 
                 try {
-                    GridDeployment dep = ctx.deploy().getGlobalDeployment(
-                        req.deploymentMode(),
-                        req.filterClassName(),
-                        req.filterClassName(),
-                        req.userVersion(),
-                        nodeId,
-                        req.classLoaderId(),
-                        req.loaderParticipants(),
-                        null);
-
-                    if (dep == null)
-                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
-                            "(is peer class loading turned on?): " + req);
-
-                    MessageMarshalling.unmarshal(req, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    CommunicationMarshalling.unmarshal(req, ctx, null,
+                        ctx.deploy().classLoader(req.deploymentInfo(), req.filterClassName(), nodeId));
 
                     filter = (IgnitePredicate<Event>)req.filter();
+
+                    GridDeployment dep = ctx.deploy().globalDeployment(req.deploymentInfo(), req.filterClassName(), nodeId);
 
                     // Resource injection.
                     ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()).get1(), filter);

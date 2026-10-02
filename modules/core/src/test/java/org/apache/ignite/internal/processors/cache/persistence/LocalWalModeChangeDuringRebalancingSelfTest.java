@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -827,29 +826,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     private void awaitExchange(IgniteEx ig) throws IgniteCheckedException {
         ig.context().cache().context().exchange().lastTopologyFuture().get();
-    }
-
-    /**
-     * Put random values to cache in multiple threads until time interval given expires.
-     *
-     * @param cache Cache to modify.
-     * @param threadCnt Number ot threads to be used.
-     * @param duration Time interval in milliseconds.
-     * @throws Exception When something goes wrong.
-     */
-    private void doLoad(IgniteCache<Integer, Integer> cache, int threadCnt, long duration) throws Exception {
-        GridTestUtils.runMultiThreaded(() -> {
-            long stopTs = U.currentTimeMillis() + duration;
-
-            int keysCnt = getKeysCount();
-
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-            do {
-                cache.put(rnd.nextInt(keysCnt), rnd.nextInt());
-            }
-            while (U.currentTimeMillis() < stopTs);
-        }, threadCnt, "load-cache");
     }
 
     /**

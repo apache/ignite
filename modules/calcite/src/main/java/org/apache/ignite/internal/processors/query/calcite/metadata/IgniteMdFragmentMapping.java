@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRecursiveTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
@@ -214,6 +215,17 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
     public FragmentMapping fragmentMapping(IgniteTableScan rel, RelMetadataQuery mq, MappingQueryContext ctx) {
         return FragmentMapping.create(rel.sourceId(),
             rel.getTable().unwrap(IgniteTable.class).colocationGroup(ctx));
+    }
+
+    /**
+     * See {@link IgniteMdFragmentMapping#fragmentMapping(RelNode, RelMetadataQuery, MappingQueryContext)}
+     */
+    public FragmentMapping fragmentMapping(
+        IgniteRecursiveTableScan rel,
+        RelMetadataQuery mq,
+        MappingQueryContext ctx
+    ) {
+        return FragmentMapping.create(ctx.localNodeId());
     }
 
     /**

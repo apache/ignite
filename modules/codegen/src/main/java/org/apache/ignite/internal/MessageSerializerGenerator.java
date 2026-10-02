@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.apache.ignite.internal.MessageProcessor.FieldFeatureGate;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -49,6 +51,7 @@ import static org.apache.ignite.internal.MessageProcessor.COMPRESSED_MESSAGE_CLA
 import static org.apache.ignite.internal.MessageProcessor.GRID_H2_NULL;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
+import static org.apache.ignite.internal.MessageProcessor.buildFieldFeatureGate;
 
 /** Generates {@code *Serializer} classes for {@code Message} types. */
 public class MessageSerializerGenerator extends MessageCompanionGenerator {
@@ -68,6 +71,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     private static final String MESSAGE_READER_CLS = "org.apache.ignite.plugin.extensions.communication.MessageReader";
 
     /** */
+    private static final String MESSAGE_SER_CTX_CLS = "org.apache.ignite.internal.MessageSerializationContext";
+
+    /** */
     private static final String ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper";
 
     /** */
@@ -85,6 +91,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private static final String MESSAGE_COLLECTION_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.MessageCollectionType";
+
+    /** */
+    private static final String COLLECTION_IMPL_TYPE_CLS = "org.apache.ignite.plugin.extensions.communication.CollectionImplementationType";
 
     /** */
     private static final String IGNITE_UUID_CLS = "org.apache.ignite.lang.IgniteUuid";
@@ -141,6 +150,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             imports.add(MESSAGE_SERIALIZER_CLS);
             imports.add(MESSAGE_WRITER_CLS);
             imports.add(MESSAGE_READER_CLS);
+            imports.add(MESSAGE_SER_CTX_CLS);
 
             writeClassHeader(writer, "MessageSerializer", serClsName);
 
@@ -191,8 +201,10 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     private void generateMethod(List<String> code, List<VariableElement> fields, boolean write) throws Exception {
         code.add(indentedLine(METHOD_JAVADOC));
 
-        code.add(indentedLine("@Override public final boolean %s(" + simpleNameWithGeneric(type) + " msg, %s) {",
-            write ? "writeTo" : "readFrom", write ? "MessageWriter writer" : "MessageReader reader"));
+        code.add(indentedLine(
+            "@Override public final boolean %s(" + simpleNameWithGeneric(type) + " msg, %s, MessageSerializationContext ctx) {",
+            write ? "writeTo" : "readFrom",
+            write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
@@ -257,7 +269,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
 
         if (write)
-            writeField(opt, callExpr(field, true));
+            writeField(field, opt, callExpr(field, true));
         else
             readField(field, opt, callExpr(field, false));
     }
@@ -297,12 +309,28 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
      * @param opt Case option.
      * @param writeExpr Writer call expression.
      */
-    private void writeField(int opt, String writeExpr) {
+    private void writeField(VariableElement field, int opt, String writeExpr) {
         write.add(indentedLine("case %d:", opt));
 
         indent++;
 
+        FieldFeatureGate gate = buildFieldFeatureGate(env, field);
+
+        if (gate != null) {
+            imports.add(gate.registry());
+
+            write.add(indentedLine("if (%s) {", gate.expression()));
+
+            indent++;
+        }
+
         returnFalseIf(write, "!" + writeExpr);
+
+        if (gate != null) {
+            indent--;
+
+            write.add(indentedLine("}"));
+        }
 
         write.add(EMPTY);
         write.add(indentedLine("writer.incrementState();"));
@@ -331,10 +359,26 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         indent++;
 
+        FieldFeatureGate gate = buildFieldFeatureGate(env, field);
+
+        if (gate != null) {
+            imports.add(gate.registry());
+
+            read.add(indentedLine("if (%s) {", gate.expression()));
+
+            indent++;
+        }
+
         read.add(indentedLine("%s = %s;", fieldRef(field), readExpr));
         read.add(EMPTY);
 
         returnFalseIf(read, "!reader.isLastRead()");
+
+        if (gate != null) {
+            indent--;
+
+            read.add(indentedLine("}"));
+        }
 
         read.add(EMPTY);
         read.add(indentedLine("reader.incrementState();"));
@@ -356,13 +400,13 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             checkTypeForCompress(type);
 
         if (type.getKind().isPrimitive())
-            return new FieldCall(capitalizeOnlyFirst(type.getKind().name()), null, false);
+            return FieldCall.scalar(capitalizeOnlyFirst(type.getKind().name()));
 
         if (type.getKind() == TypeKind.ARRAY) {
             TypeMirror compType = ((ArrayType)type).getComponentType();
 
             if (compType.getKind().isPrimitive())
-                return new FieldCall(capitalizeOnlyFirst(compType.getKind().name()) + "Array", null, false);
+                return FieldCall.scalar(capitalizeOnlyFirst(compType.getKind().name()) + "Array");
 
             if (compType.getKind() == TypeKind.DECLARED) {
                 Element compElem = ((DeclaredType)compType).asElement();
@@ -371,52 +415,52 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
                     imports.add(((QualifiedNameable)compElem).getQualifiedName().toString());
             }
 
-            return new FieldCall("ObjectArray", messageCollectionItemTypes(field, type), false);
+            return FieldCall.collection("ObjectArray", messageCollectionItemTypes(field, type), false);
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (sameType(type, String.class))
-                return new FieldCall("String", null, false);
+                return FieldCall.scalar("String");
 
             if (sameType(type, BitSet.class))
-                return new FieldCall("BitSet", null, false);
+                return FieldCall.scalar("BitSet");
 
             if (sameType(type, UUID.class))
-                return new FieldCall("Uuid", null, false);
+                return FieldCall.scalar("Uuid");
 
             if (sameType(type, IGNITE_UUID_CLS))
-                return new FieldCall("IgniteUuid", null, false);
+                return FieldCall.scalar("IgniteUuid");
 
             if (sameType(type, AFFINITY_TOPOLOGY_VERSION_CLS))
-                return new FieldCall("AffinityTopologyVersion", null, false);
+                return FieldCall.scalar("AffinityTopologyVersion");
 
             if (assignableFrom(erasedType(type), type(Map.class.getName())))
-                return new FieldCall("Map", messageCollectionItemTypes(field, type), compress);
+                return FieldCall.collection("Map", messageCollectionItemTypes(field, type), compress);
 
             if (assignableFrom(type, type(KEY_CACHE_OBJECT_CLS)))
-                return new FieldCall("KeyCacheObject", null, false);
+                return FieldCall.scalar("KeyCacheObject");
 
             if (assignableFrom(type, type(CACHE_OBJECT_CLS)))
-                return new FieldCall("CacheObject", null, false);
+                return FieldCall.scalar("CacheObject");
 
             if (assignableFrom(type, type(GRID_LONG_LIST_CLS)))
-                return new FieldCall("GridLongList", null, false);
+                return FieldCall.scalar("GridLongList");
 
             if (assignableFrom(type, type(IGNITE_PRODUCT_VERSION_CLS)))
-                return new FieldCall("IgniteProductVersion", null, false);
+                return FieldCall.scalar("IgniteProductVersion");
 
             if (assignableFrom(type, type(GRID_CACHE_VERSION_CLS)))
-                return new FieldCall("GridCacheVersion", null, false);
+                return FieldCall.scalar("GridCacheVersion");
 
             if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
                 if (sameType(type, COMPRESSED_MESSAGE_CLASS))
                     throw new IllegalArgumentException(COMPRESSED_MSG_ERROR);
 
-                return new FieldCall("Message", null, compress);
+                return FieldCall.message(compress);
             }
 
             if (assignableFrom(erasedType(type), type(Collection.class.getName())))
-                return new FieldCall("Collection", messageCollectionItemTypes(field, type), false);
+                return FieldCall.collection("Collection", messageCollectionItemTypes(field, type), false);
 
             throw new IllegalArgumentException("Unsupported declared type: " + type);
         }
@@ -552,9 +596,17 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
             assert typeArgs.size() == 1 : type.toString();
 
-            return "new MessageCollectionType(" +
-                messageCollectionItemTypeDescriptor(typeArgs.get(0), field) + ", " +
-                assignableFrom(erasedType(type), type(Set.class.getName())) + ")";
+            TypeMirror itemType = typeArgs.get(0);
+
+            if (EnumSet.class.getName().equals(qualifiedClassName(erasedType(type))) && !enumType(env, itemType))
+                throw new IllegalArgumentException("Unexpected Enum Set element type [itemType=" + itemType + ", colType=" + type + ']');
+
+            imports.add(COLLECTION_IMPL_TYPE_CLS);
+
+            String implType = resolveCollectionImplementationType(type);
+
+            return "new MessageCollectionType(" + messageCollectionItemTypeDescriptor(itemType, field) +
+                ", CollectionImplementationType." + implType + ")";
         }
         else if (enumType(env, type)) {
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageEnumType");
@@ -566,13 +618,28 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             String decoder = custMapper ? prefix + "Mapper::decode" :
                 "b -> DefaultEnumMapper.INSTANCE.decode(" + prefix + "Vals, b)";
 
-            return String.format("new MessageEnumType<>(%s, %s)", encoder, decoder);
+            return String.format("new MessageEnumType<>(%s.class, %s, %s)", simpleClassName(type), encoder, decoder);
         }
         else {
             imports.add(MESSAGE_ITEM_TYPE_CLS);
 
             return "new MessageItemType(MessageCollectionItemType." + messageCollectionItemType(type) + ")";
         }
+    }
+
+    /**
+     * @param type Declared collection type.
+     * @return Name of the {@code CollectionImplementationType} that will be used to create collection instance.
+     */
+    private String resolveCollectionImplementationType(TypeMirror type) {
+        TypeMirror declType = erasedType(type);
+
+        if (EnumSet.class.getName().equals(qualifiedClassName(declType)))
+            return "ENUM_SET";
+        else if (assignableFrom(declType, type(Set.class.getName())))
+            return "HASH_SET";
+        else
+            return "ARRAY_LIST";
     }
 
     /**
@@ -729,10 +796,14 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         private final boolean compress;
 
         /** */
-        private FieldCall(String mtd, @Nullable String collDesc, boolean compress) {
+        private final boolean isSerCtxRequired;
+
+        /** */
+        private FieldCall(String mtd, @Nullable String collDesc, boolean compress, boolean isSerCtxRequired) {
             this.mtd = mtd;
             this.collDesc = collDesc;
             this.compress = compress;
+            this.isSerCtxRequired = isSerCtxRequired;
         }
 
         /** @return Full call expression; {@code valArg}, when given, is passed as the first argument (write side). */
@@ -748,7 +819,25 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             if (compress)
                 args.add("true");
 
+            if (isSerCtxRequired)
+                args.add("ctx");
+
             return mtdPrefix + mtd + "(" + String.join(", ", args) + ")";
+        }
+
+        /** */
+        private static FieldCall scalar(String mtd) {
+            return new FieldCall(mtd, null, false, false);
+        }
+
+        /** */
+        private static FieldCall collection(String mtd, String collDesc, boolean compress) {
+            return new FieldCall(mtd, collDesc, compress, true);
+        }
+
+        /** */
+        private static FieldCall message(boolean compress) {
+            return new FieldCall("Message", null, compress, true);
         }
     }
 

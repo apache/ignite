@@ -63,7 +63,6 @@ import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.LocalRoutineInfo;
 import static org.apache.ignite.testframework.GridTestUtils.noop;
 
 /**
@@ -151,19 +150,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @param proc Continuous processor.
-     * @return Local event routines.
-     */
-    private Collection<LocalRoutineInfo> localRoutines(GridContinuousProcessor proc) {
-        return F.view(U.<Map<UUID, LocalRoutineInfo>>field(proc, "locInfos").values(),
-            new IgnitePredicate<LocalRoutineInfo>() {
-                @Override public boolean apply(LocalRoutineInfo info) {
-                    return info.handler().isEvents();
-                }
-            });
     }
 
     /**

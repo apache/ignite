@@ -24,7 +24,7 @@ Defragmentation enables a user to shrink data files and claim back disk space.
 
 [NOTE]
 ====
-Defragmentation can only be used with historical rebalance enabled. If historical rebalancing is disabled, the server node always triggers full rebalance after the restart, which would throw away the defragmented partition. A full set of data is transferred to the node from other nodes over a network. Depending on the dataset’s size, transferring may require significant time and slow down the whole cluster as network capacity is essential to fulfill user requests.
+Defragmentation itself does not require link:data-rebalancing[historical rebalancing]. However, when the node returns to the cluster after defragmentation, it has to rebalance its partitions. If historical rebalancing is unavailable, the node performs a full rebalance, which transfers complete partitions from other nodes and can overwrite the defragmented files, negating the reclaimed disk space. Make sure that the required WAL history remains available on the supplier nodes until the defragmented node rejoins the cluster.
 ====
 
 == Performing Defragmentation
@@ -34,10 +34,19 @@ Defragmentation is a costly operation in terms of disk IO. To avoid slowing down
 === Starting Defragmentation
 
 To request defragmentation, use the following command:
+[tabs]
+--
+tab:Unix[]
 [source,shell]
 ----
-control.(sh|bat) --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
+control.sh --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
 ----
+tab:Windows[]
+[source,shell]
+----
+control.bat --defragmentation schedule --nodes <consistentIds> [--caches <cacheNames>]
+----
+--
 
 After the manual restart, the node with the requested defragmentation enters a special mode called link:maintenance-mode[Maintenance Mode]. The node in maintenance mode does not join the rest of the cluster but remains isolated until defragmentation is completed (or canceled by explicit user request). After that, the user has to restart the node one more time: it exits maintenance mode and returns to normal operations (joining the cluster and starting to serve regular workload).
 
@@ -46,17 +55,45 @@ After the manual restart, the node with the requested defragmentation enters a s
 Nodes in maintenance mode do not participate in serving the regular workload. It is not recommended to execute defragmentation on several nodes simultaneously as it reduces the number of backups, thus increasing the risk of partition loss.
 ====
 
+=== Checking Defragmentation Status
+
+To check the status of an ongoing defragmentation operation, run the following command against the node in Maintenance Mode:
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --host <host> --port <port> --defragmentation status
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --host <host> --port <port> --defragmentation status
+----
+--
+
 === Stopping Defragmentation
 
 When a node executes defragmentation, it is possible to cancel it. To stop defragmentation, run the following command available in the control utility:
+[tabs]
+--
+tab:Unix[]
 [source,shell]
 ----
-control.(sh|bat) --defragmentation cancel --host --port
+control.sh --host <host> --port <port> --defragmentation cancel
 ----
+tab:Windows[]
+[source,shell]
+----
+control.bat --host <host> --port <port> --defragmentation cancel
+----
+--
 
 [NOTE]
 ====
-To reduce disk space requirements during defragmentation, caches are defragmented one by one (if a defragmentation of more than one cache is requested). To calculate additional required space, find the cache that occupies the most disk space. The same amount of disk space is required for defragmentation at max.
+During defragmentation, the original partition and index files coexist with their defragmented copies. Cache groups are processed one at a time, and the original files are replaced only after the whole cache group has been defragmented. Reserve free disk space approximately equal to the on-disk size of the largest cache group being defragmented. If little space can be reclaimed, the peak disk usage for that cache group can approach twice its original size, plus temporary link-mapping files.
+
+If a cache belongs to a shared cache group, selecting that cache for defragmentation causes the entire cache group to be defragmented.
 ====
 
 == Conclusion

@@ -50,8 +50,8 @@ public class IgnitePluginFeatureSet extends IgniteComponentFeatureSet {
         this.compName = compName;
     }
 
-    /** */
-    public String componentName() {
+    /** {@inheritDoc} */
+    @Override public String componentName() {
         return compName;
     }
 

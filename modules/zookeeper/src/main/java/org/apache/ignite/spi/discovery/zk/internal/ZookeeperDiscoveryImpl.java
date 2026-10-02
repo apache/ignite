@@ -1156,7 +1156,7 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     * Marshals credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
      * @throws IgniteSpiException If marshalling failed.
@@ -3042,7 +3042,7 @@ public class ZookeeperDiscoveryImpl {
 
             DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
-            dataBag.commonData(zkDataBagWrapper.unmarshalledData());
+            dataBag.commonData(zkDataBagWrapper.data);
 
             exchange.onExchange(dataBag);
 

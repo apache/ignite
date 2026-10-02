@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -395,14 +395,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         // Only set deployment info if it was not set automatically.
         if (deployable.deployInfo() == null) {
-            GridDeploymentInfoBean dep = globalDeploymentInfo();
+            GridDeploymentInfoMessage dep = globalDeploymentInfo();
 
             if (dep == null) {
                 GridDeployment locDep0 = locDep.get();
 
                 if (locDep0 != null) {
                     // Will copy sequence number to bean.
-                    dep = new GridDeploymentInfoBean(locDep0);
+                    dep = new GridDeploymentInfoMessage(locDep0);
 
                     checkDeploymentIsCorrect(dep, deployable, false);
                 }
@@ -426,7 +426,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param failIfNotCorrect Flag determining whether to throw exception or just warn.
      * @throws IgnitePeerToPeerClassLoadingException If deployment is incorrect.
      */
-    private void checkDeploymentIsCorrect(GridDeploymentInfoBean deployment, GridCacheDeployable deployable,
+    private void checkDeploymentIsCorrect(GridDeploymentInfoMessage deployment, GridCacheDeployable deployable,
         boolean failIfNotCorrect)
         throws IgnitePeerToPeerClassLoadingException {
         if (deployment.participants() == null
@@ -445,7 +445,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @return First global deployment.
      */
-    @Nullable public GridDeploymentInfoBean globalDeploymentInfo() {
+    @Nullable public GridDeploymentInfoMessage globalDeploymentInfo() {
         assert depEnabled;
 
         // Do not return info if mode is CONTINUOUS.
@@ -456,14 +456,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         IgniteUuid locLdrId0 = localLdrId.get();
 
         if (locLdrId0 != null) {
-            GridDeploymentInfoBean deploymentInfoBean = getDepBean(deps.get(localLdrId.get()));
+            GridDeploymentInfoMessage deploymentInfoBean = getDepBean(deps.get(localLdrId.get()));
 
             if (deploymentInfoBean != null)
                 return deploymentInfoBean;
         }
 
         for (CachedDeploymentInfo<K, V> d : deps.values()) {
-            GridDeploymentInfoBean deploymentInfoBean = getDepBean(d);
+            GridDeploymentInfoMessage deploymentInfoBean = getDepBean(d);
             if (deploymentInfoBean != null)
                 return deploymentInfoBean;
         }
@@ -472,7 +472,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /** */
-    @Nullable private GridDeploymentInfoBean getDepBean(CachedDeploymentInfo<K, V> d) {
+    @Nullable private GridDeploymentInfoMessage getDepBean(CachedDeploymentInfo<K, V> d) {
         if (d == null || cctx.discovery().node(d.senderId()) == null)
             // Sender has left.
             return null;
@@ -484,7 +484,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             for (UUID id : participants.keySet()) {
                 if (cctx.discovery().node(id) != null) {
                     // At least 1 participant is still in the grid.
-                    return new GridDeploymentInfoBean(
+                    return new GridDeploymentInfoMessage(
                         d.loaderId(),
                         d.userVersion(),
                         d.mode(),
@@ -644,8 +644,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 userVer,
                 sndId,
                 ldrId,
-                participants,
-                F.<ClusterNode>alwaysTrue());
+                participants);
 
             return d != null ? d.deployedClass(name) : null;
         }

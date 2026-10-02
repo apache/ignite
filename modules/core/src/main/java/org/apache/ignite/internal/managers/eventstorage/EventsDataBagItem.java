@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.managers.eventstorage;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.UseBinaryMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-@UseBinaryMarshaller
 public class EventsDataBagItem implements Message {
     /** */
     @Order(0)

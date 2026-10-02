@@ -23,15 +23,17 @@ public class MessageCollectionType implements MessageType {
     private final MessageType valType;
 
     /** */
-    private final boolean set;
+    private final CollectionImplementationType implType;
 
     /**
      * @param valType Value type.
-     * @param set Is set.
+     * @param colImplType Type of the collection the elements are read back into.
      */
-    public MessageCollectionType(MessageType valType, boolean set) {
+    public MessageCollectionType(MessageType valType, CollectionImplementationType colImplType) {
+        assert colImplType != CollectionImplementationType.ENUM_SET || valType instanceof MessageEnumType<?>;
+
         this.valType = valType;
-        this.set = set;
+        this.implType = colImplType;
     }
 
     /** @return Value type. */
@@ -44,8 +46,8 @@ public class MessageCollectionType implements MessageType {
         return MessageCollectionItemType.COLLECTION;
     }
 
-    /** @return Is set. */
-    public boolean set() {
-        return set;
+    /** @return Collection the elements are read back into. */
+    public CollectionImplementationType collectionImplementationType() {
+        return implType;
     }
 }

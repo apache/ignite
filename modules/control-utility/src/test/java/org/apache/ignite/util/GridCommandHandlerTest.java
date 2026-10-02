@@ -37,10 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -172,7 +169,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.management.cache.CacheIdleVerifyCancelTask.TASKS_TO_CANCEL;
-import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CACL_PART_HASH_ERR_MSG;
 import static org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask.CP_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -432,89 +428,27 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     }
                 });
             });
-        }, false);
-    }
-
-    /** */
-    @Test
-    public void testIdleVerifyCancelBeforeCalcPartitionHashStarted() throws Exception {
-        doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
-            ForkJoinPool pool = new ForkJoinPool() {
-                @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
-                    beforeCancelLatch.countDown();
-
-                    ForkJoinTask<T> submitted = super.submit(task);
-
-                    try {
-                        assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                    }
-                    catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    return submitted;
-                }
-            };
-
-            VerifyBackupPartitionsTask.poolSupplier = () -> pool;
-        }, false);
+        }, false, false);
     }
 
     /** */
     @Test
     public void testIdleVerifyCancelWhileCalcPartitionHashRunning() throws Exception {
+        listeningLog = new ListeningTestLogger(log);
+
         for (boolean checkCrc : new boolean[] {false, true}) {
-            // Can't place assert inside pool, because exceptions from task ignored.
-            AtomicBoolean interruptedOnCancel = new AtomicBoolean(true);
-            AtomicBoolean eCatched = new AtomicBoolean(false);
+            LogListener lsnr = LogListener.matches(checkCrc
+                ? "Checking of partitions page CRC sum has been cancelled"
+                : "Partition hash calculation has been cancelled"
+            ).build();
 
-            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> {
-                ForkJoinPool pool = new ForkJoinPool() {
-                    @Override public <T> ForkJoinTask<T> submit(Callable<T> task) {
-                        return super.submit(new Callable<T>() {
-                            @Override public T call() throws Exception {
-                                beforeCancelLatch.countDown();
+            listeningLog.registerListener(lsnr);
 
-                                try {
-                                    assertTrue(afterCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                                }
-                                catch (InterruptedException ignored) {
-                                    interruptedOnCancel.set(false);
-                                }
+            doTestCancelIdleVerify((beforeCancelLatch, afterCancelLatch) -> beforeCancelLatch.countDown(), checkCrc, true);
 
-                                try {
-                                    // Call must fail.
-                                    T res = task.call();
+            lsnr.check();
 
-                                    interruptedOnCancel.set(false);
-
-                                    return res;
-                                }
-                                catch (IgniteException e) {
-                                    if (!e.getMessage().startsWith(checkCrc ? CRC_CHECK_ERR_MSG : CACL_PART_HASH_ERR_MSG))
-                                        interruptedOnCancel.set(false);
-
-                                    eCatched.set(true);
-
-                                    throw e;
-                                }
-                                catch (Throwable e) {
-                                    interruptedOnCancel.set(false);
-
-                                    throw e;
-                                }
-                            }
-                        });
-                    }
-                };
-
-                VerifyBackupPartitionsTask.poolSupplier = () -> pool;
-            }, checkCrc);
-
-            assertTrue("All tasks must be cancelled", interruptedOnCancel.get());
-            assertTrue("Task must fail with expected exception", eCatched.get());
-
-            eCatched.set(false);
+            listeningLog.clearListeners();
         }
     }
 
@@ -523,12 +457,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      * @param prepare Prepares the test using beforeCancelLatch and afterCancelLatch.
      * @param checkCrc If {@code true} then run idle verify with --check-crc argument.
+     * @param waitAtStart If {@code true} then forces nodes to wait after the procedure start and to proceed only after
+     *                    the {@code prepare}'s before-latch switched.
     */
-    private void doTestCancelIdleVerify(BiConsumer<CountDownLatch, CountDownLatch> prepare, boolean checkCrc) throws Exception {
-        final int gridsCnt = 4;
+    private void doTestCancelIdleVerify(
+        BiConsumer<CountDownLatch, CountDownLatch> prepare,
+        boolean checkCrc,
+        boolean waitAtStart
+    ) throws Exception {
+        int gridsCnt = 4;
 
         if (G.allGrids().isEmpty()) {
-            listeningLog = new ListeningTestLogger(log);
+            if (listeningLog == null)
+                listeningLog = new ListeningTestLogger(log);
 
             IgniteEx srv = startGrids(gridsCnt);
 
@@ -539,9 +480,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 .setAffinity(new RendezvousAffinityFunction().setPartitions(3)));
 
             for (int part = 0; part < 3; part++) {
-                for (Integer key : partitionKeys(cache, part, 3, 0)) {
+                for (Integer key : partitionKeys(cache, part, 3, 0))
                     cache.put(key, key);
-                }
             }
         }
 
@@ -550,9 +490,43 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         prepare.accept(beforeCancelLatch, afterCancelLatch);
 
-        LogListener lsnr = LogListener.matches("Idle verify was cancelled.").build();
+        LogListener cancelLsnr = LogListener.matches("Idle verify was cancelled.").build();
 
-        listeningLog.registerListener(lsnr);
+        CountDownLatch startProceedLatch = new CountDownLatch(1);;
+        LogListener startLsnrAndWaiter = null;
+
+        if (waitAtStart) {
+            startLsnrAndWaiter = new LogListener() {
+                private final AtomicInteger startedLatch = new AtomicInteger(gridsCnt);
+
+                @Override public boolean check() {
+                    return startedLatch.get() < 1;
+                }
+
+                @Override public void reset() {
+                    assert startProceedLatch.getCount() > 0;
+
+                    startedLatch.set(gridsCnt);
+                }
+
+                @Override public void accept(String s) {
+                    if (s.contains("Idle verify procedure has started")) {
+                        startedLatch.decrementAndGet();
+
+                        try {
+                            startProceedLatch.await();
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            };
+
+            listeningLog.registerListener(startLsnrAndWaiter);
+        }
+
+        listeningLog.registerListener(cancelLsnr);
 
         IgniteInternalFuture<Integer> idleVerifyFut = GridTestUtils.runAsync(() -> {
             if (checkCrc)
@@ -561,9 +535,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 execute("--cache", "idle_verify");
         });
 
+        if (waitAtStart)
+            assertTrue(startLsnrAndWaiter.check(getTestTimeout()));
+
         assertTrue(beforeCancelLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--cancel"));
+
+        if (waitAtStart)
+            startProceedLatch.countDown();
 
         afterCancelLatch.countDown();
 
@@ -585,7 +565,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         idleVerifyFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        assertTrue(lsnr.check());
+        assertTrue(cancelLsnr.check());
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cluster;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -30,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 public class NodeFullMetricsMessage implements Message {
     /** Node metrics wrapper message. */
     @Order(0)
-    public NodeMetricsMessage nodeMetricsMsg;
+    public ClusterMetricsSnapshot nodeMetricsMsg;
 
     /** Cache metrics wrapper message. */
     @Order(1)
@@ -43,7 +44,7 @@ public class NodeFullMetricsMessage implements Message {
 
     /** */
     public NodeFullMetricsMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        nodeMetricsMsg = new NodeMetricsMessage(nodeMetrics);
+        nodeMetricsMsg = new ClusterMetricsSnapshot(nodeMetrics);
 
         cachesMetricsMsgs = U.newHashMap(cacheMetrics.size());
 
@@ -61,12 +62,12 @@ public class NodeFullMetricsMessage implements Message {
     }
 
     /** */
-    public NodeMetricsMessage nodeMetricsMessage() {
+    public ClusterMetricsSnapshot nodeMetricsMessage() {
         return nodeMetricsMsg;
     }
 
     /** */
-    public void nodeMetricsMessage(NodeMetricsMessage nodeMetricsMsg) {
+    public void nodeMetricsMessage(ClusterMetricsSnapshot nodeMetricsMsg) {
         this.nodeMetricsMsg = nodeMetricsMsg;
     }
 

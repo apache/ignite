@@ -30,10 +30,12 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Relational operator that returns the sorted contents of a table
@@ -85,6 +87,38 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelNode accept(RexShuttle shuttle) {
+        boolean[] boundsChanged = {false};
+
+        List<SearchBounds> newSearchBounds = searchBounds == null ? null : Commons.transform(searchBounds, bounds -> {
+            if (bounds == null)
+                return null;
+
+            return bounds.transform(node -> {
+                RexNode newNode = shuttle.apply(node);
+
+                boundsChanged[0] |= newNode != node;
+
+                return newNode;
+            });
+        });
+
+        RexNode newCondition = shuttle.apply(condition);
+
+        if (!boundsChanged[0] && newCondition == condition)
+            return this;
+
+        return new IgniteSortedIndexSpool(
+            getCluster(),
+            getTraitSet(),
+            getInput(),
+            collation,
+            newCondition,
+            newSearchBounds
+        );
     }
 
     /** */

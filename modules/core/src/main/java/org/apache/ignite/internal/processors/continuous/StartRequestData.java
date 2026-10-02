@@ -17,17 +17,10 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -35,8 +28,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Start request data.
  */
 public class StartRequestData implements Message {
-    /** Node filter. */
-    private IgnitePredicate<ClusterNode> nodeFilter;
+    /** Node filter, restored by the processor reading this request. */
+    IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Serialized node filter. */
     @Order(0)
@@ -48,14 +41,11 @@ public class StartRequestData implements Message {
 
     /** Deployment info. */
     @Order(2)
-    GridDeploymentInfoBean depInfo;
+    GridDeploymentInfoMessage depInfo;
 
-    /** Handler. */
-    private GridContinuousHandler hnd;
-
-    /** Serialized handler. */
+    /** Handler, restored by the processor reading this request. */
     @Order(3)
-    byte[] hndBytes;
+    GridContinuousHandler hnd;
 
     /** Buffer size. */
     @Order(4)
@@ -119,7 +109,7 @@ public class StartRequestData implements Message {
     /**
      * @param depInfo New deployment info.
      */
-    public void deploymentInfo(GridDeploymentInfoBean depInfo) {
+    public void deploymentInfo(GridDeploymentInfoMessage depInfo) {
         this.depInfo = depInfo;
     }
 
@@ -168,59 +158,5 @@ public class StartRequestData implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StartRequestData.class, this);
-    }
-
-    /** */
-    public void marshal(GridKernalContext ctx) throws IgniteCheckedException {
-        if (hnd != null) {
-            if (ctx.config().isPeerClassLoadingEnabled()) {
-                // Handle peer deployment for other handler-specific objects.
-                hnd.p2pMarshal(ctx);
-            }
-
-            hndBytes = U.marshal(ctx.marshaller(), hnd);
-        }
-
-        if (nodeFilter != null)
-            nodeFilterBytes = U.marshal(ctx.marshaller(), nodeFilter);
-    }
-
-    /** */
-    public void unmarshal(GridKernalContext ctx, UUID sndId) throws IgniteCheckedException {
-        if (ctx.config().isPeerClassLoadingEnabled() && clsName != null) {
-            GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(),
-                clsName,
-                clsName,
-                depInfo.userVersion(),
-                sndId,
-                depInfo.classLoaderId(),
-                depInfo.participants(),
-                null);
-
-            if (dep == null)
-                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
-
-            nodeFilter = U.unmarshal(ctx.marshaller(),
-                nodeFilterBytes,
-                U.resolveClassLoader(dep.classLoader(), ctx.config()));
-        }
-        else {
-            nodeFilter = U.unmarshal(ctx.marshaller(),
-                nodeFilterBytes,
-                U.resolveClassLoader(ctx.config()));
-        }
-
-        if (hndBytes != null) {
-            hnd = U.unmarshal(ctx.marshaller(), hndBytes, U.resolveClassLoader(ctx.config()));
-
-            if (ctx.config().isPeerClassLoadingEnabled())
-                hnd.p2pUnmarshal(sndId, ctx);
-
-            if (keepBinary) {
-                assert hnd instanceof CacheContinuousQueryHandler : hnd;
-
-                ((CacheContinuousQueryHandler<?, ?>)hnd).keepBinary(true);
-            }
-        }
     }
 }

@@ -88,7 +88,8 @@ Run `IgniteRebalanceOnUpgradeTest` from your IDE or via Maven. The source versio
 All nodes stay in Docker containers throughout the test. Each node is upgraded in-place:
 1. The container is gracefully stopped (`docker stop`).
 2. Source jars in `/opt/ignite/apache-ignite/libs/` are replaced by target jars from the host.
-3. The container is restarted (`docker start`).
+3. The source Spring entry config is replaced by the target config.
+4. The container is restarted (`docker start`).
 
 The Docker image for the source cluster is the same as in LOCAL mode — only one image is needed.
 The target-version jars are provided from the host filesystem.

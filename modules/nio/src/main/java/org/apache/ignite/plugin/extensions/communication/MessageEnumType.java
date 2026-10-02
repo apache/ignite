@@ -17,10 +17,14 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import java.util.EnumSet;
 import java.util.function.Function;
 
 /** */
 public class MessageEnumType<T extends Enum<T>> implements MessageType {
+    /** */
+    private final Class<T> cls;
+
     /** */
     private final Function<T, Byte> encoder;
 
@@ -28,12 +32,19 @@ public class MessageEnumType<T extends Enum<T>> implements MessageType {
     private final Function<Byte, T> decoder;
 
     /**
+     * @param cls Enum class.
      * @param encoder Encoder.
      * @param decoder Decoder.
      */
-    public MessageEnumType(Function<T, Byte> encoder, Function<Byte, T> decoder) {
+    public MessageEnumType(Class<T> cls, Function<T, Byte> encoder, Function<Byte, T> decoder) {
+        this.cls = cls;
         this.encoder = encoder;
         this.decoder = decoder;
+    }
+
+    /** @return Empty {@link EnumSet} of the enum type. */
+    public EnumSet<T> newEnumSet() {
+        return EnumSet.noneOf(cls);
     }
 
     /**

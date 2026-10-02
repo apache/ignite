@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.IndexWithSameNameCalc
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AuthorizationIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.BulkOperationDeadlockIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CacheStoreTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CacheWithInterceptorIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBasicSecondaryIndexIntegrationTest;
@@ -66,9 +67,12 @@ import org.apache.ignite.internal.processors.query.calcite.integration.QueryBloc
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.RecursiveCteIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.ResultSetSizeMetricsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ScalarInIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SelectByKeyFieldTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SelectForUpdateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
@@ -76,6 +80,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.SqlDiagno
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StatisticsCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SystemColumnsScanTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
@@ -99,14 +104,14 @@ import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMerg
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.apache.ignite.internal.processors.tx.TxThreadLockingTest;
 import org.apache.ignite.internal.processors.tx.TxWithExceptionalInterceptorTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Calcite tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     OrToUnionRuleTest.class,
     ProjectScanMergeRuleTest.class,
     CalciteQueryProcessorTest.class,
@@ -120,6 +125,7 @@ import org.junit.runners.Suite;
     AggregatesIntegrationTest.class,
     MetadataIntegrationTest.class,
     RunningQueriesIntegrationTest.class,
+    RecursiveCteIntegrationTest.class,
     SqlDiagnosticIntegrationTest.class,
     SortAggregateIntegrationTest.class,
     TableDdlIntegrationTest.class,
@@ -189,6 +195,10 @@ import org.junit.runners.Suite;
     WindowIntegrationTest.class,
     CalciteMessageUnmarshalThreadIntegrationTest.class,
     CollectIntegrationTest.class,
+    SystemColumnsScanTest.class,
+    BulkOperationDeadlockIntegrationTest.class,
+    SelectForUpdateIntegrationTest.class,
+    ResultSetSizeMetricsTest.class,
 })
 public class IntegrationTestSuite {
 }

@@ -29,6 +29,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
@@ -90,6 +91,24 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelNode accept(RexShuttle shuttle) {
+        List<RexNode> newSearchRow = shuttle.apply(searchRow);
+        RexNode newCondition = shuttle.apply(cond);
+
+        if (newSearchRow == searchRow && newCondition == cond)
+            return this;
+
+        return new IgniteHashIndexSpool(
+            getCluster(),
+            getTraitSet(),
+            getInput(),
+            newSearchRow,
+            newCondition,
+            allowNulls
+        );
     }
 
     /** */

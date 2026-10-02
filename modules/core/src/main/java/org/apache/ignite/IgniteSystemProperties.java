@@ -989,10 +989,13 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * <p>
      *     Default is {@code false}, which means that service security permissions will be respected.
      * </p>
+     *
+     * @deprecated Has no usage.
      */
     @SystemProperty("Enables Ignite to switch to compatibility mode with versions that " +
         "don't support service security permissions. In this case security permissions will be ignored (if they set)." +
         " Default is false, which means that service security permissions will be respected")
+    @Deprecated
     public static final String IGNITE_SECURITY_COMPATIBILITY_MODE = "IGNITE_SECURITY_COMPATIBILITY_MODE";
 
     /** Ignite cluster name. Defaults to {@link IgniteCluster#id()}. */

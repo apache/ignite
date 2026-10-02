@@ -27,6 +27,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.protocol.gg.GridProtocolHandler;
@@ -403,6 +404,73 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /**
+     * Resolves the class loader classes described by {@code depInfo} must be read with. Blocks when the deployment
+     * has to be requested, so it must not be called from a socket-reading thread.
+     *
+     * @param depInfo Deployment of the classes, or {@code null} when they carry none.
+     * @param clsName Name of a class the deployment must be able to load.
+     * @param sndNodeId Node the classes came from.
+     * @return Class loader of the deployment, or the local one when there is no deployment.
+     * @throws IgniteDeploymentCheckedException If the deployment cannot be obtained.
+     */
+    public ClassLoader classLoader(@Nullable GridDeploymentInfo depInfo, String clsName, UUID sndNodeId)
+        throws IgniteDeploymentCheckedException {
+        if (depInfo == null)
+            return U.resolveClassLoader(ctx.config());
+
+        return U.resolveClassLoader(globalDeployment(depInfo, clsName, sndNodeId).classLoader(), ctx.config());
+    }
+
+    /**
+     * Resolves the deployment {@code depInfo} describes, for the classes of {@code clsName}.
+     *
+     * @param depInfo Deployment of the classes, or {@code null} when the message carries none.
+     * @param clsName Name of a class the deployment must be able to load.
+     * @param sndNodeId Node the classes came from. It is not always the node that created the class loader: a node
+     *     that got the classes by peer loading passes them on as a participant of the same deployment.
+     * @return The deployment the classes are loaded with.
+     * @throws IgniteDeploymentCheckedException If there is no deployment to resolve, it is gone, or peer class
+     *     loading is off.
+     */
+    public GridDeployment globalDeployment(@Nullable GridDeploymentInfo depInfo, String clsName, UUID sndNodeId)
+        throws IgniteDeploymentCheckedException {
+        GridDeployment dep = globalDeployment(depInfo, clsName, clsName, sndNodeId);
+
+        if (dep == null) {
+            throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class (is peer class " +
+                "loading turned on?): " + clsName);
+        }
+
+        return dep;
+    }
+
+    /**
+     * Resolves the deployment {@code depInfo} describes, as
+     * {@link #globalDeployment(GridDeploymentInfo, String, UUID)} does, but under {@code rsrcName} (a task may be
+     * deployed under a name of its own) and returns {@code null} instead of throwing, for callers that have somewhere
+     * else to look.
+     *
+     * @param depInfo Deployment of the classes, or {@code null} when the message carries none.
+     * @param rsrcName Name the classes are deployed under.
+     * @param clsName Name of a class the deployment must be able to load.
+     * @param sndNodeId Node the classes came from.
+     * @return The deployment, or {@code null} when there is none to resolve or none is found.
+     */
+    @Nullable public GridDeployment globalDeployment(@Nullable GridDeploymentInfo depInfo, String rsrcName,
+        String clsName, UUID sndNodeId) {
+        if (depInfo == null)
+            return null;
+
+        return getGlobalDeployment(depInfo.deployMode(),
+            rsrcName,
+            clsName,
+            depInfo.userVersion(),
+            sndNodeId,
+            depInfo.classLoaderId(),
+            depInfo.participants());
+    }
+
+    /**
      * @param depMode Deployment mode.
      * @param rsrcName Resource name (could be task name).
      * @param clsName Class name.
@@ -410,7 +478,6 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @param sndNodeId Sender node ID.
      * @param clsLdrId Class loader ID.
      * @param participants Node class loader participant map.
-     * @param nodeFilter Node filter for class loader.
      * @return Deployment class if found.
      */
     @Nullable public GridDeployment getGlobalDeployment(
@@ -420,8 +487,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         String userVer,
         UUID sndNodeId,
         IgniteUuid clsLdrId,
-        Map<UUID, IgniteUuid> participants,
-        @Nullable IgnitePredicate<ClusterNode> nodeFilter) {
+        Map<UUID, IgniteUuid> participants) {
         if (locDep != null)
             return locDep;
 
@@ -439,7 +505,6 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         meta.senderNodeId(sndNodeId);
         meta.classLoaderId(clsLdrId);
         meta.participants(participants);
-        meta.nodeFilter(nodeFilter);
 
         if (!ctx.config().isPeerClassLoadingEnabled()) {
             meta.record(true);

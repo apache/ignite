@@ -362,8 +362,22 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                     endTime = U.currentTimeMillis() + period;
 
                     addTimeoutObject(this);
+
+                    // cancel() may have been called after the check above but before the task was re-added.
+                    if (cancel)
+                        removeTimeoutObject(this);
                 }
             }
+        }
+
+        /**
+         * Cancels this task without waiting for a concurrently running execution to finish.
+         * A running execution is not interrupted, and subsequent executions are suppressed.
+         */
+        public void cancel() {
+            cancel = true;
+
+            removeTimeoutObject(this);
         }
 
         /** {@inheritDoc} */
@@ -371,7 +385,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
             cancel = true;
 
             synchronized (this) {
-                // Just waiting for task execution end to make sure that task will not be executed anymore.
+                // Wait for a running execution to finish before the final queue cleanup.
                 removeTimeoutObject(this);
             }
         }

@@ -38,7 +38,7 @@ import org.junit.Test;
 public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() throws IgniteCheckedException {
-        return initTestMarshallerContext(Marshallers.optimized(false));
+        return initTestMarshallerContext(Marshallers.optimizedForAllClasses());
     }
 
     /**

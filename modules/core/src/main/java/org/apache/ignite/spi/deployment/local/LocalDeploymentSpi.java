@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.GridAnnotationsCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -149,7 +150,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             assert clsName != null;
 
             try {
-                Class<?> cls = U.forName(clsName, clsLdr);
+                Class<?> cls = ClassLoaderUtils.forName(clsName, clsLdr);
 
                 assert cls != null;
 

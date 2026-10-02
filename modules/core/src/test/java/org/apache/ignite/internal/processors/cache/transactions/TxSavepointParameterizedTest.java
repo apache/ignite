@@ -280,15 +280,11 @@ public class TxSavepointParameterizedTest extends GridCommonAbstractTest {
             }
         });
 
+        assertTrue(savepointRolledBackLatch.await(10, TimeUnit.SECONDS));
+
         updateKeyFormPrimary(node1Key);
 
         assertFalse(fut.isDone());
-
-        // TODO: IGNITE-28612 Entry visibility violation in transactional replication cache with one backup and near.
-        if (initKeies && useNearCache && backups == 1 && spKeyOnTxInitiator && !replicated) {
-            assertTrue(GridTestUtils.waitForCondition(() ->
-                Integer.valueOf(42).equals(cache0.get(node1Key)), 10_000));
-        }
 
         assertEquals(Integer.valueOf(42), cache0.get(node1Key));
 

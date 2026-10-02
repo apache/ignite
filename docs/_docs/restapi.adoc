@@ -95,6 +95,10 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 
 Path to this configuration should be set to `ConnectorConfiguration.setJettyPath(String)` as explained above.
 
+NOTE: Ignite uses Jetty 12. Custom Jetty XML configurations created for earlier Jetty versions must use an unnamed
+`<Arg>` element for the server thread pool and must not define the legacy `HandlerCollection` and
+`ContextHandlerCollection`. The following configuration uses the current syntax.
+
 [source,xml]
 ----
 include::code-snippets/xml/jetty.xml[tags=, indent=0]

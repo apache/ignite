@@ -30,14 +30,13 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
 /** */
 public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
@@ -50,10 +49,10 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         
         byte[] serializedTestObjectsBytes;
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(ctx, false, UNREGISTERED_TYPE_ID)) {
+        try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(ctx, false)) {
             testObjects.forEach(writer::writeObject);
 
-            serializedTestObjectsBytes = writer.array();
+            serializedTestObjectsBytes = writer.out().arrayCopy();
         }
 
         RawBinaryObjectExtractor rawReader = new RawBinaryObjectExtractor(BinaryStreams.inputStream(serializedTestObjectsBytes));
@@ -99,15 +98,6 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Object createTestObject() {
-        TestObjectAllTypes res = new TestObjectAllTypes();
-
-        res.setDefaultData();
-
-        return res;
-    }
-
-    /** */
     private interface RegisteredClass { }
 
     /** */
@@ -139,7 +129,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Class<?> getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException {
-            return U.forName(clsNamesByTypeId.get(typeId), ldr);
+            return ClassLoaderUtils.forName(clsNamesByTypeId.get(typeId), ldr);
         }
 
         /** {@inheritDoc} */

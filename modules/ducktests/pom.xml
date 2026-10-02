@@ -30,10 +30,6 @@
         <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <properties>
-        <prometheus.version>0.3.0</prometheus.version>
-    </properties>
-
     <artifactId>ignite-ducktests</artifactId>
     <url>http://ignite.apache.org</url>
 
@@ -114,7 +110,9 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven.dependency.plugin.version}</version>
                 <executions>
                     <execution>
                         <id>copy-libs</id>

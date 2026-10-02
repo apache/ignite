@@ -623,11 +623,13 @@ public interface IgniteMXBean {
      * @param warmup Warmup duration in milliseconds.
      * @param duration Test duration in milliseconds.
      * @param threads Thread count.
-     * @param maxLatency Max latency in nanoseconds.
-     * @param rangesCnt Ranges count in resulting histogram.
+     * @param maxLatency Ignored.
+     * @param rangesCnt Ignored.
      * @param payLoadSize Payload size in bytes.
      * @param procFromNioThread {@code True} to process requests in NIO threads.
+     * @deprecated Use the {@code io-test} command instead.
      */
+    @Deprecated
     @MXBeanDescription("Runs IO latency test against all remote server nodes in cluster.")
     void runIoTest(
         @MXBeanParameter(name = "warmup", description = "Warmup duration (millis).")
@@ -636,9 +638,9 @@ public interface IgniteMXBean {
             long duration,
         @MXBeanParameter(name = "threads", description = "Threads count.")
             int threads,
-        @MXBeanParameter(name = "maxLatency", description = "Maximum latency expected (nanos).")
+        @MXBeanParameter(name = "maxLatency", description = "Ignored deprecated parameter.")
             long maxLatency,
-        @MXBeanParameter(name = "rangesCnt", description = "Ranges count for histogram.")
+        @MXBeanParameter(name = "rangesCnt", description = "Ignored deprecated parameter.")
             int rangesCnt,
         @MXBeanParameter(name = "payLoadSize", description = "Payload size (bytes).")
             int payLoadSize,

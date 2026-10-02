@@ -341,7 +341,7 @@ public class IgniteTxHandler {
                     U.error(log, "Failed to prepare DHT transaction: " + locTx, e);
 
                 return new GridNearTxPrepareResponse(
-                    req.partition(),
+                    req.stripeIdx(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
@@ -512,7 +512,7 @@ public class IgniteTxHandler {
 
                     if (retry) {
                         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-                            req.partition(),
+                            req.stripeIdx(),
                             req.version(),
                             req.futureId(),
                             req.miniId(),
@@ -720,7 +720,7 @@ public class IgniteTxHandler {
                 ", req=" + req + ']');
 
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
-            req.partition(),
+            req.stripeIdx(),
             req.version(),
             req.futureId(),
             req.miniId(),
@@ -1005,7 +1005,7 @@ public class IgniteTxHandler {
 
             // Always send finish response.
             GridCacheMessage res = new GridNearTxFinishResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.threadId(),
                 req.futureId(),
@@ -1184,7 +1184,7 @@ public class IgniteTxHandler {
 
         try {
             res = new GridDhtTxPrepareResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -1273,7 +1273,7 @@ public class IgniteTxHandler {
                 }
 
             res = new GridDhtTxPrepareResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -1590,7 +1590,7 @@ public class IgniteTxHandler {
     private void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed, GridCacheVersion nearTxId) {
         if (req.replyRequired() || req.checkCommitted()) {
             GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(
-                req.partition(),
+                req.stripeIdx(),
                 req.version(),
                 req.futureId(),
                 req.miniId());

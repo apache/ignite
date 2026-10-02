@@ -40,6 +40,7 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
@@ -48,6 +49,9 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.logger.NullLogger;
+
+import static org.apache.ignite.internal.client.thin.ClientUtils.awaitFutureResult;
+import static org.apache.ignite.internal.client.thin.ClientUtils.createClientConnectionException;
 
 /**
  * Client connection multiplexer based on {@link org.apache.ignite.internal.util.nio.GridNioServer}.
@@ -150,10 +154,11 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     }
 
     /** {@inheritDoc} */
-    @Override public ClientConnection open(InetSocketAddress addr,
-                                           ClientMessageHandler msgHnd,
-                                           ClientConnectionStateHandler stateHnd)
-            throws ClientConnectionException {
+    @Override public ClientConnection open(
+        InetSocketAddress addr,
+        ClientMessageHandler msgHnd,
+        ClientConnectionStateHandler stateHnd
+    ) throws ClientConnectionException {
         rwLock.readLock().lock();
 
         try {
@@ -161,67 +166,31 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 reloadSslContext();
 
             SocketChannel ch = null;
+
             try {
                 ch = SocketChannel.open();
+
                 ch.socket().connect(new InetSocketAddress(addr.getHostName(), addr.getPort()), connTimeout);
             }
             catch (Exception e) {
-                if (ch != null) {
-                    if (ch.socket() != null) {
-                        try {
-                            ch.socket().close();
-                        }
-                        catch (Exception ignored) {
-                            // ignore close exception
-                        }
-                    }
+                CommonUtils.closeQuiet(ch);
 
-                    try {
-                        ch.close();
-                    }
-                    catch (Exception ignored) {
-                        // ignore close exception
-                    }
-                }
-                throw new ClientConnectionException(e.getMessage(), e);
+                throw createClientConnectionException(e, addr);
             }
 
-            Map<Integer, Object> meta = new HashMap<>();
-            IgniteInternalFuture<?> sslHandshakeFut = null;
+            GridNioSession ses = null;
 
-            if (sslCtxProvider != null) {
-                sslHandshakeFut = new GridFutureAdapter<>();
+            try {
+                ses = createNioSession(ch);
 
-                meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
+                return new GridNioClientConnection(ses, msgHnd, stateHnd);
             }
+            catch (Exception e) {
+                if (ses != null)
+                    ses.close();
 
-            IgniteInternalFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
-
-            if (sesFut.error() != null)
-                sesFut.get();
-
-            if (sslHandshakeFut != null) {
-                try {
-                    sslHandshakeFut.get();
-                }
-                catch (Exception e) {
-                    // A refused handshake may mean the certificates on disk have been rotated since, so the next
-                    // attempt is made with them. A connection that merely dropped must not count: that happens on
-                    // every node restart, and rebuilding the context there would also pick up a key store the
-                    // operator has staged but not yet put in use anywhere else.
-                    if (X.hasCause(e, SSLHandshakeException.class))
-                        reloadSsl.set(true);
-
-                    throw e;
-                }
+                throw createClientConnectionException(e, addr);
             }
-
-            GridNioSession ses = sesFut.get();
-
-            return new GridNioClientConnection(ses, msgHnd, stateHnd);
-        }
-        catch (Exception e) {
-            throw new ClientConnectionException(e.getMessage() + " [remoteAddress=" + addr + ']', e);
         }
         finally {
             rwLock.readLock().unlock();
@@ -239,5 +208,57 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         catch (Exception ignored) {
             // The connection attempt fails on its own, and the certificates in use stay untouched.
         }
+    }
+
+    /** */
+    private GridNioSession createNioSession(SocketChannel ch) throws IgniteCheckedException {
+        Map<Integer, Object> meta = new HashMap<>();
+
+        GridFutureAdapter<?> sslHandshakeFut = null;
+
+        if (sslCtxProvider != null) {
+            sslHandshakeFut = new GridFutureAdapter<>();
+
+            meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
+        }
+
+        IgniteInternalFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
+
+        GridNioSession ses;
+
+        try {
+            ses = awaitFutureResult(sesFut, connTimeout, "NIO session creation");
+        }
+        catch (Exception e) {
+            sesFut.listen(fut -> {
+                if (fut.error() == null)
+                    fut.result().close();
+            });
+
+            CommonUtils.closeQuiet(ch);
+
+            throw e;
+        }
+
+        if (sslHandshakeFut == null)
+            return ses;
+
+        try {
+            awaitFutureResult(sslHandshakeFut, connTimeout, "SSL handshake");
+        }
+        catch (Exception e) {
+            // A refused handshake may mean the certificates on disk have been rotated since, so the next attempt is
+            // made with them. A connection that merely dropped or timed out must not count: that happens on every
+            // node restart, and rebuilding the context there would also pick up a key store the operator has staged
+            // but not yet put in use anywhere else.
+            if (X.hasCause(e, SSLHandshakeException.class))
+                reloadSsl.set(true);
+
+            ses.close();
+
+            throw e;
+        }
+
+        return ses;
     }
 }

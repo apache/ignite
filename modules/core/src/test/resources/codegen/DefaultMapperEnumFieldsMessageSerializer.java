@@ -18,8 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord.PartitionState;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageEnumType;
@@ -44,12 +46,12 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
     /** */
     private static final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
     /** */
-    private static final MessageCollectionType partStatesCollDesc = new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(partitionStateVals, b)), false);
+    private static final MessageCollectionType partStatesCollDesc = new MessageCollectionType(new MessageEnumType<>(PartitionState.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(partitionStateVals, b)), CollectionImplementationType.ARRAY_LIST);
     /** */
-    private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), false), new MessageItemType(MessageCollectionItemType.STRING), false);
+    private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), CollectionImplementationType.ARRAY_LIST), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
-    @Override public final boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -71,13 +73,13 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMap(msg.isolationStringMap, isolationStringMapCollDesc))
+                if (!writer.writeMap(msg.isolationStringMap, isolationStringMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection(msg.partStates, partStatesCollDesc))
+                if (!writer.writeCollection(msg.partStates, partStatesCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
@@ -87,7 +89,7 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
     }
 
     /** */
-    @Override public final boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
                 msg.publicEnum = DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, reader.readByte());
@@ -106,7 +108,7 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 2:
-                msg.isolationStringMap = reader.readMap(isolationStringMapCollDesc);
+                msg.isolationStringMap = reader.readMap(isolationStringMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -114,7 +116,7 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 3:
-                msg.partStates = reader.readCollection(partStatesCollDesc);
+                msg.partStates = reader.readCollection(partStatesCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;

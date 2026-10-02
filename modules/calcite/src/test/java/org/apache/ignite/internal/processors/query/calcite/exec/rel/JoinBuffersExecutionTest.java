@@ -33,9 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
@@ -45,8 +43,7 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 
 /** Tests that buffers of join nodes are cleared at the join end and that a join node is not stuck. */
-@RunWith(Parameterized.class)
-public class JoinBuffersExecutionTest extends AbstractExecutionTest {
+public class JoinBuffersExecutionTest extends AbstractExecutionParametrizedTest {
     /** */
     @Test
     public void testMergeJoinBuffers() throws Exception {

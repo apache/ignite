@@ -345,7 +345,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         assert !F.isEmpty(keys) || !F.isEmpty(nearKeys);
 
         int p = !keys.isEmpty() ? keys.get(0).partition() : nearKeys.get(0).partition();

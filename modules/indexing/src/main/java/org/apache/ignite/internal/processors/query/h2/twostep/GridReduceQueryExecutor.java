@@ -1400,4 +1400,9 @@ public class GridReduceQueryExecutor {
 
         return Collections.singletonList(originalQry);
     }
+
+    /** */
+    IgniteH2Indexing h2() {
+        return h2;
+    }
 }

@@ -85,6 +85,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
@@ -194,8 +195,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
      **************************************************************/
-    /** Null name for execution map. */
-    private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** Ip finder for TCP discovery. */
     public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false).
@@ -685,6 +684,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
+    protected static void beforeFirstTest0() {
+        sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+    }
+
+    /** */
     protected void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -778,7 +782,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param afterTestFinished Boolean flag used to tell whether {@code afterTest()} finished execution.
      * @return Scheduled executor used when scheduling.
      */
-    private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
+    public ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
         // Compute class name as string to avoid holding reference to the test class instance in task.
         String testClsName = getClass().getName();
 
@@ -1240,28 +1244,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected Ignite startGrid(String igniteInstanceName, GridSpringResourceContext ctx) throws Exception {
         return startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)), ctx);
-    }
-
-    /**
-     * @param regionCfg Region config.
-     */
-    private void validateDataRegion(DataRegionConfiguration regionCfg) {
-        if (regionCfg.isPersistenceEnabled() && regionCfg.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE)
-            throw new AssertionError("Max size of data region should be set explicitly to avoid memory over usage");
-    }
-
-    /**
-     * @param cfg Config.
-     */
-    private void validateConfiguration(IgniteConfiguration cfg) {
-        if (cfg.getDataStorageConfiguration() != null) {
-            validateDataRegion(cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
-
-            if (cfg.getDataStorageConfiguration().getDataRegionConfigurations() != null) {
-                for (DataRegionConfiguration reg : cfg.getDataStorageConfiguration().getDataRegionConfigurations())
-                    validateDataRegion(reg);
-            }
-        }
     }
 
     /**
@@ -2075,14 +2057,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @param name Name to mask.
-     * @return Masked name.
-     */
-    private String maskNull(String name) {
-        return name == null ? NULL_NAME : name;
-    }
-
-    /**
      * @return Ignite home.
      */
     protected String home() throws IgniteCheckedException {
@@ -2236,9 +2210,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         // Remove resources cached in static, if any.
         GridClassLoaderCache.clear();
-        U.clearClassCache();
+        ClassLoaderUtils.clearClassCache();
         MarshallerExclusions.clearCache();
-        BinaryUtils.clearCache();
+        BinaryUtils.binariesFactory.clearCache();
         serializedObj.clear();
 
         if (err != null)

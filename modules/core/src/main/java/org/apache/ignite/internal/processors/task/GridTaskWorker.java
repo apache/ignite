@@ -68,7 +68,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
-import org.apache.ignite.internal.managers.communication.MessageMarshalling;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
@@ -824,7 +824,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         boolean loc = ctx.localNodeId().equals(res.nodeId()) && !ctx.config().isMarshalLocalJobs();
 
                         if (!loc)
-                            MessageMarshalling.unmarshal(res, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                            CommunicationMarshalling.unmarshal(res, ctx, null, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                         jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 
@@ -1385,7 +1385,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         ses.getId(),
                         res.getJobContext().getJobId(),
                         ses.getTaskName(),
-                        ses.getUserVersion(),
+                        dep,
                         ses.getTaskClassName(),
                         res.getJob(),
                         ses.getStartTime(),
@@ -1396,10 +1396,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         sesAttrs,
                         jobAttrs,
                         ses.getCheckpointSpi(),
-                        dep.classLoaderId(),
-                        dep.deployMode(),
                         continuous,
-                        dep.participants(),
                         forceLocDep,
                         ses.isFullSupport(),
                         internal,
@@ -1409,7 +1406,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         ses.executorName());
 
                     if (loc)
-                        ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
+                        ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req, ses.getJobSiblings());
                     else {
                         byte plc;
 

@@ -65,14 +65,14 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  *
@@ -80,12 +80,11 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class PlanExecutionTest extends AbstractPlannerTest {
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         CalciteMessageFactory msgFactory = new CalciteMessageFactory();
-
-        msgFactory.init(Marshallers.jdk(), Marshallers.jdk());
 
         // Register messages in Message#REGISTRATIONS and avoids failure in Message#directType().
         new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{msgFactory});
@@ -168,8 +167,8 @@ public class PlanExecutionTest extends AbstractPlannerTest {
 
         assertFalse(res.isEmpty());
 
-        Assert.assertArrayEquals(new Object[]{0, "Igor", 0, "Calcite", 1}, res.get(0));
-        Assert.assertArrayEquals(new Object[]{1, "Roman", 0, "Calcite", 1}, res.get(1));
+        assertArrayEquals(new Object[]{0, "Igor", 0, "Calcite", 1}, res.get(0));
+        assertArrayEquals(new Object[]{1, "Roman", 0, "Calcite", 1}, res.get(1));
     }
 
     /**
@@ -230,7 +229,7 @@ public class PlanExecutionTest extends AbstractPlannerTest {
         int pos = 0;
 
         for (Object obj : checkRes.get())
-            Assert.assertArrayEquals((Object[])obj, res.get(pos++));
+            assertArrayEquals((Object[])obj, res.get(pos++));
     }
 
     /** */

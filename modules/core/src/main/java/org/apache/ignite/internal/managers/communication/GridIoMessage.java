@@ -21,8 +21,7 @@ import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridTopicMessage;
 import org.apache.ignite.internal.NioField;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
+import org.apache.ignite.internal.StripedMessage;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.nio.GridNioServer.MessageWrapper;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -33,10 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage implements Message, MessageWrapper {
-    /** */
-    public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
-
+public class GridIoMessage implements StripedMessage, MessageWrapper {
     /** Policy. */
     @Order(0)
     byte plc;
@@ -175,18 +171,9 @@ public class GridIoMessage implements Message, MessageWrapper {
         throw new AssertionError();
     }
 
-    /**
-     * Get single partition for this message (if applicable).
-     *
-     * @return Partition ID.
-     */
-    public int partition() {
-        if (msg instanceof GridCacheMessage)
-            return ((GridCacheMessage)msg).partition();
-        if (msg instanceof DataStreamerRequest)
-            return ((DataStreamerRequest)msg).partition();
-        else
-            return STRIPE_DISABLED_PART;
+    /** {@inheritDoc} */
+    @Override public int stripeIdx() {
+        return msg instanceof StripedMessage ? ((StripedMessage)msg).stripeIdx() : NO_STRIPE;
     }
 
     /**

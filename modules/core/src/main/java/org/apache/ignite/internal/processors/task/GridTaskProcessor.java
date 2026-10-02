@@ -65,6 +65,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -1616,7 +1617,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         if (taskName != null) {
             try {
-                return U.forName(taskName, U.gridClassLoader());
+                return ClassLoaderUtils.forName(taskName);
             }
             catch (ClassNotFoundException ignored) {
                 // No-op.

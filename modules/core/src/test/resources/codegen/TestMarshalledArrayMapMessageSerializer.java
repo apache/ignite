@@ -19,7 +19,9 @@ package org.apache.ignite.internal;
 
 import java.util.List;
 import org.apache.ignite.internal.GridTopicMessage;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshalledArrayMapMessage;
+import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
@@ -37,14 +39,14 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
     /** */
     private static final MessageArrayType fixedMapKeysCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridTopicMessage.class);
     /** */
-    private static final MessageArrayType fixedMapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false), List.class);
+    private static final MessageArrayType fixedMapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), CollectionImplementationType.ARRAY_LIST), List.class);
     /** */
     private static final MessageArrayType mapKeysCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.MSG), GridTopicMessage.class);
     /** */
-    private static final MessageArrayType mapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), false), List.class);
+    private static final MessageArrayType mapValsCollDesc = new MessageArrayType(new MessageCollectionType(new MessageItemType(MessageCollectionItemType.MSG), CollectionImplementationType.ARRAY_LIST), List.class);
 
     /** */
-    @Override public final boolean writeTo(TestMarshalledArrayMapMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledArrayMapMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -54,25 +56,25 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeObjectArray(msg.mapKeys, mapKeysCollDesc))
+                if (!writer.writeObjectArray(msg.mapKeys, mapKeysCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeObjectArray(msg.mapVals, mapValsCollDesc))
+                if (!writer.writeObjectArray(msg.mapVals, mapValsCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeObjectArray(msg.fixedMapKeys, fixedMapKeysCollDesc))
+                if (!writer.writeObjectArray(msg.fixedMapKeys, fixedMapKeysCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeObjectArray(msg.fixedMapVals, fixedMapValsCollDesc))
+                if (!writer.writeObjectArray(msg.fixedMapVals, fixedMapValsCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
@@ -82,10 +84,10 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
     }
 
     /** */
-    @Override public final boolean readFrom(TestMarshalledArrayMapMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledArrayMapMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
-                msg.mapKeys = reader.readObjectArray(mapKeysCollDesc);
+                msg.mapKeys = reader.readObjectArray(mapKeysCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -93,7 +95,7 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
                 reader.incrementState();
 
             case 1:
-                msg.mapVals = reader.readObjectArray(mapValsCollDesc);
+                msg.mapVals = reader.readObjectArray(mapValsCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -101,7 +103,7 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
                 reader.incrementState();
 
             case 2:
-                msg.fixedMapKeys = reader.readObjectArray(fixedMapKeysCollDesc);
+                msg.fixedMapKeys = reader.readObjectArray(fixedMapKeysCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -109,7 +111,7 @@ public final class TestMarshalledArrayMapMessageSerializer implements MessageSer
                 reader.incrementState();
 
             case 3:
-                msg.fixedMapVals = reader.readObjectArray(fixedMapValsCollDesc);
+                msg.fixedMapVals = reader.readObjectArray(fixedMapValsCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;

@@ -86,7 +86,6 @@
                 <module>modules/ducktests</module>
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
-                <module>modules/yardstick</module>
             </modules>
         </profile>
 
@@ -136,8 +135,8 @@
                                         <artifactId>ignite-tools</artifactId>
                                         <version>${project.version}</version>
                                     </tagletArtifact>
-                                    <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
-                                    <destDir>core</destDir>
+                                    <!-- Javadoc is generated into ${outputDirectory}/apidocs. -->
+                                    <outputDirectory>${basedir}/target/javadoc</outputDirectory>
 
                                     <excludePackageNames>
                                     <!-- External packages, usage of -subpackages flag leads to incorrect handling of excludePackageNames. -->
@@ -152,8 +151,6 @@
                                         :org.mindrot.*
 
                                     <!-- For each package use 2 patterns - direct and with .* suffix. -->
-                                        :org.apache.ignite.codegen
-                                        :org.apache.ignite.codegen.*
                                         :org.apache.ignite.examples
                                         :org.apache.ignite.examples.*
                                         :org.apache.ignite.internal
@@ -178,8 +175,6 @@
                                         :org.apache.ignite.spi.deployment.uri.scanners.*
                                         :org.apache.ignite.spi.deployment.uri.tasks
                                         :org.apache.ignite.spi.deployment.uri.tasks.*
-                                        :org.apache.ignite.yardstick
-                                        :org.apache.ignite.yardstick.*
                                         :org.apache.ignite.webtest
                                         :org.apache.ignite.webtest.*
                                     </excludePackageNames>
@@ -207,7 +202,7 @@
                                 <phase>initialize</phase>
                                 <configuration>
                                     <target>
-                                        <copy todir="${basedir}/target/javadoc/core">
+                                        <copy todir="${basedir}/target/javadoc/apidocs">
                                             <fileset dir="assembly/docfiles">
                                                 <include name="img/**" />
                                                 <include name="*.js" />
@@ -216,7 +211,7 @@
 
                                             <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
-                                            <doctask dir="target/javadoc/core">
+                                            <doctask dir="target/javadoc/apidocs">
                                                 <include name="**/*.html" />
                                                 <exclude name="overview-frame.html" />
                                                 <exclude name="allclasses-frame.html" />
@@ -243,10 +238,11 @@
             <build>
                 <plugins>
                     <plugin><!-- skipping generation of dependencies licenses
-                     to keep clean /maven-shared-archive-resources/META-INF
-                     to prevent license.txt moving to sources.zip -->
+                      to keep clean /maven-shared-archive-resources/META-INF
+                      to prevent license.txt moving to sources.zip -->
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-remote-resources-plugin</artifactId>
+                        <version>${maven.remote.resources.version}</version>
                         <executions>
                             <execution>
                                 <id>ignite-dependencies</id>
@@ -469,13 +465,6 @@
         </profile>
 
         <profile>
-            <id>yardstick</id>
-            <modules>
-                <module>modules/yardstick</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>benchmarks</id>
             <modules>
                 <module>modules/benchmarks</module>
@@ -652,6 +641,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
+                <version>${maven.clean.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>clean</phase>
@@ -671,6 +661,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven.deploy.plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>

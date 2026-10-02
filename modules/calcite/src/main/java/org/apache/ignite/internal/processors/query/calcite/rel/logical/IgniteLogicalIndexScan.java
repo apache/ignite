@@ -85,4 +85,14 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
     ) {
         super(cluster, traits, tbl, idxName, rowType, proj, cond, searchBounds, requiredCols);
     }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteLogicalIndexScan copy(
+        RelTraitSet traitSet,
+        @Nullable RelDataType rowType,
+        @Nullable List<RexNode> projects,
+        @Nullable RexNode condition
+    ) {
+        return create(getCluster(), traitSet, getTable(), idxName, rowType, projects, condition, requiredColumns);
+    }
 }
